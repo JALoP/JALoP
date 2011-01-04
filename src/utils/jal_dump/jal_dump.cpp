@@ -53,6 +53,7 @@
 #define LOG_FILE_NAME "jal_dump_log.txt"
 
 using namespace std;
+#define JAL_DUMP_VERSION "1.0\n"
 
 static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid, char *type,
 	char *data, char **path, char **home);
@@ -368,12 +369,19 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 
 	int counter = 0;
 	static const char *defdir = "/var/lib/jalop/db";
-	static const char *optstring = "s:u:t:d:p:h:w";
+	static const char *optstring = "s:u:t:d:p:h:v:w";
 	static const struct option long_options[] = {
 			{"type", 1, 0, 't'}, {"sid",1,0,'s'},{"uuid",1,0,'u'},
 			{"data",1,0,'d'}, {"path",1,0,'p'},{"home",2,0,'h'},
-			{"write", 0, 0, 'w'}, {0,0,0,0}};
+			{"version",0,0,'v'},{"write", 0, 0, 'w'}, {0,0,0,0}};
 
+
+	if (2 == argc) {
+		if ('v' == getopt_long(argc, argv, optstring, long_options, NULL)) {
+			printf(JAL_DUMP_VERSION);
+			exit(0);
+		}
+	}
 	if (4 > argc) {
 		goto err_usage;
 	}
@@ -389,6 +397,7 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 		printf("Insufficient memory for uuid storage. Closing.\n");
 		exit(-1);
 	}
+
 
 	int ret_opt;
 	while (EOF != (ret_opt = getopt_long(argc, argv, optstring, long_options, NULL))) {
@@ -435,6 +444,10 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 			case 'w':
 				write_sid_flag = 1;
 				break;
+			case 'v':
+				printf(JAL_DUMP_VERSION);
+				goto version_out;
+				break;
 			case ':':		//Missing argument
 			case '?':		//Unknown option
 			default:
@@ -472,7 +485,27 @@ err_usage:
 	}
 
 	exit(-1);
+
+version_out:
+	for (counter = 0; counter < (*num_sid); counter++) {
+                free(*(*sid + counter));
+        }
+        for (counter = 0; counter < (*num_uuid); counter++) {
+                free(*(*uuid + counter));
+        }
+
+        free(*sid);
+        free(*uuid);
+        if (path != NULL) {
+                free(*path);
+        }
+        if ((home != NULL) && (*home != NULL)) {
+                free(*home);
+        }
+
+	exit(0);
 }
+
 
 static void print_usage()
 {
@@ -501,6 +534,7 @@ static void print_usage()
 			must immediately follow the option.\n\
 	-w, --write	Signals for a list of serial IDs in the JALoP database to be written\n\
 			to a file for each record type.\n\
+	-v, --version	Outputs the version and exits.\n\
 \n\
 	Type and at least 1 sid or uuid must be specified.\n\n";
 
