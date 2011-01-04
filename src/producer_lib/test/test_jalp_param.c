@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_param functions.
+ * @file test_jalp_param.c This file contains tests for jalp_param functions.
  *
  * @section LICENSE
  *

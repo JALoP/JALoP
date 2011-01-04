@@ -1,4 +1,6 @@
 /**
+ * @file jalp_test.c This file contains jalp test functions
+ *
  * @section LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective

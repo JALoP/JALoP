@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_subscriber_callbacks.c functions.
+ * @file test_jaln_subscriber_callbacks.c This file contains tests for jaln_subscriber_callbacks.c functions.
  *
  * @section LICENSE
  *

@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_context functions.
+ * @file test_jalp_context.c This file contains tests for jalp_context functions.
  *
  * @section LICENSE
  *

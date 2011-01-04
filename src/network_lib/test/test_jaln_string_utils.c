@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_string_utils.c functions.
+ * @file test_jaln_string_utils.c This file contains tests for jaln_string_utils.c functions.
  *
  * @section LICENSE
  *

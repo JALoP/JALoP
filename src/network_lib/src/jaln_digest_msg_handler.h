@@ -1,5 +1,5 @@
 /**
- * @file jaln_dgst_msg_handler.h This file contains the function
+ * @file jaln_digest_msg_handler.h This file contains the function
  * declarations for helper functions used to process a 'digest'
  * message.
  *

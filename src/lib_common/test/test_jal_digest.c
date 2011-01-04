@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests to for jal_digest functions.
+ * @file test_jal_digest.c This file contains tests to for jal_digest functions.
  *
  * @section LICENSE
  *

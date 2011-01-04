@@ -1,5 +1,5 @@
 /**
- * @file This file contains utilities to help with _to_xml tests.
+ * @file xml_test_utils.hpp This file contains utilities to help with _to_xml tests.
  *
  * @section LICENSE
  *

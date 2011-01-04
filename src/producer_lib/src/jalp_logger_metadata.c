@@ -1,5 +1,5 @@
 /**
- * @file jalp_logger_metadata.h This file defines structures related to
+ * @file jalp_logger_metadata.c This file contains functions related to
  * the jalp_logger_metadata struct.
  *
  * @section LICENSE

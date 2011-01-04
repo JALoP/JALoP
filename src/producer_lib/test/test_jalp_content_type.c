@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_content_type functions.
+ * @file test_jalp_content_type.c This file contains tests for jalp_content_type functions.
  *
  * @section LICENSE
  *

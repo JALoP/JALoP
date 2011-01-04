@@ -1,4 +1,6 @@
 /**
+ * @file dummy_net_server.c This file contains dummy net server functions
+ *
  * @section LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective

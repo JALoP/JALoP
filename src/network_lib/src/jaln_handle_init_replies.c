@@ -1,5 +1,5 @@
 /**
- * @file jaln_handl_init_replies.c This file contains function
+ * @file jaln_handle_init_replies.c This file contains function
  * definitions for internal library functions related to processing responses
  * to 'initialize' messages (init-ack/init-nack).
  *

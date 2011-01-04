@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for helper functions related to sending DATA
+ * @file test_jalp_connection.c This file contains tests for helper functions related to sending DATA
  * to the JAL Local store.
  *
  * @section LICENSE

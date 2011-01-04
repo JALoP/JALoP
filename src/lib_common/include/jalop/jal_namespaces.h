@@ -1,5 +1,5 @@
 /**
- * @file jal_status.h This file defines namespace uri's for use by jal
+ * @file jal_namespaces.h This file defines namespace uri's for use by jal
  * xml document functions.
  *
  * @section LICENSE

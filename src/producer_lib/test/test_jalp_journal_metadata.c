@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_journal_metadata functions.
+ * @file test_jalp_journal_metadata.c This file contains tests for jalp_journal_metadata functions.
  *
  * @section LICENSE
  *

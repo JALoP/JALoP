@@ -1,5 +1,6 @@
 /**
- * @file This file contains functions to test jalls_system_meta_data_xml.
+ * @file test_jalls_system_metadata_xml.cpp 
+ * This file contains functions to test jalls_system_meta_data_xml.
  *
  * @section LICENSE
  *

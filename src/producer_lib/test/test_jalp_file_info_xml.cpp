@@ -1,5 +1,5 @@
 /**
- * @file This file contains functions to test jalp_file_info_to_elem.
+ * @file test_jalp_file_info_xml.cpp This file contains functions to test jalp_file_info_to_elem.
  *
  * @section LICENSE
  *

@@ -1,5 +1,5 @@
 /**
- * @file jaln_publisher_callbacks.c
+ * @file jaln_publisher_callbacks.c This file contains jaln_publisher_callback functions
  *
  * @section LICENSE
  *

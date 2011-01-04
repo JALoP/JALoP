@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_record_info.c functions.
+ * @file test_jaln_record_info.c This file contains tests for jaln_record_info.c functions.
  *
  * @section LICENSE
  *

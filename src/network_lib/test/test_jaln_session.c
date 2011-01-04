@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_session.c functions.
+ * @file test_jaln_session.c This file contains tests for jaln_session.c functions.
  *
  * @section LICENSE
  *

@@ -1,5 +1,5 @@
 /**
- * @test_jalp_content_type_xml.cpp This file contains unit tests for the
+ * @file test_jalp_content_type_xml.cpp This file contains unit tests for the
  * functions that convert a jalp_content_type struct to a DOM element.
  *
  * @section LICENSE

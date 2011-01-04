@@ -1,5 +1,6 @@
 /**
- * @file jaln_publisher_publisher_internal.h
+ * @file jaln_publisher_callbacks_internal.h This file declares functions 
+ * related to jaln_publisher_callbacks
  *
  * @section LICENSE
  *

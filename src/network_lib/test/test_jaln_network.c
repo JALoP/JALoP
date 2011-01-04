@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_network.c functions.
+ * @file test_jaln_network.c This file contains tests for jaln_network.c functions.
  *
  * @section LICENSE
  *

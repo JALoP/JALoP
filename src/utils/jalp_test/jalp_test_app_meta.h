@@ -1,4 +1,7 @@
 /**
+ * @file jalp_test_app_meta.h This file contains delcarations for generating
+ * application metadata
+ *
  * @section LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective

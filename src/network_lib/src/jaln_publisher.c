@@ -1,7 +1,6 @@
 /**
- * @file jaln_channel_info.c This file contains function
- * definitions for internal library functions related to a jaln_channel_info
- * structure.
+ * @file jaln_publisher.c  This file contains function
+ * definitions related to the jal publisher.
  *
  * @section LICENSE
  *

@@ -1,6 +1,5 @@
 /**
- * @file jalp_audit_helper.cpp Helper function for building the XML document
- * specifically for audit records.
+ * @file jalp_journal.cpp Contains jalp journal functions
  *
  * @section LICENSE
  *

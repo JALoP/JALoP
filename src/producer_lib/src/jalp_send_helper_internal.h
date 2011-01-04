@@ -1,5 +1,5 @@
 /**
- * @file jalp_send_helper_internal.hpp This file contains functions for sending an xml buffer.
+ * @file jalp_send_helper_internal.h This file contains functions for sending an xml buffer.
  *
  * @section LICENSE
  *

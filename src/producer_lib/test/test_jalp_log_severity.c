@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_log_severity functions.
+ * @file test_jalp_log_severity.c This file contains tests for jalp_log_severity functions.
  *
  * @section LICENSE
  *

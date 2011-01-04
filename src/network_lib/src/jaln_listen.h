@@ -1,5 +1,5 @@
 /**
- * @file jaln_listen.c This file contains function definitions
+ * @file jaln_listen.h This file contains function definitions
  * related to listening for a remote peer to connect over the JALoP
  *
  * @section LICENSE

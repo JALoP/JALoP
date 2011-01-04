@@ -1,4 +1,5 @@
 /**
+ * @file jal_dump.h This file contains declarations for functions used in jal_dump
  * @section LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective

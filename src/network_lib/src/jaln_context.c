@@ -1,5 +1,5 @@
 /**
- * @file jaln_context.c
+ * @file jaln_context.c This file contains functions related to a jaln_context
  *
  * Public functions for creating and configuring a jaln_context.
  *

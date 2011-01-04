@@ -1,5 +1,5 @@
 /**
- * @file jaln_tls.h
+ * @file jaln_tls.h This file declares functions related to tls
  *
  * @section LICENSE
  *

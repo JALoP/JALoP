@@ -1,5 +1,5 @@
 /**
- * @file This file contains function declarations for code related
+ * @file jaln_digest.h This file contains function declarations for code related
  * to the digest used during JALoP communications.
  *
  * @section LICENSE

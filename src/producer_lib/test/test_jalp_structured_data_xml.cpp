@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_structured_data_to_elem
+ * @file test_jalp_structured_data_xml.cpp This file contains tests for jalp_structured_data_to_elem
  *
  * @section LICENSE
  *

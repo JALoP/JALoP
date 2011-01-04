@@ -1,5 +1,5 @@
 /**
- * @file jalls_system_metadata_xml.cpp This file defines functions to deal with
+ * @file jsub_system_metadata_xml.cpp This file defines functions to deal with
  * creating system metadata DOMDocuments.
  *
  * @section LICENSE

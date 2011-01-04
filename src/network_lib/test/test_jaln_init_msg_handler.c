@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_init_msg_handler.c functions.
+ * @file test_jaln_init_msg_handler.c This file contains tests for jaln_init_msg_handler.c functions.
  *
  * @section LICENSE
  *

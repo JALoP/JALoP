@@ -1,5 +1,5 @@
 /**
- * @file jaln_subscriber_callbacks.c
+ * @file jaln_subscriber_callbacks.c This file contains jaln_subscriber_callbacks functions
  *
  * @section LICENSE
  *

@@ -1,5 +1,5 @@
 /**
- * @file jal_base64.c
+ * @file jal_base64_internal.h
  * Defines base64 encoding function.
  *
  * @section LICENSE

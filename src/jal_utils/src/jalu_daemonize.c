@@ -1,5 +1,5 @@
 /**
- * @file jalu_daemonize.h This file contains a utility function to daemonize a process.
+ * @file jalu_daemonize.c This file contains a utility function to daemonize a process.
  *
  * @section LICENSE
  *

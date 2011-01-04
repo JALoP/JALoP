@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_subscribe_msg_handler.c functions.
+ * @file test_jaln_pub_feeder.c This file contains tests for jaln_pub_feeder.c functions.
  *
  * @section LICENSE
  *

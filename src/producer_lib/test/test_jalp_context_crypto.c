@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_context_crypto functions.
+ * @file test_jalp_context_crypto.c This file contains tests for jalp_context_crypto functions.
  *
  * @section LICENSE
  *

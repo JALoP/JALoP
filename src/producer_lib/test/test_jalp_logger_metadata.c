@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_logger_metadata functions.
+ * @file test_jalp_logger_metadata.c This file contains tests for jalp_logger_metadata functions.
  *
  * @section LICENSE
  *

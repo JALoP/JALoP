@@ -1,4 +1,6 @@
 /**
+ * @file jal_bn2b64.hpp contains jal_BN2b64 declaration
+ *
  * @section LICENSE
  *
  * Copyright 2002-2010 The Apache Software Foundation.

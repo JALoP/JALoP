@@ -1,4 +1,6 @@
 /**
+ * @file server.c This file contains server functions
+ *
  * @section LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective

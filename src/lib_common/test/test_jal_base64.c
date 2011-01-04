@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jal_base64_enc.
+ * @file test_jal_base64.c This file contains tests for jal_base64_enc.
  *
  * @section LICENSE
  *

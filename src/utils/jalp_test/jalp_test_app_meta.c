@@ -1,4 +1,6 @@
 /**
+ * @file jalp_test_app_meta.c This file contains functionsa for generating app metadata
+ *
  * @section LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective

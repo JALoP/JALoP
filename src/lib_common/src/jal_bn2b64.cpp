@@ -1,4 +1,6 @@
 /**
+ * @file jal_bn2b64.cpp Contains jal_BN2b64
+ *
  * @section LICENSE
  *
  * Copyright 2002-2010 The Apache Software Foundation.

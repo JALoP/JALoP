@@ -1,5 +1,6 @@
 /**
- * @file jaln_subscriber_callbacks_internal.h
+ * @file jaln_subscriber_callbacks_internal.h This file declares internal functions
+ * related to jaln_subscriber_callbacks
  *
  * @section LICENSE
  *

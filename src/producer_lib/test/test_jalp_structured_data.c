@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_structured_data functions.
+ * @file test_jalp_structured_data.c This file contains tests for jalp_structured_data functions.
  *
  * @section LICENSE
  *

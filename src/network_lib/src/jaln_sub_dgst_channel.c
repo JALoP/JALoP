@@ -1,7 +1,6 @@
 /**
- * @file jaln_session.h This file contains function
- * declarations for internal library functions related to a jaln_session
- * structure.
+ * @file jaln_sub_dgst_channel.c This file contains function
+ * declarations for functions related to jaln_sub_dgst
  *
  * @section LICENSE
  *

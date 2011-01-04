@@ -1,5 +1,5 @@
 /**
- * @file main.c Dummy server as the start to 'real' jalp_push tool. Shows
+ * @file sub.c Dummy server as the start to 'real' jalp_push tool. Shows
  * sample use of the network library.
  *
  * @section LICENSE

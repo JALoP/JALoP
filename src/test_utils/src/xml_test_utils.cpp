@@ -1,5 +1,5 @@
 /**
- * @file This file defines functions to assist with _to_xml testing.
+ * @file xml_test_utils.cpp This file defines functions to assist with _to_xml testing.
  *
  * @section LICENSE
  *

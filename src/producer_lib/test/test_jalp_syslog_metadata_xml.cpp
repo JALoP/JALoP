@@ -1,5 +1,5 @@
 /**
- * @file This file contains functions to test jalp_syslog_metadata_to_elem.
+ * @file test_jalp_syslog_metadata_xml.cpp This file contains functions to test jalp_syslog_metadata_to_elem.
  *
  * @section LICENSE
  *
