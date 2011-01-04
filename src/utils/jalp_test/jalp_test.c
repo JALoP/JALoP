@@ -46,6 +46,8 @@
 
 #include "jalp_test_app_meta.h"
 
+#define JALP_TEST_VERSION "1.0\n"
+
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
 	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path);
 
@@ -219,8 +221,8 @@ err_out:
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
 	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char ** schema_path)
 {
-	static const char *optstring = "a:p:st:hj:k:c:dx:";
-	static const struct option long_options[] = { {"type", 1, 0, 't'}, {NULL, 0, 0, 0} };
+	static const char *optstring = "a:p:st:hj:k:c:dx:v";
+	static const struct option long_options[] = { {"type", 1, 0, 't'}, {"version", 0, 0, 'v'}, {NULL, 0, 0, 0} };
 
 	int ret_opt;
 
@@ -266,6 +268,10 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 			case 'x':
 				*schema_path = strdup(optarg);
 				break;
+			case 'v':
+				printf(JALP_TEST_VERSION);
+				goto version_out;
+				break;
 			case ':':
 			case '?':
 			default:
@@ -306,6 +312,21 @@ err_usage:
 
 	print_usage();
 	exit(-1);
+
+version_out:
+	if (app_meta_path && *app_meta_path)
+		free(*app_meta_path);
+	if (payload_path && *payload_path)
+		free(*payload_path);
+	if (key_path && *key_path)
+		free(*key_path);
+	if (cert_path && *cert_path)
+		free(*cert_path);
+	if (socket_path && *socket_path)
+		free(*socket_path);
+	if (schema_path && *schema_path)
+		free(*schema_path);
+	exit(0);
 }
 
 static void print_usage()
@@ -322,7 +343,8 @@ static void print_usage()
 	-k	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
 	-c	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
 	-d	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
-	-x	The full or relative path to the JALoP Schemas";
+	-x	The full or relative path to the JALoP Schemas.\n\
+	-v, --version Print the version number and exit.";
 
 	printf("%s\n", usage);
 }
