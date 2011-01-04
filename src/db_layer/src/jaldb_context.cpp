@@ -2657,7 +2657,7 @@ enum jaldb_status jaldb_store_confed_sid_tmp_helper(
 			bool wasFound = true;
 			try {
 				doc = cont->getDocument(txn,
-						JALDB_SERIAL_ID_DOC_NAME,
+						JALDB_CONNECTION_METADATA_DOC_NAME,
 						DB_READ_COMMITTED);
 			} catch (XmlException &e){
 				if (e.getExceptionCode()
@@ -2670,7 +2670,7 @@ enum jaldb_status jaldb_store_confed_sid_tmp_helper(
 			}
 			if (!wasFound) {
 				doc = ctx->manager->createDocument();
-				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setName(JALDB_CONNECTION_METADATA_DOC_NAME);
 				cont->putDocument(txn, doc, uc);
 			}
 			doc.setMetaData(JALDB_NS,
@@ -2792,7 +2792,7 @@ enum jaldb_status jaldb_get_last_confed_sid_tmp_helper(
 		try {
 			XmlDocument doc;
 			doc = cont->getDocument(txn,
-						JALDB_SERIAL_ID_DOC_NAME,
+						JALDB_CONNECTION_METADATA_DOC_NAME,
 						DB_READ_COMMITTED);
 			XmlValue val;
 			if (!doc.getMetaData(JALDB_NS,
@@ -2861,7 +2861,7 @@ enum jaldb_status jaldb_store_journal_resume(
 			bool wasFound = true;
 			try {
 				doc = cont.getDocument(txn,
-						JALDB_SERIAL_ID_DOC_NAME,
+						JALDB_CONNECTION_METADATA_DOC_NAME,
 						DB_READ_COMMITTED);
 			} catch (XmlException &e){
 				if (e.getExceptionCode()
@@ -2875,7 +2875,7 @@ enum jaldb_status jaldb_store_journal_resume(
 			}
 			if (!wasFound) {
 				doc = ctx->manager->createDocument();
-				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setName(JALDB_CONNECTION_METADATA_DOC_NAME);
 				cont.putDocument(txn, doc, uc);
 			}
 			doc.setMetaData(JALDB_NS,
@@ -2934,7 +2934,7 @@ enum jaldb_status jaldb_get_journal_resume(
 		try {
 			XmlDocument doc;
 			doc = cont.getDocument(txn,
-					JALDB_SERIAL_ID_DOC_NAME,
+					JALDB_CONNECTION_METADATA_DOC_NAME,
 					DB_READ_COMMITTED);
 			bool offset_found = true;
 			bool path_found = true;
@@ -3044,7 +3044,7 @@ enum jaldb_status jaldb_purge_unconfirmed_log(
 			bool found_sid_doc = false;
 			XmlDocument sid_doc;
 			try {
-				sid_doc = sys_cont.getDocument(txn, JALDB_SERIAL_ID_DOC_NAME,
+				sid_doc = sys_cont.getDocument(txn, JALDB_CONNECTION_METADATA_DOC_NAME,
 						DB_RMW | DBXML_LAZY_DOCS | DB_READ_COMMITTED);
 				found_sid_doc = true;
 			} catch (XmlException &e) {
@@ -3140,7 +3140,7 @@ enum jaldb_status jaldb_purge_unconfirmed_audit(
 			bool found_sid_doc = false;
 			XmlDocument sid_doc;
 			try {
-				sid_doc = sys_cont.getDocument(txn, JALDB_SERIAL_ID_DOC_NAME,
+				sid_doc = sys_cont.getDocument(txn, JALDB_CONNECTION_METADATA_DOC_NAME,
 						DB_RMW | DBXML_LAZY_DOCS | DB_READ_COMMITTED);
 				found_sid_doc = true;
 			} catch (XmlException &e) {
@@ -3215,7 +3215,7 @@ enum jaldb_status jaldb_purge_unconfirmed_journal(
 			bool found_sid_doc = false;
 			XmlDocument sid_doc;
 			try {
-				sid_doc = sys_cont.getDocument(txn, JALDB_SERIAL_ID_DOC_NAME,
+				sid_doc = sys_cont.getDocument(txn, JALDB_CONNECTION_METADATA_DOC_NAME,
 						DB_RMW | DBXML_LAZY_DOCS | DB_READ_COMMITTED);
 				found_sid_doc = true;
 			} catch (XmlException &e) {

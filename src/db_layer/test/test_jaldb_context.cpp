@@ -3527,7 +3527,7 @@ extern "C" void test_jaldb_update_sync_works()
 	string sync_id(JALDB_REMOTE_META_PREFIX REMOTE_HOST JALDB_SYNC_META_SUFFIX);
 	string sent_id(JALDB_REMOTE_META_PREFIX REMOTE_HOST JALDB_SENT_META_SUFFIX);
 
-	cont.putDocument(JALDB_SERIAL_ID_DOC_NAME, "<doc>serial_id</doc>", uc);
+	cont.putDocument(JALDB_CONNECTION_METADATA_DOC_NAME, "<doc>serial_id</doc>", uc);
 
 	cont.putDocument("1", "<doc>1</doc>", uc);
 	doc = cont.getDocument("1");
@@ -5424,7 +5424,7 @@ extern "C" void test_jaldb_store_confed_sid_tmp_helper_works()
 	XmlTransaction txn = context->manager->createTransaction();
 	try {
 		doc = sys_cont.getDocument(txn,
-					JALDB_SERIAL_ID_DOC_NAME,
+					JALDB_CONNECTION_METADATA_DOC_NAME,
 					DB_READ_COMMITTED);
 		ret = JALDB_OK;
 	} catch (XmlException &e){
@@ -5442,7 +5442,7 @@ extern "C" void test_jaldb_store_confed_sid_tmp_helper_works()
 	XmlTransaction txn2 = context->manager->createTransaction();
 	try {
 		doc2 = sys_cont.getDocument(txn2,
-					JALDB_SERIAL_ID_DOC_NAME,
+					JALDB_CONNECTION_METADATA_DOC_NAME,
 					DB_READ_COMMITTED);
 		XmlValue val;
 		if (!doc2.getMetaData(JALDB_NS,
@@ -5474,7 +5474,7 @@ extern "C" void test_jaldb_store_confed_sid_tmp_helper_works()
 	XmlTransaction txn3 = context->manager->createTransaction();
 	try {
 		doc3 = sys_cont.getDocument(txn3,
-					JALDB_SERIAL_ID_DOC_NAME,
+					JALDB_CONNECTION_METADATA_DOC_NAME,
 					DB_READ_COMMITTED);
 		XmlValue val;
 		if (!doc3.getMetaData(JALDB_NS,
@@ -5514,7 +5514,7 @@ extern "C" void test_jaldb_get_last_confed_sid_tmp_helper_works()
 	XmlTransaction txn = context->manager->createTransaction();
 	XmlValue sid_val(sid_in);
 	doc = context->manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+	doc.setName(JALDB_CONNECTION_METADATA_DOC_NAME);
 	doc.setMetaData(JALDB_NS,
 			JALDB_LAST_CONFED_SID_NAME,
 			sid_val);
@@ -5583,7 +5583,7 @@ extern "C" void test_jaldb_store_journal_resume_works()
 	XmlTransaction txn = context->manager->createTransaction();
 	try {
 		doc = sys_cont.getDocument(txn,
-					JALDB_SERIAL_ID_DOC_NAME,
+					JALDB_CONNECTION_METADATA_DOC_NAME,
 					DB_READ_COMMITTED);
 		ret = JALDB_OK;
 	} catch (XmlException &e){
@@ -5623,7 +5623,7 @@ extern "C" void test_jaldb_store_journal_resume_works()
 	XmlTransaction txn2 = context->manager->createTransaction();
 	try {
 		doc2 = sys_cont.getDocument(txn2,
-					JALDB_SERIAL_ID_DOC_NAME,
+					JALDB_CONNECTION_METADATA_DOC_NAME,
 					DB_READ_COMMITTED);
 		ret = JALDB_OK;
 	} catch (XmlException &e){
@@ -5677,7 +5677,7 @@ extern "C" void test_jaldb_get_journal_resume_works()
 	XmlValue offset_val(offset_in);
 	XmlValue path_val(path_in);
 	doc = context->manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+	doc.setName(JALDB_CONNECTION_METADATA_DOC_NAME);
 	doc.setMetaData(JALDB_NS,
 		JALDB_OFFSET_NAME, offset_val);
 	doc.setMetaData(JALDB_NS,
@@ -5749,7 +5749,7 @@ extern "C" void test_purge_audit_works()
 	XmlUpdateContext uc = context->manager->createUpdateContext();
 
 	XmlDocument doc;
-	doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+	doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 	sys_cont.deleteDocument(doc, uc);
 
 	XmlResults res = sys_cont.getAllDocuments(DB_READ_COMMITTED);
@@ -5811,7 +5811,7 @@ extern "C" void test_purge_audit_works_with_no_confed_records()
 
 	XmlDocument doc;
 	try {
-		doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+		doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 		// the doc should not exist, so an exception should be thrown.
 		sys_cont.deleteDocument(doc, uc);
 		assert_true(false);
@@ -5864,7 +5864,7 @@ extern "C" void test_purge_audit_works_with_when_empty()
 
 	XmlDocument doc;
 	try {
-		doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+		doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 		// the doc should exist, so an exception should be thrown.
 		assert_true(false);
 	} catch (XmlException &e) {
@@ -5940,7 +5940,7 @@ extern "C" void test_purge_log_with_no_confed_records()
 
 	XmlDocument doc;
 	try {
-		doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+		doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 		assert_true(false);
 	} catch (XmlException &e) {
 		assert_equals(e.getExceptionCode(), XmlException::DOCUMENT_NOT_FOUND);
@@ -6002,7 +6002,7 @@ extern "C" void test_purge_log_works_with_no_records()
 
 	XmlDocument doc;
 	try {
-		doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+		doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 		assert_true(false);
 	} catch (XmlException &e) {
 		assert_equals(e.getExceptionCode(), XmlException::DOCUMENT_NOT_FOUND);
@@ -6079,7 +6079,7 @@ extern "C" void test_purge_log_works()
 	XmlUpdateContext uc = context->manager->createUpdateContext();
 
 	XmlDocument doc;
-	doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+	doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 	sys_cont.deleteDocument(doc, uc);
 
 	XmlResults res = sys_cont.getAllDocuments(DB_READ_COMMITTED);
@@ -6181,7 +6181,7 @@ extern "C" void test_purge_journal_works()
 	XmlUpdateContext uc = context->manager->createUpdateContext();
 
 	XmlDocument doc;
-	doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+	doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 	sys_cont.deleteDocument(doc, uc);
 
 	XmlResults res = sys_cont.getAllDocuments(DB_READ_COMMITTED);
@@ -6266,7 +6266,7 @@ extern "C" void test_purge_journal_works_with_no_confed_records()
 
 	XmlDocument doc;
 	try {
-		doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+		doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 		// the doc should not exist, so an exception should be thrown.
 		assert_true(false);
 	} catch (XmlException &e) {
@@ -6323,7 +6323,7 @@ extern "C" void test_purge_journal_works_with_when_empty()
 
 	XmlDocument doc;
 	try {
-		doc = sys_cont.getDocument(JALDB_SERIAL_ID_DOC_NAME);
+		doc = sys_cont.getDocument(JALDB_CONNECTION_METADATA_DOC_NAME);
 		// the doc should not exist, so an exception should be thrown.
 		assert_true(false);
 	} catch (XmlException &e) {

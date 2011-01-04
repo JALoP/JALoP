@@ -50,6 +50,7 @@
 #define JALDB_SERIAL_ID_NAME "serialId"
 #define JALDB_LAST_CONFED_SID_NAME "last_confed_serialId"
 #define JALDB_SERIAL_ID_DOC_NAME "__next_sid"
+#define JALDB_CONNECTION_METADATA_DOC_NAME "__connection_metadata"
 #define JALDB_OFFSET_NAME "offsetName"
 #define JALDB_JOURNAL_PATH "journalPath"
 #define JALDB_SOURCE "source"
