@@ -303,10 +303,6 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 			fd_dat = open(datstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
 		}
 
-		printf("Path for system data is %s.\n", sysstr);
-		printf("Path for application data is %s.\n", appstr);
-		printf("Path for record data is %s.\n", datstr);
-
 		if (fd_sys < 0 || fd_app < 0 || fd_dat < 0) {
 			printf("file open error\n");
 			printf("System fd was %i, App fd was %i, Data fd was %i\n", fd_sys, fd_app, fd_dat);
@@ -315,12 +311,18 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 
 		if (fd_sys) {
 			ret = write(fd_sys, sys_meta_buf, sys_meta_len);
+			if (ret >= 0)
+				printf("Path for system data is %s.\n", sysstr);
 		}
 		if (ret >= 0 && fd_app) {
 			ret = write(fd_app, app_meta_buf, app_meta_len);
+			if (ret >= 0)
+				printf("Path for application data is %s.\n", appstr);
 		}
 		if (ret >= 0 && fd_dat) {
 			ret = write(fd_dat, record_buf, record_len);
+			if (ret >= 0)
+				printf("Path for record data is %s.\n", datstr);
 		}
 
 		free(tmpstr);
