@@ -264,7 +264,9 @@ void jaldb_context_destroy(jaldb_context **ctx)
 		(*ctx)->log_conf_db->close((*ctx)->log_conf_db, 0);
 	}
 
-	ctxp->log_dbp->close((*ctx)->log_dbp, 0);
+	if (ctxp->log_dbp) {
+		ctxp->log_dbp->close((*ctx)->log_dbp, 0);
+	}
 
 	delete ctxp->temp_containers;
 
