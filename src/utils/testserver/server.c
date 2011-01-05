@@ -48,6 +48,9 @@
 // from recvmsg().
 #define BUF_SIZE 4096
 
+#define DUMMY_LOCAL_STORE_VERSION "1.0\n"
+#define VERSION_FLAG "--version"
+
 static const char *BREAK_STRING = "BREAK";
 static uint8_t LOG_MSG = 1;
 static uint8_t AUDIT_MSG = 2;
@@ -371,6 +374,13 @@ int main(int argc, char **argv)
 	if (argc > 2) {
 		printf("usage: [path]\n");
 		goto err_out;
+	}
+	
+	if (argc == 2) {
+		if (0 == strcmp(argv[1], VERSION_FLAG)) {
+			printf(DUMMY_LOCAL_STORE_VERSION);
+			exit(0);
+		}
 	}
 
 	char *sock_path;
