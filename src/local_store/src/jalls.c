@@ -71,8 +71,11 @@
 #define JALLS_LISTEN_BACKLOG 20
 #define JALLS_USAGE "usage: [--debug] FILE\n"
 #define JALLS_ERRNO_MSG_SIZE 1024
+#define JALLS_VERSION "1.0\n"
+#define VERSION_CALLED 1
 
 static const char *DEBUG_FLAG = "--debug";
+static const char *VERSION_FLAG = "--version";
 
 // Members for deleting socket file
 extern volatile int should_exit;
@@ -97,7 +100,9 @@ int main(int argc, char **argv) {
 	}
 	int debug = 0;
 	int err = parse_cmdline(argc, argv, &config_path, &debug);
-	if (err < 0) {
+	if (err == VERSION_CALLED) {
+		goto version_out;
+	} else if (err < 0) {
 		goto err_out;
 	}
 
@@ -276,6 +281,10 @@ err_out:
 	jaldb_context_destroy(&db_ctx);
 
 	exit(-1);
+
+version_out:
+	jalls_shutdown();
+	exit(0);
 }
 
 static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug) {
@@ -287,6 +296,9 @@ static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug)
 		if (0 == strcmp(argv[1], DEBUG_FLAG)) {
 			fprintf(stderr, JALLS_USAGE);
 			return -1;
+		} else if (0 == strcmp(argv[1], VERSION_FLAG)) {
+			printf(JALLS_VERSION);
+			return VERSION_CALLED;
 		}
 		*config_path = argv[1];
 		return 0;
