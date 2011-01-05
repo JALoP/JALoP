@@ -47,6 +47,8 @@
 #include "jalu_config.h"
 
 #define ONE_MINUTE 60
+#define JALD_VERSION "1.0\n"
+#define VERSION_CALLED 1
 
 #define DEBUG_LOG_SUB_SESSION(ch_info, args...) \
 do { \
@@ -135,7 +137,7 @@ static axlHash *gs_log_subs = NULL;
 static int exiting = 0;
 
 static void usage();
-static void process_options(int argc, char **argv);
+static int process_options(int argc, char **argv);
 static enum jald_status config_load(config_t *config, char *config_path);
 static void init_global_config(void);
 static void free_global_config(void);
@@ -677,7 +679,8 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	process_options(argc, argv);
+	if (process_options(argc, argv) == VERSION_CALLED)
+		goto version_out;
 
 	DEBUG_LOG("Config Path: %s\tDebug: %d\n", global_args.config_path, global_args.debug_flag);
 
@@ -817,18 +820,23 @@ out:
 	config_destroy(&config);
 
 	return rc;
+
+version_out:
+	config_destroy(&config);
+	return 0;
 }
 
-void process_options(int argc, char **argv)
+int process_options(int argc, char **argv)
 {
 	int opt = 0;
 	int long_index = 0;
 
-	static const char *opt_string = "c:d";
+	static const char *opt_string = "c:d:v";
 	static const struct option long_options[] = {
 		{"config", required_argument, NULL, 'c'}, /* --config or -c */
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
 		{"no-daemon", no_argument, &global_args.daemon, 0}, /* --no-daemon */
+		{"version", no_argument, NULL, 'v'}, /* --no-daemon */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
@@ -849,6 +857,10 @@ void process_options(int argc, char **argv)
 				}
 				global_args.config_path = strdup(optarg);
 				break;
+			case 'v':
+				printf(JALD_VERSION);
+				return VERSION_CALLED;
+				break;
 			case 0:
 				// getopt_long returns 0 for long options that
 				// have no equivalent 'short' option, i.e.
@@ -862,6 +874,8 @@ void process_options(int argc, char **argv)
 	if (!global_args.config_path) {
 		usage();
 	}
+
+	return 0;
 }
 
 __attribute__((noreturn)) void usage()
