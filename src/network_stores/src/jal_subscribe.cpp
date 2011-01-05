@@ -54,6 +54,8 @@
 #define DB_ROOT "db_root"
 #define SCHEMAS_ROOT "schemas_root"
 #define MAX_PORT_LENGTH 10
+#define VERSION "1.0\n"
+#define VERSION_CALLED 1
 
 #define DEBUG_LOG(args...) \
 	do { \
@@ -92,7 +94,7 @@ enum jal_subscribe_status {
 };
 
 void usage();
-void process_options(int argc, char **argv);
+int process_options(int argc, char **argv);
 int config_load(config_t *config, char *config_path);
 void init_global_config(void);
 void free_global_args(void);
@@ -149,7 +151,8 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	process_options(argc, argv);
+	if (VERSION_CALLED == process_options(argc, argv))
+		goto version_out;
 	DEBUG_LOG("Config Path: %s\tDebug: %d",
 		 global_args.config_path, global_args.debug_flag);
 	if (!global_args.config_path){
@@ -207,17 +210,22 @@ out:
 		DEBUG_LOG("Cleanup completed!");
 	}
 	return rc;
+
+version_out:
+	config_destroy(&config);
+	return 0;
 }
 
-void process_options(int argc, char **argv)
+int process_options(int argc, char **argv)
 {
 	int opt = 0;
 	int long_index = 0;
 
-	static const char *opt_string = "c:d";
+	static const char *opt_string = "c:d:v";
 	static const struct option long_options[] = {
 		{"config", required_argument, NULL,'c'}, /* --config or -c */
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
+		{"version", no_argument, NULL, 'v'}, /* --version or -v */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
@@ -234,6 +242,10 @@ void process_options(int argc, char **argv)
 			case 'c':
 				global_args.config_path = strdup(optarg);
 				break;
+			case 'v':
+				printf(VERSION);
+				return VERSION_CALLED;
+				break;
 			case 0:
 				break;
 			default:
@@ -244,6 +256,8 @@ void process_options(int argc, char **argv)
 	if (!global_args.config_path) {
 		usage();
 	}
+
+	return 0;
 }
 
 __attribute__((noreturn)) void usage()
