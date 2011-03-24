@@ -1,0 +1,14 @@
+import os
+
+Import('*')
+
+subdirs = """
+	    local_store
+	    network_lib
+	    network_stores
+	    producer_lib
+	    test
+	  """.split()
+
+for d in subdirs:
+	env.SConscript('%s/SConscript' % d, exports='env')
