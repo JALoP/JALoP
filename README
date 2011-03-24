@@ -1,0 +1,39 @@
+This a reference implementation of Journal, Audit, and Logging Protocol (JALoP).
+The implementation is divided into a number of sections.
+  The JALoP Network Library (JNL)
+  The JALoP Producer Library (JPL)
+  JALoP Local Store
+  JALoP Network Stores
+
+Building
+This project uses the scons (www.scons.org) build tool and will compile under python 2.4 or 2.6. Later version of Python should work as well, but were not tested. You do not need to install scons to build, a version of scons is included as part of the distribution. To build, simply run the scons script in the top directory:
+
+$ scons
+
+This generates doc, debug, and release directories. To clean the build output you can remove these directories by hand or run 
+$ scons -c
+
+Scons accepts a '-j' argument for parallel builds, so
+
+$ scons -j6 
+will run 6 worker threads in parallel.
+
+All of the source code for the implementation is under the 'src' directory. The src directory is divided into different sections based on functionality, subdirs such as network_lib, local_store, etc.
+
+A number of patches for external project are included. These patches are modify existing projects (e.g. log4cxx) to utilize JALoP as an output method. These may be found under the 'patches' directory.
+
+This project is built and tested in the following environments:
+  RedHat Enterprise Linux (RHEL) 5 on x86_64, using gcc version 4.1.2
+  RHEL 6 on x86_64, using gcc version 4.4.4
+  RHEL 6 on i386, using gcc version 4.4.4
+  Solaris 10 TX 09/10 on i386, using gcc version 3.4.3
+
+This project makes use of the following libraries.
+
+  libxml2 - http://xmlsoft.org/
+  libxmlsec1 - http://www.aleksey.com/xmlsec/
+  openssl - http://www.openssl.org/
+  libconfig - http://freshmeat.net/projects/libconfigduo
+  libvortex - http://www.aspl.es/fact/files/af-arch/vortex/html/
+  test-dept - http://code.google.com/p/test-dept/
+
