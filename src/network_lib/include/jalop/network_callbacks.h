@@ -1,0 +1,319 @@
+/**
+ * @file network_callbacks.h
+ *
+ * @section LICENSE
+ *
+ * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef JALN_NET_CALLBACKS_H
+#define JALN_NET_CALLBACKS_H
+#include <jalop/network_types.h>
+/**
+ * @struct jaln_subscriber_callbacks
+ * The JAL network store fills this in for each accepted connection.
+ * All of the callback functions take a user_data parameter which is the same
+ * pointer that is passed into a call to
+ * jaln_create_subscriber_channel(struct VortexConnection *, int, VortexOnCloseHandler,
+ * axlPointer, VortexOnChannelCreated, axlPointer, struct jaln_connection_response_handlers *,
+ * void *, struct jaln_connect_request *) or a call to 
+ * jaln_journal_recover(struct jaln_channel *channel, const char *serial_id,
+ * struct jaln_subscriber_callbacks subscribe_callbacks, void *subscriber_data,
+ * or a call to jaln_subscribe(struct jaln_channel *channel,
+ * const char *serial_id, struct jaln_subscriber_callbacks, void *subscriber_data,
+ * jaln_on_message_complete subscribe_complete, void *recover_complete_data);
+ */
+struct jaln_subscriber_callbacks {
+	/**
+	 * The JNL will execute this function after it receives and parses the
+	 * MIME headers of a '*-record' message.
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] record_info The details of this record.
+	 * @param[in] headers Any additional headers.
+	 * @param[in] user_data A pointer to user data supplied in 
+	*/
+	typedef void (*on_record_headers)(const char *serial_id,
+				  const struct jaln_record_info *record_info,
+				  const struct jaln_mime_header *headers,
+				  const uint32_t cnt,
+				  axlPointer user_data);
+	/**
+	 * The JNL calls this function to feed bytes of the application metadata to the
+	 * JAL network store.
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] buffer A buffer containing bytes of the application metadata
+	 * @param[in] avail The number of bytes contained in buffer
+	 * @param[in] more Boolean flag to indicate if there is more data availble. This is
+	 * set to 1 if there are more bytes expected, and 0 otherwise
+	 * @param[in] user_data A pointer to the user_data.
+	 */
+	typedef void (*on_app_metadata)(const char *serial_id,
+				const uint8_t *buffer,
+				const uint32_t avail,
+				const int more,
+				axlPointer user_data);
+	/**
+	 * The JNL calls this function to feed bytes of the system metadata to the
+	 * JAL network store.
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] buffer A buffer containing bytes of the system metadata
+	 * @param[in] avail The number of bytes contained in buffer
+	 * @param[in] more Boolean flag to indicate if there is more data availble. This is
+	 * set to 1 if there are more bytes expected, and 0 otherwise
+	 * @param[in] user_data A pointer to the user_data
+	 */
+	typedef void (*on_sys_metadata)(const char *serial_id,
+				const uint8_t *buffer,
+				const uint32_t avail,
+				const int more,
+				axlPointer user_data);
+	/**
+	 * The JNL calls this function to feed bytes of the payload (journal, audit, or
+	 * log data) to the JAL network store.
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] buffer A buffer containing bytes of the payload
+	 * @param[in] avail The number of bytes contained in buffer
+	 * @param[in] more Boolean flag to indicate if there is more data availble. This is
+	 * set to 1 if there are more bytes expected, and 0 otherwise
+	 * @param[in] user_data A pointer to the user_data.
+	 */
+	typedef void (*on_payload)(const char *serial_id,
+			   const uint8_t *buffer,
+			   const uint32_t avail,
+			   const int more,
+			   void *user_data);
+	/**
+	 * The JNL calls this to inform the JAL Network store of the digest it
+	 * calculated for a particular record. Note that the JNL will not send
+	 * the 'digest' method automatically. The application must explicitly
+	 * send the message with a call to #XXX
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of the record
+	 * @param[in] digest A buffer containing bytes of the digest
+	 * @param[in] len The length of the digest, in bytes.
+	 * @param[in] user_data A pointer to the user data.
+	 */
+	typedef void (*notify_digest)(const char *serial_id,
+			      const uint8_t *digest,
+			      const uint32_t len,
+			      const void *user_data);
+	/**
+	 * The JNL will execute this callback for every record in a
+	 * 'digest-response' message.
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of the record
+	 * @param[in] status Indicates whether or not the digest calculated locally
+	 * matches the digest calculated by the remote sidel.
+	 * @param[in] user_data A pointer to the user_data.
+	 */
+	typedef void (*on_digest_response)(const char *serial_id,
+				   const enum jaln_digest_status status,
+				   const void *user_data);
+};
+/**
+ * Called when the sending ends completes a message message.
+ */
+typedef void (*jaln_on_message_complete)(const void *user_data);
+
+/**
+ * @struct jaln_publisher_callbacks
+ * The application must fill one of these in for each accepted connection.
+ *
+ */
+struct jaln_publisher_callbacks {
+	/**
+	 * The JNL will execute this callback when it receives a
+	 * 'journal-resume' message. The application should fill out the
+	 * provided #jaln_record_feeder structure with appropriate function
+	 * pointers and context data. When the application returns control back
+	 * to the JNL, it will begin sending a response to this
+	 * 'journal-recover' message using the data in the jaln_record_feeder.
+	 *
+	 * @param[in] serial_id The serial_id of the journal record
+	 * this record.
+	 * @param[in] headers additional mime headers sent as part of this message
+	 * @param[out] feeder a jaln_record_feeder the application should fill in for
+	 * @param[in] user_data A pointer to the user_data of this
+	 * #jaln_publisher_callbacks
+	 */
+	void (*journal_resume)(const char *serial_id,
+			       const uint64_t offset,
+			       struct jaln_mime_header *headers,
+			       struct jaln_record_feeder *feeder,
+			       void *user_data);
+	/**
+	 * The JNL executes this callback to inform the application of a
+	 * 'subscribe' message. This callback is purely informational.
+	 *
+	 * @param[in] serial_id The serial_id in the subscribe message
+	 * @param[in] headers additional mime headers sent as part of this message
+	 * @param[in] user_data the user pointer.
+	 */
+	void (*on_subscribe)(const char *serial_id,
+			     struct jaln_mime_header *headers,
+			     void *user_data);
+	/**
+	 * The JNL will execute this callback to obtain the next
+	 * #jaln_record_feeder.
+	 *
+	 * @param[in] serial_id The serial_id sent by the peer as part of this
+	 * 'subscribe' message.
+	 * @param[out] feeder The application should fill out this structure
+	 * with appropriate data to send a record to a peer.
+	 * @param[in] user_data A pointer to the user supplied data
+	 *
+	 * @return JAL_OK to continue sending records, anything else will
+	 * complete end ANS stream
+	 */
+	int (*fill_feeder_for_next_record)(const char *last_serial_id,
+					   struct jaln_record_feeder *feeder,
+					   void *user_data);
+	/**
+	 * The JNL executes this callback when it receives a 'sync' message
+	 * from the peer.
+	 *
+	 * @param[in] serial_id the serial_id sent by the remote peer.
+	 * @param headers Any additional headers sent with this message.
+	 * @param[in] user_data A pointer to the user_data of this
+	 * jaln_publisher_callbacks
+	 */
+	void (*sync)(const char *serial_id,
+		     struct jaln_mime_header *headers,
+		     void *user_data);
+	/**
+	 * Informs the application of the calculated checksum of the record
+	 * identified by serial_id. This is the checksum calculated as the
+	 * record is sent, not the digest received by the remote side. This is
+	 * purely informational as the JNL maintains the sent of sent, but not
+	 * yet confirmed digests.
+	 *
+	 * @param[in] serial_id The serial_id of the record.
+	 * @param[in] digest The digest value of the record.
+	 * @param[in] lenght The length of the digest, in bytes.
+	 * @param[in] user_data A pointer to the user_data of this
+	 * jaln_publisher_callbacks
+	 *
+	 * @note should the JNL really track the digests? seems like a
+	 * reasonable feature, but may need some extra tuning parameters or
+	 * callbacks so the applications can start flushing memory, or should
+	 * cache to disk unconfirmeded digests...
+	 */
+	void (*notify_digest)(const char *serial_id,
+			      const uint8_t *digest,
+			      const uint32_t size,
+			      void *user_data);
+	/**
+	 * Inform the application of the calculated checksum sent by the peer.
+	 * The JNL tracks the serial_id and digests for all records sent on each
+	 * channel. The JNL automatically checks the peer's calculated digest
+	 * against the locally calculated digest and builds an appropriate 
+	 * 'digest-response' message for every 'digest' message. Once the JNL
+	 * sends a 'digest-response' message to the peer, the JNL removes the
+	 * entry from it's internal structures.
+	 *
+	 * This is called for each record in the 'digest' method.
+	 *
+	 * @param[in] serial_id The serial_id of a particular record
+	 * @param[in] local_digest The digest, as calculated by the JNL when the
+	 * record was sent.
+	 * @param[in] local_size The size, in bytes, of the local_digest
+	 * @param[in] peer_digest The digest, as calculated by the remote peer.
+	 * @param[in] peer_size The size, in bytes, of #peer_digest
+	 * @param[in] user_data A pointer to the user_data of this
+	 * #jaln_publisher_callbacks
+	 */
+	void (*peer_digest)(const char *serial_id,
+			   const uint8_t *local_digest,
+			   const uint32_t local_size,
+			   const uint8_t *peer_digest,
+			   const uint32_t peer_size,
+			   enum jaln_digest_status status,
+			   struct jaln_mime_header *headers,
+			   void *user_data);
+};
+
+/**
+ * The JNL will execute this callback when it receies a 'connect'
+ * message from the remote peer.
+ * @param[in] req A structure containing the connection info requested by
+ * the peer, including additional MIME headesr.
+ *
+ * @param[out] selected_encoding The application must indicate which
+ * encoding it will send the JAL metadata and audit records in. The
+ * application is responsible for sending the metadata and audit
+ * records in the selected encoding. The application may signal that no
+ * encoding is acceptable by setting selected_encoding to value out of
+ * range. The index starts at zero, so if the remote peer indicates
+ * @verbatim
+ * aceept-encoding: exi, xml
+ * @endverbatim
+ * The application would signal 'EXI' by setting selected_encoded to 0, or
+ * signal XML by setting selected_encoded to 1. The application may
+ * refuse all encodings by setting selected_encoded to -1.
+ * @param[in] user_data A pointer to the user_data of this
+ * jaln_publisher_callbacks
+ *
+ * @returns JALN_CONNECT_ERR_NONE to accept the connection, or any of the
+ * jaln_connect_errors to indicate the failure to return.
+ *
+ * @note: This imits applications to a single error code. In
+ * practice this is probably fine, but not sure it should be so limited...
+ *
+ *
+ */
+enum  jal_status typedef(*jaln_connect_handler)(const struct jaln_connect_request *req,
+						int *selected_encoding,
+						void *user_data);
+
+/**
+ * This structure contains the handlers for 'connect-ack' and 'connect-nack'
+ * messages.
+ * @see jaln_connect()
+ */
+struct jaln_connection_response_handlers {
+	/**
+	 * The JNL will execute this callback when it receies a 'subscribe-ack'
+	 * message from the remote peer.
+	 * including the MIME headesr.
+	 * @param[in] channel The JAL channel the 'connect-ack' was received
+	 * @param[in] ack A structure containing information about the connection,
+	 * @param[in] user_data The user data.
+	 *
+	 * @see jaln_connect_ack
+	 */
+	void (*connect_ack)(const jaln_channel *channal,
+			    const struct jaln_connect_ack *ack,
+			    void *user_data);
+	/**
+	 * The JNL will execute this callback when it receies a 'subscribe-nack'
+	 * message from the remote peer.
+	 * @param nack The failure reasons given by the remote peer.
+	 * This includes any additional MIME headers.
+	 * @param user_data The user data.
+	 *
+	 * @note maybe add the jalchannel.. not sure it's usefull in the
+	 * connect_nack, since the channel will be closing at this point
+	 */
+	void (*connect_nack)(const struct jaln_connect_nack *nack,
+			     void *user_data);
+};
+
+#endif // JALN_NET_CALLBACKS_H
