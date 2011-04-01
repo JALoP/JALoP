@@ -172,24 +172,29 @@ typedef void (*jaln_on_message_complete)(const void *user_data);
 struct jaln_publisher_callbacks {
 	/**
 	 * The JNL will execute this callback when it receives a
-	 * 'journal-resume' message. The application should fill out the
+	 * 'journal-resume' message. This call is to inform the application of 
 	 * provided #jaln_record_feeder structure with appropriate function
 	 * pointers and context data. When the application returns control back
 	 * to the JNL, it will begin sending a response to this
 	 * 'journal-recover' message using the data in the jaln_record_feeder.
 	 *
-	 * @param[in] serial_id The serial_id of the journal record
-	 * this record.
 	 * @param[in] headers additional mime headers sent as part of this message
-	 * @param[out] feeder a jaln_record_feeder the application should fill in for
+	 * @param[in,out] record_info Information about this record. The JNL
+	 * fills in the serial_id field and the application must fill in the
+	 * rest. The JNL assumes ownership of the serial_id and headers fields
+	 * of the this structure and will call jal_free() and
+	 * jaln_mime_headers_free() respectively when the record_info is no
+	 * longer needed.
+	 * @param[out] payload_delivery Determines which set of functions the
+	 * JNL will call to acquire the bytes of the journal payload.
 	 * @param[in] user_data A pointer to the user_data of this
 	 * #jaln_publisher_callbacks
 	 */
-	void (*journal_resume)(const char *serial_id,
-			       const uint64_t offset,
-			       struct jaln_mime_header *headers,
-			       struct jaln_record_feeder *feeder,
-			       void *user_data);
+	int (*on_journal_resume)(struct jaln_record_info *record_info,
+				 int offset,
+				 struct jaln_mime_header *headers,
+				 enum payload_delivery_type *payload_delivery
+				 void *user_data);
 	/**
 	 * The JNL executes this callback to inform the application of a
 	 * 'subscribe' message. This callback is purely informational.
