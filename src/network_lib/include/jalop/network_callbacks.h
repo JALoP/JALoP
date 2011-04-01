@@ -50,7 +50,6 @@ struct jaln_subscriber_callbacks {
 	void (*on_record_headers)(const char *serial_id,
 				  const struct jaln_record_info *record_info,
 				  const struct jaln_mime_header *headers,
-				  const uint32_t cnt,
 				  void *user_data);
 	/**
 	 * The JNL calls this function to delivery the payload of the
