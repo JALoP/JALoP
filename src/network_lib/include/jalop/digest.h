@@ -37,43 +37,50 @@ struct jal_digest_ctx {
 	 */
 	int len;
 	/**
-	 * Function to call to create a digest context.
-	 */
-	void* (*create)(void);
-	/**
-	 * Function to call to initialize a digest context.
+	 * Function to call to create an instnace of a particular digest context.
+	 * The pointer returned by this function is passed as the first
+	 * parameter to all the other functions in this structure.
 	 *
+	 * @return Non-NULL on success. If a NULL pointer is returned, the JNL
+	 * interprets this to indicate a memory failure.
+	 */
+	void *(*create)(void);
+	/**
+	 * Function to call to initialize a digest context. This is called
+	 * immediately after create()
+	 *
+	 * @param instance The instance pointer.
 	 * @returns JAL_OK on success, JAL_ERROR on failure
 	 */
-	int (*init)(void *ctx);
+	int (*init)(void *instance);
 	/**
 	 * Function to call to update a digest context.
-	 * @param[in] ctx the digest context
+	 * @param[in] instance the instance pointer.
 	 * @param[in] data a buffer containing bytes to feed into the digest context
 	 * @param[in] len the number of bytes in data
 	 *
 	 * @returns JAL_OK on success, JAL_ERROR on failure.
 	 */
-	int (*update)(void *ctx, uint8_t *data, uint32_t len);
+	int (*update)(void *instance, uint8_t *data, uint32_t len);
 	/**
 	 * Function to signal that the end of a message to digest was reached. After
-	 * this call, the JNL will not call the corresponding jal_digest_update method.
-	 * no more bytes will be added to the context.
+	 * this call, the JNL will not call the corresponding #update() using
+	 * this instance ever again.
 	 *
-	 * @param[in] ctx The digest context
+	 * @param[in] instance The instance pointer.
 	 * @param[out] digest a buffer to hold the digest
-	 * @param[in,out] len A pointer to the size of the buffer. This indicates the
-	 * number of bytes available in the buffer. The implementation must set this to
-	 * the number of bytes written to the buffer, or -1 on error.
+	 * @param[in,out] len A pointer to the size of buffer. This indicates the
+	 * number of bytes available in buffer. The implementation must set this to
+	 * the number of bytes copied into buffer, or -1 on error.
 	 *
-	 * @returns the number of bytes written into the buffer, or -1 on error.
+	 * @returns the number of bytes written into buffer, or -1 on error.
 	 */
-	int (*final)(void *ctx, uint8_t *digest, uint32_t *len);
+	int (*final)(void *instance, uint8_t *digest, uint32_t *len);
 	/**
-	 * Function to clean up resources used by a digest context.
-	 * @param[in] ctx The digest context to release.
+	 * Function to clean up resources used by a digest instance.
+	 * @param[in] instance The instance to destroy.
 	 */
-	void (*destroy)(void *ctx);
+	void (*destroy)(void *instance);
 };
 /**
  * Register a new digest algorithm.
