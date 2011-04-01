@@ -324,6 +324,7 @@ struct jaln_publisher_callbacks {
 	 */
 	int (*acquire_payload_feeder(const char *serial_id,
 				     struct *payload_feeder,
+				     struct jaln_payload_feeder *feeder,
 				     void *user_data);
 	/**
 	 * Release a payload feeder for the identified serial_id.
@@ -335,6 +336,7 @@ struct jaln_publisher_callbacks {
 	 */
 	int (*release_payload_feeder(const char *serial_id,
 				     struct *payload_feeder,
+				     struct jaln_payload_feeder *feeder,
 				     void *user_data);
 	/**
 	 * The JNL calls this once the record is fully sent, or the

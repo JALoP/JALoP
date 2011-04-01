@@ -56,6 +56,27 @@ struct jaln_mime_header {
 	struct jaln_mime_header *next;
 };
 /**
+ * enum for the application to indicate which method to use to get the bytes of
+ * the journal payload.
+ */
+enum jaln_payload_delivery_type {
+	/** 
+	 * This is not a valid choice. The JLN will set this value to force an
+	 * application to choose a valid options.
+	 */
+	JALN_PD_NONE,
+	/** 
+	 * Indicates the journal payload will be delivered using a feeder
+	 * object
+	 */
+	JALN_PD_FEEDER,
+	/** 
+	 * Indicates the journal payload will be delivered using a single
+	 * buffer.
+	 */
+	JALN_PD_BUFFER,
+};
+/**
  * Destroy a list of MIME headers
  *
  * @param[in,out] headers The headers to free. This will be set to NULL.
@@ -211,48 +232,20 @@ struct jaln_connect_nack {
 	struct jaln_mime_header *headers;
 };
 /**
- * @struct jaln_record_feeder
- * The jaln_record_feeder is used to send JAL records to the remote peer.
+ * @struct jaln_payload_feeder
+ * The jaln_payload_feeder is used to send bytes of the payload (journal,
+ * audit, or log data) to the remote peer.
  */
-struct jaln_record_feeder {
-	/** User supplied context data for the record. */
-	void *user_data;
-	/** Information about this record */
-	struct jaln_record_info record_info;
-	/** Any additional headers the application would like to send. */
-	struct jaln_mime_header *headers;
+struct jaln_payload_feeder {
 	/**
-	 * The JNL calls this when it needs to read more bytes of the system
-	 * metadata.
+	 * An application may set this to anything they like. It will be passed
+	 * as the feeder_data parameter of #get_payload.
 	 *
-	 * @param[in] offset The offset, in bytes, into the system metadata
-	 * to start reading from.
-	 * @param[in] buffer The buffer to fill with data.
-	 * @param[in,out] size The number of bytes available in the buffer.
-	 * Applications must set this to the actual number of bytes read.
-	 *
-	 * @return JAL_OK to continue, some other value to stop sending data.
+	 * the JNL will call release_payload_feeder when it is done with a
+	 * particluar instance to give the application a chance to release any
+	 * data associated with the feeder.
 	 */
-	int (*get_system_metadata)(const uint64_t offset,
-				    uint8_t * const buffer,
-				    uint32_t *size,
-				    void *user_data);
-	/**
-	 * The JNL calls this when it needs to read more bytes of the
-	 * application metadata.
-	 *
-	 * @param[in] offset The offset, in bytes, into the system metadata
-	 * to start reading from.
-	 * @param[in] buffer The buffer to fill with data.
-	 * @param[in,out] size The number of bytes available in the buffer.
-	 * Applications must set this to the actual number of bytes read.
-	 *
-	 * @return JAL_OK to continue, some other value to stop sending data.
-	 */
-	int (*get_application_metadata)(const uint64_t offset,
-					uint8_t * const buffer,
-					uint32_t *size,
-					void *user_data);
+	void *feeder_data;
 	/**
 	 * The JNL calls this when it needs to read more bytes of the payload
 	 * (raw journal, audit, or log data).
@@ -262,21 +255,14 @@ struct jaln_record_feeder {
 	 * @param[in] buffer The buffer to fill with data.
 	 * @param[in,out] size The number of bytes available in the buffer.
 	 * Applications must set this to the actual number of bytes read.
+	 * @param[in] feeder_data the application defined feeder_data pointer of this struct.
 	 *
 	 * @return JAL_OK to continue, some other value to stop sending data.
 	 */
-	int (*get_payload)(const uint64_t offset,
+	enum jal_status (*get_payload)(const uint64_t offset,
 			   uint8_t * const buffer,
 			   uint32_t *size,
-			   void *user_data);
-	/**
-	 * The JNL will call this when it no longer needs the data for this
-	 * record. Applications should use this callback to clean up any
-	 * resources allocated for this record.
-	 *
-	 * @param[in] user_data the user_data of this context.
-	 */
-	void (*free)(void *user_data);
+			   void *feeder_data);
 };
 /**
  * This holds global data such as base publisher
