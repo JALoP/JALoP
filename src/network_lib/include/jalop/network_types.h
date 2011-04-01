@@ -200,10 +200,10 @@ struct jaln_connect_request {
  * when the peer sends a 'connect-nack' message. @see XXX
  */
 struct jaln_connect_nack {
-	/**
-	 * List of failure reasons given by the remote peer.
-	 */
-	struct jaln_string_list *error_list;
+	/** List of failure reasons given by the remote peer. */
+	struct jaln_string_list **error_list;
+	/** Number of elements in the \p error_list */
+	int error_cnt;
 	/**
 	 * Any additional headers. This list will not contain the headers for
 	 * the errors in #error_list.
@@ -215,17 +215,11 @@ struct jaln_connect_nack {
  * The jaln_record_feeder is used to send JAL records to the remote peer.
  */
 struct jaln_record_feeder {
-	/**
-	 * User supplied context data for the record.
-	 */
+	/** User supplied context data for the record. */
 	void *user_data;
-	/**
-	 * Information about this record
-	 */
+	/** Information about this record */
 	struct jaln_record_info record_info;
-	/**
-	 * Any additional headers the application would like to send.
-	 */
+	/** Any additional headers the application would like to send. */
 	struct jaln_mime_header *headers;
 	/**
 	 * The JNL calls this when it needs to read more bytes of the system
