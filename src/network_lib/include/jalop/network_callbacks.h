@@ -442,7 +442,7 @@ struct jaln_publisher_callbacks {
  *
  *
  */
-enum  jal_status typedef(*jaln_connect_handler)(const struct jaln_connect_request *req,
+typedef enum  jal_status (*jaln_connect_handler)(const struct jaln_connect_request *req,
 						int *selected_encoding,
 						void *user_data);
 
