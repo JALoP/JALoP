@@ -51,7 +51,7 @@ struct jaln_subscriber_callbacks {
 				  const struct jaln_record_info *record_info,
 				  const struct jaln_mime_header *headers,
 				  const uint32_t cnt,
-				  axlPointer user_data);
+				  void *user_data);
 	/**
 	 * The JNL calls this function to feed bytes of the application metadata to the
 	 * JAL network store.
@@ -67,7 +67,7 @@ struct jaln_subscriber_callbacks {
 				const uint8_t *buffer,
 				const uint32_t avail,
 				const int more,
-				axlPointer user_data);
+				void *user_data);
 	/**
 	 * The JNL calls this function to feed bytes of the system metadata to the
 	 * JAL network store.
@@ -83,7 +83,7 @@ struct jaln_subscriber_callbacks {
 				const uint8_t *buffer,
 				const uint32_t avail,
 				const int more,
-				axlPointer user_data);
+				void *user_data);
 	/**
 	 * The JNL calls this function to feed bytes of the payload (journal, audit, or
 	 * log data) to the JAL network store.
