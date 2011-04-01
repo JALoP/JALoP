@@ -28,14 +28,8 @@
  * The JAL network store fills this in for each accepted connection.
  * All of the callback functions take a user_data parameter which is the same
  * pointer that is passed into a call to
- * jaln_create_subscriber_channel(struct VortexConnection *, int, VortexOnCloseHandler,
- * axlPointer, VortexOnChannelCreated, axlPointer, struct jaln_connection_response_handlers *,
- * void *, struct jaln_connect_request *) or a call to 
- * jaln_journal_recover(struct jaln_channel *channel, const char *serial_id,
- * struct jaln_subscriber_callbacks subscribe_callbacks, void *subscriber_data,
- * or a call to jaln_subscribe(struct jaln_channel *channel,
- * const char *serial_id, struct jaln_subscriber_callbacks, void *subscriber_data,
- * jaln_on_message_complete subscribe_complete, void *recover_complete_data);
+ * jaln_create_subscriber_channel() or a call to jaln_journal_recover(), or a
+ * call to jaln_subscribe()
  */
 struct jaln_subscriber_callbacks {
 	/**
@@ -46,6 +40,7 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] record_info The details of this record.
 	 * @param[in] headers Any additional headers.
 	 * @param[in] user_data A pointer to user data supplied in 
+	 *
 	*/
 	void (*on_record_headers)(const char *serial_id,
 				  const struct jaln_record_info *record_info,
