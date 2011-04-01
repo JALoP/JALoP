@@ -4,3 +4,4 @@
 release/
 debug/
 /config.log
+/doc/doxygen.out
