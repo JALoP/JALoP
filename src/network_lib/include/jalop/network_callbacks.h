@@ -171,29 +171,157 @@ struct jaln_publisher_callbacks {
 			     struct jaln_mime_header *headers,
 			     void *user_data);
 	/**
-	 * The JNL will execute this callback to obtain the next
-	 * #jaln_record_feeder.
+	 * The JNL will execute this callback to obtain the record info for the
+	 * next record that should be sent on this channel.
 	 *
 	 * @param[in] serial_id The serial_id sent by the peer as part of this
 	 * 'subscribe' message.
 	 * @param[out] feeder The application should fill out this structure
-	 * with appropriate data to send a record to a peer.
+	 * with appropriate data to send a record to a peer. The JNL assumes
+	 * ownership of the serial_id and headers fields and will call
+	 * jal_free() and jaln_mime_header_free() respectively when it is
+	 * finished with the structure.
+	 * @param[out] payload_delivery The aplication must set this to
+	 * indicate which set of callbacks JNL should call to get the payload.
 	 * @param[in] user_data A pointer to the user supplied data
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete end ANS stream
 	 */
-	int (*fill_feeder_for_next_record)(const char *last_serial_id,
-					   struct jaln_record_feeder *feeder,
-					   void *user_data);
+	int (*get_next_record_info)(const char *last_serial_id,
+				    struct jaln_record_info *record_info,
+				    enum payload_delivery_type *payload_delivery
+				    void *user_data);
+	/**
+	 * Aquire a pointer to the system metadata. The buffer must contain the
+	 * same number of bytes as were designated in the
+	 * #jaln_record_info obtained in #get_next_record_info(). When
+	 * the JNL is finished with this buffer, it will call
+	 * #release_record_sys_metadata();
+	 *
+	 * @param[in] serial_id The serial_id of the record to get.
+	 * @param[out] buffer a user allocated buffer that contains the bytes
+	 * of the system metadata.
+	 * @param[in] user_data A pointer to the user provided data.
+	 */
+	int (*acquire_sys_metadata(const char *serial_id,
+				uint8_t **buffer,
+				void *user_data);
+	/**
+	 * Release the system metadata buffer.
+	 *
+	 * @param[in] serial_id The serial id relating to this buffer
+	 * @param[in] a pointer that was obtained by the call to
+	 * #acquire_record_sys_metadata()
+	 * @param[in] user_data A pointer to the user provided data.
+	 */
+	int (*release_sys_metadata(const char *serial_id,
+				uint8_t **buffer,
+				void *user_data);
+	/**
+	 * Aquire a pointer to the application metadata. The buffer must contain the
+	 * same number of bytes as were designated in the
+	 * #jaln_record_info obtained in #get_record_info(). When
+	 * the JNL is finished with this buffer, it will call
+	 * #release_record_app_metadata();
+	 *
+	 * @param[in] serial_id The serial_id of the record to get.
+	 * @param[out] buffer a user allocated buffer that contains the bytes
+	 * of the application metadata.
+	 * @param[in] user_data A pointer to the user provided data.
+	 */
+	int (*acquire_app_metadata(const char *serial_id,
+				uint8_t **buffer,
+				void *user_data);
+	/**
+	 * Release the application metadata buffer.
+	 *
+	 * @param[in] serial_id The serial id relating to this buffer
+	 * @param[in] a pointer that was obtained by the call to
+	 * #acquire_record_app_metadata()
+	 * @param[in] user_data A pointer to the user provided data.
+	 */
+	int (*release_app_metadata(const char *serial_id,
+				uint8_t *buffer,
+				void *user_data);
+	/**
+	 * Aquire a pointer to the payload. The buffer must contain the
+	 * same number of bytes as were designated in the
+	 * #jaln_record_info obtained in #get_record_info() (minus \b offset
+	 * bytes). When the JNL is finished with this buffer, it will call
+	 * #release_payload_buffer();
+	 *
+	 * @param[in] serial_id The serial_id of the record to get.
+	 * @param[in] offset The offset into the data the JNL would like to
+	 * start reading from. In most cases this will be 0, but this function
+	 * may be called in response to a 'journal resume' message, in which
+	 * case, the offset would indicate the number of bytes the remote side
+	 * is claiming it received. Regardless, then JNL will start reading
+	 * from this address (not buffer + offset).
+	 * @param[out] buffer a user allocated buffer that contains the bytes
+	 * of the payload.
+	 * @param[in] user_data A pointer to the user provided data.
+	 */
+	int (*acquire_payload_buffer(const char *serial_id,
+				size_t offset,
+				uint8_t **buffer,
+				void *user_data);
+	/**
+	 * Release the payload buffer.
+	 *
+	 * @param[in] serial_id The serial id relating to this buffer
+	 * @param offset The offset that was passed into
+	 * #acquire_payload_buffer. This may be usefull if, for example, the
+	 * payload was mmapped and the application needs to retrieve the
+	 * original pointer.
+	 * @param[in] a pointer that was obtained by the call to
+	 * #acquire_payload_buffer()
+	 * @param[in] user_data A pointer to the user provided data.
+	 */
+	int (*release_payload_buffer(const char *serial_id,
+				size_t offset,
+				uint8_t *buffer,
+				void *user_data);
+	/**
+	 * Acquire a payload feeder for the identified serial_id. When the
+	 * application is finished with the feeder, it will call
+	 * #release_payload_feeder()
+	 *
+	 * @param[in] serial_id The serial id of the record to get.
+	 * @param[out] feeder The callbacks necessary to retrieve bytes of data
+	 * for the payload.
+	 * @param user_data A pointer to the user provided data.
+	 */
+	int (*acquire_payload_feeder(const char *serial_id,
+				     struct *payload_feeder,
+				     void *user_data);
+	/**
+	 * Release a payload feeder for the identified serial_id.
+	 *
+	 * @param[in] serial_id The serial id of the record to get.
+	 * @param[in] feeder The callbacks necessary to retrieve bytes of data
+	 * for the payload.
+	 * @param user_data A pointer to the user provided data.
+	 */
+	int (*release_payload_feeder(const char *serial_id,
+				     struct *payload_feeder,
+				     void *user_data);
+	/**
+	 * The JNL calls this once the record is fully sent, or the
+	 * connection/channel is severed. It provides a chance for the
+	 * application to clean up any resources (including those in
+	 * record_info);
+	 *
+	 * @param serial_id The serial_id of this record_info
+	 * @param record_info The record_info struct
+	 */
+	void (*on_record_complete)(char *serial_id);
 	/**
 	 * The JNL executes this callback when it receives a 'sync' message
 	 * from the peer.
-	 *
-	 * @param[in] serial_id the serial_id sent by the remote peer.
+	 *@param[in] serial_id the serial_id sent by the remote peer.
 	 * @param headers Any additional headers sent with this message.
-	 * @param[in] user_data A pointer to the user_data of this
-	 * jaln_publisher_callbacks
+	 * @param[in] user_data A pointer to the user provided data.
 	 */
 	void (*sync)(const char *serial_id,
 		     struct jaln_mime_header *headers,
