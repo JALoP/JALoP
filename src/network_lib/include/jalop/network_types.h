@@ -73,12 +73,16 @@ void jaln_mime_header_free(struct jaln_mime_header **headers);
 struct jaln_record_info {
 	/** The type of this record (journal, audit, or log) */
 	enum jaln_record_type type;
+	/** The serial ID of this record */
+	char *serial_id;
 	/** The length of the system metadata */
 	uint64_t sys_meta_len;
 	/** The length of the application metadata */
 	uint64_t app_meta_len;
 	/** The length of the payload (raw journal, audit, or log data) */
 	uint64_t payload_len;
+	/** Any additional headers the application would like to send.  */
+	struct jaln_mime_header *headers;
 };
 
 /**
