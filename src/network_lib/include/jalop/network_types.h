@@ -272,7 +272,7 @@ typedef struct jaln_context_t* jaln_context;
 /**
  * Representions the unique connection between two JALoP Peers
  */
-typedef struct jaln_connection_t* jaln_connection
+typedef struct jaln_connection_t* jaln_connection;
 /**
  * Represents a single JALoP Channel on a connection. A channel may be created
  * that has different subscriber/publisher callbacks from the base context.

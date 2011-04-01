@@ -23,6 +23,7 @@
 #ifndef JALN_NET_CALLBACKS_H
 #define JALN_NET_CALLBACKS_H
 #include <jalop/network_types.h>
+#include <stdlib.h>
 /**
  * @struct jaln_subscriber_callbacks
  * The JAL network store fills this in for each accepted connection.
@@ -187,7 +188,7 @@ struct jaln_publisher_callbacks {
 	int (*on_journal_resume)(struct jaln_record_info *record_info,
 				 int offset,
 				 struct jaln_mime_header *headers,
-				 enum payload_delivery_type *payload_delivery
+				 enum jaln_payload_delivery_type *payload_delivery,
 				 void *user_data);
 	/**
 	 * The JNL executes this callback to inform the application of a
@@ -220,7 +221,7 @@ struct jaln_publisher_callbacks {
 	 */
 	int (*get_next_record_info)(const char *last_serial_id,
 				    struct jaln_record_info *record_info,
-				    enum payload_delivery_type *payload_delivery
+				    enum jaln_payload_delivery_type *payload_delivery,
 				    void *user_data);
 	/**
 	 * Aquire a pointer to the system metadata. The buffer must contain the
@@ -234,7 +235,7 @@ struct jaln_publisher_callbacks {
 	 * of the system metadata.
 	 * @param[in] user_data A pointer to the user provided data.
 	 */
-	int (*acquire_sys_metadata(const char *serial_id,
+	int (*acquire_sys_metadata)(const char *serial_id,
 				uint8_t **buffer,
 				void *user_data);
 	/**
@@ -245,7 +246,7 @@ struct jaln_publisher_callbacks {
 	 * #acquire_record_sys_metadata()
 	 * @param[in] user_data A pointer to the user provided data.
 	 */
-	int (*release_sys_metadata(const char *serial_id,
+	int (*release_sys_metadata)(const char *serial_id,
 				uint8_t **buffer,
 				void *user_data);
 	/**
@@ -260,7 +261,7 @@ struct jaln_publisher_callbacks {
 	 * of the application metadata.
 	 * @param[in] user_data A pointer to the user provided data.
 	 */
-	int (*acquire_app_metadata(const char *serial_id,
+	int (*acquire_app_metadata)(const char *serial_id,
 				uint8_t **buffer,
 				void *user_data);
 	/**
@@ -271,7 +272,7 @@ struct jaln_publisher_callbacks {
 	 * #acquire_record_app_metadata()
 	 * @param[in] user_data A pointer to the user provided data.
 	 */
-	int (*release_app_metadata(const char *serial_id,
+	int (*release_app_metadata)(const char *serial_id,
 				uint8_t *buffer,
 				void *user_data);
 	/**
@@ -292,7 +293,7 @@ struct jaln_publisher_callbacks {
 	 * of the payload.
 	 * @param[in] user_data A pointer to the user provided data.
 	 */
-	int (*acquire_payload_buffer(const char *serial_id,
+	int (*acquire_payload_buffer)(const char *serial_id,
 				size_t offset,
 				uint8_t **buffer,
 				void *user_data);
@@ -308,7 +309,7 @@ struct jaln_publisher_callbacks {
 	 * #acquire_payload_buffer()
 	 * @param[in] user_data A pointer to the user provided data.
 	 */
-	int (*release_payload_buffer(const char *serial_id,
+	int (*release_payload_buffer)(const char *serial_id,
 				size_t offset,
 				uint8_t *buffer,
 				void *user_data);
@@ -322,8 +323,7 @@ struct jaln_publisher_callbacks {
 	 * for the payload.
 	 * @param user_data A pointer to the user provided data.
 	 */
-	int (*acquire_payload_feeder(const char *serial_id,
-				     struct *payload_feeder,
+	int (*acquire_payload_feeder)(const char *serial_id,
 				     struct jaln_payload_feeder *feeder,
 				     void *user_data);
 	/**
@@ -334,8 +334,7 @@ struct jaln_publisher_callbacks {
 	 * for the payload.
 	 * @param user_data A pointer to the user provided data.
 	 */
-	int (*release_payload_feeder(const char *serial_id,
-				     struct *payload_feeder,
+	int (*release_payload_feeder)(const char *serial_id,
 				     struct jaln_payload_feeder *feeder,
 				     void *user_data);
 	/**
@@ -408,6 +407,7 @@ struct jaln_publisher_callbacks {
 			   enum jaln_digest_status status,
 			   struct jaln_mime_header *headers,
 			   void *user_data);
+
 };
 
 /**
@@ -486,7 +486,7 @@ struct jaln_connection_response_handlers {
  *
  * @return JAL_OK to accept the close request
  */
-typedef jal_status (*jaln_on_close_handler)(int channel_num, jaln_connection *connection, void *user_data)
+typedef enum jal_status (*jaln_on_close_handler)(int channel_num, jaln_connection connection, void *user_data);
 
 
 /**
@@ -501,5 +501,5 @@ typedef jal_status (*jaln_on_close_handler)(int channel_num, jaln_connection *co
  * @param channel The new channel
  * @param user_data A user provided pointer.
  */
-typedef void (*jaln_on_channel_created)(int channel_num, jaln_connection *connection, void *user_data)
+typedef void (*jaln_on_channel_created)(int channel_num, jaln_connection connection, void *user_data);
 #endif // JALN_NET_CALLBACKS_H
