@@ -27,12 +27,6 @@
 #define JALN_COMMON_N
 #include <stdint.h>
 
-// Need to include the proper vortex headers, not forward declare.
-struct VortexConnection;
-struct VortexCtx;
-typedef void * (*VortexOnCloseHandler)(void);
-typedef void * (*VortexOnChannelCreated)(void);
-typedef void * axlPointer;
 /**
  * Enum used to distinguish between record types
  */
@@ -291,14 +285,17 @@ struct jaln_record_feeder {
 	void (*free)(void *user_data);
 };
 /**
- * JAL Network Context. This holds global data such as base publisher
+ * This holds global data such as base publisher
  * callbacks, and channel creation handlers.
  */
-struct jaln_context { };
+typedef struct jaln_context_t* jaln_context;
 /**
- * JAL Channel. This holds data relating to a specific channel, including
- * channel specific subcribe/publish callbacks and user pointers, and the
- * underlying VortexChannel.
+ * Representions the unique connection between two JALoP Peers
  */
-struct jaln_channel { };
+typedef struct jaln_connection_t* jaln_connection
+/**
+ * Represents a single JALoP Channel on a connection. A channel may be created
+ * that has different subscriber/publisher callbacks from the base context.
+ */
+typedef struct jaln_channel_t* jaln_channel;
 #endif //JALN_COMMON_N

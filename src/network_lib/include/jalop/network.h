@@ -34,23 +34,23 @@
  *
  * In addition to configuring the openssl context, this also installs a 
  *
- * @param[in] ctx The vortex context to register jalop on.
+ * @param[in] jaln_ctx The JAL ctx to register the TLS profile on.
  * @param[in] private_key The private key that should be used for TLS
  * @param[in] public_cert The public certificate for the private key
  * @param[in] peer_certs A directory containing certificates for remote peers.
  * @return JAL_OK, or an error code.
  */
-enum jal_status jaln_register_tls(struct VortexCtx *ctx,
+enum jal_status jaln_register_tls(jaln_context jaln_ctx,
 				  const char *private_key,
 				  const char *public_cert,
 				  const char *peer_certs);
 
 /**
  * Create and initialize a new jaln_context
- * @param[out] ctx Receives a pointer to the new context
+ * @param[out] jaln_ctx Receives a pointer to the new context
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_context_create(struct jaln_context **ctx);
+enum jal_status jaln_context_create(jaln_context *jaln_ctx);
 /**
  * Retain a hold on the jaln_context
  *
@@ -58,7 +58,7 @@ enum jal_status jaln_context_create(struct jaln_context **ctx);
  * @return JAL_OK on success, or an error code.
  *
  */
-enum jal_status jaln_context_add_ref(struct jaln_context *ctx);
+enum jal_status jaln_context_add_ref(jaln_context ctx);
 /**
  * Release a hold on the jaln_context
  *
@@ -66,18 +66,16 @@ enum jal_status jaln_context_add_ref(struct jaln_context *ctx);
  * @return JAL_OK on success, or an error code.
  *
  */
-enum jal_status jaln_context_release(struct jaln_context *ctx);
+enum jal_status jaln_context_release(jaln_context ctx);
 /**
- * Register the JALoP profile and get ready to listen for connections. Due to a
- * limitation in vortex, you should not use this VortexCtx for both listening
- * and initiating the connections. The reason is that using this context with a
- * call to vortex_connection_new() will cause the JALoP Profile will get sent
- * as part of the greeting message before TLS is negotiated. This is limitation
- * of the vortex library.
+ * Register the JALoP profile and start listening for connections. Once this
+ * function is called, the \p jaln_ctx cannot be used to initiate connections
+ * to remote peers.
  *
  * @param[in] jaln_ctx The jalop context that will parse incoming and format
  *            outgoing JALoP messages.
- * @param[in] vortex_ctx the VortexCtx to register the profile in.
+ * @param[in] host the host interface IP to listen on
+ * @param[in] port The port to listen on
  * @param[in] connect_handler A user supplied callback the the jaln_ctxt
  *            will execute when it receives a JALoP 'connect' message. This provides a hook for
  *            the application to accept/reject connetions based on additional
@@ -94,12 +92,13 @@ enum jal_status jaln_context_release(struct jaln_context *ctx);
  * NULL for the connect_handler, block until the channel created & connected,
  * or an error occurs.
  */
-enum jal_status jaln_context_register_jalop(struct jaln_context* jaln_ctx,
-					    struct VortexCtx *vortex_ctx,
-					    jaln_connect_handler connect_handler,
-					    void *connect_data,
-					    struct jaln_publisher_callbacks *publish_callbacks,
-					    void *publisher_data);
+enum jal_status jaln_context_listen(jaln_context jaln_ctx,
+				    const char *host,
+				    int port,
+				    jaln_connect_handler connect_handler,
+				    void *connect_data,
+				    struct jaln_publisher_callbacks *publish_callbacks,
+				    void *publisher_data);
 /**
  * Creates a JALoP channel and sends connect message and prepare to act as
  * publisher.
@@ -107,8 +106,8 @@ enum jal_status jaln_context_register_jalop(struct jaln_context* jaln_ctx,
  * @param[in] connection An already established JALoP connection. Any security
  *            negotiations must be performed before calling this method.
  * @param[in] channel_num, a hint to the requested channel number. Specifing 0
- *            allows vortex to auto select the channel number. This is the preferred
- *            method of channel creation.
+ *            allows the implementation to auto select the channel number. This 
+ *            is the preferred method of channel creation.
  * @param[in] close_handler callback to allow/deny a request to close the channel.
  *            If NULL, close requests are always honored.
  * @param[in] close_data user data passed into the close_handler
@@ -129,12 +128,12 @@ enum jal_status jaln_context_register_jalop(struct jaln_context* jaln_ctx,
  * @return A jaln_channel.
  */
 struct jaln_channel *jaln_create_publisher_channel(
-				VortexConnection *connection,
+				jaln_connection connection,
 				int channel_num,
-	 			VortexOnCloseHandler close_handler,
-		 		axlPointer close_data,
-			 	VortexOnChannelCreated on_channel_created,
-				axlPointer channel_created_data,
+	 			jaln_on_close_close_channel close_handler,
+		 		void *close_data,
+			 	jaln_channel_create_handler on_channel_created,
+				void *channel_created_data,
 				struct jaln_connection_response_handlers *connection_handler,
 				void *connect_data,
 				struct jaln_publisher_callbacks *publisher_callbacks,
@@ -154,8 +153,8 @@ struct jaln_channel *jaln_create_publisher_channel(
  * @param[in] connection An already established JALoP connection. Any security
  *            negotiations must be performed before calling this method.
  * @param[in] channel_num, a hint to the requested channel number. Specifing 0
- *            allows vortex to auto select the channel number. This is the preferred
- *            method of channel creation.
+ *            allows the implementation to auto select the channel number.
+ *            This is the preferred method of channel creation.
  * @param[in] close_handler callback to allow/deny a request to close the channel.
  *            If NULL, close requests are always honored.
  * @param[in] close_data user data passed into the close_handler
@@ -168,19 +167,21 @@ struct jaln_channel *jaln_create_publisher_channel(
  *            functions.
  * @param[in] jal_connect_data user pointer passed into the jal_connection_handler
  *            callbacks
- * @param[in] request The parameters of the request message.
+ * @param[in] request The parameters of the request message. The JLN make an
+ *            internal copy of this structure. The application must release any
+ *            memory allocated in this structure.
  *
  * @return a jaln_channel
  * @note should this have a blocking mode too?
  */
-struct jaln_channel *jaln_create_subscriber_channel(struct VortexConnection *connection,
+struct jaln_channel *jaln_create_subscriber_channel(jaln_connection,
 			 int channel_num,
-			 VortexOnCloseHandler close_handler,
-			 axlPointer close_data,
-			 VortexOnChannelCreated on_channel_created,
-			 axlPointer channel_created_data,
+			 jaln_on_close_channel close_handler,
+			 void *close_data,
+			 jaln_on_channel_created_handler on_channel_created,
+			 void *channel_created_data,
 			 struct jaln_connection_response_handlers *connection_handler,
-			 void * jal_connect_data,
+			 void *jal_connect_data,
 			 struct jaln_connect_request *request
 			);
 /**
@@ -203,7 +204,7 @@ struct jaln_channel *jaln_create_subscriber_channel(struct VortexConnection *con
  *
  * @return JAL_OK on success, or an error.
  */
-enum jal_status jaln_journal_recover(struct jaln_channel *channel,
+enum jal_status jaln_journal_recover(jaln_channel channel,
 				const char *serial_id,
 				struct jaln_subscriber_callbacks *subscriber_callbacks,
 				void *subscriber_data,
@@ -211,7 +212,7 @@ enum jal_status jaln_journal_recover(struct jaln_channel *channel,
 				void *recover_complete_data
 			);
 /**
- * send a subscribe message on the given channel.
+ * Send a subscribe message on the given channel.
  * If the all input paramters are valid and
  * susbscriber_callbacks::on_message_complete is defined this call will return
  * immediately, and execute on_message_complete in a seperate thread when the

@@ -316,4 +316,30 @@ struct jaln_connection_response_handlers {
 			     void *user_data);
 };
 
+/**
+ * This handler allows the application to accept or reject a request from the
+ * peer to close a channel.
+ *
+ * @param channel_num The channel number in question
+ * @param connection the connection the channel is on.
+ * @param user_data A user provided pointer.
+ *
+ * @return JAL_OK to accept the close request
+ */
+typedef jal_status (*jaln_on_close_handler)(int channel_num, jaln_connection *connection, void *user_data)
+
+
+/**
+ * This handler allows the application to be notified when the jalop channel is
+ * created. If there is an error channel_num will be -1, and channel will be NULL.
+ * This is called after the channel is established, but before the 'connect'
+ * message is sent.
+ *
+ * TODO: provide a mechanism to get underlyihng vortex errors?
+ *
+ * @param channel_num The channel number in question.
+ * @param channel The new channel
+ * @param user_data A user provided pointer.
+ */
+typedef void (*jaln_on_channel_created)(int channel_num, jaln_connection *connection, void *user_data)
 #endif // JALN_NET_CALLBACKS_H

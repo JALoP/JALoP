@@ -106,7 +106,7 @@ struct jal_digest_ctx {
  *
  * @returns JAL_OK on success
  */
-int register_digest_algorithm(struct jaln_context *jal_ctx,
+int register_digest_algorithm(jaln_context jal_ctx,
 			      char *algorithm,
 			      struct jal_digest_ctx *digest_ctx);
 #endif //JAL_DIGEST_H
