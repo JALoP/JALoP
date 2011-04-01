@@ -53,43 +53,74 @@ struct jaln_subscriber_callbacks {
 				  const uint32_t cnt,
 				  void *user_data);
 	/**
-	 * The JNL calls this function to feed bytes of the application metadata to the
-	 * JAL network store.
+	 * The JNL calls this function to delivery the payload of the
+	 * application metadata. This will be called once for each
+	 * subscriber_id and delivers the entire contents of the application
+	 * metadata in the buffer.
 	 *
 	 * @param[in] serial_id The Publisher assigned sequence ID of this record
-	 * @param[in] buffer A buffer containing bytes of the application metadata
-	 * @param[in] avail The number of bytes contained in buffer
-	 * @param[in] more Boolean flag to indicate if there is more data availble. This is
-	 * set to 1 if there are more bytes expected, and 0 otherwise
+	 * @param[in] buffer A buffer containing the application metadata. The
+	 *            application is responsible for freeing this pointer with
+	 *            #jal_free().
+	 * @param[in] cnt The size, in bytes, of the buffer.
 	 * @param[in] user_data A pointer to the user_data.
 	 */
 	void (*on_app_metadata)(const char *serial_id,
 				const uint8_t *buffer,
-				const uint32_t avail,
-				const int more,
+				const uint32_t cnt,
 				void *user_data);
 	/**
-	 * The JNL calls this function to feed bytes of the system metadata to the
-	 * JAL network store.
+	 * The JNL calls this function to delivery the entire contents of the
+	 * system metadata block.
 	 *
 	 * @param[in] serial_id The Publisher assigned sequence ID of this record
-	 * @param[in] buffer A buffer containing bytes of the system metadata
-	 * @param[in] avail The number of bytes contained in buffer
-	 * @param[in] more Boolean flag to indicate if there is more data availble. This is
-	 * set to 1 if there are more bytes expected, and 0 otherwise
+	 * @param[in] buffer A buffer containing system metadata. The
+	 * application is responsible for freeing this memory with a call to
+	 * #jal_free()
+	 * @param[in] cnt The number of bytes in the buffer.
 	 * @param[in] user_data A pointer to the user_data
 	 */
 	void (*on_sys_metadata)(const char *serial_id,
 				const uint8_t *buffer,
-				const uint32_t avail,
-				const int more,
+				const uint32_t cnt,
 				void *user_data);
 	/**
-	 * The JNL calls this function to feed bytes of the payload (journal, audit, or
-	 * log data) to the JAL network store.
+	 * The JNL calls this function to delivery the entire contents of the
+	 * audit entry.
 	 *
 	 * @param[in] serial_id The Publisher assigned sequence ID of this record
-	 * @param[in] buffer A buffer containing bytes of the payload
+	 * @param[in] buffer A buffer containing audit entry. The
+	 * application is responsible for freeing this memory with a call to
+	 * #jal_free()
+	 * @param[in] cnt The number of bytes in the buffer.
+	 * @param[in] user_data A pointer to the user_data
+	 */
+	void (*on_audit)(const char *serial_id,
+			 const uint8_t *buffer,
+			 const uint32_t avail,
+			 void *user_data);
+	/**
+	 * The JNL calls this function to delivery the entire contents of a log
+	 * entry.
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] buffer A buffer containing the entire log entry. The
+	 * application is responsible for freeing this memory with a call to
+	 * #jal_free()
+	 * @param[in] cnt The number of bytes in the buffer.
+	 * @param[in] user_data A pointer to the user_data
+	 */
+	void (*on_log)(const char *serial_id,
+			 const uint8_t *buffer,
+			 const uint32_t avail,
+			 void *user_data);
+	/**
+	 * The JNL calls this function to feed bytes of a journal entry to the
+	 * application.
+	 *
+	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] buffer A buffer containing bytes of the payload, after
+	 * this application returns from this call they must not access buffer.
 	 * @param[in] avail The number of bytes contained in buffer
 	 * @param[in] more Boolean flag to indicate if there is more data availble. This is
 	 * set to 1 if there are more bytes expected, and 0 otherwise
