@@ -47,7 +47,7 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] headers Any additional headers.
 	 * @param[in] user_data A pointer to user data supplied in 
 	*/
-	typedef void (*on_record_headers)(const char *serial_id,
+	void (*on_record_headers)(const char *serial_id,
 				  const struct jaln_record_info *record_info,
 				  const struct jaln_mime_header *headers,
 				  const uint32_t cnt,
@@ -63,7 +63,7 @@ struct jaln_subscriber_callbacks {
 	 * set to 1 if there are more bytes expected, and 0 otherwise
 	 * @param[in] user_data A pointer to the user_data.
 	 */
-	typedef void (*on_app_metadata)(const char *serial_id,
+	void (*on_app_metadata)(const char *serial_id,
 				const uint8_t *buffer,
 				const uint32_t avail,
 				const int more,
@@ -79,7 +79,7 @@ struct jaln_subscriber_callbacks {
 	 * set to 1 if there are more bytes expected, and 0 otherwise
 	 * @param[in] user_data A pointer to the user_data
 	 */
-	typedef void (*on_sys_metadata)(const char *serial_id,
+	void (*on_sys_metadata)(const char *serial_id,
 				const uint8_t *buffer,
 				const uint32_t avail,
 				const int more,
@@ -95,7 +95,7 @@ struct jaln_subscriber_callbacks {
 	 * set to 1 if there are more bytes expected, and 0 otherwise
 	 * @param[in] user_data A pointer to the user_data.
 	 */
-	typedef void (*on_payload)(const char *serial_id,
+	void (*on_journal)(const char *serial_id,
 			   const uint8_t *buffer,
 			   const uint32_t avail,
 			   const int more,
@@ -111,7 +111,7 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] len The length of the digest, in bytes.
 	 * @param[in] user_data A pointer to the user data.
 	 */
-	typedef void (*notify_digest)(const char *serial_id,
+	void (*notify_digest)(const char *serial_id,
 			      const uint8_t *digest,
 			      const uint32_t len,
 			      const void *user_data);
@@ -124,7 +124,7 @@ struct jaln_subscriber_callbacks {
 	 * matches the digest calculated by the remote sidel.
 	 * @param[in] user_data A pointer to the user_data.
 	 */
-	typedef void (*on_digest_response)(const char *serial_id,
+	void (*on_digest_response)(const char *serial_id,
 				   const enum jaln_digest_status status,
 				   const void *user_data);
 };
