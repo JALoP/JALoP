@@ -150,7 +150,7 @@ struct jaln_connect_ack {
 	 * This list contains any extra headers, not processed by the JNL. It
 	 * only contains additional headers not included the JALoP spec.
 	 */
-	struct jaln_mime_header_list *headers;
+	struct jaln_mime_header *headers;
 };
 /**
  * This represents the data that is sent as part of a 'connect' message.
@@ -195,7 +195,7 @@ struct jaln_connect_request {
 	 * This list contains any extra headers not processed by the JNL. It
 	 * only contains additional headers not included the JALoP spec.
 	 */
-	struct jaln_mime_header_list *headers;
+	struct jaln_mime_header *headers;
 };
 /**
  * The JNL fills out the #jaln_connect_nack and passes it to the application
@@ -210,7 +210,7 @@ struct jaln_connect_nack {
 	 * Any additional headers. This list will not contain the headers for
 	 * the errors in #error_list.
 	 */
-	struct jaln_mime_header_list *headers;
+	struct jaln_mime_header *headers;
 };
 /**
  * @struct jaln_record_feeder
