@@ -40,6 +40,26 @@ enum jal_status {
 	JAL_E_NO_MEM,
 	JAL_OK = 0,
 };
+/** Indicates if a given entry is considered malicious. */
+enum jal_threat_level {
+	/** 
+	 * Indications the application didn't checkor could not determine if
+	 * the entry is unsafe. 
+	 */
+	JAL_THREAT_UNKNOWN = 0,
+	/**
+	 * Indicates the application performed some sort of scanning on the
+	 * entry and determined it was not a thread.
+	 * @note a file could be marked as safe and still contain malicious
+	 * code that was undetected.
+	 */
+	JAL_THREAT_SAFE,
+	/**
+	 * Indicates the application performed some sort of scanning on the
+	 * entry a determined the entry contained malicious code.
+	 */
+	JAL_THREAT_MALICIOUS,
+};
 
 
 /**
