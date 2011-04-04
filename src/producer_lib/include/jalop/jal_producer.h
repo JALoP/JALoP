@@ -1,5 +1,35 @@
 #ifndef jalp_PRODUCER_H
 #define jalp_PRODUCER_H
+/**
+ * @file jal_producer.h This file defines the public API available to
+ * applications generating JAL data. It provides the interfaces needed to build
+ * the appilication metadata sections and submit JAL data (and metadata) to the
+ * JAL Local Store.
+ *
+ * @section LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2011 Tresys Technology LLCColumbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache LicenseVersion 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writingsoftware
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KINDeither express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <stdint.h>
 #include <stdlib.h>
 enum jal_status {
