@@ -83,7 +83,7 @@ struct jalp_connection_t {
  * the sd_id field. This corresponds to the Structured Data section of the
  * syslog RFC (RFC 5424, section 6.3)
  */
-struct jalp_structured_data_param {
+struct jalp_param {
 	/**
 	 * The key for this param
 	 */
@@ -95,7 +95,7 @@ struct jalp_structured_data_param {
 	/**
 	 * The next element in the list.
 	 */
-	struct jalp_structured_data_param *next;
+	struct jalp_param *next;
 };
 /**
  * Represents a set of structured data elements. Applications should use an ID
@@ -110,7 +110,7 @@ struct jalp_structured_data {
 	/**
 	 * A list of params
 	 */
-	struct jalp_structured_data_param *param_list;
+	struct jalp_param *param_list;
 };
 /**
  * The syslog_metadata structure should be filled in if an application wishes
@@ -523,8 +523,9 @@ struct jalp_structured_data *jalp_create_structured_data(struct jalp_structured_
  *
  * @return the newly created param
  */
-struct jalp_structured_data_param *jalp_structured_data_insert_param(struct jalp_structured_data *group,
-						       char *name, 
+struct jalp_param *jalp_structured_data_insert_param(struct jalp_structured_data *group,
+						       char *name
+						       char *value);
 						       char *value);
 /**
  * Create a new structured_data element as the next element in the list. If
@@ -536,8 +537,8 @@ struct jalp_structured_data_param *jalp_structured_data_insert_param(struct jalp
  *
  * @return the newly created param
  */
-struct jalp_structured_data_param *jalp_structured_data_param_insert(struct jalp_structured_data_param *group,
-						       char *name, 
+struct jalp_param *jalp_param_insert(struct jalp_param *group,
+						       char *name
 						       char *value);
 /**
  * Release all memory associated with this structured data list. This frees all
