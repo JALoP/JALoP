@@ -33,11 +33,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 enum jal_status {
-	jalp_E_XML_PARSE = -1024,
-	jalp_E_XML_SCHEMA,
-	jalp_E_NOT_CONNECTED,
-	jalp_E_INVAL,
-	jalp_E_NO_MEM,
+	JAL_E_XML_PARSE = -1024,
+	JAL_E_XML_SCHEMA,
+	JAL_E_NOT_CONNECTED,
+	JAL_E_INVAL,
+	JAL_E_NO_MEM,
 	JAL_OK = 0,
 };
 
