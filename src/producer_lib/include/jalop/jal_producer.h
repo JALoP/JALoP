@@ -44,7 +44,7 @@ enum jal_status {
 enum jal_threat_level {
 	/** 
 	 * Indications the application didn't checkor could not determine if
-	 * the entry is unsafe. 
+	 * the entry is unsafe.
 	 */
 	JAL_THREAT_UNKNOWN = 0,
 	/**
@@ -123,7 +123,7 @@ struct jalp_structured_data {
  * the process ID (PID) is generated automatically. Timestamps are generated
  * automatically if the timestamp field is NULL.
  */
-struct syslog_metadata {
+struct jalp_syslog_metadata {
 	/**
 	 * The time that should be logged for this record. If NULL, the JAL
 	 * library will generate a timestamp itself. The timestamp must confrom
@@ -191,9 +191,9 @@ struct stack_frame {
  *
  * All fields are optional, except the loggerName.
  */
-struct logger_metadata {
+struct jalp_logger_metadata {
 	/** The name of this logger*/
-	char *loggerName;
+	char *logger_name;
 	/** The severity of this log entry */
 	struct severity *severity;
 	/**
@@ -233,8 +233,8 @@ struct jalp_app_metadata {
 	 * holds the sys, log, or custom sub-element.
 	 */
 	union {
-		struct syslog_metadata sys;
-		struct logger_metadata log;
+		struct jalp_syslog_metadata sys;
+		struct jalp_logger_metadata log;
 		/**
 		 * a block of XML data. It may conform to any schema,
 		 * or none at all. This may be a complete document, or just a
@@ -280,7 +280,10 @@ typedef struct jalp_connection_t* jalp_connection;
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jalp_connection_create(char* path, char *hostname, char *app_name, jalp_connection *conn);
+enum jal_status jalp_connection_create(char* path,
+		char *hostname,
+		char *app_name,
+		jalp_connection *conn);
 
 /**
  * Connect to the JALoP Local Store. It is safe to call this repeatedly, even
@@ -309,8 +312,9 @@ void jalp_connection_destroy(jalp_connection *conn);
  *
  * @param[in] conn The connection to send the data over
  * @param[in] The 
- * @param[in] app_metadata An XML document conforming to the application metadata
- * schema.
+ * @param[in] jal_app_metadata Pointer to a jalp_app_metadata structure. The 
+ * ProducerLib will convert the structure into an appropriate XML document.
+ *
  * @param[in] log_string A preformatted string to send to the JALoP Local Store
  * @return JAL_OK on sucess.
  *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
@@ -329,15 +333,18 @@ void jalp_connection_destroy(jalp_connection *conn);
  *
  * app_meta or log_string may be NULL, but not both.
  * */
-enum jal_status jalp_log(jalp_connection conn, struct jalp_app_metadata *app_meta, char* log_string);
+enum jal_status jalp_log(jalp_connection conn,
+		struct jalp_app_metadata *app_meta,
+		char* log_string);
 
 /**
  * Send a log message to the JALoP Local Store
  *
  * @param[in] conn The connection to send the data over
- * @param[in] app_metadata[in] An XML document conforming to the application metadata
+ * @param[in] app_metadata A struct that the ProducerLib will convert into XML
+ * for the application metadata.
  * schema.
- * @param[in] log_buffer[in] A byte buffer
+ * @param[in] log_buffer A byte buffer
  * @return JAL_OK on sucess.
  *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
  *         JAL_XML_SCHEMA_ERROR if app_metadata fails to pass schema validation
@@ -351,14 +358,18 @@ enum jal_status jalp_log(jalp_connection conn, struct jalp_app_metadata *app_met
  *
  * The conn will be connected if it isn't already.
  */
-enum jal_status jalp_log_buffer(jalp_connection conn, struct jalp_app_metadata *app_meta, char *app_metadata, uint8_t *log_buffer, size_t log_buffer_size);
+enum jal_status jalp_log_buffer(jalp_connection conn,
+		struct jalp_app_metadata *app_meta,
+		char *app_metadata,
+		uint8_t *log_buffer,
+		size_t log_buffer_size);
 
 /**
  * Send a journal entry to the JALoP Local Store
  *
  * @param[in] conn The connection to send the data over
- * @param[in] app_metadata[in] Metedata about the journal data.
- * @param[in] log_string[in] A preformatted string to send to the JALoP Local Store
+ * @param[in] app_metadata Metedata about the journal data.
+ * @param[in] log_string A preformatted string to send to the JALoP Local Store
  * @return JAL_OK on sucess.
  *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
  *         JAL_XML_SCHEMA_ERROR if app_metadata fails to pass schema validation
@@ -369,18 +380,20 @@ enum jal_status jalp_log_buffer(jalp_connection conn, struct jalp_app_metadata *
  * Sends the entire contents of journal_string to the JALoP Local Store,
  * including the NULL terminator. Applications that include digests of the
  * journal data should include the NULL terminator in their digest
- * calculations or use jalp_journal_buffer(char*, uint8_t*, uint64_t);
+ * calculations or use #jalp_journal_buffer()
  *
  * The conn will be connected if it isn't already.
  */
-enum jal_status jalp_journal(jalp_connection conn, struct jalp_app_metadata *app_meta, char *journal_string);
+enum jal_status jalp_journal(jalp_connection conn,
+		struct jalp_app_metadata *app_meta,
+		char *journal_string);
 
 /**
  * Send a journal data to the JALoP Local Store
  *
- * @param[in] app_metadata[in] An XML document conforming to the application metadata
+ * @param[in] app_metadata An XML document conforming to the application metadata
  * schema.
- * @param[in] journal_buffer[in] A byte buffer that contains the full contents of
+ * @param[in] journal_buffer A byte buffer that contains the full contents of
  * a journal entry.
  * @return JAL_OK on sucess.
  *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
@@ -391,7 +404,10 @@ enum jal_status jalp_journal(jalp_connection conn, struct jalp_app_metadata *app
  *
  * The conn will be connected if it isn't already.
  */
-enum jal_status jalp_journal_buffer(jalp_connection conn, struct jalp_app_metadata *app_meta, uint8_t * journal_buffer, uint64_t journal_buffer_size);
+enum jal_status jalp_journal_buffer(jalp_connection conn,
+		struct jalp_app_metadata *app_meta,
+		uint8_t * journal_buffer,
+		uint64_t journal_buffer_size);
 
 /**
  * Send an open file descriptor to the JAL Local Store. The caller must not
@@ -416,13 +432,13 @@ enum jal_status jalp_journal_buffer(jalp_connection conn, struct jalp_app_metada
  * behaviour since the sending thread here would need to prevent the app from
  * exiting while it's sending the data to the JNL....
  */
-enum jal_status jalp_journal_fd(jalp_connection conn, 
-		struct jalp_app_metadata *app_meta, 
+enum jal_status jalp_journal_fd(jalp_connection conn,
+		struct jalp_app_metadata *app_meta,
 		int fd);
 
 /**
- * Open the file at \p path and send it the JAL local store. Internally, this
- * uses the #jalp_journal_fd call to send a file descriptor. The application
+ * Open the file at \p path and send it the JAL local store. This uses the
+ * #jalp_journal_fd internally to send a file descriptor. The application
  * should never write to the file after calling this method, but is free to
  * unlink it.
  *
@@ -440,17 +456,16 @@ enum jal_status jalp_journal_fd(jalp_connection conn,
  * @note same comment as for #jalp_journal_fd, should we emulate this?
  *
  */
-enum jal_status jalp_journal_path(jalp_connection conn, 
+enum jal_status jalp_journal_path(jalp_connection conn,
 		struct jalp_app_metadata *app_meta,
-		uint8_t * journal_buffer, 
+		uint8_t * journal_buffer,
 		uint64_t journal_buffer_size);
 /**
  * Send an audit record to the JALoP Local Store
  *
  * @param[in] conn The connection to send the data over
- * @param app_metadata[in] An XML document conforming to the application metadata
- * schema.
- * @param[in] audit_string[in] An audit document conforming to the MITRE CEE event.xsd document.
+ * @param[in] app_metadata A structure that the ProducerLib will convert into XML.
+ * @param[in] audit_string An audit document conforming to the MITRE CEE event.xsd document.
  * @return JAL_OK on sucess.
  *         JAL_XML_PARSE_ERROR if one of the documents failed to parse
  *         JAL_XML_SCHEMA_ERROR if one of the documents failed schema
@@ -468,8 +483,8 @@ enum jal_status jalp_journal_path(jalp_connection conn,
  *
  * \p conn will be connected if it isn't already.
  */
-enum jal_status jalp_audit(jalp_connection conn, 
-		struct jalp_app_metadata *app_meta, 
+enum jal_status jalp_audit(jalp_connection conn,
+		struct jalp_app_metadata *app_meta,
 		char *audit_string);
 
 /**
@@ -503,19 +518,19 @@ enum jal_status jalp_audit_buffer(jalp_connection conn,
  * of a list.
  * @param[in] sd_id The sd_id to use for the new element
  * @param[in] name The name of this element
- * @param value The value of this element.
+ * @param[in] value The value of this element.
  *
  * @return a newly created jalp_structred_data pointer. This must be freed with
  * jalp_destroy_structured_data_list(struct jalp_structured_data*).
  *
  * sd_id, name, and value are copied to allocated buffers.
  */
-struct jalp_structured_data *jalp_create_structured_data(struct jalp_structured_data *prev, 
+struct jalp_structured_data *jalp_create_structured_data(struct jalp_structured_data *prev,
 						       char *sd_id);
 /**
  * Insert a new param element in \p group. If there are already elements in the
  * list, this will insert this param at the head of the list.
- * @see #jalp_structured_data_param_insert
+ * @see #jalp_param_insert
  *
  * @param[in] group the SD element to add to.
  * @param[in] key The key of this param.
@@ -524,7 +539,7 @@ struct jalp_structured_data *jalp_create_structured_data(struct jalp_structured_
  * @return the newly created param
  */
 struct jalp_param *jalp_structured_data_insert_param(struct jalp_structured_data *group,
-						       char *name
+						       char *name,
 						       char *value);
 						       char *value);
 /**
@@ -538,7 +553,7 @@ struct jalp_param *jalp_structured_data_insert_param(struct jalp_structured_data
  * @return the newly created param
  */
 struct jalp_param *jalp_param_insert(struct jalp_param *group,
-						       char *name
+						       char *name,
 						       char *value);
 /**
  * Release all memory associated with this structured data list. This frees all
@@ -551,7 +566,7 @@ void jalp_free_structured_data_list(struct jalp_structured_data **group);
  * Destroy an entire list. This must only be called on the head of the list. If
  * called anywhere else, memory leaks will occur.
  *
- * @param head[in,out] The head of the list to free.
+ * @param[in,out] head The head of the list to free.
  */
 void jalp_destroy_structured_data_list(struct jalp_structured_data **head);
 
