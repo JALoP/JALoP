@@ -214,6 +214,17 @@ struct jalp_logger_metadata {
 	/** An extended list of metadata. */
 	struct structured_data *sd;
 };
+/**
+ * Holds a digest value for any digest algorithm
+ */
+struct jalp_digest {
+	/** The URI for the digest algorithm */
+	char *uri;
+	/** the digest value */
+	uint8_t *val;
+	/** The lengthin bytes, of the digest */
+	uint32_t len;
+};
 
 /**
  * Structure that represents a App Metadata document.
@@ -242,6 +253,8 @@ struct jalp_app_metadata {
 		 */
 		char *custom;
 	};
+	/** The digest, if any, of the payload */
+	struct jalp_digest *payload_digest;
 };
 
 /**
