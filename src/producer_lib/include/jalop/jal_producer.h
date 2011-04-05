@@ -41,7 +41,7 @@ enum jal_status {
 	JAL_OK = 0,
 };
 /** Indicates if a given entry is considered malicious. */
-enum jal_threat_level {
+enum jalp_threat_level {
 	/** 
 	 * Indications the application didn't checkor could not determine if
 	 * the entry is unsafe.
@@ -285,9 +285,9 @@ struct jalp_transform {
  * @param[out] new_transform A pointer to the newly created transformor NULL.
  * @return JAL_OK on success, or an error.
  */
-enum jal_status jalp_transform_create(struct jalp_transform *prev
-		char *uri
-		char *child_text
+enum jal_status jalp_transform_create(struct jalp_transform *prev, 
+		char *uri, 
+		char *child_text, 
 		struct jalp_transform **new_transform);
 /**
  * Create an XOR transform in the chain.
@@ -301,8 +301,8 @@ enum jal_status jalp_transform_create(struct jalp_transform *prev
  * @return JAL_OK on success, or an error.
  */
 
-enum jal_status jalp_xor_transform_create(struct jalp_transform *prev
-		uint32_t key
+enum jal_status jalp_xor_transform_create(struct jalp_transform *prev, 
+		uint32_t key, 
 		struct jalp_transform** new_transform);
 
 /**
@@ -315,7 +315,7 @@ enum jal_status jalp_xor_transform_create(struct jalp_transform *prev
  * @return JAL_OK on success, or an error.
  */
 
-enum jal_status jalp_aes_transform_create(struct jalp_transform *prev
+enum jal_status jalp_deflate_transform_create(struct jalp_transform *prev, 
 		struct jalp_transform** new_transform);
 /**
  * Enum to restrict AES keysizes
@@ -347,7 +347,7 @@ enum jalp_aes_key_size {
  * @param[out] new_transform a pointer to the newly created transformor NULL.
  * @return JAL_OK on success, or an error.
  */
-enum jal_status jalp_aes_transform_create(struct jalp_transform *prev
+enum jal_status jalp_aes_transform_create(struct jalp_transform *prev, 
 		enum jalp_aes_key_size,
 		uint32_t *key,
 		struct jalp_transform** new_transform);
@@ -394,9 +394,9 @@ struct jalp_content_type {
  */
 struct jalp_file_info {
 	/** The name of the file. */
-	char *filename; 
+	char *filename;
 	/** Indicator of whether or not this entry is considered malicious. */
-	enum jalp_threat_level;
+	enum jalp_threat_level threat_level;
 	/** The size of the file before any transforms were applied to it. */
 	uint64_t original_size;
 	/** The size of the file after all transforms were applied */
@@ -406,7 +406,7 @@ struct jalp_file_info {
 	 * the XML.
 	 */
 	struct jal_content_type *content_type;
-}
+};
 /**
  * Structure to provide metadata about the payloadtypically only used for
  * journal entries.
@@ -415,7 +415,7 @@ struct jalp_file_metadata {
 	/**
 	 * Generic metadata about the file.
 	 */
-	struct jalp_file_info;
+	struct jalp_file_info file_info;
 	/** 
 	 * List of transforms that the application applied before submitting
 	 * the entry to the JAL local store
@@ -441,7 +441,8 @@ typedef struct jalp_connection_t* jalp_connection;
  *
  */
 enum jal_status jalp_connection_load_pem_rsa(jalp_connection conn,
-		const char *keyfileconst char *password);
+		const char *keyfile,
+		const char *password);
 /**
  * Load an RSA public certificate. This must be the public certificate that
  * corresponds to the private key set with #jalp_connection_load_pem_rsa.
@@ -507,10 +508,8 @@ void jalp_connection_destroy(jalp_connection *conn);
  * Send a log message to the JALoP Local Store
  *
  * @param[in] conn The connection to send the data over
- * @param[in] The 
- * @param[in] jal_app_metadata Pointer to a jalp_app_metadata structure. The 
+ * @param[in] app_meta Pointer to a jalp_app_metadata structure. The 
  * ProducerLib will convert the structure into an appropriate XML document.
- *
  * @param[in] log_string A preformatted string to send to the JALoP Local Store
  * @return JAL_OK on sucess.
  *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
