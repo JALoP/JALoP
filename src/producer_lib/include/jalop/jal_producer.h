@@ -259,6 +259,32 @@ struct jalp_payload_metadata {
 typedef struct jalp_connection_t* jalp_connection;
 
 /**
+ * Load an RSA private key. If successfulevery application metadata document
+ * will get signed (using RSA+SHA256). Once a key is setit cannot be unset.
+ * You must createa a new context.
+ *
+ * @param[in] jalp_connection The connection object to attach the RSA keys to.
+ * @param[in] keyfile The path to the private key file.
+ * @param[in] password The password for the key file.
+ *
+ * @return JAL_OK on success, or an error code.
+ *
+ */
+enum jal_status jalp_connection_load_pem_rsa(jalp_connection conn,
+		const char *keyfileconst char *password);
+/**
+ * Load an RSA public certificate. This must be the public certificate that
+ * corresponds to the private key set with #jalp_connection_load_pem_rsa.
+ * If applications add the certificatethe Producer Library will add a KeyInfo
+ * block for the certificate.
+ *
+ * @param[in] jalp_connection The connection object to attach the RSA keys to.
+ * @param[in] certfile The path to the x509 public certificate file.
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jalp_connection_load_x509_cert(jalp_connection conn,
+		const char *certfile);
+/**
  * Create a jalp_connection.
  * @param[in] path The name of the socket to connect to. If this is NULL, the
  * default path defined in jalp_SOCKET_NAME is used.
