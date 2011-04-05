@@ -255,15 +255,172 @@ struct jalp_app_metadata {
 	};
 	/** The digest, if any, of the payload */
 	struct jalp_digest *payload_digest;
+	/** 
+	 * Optional metadata for the file. Applications are strongly
+	 * encouraged to include this for journal entries.
+	 */
+	struct jalp_file_metadata *file_metadata;
+};
+/**
+ * Structure to describe transforms applied to an entry
+ */
+struct jalp_transform {
+	/** the URI for this transform */
+	char *uri;
+	/** Snippet of XML code to add as a child of the transform element. */
+	char *xml;
+	/** The next transform in the sequenceor NULL */
+	struct jalp_transform *next;
 };
 
 /**
- * Structure that represents the payload section of an application metadata
- * document.
+ * Create another transfrom in the chain.
+ *
+ * @param[in] prev The transform that should come directly before the new
+ * transform. If \p prev already points somewhere for \p next, the new
+ * transform is inserted into the list.
+ * @param[in] uri A URI for the transform.
+ * @param[in] child_text XML for the body of the transform. This must be valid
+ * XML.
+ * @param[out] new_transform A pointer to the newly created transformor NULL.
+ * @return JAL_OK on success, or an error.
  */
-struct jalp_payload_metadata {
-	/** foo */
-	int foo;
+enum jal_status jalp_transform_create(struct jalp_transform *prev
+		char *uri
+		char *child_text
+		struct jalp_transform **new_transform);
+/**
+ * Create an XOR transform in the chain.
+ *
+ * @param[in] prev The transform that should come directly before the new
+ * transform. If \p prev already points somewhere for \p next, the new
+ * transform is inserted into the list.
+ * @param[in] key The 4 byte XOR key that was applied to the datathis must
+ * not be 0.
+ * @param[out] new_transform a pointer to the newly created transformor NULL.
+ * @return JAL_OK on success, or an error.
+ */
+
+enum jal_status jalp_xor_transform_create(struct jalp_transform *prev
+		uint32_t key
+		struct jalp_transform** new_transform);
+
+/**
+ * Create a deflate transform in the chain.
+ *
+ * @param[in] prev The transform that should come directly before the new
+ * transform. If \p prev already points somewhere for \p next, the new
+ * transform is inserted into the list.
+ * @param[out] new_transform a pointer to the newly created transformor NULL.
+ * @return JAL_OK on success, or an error.
+ */
+
+enum jal_status jalp_aes_transform_create(struct jalp_transform *prev
+		struct jalp_transform** new_transform);
+/**
+ * Enum to restrict AES keysizes
+ */
+enum jalp_aes_key_size {
+	/** Indicates a 128 bit (16 byte) key */
+	JALP_AES128,
+	/** Indicates a 192 bit (24 byte) key */
+	JALP_AES192,
+	/** Indicates a 256 bit (32 byte) key */
+	JALP_AES256,
+};
+
+/**
+ * Create an AES transform in the chain. This should only be used for AES
+ * transforms as described in the JALoP-v1.0 specification. The key and IV are
+ * not required, but are recommended since the intent is not to provide data
+ * securitybut protection from accidental execution of malicios code.
+ *
+ * @param[in] prev The transform that should come directly before the new
+ * transform. If \p prev already points somewhere for \p next, the new
+ * transform is inserted into the list.
+ * @param[in] key_size The key size. The length of \p key is determined by \p
+ * key_sizefor example, if \p key_size is #JALP_AES192, the \p key array is
+ * assumed to be 24 bytes in length.
+ * @param[in] key The AES keyor NULL, the length of this array is determined
+ * by \p key_size.
+ * @param[in] iv The initialization vector, or NULL.
+ * @param[out] new_transform a pointer to the newly created transformor NULL.
+ * @return JAL_OK on success, or an error.
+ */
+enum jal_status jalp_aes_transform_create(struct jalp_transform *prev
+		enum jalp_aes_key_size,
+		uint32_t *key,
+		struct jalp_transform** new_transform);
+/**
+ * Describes the content-type of the entry. 
+ * @see MIME
+ */
+struct jalp_content_type {
+	/**
+	 * The top level media type. This must be one of following:
+	 *  - "application"
+	 *  - "audio"
+	 *  - "example"
+	 *  - "image"
+	 *  - "message"
+	 *  - "model"
+	 *  - "test"
+	 *  - "video"
+	 *
+	 *  The JPL provides macros for each of these
+	 *  @see contentTypeMacros
+	 */
+	char *media_type;
+	/** A string for the subtypethis may be anything. */
+	char *subtype;
+	/** A list of optional parameters. */
+	struct jalp_param *params;
+};
+
+/**
+ * @defgroup contentTypeMacros Content Type Macros
+ */
+/** @ingroup contentTypeMacros */
+#define JALP_CT_APPLICATION "application"
+#define JALP_CT_AUDIO "audio"
+#define JALP_CT_EXAMPLE "example"
+#define JALP_CT_IMAGE "image"
+#define JALP_CT_MESSAGE "message"
+#define JALP_CT_MODEL "model"
+#define JALP_CT_TEST "test"
+#define JALP_CT_VIDEO "video"
+/**
+ * Detailed information about the file typeetc.
+ */
+struct jalp_file_info {
+	/** The name of the file. */
+	char *filename; 
+	/** Indicator of whether or not this entry is considered malicious. */
+	enum jalp_threat_level;
+	/** The size of the file before any transforms were applied to it. */
+	uint64_t original_size;
+	/** The size of the file after all transforms were applied */
+	uint64_t size;
+	/** 
+	 * An (optional) content type. If NULL, no content-type is added to
+	 * the XML.
+	 */
+	struct jal_content_type *content_type;
+}
+/**
+ * Structure to provide metadata about the payloadtypically only used for
+ * journal entries.
+ */
+struct jalp_file_metadata {
+	/**
+	 * Generic metadata about the file.
+	 */
+	struct jalp_file_info;
+	/** 
+	 * List of transforms that the application applied before submitting
+	 * the entry to the JAL local store
+	 */
+	struct jalp_transform *transforms;
 };
 
 /**
@@ -580,6 +737,20 @@ struct jalp_structured_data *jalp_create_structured_data(struct jalp_structured_
 struct jalp_param *jalp_structured_data_insert_param(struct jalp_structured_data *group,
 						       char *name,
 						       char *value);
+
+/**
+ * Insert a new param element in \p group. If there are already elements in the
+ * list, this will insert this param at the head of the list.
+ * @see #jalp_param_insert
+ *
+ * @param[in] the jalp_content_type structure to add the param to.
+ * @param[in] key The key of this param.
+ * @param[in] value The value of this param.
+ *
+ * @return the newly created param
+ */
+struct jalp_param *jalp_content_type_insert_param(struct jalp_content_type *content_type,
+						       char *name,
 						       char *value);
 /**
  * Create a new structured_data element as the next element in the list. If
