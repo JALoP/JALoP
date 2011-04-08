@@ -190,9 +190,13 @@ enum jal_status jalp_journal(jalp_context *ctx,
  * The caller must not write to the file identified by \p fd after making this
  * call, or else the JAL local store may receive incorrect data. This call
  * works by sending just the file descriptor and is not available on all
- * platforms. You can check for it's existence by checking for
- * JALP_CAN_SEND_FDS, example:
+ * platforms. If the underlying system doesn't support sending a 
+ * file descriptor over a UNIX Domain socket, this function will always return 
+ * JAL_E_NOT_SUPPORTED. Applications may check for this support at compile time
+ * by looking for the JALP_CAN_SEND_FDS preprocessor define.
+ * For example:
  * @code
+ * #include<jalop/jalp_config.h>
  * #ifdef JALP_CAN_SEND_FDS
  * \/\* do something *\/
  * #endif
@@ -203,7 +207,7 @@ enum jal_status jalp_journal(jalp_context *ctx,
  * @param[in] fd The file descriptor of the journal.
  * @return 
  *  - JAL_OK on success
- *  - JAL_NOT_SUPPORTED if the system doesn't support sending open file
+ *  - JAL_E_NOT_SUPPORTED if the system doesn't support sending open file
  *   descriptors through a domain socket.
  *
  */
@@ -225,10 +229,13 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
  *
  * @note It is an error to pass NULL for both \p app_meta and \p journal_buffer.
  *
- * @return JAL_OK if the JPL was successful at opening the file and sending the
+ * @return 
+ *  - JAL_OK if the JPL was successful at opening the file and sending the
  * descriptor to the JAL local store.
- *
- * @note same comment as for #jalp_journal_fd, should we emulate this?
+ *  - JAL_E_NOT_SUPPORTED if the underlying system doesn't support SCM_RIGHTS on
+ *  a socket
+ *  - JAL_E_SYS some other system error occurred, for more info, the
+ *  application can call jalp_errno to get the value.
  *
  */
 enum jal_status jalp_journal_path(jalp_context *ctx,
