@@ -53,19 +53,6 @@
 typedef struct jalp_context_t jalp_context;
 
 /**
- * Enumeration for error codes returned by JALoP calls.
- */
-enum jal_status {
-	JAL_E_XML_PARSE = -1024,
-	JAL_E_XML_SCHEMA,
-	JAL_E_NOT_CONNECTED,
-	JAL_E_INVAL,
-	JAL_E_NO_MEM,
-	JAL_OK = 0,
-};
-
-
-/**
  * Load an RSA private key. If successful, every application metadata document
  * will get signed (using RSA+SHA256). Once a key is set, it cannot be changed.
  * You must create a new context.

@@ -1,0 +1,4 @@
+Import('*')
+
+#uncomment when we have some actual source code.
+#env.SharedLibrary(target='jal-common', source=env.Glob("*.c"))
