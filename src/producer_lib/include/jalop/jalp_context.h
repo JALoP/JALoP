@@ -33,9 +33,20 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-/** Opaque pointer to the internal jalp_context_t type. */
+/**
+ * Opaque pointer to the internal jalp_context_t type.
+ * The jalp_context holds information about the connection to the JALoP Local Store.
+ * The jalp_context is not thread safe. Applications should either create
+ * separate logging connections for each thread, or properly guard the jalp_context.
+ *
+ * Because each connection requires resources in the JAL Local Store, a
+ * massively threaded process should avoid creating a connection for each thread.
+ */
 typedef struct jalp_context_t jalp_context;
 
+/**
+ * Enumeration for error codes returned by JALoP calls.
+ */
 enum jal_status {
 	JAL_E_XML_PARSE = -1024,
 	JAL_E_XML_SCHEMA,
@@ -45,14 +56,6 @@ enum jal_status {
 	JAL_OK = 0,
 };
 
-/**
- * The jalp_context holds information about the connection to the JALoP Local Store.
- * The jalp_context is not thread safe. Applications should either create
- * separate logging connections for each thread, or properly guard the jalp_context.
- *
- * Because each connection requires resources in the JAL Local Store, a
- * massively threaded process should avoid creating a connection for each thread.
- */
 
 /**
  * Load an RSA private key. If successful, every application metadata document
@@ -103,9 +106,8 @@ jalp_context *jalp_context_create(void);
  * this is set to NULL or the empty string, the JPL will try to generate a suitable
  * hostname (i.e. by calling gethostname() on POSIX systems).
  * @param[in] app_name A string to use when filling out metadata sections. If
- * this is set to NULL o the empty string, the JPL will try to generate a
+ * this is set to NULL, or the empty string, the JPL will try to generate a
  * suitable process name.
- *
  *
  * @return JAL_OK on success, or an error code.
  */
@@ -140,56 +142,60 @@ void jalp_context_destroy(jalp_context **ctx);
  * Send a log message to the JALoP Local Store
  *
  * @param[in] ctx The context to send the data over
- * @param[in] app_metadata A struct that the ProducerLib will convert into XML
+ * @param[in] app_meta An optional struct that the ProducerLib will convert into XML
  * for the application metadata.
  * schema.
- * @param[in] log_buffer A byte buffer
+ * @param[in] log_buffer An optional byte buffer that is the log message
+ * @param[in] log_buffer_size The size of the byte buffer.
+ *
+ * @note It is an error to pass NULL for both \p app_meta and \p log_buffer.
+ * 
+ *
  * @return JAL_OK on sucess.
- *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
- *         JAL_XML_SCHEMA_ERROR if app_metadata fails to pass schema validation
  *         JAL_XML_EINVAL if there is something wrong with the parameters
  *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
  *
- * If app_meta is NULL, log_buffer must be non-NULL and log_buffer_size must
- * be > 0. If app_meta is non-NULL, log_buffer may be NULL. If log_buffer is
- * NULL, log_buffer_size must be 0.
- *
- * The ctx will be connected if it isn't already.
+ * @note The ctx will be connected if it isn't already.
  */
-enum jal_status jalp_log_buffer(jalp_context *ctx,
-		struct jalp_app_metadata *app_meta,
-		char *app_metadata,
+enum jal_status jalp_log(jalp_context *ctx,
+		struct jalp_app_meta *app_meta,
 		uint8_t *log_buffer,
 		size_t log_buffer_size);
 
 /**
- * Send a journal data to the JALoP Local Store
+ * Send a journal data to the JALoP Local Store.
  *
- * @param[in] app_metadata An XML document conforming to the application metadata
- * schema.
+ * @param[in] jalp_context ctx The connection to send the data over.
+ * @param[in] app_meta An optional structure that will be converted into an XML
+ * document conforming to the application metadata schema.
  * @param[in] journal_buffer A byte buffer that contains the full contents of
  * a journal entry.
- * @return JAL_OK on sucess.
- *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
- *         JAL_XML_SCHEMA_ERROR if app_metadata fails to pass schema validation
+ * @param[in] journal_buffer_size The size (in bytes) of \p journal_buffer.
+ *
+ * @note It is an error to pass NULL for both \p app_metadata and \p
+ * journal_buffer.
+ *
+ * @return JAL_OK on success.
  *         JAL_EINVAL If the parameters are incorrect.
  *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
  *
- * The ctx will be connected if it isn't already.
+ * @note The ctx will be connected if it isn't already.
  */
-enum jal_status jalp_journal_buffer(jalp_context *ctx,
+enum jal_status jalp_journal(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
-		uint8_t * journal_buffer,
+		uint8_t *journal_buffer,
 		uint64_t journal_buffer_size);
 
 /**
- * Send an open file descriptor to the JAL Local Store. The caller must not
- * write to the file identified by \p fd after making this call, or else the
- * JAL local store may receive incorrect data. This call works by sending just
- * the file descriptor and is not available on all platforms. You can check for
- * it's existence by checking for JALP_CAN_SEND_FDS, example:
+ * Send an open file descriptor to the JAL Local Store.
+ *
+ * The caller must not write to the file identified by \p fd after making this
+ * call, or else the JAL local store may receive incorrect data. This call
+ * works by sending just the file descriptor and is not available on all
+ * platforms. You can check for it's existence by checking for
+ * JALP_CAN_SEND_FDS, example:
  * @code
  * #ifdef JALP_CAN_SEND_FDS
  * \/\* do something *\/
@@ -197,7 +203,7 @@ enum jal_status jalp_journal_buffer(jalp_context *ctx,
  * @endcode
  *
  * @param[in] ctx The context to send the record over.
- * @param[in] app_meta the application provided metadata (or null);
+ * @param[in] app_meta The optional application provided metadata.
  * @param[in] fd The file descriptor of the journal.
  *
  * @note would it be better to fake this call if sending the file descriptor is
@@ -212,18 +218,18 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 		int fd);
 
 /**
- * Open the file at \p path and send it the JAL local store. This uses the
- * #jalp_journal_fd internally to send a file descriptor. The application
- * should never write to the file after calling this method, but is free to
- * unlink it.
+ * Open the file at \p path and send it the JAL local store.
  *
- * Applications should provide both the \p app_meta adn \p path parameters.
- * One of these parameters may be NULL, but not both.
+ * This uses the #jalp_journal_fd internally to send a file descriptor. The
+ * application should never write to the file after calling this method, but is
+ * free to unlink it.
  *
  * @param[in] ctx The context to send the journal over.
- * @param[in] app_metadata The application provided metadata about the journal
- * entry.
+ * @param[in] app_meta An optional structure that the library will convert into
+ * an XML document.
  * @param[in] path The path to the file to journal.
+ *
+ * @note It is an error to pass NULL for both \p app_meta and \p journal_buffer.
  *
  * @return JAL_OK if the JPL was successful at opening the file and sending the
  * descriptor to the JAL local store.
@@ -233,25 +239,28 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
  */
 enum jal_status jalp_journal_path(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
-		uint8_t * journal_buffer,
-		uint64_t journal_buffer_size);
+		char *path);
 /**
  * Send an audit record to the JALoP Local Store
  *
  * @param[in] ctx The context to send the data over
- * @param[in] app_metadata metadata about the audit entry.
- * @param[in] audit_buffer A byte buffer that contains the full contents of
+ * @param[in] app_meta An optional struct that the library will convert into an
+ * XML document. The resulting document will conform to the applicationMetadata
+ * XML Schema defined in the JALoP-v1.0-Specification.
+ * @param[in] audit_buffer An optional byte buffer that contains the full contents of
  * a audit entry.
+ * @param[in] audit_buffer_size The size (in bytes) of \p audit_buffer.
+ *
+ * @note It is an error to pass NULL for both \p app_meta and \p audit_buffer.
+ *
  * @return JAL_OK on sucess.
- *         JAL_XML_PARSE_ERROR if app_metadata fails to parse
- *         JAL_XML_SCHEMA_ERROR if app_metadata fails to pass schema validation
  *         JAL_EINVAL If the parameters are incorrect.
  *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
  *
- * \p conn will be connected if it isn't already.
+ * @note \p ctx will be connected if it isn't already.
  */
-enum jal_status jalp_audit_buffer(jalp_context *ctx,
+enum jal_status jalp_audit(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
 		uint8_t *audit_buffer,
 		size_t audit_buffer_size);
