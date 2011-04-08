@@ -30,6 +30,14 @@
 #define JALP_SYSLOG_METADATA_H
 
 #include <jalop/jalp_structured_data.h>
+/**
+ * @addtogroup AppMetadata
+ * @{
+ * @defgroup SyslogMetadata Syslog Metadata
+ * Specialized structures and functions to deal with common metadata attached
+ * to syslog style logs.
+ * @{
+ */
 
 /**
  * The syslog_metadata structure should be filled in if an application wishes
@@ -74,16 +82,18 @@ struct jalp_syslog_metadata {
 };
 
 /**
- * Allocate and initialize a jalp_syslog_metadata structure.
- * @return The newly allocated jalp_syslog_metadata
+ * Allocate and initialize a #jalp_syslog_metadata structure.
+ * @return The newly allocated #jalp_syslog_metadata
  */
 struct jalp_syslog_metadata *jalp_syslog_metadata_create(void);
 /**
- * Destroy a jalp_syslog_metadata structure and all it's members.
- * @param[in,out] sys_meta A jalp_syslog_metadata object to destroy. This will
+ * Destroy a #jalp_syslog_metadata structure and all it's members.
+ * @param[in,out] syslog_meta A #jalp_syslog_metadata object to destroy. This will
  * be set to NULL.
  * @return JAL_OK, or JAL_BAD_POINTER
  */
 void jalp_syslog_metadata_destroy(struct jalp_syslog_metadata **syslog_meta);
+/** @} */
+/** @} */
 #endif //JALP_PRODUCER_H
 

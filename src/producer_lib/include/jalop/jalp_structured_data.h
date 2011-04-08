@@ -30,6 +30,23 @@
 #define JALP_STRUCTURED_DATA_H
 #include <jalop/jalp_param.h>
 /**
+ * @ingroup LoggerMetadata
+ * @ingroup SyslogMetadata
+ * @{
+ * @defgroup StructuredData Structured Data
+ * The functions and methods in here are used to generate structured data
+ * elements. The concept of structured data is borrowed from the syslog RFC
+ * (http://tools.ietf.org/html/rfc5424).
+ *
+ * Typically, structured data elements are used to provide additional
+ * information about the system at the time the log entry was generated. This
+ * may be information about the system clock, timezone, data about the process
+ * that generated the log, or information about the logging system itself.
+ * Applications are free to use structured data to provide any key/value pairs
+ * they see fit.
+ * @{
+ */
+/**
  * Represents a set of structured data elements. Applications should use an ID
  * containing an '@' unless using one of the registered IDs.
  *
@@ -44,7 +61,7 @@
 struct jalp_structured_data {
 	/** The SD-ID for all param elements in \p param_list. */
 	char *sd_id;
-	/** A list of params belonging to this SD-ID*/
+	/** A list of params belonging to this SD-ID */
 	struct jalp_param *param_list;
 	/** The next structured data group */
 	struct jalp_structured_data *next;
@@ -52,28 +69,27 @@ struct jalp_structured_data {
 /**
  * Create a jalp_structured_data element.
  *
- * @param[in] prev The location in a list to add the element. If prev is not the
- * end of the list, then the new node is created as the next element of prev,
- * and prev->next becomes the new node's next element.
+ * @param[in] prev The location in a list to add the element. If \p prev is not the
+ * end of the list, then the new node is created as the next element of \p prev,
+ * and \p prev->next becomes the new node's next element.
  * This function may be used to add elements to the end, or middle
- * of a list. #prev may be NULL.
+ * of a list. When \p prev is NULL this creates a new list.
  * @param[in] sd_id The sd_id to use for the new element.
- * @param[in] name The name of this element
- * @param[in] value The value of this element.
  *
  * @return a newly created jalp_structred_data pointer. This must be freed with
  * jalp_structured_data_destroy(struct jalp_structured_data*).
  *
- * sd_id, name, and value are copied to allocated buffers.
  */
 struct jalp_structured_data *jalp_structured_data_append(struct jalp_structured_data *prev,
 							 char *sd_id);
 /**
- * Release all memory associated with this structured data list. This frees all
- * params of #group and all #jalp_structured_data elements.
- * @param[in,out] group The list of SD groups to destroy. This will be set to
+ * Release all memory associated with this structured data list.
+ * This frees all params of \p sd_group and all #jalp_structured_data elements.
+ * @param[in,out] sd_group The list of SD groups to destroy. This will be set to
  * NULL.
  */
 void jalp_structured_data_destroy(struct jalp_structured_data **sd_group);
+/** @} */
+/** @} */
 #endif //JALP_STRUCTURED_DATA_H
 

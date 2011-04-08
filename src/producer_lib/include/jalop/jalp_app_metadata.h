@@ -32,6 +32,12 @@
 #include <jalop/jalp_logger_metadata.h>
 #include <jalop/jalp_digest.h>
 #include <jalop/jalp_fileinfo.h>
+/**
+ * @defgroup AppMetadata Application Metadata
+ *
+ * Structures and functions related to building application metadata.
+ * @{
+ */
 /** 
  * Enum for the type of embedded metadata in the application metadata
  * structure.
@@ -107,5 +113,6 @@ struct jalp_app_metadata *jalp_app_metadata_create(void)
  * NULL.
  */
 void jalp_app_metadata_destroy(struct jalp_app_metadata **app_meta)
+/** @} */
 #endif //JALP_APP_METADATA_H
 

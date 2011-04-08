@@ -29,6 +29,7 @@
 #ifndef JALP_TRANSFORM_H
 #define JALP_TRANSFORM_H
 /**
+ * @ingroup JournalMetadata
  * Enum to restrict AES keysizes
  */
 enum jalp_aes_key_size {
@@ -40,6 +41,7 @@ enum jalp_aes_key_size {
 	JALP_AES256,
 };
 /**
+ * @ingroup JournalMetadata
  * Structure to describe transforms applied to an entry
  */
 struct jalp_transform {
@@ -52,6 +54,7 @@ struct jalp_transform {
 };
 
 /**
+ * @ingroup JournalMetadata
  * Create another transform in the chain.
  *
  * @param[in] prev The transform that should come directly before the new
@@ -66,20 +69,22 @@ struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
 		char *uri,
 		char *xml_snippet);
 /**
- * Release all memory associated with a jalp_transform object. This frees all
- * jalp_transform objects in the list and calls free for every member.
+ * @ingroup JournalMetadata
+ * Release all memory associated with a #jalp_transform object. This frees all
+ * #jalp_transform objects in the list and calls free for every data member.
  * @param[in] transform the list to destroy.
  */
-struct jalp_transform *jalp_transform_destroy(struct jalp_transform **transform);
+void jalp_transform_destroy(struct jalp_transform **transform);
 
 /**
+ * @ingroup JournalMetadata
  * Create an XOR transform in the chain.
  *
  * @param[in] prev The transform that should come directly before the new
  * transform. If \p prev already points somewhere for \p next, the new
  * transform is inserted into the list.
  * @param[in] key The 4 byte XOR key that was applied to the data, this must
- * not be 0.
+ * not be the bytestring 0x00000000.
  * @return a pointer to the newly created transform
  */
 
@@ -87,18 +92,19 @@ struct jalp_transform *jalp_transform_append_xor(struct jalp_transform *prev,
 		uint32_t key);
 
 /**
+ * @ingroup JournalMetadata
  * Create a deflate transform in the chain.
  *
  * @param[in] prev The transform that should come directly before the new
  * transform. If \p prev already points somewhere for \p next, the new
  * transform is inserted into the list.
- * @param[out] new_transform a pointer to the newly created transform, or NULL.
- * @return JAL_OK on success, or an error.
+ * @return a pointer to the newly created transform.
  */
 struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev);
 
 
 /**
+ * @ingroup JournalMetadata
  * Create an AES transform in the chain. This should only be used for AES
  * transforms as described in the JALoP-v1.0 specification. The key and IV are
  * not required, but are recommended since the intent is not to provide data
@@ -117,7 +123,7 @@ struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev
  * @return a pointer to the newly created transform
  */
 struct jalp_transform *jalp_transform_append_aes(struct jalp_transform *prev,
-		enum jalp_aes_key_size,
+		enum jalp_aes_key_size key_size,
 		uint8_t *key,
 		uint8_t *iv);
 

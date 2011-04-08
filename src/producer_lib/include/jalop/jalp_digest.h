@@ -30,6 +30,15 @@
 #define JALP_DIGETS_H
 
 /**
+ * @addtogroup AppMetadata
+ * @{
+ * @defgroup PayloadDigest Payload Digest
+ * Structures and functions to add a digest of the payload to the application
+ * metadata document. Applications are encourage to use a digest algorithm of
+ * the SHA family (except SHA 1).
+ * @{
+ */
+/**
  * Holds a digest value for any digest algorithm. Applications should only ever
  * create/destroy jalp_digest objects with calls to jalp_digest_create() and
  * japl_digest_destroy(). The destructor function assumes ownership of the
@@ -53,7 +62,7 @@ struct jalp_digest *jalp_digest_create(void);
  * Release all the memory associated with a jalp_digest object. This will
  * release all members will calls to 'free()'.
  *
- * @parm[in,out] digest The object to free, this is set to NULL.
+ * @param[in,out] digest The object to free, this is set to NULL.
  */
 void jalp_digest_destroy(struct jalp_digest **digest);
 /**
@@ -62,5 +71,7 @@ void jalp_digest_destroy(struct jalp_digest **digest);
  * "free()"
  */
 char *jalp_digest_sha256();
+/** @} */
+/** @} */
 #endif // JALP_APP_METADATA_H
 

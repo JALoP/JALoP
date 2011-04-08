@@ -1,5 +1,5 @@
 /**
- * @file jal_stack_frame.h This file defines the structure and functions use to
+ * @file jalp_stack_frame.h This file defines the structure and functions use to
  * create a stack frame entry in the application metadata.
  *
  * @section LICENSE
@@ -28,6 +28,17 @@
  */
 #ifndef JALP_STACK_FRAME_H
 #define JALP_STACK_FRAME_H
+/**
+ * @addtogroup LoggerMetadata
+ * @{
+ * @defgroup StackFrame Stack Frames
+ * @{
+ * Logger applications often have additional information pertaining to the
+ * runtime state of the sytem, such as the stack. The structures and functions
+ * here provide a mechanism for logger libraries to include stack information
+ * as part of the metadata included with a log entry.
+ * @{
+ */
 /**
  * Represents one entry in a stack frame.  All fields are optional and may be
  * set to NULL. Line Numbers are assumed to start counting at 1, so a value of
@@ -64,10 +75,12 @@ struct jalp_stack_frame {
 	struct jalp_stack_frame *next;
 };
 /**
- * Create a new stack frame and add it to the list. If #prev already points
+ * Create a new stack frame and add it to the list. If \p prev already points
  * somewhere, the new jalp_stack_frame is inserted between prev and prev->next.
- * 
+ *
  * The application must fill in the remaining fields.
+ * @param[in] prev The stack frame that will come before the new one. If NULL,
+ * this creates a new list.
  *
  * @return The new jalp_stack_frame
  */
@@ -78,9 +91,12 @@ struct jalp_stack_frame *jalp_stack_frame_append(struct jalp_stack_frame* prev);
  * associated memory using the appropriate "*_destroy()" function or "free()".
  * This releases jalp_stack_frame objects in the list.
  *
- * @param[in,out] The stack frame to release. This will be set to NULL.
+ * @param[in,out] stack_frame The stack frame to release. This will be set to NULL.
  */
 void jalp_stack_frame_destroy(struct jalp_stack_frame **stack_frame);
 
+/** @} */
+/** @} */
+/** @} */
 #endif // JALP_STACK_FRAME_H
 

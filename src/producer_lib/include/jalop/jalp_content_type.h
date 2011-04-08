@@ -30,8 +30,15 @@
 #define JALP_CONTENT_TYPE_H
 #include <jalop/jalp_params.h>
 /**
- * Describes the content-type of the entry.
+ * @addtogroup FileInfo
+ * @{
+ * @defgroup ContentType Content Type
+ * Functions and structures releated the adding "content-type" information.
  * @see MIME
+ * @{
+ */
+/**
+ * Describes the content-type of a file.
  */
 struct jalp_content_type {
 	/**
@@ -59,76 +66,72 @@ struct jalp_content_type {
  * @return the new jalp_content_type object.
  */
 struct jalp_content_type *jalp_content_type_create(void);
+
 /**
- * Release all memory associated with a jalp_content_type object. This calls
- * the appropriate "*_destroy()" functions or free() on member elements.
+ * Release all memory associated with a jalp_content_type object.
+ * This calls the appropriate "*_destroy()" functions or free() on member
+ * elements.
  * @param[in,out] content_type the object to destroy, this will be set to NULL.
  */
-void jalp_content_type_destroy(struct jalp_content_type **content_type)
+void jalp_content_type_destroy(struct jalp_content_type **content_type);
 
 /**
  * @defgroup mediaTypeAllocators Media Type Allocators
  *
- * These functions provide a way for applications to set 
- * #jalp_content_type::media_type.
+ * Functions that allocate strings for use as jalp_content_type::media_type
+ * @{
  */
-
 /**
- * @addtogroup mediaTypeAllocators
- * Allocate a new string with value "application", the memory must be released
- * with free().
- * @return "application"
- */
-char *jalp_mt_application();
-/**
- * @addtogroup mediaTypeAllocators
  * Allocate a new string with value "audio", the memory must be released
  * with free().
  * @return "audio"
  */
 char *jalp_mt_audio();
 /**
- * @addtogroup mediaTypeAllocators
+ * Allocate a new string with value "application", the memory must be released
+ * with free().
+ * @return "application"
+ */
+char *jalp_mt_application();
+/**
  * Allocate a new string with value "example", the memory must be released
  * with free().
  * @return "example"
  */
 char *jalp_mt_example();
 /**
- * @addtogroup mediaTypeAllocators
  * Allocate a new string with value "image", the memory must be released
  * with free().
  * @return "image"
  */
 char *jalp_mt_image();
 /**
- * @addtogroup mediaTypeAllocators
  * Allocate a new string with value "message", the memory must be released
  * with free().
  * @return "message"
  */
 char *jalp_mt_message();
 /**
- * @addtogroup mediaTypeAllocators
  * Allocate a new string with value "model", the memory must be released
  * with free().
  * @return "model"
  */
 char *jalp_mt_model();
 /**
- * @addtogroup mediaTypeAllocators
  * Allocate a new string with value "test", the memory must be released
  * with free().
  * @return "test"
  */
 char *jalp_mt_test();
 /**
- * @addtogroup mediaTypeAllocators
  * Allocate a new string with value "video", the memory must be released
  * with free().
  * @return "video"
  */
 char *jalp_mt_video();
+/** @} */
+/** @} */
+/** @} */
 
 #endif // JALP_CONTENT_TYPE_H
 

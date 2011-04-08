@@ -29,7 +29,13 @@
 #ifndef JALP_FILEINFO_H
 #define JALP_FILEINFO_H
 #include <jalp_content_type.h>
-
+/**
+ * @ingroup AppMetadata
+ * @{
+ * @defgroup FileInfo File Info
+ * Structures and functions for adding metadata about journal files.
+ * @{
+ */
 /** Indicates if a given entry is considered malicious. */
 enum jalp_threat_level {
 	/**
@@ -82,6 +88,8 @@ struct jalp_file_info *jalp_file_info_create(void);
  * @param[in,out] file_info the object to destroy. The pointer is set to NULL.
  */
 void jalp_file_info_destroy(struct jalp_file_info **file_info);
+/** @} */
+/** @} */
 
 #endif // JALP_FILEINFO_H
 

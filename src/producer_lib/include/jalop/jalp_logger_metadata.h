@@ -1,5 +1,5 @@
 /**
- * @file jal_logger_metadata.h This file defines structures related to 'logger'
+ * @file jalp_logger_metadata.h This file defines structures related to 'logger'
  * metadata.
  *
  * @section LICENSE
@@ -31,7 +31,14 @@
 #include <jalop/jalp_structured_data.h>
 #include <jalop/jalp_stack_frame.h>
 #include <jalop/jalp_log_severity.h>
-
+/**
+ * @addtogroup AppMetadata
+ * @{
+ * @defgroup LoggerMetadata Logger Metadata
+ * Structures and functions specific to generating
+ * metadata for loggers (i.e. log4j, log4cxx, etc).
+ * @{
+ */
 /**
  * Structure to represent the 'logger' type data in the application meta-data.
  *
@@ -72,5 +79,7 @@ struct jalp_logger_metadata *jalp_logger_metadata_create(void);
  * @param[in] logger_meta The object to destroy, this will be set to NULL.
  */
 void jalp_logger_metadata_destroy(struct jalp_logger_metadata **logger_meta);
+/** @} */
+/** @} */
 #endif // JALP_LOGGOR_METADATA_H
 

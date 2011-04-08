@@ -30,6 +30,7 @@
 #define JALP_PARAM_H
 
 /**
+ * @ingroup StructuredData
  * A linked list of generic jalp_param elements. jalp_param elements are simple key/value 
  * pairs.
  * mechanism to list extra key/value pairs. The elements are namespaced using
@@ -45,12 +46,13 @@ struct jalp_param {
 	struct jalp_param *next;
 };
 /**
- * Create a new jalp_param element as the next element in the list. If
- * #prev already has elements, this is inserted between the 2 existing
- * elements. If #prev is NULL a new element is created as the start of a new
+ * @ingroup StructuredData
+ * Create a new jalp_param element as the next element in the list.
+ * If \p prev already has elements, this is inserted between the 2 existing
+ * elements. If \p prev is NULL a new element is created as the start of a new
  * list.
  * @param[in] prev The list to add to, or NULL.
- * @param[in] key The key of this param.
+ * @param[in] name The key of this param.
  * @param[in] value The value of this param.
  *
  * @return the newly created param
@@ -59,12 +61,13 @@ struct jalp_param *jalp_param_append(struct jalp_param *prev,
 				     char *name,
 				     char *value);
 /**
+ * @ingroup StructuredData
  * Free all memory associated with a jalp_param. If the structure has a 'next'
  * element, this will be destroyed as well.
  *
- * @param[in,out] param The list to destroy. This will be set to NULL.
+ * @param[in,out] param_list The list to destroy. This will be set to NULL.
  */
-void jalp_param_destroy(struct jalp_param **parm_list);
+void jalp_param_destroy(struct jalp_param **param_list);
 
 #endif // JALP_PARAM_H
 

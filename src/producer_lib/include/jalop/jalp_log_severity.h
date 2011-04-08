@@ -1,5 +1,5 @@
 /**
- * @file jal_log_severity.h This file defines structures related to the
+ * @file jalp_log_severity.h This file defines structures related to the
  * jalp_log_severity structure.
  * metadata.
  *
@@ -32,6 +32,7 @@
 #include <jalop/jalp_structured_data.h>
 #include <jalop/jalp_stack_frame.h>
 /**
+ * @ingroup LoggerMetadata
  * Structure the encapsulates a severity level. The severity for a log may be
  * described by both an integer and a string. These values only have meaning to
  * the application.
@@ -46,6 +47,7 @@ struct jalp_log_severity {
 	char *level_str;
 };
 /**
+ * @ingroup LoggerMetadata
  * Create and initialize a jalp_log_severity object
  * @return The newly allocated log_severity object.
  *
@@ -53,9 +55,11 @@ struct jalp_log_severity {
  */
 struct jalp_log_severity *jalp_log_severity_create(void);
 /**
+ * @ingroup LoggerMetadata
  * destroy a jalp_log_severity object and any members.
  * @param[in,out] log_severity The object to destroy. This will be set to NULL.
  */
 void jalp_log_severity_destroy(struct jalp_log_severity** log_severity);
+/** @} */
 #endif // JALP_LOG_SEVERITY_H
 

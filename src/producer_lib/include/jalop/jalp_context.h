@@ -1,7 +1,5 @@
-#ifndef JALP_PRODUCER_H
-#define JALP_PRODUCER_H
 /**
- * @file jal_producer.h This file defines the public API available to
+ * @file jalp_context.h This file defines the public API available to
  * applications generating JAL data. It provides the interfaces needed to build
  * the application metadata sections and submit JAL data (and metadata) to the
  * JAL Local Store.
@@ -30,9 +28,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef JALP_CONTEXT_H
+#define JALP_CONTEXT_H
 #include <stdint.h>
 #include <stdlib.h>
 
+/**
+ * @defgroup ProducerContext Producer Context
+ * Each producer application that generates JAL data to send to a JAL local
+ * store must first create and initialize a jalp_context object. The functions
+ * and structures here are used to connect to JAL local store and send JAL
+ * data.
+ * @{
+ */
 /**
  * Opaque pointer to the internal jalp_context_t type.
  * The jalp_context holds information about the connection to the JALoP Local Store.
@@ -62,7 +70,7 @@ enum jal_status {
  * will get signed (using RSA+SHA256). Once a key is set, it cannot be changed.
  * You must create a new context.
  *
- * @param[in] jalp_context The context to attach the RSA keys to.
+ * @param[in] ctx The context to attach the RSA keys to.
  * @param[in] keyfile The path to the private key file.
  * @param[in] password The password for the key file.
  *
@@ -125,9 +133,10 @@ enum jal_status jalp_context_init(jalp_context *ctx,
  * @return JAL_OK if the connection is complete.
  */
 enum jal_status jalp_context_connect(jalp_context *ctx);
-/*
+/**
  * Disconnect from a JAL Local Store
  * @param[in] ctx the connection to disconnect.
+ * @return JAL_OK on success, or an error.
  */
 enum jal_status jalp_context_disconnect(jalp_context *ctx);
 /**
@@ -166,7 +175,7 @@ enum jal_status jalp_log(jalp_context *ctx,
 /**
  * Send a journal data to the JALoP Local Store.
  *
- * @param[in] jalp_context ctx The connection to send the data over.
+ * @param[in] ctx The connection to send the data over.
  * @param[in] app_meta An optional structure that will be converted into an XML
  * document conforming to the application metadata schema.
  * @param[in] journal_buffer A byte buffer that contains the full contents of
@@ -205,13 +214,11 @@ enum jal_status jalp_journal(jalp_context *ctx,
  * @param[in] ctx The context to send the record over.
  * @param[in] app_meta The optional application provided metadata.
  * @param[in] fd The file descriptor of the journal.
+ * @return 
+ *  - JAL_OK on success
+ *  - JAL_NOT_SUPPORTED if the system doesn't support sending open file
+ *   descriptors through a domain socket.
  *
- * @note would it be better to fake this call if sending the file descriptor is
- * impossible? Considering that would make this call extremely slow on
- * platforms that don't have SCM_RIGHTS, I don't think it's a good idea to do that.
- * Could be done in a separate worker thread, but that could still cause confusing
- * behaviour since the sending thread here would need to prevent the app from
- * exiting while it's sending the data to the JNL....
  */
 enum jal_status jalp_journal_fd(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
@@ -253,7 +260,7 @@ enum jal_status jalp_journal_path(jalp_context *ctx,
  *
  * @note It is an error to pass NULL for both \p app_meta and \p audit_buffer.
  *
- * @return JAL_OK on sucess.
+ * @return JAL_OK on success.
  *         JAL_EINVAL If the parameters are incorrect.
  *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
@@ -265,5 +272,6 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		uint8_t *audit_buffer,
 		size_t audit_buffer_size);
 
-#endif /* JALP_PRODUCER_H */
+/** @} */
+#endif // JALP_CONTEXT_H
 

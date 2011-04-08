@@ -31,6 +31,19 @@
 #include <jalp_file_info.h>
 #include <jalp_journal_transforms.h>
 /**
+ * @defgroup JournalMetadata Journal Metadata
+ * This contains additional structures and functions to generate information
+ * about journal data. Journal Data is typically large, binary files and the
+ * APIs in this section allow applications to attach information such as the
+ * filename, original file size, or threat level (jalp_threat_level).
+ *
+ * JALoP (and this library) make no attempt to compress, encrypt or otherwise
+ * transform files. Applications may wish to perform any number of transforms
+ * before sending the file to the JAL local store, though they should describe
+ * any transforms applied by filling approprate jalp_transform structures.
+ * @{
+ */
+/**
  * Structure to provide metadata about the payload, typically only used for
  * journal entries.
  */
@@ -51,11 +64,13 @@ struct jalp_journal_metadata {
  */
 struct jalp_journal_metadata *jalp_journal_metadata_create(void);
 /**
+ * @ingroup jalp_journal_metadata
  * Release all memory associated with a jalp_journal_metadata object. This
  * calls the appropriate "*_destroy()" functions and "free()" on all members.
  * @param[in,out] journal_meta the object to destroy, this will be set to NULL.
  */
 void jalp_journal_metadata_destroy(struct jalp_journal_metadata **journal_meta)
 
+/** @} */
 #endif //JALP_JOURNAL_METADATA_H
 
