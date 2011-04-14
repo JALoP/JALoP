@@ -26,13 +26,12 @@
 #ifndef JALN_NETWORK_H
 #define JALN_NETWORK_H
 #include <jalop/network_callbacks.h>
+#include <jalop/network_types.h>
 /**
  * Adds the TLS profile and a connection handler to prevent showing the JALoP
  * profile in greeting messages until after TLS is negotiated. This installs a
  * default TLS handler that checks that the certificate sent by the remote side
  * matches a known certificate.
- *
- * In addition to configuring the openssl context, this also installs a 
  *
  * @param[in] jaln_ctx The JAL ctx to register the TLS profile on.
  * @param[in] private_key The private key that should be used for TLS
@@ -40,207 +39,152 @@
  * @param[in] peer_certs A directory containing certificates for remote peers.
  * @return JAL_OK, or an error code.
  */
-enum jal_status jaln_register_tls(jaln_context jaln_ctx,
+enum jal_status jaln_context_register_tls(jaln_context *jaln_ctx,
 				  const char *private_key,
 				  const char *public_cert,
 				  const char *peer_certs);
 
 /**
- * Create and initialize a new jaln_context
- * @param[out] jaln_ctx Receives a pointer to the new context
- * @return JAL_OK on success, or an error code.
+ * Register a XML encoding.
+ * By default, the JNL will only accept or send 'XML' as an encoding for the
+ * metadata and audit records. Applications may choose to support additional
+ * encodings (such as EXI, deflate, etc) by calling this function.
+ *
+ * When the JNL initiates a connection to a remote peer, it will propose all
+ * registered encodings. When the JNL receives a connection request, it will
+ * auto-select which encoding to use. Applications may select a different
+ * encoding in their jaln_connect_handler.
+ *
+ * Converting XML to other formats must be handled by the application.
+ *
+ * @param jaln_ctx The context to add the encoding to.
+ * @param encoding The encoding to add to the list.
+ * @return JAL_OK on success.
  */
-enum jal_status jaln_context_create(jaln_context *jaln_ctx);
+enum jal_status jaln_context_register_encoding(jaln_context *jaln_ctx,
+				  const char *encoding);
+/**
+ * Create and initialize a new jaln_context
+ * @return A pointer to the new context
+ */
+jaln_context *jaln_context_create(void);
 /**
  * Retain a hold on the jaln_context
  *
- * @param[in] ctx The context to keep a reference on.
+ * @param[in] jaln_ctx The context to keep a reference on.
  * @return JAL_OK on success, or an error code.
  *
  */
-enum jal_status jaln_context_add_ref(jaln_context ctx);
+enum jal_status jaln_context_add_ref(jaln_context *jaln_ctx);
 /**
  * Release a hold on the jaln_context
  *
- * @param[in] ctx The context to release.
+ * @param[in] jaln_ctx The context to release.
  * @return JAL_OK on success, or an error code.
  *
  */
-enum jal_status jaln_context_release(jaln_context ctx);
+enum jal_status jaln_context_release(jaln_context *jaln_ctx);
+/**
+ * Register a callbacks that the JNL executes when channels are created and
+ * closed.
+ * @param jaln_ctx The context object
+ * @param connection_handlers The connection handlers.
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_context_register_connection_handlers(jaln_context *jaln_ctx,
+		struct jaln_connection_handlers *connection_handlers);
+
+/**
+ * Register the callbacks required to act as a subscriber.
+ * @param jaln_ctx The context object
+ * @param subscriber_callbacks The structure containing all the callbacks.
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_context_register_subscriber_callbacks(jaln_context *jaln_ctx,
+				    struct jaln_publisher_callbacks subscriber_callbacks);
+
+/**
+ * Register the callbacks required to act as a publisher.
+ * @param[in] jaln_ctx The context object
+ * @param[in] publisher_callbacks The structure containing all the callbacks.
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_context_register_publisher_callbacks(jaln_context *jaln_ctx,
+				    struct jaln_publisher_callbacks publisher_callbacks);
+
 /**
  * Register the JALoP profile and start listening for connections. Once this
- * function is called, the \p jaln_ctx cannot be used to initiate connections
- * to remote peers.
+ * function is called, the \p jaln_ctx cannot be used to with calls to
+ * jaln_context_subscribe or jaln_context_publish.
  *
- * @param[in] jaln_ctx The jalop context that will parse incoming and format
+ * @param[in] jaln_ctx The jaln_context that will parse incoming and format
  *            outgoing JALoP messages.
  * @param[in] host the host interface IP to listen on
  * @param[in] port The port to listen on
- * @param[in] connect_handler A user supplied callback the the jaln_ctxt
- *            will execute when it receives a JALoP 'connect' message. This provides a hook for
- *            the application to accept/reject connetions based on additional
- *            criteria.
- * @param[in] connect_data User pointer past into the connect_handler.
- * @param[in] publish_callbacks Callbacks to to use when the remote peer sends a
- * @param[in] publisher_data User pointer past into the publish_callbacks.
- *            'subscribe' message. If these are NULL, remote peers will be denied
- *            any request 'connect' request that indicates the remote peer wishes to
- *            subscribe. The JNL will send a 'unauthorized-mode' error.
- * @return JAL_OK on success, or an error.
+ * @param[in] user_data An address that will be passed into all the callback
+ * methods.
+ * @return a Connection object
  *
- * @note should this have a blocking alternative? i.e, if the caller passes
- * NULL for the connect_handler, block until the channel created & connected,
- * or an error occurs.
  */
-enum jal_status jaln_context_listen(jaln_context jaln_ctx,
+struct jaln_connection *jaln_context_listen(jaln_context *jaln_ctx,
 				    const char *host,
 				    int port,
-				    jaln_connect_handler connect_handler,
-				    void *connect_data,
-				    struct jaln_publisher_callbacks *publish_callbacks,
-				    void *publisher_data);
-/**
- * Creates a JALoP channel and sends connect message and prepare to act as
- * publisher.
- *
- * @param[in] connection An already established JALoP connection. Any security
- *            negotiations must be performed before calling this method.
- * @param[in] channel_num, a hint to the requested channel number. Specifing 0
- *            allows the implementation to auto select the channel number. This 
- *            is the preferred method of channel creation.
- * @param[in] close_handler callback to allow/deny a request to close the channel.
- *            If NULL, close requests are always honored.
- * @param[in] close_data user data passed into the close_handler
- * @param[in] on_channel_created Called when the channel is created, or an error
- *            occurs. Applications only need to provide this if they wish to take some
- *            additional action when the channel is created, or be notified of channel
- *            creation errors.
- * @param[in] channel_created_data passed into the on_channel_created handler
- * @param[in] connection_handler The set of callbacks that are called when the
- *            response to the connect message returned
- * @param[in] connect_data user pointer passed into to the handlers in
- *            jal_connection_handler
- * @param[in] publisher_callbacks Set of callbacks for to implement the
- *            'publisher' role.
- * @param[in] publisher_data user data passed into the publisher_callbacks.
- * @param[in] request The parameters of the request message.
- *
- * @return A jaln_channel.
- */
-struct jaln_channel *jaln_create_publisher_channel(
-				jaln_connection connection,
-				int channel_num,
-	 			jaln_on_close_handler close_handler,
-		 		void *close_data,
-			 	jaln_on_channel_created on_channel_created,
-				void *channel_created_data,
-				struct jaln_connection_response_handlers *connection_handler,
-				void *connect_data,
-				struct jaln_publisher_callbacks *publisher_callbacks,
-				void *publisher_data,
-				struct jaln_connect_request *request
-				 );
+				    void *user_data);
 
 /**
- * Create a jalop channel and send the initial 'connect' message. Note that
- * this does not send a subscribe message. After the channel is connected, and
- * the initial connect message is sent, applications may wish to send any
- * number of 'journal-resume' messages. They should complete all
- * 'journal-resume' transactions before sending a 'subscribe'. The application
- * must provide the jal_connection_handler in order to start sending messages
- * once the channel is created and the initial 'connect' is sent.
- *
- * @param[in] connection An already established JALoP connection. Any security
- *            negotiations must be performed before calling this method.
- * @param[in] channel_num, a hint to the requested channel number. Specifing 0
- *            allows the implementation to auto select the channel number.
- *            This is the preferred method of channel creation.
- * @param[in] close_handler callback to allow/deny a request to close the channel.
- *            If NULL, close requests are always honored.
- * @param[in] close_data user data passed into the close_handler
- * @param[in] on_channel_created Called when the channel is created. This is
- *            purely informational.
- * @param[in] channel_created_data passed into the on_channel_created handler
- * @param[in] connection_handler callbacks that are invoked when the response to
- *            a JALoP 'connect' message is received. It is in these callbacks the
- *            application should invoke the jaln_journal_recover or jaln_subscribe
- *            functions.
- * @param[in] jal_connect_data user pointer passed into the jal_connection_handler
- *            callbacks
- * @param[in] request The parameters of the request message. The JLN make an
- *            internal copy of this structure. The application must release any
- *            memory allocated in this structure.
- *
- * @return a jaln_channel
- * @note should this have a blocking mode too?
+ * Connect to a remote peer and indicate a desire to receive JAL records from the
+ * remote. Once connected, the JNL will execute the
+ * jaln_subscriber_callbacks::get_subscribe_request for each data type
+ * identified by data_classes.
+ * @param[in] ctx The jaln_context to use for the connection.
+ * @param[in] host The hostname or IP address of the remote to connect to.
+ * @param[in] port The port to connect to.
+ * @param[in] data_classes bitmask of JAL record types to publish. Must be
+ * comprised of the entries of enum jaln_record_type.
+ * @param[in] user_data An address that will be passed into all the callback
+ * methods.
+ * @return A connection object that represents the link to the remote peer.
  */
-struct jaln_channel *jaln_create_subscriber_channel(jaln_connection,
-			 int channel_num,
-			 jaln_on_close_handler close_handler,
-			 void *close_data,
-			 jaln_on_channel_created on_channel_created,
-			 void *channel_created_data,
-			 struct jaln_connection_response_handlers *connection_handler,
-			 void *jal_connect_data,
-			 struct jaln_connect_request *request
-			);
+struct jaln_connection *jaln_context_subscribe(
+		jaln_context *ctx,
+		char *host,
+		char *port,
+		int data_classes,
+		void *user_data);
+
 /**
- * Recover a journal entry.
+ * Connect to a remote peer and indicate a desire to send JAL records to the
+ * remote. The remote peer will need to send appropriate 'subscribe'
+ * messages.
+ * @param ctx The context to use for the connection.
+ * @param host The host, as and IP address or hostname, to connect to.
+ * @param port The port to connect to on the remote peer.
+ * @param data_classes bitmask of JAL record types to publish. Must be
+ * comprised of the entries of enum jaln_record_type.
+ * @param[in] user_data An address that will be passed into all the callback
+ * methods.
  *
- * This returns immediately if all input paramters are valid and 
- * subscriber_callbacks::on_message_complete is defined. Once the exchange is
- * completed, the callback is executed on another thread. If the
- * subscriber_callbacks::on_message_complete is NULL, this call blocks until
- * the exchange is complete.
- *
- * @param[in] channel the JALoP channel to start journal recovery on
- * @param[in] serial_id The serial id of the journal record to recover
- * @param[in] subscriber_callbacks The callbacks to handle the incoming record
- * @param[in] subscriber_data User data passed into the subscribe_callbacks
- * @param[in] recover_complete Callback that is invoked once the entire journal
- * record is downloaded.
- * @param[in] recover_complete_data User data passed into the recover_complete
- * callback.
- *
- * @return JAL_OK on success, or an error.
+ * @return a jaln_connection object
  */
-enum jal_status jaln_journal_recover(jaln_channel channel,
-				const char *serial_id,
-				struct jaln_subscriber_callbacks *subscriber_callbacks,
-				void *subscriber_data,
-				jaln_on_message_complete recover_complete,
-				void *recover_complete_data
-			);
+struct jaln_connection *jaln_context_publish(
+		jaln_context *ctx,
+		char *host,
+		char *port,
+		int data_classes,
+		void *user_data);
+
+
 /**
- * Send a subscribe message on the given channel.
- * If the all input paramters are valid and
- * susbscriber_callbacks::on_message_complete is defined this call will return
- * immediately, and execute on_message_complete in a seperate thread when the
- * exchange finishes. When susbscriber_callbacks::on_message_complete is NULL,
- * this call blocks until the message exchange completes.
+ * Disconnect from a remote peer. This immediately sever to connection without
+ * waiting for transfers to complete. To gracefully close connections,
+ * applications should return something other than JAL_OK in their callbacks.
  *
- * subscriber_data is passed to all the callbacks defined in
- * jaln_subscriber_callbacks
- *
- * @param[in] channel The JalChannel to send the subscribe message on.
- * @param[in] serial_id The serial_id of the entry to start from.
- * @param[in] subscriber_callbacks Callbacks to handle the reponse from a
- * 'subscribe' message
- * @param[in] subscriber_data User data pointer passed to the
- * subscriber_callbacks
- * @param[in] subscribe_complete Callback for when the message exchange is
- * finished.
- * @param[in] subscribe_complete_data User data pointer passed to the
- * subscribe_complete callback
- *
- *
- * @return JAL_OK on success, or an error.
+ * @param jal_conn The connection to shutdown.
+ * @return JAL_OK if everything was successful, an error otherwise.
  */
-enum jal_status jaln_subscribe(struct jaln_channel *channel,
-			  const char *serial_id,
-			  struct jaln_subscriber_callbacks *subscriber_callbacks,
-			  void *subscriber_data,
-			  jaln_on_message_complete subscribe_complete,
-			  void *subscribe_complete_data);
+enum jaln_status jaln_connection_shutdown(struct jaln_connection *jal_conn);
 
 #endif // JALN_NETWORK

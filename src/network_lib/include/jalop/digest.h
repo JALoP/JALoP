@@ -102,7 +102,9 @@ struct jal_digest_ctx {
  * results of the digest calculation. Lastly, the JNL calls
  * jal_digtest_ctx#destroy to clean up any allocated memory.
  *
- * If a digest_ctx already exists for a given algorithm it is replaced.
+ * If a digest_ctx already exists for a given algorithm it is replaced. The JNL
+ * assumes ownership of the jal_digest_ctx, and will call jal_digest_destroy as
+ * appropriate.
  *
  * @returns JAL_OK on success
  */

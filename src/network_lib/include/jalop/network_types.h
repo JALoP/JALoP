@@ -32,17 +32,11 @@
  */
 enum jaln_record_type {
 	/** Indicates a Journal Record */
-	JALN_RTYPE_JOURNAL,
+	JALN_RTYPE_JOURNAL = 1 << 0,
 	/** Indicates an Audit Record */
-	JALN_RTYPE_AUDIT,
+	JALN_RTYPE_AUDIT = 1 << 1,
 	/** Indicates a Log Record */
-	JALN_RTYPE_LOG,
-};
-/**
- * Enum that contains all the possible return codes from JAL API calls
- */
-enum jal_status {
-	JAL_S_OK,
+	JALN_RTYPE_LOG = 1 << 2,
 };
 /**
  * Structure to encompass MIME headers
@@ -60,21 +54,37 @@ struct jaln_mime_header {
  * the journal payload.
  */
 enum jaln_payload_delivery_type {
-	/** 
+	/**
 	 * This is not a valid choice. The JLN will set this value to force an
 	 * application to choose a valid options.
 	 */
 	JALN_PD_NONE,
-	/** 
+	/**
 	 * Indicates the journal payload will be delivered using a feeder
 	 * object
 	 */
 	JALN_PD_FEEDER,
-	/** 
+	/**
 	 * Indicates the journal payload will be delivered using a single
 	 * buffer.
 	 */
 	JALN_PD_BUFFER,
+};
+
+/**
+ * Information about a connected JALoP Channel
+ */
+struct jaln_channel_info {
+	/** The hostname of the remote peer (if available) */
+	char *hostname;
+	/** The IP address in dotted decimal notation (i.e. "192.168.1.6") */
+	char *addr;
+	/** The selected XML encoding, "XML", "EXI", "deflate" etc */
+	char *encoding;
+	/** The selected digest method, "sha256", "sha512", etc */
+	char *digest_method;
+	/** The type of JAL records exchanged on this channel */
+	enum jaln_record_type type;
 };
 /**
  * Destroy a list of MIME headers
@@ -117,9 +127,9 @@ enum jaln_digest_status {
  */
 enum jaln_role {
 	/**
-	 * The peer should act as a subcriber. They are expected to send only
+	 * The peer should act as a subscriber. They are expected to send only
 	 * 'subscribe', 'journal-resume', 'digest', and 'sync' messages.
-	 * 
+	 *
 	 * The must be prepared to handle '*-record', and 'digest-response'
 	 * messages.
 	 */
@@ -138,33 +148,24 @@ enum jaln_role {
  * This represents the data that is sent as part of a 'connect-ack' message.
  */
 struct jaln_connect_ack {
+	/** The hostname (if available) of the remote peer.
+	char *hostname;
+	/** The IP address in dotted decimal notation (i.e. "192.168.1.1"). */
+	char *addr;
 	/**
 	 * The version of JALoP that the peers are using to communicate.
 	 */
 	int jaln_version;
 	/**
-	 * The selected encoding mechanism for audit data and JAL metadata
-	 * sections.
-	 */
-	char *encoding;
-	/**
-	 * The selected digest method.
-	 */
-	char *digest;
-	/**
-	 * The jal user agent string (if any). This is the user agent of the
+	 * The JALoP user agent string (if any). This is the user agent of the
 	 * receiver of the 'connect' (sender of 'connect-ack') message.
 	 */
 	char *jaln_agent;
 	/**
-	 * Indicates which role the handler is expected to take on.
+	 * Indicates which role this side of the connection is expected to
+	 * play.
 	 */
 	enum jaln_role mode;
-	/**
-	 * Indicates what kind of data the sender wants to send/receive over
-	 * this channel.
-	 */
-	enum jaln_record_type data_class;
 	/**
 	 * This list contains any extra headers, not processed by the JNL. It
 	 * only contains additional headers not included the JALoP spec.
@@ -175,32 +176,31 @@ struct jaln_connect_ack {
  * This represents the data that is sent as part of a 'connect' message.
  */
 struct jaln_connect_request {
-	/**
-	 * The version of JALoP that the peers are using to communicate.
-	 */
+	/** The hostname of the remote peer */
+	char *hostname;
+	/** The address of the remote peer */
+	char *addr;
+	/** Information about the connection request; */
+	struct jaln_channel_info ch_info;
+	/** The requested type of data to transfer using this channel. */
+	enum jaln_record_type type;
+	/** The version of JALoP that the peers are using to communicate. */
 	int jaln_version;
 	/**
 	 * The proposed encodings the sender of this 'connect' message is will
 	 * to use.
-	 *
 	 */
 	char **encodings;
-	/**
-	 * The number of encodings int the array.
-	 */
+	/** The number of encodings in the array. */
 	int enc_cnt;
-	/**
-	 * The proposed digest methods
-	 */
+	/** The proposed digest methods. */
 	char **digest;
-	/**
-	 * The number of digests int the array.
-	 */
+	/** The number of digests in the array. */
 	int dgst_cnt;
 	/**
 	 * The mode as sent by the remote peer. Note that when the peer sends a
 	 * 'connect' message with the mode set to JALN_ROLE_SUBSCRIBE, it is
-	 * indicating that it plans on acting as a subscriber. Conversly, when
+	 * indicating that it plans on acting as a subscriber. Conversely, when
 	 * the mode is JALN_ROLE_PUBLISH, it indicates the peer plans on acting
 	 * as a publisher.
 	 */
@@ -221,7 +221,10 @@ struct jaln_connect_request {
  * when the peer sends a 'connect-nack' message. @see XXX
  */
 struct jaln_connect_nack {
-	/** List of failure reasons given by the remote peer. */
+	/** Information about the channel. on
+	 *
+	struct jaln_channel_info *ch_info;
+	/** Array of failure reasons given by the remote peer. */
 	struct jaln_string_list **error_list;
 	/** Number of elements in the \p error_list */
 	int error_cnt;
@@ -239,10 +242,10 @@ struct jaln_connect_nack {
 struct jaln_payload_feeder {
 	/**
 	 * An application may set this to anything they like. It will be passed
-	 * as the feeder_data parameter of #get_payload.
+	 * as the \p feeder_data parameter of #get_bytes.
 	 *
 	 * the JNL will call release_payload_feeder when it is done with a
-	 * particluar instance to give the application a chance to release any
+	 * particular instance to give the application a chance to release any
 	 * data associated with the feeder.
 	 */
 	void *feeder_data;
@@ -250,8 +253,7 @@ struct jaln_payload_feeder {
 	 * The JNL calls this when it needs to read more bytes of the payload
 	 * (raw journal, audit, or log data).
 	 *
-	 * @param[in] offset The offset, in bytes, into the system metadata
-	 * to start reading from.
+	 * @param[in] offset The offset, in bytes, to start reading from.
 	 * @param[in] buffer The buffer to fill with data.
 	 * @param[in,out] size The number of bytes available in the buffer.
 	 * Applications must set this to the actual number of bytes read.
@@ -259,7 +261,7 @@ struct jaln_payload_feeder {
 	 *
 	 * @return JAL_OK to continue, some other value to stop sending data.
 	 */
-	enum jal_status (*get_payload)(const uint64_t offset,
+	enum jal_status (*get_bytes)(const uint64_t offset,
 			   uint8_t * const buffer,
 			   uint32_t *size,
 			   void *feeder_data);
@@ -268,14 +270,5 @@ struct jaln_payload_feeder {
  * This holds global data such as base publisher
  * callbacks, and channel creation handlers.
  */
-typedef struct jaln_context_t* jaln_context;
-/**
- * Representions the unique connection between two JALoP Peers
- */
-typedef struct jaln_connection_t* jaln_connection;
-/**
- * Represents a single JALoP Channel on a connection. A channel may be created
- * that has different subscriber/publisher callbacks from the base context.
- */
-typedef struct jaln_channel_t* jaln_channel;
+typedef struct jaln_context_t jaln_context;
 #endif //JALN_COMMON_N
