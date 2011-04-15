@@ -38,7 +38,7 @@
  * Structures and functions related to building application metadata.
  * @{
  */
-/** 
+/**
  * Enum for the type of embedded metadata in the application metadata
  * structure.
  */
@@ -61,7 +61,7 @@ enum jalp_metadata_type {
  *
  * Applications must use jalp_app_meta_create() and jalp_app_metadata_destroy() to
  * create/destroy these objects. The destructor assumes ownership of all
- * pointers and will call the appropriate "*_destory()" functions or "free()".
+ * pointers and will call the appropriate "*_destroy()" functions or "free()".
  */
 struct jalp_app_metadata {
 	/**
@@ -74,7 +74,7 @@ struct jalp_app_metadata {
 	 * multiple entries, or be NULL. It's has no meaning to JALoP. This is
 	 * optional.
 	 */
-	char *eventId;
+	char *event_id;
 	/**
 	 * Holds the sys, log, or custom sub-element. The #type member
 	 * determines how the library interprets this pointer.
@@ -89,8 +89,6 @@ struct jalp_app_metadata {
 		 */
 		char *custom;
 	};
-	/** The (optional) digest of the payload. */
-	struct jalp_digest *payload_digest;
 	/**
 	 * Optional metadata for the file. Applications are strongly
 	 * encouraged to include this for journal entries.
