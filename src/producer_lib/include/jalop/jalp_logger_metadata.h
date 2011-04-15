@@ -39,6 +39,36 @@
  * metadata for loggers (i.e. log4j, log4cxx, etc).
  * @{
  */
+
+/**
+ * Structure the encapsulates a severity level. The severity for a log may be
+ * described by both an integer and a string. These values only have meaning to
+ * the application.
+ *
+ * Applications must allocate and destroy this structure using
+ * jalp_log_severity_create and jalp_log_severity_destroy.
+ */
+struct jalp_log_severity {
+	/** indicates the numeric level */
+	int level_val;
+	/** an optional, human readable string */
+	char *level_str;
+};
+/**
+ * @ingroup LoggerMetadata
+ * Create and initialize a jalp_log_severity object
+ * @return The newly allocated log_severity object.
+ *
+ * @returns JAL_OK on success.
+ */
+struct jalp_log_severity *jalp_log_severity_create(void);
+/**
+ * @ingroup LoggerMetadata
+ * destroy a jalp_log_severity object and any members.
+ * @param[in,out] log_severity The object to destroy. This will be set to NULL.
+ */
+void jalp_log_severity_destroy(struct jalp_log_severity** log_severity);
+
 /**
  * Structure to represent the 'logger' type data in the application meta-data.
  *
