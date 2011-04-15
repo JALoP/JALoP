@@ -31,7 +31,7 @@
 #include <jalop/jalp_syslog_metadata.h>
 #include <jalop/jalp_logger_metadata.h>
 #include <jalop/jalp_digest.h>
-#include <jalop/jalp_fileinfo.h>
+#include <jalop/jalp_journal_metadata.h>
 /**
  * @defgroup AppMetadata Application Metadata
  *
@@ -93,7 +93,7 @@ struct jalp_app_metadata {
 	 * Optional metadata for the file. Applications are strongly
 	 * encouraged to include this for journal entries.
 	 */
-	struct jalp_file_metadata *file_metadata;
+	struct jalp_journal_metadata *file_metadata;
 };
 
 /**
