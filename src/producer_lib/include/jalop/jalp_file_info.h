@@ -36,6 +36,21 @@
  * Structures and functions for adding metadata about journal files.
  * @{
  */
+/** 
+ * Enum covering the IANA MIME types.
+ * Although JALoP uses MIME types, the content of a journal record is not
+ * expected to conform to MIME, hence the omission of the 'multipart' type.
+ */
+enum jalp_media_type {
+	JALP_MT_APPLICATION,
+	JALP_MT_AUDIO,
+	JALP_MT_EXAMPLE,
+	JALP_MT_IMAGE,
+	JALP_MT_MESSAGE,
+	JALP_MT_MODEL,
+	JALP_MT_TEXT,
+	JALP_MT_VIDEO,
+};
 /** Indicates if a given entry is considered malicious. */
 enum jalp_threat_level {
 	/**
@@ -56,6 +71,41 @@ enum jalp_threat_level {
 	 */
 	JAL_THREAT_MALICIOUS,
 };
+/**
+ * @addtogroup FileInfo
+ * @{
+ * @defgroup ContentType Content Type
+ * Functions and structures related the adding "content-type" information.
+ * @see MIME
+ * @{
+ */
+/**
+ * Describes the content-type of a file.
+ */
+struct jalp_content_type {
+	/**
+	 * The top level media type.
+	 */
+	enum jalp_media_type media_type;
+	/** A string for the subtype, this may be anything. */
+	char *subtype;
+	/** A list of optional parameters. */
+	struct jalp_param *params;
+};
+/**
+ * Create and initialize a jalp_content_type object.
+ * @return the new jalp_content_type object.
+ */
+struct jalp_content_type *jalp_content_type_create(void);
+
+/**
+ * Release all memory associated with a jalp_content_type object.
+ * This calls the appropriate "*_destroy()" functions or free() on member
+ * elements.
+ * @param[in,out] content_type the object to destroy, this will be set to NULL.
+ */
+void jalp_content_type_destroy(struct jalp_content_type **content_type);
+
 
 
 /**
