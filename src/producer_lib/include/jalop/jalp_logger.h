@@ -45,10 +45,10 @@
  * structure depending on the needs of the application. The jalp_syslog_metdata structure is
  * aimed at providing the same information typically conveyed via the syslog
  * mechanism of *nix systems.
- * The jalp_logger_metadata structure is aimed at providing more extensive metadata that is
- * typically provided by frameworks such as log4j. If neither of these
- * facilities provide enough flexibility, the application may assign the
- * jalp_app_metadata::custom field to a snippet of XML.
+ * The jalp_logger_metadata structure is aimed at providing extensive metadata that is
+ * typically provided by frameworks such as log4j. If neither the
+ * jalp_syslog_metadata or the jalp_logger_metadata provide enough flexibility, an 
+ * application may assign the jalp_app_metadata::custom field to a snippet of XML.
  *
  * In the event the \p ctx was configured to generate digest values
  * (@see jalp_context_set_digest_callbacks), the ProducerLib will
@@ -63,7 +63,7 @@
  *
  * @note It is an error to pass NULL for both \p app_meta and \p log_buffer.
  *
- * @return JAL_OK on sucess.
+ * @return JAL_OK on success.
  *         JAL_XML_EINVAL if there is something wrong with the parameters
  *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
