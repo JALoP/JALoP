@@ -109,6 +109,72 @@ struct jalp_logger_metadata *jalp_logger_metadata_create(void);
  * @param[in] logger_meta The object to destroy, this will be set to NULL.
  */
 void jalp_logger_metadata_destroy(struct jalp_logger_metadata **logger_meta);
+
+/**
+ * @defgroup StackFrame Stack Frames
+ * @{
+ * Logger applications often have additional information pertaining to the
+ * runtime state of the sytem, such as the stack. The structures and functions
+ * here provide a mechanism for logger libraries to include stack information
+ * as part of the metadata included with a log entry.
+ * @{
+ */
+/**
+ * Represents one entry in a stack frame.  All fields are optional and may be
+ * set to NULL. Line Numbers are assumed to start counting at 1, so a value of
+ * 0 for \p line_number will suppress the filed.
+ * If an application is providing multiple levels of stack information, they
+ * should list the stack frames from the bottom up. That is, the first
+ * stack_frame in the list should be the one where the log actually happened.
+ *
+ * The depth should be filled in to indicate the level in the stack trace. A
+ * value of -1 indicates the depth for this frame should not be included. The
+ * frame with depth 0 is considered the inner most (i.e. where the log took
+ * place) frame.
+ *
+ * The JPL does not verify that the depths follow any particular order.
+ *
+ * Applications must create/destroy jalp_stack_frame objects using
+ * jalp_stack_frame_create() and jalp_stack_frame_destory(). The
+ * jalp_stack_frame assumes ownership of all memory it references.
+ */
+struct jalp_stack_frame {
+	/** The caller's name */
+	char *caller_name;
+	/** The filename where the log message was generated */
+	char *file_name;
+	/** The line number in the source file */
+	uint64_t line_number;
+	/** The class name that generated the log **/
+	char *class_name;
+	/** The method/function where the log was generated */
+	char *method_name;
+	/** The 'depth' of this stack frame */
+	int depth;
+	/** The next (parent) stack frame. */
+	struct jalp_stack_frame *next;
+};
+/**
+ * Create a new stack frame and add it to the list. If \p prev already points
+ * somewhere, the new jalp_stack_frame is inserted between prev and prev->next.
+ *
+ * The application must fill in the remaining fields.
+ * @param[in] prev The stack frame that will come before the new one. If NULL,
+ * this creates a new list.
+ *
+ * @return The new jalp_stack_frame
+ */
+struct jalp_stack_frame *jalp_stack_frame_append(struct jalp_stack_frame* prev);
+
+/**
+ * Release all memory associated with a stack frame. This will release all 
+ * associated memory using the appropriate "*_destroy()" function or "free()".
+ * This releases jalp_stack_frame objects in the list.
+ *
+ * @param[in,out] stack_frame The stack frame to release. This will be set to NULL.
+ */
+void jalp_stack_frame_destroy(struct jalp_stack_frame **stack_frame);
+
 /** @} */
 /** @} */
 #endif // JALP_LOGGOR_METADATA_H
