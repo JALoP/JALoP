@@ -30,7 +30,6 @@
 #define JALP_APP_METADATA_H
 #include <jalop/jalp_syslog_metadata.h>
 #include <jalop/jalp_logger_metadata.h>
-#include <jalop/jalp_digest.h>
 #include <jalop/jalp_journal_metadata.h>
 /**
  * @defgroup AppMetadata Application Metadata
