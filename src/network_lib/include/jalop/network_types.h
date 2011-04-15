@@ -50,28 +50,6 @@ struct jaln_mime_header {
 	struct jaln_mime_header *next;
 };
 /**
- * enum for the application to indicate which method to use to get the bytes of
- * the journal payload.
- */
-enum jaln_payload_delivery_type {
-	/**
-	 * This is not a valid choice. The JLN will set this value to force an
-	 * application to choose a valid options.
-	 */
-	JALN_PD_NONE,
-	/**
-	 * Indicates the journal payload will be delivered using a feeder
-	 * object
-	 */
-	JALN_PD_FEEDER,
-	/**
-	 * Indicates the journal payload will be delivered using a single
-	 * buffer.
-	 */
-	JALN_PD_BUFFER,
-};
-
-/**
  * Information about a connected JALoP Channel
  */
 struct jaln_channel_info {
