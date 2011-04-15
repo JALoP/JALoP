@@ -81,11 +81,25 @@ enum jal_status jalp_context_load_x509_cert(jalp_context *ctx,
 		const char *certfile);
 
 /**
+ * Register a set of functions to implement a digest algorithm.
+ * The ProducerLibrary will use the functions in the jal_digest_ctx to
+ * automatically create digests for data sent to the JALoP Local Store. By
+ * default, no digests are created.
+ *
+ * @param[in] ctx The jalp_context
+ * @param[in] digest_ctx The callbacks to implement a digest algorithm.
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
+		struct jal_digest_ctx *digest_ctx);
+
+/**
  * Create a jalp_context. This must be initialized with a call to
  * #jalp_context_init
  * @return a newly created jalp_context
  */
 jalp_context *jalp_context_create(void);
+
 /**
  * Initialize a jalp_context.
  * @param[in] path The name of the socket to connect to. If this is NULL, the
