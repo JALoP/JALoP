@@ -39,7 +39,7 @@
  * @param[in] peer_certs A directory containing certificates for remote peers.
  * @return JAL_OK, or an error code.
  */
-enum jal_status jaln_context_register_tls(jaln_context *jaln_ctx,
+enum jal_status jaln_register_tls(jaln_context *jaln_ctx,
 				  const char *private_key,
 				  const char *public_cert,
 				  const char *peer_certs);
@@ -61,7 +61,7 @@ enum jal_status jaln_context_register_tls(jaln_context *jaln_ctx,
  * @param encoding The encoding to add to the list.
  * @return JAL_OK on success.
  */
-enum jal_status jaln_context_register_encoding(jaln_context *jaln_ctx,
+enum jal_status jaln_register_encoding(jaln_context *jaln_ctx,
 				  const char *encoding);
 /**
  * Create and initialize a new jaln_context
@@ -92,7 +92,7 @@ enum jal_status jaln_context_release(jaln_context *jaln_ctx);
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_context_register_connection_handlers(jaln_context *jaln_ctx,
+enum jal_status jaln_register_connection_handlers(jaln_context *jaln_ctx,
 		struct jaln_connection_handlers *connection_handlers);
 
 /**
@@ -102,7 +102,7 @@ enum jal_status jaln_context_register_connection_handlers(jaln_context *jaln_ctx
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_context_register_subscriber_callbacks(jaln_context *jaln_ctx,
+enum jal_status jaln_register_subscriber_callbacks(jaln_context *jaln_ctx,
 				    struct jaln_publisher_callbacks subscriber_callbacks);
 
 /**
@@ -112,7 +112,7 @@ enum jal_status jaln_context_register_subscriber_callbacks(jaln_context *jaln_ct
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_context_register_publisher_callbacks(jaln_context *jaln_ctx,
+enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
 				    struct jaln_publisher_callbacks publisher_callbacks);
 
 /**
@@ -148,7 +148,7 @@ struct jaln_connection *jaln_context_listen(jaln_context *jaln_ctx,
  * methods.
  * @return A connection object that represents the link to the remote peer.
  */
-struct jaln_connection *jaln_context_subscribe(
+struct jaln_connection *jaln_subscribe(
 		jaln_context *ctx,
 		char *host,
 		char *port,
@@ -169,7 +169,7 @@ struct jaln_connection *jaln_context_subscribe(
  *
  * @return a jaln_connection object
  */
-struct jaln_connection *jaln_context_publish(
+struct jaln_connection *jaln_publish(
 		jaln_context *ctx,
 		char *host,
 		char *port,
@@ -185,6 +185,6 @@ struct jaln_connection *jaln_context_publish(
  * @param jal_conn The connection to shutdown.
  * @return JAL_OK if everything was successful, an error otherwise.
  */
-enum jaln_status jaln_connection_shutdown(struct jaln_connection *jal_conn);
+enum jaln_status jaln_shutdown(struct jaln_connection *jal_conn);
 
 #endif // JALN_NETWORK
