@@ -27,17 +27,15 @@ pkg_config_version = '0.23'
 # When the package is found, this script will add a 
 # key_flags to the Enviroment. These may be used when building various targets
 # to ensure the proper flags are added. For example, if the 'foo' program
-# needs libxml2 and openssl, something like the following should be added to
+# needs openssl, something like the following should be added to
 # the SConscript for 'foo'
 #
-# flags = env['libxml_flags'] + " " + env['openssl_flags']
+# flags = env['openssl_flags']
 # env.Program('foo', 'foo.c', parse_flags=flags)
 #
 
 packages_at_least = {
 	'openssl'  : ['openssl', '0.9.7'],
-	'xmlsec'   : ['xmlsec1', '1.2.9'],
-	'libxml'   : ['libxml-2.0', '2.6.23'],
 	'libconfig': ['libconfig', '1.3.2'],
 	}
 
