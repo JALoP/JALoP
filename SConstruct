@@ -5,7 +5,7 @@ sys.path.append(os.getcwd() + '/3rd-party/build')
 import ConfigHelpers
 
 # Update package version here, add actual checks below
-pkg_config_version = '0.23'
+pkg_config_version = '0.21'
 
 # Only add packages to this list that install package config files.
 # For each package in this map, make sure the installed version is at least
