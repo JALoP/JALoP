@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 #include <jalop/jalp_structured_data.h>
 /**
  * @addtogroup AppMetadata

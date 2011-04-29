@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#include <jalop/network_types.h>
+#include <jalop/jaln_network.h>
 #include <stdint.h>
 
 /** 

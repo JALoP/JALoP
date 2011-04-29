@@ -105,7 +105,7 @@ struct jalp_app_metadata {
  *
  * @return a new jalp_app_metadata object
  */
-struct jalp_app_metadata *jalp_app_metadata_create(void)
+struct jalp_app_metadata *jalp_app_metadata_create(void);
 /**
  * Free all resources owned by a jalp_app_metadata structure. This function
  * assumes ownership of all member elements and will call the appropriate
@@ -114,7 +114,7 @@ struct jalp_app_metadata *jalp_app_metadata_create(void)
  * @param[in,out] app_meta The object to destroy. The pointer will be set to
  * NULL.
  */
-void jalp_app_metadata_destroy(struct jalp_app_metadata **app_meta)
+void jalp_app_metadata_destroy(struct jalp_app_metadata **app_meta);
 /** @} */
 #ifdef __cplusplus
 }

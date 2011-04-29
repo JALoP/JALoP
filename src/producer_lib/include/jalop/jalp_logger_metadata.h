@@ -34,8 +34,6 @@ extern "C" {
 #endif
 
 #include <jalop/jalp_structured_data.h>
-#include <jalop/jalp_stack_frame.h>
-#include <jalop/jalp_log_severity.h>
 /**
  * @addtogroup AppMetadata
  * @{

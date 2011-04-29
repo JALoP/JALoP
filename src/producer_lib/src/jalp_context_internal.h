@@ -1,5 +1,3 @@
-#ifndef JALP_CONTEXT_INTERNAL_H
-#define JALP_CONTEXT_INTERNAL_H
 /**
  * @file jalp_context_internal.h This file defines the private structures and
  * APIs for the jalp_producer context
@@ -28,6 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef JALP_CONTEXT_INTERNAL_H
+#define JALP_CONTEXT_INTERNAL_H
 
 #ifdef __cplusplus
 extern "C" {

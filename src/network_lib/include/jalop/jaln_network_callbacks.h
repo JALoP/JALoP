@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#include <jalop/network_types.h>
+#include <jalop/jaln_network_types.h>
 #include <stdlib.h>
 /**
  * @struct jaln_subscriber_callbacks

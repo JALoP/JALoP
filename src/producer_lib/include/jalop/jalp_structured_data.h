@@ -33,7 +33,6 @@
 extern "C" {
 #endif
 
-#include <jalop/jalp_param.h>
 /**
  * @ingroup LoggerMetadata
  * @ingroup SyslogMetadata

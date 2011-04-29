@@ -30,8 +30,9 @@
 extern "C" {
 #endif
 
-#include <jalop/network_callbacks.h>
-#include <jalop/network_types.h>
+#include <jalop/jal_status.h>
+#include <jalop/jaln_network_callbacks.h>
+#include <jalop/jaln_network_types.h>
 /**
  * Create and initialize a new jaln_context
  * @return A pointer to the new context
@@ -201,7 +202,7 @@ struct jaln_connection *jaln_publish(
  * @param jal_conn The connection to shutdown.
  * @return JAL_OK if everything was successful, an error otherwise.
  */
-enum jaln_status jaln_disconnect(struct jaln_connection *jal_conn);
+enum jal_status jaln_disconnect(struct jaln_connection *jal_conn);
 
 /**
  * Disconnect from a remote peer. This immediately sever to connection without
@@ -211,7 +212,7 @@ enum jaln_status jaln_disconnect(struct jaln_connection *jal_conn);
  * @param jal_conn The connection to shutdown.
  * @return JAL_OK if everything was successful, an error otherwise.
  */
-enum jaln_status jaln_shutdown(struct jaln_connection *jal_conn);
+enum jal_status jaln_shutdown(struct jaln_connection *jal_conn);
 
 
 #ifdef __cplusplus

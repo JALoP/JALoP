@@ -33,8 +33,6 @@
 extern "C" {
 #endif
 
-#include <jalp_file_info.h>
-#include <jalp_journal_transforms.h>
 /**
  * @defgroup JournalMetadata Journal Metadata
  * This contains additional structures and functions to generate information
@@ -267,7 +265,7 @@ struct jalp_journal_metadata *jalp_journal_metadata_create(void);
  * calls the appropriate "*_destroy()" functions and "free()" on all members.
  * @param[in,out] journal_meta the object to destroy, this will be set to NULL.
  */
-void jalp_journal_metadata_destroy(struct jalp_journal_metadata **journal_meta)
+void jalp_journal_metadata_destroy(struct jalp_journal_metadata **journal_meta);
 
 /** @} */
 
