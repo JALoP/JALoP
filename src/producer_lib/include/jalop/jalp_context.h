@@ -53,47 +53,6 @@
 typedef struct jalp_context_t jalp_context;
 
 /**
- * Load an RSA private key. If successful, every application metadata document
- * will get signed (using RSA+SHA256). Once a key is set, it cannot be changed.
- * You must create a new context.
- *
- * @param[in] ctx The context to attach the RSA keys to.
- * @param[in] keyfile The path to the private key file.
- * @param[in] password The password for the key file.
- *
- * @return JAL_OK on success, or an error code.
- *
- */
-enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
-		const char *keyfile,
-		const char *password);
-/**
- * Load an RSA public certificate. This must be the public certificate that
- * corresponds to the private key set with #jalp_context_load_pem_rsa.
- * If applications add the certificate, the Producer Library will add a KeyInfo
- * block for the certificate.
- *
- * @param[in] ctx The context to attach the certificate to.
- * @param[in] certfile The path to the x509 public certificate file.
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jalp_context_load_x509_cert(jalp_context *ctx,
-		const char *certfile);
-
-/**
- * Register a set of functions to implement a digest algorithm.
- * The ProducerLibrary will use the functions in the jal_digest_ctx to
- * automatically create digests for data sent to the JALoP Local Store. By
- * default, no digests are created.
- *
- * @param[in] ctx The jalp_context
- * @param[in] digest_ctx The callbacks to implement a digest algorithm.
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
-		struct jal_digest_ctx *digest_ctx);
-
-/**
  * Create a jalp_context. This must be initialized with a call to
  * #jalp_context_init
  * @return a newly created jalp_context
@@ -126,27 +85,55 @@ enum jal_status jalp_context_init(jalp_context *ctx,
 		char *app_name);
 
 /**
- * Connect to the JALoP Local Store. It is safe to call this repeatedly, even
- * after a connection was made. This call will block until the connection is
- * established.
- *
- * @param[in] ctx the #jalp_context to connect
- * @return JAL_OK if the connection is complete.
- */
-enum jal_status jalp_context_connect(jalp_context *ctx);
-/**
- * Disconnect from a JAL Local Store
- * @param[in] ctx the connection to disconnect.
- * @return JAL_OK on success, or an error.
- */
-enum jal_status jalp_context_disconnect(jalp_context *ctx);
-/**
  * Disconnect (if needed) and destroy the connection.
  *
  * @param[in,out] ctx The #jalp_context to destroy. On return, this will be set to
  * NULL.
  */
 void jalp_context_destroy(jalp_context **ctx);
+
+/**
+ * Load an RSA private key. If successful, every application metadata document
+ * will get signed (using RSA+SHA256). Once a key is set, it cannot be changed.
+ * You must create a new context.
+ *
+ * @param[in] ctx The context to attach the RSA keys to.
+ * @param[in] keyfile The path to the private key file.
+ * @param[in] password The password for the key file.
+ *
+ * @return JAL_OK on success, or an error code.
+ *
+ */
+enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
+		const char *keyfile,
+		const char *password);
+
+/**
+ * Load an RSA public certificate. This must be the public certificate that
+ * corresponds to the private key set with #jalp_context_load_pem_rsa.
+ * If applications add the certificate, the Producer Library will add a KeyInfo
+ * block for the certificate.
+ *
+ * @param[in] ctx The context to attach the certificate to.
+ * @param[in] certfile The path to the x509 public certificate file.
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jalp_context_load_x509_cert(jalp_context *ctx,
+		const char *certfile);
+
+/**
+ * Register a set of functions to implement a digest algorithm.
+ * The ProducerLibrary will use the functions in the jal_digest_ctx to
+ * automatically create digests for data sent to the JALoP Local Store. By
+ * default, no digests are created.
+ *
+ * @param[in] ctx The jalp_context
+ * @param[in] digest_ctx The callbacks to implement a digest algorithm.
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
+		struct jal_digest_ctx *digest_ctx);
+
 
 /** @} */
 #endif // JALP_CONTEXT_H

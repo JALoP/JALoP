@@ -46,7 +46,7 @@ struct jaln_subscriber_callbacks {
 	 * records, or only receive new records.
 	 *
 	 * For journal records, the Application must specify the offset. When
-	 * the offset it 0, the JNL behaves in the same was as for audit and
+	 * the offset is 0, the JNL behaves in the same way as audit and
 	 * log records. When the offset is non-zero, the JNL will send a
 	 * 'journal-resume' message and indicate that \p offset bytes of the
 	 * record identified by \p serial_id were downloaded.
@@ -66,79 +66,53 @@ struct jaln_subscriber_callbacks {
 			uint64_t *offset);
 	/**
 	 * The JNL will execute this function after it receives and parses the
-	 * MIME headers of a '*-record' message.
+	 * MIME headers and has the system and application metadata sections of
+	 * a specific record.
 	 *
+	 * @param[in] ch_info Information about the connection
+	 * @param[in] type The type of JAL record to retrieve.
 	 * @param[in] record_info The details of this record.
 	 * @param[in] headers Any additional headers.
-	 * @param[in] user_data A pointer to user data supplied in
+	 * @param[in] system_metadata_buffer A buffer containing the system metadata. The
+	 *            application is responsible for freeing this pointer with
+	 *            free().
+	 * @param[in] system_metadata_size The size, in bytes, of the \p
+	 *            system_metadata_buffer.
+	 * @param[in] application_metadata_buffer A buffer containing the application metadata. The
+	 *            application is responsible for freeing this pointer with
+	 *            free().
+	 * @param[in] appliction_metadata_size The size, in bytes, of the \p
+	 *            application_metadata_buffer.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue receiving data.
 	 *
 	 */
-	int (*on_record_headers)(const struct jaln_channel_info *ch_info,
+	int (*on_record_info)(const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			const struct jaln_record_info *record_info,
 			const struct jaln_mime_header *headers,
+			const uint8_t *system_metadata_buffer,
+			const uint32_t system_metadata_size,
+			const uint8_t *application_metadata_buffer,
+			const uint32_t application_metadata_size,
 			void *user_data);
 	/**
-	 * The JNL calls this function to delivery the payload of the
-	 * application metadata. This will be called once for each
-	 * subscriber_id and delivers the entire contents of the application
-	 * metadata in the buffer.
-	 *
-	 * @param[in] type The type of this record (journal, audit, or log).
-	 * @param[in] serial_id The Publisher assigned sequence ID of this record
-	 * @param[in] buffer A buffer containing the application metadata. The
-	 *            application is responsible for freeing this pointer with
-	 *            free().
-	 * @param[in] cnt The size, in bytes, of the buffer.
-	 * @param[in] user_data A pointer to the user_data.
-	 * @return JAL_OK to continue receiving data, anything else will cause
-	 * the JNL ignore any more messages for the specific record type and
-	 * attempt to close the connection.
-	 */
-	int (*on_app_metadata)(const struct jaln_channel_info *ch_info,
-			enum jaln_record_type type,
-			const char *serial_id,
-			const uint8_t *buffer,
-			const uint32_t cnt,
-			void *user_data);
-	/**
-	 * The JNL calls this function to delivery the entire contents of the
-	 * system metadata block.
-	 *
-	 * @param[in] type The type of this record (journal, audit, or log).
-	 * @param[in] serial_id The Publisher assigned sequence ID of this record
-	 * @param[in] buffer A buffer containing system metadata. The
-	 * application is responsible for freeing this memory with a call to
-	 * free()
-	 * @param[in] cnt The number of bytes in the buffer.
-	 * @param[in] user_data A pointer to the user_data
-	 * @return JAL_OK to continue receiving data, anything else will cause
-	 * the JNL ignore any more messages for the specific record type and
-	 * attempt to close the connection.
-	 */
-	int (*on_sys_metadata)(const struct jaln_channel_info *ch_info,
-			enum jaln_record_type type,
-			const char *serial_id,
-			const uint8_t *buffer,
-			const uint32_t cnt,
-			void *user_data);
-	/**
-	 * The JNL calls this function to delivery the entire contents of the
+	 * The JNL calls this function to deliver the entire contents of the
 	 * audit entry.
 	 *
-	 * @param[in] type The type of this record (journal, audit, or log).
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The Publisher assigned sequence ID of this record
 	 * @param[in] buffer A buffer containing audit entry. The
 	 * application is responsible for freeing this memory with a call to
 	 * free()
 	 * @param[in] cnt The number of bytes in the buffer.
-	 * @param[in] user_data A pointer to the user_data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue receiving data, anything else will cause
-	 * the JNL ignore any more messages for the specific record type and
-	 * attempt to close the connection.
+	 * the JNL ignore any more messages for audit records.
 	 */
 	int (*on_audit)(const struct jaln_channel_info *ch_info,
 			const char *serial_id,
@@ -146,20 +120,20 @@ struct jaln_subscriber_callbacks {
 			const uint32_t cnt,
 			void *user_data);
 	/**
-	 * The JNL calls this function to delivery the entire contents of a log
+	 * The JNL calls this function to deliver the entire contents of a log
 	 * entry.
 	 *
-	 * @param[in] type The type of this record (journal, audit, or log).
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The Publisher assigned sequence ID of this record
 	 * @param[in] buffer A buffer containing the entire log entry. The
 	 * application is responsible for freeing this memory with a call to
 	 * free()
 	 * @param[in] cnt The number of bytes in the buffer.
-	 * @param[in] user_data A pointer to the user_data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue receiving data, anything else will cause
-	 * the JNL ignore any more messages for the specific record type and
-	 * attempt to close the connection.
+	 * the JNL ignore any more messages related to log records.
 	 */
 	int (*on_log)(const struct jaln_channel_info *ch_info,
 			const char *serial_id,
@@ -168,20 +142,23 @@ struct jaln_subscriber_callbacks {
 			void *user_data);
 	/**
 	 * The JNL calls this function to deliver bytes of a journal entry to the
-	 * application.
+	 * application. This function may be called multiple times for a single
+	 * journal record. Each time the function is called, it delivers more
+	 * data 
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The Publisher assigned sequence ID of this record
 	 * @param[in] buffer A buffer containing bytes of the journal, after
 	 * this application returns from this call they must not access buffer.
 	 * @param[in] cnt The number of bytes contained in buffer
-	 * @param[in] offset The number of bytes contained in buffer
+	 * @param[in] offset The offset into the journal data.
 	 * @param[in] more Boolean flag to indicate if there is more data
 	 * expected, this is set to 1 if there are more bytes expected, and 0 otherwise
-	 * @param[in] user_data A pointer to the user_data.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue receiving data, anything else will cause
-	 * the JNL ignore any more messages for the specific record type and
-	 * attempt to close the connection.
+	 * the JNL ignore any more messages for journal records.
 	 */
 	int (*on_journal)(const struct jaln_channel_info *ch_info,
 			const char *serial_id,
@@ -194,11 +171,13 @@ struct jaln_subscriber_callbacks {
 	 * The JNL calls this to inform the JAL Network store of the digest it
 	 * calculated for a particular record.
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of this record (journal, audit, or log).
 	 * @param[in] serial_id The Publisher assigned sequence ID of the record
 	 * @param[in] digest A buffer containing bytes of the digest
 	 * @param[in] len The length of the digest, in bytes.
-	 * @param[in] user_data A pointer to the user data.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue receiving data, anything else will cause
 	 * the JNL ignore any more messages for the specific record type and
@@ -214,11 +193,13 @@ struct jaln_subscriber_callbacks {
 	 * The JNL will execute this callback for every record in a
 	 * 'digest-response' message.
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of this record (journal, audit, or log).
 	 * @param[in] serial_id The Publisher assigned sequence ID of the record
 	 * @param[in] status Indicates whether or not the digest calculated locally
 	 * matches the digest calculated by the remote side.
-	 * @param[in] user_data A pointer to the user_data.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue receiving data, anything else will cause
 	 * the JNL ignore any more messages for the specific record type and
@@ -231,6 +212,10 @@ struct jaln_subscriber_callbacks {
 			const void *user_data);
 	/**
 	 * Called when the remote peer completes a subscribe message.
+	 * @param[in] ch_info Information about the connection
+	 * @param[in] type The type of this record (journal, audit, or log).
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
 	void (*message_complete)(const struct jaln_channel_info *ch_info,
 			enum jaln_record_type,
@@ -241,7 +226,7 @@ struct jaln_subscriber_callbacks {
 	 *
 	 * To handle a 'journal-resume' message, applications must provide the
 	 * JNL with the portion of a journal record that was already
-	 * transferred. The JNL uses calls this function to acquire a payload
+	 * transferred. The JNL calls this function to acquire a payload
 	 * feeder that it uses to calculate the digest of the JAL record. The
 	 * application informs the JNL of how many bytes were previously
 	 * downloaded when it calls jaln_context_subscribe.
@@ -249,11 +234,11 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] serial_id The serial id of the record to get.
 	 * @param[out] feeder The callbacks necessary to retrieve the already
 	 * downloaded portions of the record.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue receiving data, anything else will cause
-	 * the JNL ignore any more messages for the specific record type and
-	 * attempt to close the connection.
+	 * the JNL ignore any more messages for journal records.
 	 */
 	int (*acquire_journal_feeder)(const struct jaln_channel_info *ch_info,
 			const char *serial_id,
@@ -265,7 +250,8 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] serial_id The serial id of the record to get.
 	 * @param[in] feeder The callbacks necessary to retrieve bytes of data
 	 * for the payload.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 */
 	void (*release_journal_feeder)(const struct jaln_channel_info *ch_info,
@@ -292,21 +278,23 @@ struct jaln_publisher_callbacks {
 	 * members. The JNL will call free() and jaln_mime_headers_free()
 	 * when the record_info is no longer needed.
 	 *
-	 * @param[in] user_data A pointer to the user_data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 * @return JAL_OK to continue sending records, anything else to stop.
 	 */
 	int (*on_journal_resume)(const struct jaln_channel_info *ch_info,
-			enum jaln_record_type type,
 			struct jaln_record_info *record_info,
 			struct jaln_mime_header *headers);
 	/**
 	 * The JNL executes this callback to inform the application of a
 	 * 'subscribe' message. This callback is purely informational.
 	 *
-	 * @param[in] type The type of the record to retrieve (journal, audit, or log).
+	 * @param[in] type The type of records the remote is subscribing 
+	 * to (journal, audit, or log).
 	 * @param[in] serial_id The serial_id in the subscribe message
 	 * @param[in] headers additional mime headers sent as part of this message
-	 * @param[in] user_data a pointer to the user data.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 * @return JAL_OK to continue sending records, anything else to stop.
 	 */
 	int (*on_subscribe)(const struct jaln_channel_info *ch_info,
@@ -318,13 +306,27 @@ struct jaln_publisher_callbacks {
 	 * The JNL will execute this callback to obtain the record info for the
 	 * next record that should be sent on this channel.
 	 *
+	 * @param[in] ch_info Information about the connection
+	 * @param type The type of record (journal, audit, or log) to obtain
+	 * data for.
 	 * @param[in] serial_id The serial_id sent by the peer as part of this
 	 * 'subscribe' message.
 	 * @param[out] record_info The application must properly fill out the
 	 * jaln_record_info structure. The JNL assumes ownership of this
 	 * structure and any members and will call appropriate functions to
 	 * release memory.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[out] system_metadata_buffer a user allocated buffer that contains the bytes
+	 * of the system metadata. The \p sys_meta_len field of \p record_info
+	 * indicates the size of this buffer.
+	 * @param[out] application_metadata_buffer a user allocated buffer that contains the bytes
+	 * of the application metadata. The \p sys_meta_len field of
+	 * \p record_info indicates the size of this buffer.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 *
+	 * @note The JNL executes release_metadata_buffers when it no longer
+	 * needs access to \p system_metadata_buffer and
+	 * \p application_metadata_buffer.
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream
@@ -333,75 +335,32 @@ struct jaln_publisher_callbacks {
 			enum jaln_record_type type,
 			const char *last_serial_id,
 			struct jaln_record_info *record_info,
+			uint8_t **system_metadata_buffer,
+			uint8_t **application_metadata_buffer,
 			void *user_data);
 	/**
-	 * Acquire a pointer to the system metadata. The buffer must contain the
-	 * same number of bytes as were designated in the
-	 * #jaln_record_info obtained in #get_next_record_info(). When
-	 * the JNL is finished with this buffer, it will call
-	 * release_sys_metadata();
+	 * The JNL execute this callback when it is no longer using the bytes
+	 * of the system metadata and application metadata. 
+	 * Applications must
+	 * release any resources allocated when the JNL executed
+	 * \p get_next_record_info
 	 *
-	 * @param[in] serial_id The serial_id of the record to get.
-	 * @param[out] buffer a user allocated buffer that contains the bytes
-	 * of the system metadata.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] ch_info Information about the connection
+	 * @param[in] serial_id The serial_id of the record.
+	 * @param[in] system_metadata_buffer The buffer obtained by the call
+	 * to \p get_next_record_info.
+	 * @param[in] application_metadata_buffer The buffer obtained by the call
+	 * to \p get_next_record_info.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
 	 */
-	int (*acquire_sys_metadata)(const struct jaln_channel_info *ch_info,
-			enum jaln_record_type type,
+	int (*release_metadata_buffers)(const struct jaln_channel_info *ch_info,
 			const char *serial_id,
-			uint8_t **buffer,
-			void *user_data);
-	/**
-	 * Release the system metadata buffer.
-	 *
-	 * @param[in] serial_id The serial id relating to this buffer
-	 * @param[in] a pointer that was obtained by the call to
-	 * acquire_sys_metadata()
-	 * @param[in] user_data A pointer to the user data
-	 *
-	 * @return JAL_OK to continue sending records, anything else will
-	 * complete the ANS stream.
-	 */
-	int (*release_sys_metadata)(const struct jaln_channel_info *ch_info,
-			enum jaln_record_type type,
-			const char *serial_id,
-			uint8_t **buffer,
-			void *user_data);
-	/**
-	 * Acquire a pointer to the application metadata. The buffer must contain the
-	 * same number of bytes as were designated in the
-	 * #jaln_record_info obtained in #get_next_record_info(). When
-	 * the JNL is finished with this buffer, it will call
-	 * release_app_metadata();
-	 *
-	 * @param[in] serial_id The serial_id of the record to get.
-	 * @param[out] buffer a user allocated buffer that contains the bytes
-	 * of the application metadata.
-	 * @param[in] user_data A pointer to the user data
-	 *
-	 * @return JAL_OK to continue sending records, anything else will
-	 * complete the ANS stream.
-	 */
-	int (*acquire_app_metadata)(const struct jaln_channel_info *ch_info,
-			enum jaln_record_type type,
-			const char *serial_id,
-			uint8_t **buffer,
-			void *user_data);
-	/**
-	 * Release the application metadata buffer.
-	 *
-	 * @param[in] serial_id The serial id relating to this buffer
-	 * @param[in] a pointer that was obtained by the call to
-	 * acquire_app_metadata()
-	 * @param[in] user_data A pointer to the user data
-	 */
-	int (*release_app_metadata)(const struct jaln_channel_info *ch_info,
-			enum jaln_record_type type,
-			const char *serial_id,
-			uint8_t *buffer,
+			uint8_t *system_metadata_buffer,
+			uint8_t *application_metadata_buffer,
 			void *user_data);
 	/**
 	 * Acquire a pointer to the log payload. The buffer must contain the
@@ -409,10 +368,12 @@ struct jaln_publisher_callbacks {
 	 * #jaln_record_info obtained in #get_next_record_info(). When the JNL
 	 * is finished with this buffer, it will call release_payload_buffer()
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial_id of the record to get.
 	 * @param[out] buffer a user allocated buffer that contains the bytes
 	 * of the log entry.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
@@ -424,10 +385,12 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Release the log buffer.
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id relating to this buffer
-	 * @param[in] a pointer that was obtained by the call to
+	 * @param[in] buffer a pointer that was obtained by the call to
 	 * acquire_log_buffer()
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
@@ -442,10 +405,12 @@ struct jaln_publisher_callbacks {
 	 * obtained by calling get_next_record_info(). When the JNL is finished
 	 * with this buffer, it will call release_audit_data();
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial_id of the record to get.
 	 * @param[out] buffer a user allocated buffer that contains the bytes
 	 * of the payload.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
@@ -457,10 +422,12 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Release the audit buffer.
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id relating to this buffer
 	 * @param[in] a pointer that was obtained by a call to
 	 * acquire_audit_data()
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
@@ -473,10 +440,12 @@ struct jaln_publisher_callbacks {
 	 * Acquire a payload feeder for the journal record identified by serial_id.
 	 * When the JNL is finished with the feeder, it will call #release_payload_feeder()
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id of the record to get.
 	 * @param[out] feeder The callbacks necessary to retrieve bytes of data
 	 * for the payload.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
@@ -488,9 +457,11 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Release a payload feeder for journal record identified by \p serial_id.
 	 *
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id of the record to get.
 	 * @param[in] feeder The feeder object
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 */
 	void (*release_journal_feeder)(const struct jaln_channel_info *ch_info,
@@ -503,8 +474,11 @@ struct jaln_publisher_callbacks {
 	 * application to clean up any resources (including those in
 	 * record_info);
 	 *
+	 * @param[in] ch_info Information about the connection
+	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id The serial_id of this record_info
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
 	void (*on_record_complete)(const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
@@ -513,9 +487,12 @@ struct jaln_publisher_callbacks {
 	/**
 	 * The JNL executes this callback when it receives a 'sync' message
 	 * from the peer.
+	 * @param[in] ch_info Information about the connection
+	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id the serial_id sent by the remote peer.
 	 * @param[in] headers Any additional headers sent with this message.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 */
 	void (*sync)(const struct jaln_channel_info *ch_info,
@@ -530,10 +507,13 @@ struct jaln_publisher_callbacks {
 	 * purely informational as the JNL maintains the sent of sent, but not
 	 * yet confirmed digests.
 	 *
+	 * @param[in] ch_info Information about the connection
+	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id The serial_id of the record.
 	 * @param[in] digest The digest value of the record.
 	 * @param[in] lenght The length of the digest, in bytes.
-	 * @param[in] user_data A pointer to the user data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @note should the JNL really track the digests? seems like a
 	 * reasonable feature, but may need some extra tuning parameters or
@@ -557,13 +537,16 @@ struct jaln_publisher_callbacks {
 	 *
 	 * This is called for each record in the 'digest' method.
 	 *
+	 * @param[in] ch_info Information about the connection
+	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id The serial_id of a particular record
 	 * @param[in] local_digest The digest, as calculated by the JNL when the
 	 * record was sent.
 	 * @param[in] local_size The size, in bytes, of the local_digest
 	 * @param[in] peer_digest The digest, as calculated by the remote peer.
 	 * @param[in] peer_size The size, in bytes, of #peer_digest
-	 * @param[in] user_data A pointer to the user data.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
 	void (*peer_digest)(const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
@@ -606,8 +589,8 @@ struct jaln_connection_handlers {
 	 * The application would signal 'sha512' by setting selected_digest to 0, or
 	 * signal sha256 to 1. The application may refuse all digest methods by setting
 	 * selected_encoded to -1.
-	 * @param[in] user_data A pointer to the user_data of this
-	 * jaln_publisher_callbacks
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @returns JALN_CONNECT_ERR_NONE to accept the connection, or any of the
 	 * jaln_connect_errors to indicate the failure to return.
@@ -624,16 +607,27 @@ struct jaln_connection_handlers {
 	/**
 	 * Notify the application that a channel was closed.
 	 * @param[in] channel_info Information about the channel that is closing.
-	 * @param[in] user_data The user_data
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
 	void (*on_channel_close)(const struct jaln_channel_info *channel_info,
 		void *user_data);
+
+	/**
+	 * Notify the application when all channels for a connection have
+	 * closed.
+	 * @param[in] jaln_conn The connection object. The JNL releases this
+	 * object when the function returns.
+	 */
+	void (*on_connection_close)(const struct jaln_connection *jal_conn, void *user_data);
+
 	/**
 	 * The JNL will execute this callback when it receives a 'connect-ack'
 	 * message from the remote peer.
 	 * @param[in] ack A structure containing information about the connection,
 	 * including the MIME headers.
-	 * @param[in] user_data The user data.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 * @see jaln_connect_ack
 	 */
@@ -644,7 +638,8 @@ struct jaln_connection_handlers {
 	 * message from the remote peer.
 	 * @param nack The failure reasons given by the remote peer.
 	 * This includes any additional MIME headers.
-	 * @param user_data The user data.
+	 * @param[in] user_data A pointer to user data that was passed into
+	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 */
 	void (*connect_nack)(const struct jaln_connect_nack *nack,

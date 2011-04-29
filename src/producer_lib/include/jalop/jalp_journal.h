@@ -48,7 +48,7 @@
 /**
  * Send a journal entry to the JALoP Local Store.
  *
- * @param[in] ctx The connection to send the data over.
+ * @param[in] ctx The context to send the data over.
  * @param[in] app_meta An optional structure that will be converted into an XML
  * document conforming to the application metadata schema.
  * @param[in] journal_buffer A byte buffer that contains the full contents of
@@ -93,8 +93,8 @@ enum jal_status jalp_journal(jalp_context *ctx,
  * @param[in] fd The file descriptor of the journal.
  * @return 
  *  - JAL_OK on success
- *  - JAL_E_NOT_SUPPORTED if the system doesn't support sending open file
- *   descriptors through a domain socket.
+ *  - JAL_E_NOT_SUPPORTED if the underlying system doesn't support SCM_RIGHTS on
+ *  a socket
  *
  */
 enum jal_status jalp_journal_fd(jalp_context *ctx,

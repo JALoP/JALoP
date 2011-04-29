@@ -28,12 +28,32 @@
 #include <jalop/network_callbacks.h>
 #include <jalop/network_types.h>
 /**
+ * Create and initialize a new jaln_context
+ * @return A pointer to the new context
+ */
+jaln_context *jaln_context_create(void);
+/**
+ * Destroy a jaln_context
+ * All connections using this context must have already been shutdown via
+ * jaln_disconnect or jaln_shutdown.
+ *
+ * If the \p jaln_context is still connected to remotes, this function will return
+ * an error.
+ *
+ * @param[in,out] jaln_ctx the context to destroy. If the jaln_ctx is \p jaln_ctx will be set to
+ * NULL.
+ *
+ * @return JAL_OK if the context was destroyed, or an error code.
+ */
+enum jal_status jaln_context_destroy(jaln_context *jaln_ctx);
+
+/**
  * Adds the TLS profile and a connection handler to prevent showing the JALoP
  * profile in greeting messages until after TLS is negotiated. This installs a
  * default TLS handler that checks that the certificate sent by the remote side
  * matches a known certificate.
  *
- * @param[in] jaln_ctx The JAL ctx to register the TLS profile on.
+ * @param[in] jaln_ctx The jaln_ctx to register the TLS profile on.
  * @param[in] private_key The private key that should be used for TLS
  * @param[in] public_cert The public certificate for the private key
  * @param[in] peer_certs A directory containing certificates for remote peers.
@@ -63,27 +83,6 @@ enum jal_status jaln_register_tls(jaln_context *jaln_ctx,
  */
 enum jal_status jaln_register_encoding(jaln_context *jaln_ctx,
 				  const char *encoding);
-/**
- * Create and initialize a new jaln_context
- * @return A pointer to the new context
- */
-jaln_context *jaln_context_create(void);
-/**
- * Retain a hold on the jaln_context
- *
- * @param[in] jaln_ctx The context to keep a reference on.
- * @return JAL_OK on success, or an error code.
- *
- */
-enum jal_status jaln_context_add_ref(jaln_context *jaln_ctx);
-/**
- * Release a hold on the jaln_context
- *
- * @param[in] jaln_ctx The context to release.
- * @return JAL_OK on success, or an error code.
- *
- */
-enum jal_status jaln_context_release(jaln_context *jaln_ctx);
 /**
  * Register a callbacks that the JNL executes when channels are created and
  * closed.
@@ -118,7 +117,9 @@ enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
 /**
  * Register the JALoP profile and start listening for connections. Once this
  * function is called, the \p jaln_ctx cannot be used to with calls to
- * jaln_context_subscribe or jaln_context_publish.
+ * jaln_context_subscribe or jaln_context_publish. \p jaln_context_listen may
+ * be used to implement a server process that waits for remote systems to
+ * connect.
  *
  * @param[in] jaln_ctx The jaln_context that will parse incoming and format
  *            outgoing JALoP messages.
@@ -129,7 +130,7 @@ enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
  * @return a Connection object
  *
  */
-struct jaln_connection *jaln_context_listen(jaln_context *jaln_ctx,
+struct jaln_connection *jaln_listen(jaln_context *jaln_ctx,
 				    const char *host,
 				    int port,
 				    void *user_data);
@@ -176,11 +177,31 @@ struct jaln_connection *jaln_publish(
 		int data_classes,
 		void *user_data);
 
+/**
+ * Disconnect from the remote peers.
+ *
+ * This will begin a graceful shutdown process for the connection.
+ *
+ * For Publishers, this means that the JNL will complete sending of any JAL
+ * records, and then close the connection. If the remote end sends any digest
+ * or sync messages, these will still be delivered to the application.
+ *
+ * For Subscribers, this means that the JNL will continue delivering data for
+ * any JAL records that are currently getting transfered and deliver any
+ * digest-response messages.
+ *
+ * Once the connection is closed, the JNL will execute
+ * jaln_connection_handlers::on_connection_close
+ *
+ * @param jal_conn The connection to shutdown.
+ * @return JAL_OK if everything was successful, an error otherwise.
+ */
+enum jaln_status jaln_disconnect(struct jaln_connection *jal_conn);
 
 /**
  * Disconnect from a remote peer. This immediately sever to connection without
- * waiting for transfers to complete. To gracefully close connections,
- * applications should return something other than JAL_OK in their callbacks.
+ * waiting for transfers to complete. To gracefully close the connection
+ * applications should use jaln_disconnect.
  *
  * @param jal_conn The connection to shutdown.
  * @return JAL_OK if everything was successful, an error otherwise.
