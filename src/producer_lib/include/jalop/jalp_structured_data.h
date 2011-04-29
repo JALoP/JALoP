@@ -28,6 +28,11 @@
  */
 #ifndef JALP_STRUCTURED_DATA_H
 #define JALP_STRUCTURED_DATA_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/jalp_param.h>
 /**
  * @ingroup LoggerMetadata
@@ -130,5 +135,8 @@ struct jalp_structured_data *jalp_structured_data_append(struct jalp_structured_
 void jalp_structured_data_destroy(struct jalp_structured_data **sd_group);
 /** @} */
 /** @} */
+#ifdef __cplusplus
+}
+#endif
 #endif //JALP_STRUCTURED_DATA_H
 

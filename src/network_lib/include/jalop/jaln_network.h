@@ -25,6 +25,11 @@
  */
 #ifndef JALN_NETWORK_H
 #define JALN_NETWORK_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/network_callbacks.h>
 #include <jalop/network_types.h>
 /**
@@ -207,5 +212,10 @@ enum jaln_status jaln_disconnect(struct jaln_connection *jal_conn);
  * @return JAL_OK if everything was successful, an error otherwise.
  */
 enum jaln_status jaln_shutdown(struct jaln_connection *jal_conn);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // JALN_NETWORK

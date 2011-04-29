@@ -28,6 +28,11 @@
  */
 #ifndef JALP_JOURNAL_METADATA_H
 #define JALP_JOURNAL_METADATA_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalp_file_info.h>
 #include <jalp_journal_transforms.h>
 /**
@@ -265,5 +270,10 @@ struct jalp_journal_metadata *jalp_journal_metadata_create(void);
 void jalp_journal_metadata_destroy(struct jalp_journal_metadata **journal_meta)
 
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //JALP_JOURNAL_METADATA_H
 

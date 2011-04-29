@@ -25,6 +25,11 @@
  */
 #ifndef JALN_COMMON_N
 #define JALN_COMMON_N
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 /**
@@ -249,4 +254,9 @@ struct jaln_payload_feeder {
  * callbacks, and channel creation handlers.
  */
 typedef struct jaln_context_t jaln_context;
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //JALN_COMMON_N

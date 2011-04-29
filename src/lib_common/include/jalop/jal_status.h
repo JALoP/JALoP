@@ -27,6 +27,11 @@
  */
 #ifndef JAL_STATUS_H
 #define JAL_STATUS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Enumeration for error codes returned by JALoP calls.
  */
@@ -39,4 +44,7 @@ enum jal_status {
 	JAL_OK = 0,
 };
 
+#ifdef __cplusplus
+}
+#endif
 #endif // JAL_STATUS_H

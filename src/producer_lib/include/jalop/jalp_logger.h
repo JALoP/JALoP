@@ -28,6 +28,11 @@
  */
 #ifndef JALP_LOGGER_H
 #define JALP_LOGGER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <jalop/jalp_context.h>
@@ -76,5 +81,8 @@ enum jal_status jalp_log(jalp_context *ctx,
 		size_t log_buffer_size);
 
 /** @} */
+#ifdef __cplusplus
+}
+#endif
 #endif // JALP_LOGGER_H
 

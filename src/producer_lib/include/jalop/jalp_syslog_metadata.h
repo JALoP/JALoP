@@ -29,6 +29,10 @@
 #ifndef JALP_SYSLOG_METADATA_H
 #define JALP_SYSLOG_METADATA_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/jalp_structured_data.h>
 /**
  * @addtogroup AppMetadata
@@ -95,5 +99,8 @@ struct jalp_syslog_metadata *jalp_syslog_metadata_create(void);
 void jalp_syslog_metadata_destroy(struct jalp_syslog_metadata **syslog_meta);
 /** @} */
 /** @} */
+#ifdef __cplusplus
+}
+#endif
 #endif //JALP_PRODUCER_H
 

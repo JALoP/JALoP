@@ -28,6 +28,11 @@
  */
 #ifndef JALP_AUDIT_H
 #define JALP_AUDIT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/jalp_context.h>
 
 /**
@@ -67,5 +72,8 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		uint8_t *audit_buffer,
 		size_t audit_buffer_size);
 
+#ifdef __cplusplus
+}
+#endif
 #endif // JALP_AUDIT_H
 

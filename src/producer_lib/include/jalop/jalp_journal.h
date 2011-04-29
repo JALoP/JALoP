@@ -28,6 +28,11 @@
  */
 #ifndef JALP_LOGGER_H
 #define JALP_LOGGER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/jalp_context.h>
 
 /**
@@ -129,5 +134,10 @@ enum jal_status jalp_journal_path(jalp_context *ctx,
 		char *path);
 
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // JALP_JOURNAL_H
 

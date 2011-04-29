@@ -22,6 +22,11 @@
  */
 #ifndef JALN_NET_CALLBACKS_H
 #define JALN_NET_CALLBACKS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/network_types.h>
 #include <stdlib.h>
 /**
@@ -645,4 +650,9 @@ struct jaln_connection_handlers {
 	void (*connect_nack)(const struct jaln_connect_nack *nack,
 			     void *user_data);
 };
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // JALN_NET_CALLBACKS_H

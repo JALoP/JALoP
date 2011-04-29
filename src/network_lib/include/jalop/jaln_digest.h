@@ -24,6 +24,11 @@
  */
 #ifndef JAL_DIGEST_H
 #define JAL_DIGEST_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/network_types.h>
 #include <stdint.h>
 
@@ -111,4 +116,9 @@ struct jal_digest_ctx {
 int jaln_register_digest_algorithm(jaln_context *jal_ctx,
 			      char *algorithm,
 			      struct jal_digest_ctx *digest_ctx);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //JAL_DIGEST_H

@@ -28,11 +28,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct jalp_context_t {
 	int socket; /**< The socket used to communicate with the JALoP Local Store */
 	char *path; /**< The path that was originally used to connect to the socket */
 	char *hostname; /**< The hostname to use when generating the application metadata sections */
 	char *app_name; /**< The application name to use when generating the application metadata sections */
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //JALP_CONTEXT_INTERNAL_H

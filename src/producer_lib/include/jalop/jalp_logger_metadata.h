@@ -28,6 +28,11 @@
  */
 #ifndef JALP_LOGGOR_METADATA_H
 #define JALP_LOGGOR_METADATA_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/jalp_structured_data.h>
 #include <jalop/jalp_stack_frame.h>
 #include <jalop/jalp_log_severity.h>
@@ -177,5 +182,10 @@ void jalp_stack_frame_destroy(struct jalp_stack_frame **stack_frame);
 
 /** @} */
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // JALP_LOGGOR_METADATA_H
 

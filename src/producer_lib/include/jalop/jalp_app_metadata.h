@@ -28,6 +28,11 @@
  */
 #ifndef JALP_APP_METADATA_H
 #define JALP_APP_METADATA_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <jalop/jalp_syslog_metadata.h>
 #include <jalop/jalp_logger_metadata.h>
 #include <jalop/jalp_journal_metadata.h>
@@ -111,5 +116,8 @@ struct jalp_app_metadata *jalp_app_metadata_create(void)
  */
 void jalp_app_metadata_destroy(struct jalp_app_metadata **app_meta)
 /** @} */
+#ifdef __cplusplus
+}
+#endif
 #endif //JALP_APP_METADATA_H
 

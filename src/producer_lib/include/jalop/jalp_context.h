@@ -30,6 +30,11 @@
  */
 #ifndef JALP_CONTEXT_H
 #define JALP_CONTEXT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -136,5 +141,10 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 
 
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // JALP_CONTEXT_H
 
