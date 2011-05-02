@@ -39,6 +39,8 @@ pkg_config_version = '0.21'
 packages_at_least = {
 	'openssl'  : ['openssl', '0.9.7'],
 	'libconfig': ['libconfig', '1.3.2'],
+	'vortex'   : ['vortex-1.1', '1.1.7'],
+	'xerces'   : ['xerces-c', '3.1.1'],
 	}
 
 # flags are shared by both debug and release builds
