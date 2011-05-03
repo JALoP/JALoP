@@ -1,8 +1,7 @@
 /**
  * @file network.h
  *
- * Public API for functions, structures and enums shared by both publisher and
- * subscriber code.
+ * Public functions for creating and configuring a jaln_context.
  *
  * @section LICENSE
  *

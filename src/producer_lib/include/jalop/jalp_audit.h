@@ -43,16 +43,16 @@ extern "C" {
  * jalp_application_metadata::custom field, which may contain any valid XML.
  *
  * In the event the \p ctx was configured to generate digest values
- * (@see jalp_context_set_digest_callbacks), the ProducerLib will generate an
- * applicationMetadata document automatically.
+ * (@see jalp_context_set_digest_callbacks), the Producer Lib will generate an
+ * applicationMetadata document automatically if none is specified.
  *
  * @param[in] ctx The context to send the data over
  * @param[in] app_meta An optional struct that the library will convert into an
  * XML document. The resulting document will conform to the applicationMetadata
  * XML Schema defined in the JALoP-v1.0-Specification.
  * @param[in] audit_buffer An optional byte buffer that contains the full contents of
- * a audit entry. An audit entry must conform to the MITRE CEE XML schema. The
- * JPL will verify that \b audit_buffer conforms to the MITRE CEE XML schema
+ * an audit entry. An audit entry must conform to the MITRE CEE XML schema. The
+ * Producer Lib will verify that \p audit_buffer conforms to the MITRE CEE XML schema
  * and generates and error if it does not.
  * @param[in] audit_buffer_size The size (in bytes) of \p audit_buffer.
  *
@@ -62,7 +62,7 @@ extern "C" {
  *         JAL_EINVAL If the parameters are incorrect.
  *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
- *         JAL_SCHEMA_VALIDATION_FAILURE if \b audit_buffer does not conform to
+ *         JAL_SCHEMA_VALIDATION_FAILURE if \p audit_buffer does not conform to
  *         the MITRE CEE XML schema.
  *
  * @note \p ctx will be connected if it isn't already.

@@ -1,8 +1,7 @@
 /**
  * @file network_types.h
  *
- * Public API for functions, structures and enums shared by both publisher and
- * subscriber code.
+ * Public types of the JALoP Network Library.
  *
  * @section LICENSE
  *

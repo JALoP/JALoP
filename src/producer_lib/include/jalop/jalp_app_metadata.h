@@ -74,8 +74,8 @@ struct jalp_app_metadata {
 	 */
 	enum jalp_metadata_type type;
 	/**
-	 * An application defined event ID. This can be used to correlate
-	 * multiple entries, or be NULL. It's has no meaning to JALoP. This is
+	 * An application defined event ID. This may be used to correlate
+	 * multiple entries, or be NULL. It has no meaning to JALoP. This is
 	 * optional.
 	 */
 	char *event_id;
@@ -84,7 +84,9 @@ struct jalp_app_metadata {
 	 * determines how the library interprets this pointer.
 	 */
 	union {
+		/** syslog metadata */
 		struct jalp_syslog_metadata *sys;
+		/** logger metadata */
 		struct jalp_logger_metadata *log;
 		/**
 		 * a block of XML data. It may conform to any schema,

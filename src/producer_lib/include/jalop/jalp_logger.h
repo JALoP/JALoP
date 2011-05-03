@@ -45,14 +45,14 @@ extern "C" {
  * Send a log message to the JALoP Local Store.
  *
  * If an application wishes to include additional data about the event, they
- * may allocate and fill in an jalp_app_metadata structure. This typically
+ * may allocate and fill in a jalp_app_metadata structure. This typically
  * entails filling out a jalp_syslog_metadata structure or jalp_logger_metadata
  * structure depending on the needs of the application. The jalp_syslog_metdata structure is
  * aimed at providing the same information typically conveyed via the syslog
  * mechanism of *nix systems.
  * The jalp_logger_metadata structure is aimed at providing extensive metadata that is
  * typically provided by frameworks such as log4j. If neither the
- * jalp_syslog_metadata or the jalp_logger_metadata provide enough flexibility, an 
+ * jalp_syslog_metadata or the jalp_logger_metadata provide enough flexibility, an
  * application may assign the jalp_app_metadata::custom field to a snippet of XML.
  *
  * In the event the \p ctx was configured to generate digest values

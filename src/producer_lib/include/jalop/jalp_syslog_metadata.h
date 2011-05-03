@@ -49,7 +49,7 @@ extern "C" {
  * The syslog_metadata structure should be filled in if an application wishes
  * to generate events that contain data similar to what syslog produces.
  *
- * These correspond to the elements in the JAL application meta-data schema
+ * These correspond to the elements in the JAL application metadata schema
  * (applicationMetadata.xsd).
  *
  * The hostname and application name are taken from the jalp_context, while
@@ -65,7 +65,7 @@ struct jalp_syslog_metadata {
 	char *timestamp;
 	/**
 	 * The message ID may be used to identify the 'type' of the log
-	 * message. See the MSGID field in RFC 5424.
+	 * message. @See the MSGID field in RFC 5424.
 	 */
 	char *messageId;
 	/**

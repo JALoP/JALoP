@@ -73,13 +73,13 @@ struct jalp_log_severity *jalp_log_severity_create(void);
 void jalp_log_severity_destroy(struct jalp_log_severity** log_severity);
 
 /**
- * Structure to represent the 'logger' type data in the application meta-data.
+ * Structure to represent the 'logger' type data in the application metadata.
  *
  * All fields are optional, except the logger_name.
- * The jalp_logger_metada object assumes ownership of all pointers.
+ * The jalp_logger_metadata object assumes ownership of all pointers.
  */
 struct jalp_logger_metadata {
-	/** The name of this logger*/
+	/** The name of this logger */
 	char *logger_name;
 	/** The severity of this log entry */
 	struct jalp_log_severity *severity;
@@ -98,12 +98,12 @@ struct jalp_logger_metadata {
 	char *mapped_diagnostic_context;
 	/** A stack trace */
 	struct stack_frame *stack;
-	/** An extended list of meta-data. */
+	/** An extended list of metadata. */
 	struct structured_data *sd;
 };
 /**
  * Create a logger metadata structure
- * @return the newly craeted jalp_logger_metadata object
+ * @return the newly created jalp_logger_metadata object
  */
 struct jalp_logger_metadata *jalp_logger_metadata_create(void);
 /**
@@ -114,31 +114,22 @@ struct jalp_logger_metadata *jalp_logger_metadata_create(void);
 void jalp_logger_metadata_destroy(struct jalp_logger_metadata **logger_meta);
 
 /**
- * @defgroup StackFrame Stack Frames
- * @{
- * Logger applications often have additional information pertaining to the
- * runtime state of the sytem, such as the stack. The structures and functions
- * here provide a mechanism for logger libraries to include stack information
- * as part of the metadata included with a log entry.
- * @{
- */
-/**
- * Represents one entry in a stack frame.  All fields are optional and may be
+ * Represents one entry in a stack trace.  All fields are optional and may be
  * set to NULL. Line Numbers are assumed to start counting at 1, so a value of
- * 0 for \p line_number will suppress the filed.
+ * 0 for \p line_number will suppress the field.
  * If an application is providing multiple levels of stack information, they
  * should list the stack frames from the bottom up. That is, the first
  * stack_frame in the list should be the one where the log actually happened.
  *
  * The depth should be filled in to indicate the level in the stack trace. A
  * value of -1 indicates the depth for this frame should not be included. The
- * frame with depth 0 is considered the inner most (i.e. where the log took
- * place) frame.
+ * frame with depth 0 is considered the inner most frame (i.e. where the log took
+ * place).
  *
  * The JPL does not verify that the depths follow any particular order.
  *
  * Applications must create/destroy jalp_stack_frame objects using
- * jalp_stack_frame_create() and jalp_stack_frame_destory(). The
+ * jalp_stack_frame_create() and jalp_stack_frame_destroy(). The
  * jalp_stack_frame assumes ownership of all memory it references.
  */
 struct jalp_stack_frame {

@@ -1,8 +1,6 @@
 /**
  * @file jalp_context.h This file defines the public API available to
- * applications generating JAL data. It provides the interfaces needed to build
- * the application metadata sections and submit JAL data (and metadata) to the
- * JAL Local Store.
+ * applications for sending JAL data to a JALoP Local Store.
  *
  * @section LICENSE
  *
@@ -40,16 +38,16 @@ extern "C" {
 
 /**
  * @defgroup ProducerContext Producer Context
- * Each producer application that generates JAL data to send to a JAL local
- * store must first create and initialize a jalp_context object. The functions
- * and structures here are used to connect to JAL local store and send JAL
- * data.
+ * Each producer application that generates JAL data to send to a JALoP Local
+ * Store must first create and initialize a jalp_context object. This object
+ * maintains connection information and is used to send JAL data to the JALoP
+ * Local Store.
  * @{
  */
 /**
- * Opaque pointer to the internal jalp_context_t type.
+ * Opaque pointer to the jalp_context.
  * The jalp_context holds information about the connection to the JALoP Local Store.
- * The jalp_context is not thread safe. Applications should either create
+ * The jalp_context is not thread safe. Applications must either create
  * separate logging connections for each thread, or properly guard the jalp_context.
  *
  * Because each connection requires resources in the JAL Local Store, a
@@ -69,10 +67,9 @@ jalp_context *jalp_context_create(void);
  * @param[in] path The name of the socket to connect to. If this is NULL, the
  * default path defined in JALP_SOCKET_NAME is used.
  *
- * In most cases, it is safe pass NULL as the path. For testing purposes, or
- * when the path to the domain socket in the producer process is different
- * from the path in the JALoP Local Store, the caller may specify a different
- * path.
+ * In most cases, it is safe pass NULL as the path. In some rare cases, it may
+ * be necessary to indicate a different path to use when connecting to the
+ * JALoP Local Store.
  *
  * @param[in] ctx The context to create.
  * @param[in] hostname A string to use when filling out metadata sections. If
@@ -128,7 +125,7 @@ enum jal_status jalp_context_load_x509_cert(jalp_context *ctx,
 
 /**
  * Register a set of functions to implement a digest algorithm.
- * The ProducerLibrary will use the functions in the jal_digest_ctx to
+ * The Producer Library will use the functions in the jal_digest_ctx to
  * automatically create digests for data sent to the JALoP Local Store. By
  * default, no digests are created.
  *

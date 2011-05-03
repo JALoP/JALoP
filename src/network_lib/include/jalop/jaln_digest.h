@@ -42,12 +42,12 @@ struct jal_digest_ctx {
 	 */
 	int len;
 	/**
-	 * Function to call to create an instnace of a particular digest context.
-	 * The pointer returned by this function is passed as the first
+	 * Function to call to create an instance of a particular digest context.
+	 * The pointer returned by this function is passed as the \p instance
 	 * parameter to all the other functions in this structure.
 	 *
-	 * @return Non-NULL on success. If a NULL pointer is returned, the JNL
-	 * interprets this to indicate a memory failure.
+	 * @return Non-NULL on success. If a NULL pointer is returned,
+	 * returning a NULL value indicates a allocation failure.
 	 */
 	void *(*create)(void);
 	/**
@@ -62,7 +62,7 @@ struct jal_digest_ctx {
 	 * Function to call to update a digest context.
 	 * @param[in] instance the instance pointer.
 	 * @param[in] data a buffer containing bytes to feed into the digest context
-	 * @param[in] len the number of bytes in data
+	 * @param[in] len the number of bytes in the buffer \p data
 	 *
 	 * @returns JAL_OK on success, JAL_ERROR on failure.
 	 */
@@ -90,7 +90,7 @@ struct jal_digest_ctx {
 /**
  * Register a new digest algorithm.
  *
- * @param[in] jal_ctx The function pointers and data sizes for the digest algorithm.
+ * @param[in] jal_ctx The jaln_context to associate with this the jal_digest_ctx.
  * @param[in] algorithm The name of the digest method. The JNL makes a copy of this
  * string. Algorithm names are case-insensitive, so sha256, SHA256, and sHa256
  * are all the same. The JNL strips any leading or trailing whitespace from the

@@ -43,7 +43,7 @@ extern "C" {
  * JALoP (and this library) make no attempt to compress, encrypt or otherwise
  * transform files. Applications may wish to perform any number of transforms
  * before sending the file to the JAL local store, though they should describe
- * any transforms applied by filling approprate jalp_transform structures.
+ * any transforms applied by filling appropriate jalp_transform structures.
  * @{
  */
 /**
@@ -125,7 +125,7 @@ struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev
  * transform. If \p prev already points somewhere for \p next, the new
  * transform is inserted into the list.
  * @param[in] key_size The key size. The length of \p key is determined by \p
- * key_sizefor example, if \p key_size is #JALP_AES192, the \p key array is
+ * key_size. For example, if \p key_size is #JALP_AES192, the \p key array is
  * assumed to be 24 bytes in length.
  * @param[in] key The AES key, or NULL, the length of this array is determined
  * by \p key_size.
@@ -184,9 +184,7 @@ enum jalp_threat_level {
  * Describes the content-type of a file.
  */
 struct jalp_content_type {
-	/**
-	 * The top level media type.
-	 */
+	/** The top level media type. */
 	enum jalp_media_type media_type;
 	/** A string for the subtype, this may be anything. */
 	char *subtype;

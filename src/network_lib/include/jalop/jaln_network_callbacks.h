@@ -149,7 +149,7 @@ struct jaln_subscriber_callbacks {
 	 * The JNL calls this function to deliver bytes of a journal entry to the
 	 * application. This function may be called multiple times for a single
 	 * journal record. Each time the function is called, it delivers more
-	 * data 
+	 * data to the application.
 	 *
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The Publisher assigned sequence ID of this record
@@ -336,7 +336,7 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream
 	 */
-	int (*get_next_record_info)(const struct jaln_channel_info *ch_info,
+	int (*get_next_record_info_and_metadata)(const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			const char *last_serial_id,
 			struct jaln_record_info *record_info,
@@ -348,14 +348,14 @@ struct jaln_publisher_callbacks {
 	 * of the system metadata and application metadata. 
 	 * Applications must
 	 * release any resources allocated when the JNL executed
-	 * \p get_next_record_info
+	 * \p get_next_record_info_and_metadata
 	 *
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial_id of the record.
 	 * @param[in] system_metadata_buffer The buffer obtained by the call
-	 * to \p get_next_record_info.
+	 * to \p get_next_record_info_and_metadata.
 	 * @param[in] application_metadata_buffer The buffer obtained by the call
-	 * to \p get_next_record_info.
+	 * to \p get_next_record_info_and_metadata.
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
@@ -370,8 +370,8 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Acquire a pointer to the log payload. The buffer must contain the
 	 * same number of bytes as were designated in the
-	 * #jaln_record_info obtained in #get_next_record_info(). When the JNL
-	 * is finished with this buffer, it will call release_payload_buffer()
+	 * #jaln_record_info obtained in #get_next_record_info_and_metadata(). When the JNL
+	 * is finished with this buffer, it will call release_log_data()
 	 *
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial_id of the record to get.
@@ -407,7 +407,7 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Acquire a pointer to audit data. The buffer must contain the
 	 * same number of bytes as were designated in the jaln_record_info
-	 * obtained by calling get_next_record_info(). When the JNL is finished
+	 * obtained by calling get_next_record_info_and_metadata(). When the JNL is finished
 	 * with this buffer, it will call release_audit_data();
 	 *
 	 * @param[in] ch_info Information about the connection
@@ -443,7 +443,7 @@ struct jaln_publisher_callbacks {
 			void *user_data);
 	/**
 	 * Acquire a payload feeder for the journal record identified by serial_id.
-	 * When the JNL is finished with the feeder, it will call #release_payload_feeder()
+	 * When the JNL is finished with the feeder, it will call #release_journal_feeder()
 	 *
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id of the record to get.
