@@ -1,8 +1,10 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/3rd-party/build')
+sys.path.append(os.getcwd() + '/build-scripts')
 
 import ConfigHelpers
+import PackageCheckHelpers
 
 # Update package version here, add actual checks below
 pkg_config_version = '0.21'
@@ -55,7 +57,9 @@ conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.Che
 				       'CheckPKG': ConfigHelpers.CheckPKG,
 				       'CheckPKGAtLeastVersion': ConfigHelpers.CheckPKGAtLeastVersion,
 				       'CheckPKGAtMostVersion': ConfigHelpers.CheckPKGAtMostVersion,
-				       'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion })
+				       'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion,
+				       'CheckSantuario': PackageCheckHelpers.CheckSantuario,
+					   })
 
 if not conf.CheckCC():
 	Exit(-1)
@@ -69,6 +73,9 @@ if not conf.CheckHeader("test-dept.h"):
 if not conf.CheckPKGConfig(pkg_config_version):
 	Exit(-1)
 
+if not conf.CheckSantuario():
+	Exit(-1)
+
 for (pkg, version) in packages_at_least.values():
 	if not conf.CheckPKGAtLeastVersion(pkg, version):
 		Exit(-1)
@@ -80,6 +87,9 @@ for key, (pkg, version) in packages_at_least.items():
 		debug_env[key + "_flags"] = cmd
 
 	debug_env.ParseConfig('pkg-config --cflags --libs %s' % pkg, function=addFlags)
+
+# add linker flags for santuario
+debug_env["santuario_flags"] = "-lxml-security-c"
 
 
 # Clone the debug environment after it's been configured, no need to re-run all the conf checks
