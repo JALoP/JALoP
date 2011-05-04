@@ -1,5 +1,5 @@
 /**
- * @file network.h
+ * @file jaln_network.h
  *
  * Public functions for creating and configuring a jaln_context.
  *

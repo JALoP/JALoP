@@ -1,5 +1,5 @@
 /**
- * @file network_types.h
+ * @file jaln_network_types.h
  *
  * Public types of the JALoP Network Library.
  *
@@ -130,7 +130,7 @@ enum jaln_role {
  * This represents the data that is sent as part of a 'connect-ack' message.
  */
 struct jaln_connect_ack {
-	/** The hostname (if available) of the remote peer.
+	/** The hostname (if available) of the remote peer. */
 	char *hostname;
 	/** The IP address in dotted decimal notation (i.e. "192.168.1.1"). */
 	char *addr;
@@ -200,11 +200,10 @@ struct jaln_connect_request {
 };
 /**
  * The JNL fills out the #jaln_connect_nack and passes it to the application
- * when the peer sends a 'connect-nack' message. @see XXX
+ * when the peer sends a 'connect-nack' message.
  */
 struct jaln_connect_nack {
-	/** Information about the channel. on
-	 *
+	/** Information about the channel. */
 	struct jaln_channel_info *ch_info;
 	/** Array of failure reasons given by the remote peer. */
 	struct jaln_string_list **error_list;

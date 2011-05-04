@@ -36,6 +36,10 @@ extern "C" {
 #include <jalop/jalp_context.h>
 
 /**
+ * @defgroup audit Sending Audit Data
+ * @{
+ */
+/**
  * Send an audit record to the JALoP Local Store
  * Typically audit records will contain all the information needed to identify
  * an audit event. Applications may choose to include auxiliary data via the
@@ -43,8 +47,10 @@ extern "C" {
  * jalp_application_metadata::custom field, which may contain any valid XML.
  *
  * In the event the \p ctx was configured to generate digest values
- * (@see jalp_context_set_digest_callbacks), the Producer Lib will generate an
+ * , the Producer Lib will generate an
  * applicationMetadata document automatically if none is specified.
+ *
+ * @see jalp_context_set_digest_callbacks
  *
  * @param[in] ctx The context to send the data over
  * @param[in] app_meta An optional struct that the library will convert into an
@@ -72,6 +78,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		uint8_t *audit_buffer,
 		size_t audit_buffer_size);
 
+/** @} */
 #ifdef __cplusplus
 }
 #endif

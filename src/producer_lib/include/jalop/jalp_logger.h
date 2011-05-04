@@ -38,10 +38,10 @@ extern "C" {
 #include <jalop/jalp_context.h>
 
 /**
- * @defgroup logger Logger and Syslog
+ * @defgroup logger Sending Logger/Syslog Data
  * @{
  */
-/*
+/**
  * Send a log message to the JALoP Local Store.
  *
  * If an application wishes to include additional data about the event, they
@@ -55,9 +55,10 @@ extern "C" {
  * jalp_syslog_metadata or the jalp_logger_metadata provide enough flexibility, an
  * application may assign the jalp_app_metadata::custom field to a snippet of XML.
  *
- * In the event the \p ctx was configured to generate digest values
- * (@see jalp_context_set_digest_callbacks), the ProducerLib will
+ * In the event the \p ctx was configured to generate digest values,the ProducerLib will
  * generate an applicationMetadata document automatically.
+ *
+ * @see jalp_context_set_digest_callbacks
  *
  * @param[in] ctx The context to send the data over
  * @param[in] app_meta An optional struct that the ProducerLib will convert into XML
@@ -76,7 +77,7 @@ extern "C" {
  * @note The ctx will be connected if it isn't already.
  */
 enum jal_status jalp_log(jalp_context *ctx,
-		struct jalp_app_meta *app_meta,
+		struct jalp_app_metadata *app_meta,
 		uint8_t *log_buffer,
 		size_t log_buffer_size);
 

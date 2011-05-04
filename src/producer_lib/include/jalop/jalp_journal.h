@@ -47,8 +47,8 @@ extern "C" {
  * jalp_app_metadata::file_metadata section.
  *
  * In the event the \p ctx was configured to generate digest values
- * (@see jalp_context_set_digest_callbacks), the Producer Library will generate an
- * applicationMetadata document automatically.
+ * , the Producer Library will generate an applicationMetadata document automatically.
+ * @see jalp_context_set_digest_callbacks
  */
 /**
  * Send a journal entry to the JALoP Local Store.

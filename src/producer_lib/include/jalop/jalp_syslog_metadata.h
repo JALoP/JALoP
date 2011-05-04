@@ -65,7 +65,7 @@ struct jalp_syslog_metadata {
 	char *timestamp;
 	/**
 	 * The message ID may be used to identify the 'type' of the log
-	 * message. @See the MSGID field in RFC 5424.
+	 * message. @see the MSGID field in RFC 5424.
 	 */
 	char *messageId;
 	/**

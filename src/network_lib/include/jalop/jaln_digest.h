@@ -1,5 +1,5 @@
 /**
- * @file digest.h
+ * @file jaln_digest.h
  *
  * APIs for implementing and registering additional digest algorithms
  *
