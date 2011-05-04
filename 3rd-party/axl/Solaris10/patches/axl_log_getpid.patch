@@ -1,0 +1,20 @@
+Changed format string to accept long int from the getpid function.
+This is needed as getpid can return either a long or an int and can
+produce warnings during compilation.  Werror flags are turned on by
+default.
+
+diff -wubr axl-0.6.4.b4604.g4608/src/axl_log.c axl.new/src/axl_log.c
+--- axl-0.6.4.b4604.g4608/src/axl_log.c	Sun Jun 28 22:00:21 2009
++++ axl.new/src/axl_log.c	Wed May  4 10:31:49 2011
+@@ -174,9 +174,9 @@
+ 
+ 	/* printout the process pid */
+ 	if (axl_log_color_is_enabled ()) 
+-		printf ("\e[1;36m(proc %d)\e[0m: ", getpid ());
++		printf ("\e[1;36m(proc %ld)\e[0m: ", getpid ());
+ 	else
+-		printf ("(proc %d): ", getpid ());
++		printf ("(proc %ld): ", getpid ());
+ 
+ 	/* drop a log according to the level */
+ 	if (axl_log_color_is_enabled ()) {
