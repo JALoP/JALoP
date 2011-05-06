@@ -1,5 +1,5 @@
 /**
- * @file jaln_network_callbacks.h
+ * @file jaln_connection_callbacks.h
  *
  * @section LICENSE
  *
