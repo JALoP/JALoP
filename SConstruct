@@ -11,12 +11,12 @@ pkg_config_version = '0.21'
 
 # Only add packages to this list that install package config files.
 # For each package in this map, make sure the installed version is at least
-# the version specified. 
+# the version specified.
 #
-# NOTE: Adding the package here only checks for the existence of package, and 
+# NOTE: Adding the package here only checks for the existence of package, and
 # does not add the required cflags/libs to environment. This is intentional.
 # Add the cflags/library flags only where they are needed. This can be done
-# using the 'ParseConfig' method of the Environment object: 
+# using the 'ParseConfig' method of the Environment object:
 #      env.ParseConfig("pkg-config libconfig --cflags --libs")
 #
 # Packages are not added here since doing so would result in everything
@@ -26,7 +26,7 @@ pkg_config_version = '0.21'
 # The array must be the name of the package (according to pkg-config) and the
 # minimum version to use.
 #
-# When the package is found, this script will add a 
+# When the package is found, this script will add a
 # key_flags to the Enviroment. These may be used when building various targets
 # to ensure the proper flags are added. For example, if the 'foo' program
 # needs openssl, something like the following should be added to
@@ -53,7 +53,7 @@ flags = ' -Wall -Werror -g '
 
 debug_flags = '-DDEBUG'
 release_flags = '-O3 -DNDEBUG'
-debug_env = Environment(tools=['default','doxygen'], toolpath=['./3rd-party/site_scons/site_tools/'], CCFLAGS=flags)
+debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'], toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'], CCFLAGS=flags)
 
 conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
 				       'CheckPKG': ConfigHelpers.CheckPKG,
@@ -93,6 +93,7 @@ for key, (pkg, version) in packages_at_least.items():
 # add linker flags for santuario
 debug_env["santuario_flags"] = "-lxml-security-c"
 
+debug_env.AppendENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
 
 # Clone the debug environment after it's been configured, no need to re-run all the conf checks
 release_env = debug_env.Clone()

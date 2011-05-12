@@ -1,4 +1,2 @@
 Import('*')
-
-#uncomment when we have some actual source code.
-#env.SharedLibrary(target='jal-producer', source=env.Glob("*.c"))
+env.SConscript('src/SConscript', exports='env')
