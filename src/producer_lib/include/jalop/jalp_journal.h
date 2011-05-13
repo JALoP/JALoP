@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_LOGGER_H
-#define JALP_LOGGER_H
+#ifndef _JALP_LOGGER_H_
+#define _JALP_LOGGER_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,5 +139,5 @@ enum jal_status jalp_journal_path(jalp_context *ctx,
 }
 #endif
 
-#endif // JALP_JOURNAL_H
+#endif // _JALP_JOURNAL_H_
 

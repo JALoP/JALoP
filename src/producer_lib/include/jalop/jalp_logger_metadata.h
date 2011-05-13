@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_LOGGOR_METADATA_H
-#define JALP_LOGGOR_METADATA_H
+#ifndef _JALP_LOGGOR_METADATA_H_
+#define _JALP_LOGGOR_METADATA_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -176,5 +176,5 @@ void jalp_stack_frame_destroy(struct jalp_stack_frame **stack_frame);
 }
 #endif
 
-#endif // JALP_LOGGOR_METADATA_H
+#endif // _JALP_LOGGOR_METADATA_H_
 

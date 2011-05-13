@@ -25,8 +25,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JAL_STATUS_H
-#define JAL_STATUS_H
+#ifndef _JAL_STATUS_H_
+#define _JAL_STATUS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,4 +47,4 @@ enum jal_status {
 #ifdef __cplusplus
 }
 #endif
-#endif // JAL_STATUS_H
+#endif // _JAL_STATUS_H_

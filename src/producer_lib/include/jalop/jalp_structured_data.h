@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_STRUCTURED_DATA_H
-#define JALP_STRUCTURED_DATA_H
+#ifndef _JALP_STRUCTURED_DATA_H_
+#define _JALP_STRUCTURED_DATA_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -136,5 +136,5 @@ void jalp_structured_data_destroy(struct jalp_structured_data **sd_group);
 #ifdef __cplusplus
 }
 #endif
-#endif //JALP_STRUCTURED_DATA_H
+#endif // _JALP_STRUCTURED_DATA_H_
 
