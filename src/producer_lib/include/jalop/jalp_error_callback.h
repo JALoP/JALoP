@@ -1,6 +1,6 @@
 /**
- * @file jalp_structured_data.h This file defines structures and functions to
- * deal with structured_data elements of the syslog and logger metadata.
+ * @file jalp_error_callback.h This file defines functions to deal with
+ * fatal errors.
  *
  * @section LICENSE
  *
@@ -28,11 +28,6 @@
  */
 
 
-/* All out of memory errors are will be handled by memerror_handler
-* Applications may override the default behavior (to simply abort)
-* but must never return control to the application.
-* memerror_handler will call abort if control is ever returned */
-
 
 #ifndef _JALP_ERROR_CALLBACK_H_
 #define _JALP_ERROR_CALLBACK_H_
@@ -42,26 +37,22 @@ extern "C" {
 #endif
 
 /**
- * Register a function to be called in case of terminating error.
- *
- * @param[in] func Application defined function to register to be
- * called to handle unrecoverable errors.
- *
- * @return 0 on success.
+ * Pointer to the application defined function to handle fatal errors.
+ * Such functions should not attempt to return control to the application.
  */
-
-int jalp_set_error_callback(void (*func)(int err));
-
+typedef jalp_app_error_handler void(*error_callback)(int err);
 
 /**
- * Calls registered function to handle errors. Never returns.
+ * Register a function to be called in case of terminating error. Applications
+ * may use this to override the default fatal error behaivor (to simply abort).
  *
- * @param[in] error Error value to be passed. Default behavior
- * ignores this and aborts.
  *
+ * @param[in] handler Application defined function to execute if the Producer
+ * Library encounters a fatal error, such as allocation failures.
+ *
+ * @return JAL_OK on success or JAL_E_INVAL if the function pointer is NULL.
  */
-
-void jalp_error_handler(int error);
+int jalp_set_error_callback(jalp_app_error_handler handler);
 
 #ifdef __cplusplus
 }
