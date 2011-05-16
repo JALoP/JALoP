@@ -32,6 +32,7 @@
 #ifndef _JALP_ERROR_CALLBACK_H_
 #define _JALP_ERROR_CALLBACK_H_
 
+#include <jalop/jal_status.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

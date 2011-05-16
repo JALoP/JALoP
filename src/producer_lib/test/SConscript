@@ -1,0 +1,12 @@
+import os
+import string
+Import('*')
+
+tests = []
+
+tests.append(env.TestDeptTest('test_jalp_error_callback.c', other_sources=[])[0].abspath)
+
+producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
+AlwaysBuild(producer_tests)
+env.Depends(all_tests, producer_tests)
+

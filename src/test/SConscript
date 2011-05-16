@@ -1,9 +1,0 @@
-Import('*')
-subdirs = """
-	    producer_lib
-	  """.split()
-all_tests = env.Alias('tests')
-AlwaysBuild(all_tests)
-
-for d in subdirs:
-	env.SConscript('%s/SConscript' % d, exports='env all_tests')

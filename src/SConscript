@@ -7,8 +7,12 @@ subdirs = """
 	    network_lib
 	    network_stores
 	    producer_lib
-	    test
 	  """.split()
 
+all_tests = env.Alias('tests')
+AlwaysBuild(all_tests)
+if env.GetOption('clean'):
+	env.Default(all_tests)
+
 for d in subdirs:
-	env.SConscript('%s/SConscript' % d, exports='env')
+	env.SConscript('%s/SConscript' % d, exports='env all_tests')

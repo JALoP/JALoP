@@ -90,7 +90,7 @@ def TestDeptTest(env, testfile, other_sources):
 
 	c_suffix = env['CFILESUFFIX']
 	sut = string.split(string.split(str(testfile), 'test_')[1], c_suffix)[0]
-	sut_path = os.path.join('..', '..', os.path.split(os.getcwd())[-1], 'src')
+	sut_path = os.path.join('..', 'src')
 	sut_object = os.path.join(sut_path, sut_prefix + sut + sut_suffix)
 
 	proxies = 'test_' + sut + '_proxies.s'
