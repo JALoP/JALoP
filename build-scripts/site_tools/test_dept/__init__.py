@@ -11,9 +11,6 @@ if platform == 'i686' or platform == 'i386':
 elif platform == 'x86_64':
 	SYMBOLS_TO_ASM = 'sym2asm_x86_64.awk'
 
-
-
-
 def TestDeptMainFromSymbols(source, target, env, for_signature):
 	''' This will take a test_depth style driver program and generate a
 	    test_dept main program. Basically, the build_main_from_symbols
@@ -63,7 +60,7 @@ def TestDeptObjectCopyReplacingSymbols(source, target, env, for_signature):
 	'''
 	return 'objcopy_wrapper objcopy %s %s %s' % (source[0], source[1], target[0])
 
-def TestDeptTest(env, testfile, other_sources, shared_object=False):
+def TestDeptTest(env, testfile, other_sources):
 	''' This function hooks everything together.
 
 	testfile should be a file named test_<sut>.c, where <sut> is the
@@ -72,11 +69,6 @@ def TestDeptTest(env, testfile, other_sources, shared_object=False):
 	test_foo.c
 
 	other_sources is an array of additional targets to link against.
-
-	shared_object indicates if the object file build was a for a shared
-	library, or statically linke. On POSIX systems, SCons uses a different 
-	suffix for objects that are build for use in a shared library, and
-	objects built for static linking.
 
 	In addition to the source file test_<sut>.c, this expects there to be a
 	test_<sut>_no_proxy.txt file. It uses this file to prevent adding code
@@ -88,19 +80,14 @@ def TestDeptTest(env, testfile, other_sources, shared_object=False):
 	foobar_test_dept_proxy foobar
 	'''
 
-	obj_suffix = env['OBJSUFFIX']
-	obj_prefix = env['OBJPREFIX']
-	if shared_object:
-		sut_suffix = env['SHOBJSUFFIX']
-		sut_prefix = env['SHOBJPREFIX']
-		# On solaris, SHOBJPREX is so_, but on linux and others it
-		# gets defined as $OBJPREFIX. 
-		# TODO: Find a better way to resolve the variable.
-		if sut_prefix[0] == '$':
-			sut_prefix = env[sut_prefix.split('$')[1]]
-	else:
-		sut_suffix = obj_suffix
-		sut_prefix = obj_prefix
+	sut_suffix = env['SHOBJSUFFIX']
+	sut_prefix = env['SHOBJPREFIX']
+	# On solaris, SHOBJPREX is so_, but on linux and others it
+	# gets defined as $OBJPREFIX. 
+	# TODO: Find a better way to resolve the variable.
+	if sut_prefix[0] == '$':
+		sut_prefix = env[sut_prefix.split('$')[1]]
+
 	c_suffix = env['CFILESUFFIX']
 	sut = string.split(string.split(str(testfile), 'test_')[1], c_suffix)[0]
 	sut_path = os.path.join('..', '..', os.path.split(os.getcwd())[-1], 'src')
@@ -113,18 +100,18 @@ def TestDeptTest(env, testfile, other_sources, shared_object=False):
 	replacement_symbols = 'test_' + sut + '_replacement_symbols.txt'
 	test_main = 'main_test_' + sut + c_suffix
 
-	test_object = env.Object(source=testfile)
-	test_main = env.TDMainFromSymbols(target=test_main, source=test_object)
-	test_main_object = env.Object(test_main)
+	test_object = env.SharedObject(source=testfile)
+	test_main = env.TDMainFromSymbols(target=[test_main], source=[test_object])
+	test_main_object = env.SharedObject(test_main)
 	t = env.TDReplacementSymbols(target=replacement_symbols, source=test_object)
 
 	env.TDProxies(target=proxies, source=[test_object, test_main_object])
-	proxiesObject = env.Object(proxies)
+	proxiesObject = env.SharedObject(proxies)
 
 	env.TDObjectCopyReplacingSymbols(target=sut_using_proxies_tmp, source=[replacement_symbols, sut_object])
 	env.TDObjectCopyReplacingSymbols(target=sut_using_proxies, source=[protected_symbols, sut_using_proxies_tmp])
 
-	test_sources = [test_object, test_main, sut_using_proxies, proxiesObject]
+	test_sources = [test_object, test_main_object, sut_using_proxies, proxiesObject]
 	for i in other_sources:
 		test_sources.append(i);
 
