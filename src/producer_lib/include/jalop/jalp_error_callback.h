@@ -40,7 +40,7 @@ extern "C" {
  * Pointer to the application defined function to handle fatal errors.
  * Such functions should not attempt to return control to the application.
  */
-typedef jalp_app_error_handler void(*error_callback)(int err);
+typedef void(*jalp_app_error_handler)(int err);
 
 /**
  * Register a function to be called in case of terminating error. Applications
@@ -52,7 +52,7 @@ typedef jalp_app_error_handler void(*error_callback)(int err);
  *
  * @return JAL_OK on success or JAL_E_INVAL if the function pointer is NULL.
  */
-int jalp_set_error_callback(jalp_app_error_handler handler);
+enum jal_status jalp_set_error_callback(jalp_app_error_handler handler);
 
 #ifdef __cplusplus
 }

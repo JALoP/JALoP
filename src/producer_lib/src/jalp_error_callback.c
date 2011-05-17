@@ -29,9 +29,9 @@
 
 
 #include <stdlib.h>
-#include <include/jalop/jalp_error_callback.h>
-#include <src/jalp_error_callback_internal.h>
-#include <lib_common/include/jalop/jal_status.h>
+#include <jalop/jalp_error_callback.h>
+#include <jalop/jal_status.h>
+#include "jalp_error_callback_internal.h"
 
 /** The default behavior for the jalp error handler is to abort */
 static void jalp_default_fatal_error_callback(int err)
@@ -41,9 +41,9 @@ static void jalp_default_fatal_error_callback(int err)
 
 /** holds the registered callback function provided by the
  * application for handling fatal errors. */
-static void (*fatal_error_callback)(int err) = &jalp_default_fatal_error_callback;
+static jalp_app_error_handler fatal_error_callback = &jalp_default_fatal_error_callback;
 
-int jalp_set_error_callback(jalp_app_error_handler handler)
+enum jal_status jalp_set_error_callback(jalp_app_error_handler handler)
 {
 	if(!handler) {
 		return JAL_E_INVAL;
