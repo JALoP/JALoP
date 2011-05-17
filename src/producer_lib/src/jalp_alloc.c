@@ -1,5 +1,5 @@
 /**
- * @file jalp_malloc_wrappers.c This file contains wrappers for malloc,
+ * @file jalp_alloc.c This file contains wrappers for malloc,
  * calloc, and realloc.
  *
  * @section LICENSE
@@ -30,7 +30,7 @@
 
 #include <jalop/jal_status.h>
 #include "jalp_error_callback_internal.h"
-#include "jalp_malloc_wrappers.h"
+#include "jalp_alloc.h"
 
 
 void *jalp_calloc(size_t nmemb, size_t size)

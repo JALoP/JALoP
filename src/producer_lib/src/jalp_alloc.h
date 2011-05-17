@@ -1,5 +1,5 @@
 /**
- * @file jalp_malloc_wrappers.h This file defines wrappers for malloc, calloc,
+ * @file jalp_alloc.h This file defines wrappers for malloc, calloc,
  * and realloc for use by the Producer Library.
  *
  * @section LICENSE
@@ -27,8 +27,8 @@
  * limitations under the License.
  */
 
-#ifndef _JALP_MALLOC_WRAPPERS_H_
-#define _JALP_MALLOC_WRAPPERS_H_
+#ifndef _JALP_ALLOC_H_
+#define _JALP_ALLOC_H_
 
 #include <stdlib.h>
 
@@ -91,4 +91,4 @@ void *jalp_realloc(void *ptr, size_t size);
 }
 #endif
 
-#endif //_JALP_MALLOC_WRAPPERS_H_
+#endif //_JALP_ALLOC_H_
