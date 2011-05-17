@@ -56,7 +56,7 @@ void test_jalp_malloc_success_for_non_zero_allocation()
 	free(ptr);
 }
 
-void tests_jalp_calloc_calls_error_handler_on_calloc_failure()
+void test_jalp_calloc_calls_error_handler_on_calloc_failure()
 {
 	assert_equals(0, error_handler_called);
 	replace_function(&calloc, &calloc_always_fails);
@@ -65,28 +65,28 @@ void tests_jalp_calloc_calls_error_handler_on_calloc_failure()
 	jalp_calloc(1, sizeof(int));
 	assert_equals(1, error_handler_called);
 }
-void tests_jalp_calloc_success_for_zero_elements_zero_size_allocation()
+void test_jalp_calloc_success_for_zero_elements_zero_size_allocation()
 {
 	void *ptr = jalp_calloc(0, 0);
 	assert_not_equals(NULL, ptr);
 	free(ptr);
 }
 
-void tests_jalp_calloc_success_for_zero_elements_non_zero_size_allocation()
+void test_jalp_calloc_success_for_zero_elements_non_zero_size_allocation()
 {
 	void *ptr = jalp_calloc(0, sizeof(int));
 	assert_not_equals(NULL, ptr);
 	free(ptr);
 }
 
-void tests_jalp_calloc_success_for_non_zero_elements_zero_size_allocation()
+void test_jalp_calloc_success_for_non_zero_elements_zero_size_allocation()
 {
 	void *ptr = jalp_calloc(1, 0);
 	assert_not_equals(NULL, ptr);
 	free(ptr);
 }
 
-void tests_jalp_calloc_success_for_non_zero_elements_non_zero_size_allocation() 
+void test_jalp_calloc_success_for_non_zero_elements_non_zero_size_allocation() 
 {
 	void *ptr = jalp_calloc(1, sizeof(int));
 	assert_not_equals(NULL, ptr);
