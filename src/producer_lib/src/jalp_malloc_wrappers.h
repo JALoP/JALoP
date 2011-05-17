@@ -42,7 +42,7 @@ extern "C" {
  *
  * The jalp producer library wraps the standard malloc calls
  * and checks the return code. If an allocation failure occurs,
- * this results in a call to the producer global error handler.
+ * this results in a call to jalp_error_handler.
  *
  */
 
@@ -82,7 +82,7 @@ void *jalp_malloc(size_t size);
  *
  * @param[in] size New size of the allocation.
  *
- * @return a void pointer to the rallocated memory, to be freed with free()
+ * @return a void pointer to the reallocated memory, to be freed with free()
  *
  */
 void *jalp_realloc(void *ptr, size_t size);

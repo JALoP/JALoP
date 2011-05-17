@@ -28,21 +28,16 @@
  */
 
 
-#include <include/jalop/jalp_malloc_wrappers.h>
-#include <src/jalp_error_callback_internal.h>
-#include <lib_common/include/jalop/jal_status.h>
+#include <jalop/jal_status.h>
+#include "jalp_error_callback_internal.h"
+#include "jalp_malloc_wrappers.h"
 
 
 void *jalp_calloc(size_t nmemb, size_t size)
 {
         void *tmp = calloc(nmemb, size);
         if (!tmp) {
-		if (!nmemb || !size) {
-			jalp_error_handler(JAL_E_INVAL);
-		}
-		else {
-                	jalp_error_handler(JAL_E_NO_MEM);
-		}
+               	jalp_error_handler(JAL_E_NO_MEM);
         }
         return tmp;
 }
@@ -51,11 +46,7 @@ void *jalp_malloc(size_t size)
 {
 	void * tmp = malloc(size);
 	if (!tmp) {
-		if (!size) {
-			jalp_error_handler(JAL_E_INVAL);
-		else {
-                	jalp_error_handler(JAL_E_NO_MEM);
-		}
+		jalp_error_handler(JAL_E_NO_MEM);
 	}
 	return tmp;
 }
@@ -64,16 +55,13 @@ void *jalp_realloc(void *ptr, size_t size)
 {
         void *tmp = realloc(ptr, size);
         if (!tmp) {
-		/* if realloc returns null, but ptr was not null and size was zero,
-		 * then this is essentially a call to free and will return normally.
-		 * Otherwise, there was an error */
-		if (!ptr && !size) {
-			jalp_error_handler(JAL_E_INVAL);
+	/* if ptr was valid and size was zero,then this was
+	 * a valid free-like call to realloc and should return a NULL pointer.
+	 * Otherwise, a NULL return indicates an error. */
+		if (ptr && !size) {
+			return NULL;
 		}
-		else if (!ptr) {
-                	jalp_error_handler(JAL_E_NO_MEM);
-		}
-		else if (size) {
+		else {
 			jalp_error_handler(JAL_E_NO_MEM);
 		}
         }
