@@ -1,4 +1,5 @@
 import os
+from Utils import recursive_glob
 
 Import('*')
 
@@ -9,8 +10,10 @@ subdirs = """
 	    producer_lib
 	  """.split()
 
-all_tests = env.Alias('tests')
 AlwaysBuild(all_tests)
+
+matches = recursive_glob('.', '*.gcda')
+env.Clean(all_tests, matches)
 if env.GetOption('clean'):
 	env.Default(all_tests)
 

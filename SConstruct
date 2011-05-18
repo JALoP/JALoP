@@ -5,6 +5,7 @@ sys.path.append(os.getcwd() + '/build-scripts')
 
 import ConfigHelpers
 import PackageCheckHelpers
+from Utils import recursive_glob
 
 # Update package version here, add actual checks below
 pkg_config_version = '0.21'
@@ -51,7 +52,8 @@ flags = ' -Wall -Werror -g '
 # particular build configuration should get added to the appropriate spot.
 
 
-debug_flags = '-DDEBUG'
+debug_flags = '-DDEBUG -fprofile-arcs -ftest-coverage'
+debug_ldflags = '-g -fprofile-arcs -ftest-coverage'
 release_flags = '-O3 -DNDEBUG'
 debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'], toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'], CCFLAGS=flags)
 
@@ -95,16 +97,41 @@ debug_env["santuario_flags"] = "-lxml-security-c"
 
 debug_env.AppendENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
 
+all_tests = debug_env.Alias('tests')
+
 # Clone the debug environment after it's been configured, no need to re-run all the conf checks
 release_env = debug_env.Clone()
 
 # add appropriate flags for debug/release
 release_env.Append(CCFLAGS=release_flags)
-debug_env.Append(CCFLAGS=debug_flags)
+debug_env.Append(CCFLAGS=debug_flags, LINKFLAGS=debug_ldflags)
+
+
+# coverage target
+lcov_output_dir = "cov"
+lcov_output_file = "app.info"
+lcov_output_path = os.path.join(lcov_output_dir, lcov_output_file)
+
+coverage = debug_env.Alias(target=lcov_output_dir, source=None, 
+		action=["mkdir -p ${TARGET}",
+			"lcov -q --directory ${TARGET}/.. -b ${TARGET}/.. --capture --output-file %s" % lcov_output_path,
+			"lcov -q --remove %s /usr/\* --output-file %s" % (lcov_output_path, lcov_output_path),
+			"lcov -q --remove %s 3rd-party/\* --output-file %s" % (lcov_output_path, lcov_output_path),
+			"cd ${TARGET} && genhtml --show-details -k %s" % (lcov_output_file),
+			])
+debug_env.AlwaysBuild(coverage)
+
+debug_env.Clean(coverage, ['#cov'])
+debug_env.Clean(coverage, recursive_glob('.', '*.gcda'))
+if GetOption("clean"):
+	debug_env.Default(coverage)
+else:
+	debug_env.Depends(target=coverage, dependency=all_tests)
+
 
 # build release and debug versions in seperate directories
-SConscript('SConscript', variant_dir='debug', duplicate=0, exports={'env':debug_env})
-SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env})
+SConscript('SConscript', variant_dir='debug', duplicate=0, exports={'env':debug_env, 'all_tests':all_tests})
+SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env, 'all_tests':all_tests})
 
 # docs only need to get built once, and it shouldn't matter if the debug or
 # relase flags are used.
