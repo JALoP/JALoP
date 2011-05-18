@@ -257,7 +257,7 @@ struct jalp_journal_metadata {
 	 * List of transforms that the application applied before submitting
 	 * the entry to the JAL local store
 	 */
-	struct jalp_journal_transform *transforms;
+	struct jalp_transform *transforms;
 };
 /**
  * Create and initialize a jalp_journal_metadata object
