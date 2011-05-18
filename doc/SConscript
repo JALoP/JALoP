@@ -1,2 +1,9 @@
 Import('*')
-env.Doxygen('doxy.cfg')
+doxygen = env.Doxygen('doxy.cfg')
+env.Alias("docs", doxygen)
+AlwaysBuild(doxygen)
+
+if env.GetOption('clean'):
+	env.Default(doxygen)
+
+
