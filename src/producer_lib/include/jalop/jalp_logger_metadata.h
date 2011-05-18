@@ -98,9 +98,9 @@ struct jalp_logger_metadata {
 	/** The mapped diagnostic context, checkout Log4J for a description */
 	char *mapped_diagnostic_context;
 	/** A stack trace */
-	struct stack_frame *stack;
+	struct jalp_stack_frame *stack;
 	/** An extended list of metadata. */
-	struct structured_data *sd;
+	struct jalp_structured_data *sd;
 };
 /**
  * Create a logger metadata structure
