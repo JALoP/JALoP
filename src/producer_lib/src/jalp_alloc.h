@@ -87,6 +87,19 @@ void *jalp_malloc(size_t size);
  */
 void *jalp_realloc(void *ptr, size_t size);
 
+/**
+ * Calls strdup.
+ * If strdup returns with no issues, returns a pointer to the new duplicate 
+ * string.
+ * Otherwise, calls jalp_error_handler.
+ * 
+ * @param[in] str pointer to string to be duplicated.
+ *
+ * @return a char pointer to the duplicate string, to be freed with free()
+ *
+ */
+char *jalp_strdup(void *str);
+
 #ifdef __cplusplus
 }
 #endif

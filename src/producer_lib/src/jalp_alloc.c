@@ -67,3 +67,15 @@ void *jalp_realloc(void *ptr, size_t size)
         }
         return tmp;
 }
+
+char *jalp_strdup(char *str)
+{
+	if (!str) {
+		return NULL;
+	}
+	char *tmp = strdup(str);
+	if (!tmp) {
+		jalp_error_handler(JAL_E_NO_MEM);
+	}
+	return tmp;
+}
