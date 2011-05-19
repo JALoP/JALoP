@@ -21,6 +21,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_param.c',
 	other_sources=[errorCallbackObj, allocObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_structured_data.c',
 	other_sources=[allocObj, errorCallbackObj, paramObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_stack_frame.c', 
+	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
