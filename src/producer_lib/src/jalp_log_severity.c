@@ -38,7 +38,7 @@ struct jalp_log_severity *jalp_log_severity_create(void)
 	return new_severity;
 }
 
-void jalp_log_severity_destroy(struct jalp_log_severity** log_severity)
+void jalp_log_severity_destroy(struct jalp_log_severity **log_severity)
 {
 	if (!log_severity || !(*log_severity)) {
 		return;
