@@ -40,21 +40,16 @@ struct jalp_param *jalp_param_insert(struct jalp_param *prev, char *name,
 	}
 
 	struct jalp_param *old_next = NULL;
-	struct jalp_param *new_jalp_param = jalp_calloc(1, sizeof(*new_jalp_param));
-	char *tmp_name = jalp_malloc(strlen(name) + 1);
-	char *tmp_value = jalp_malloc(strlen(value) + 1);
-
-	strcpy(tmp_name, name);
-	strcpy(tmp_value, value);
-
+	struct jalp_param *new_jalp_param;
+	new_jalp_param = jalp_malloc(sizeof(*new_jalp_param));
 
 	if (prev) {
 		old_next = prev->next;
 		prev->next = new_jalp_param;
 	}
 
-	new_jalp_param->key = tmp_name;
-	new_jalp_param->value = tmp_value;
+	new_jalp_param->key = jalp_strdup(name);
+	new_jalp_param->value = jalp_strdup(value);
 	new_jalp_param->next = old_next;
 
 	return new_jalp_param;
@@ -62,23 +57,15 @@ struct jalp_param *jalp_param_insert(struct jalp_param *prev, char *name,
 }
 void jalp_param_destroy(struct jalp_param **param_list)
 {
-	struct jalp_param *tmp = (*param_list)->next;
-	char *tmp_key = (*param_list)->key;
-	char *tmp_value = (*param_list)->value;
+	struct jalp_param *next = (*param_list)->next;
 
-	if (tmp) {
-		(*param_list)->key = NULL;
-		(*param_list)->value = NULL;
-		(*param_list)->next = NULL;
-		jalp_param_destroy(&tmp);
+	if (next) {
+		jalp_param_destroy(&next);
 	}
-	free(tmp_key);
-	free(tmp_value);
 
-	/* If the linked list was circular, the head of the list won't be
-	 * free'd twice. */
-	if (tmp_key) {
-		free(*param_list);
-	}
+	free((*param_list)->key);
+	free((*param_list)->value);
+	free(*param_list);
+
 	*param_list = NULL;
 }
