@@ -20,8 +20,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALN_NET_CALLBACKS_H_
-#define _JALN_NET_CALLBACKS_H_
+#ifndef _JALN_CONNECTION_CALLBACKS_H_
+#define _JALN_CONNECTION_CALLBACKS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,4 +122,4 @@ struct jaln_connection_handlers {
 }
 #endif
 
-#endif // _JALN_NET_CALLBACKS_H_
+#endif // _JALN_CONNECTION_CALLBACKS_H_

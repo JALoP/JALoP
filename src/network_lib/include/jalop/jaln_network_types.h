@@ -22,8 +22,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALN_COMMON_N_
-#define _JALN_COMMON_N_
+#ifndef _JALN_NETWORK_TYPES_H_
+#define _JALN_NETWORK_TYPES_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -257,4 +257,4 @@ typedef struct jaln_context_t jaln_context;
 }
 #endif
 
-#endif // _JALN_COMMON_N_
+#endif // _JALN_NETWORK_TYPES_H_
