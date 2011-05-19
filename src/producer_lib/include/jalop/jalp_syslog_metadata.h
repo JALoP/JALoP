@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_SYSLOG_METADATA_H
-#define JALP_SYSLOG_METADATA_H
+#ifndef _JALP_SYSLOG_METADATA_H_
+#define _JALP_SYSLOG_METADATA_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,5 +104,5 @@ void jalp_syslog_metadata_destroy(struct jalp_syslog_metadata **syslog_meta);
 #ifdef __cplusplus
 }
 #endif
-#endif //JALP_PRODUCER_H
+#endif // _JALP_PRODUCER_H_
 

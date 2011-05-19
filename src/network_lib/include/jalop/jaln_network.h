@@ -22,8 +22,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALN_NETWORK_H
-#define JALN_NETWORK_H
+#ifndef _JALN_NETWORK_H_
+#define _JALN_NETWORK_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -218,4 +218,4 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn);
 }
 #endif
 
-#endif // JALN_NETWORK
+#endif // _JALN_NETWORK_

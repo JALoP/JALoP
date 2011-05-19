@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_CONTEXT_H
-#define JALP_CONTEXT_H
+#ifndef _JALP_CONTEXT_H_
+#define _JALP_CONTEXT_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -143,5 +143,5 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 }
 #endif
 
-#endif // JALP_CONTEXT_H
+#endif // _JALP_CONTEXT_H_
 

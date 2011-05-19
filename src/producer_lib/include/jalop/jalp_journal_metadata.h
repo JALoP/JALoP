@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_JOURNAL_METADATA_H
-#define JALP_JOURNAL_METADATA_H
+#ifndef _JALP_JOURNAL_METADATA_H_
+#define _JALP_JOURNAL_METADATA_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -271,5 +271,5 @@ void jalp_journal_metadata_destroy(struct jalp_journal_metadata **journal_meta);
 }
 #endif
 
-#endif //JALP_JOURNAL_METADATA_H
+#endif // _JALP_JOURNAL_METADATA_H_
 

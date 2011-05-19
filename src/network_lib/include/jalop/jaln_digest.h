@@ -22,8 +22,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JAL_DIGEST_H
-#define JAL_DIGEST_H
+#ifndef _JAL_DIGEST_H_
+#define _JAL_DIGEST_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -121,4 +121,4 @@ int jaln_register_digest_algorithm(jaln_context *jal_ctx,
 }
 #endif
 
-#endif //JAL_DIGEST_H
+#endif // _JAL_DIGEST_H_

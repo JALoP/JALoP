@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_AUDIT_H
-#define JALP_AUDIT_H
+#ifndef _JALP_AUDIT_H_
+#define _JALP_AUDIT_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,5 +82,5 @@ enum jal_status jalp_audit(jalp_context *ctx,
 #ifdef __cplusplus
 }
 #endif
-#endif // JALP_AUDIT_H
+#endif // _JALP_AUDIT_H_
 

@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef JALP_CONTEXT_INTERNAL_H
-#define JALP_CONTEXT_INTERNAL_H
+#ifndef _JALP_CONTEXT_INTERNAL_H_
+#define _JALP_CONTEXT_INTERNAL_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,4 +44,4 @@ struct jalp_context_t {
 }
 #endif
 
-#endif //JALP_CONTEXT_INTERNAL_H
+#endif //_JALP_CONTEXT_INTERNAL_H_
