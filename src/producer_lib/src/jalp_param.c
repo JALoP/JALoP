@@ -57,15 +57,21 @@ struct jalp_param *jalp_param_insert(struct jalp_param *prev, char *name,
 }
 void jalp_param_destroy(struct jalp_param **param_list)
 {
-	struct jalp_param *next = (*param_list)->next;
-
-	if (next) {
-		jalp_param_destroy(&next);
+	if (!param_list || !*param_list) {
+		return;
 	}
 
-	free((*param_list)->key);
-	free((*param_list)->value);
-	free(*param_list);
+	struct jalp_param *current;
+	struct jalp_param *next = *param_list;
+
+	while (next) {
+		current = next;
+		next = current->next;
+		free(current->key);
+		free(current->value);
+		free(current);
+	}
+
 
 	*param_list = NULL;
 }
