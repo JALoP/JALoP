@@ -13,13 +13,12 @@ errorCallbackObj = env.SharedObject(os.path.join('..','src', 'jalp_error_callbac
 allocObj = env.SharedObject(os.path.join('..','src', 'jalp_alloc.c'))
 paramObj = env.SharedObject(os.path.join('..','src', 'jalp_param.c'))
 
-tests.append(testEnv.TestDeptTest('test_jalp_error_callback.c', other_sources=[])[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jalp_alloc.c', other_sources=[errorCallbackObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_error_callback.c', other_sources=[], useProxies=True)[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_alloc.c', other_sources=[errorCallbackObj], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity.c', 
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_param.c', 
 	other_sources=[errorCallbackObj, allocObj])[0].abspath)
-
 tests.append(testEnv.TestDeptTest('test_jalp_structured_data.c',
 	other_sources=[allocObj, errorCallbackObj, paramObj])[0].abspath)
 

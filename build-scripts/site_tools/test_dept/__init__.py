@@ -60,7 +60,7 @@ def TestDeptObjectCopyReplacingSymbols(source, target, env, for_signature):
 	'''
 	return 'objcopy_wrapper objcopy %s %s %s' % (source[0], source[1], target[0])
 
-def TestDeptTest(env, testfile, other_sources):
+def TestDeptTest(env, testfile, other_sources, useProxies=False):
 	''' This function hooks everything together.
 
 	testfile should be a file named test_<sut>.c, where <sut> is the
@@ -104,9 +104,8 @@ def TestDeptTest(env, testfile, other_sources):
 	test_main = env.TDMainFromSymbols(target=[test_main], source=[test_object])
 	test_main_object = env.SharedObject(test_main)
 	test_sources = [test_object, test_main_object]
-
 	# not going to try and proxy calls to C++ code
-	if (suffix == 'c'):
+	if useProxies and (suffix == 'c'):
 		t = env.TDReplacementSymbols(target=replacement_symbols, source=test_object)
 		env.TDProxies(target=proxies, source=[test_object, test_main_object])
 		proxiesObject = env.SharedObject(proxies)
