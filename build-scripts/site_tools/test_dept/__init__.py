@@ -89,7 +89,7 @@ def TestDeptTest(env, testfile, other_sources):
 		sut_prefix = env[sut_prefix.split('$')[1]]
 
 	c_suffix = env['CFILESUFFIX']
-	sut = string.split(string.split(str(testfile), 'test_')[1], c_suffix)[0]
+	(sut, suffix) = string.rsplit(string.split(str(testfile), 'test_')[1], '.')
 	sut_path = os.path.join('..', 'src')
 	sut_object = os.path.join(sut_path, sut_prefix + sut + sut_suffix)
 
@@ -103,15 +103,20 @@ def TestDeptTest(env, testfile, other_sources):
 	test_object = env.SharedObject(source=testfile)
 	test_main = env.TDMainFromSymbols(target=[test_main], source=[test_object])
 	test_main_object = env.SharedObject(test_main)
-	t = env.TDReplacementSymbols(target=replacement_symbols, source=test_object)
+	test_sources = [test_object, test_main_object]
 
-	env.TDProxies(target=proxies, source=[test_object, test_main_object])
-	proxiesObject = env.SharedObject(proxies)
+	# not going to try and proxy calls to C++ code
+	if (suffix == 'c'):
+		t = env.TDReplacementSymbols(target=replacement_symbols, source=test_object)
+		env.TDProxies(target=proxies, source=[test_object, test_main_object])
+		proxiesObject = env.SharedObject(proxies)
+		env.TDObjectCopyReplacingSymbols(target=sut_using_proxies_tmp, source=[replacement_symbols, sut_object])
+		env.TDObjectCopyReplacingSymbols(target=sut_using_proxies, source=[protected_symbols, sut_using_proxies_tmp])
+		test_sources.append(sut_using_proxies)
+		test_sources.append(proxiesObject)
+	else:
+		test_sources.append(sut_object)
 
-	env.TDObjectCopyReplacingSymbols(target=sut_using_proxies_tmp, source=[replacement_symbols, sut_object])
-	env.TDObjectCopyReplacingSymbols(target=sut_using_proxies, source=[protected_symbols, sut_using_proxies_tmp])
-
-	test_sources = [test_object, test_main_object, sut_using_proxies, proxiesObject]
 	for i in other_sources:
 		test_sources.append(i);
 
