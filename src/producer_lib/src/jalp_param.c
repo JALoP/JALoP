@@ -32,7 +32,7 @@
 #include <jalop/jalp_structured_data.h>
 #include "jalp_alloc.h"
 
-struct jalp_param *jalp_param_insert(struct jalp_param *prev, char *name,
+struct jalp_param *jalp_param_append(struct jalp_param *prev, char *name,
 							      char *value)
 {
 	if (!name || !value) {

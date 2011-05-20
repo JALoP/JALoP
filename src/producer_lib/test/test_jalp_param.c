@@ -4,35 +4,35 @@
 #include <jalop/jalp_structured_data.h>
 #include "jalp_alloc.h"
 
-void test_jalp_param_insert_returns_null_when_name_is_null()
+void test_jalp_param_append_returns_null_when_name_is_null()
 {
 	struct jalp_param *param = NULL;
-	assert_equals(NULL, jalp_param_insert(param, NULL, "value"));
+	assert_equals(NULL, jalp_param_append(param, NULL, "value"));
 }
 
-void test_jalp_param_insert_returns_null_when_value_is_null()
+void test_jalp_param_append_returns_null_when_value_is_null()
 {
 	struct jalp_param *param = NULL;
-	assert_equals(NULL, jalp_param_insert(param, "name", NULL));
+	assert_equals(NULL, jalp_param_append(param, "name", NULL));
 }
 
-void test_jalp_param_insert_return_new_param_when_param_is_null()
+void test_jalp_param_append_return_new_param_when_param_is_null()
 {
 	struct jalp_param *param = NULL;
-	param = jalp_param_insert(param, "name", "value");
+	param = jalp_param_append(param, "name", "value");
 	assert_not_equals(NULL, param);
 	assert_string_equals("name", param->key);
 	assert_string_equals("value", param->value);
 }
 
-void test_jalp_param_insert_return_list_when_param_is_not_null()
+void test_jalp_param_append_return_list_when_param_is_not_null()
 {
 	struct jalp_param *next_param = NULL;
 	struct jalp_param *param = jalp_malloc(sizeof(*param));
 	param->key = jalp_strdup("name");
 	param->value = jalp_strdup("value");
 	param->next = NULL;
-	next_param = jalp_param_insert(param, "name2", "value2");
+	next_param = jalp_param_append(param, "name2", "value2");
 	assert_not_equals(NULL, param);
 	assert_not_equals(NULL, next_param);
 	assert_string_equals("name2", next_param->key);
@@ -41,7 +41,7 @@ void test_jalp_param_insert_return_list_when_param_is_not_null()
 	assert_string_equals("value2", param->next->value);
 }
 
-void test_jalp_param_insert_return_list_with_param_inserted_center()
+void test_jalp_param_append_return_list_with_param_inserted_center()
 {
 	struct jalp_param *frst_param = jalp_malloc(sizeof(*frst_param));
 	struct jalp_param *scnd_param = jalp_malloc(sizeof(*scnd_param));
@@ -51,7 +51,7 @@ void test_jalp_param_insert_return_list_with_param_inserted_center()
 	frst_param->next = scnd_param;
 	scnd_param->key = "name2";
 	scnd_param->value = "value2";
-	new_scnd = jalp_param_insert(frst_param, "name1", "value1");
+	new_scnd = jalp_param_append(frst_param, "name1", "value1");
 	assert_not_equals(NULL, frst_param);
 	assert_not_equals(NULL, scnd_param);
 	assert_not_equals(NULL, new_scnd);

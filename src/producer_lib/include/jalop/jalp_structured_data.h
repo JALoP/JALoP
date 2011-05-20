@@ -76,7 +76,7 @@ struct jalp_param {
  *
  * @return the newly created param
  */
-struct jalp_param *jalp_param_insert(struct jalp_param *prev,
+struct jalp_param *jalp_param_append(struct jalp_param *prev,
 				     char *name,
 				     char *value);
 /**
@@ -122,7 +122,7 @@ struct jalp_structured_data {
  * jalp_structured_data_destroy(struct jalp_structured_data*).
  *
  */
-struct jalp_structured_data *jalp_structured_data_insert(struct jalp_structured_data *prev,
+struct jalp_structured_data *jalp_structured_data_append(struct jalp_structured_data *prev,
 							 char *sd_id);
 /**
  * Release all memory associated with this structured data list.
