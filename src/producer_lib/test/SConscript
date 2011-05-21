@@ -15,6 +15,7 @@ contentTypeObj = env.SharedObject(os.path.join('..', 'src', 'jalp_content_type.c
 fileInfoObj = env.SharedObject(os.path.join('..', 'src', 'jalp_file_info.c'));
 logSeverityObj = env.SharedObject(os.path.join('..', 'src', 'jalp_log_severity.c'))
 jalopInitObj = env.SharedObject(os.path.join('..','src', 'jalp_init.cpp'))
+base64Obj = env.SharedObject(os.path.join('..','src', 'jalp_base64.c'))
 xmlTestUtilsObj = testEnv.SharedObject("xml_test_utils.cpp");
 logMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'));
 structDataObj = env.SharedObject(os.path.join('..', 'src', 'jalp_structured_data.c'))
@@ -29,13 +30,13 @@ tests.append(testEnv.TestDeptTest('test_jalp_structured_data.c',
 tests.append(testEnv.TestDeptTest('test_jalp_stack_frame.c', 
 	other_sources=[lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_transform.c',
-	other_sources=[lib_common])[0].abspath)
+	other_sources=[lib_common, base64Obj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_content_type.c',
 	other_sources=[paramObj, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_file_info.c',
 	other_sources=[paramObj, contentTypeObj, lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jalp_journal_metadata.c', 
-	other_sources=[transformObj, fileInfoObj, contentTypeObj, paramObj, lib_common])[0].abspath)
+	other_sources=[transformObj, fileInfoObj, contentTypeObj, paramObj, lib_common, base64Obj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_init.cpp',
 	other_sources=[lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_base64.c',
