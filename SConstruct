@@ -1,5 +1,6 @@
 import sys
 import os
+import platform
 sys.path.append(os.getcwd() + '/3rd-party/build')
 sys.path.append(os.getcwd() + '/build-scripts')
 
@@ -45,17 +46,26 @@ packages_at_least = {
 	}
 
 # flags are shared by both debug and release builds
-flags = ' -Wall -Werror -g -DHAVE_VA_COPY '
+warningFlags = ' -Wall -W -Wundef -Wshadow -Wmissing-noreturn -Wformat=2 -Wmissing-format-attribute -Wextra -Werror -D_FORTIFY_SOURCE=2 -fexceptions   '
+flags = warningFlags + ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE_ -g -DHAVE_VA_COPY '
+
 # The debug and release flags are applied to the appropriate environments.
 # This script will build both debug and release version at the same time,
 # common flags should get added to the 'flags' variable. Flags sepcific to a
 # particular build configuration should get added to the appropriate spot.
+debug_flags = ' -Wunreachable-code -DDEBUG -fprofile-arcs -ftest-coverage '
+debug_ldflags = ' -fprofile-arcs -ftest-coverage '
+release_flags = ' -O3 -DNDEBUG -Wno-unreachable-code'
+debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
+		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
+debug_env.Append(CCFLAGS=flags, CFLAGS='-std=gnu99')
+if platform.system() == 'SunOS':
+	debug_env.Append(CCFLAGS=' -D_POSIX_C_SOURCE=200112L ')
 
-
-debug_flags = '-DDEBUG -fprofile-arcs -ftest-coverage'
-debug_ldflags = '-g -fprofile-arcs -ftest-coverage'
-release_flags = '-O3 -DNDEBUG'
-debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'], toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'], CCFLAGS=flags)
+# Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
+(major, _, _) = debug_env['CCVERSION'].split('.')
+if int(major) >= 4:
+	debug_env.Append(CCFLAGS=' -fstack-protector --param=ssp-buffer-size=4')
 
 conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
 				       'CheckPKG': ConfigHelpers.CheckPKG,

@@ -30,7 +30,7 @@ def __checkCanLink(context, source, source_type, message_libname, real_libs=[]):
 
 santuario_source = '''
 #include <xsec/framework/XSECProvider.hpp>
-int main (int argc, char **argv) {
+int main () {
 	XSECPlatformUtils::Initialise();
 	return 0;
 }

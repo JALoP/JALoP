@@ -1,4 +1,11 @@
 Import('*')
 
-producer_lib = env.SharedLibrary(target='jal-producer', source=env.Glob("*.c"))
+sources = []
+for source in env.Glob("*.c"):
+	if not source.name == 'jalp_asprintf.c':
+		sources.append(source)
+
+# GCC on solaris and RHEL 5 don't support #pragma GCC diagnostic to disable warnings, so disable it here.
+asprintfObj = env.SharedObject(source='jalp_asprintf.c', CCFLAGS=env['CCFLAGS'] + ' -Wno-missing-format-attribute -Wno-unreachable-code')
+producer_lib = env.SharedLibrary(target='jal-producer', source=[sources, asprintfObj])
 env.Default(producer_lib)

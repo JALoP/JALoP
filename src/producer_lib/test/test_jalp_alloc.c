@@ -7,19 +7,19 @@
 
 static int error_handler_called = 0;
 
-void *malloc_always_fails(size_t size)
+void *malloc_always_fails(__attribute__((unused))size_t size)
 {
 	return NULL;
 }
-void *calloc_always_fails(size_t nmemb, size_t size)
+void *calloc_always_fails(__attribute__((unused))size_t nmemb, __attribute__((unused))size_t size)
 {
 	return NULL;
 }
-void *realloc_always_fails(void *ptr, size_t size)
+void *realloc_always_fails(__attribute__((unused))void *ptr, __attribute__((unused))size_t size)
 {
 	return NULL;
 }
-void mocked_error_handler(int err)
+void mocked_error_handler(__attribute__((unused))int err)
 {
 	error_handler_called = 1;
 }

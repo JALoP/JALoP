@@ -10,14 +10,14 @@ static int td_error_handler_called = 0;
 static int abort_called = 0;
 static jmp_buf env;
 
-void abort_handler(int sig) 
+__attribute__((noreturn)) void abort_handler(__attribute__((unused))int sig)
 {
 	abort_called = 1;
 	signal(SIGABRT, abort_handler);
 	longjmp(env, 1);
 }
 
-static void td_error_handler(int err)
+static void td_error_handler(__attribute__((unused))int err)
 {
 	td_error_handler_called = 1;
 }

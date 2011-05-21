@@ -34,7 +34,7 @@
 #include "jalp_error_callback_internal.h"
 
 /** The default behavior for the jalp error handler is to abort */
-static void jalp_default_fatal_error_callback(int err)
+__attribute__((noreturn)) static void jalp_default_fatal_error_callback(__attribute__((unused))int err)
 {
 	abort();
 }
@@ -52,7 +52,7 @@ enum jal_status jalp_set_error_callback(jalp_app_error_handler handler)
 	return JAL_OK;
 }
 
-void jalp_error_handler(int err)
+__attribute__((noreturn)) void jalp_error_handler(int err)
 {
 	fatal_error_callback(err);
 	abort();
