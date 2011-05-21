@@ -1,7 +1,7 @@
 Import('*')
 
 sources = []
-for source in env.Glob("*.c"):
+for source in (env.Glob("*.c") + env.Glob("*.cpp")):
 	if not source.name == 'jalp_asprintf.c':
 		sources.append(source)
 
