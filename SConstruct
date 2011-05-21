@@ -1,6 +1,7 @@
 import sys
 import os
 import platform
+import SCons.Util
 sys.path.append(os.getcwd() + '/3rd-party/build')
 sys.path.append(os.getcwd() + '/build-scripts')
 
@@ -51,34 +52,89 @@ packages_at_least = {
 	}
 
 # flags are shared by both debug and release builds
-warningFlags = ' -Wall -W -Wundef -Wshadow -Wmissing-noreturn -Wformat=2 -Wmissing-format-attribute -Wextra -Werror -D_FORTIFY_SOURCE=2 -fexceptions   '
-flags = warningFlags + ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE_ -g -DHAVE_VA_COPY '
+default_ccflags = ' -Wall -W -Wundef -Wshadow -Wmissing-noreturn -Wformat=2 -Wmissing-format-attribute '
+default_ccflags += ' -Wextra -Wno-unreachable-code -Werror -D_FORTIFY_SOURCE=2 -fexceptions '
+default_ccflags += ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE_ -DHAVE_VA_COPY '
+default_cflags = ' -std=gnu99 '
+
 
 # The debug and release flags are applied to the appropriate environments.
 # This script will build both debug and release version at the same time,
 # common flags should get added to the 'flags' variable. Flags sepcific to a
 # particular build configuration should get added to the appropriate spot.
-debug_flags = ' -Wno-unreachable-code -DDEBUG -fprofile-arcs -ftest-coverage '
-debug_ldflags = ' -fprofile-arcs -ftest-coverage '
-release_flags = ' -O3 -DNDEBUG -Wno-unreachable-code'
-debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
+extra_debug_ccflags = '-DDEBUG'.split()
+
+profiling_ccflags = '-fprofile-arcs -ftest-coverage'.split()
+profiling_ldflags = profiling_ccflags
+
+stack_protector_ccflags = '-fstack-protector --param=ssp-buffer-size=4'.split()
+
+extra_release_ccflags = '-DNDEBUG -g -O3'.split()
+debug_env = Environment(ENV=os.environ, tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
+		parse_flags= default_ccflags,
 		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
-if os.environ.has_key('DESTDIR'):
-	debug_env['DESTDIR'] = os.environ['DESTDIR']
 debug_env['JALOP_VERSION_STR'] = '1.0'
 update_env_with_install_paths(debug_env)
+# There is a quirk in scons where it likes to try and normalize the path. Basically, if you use
+# PrependENVPath, it will scan for duplicate path entries, and keep the the first entry, however
+# if you use AppendENVPath, it will scan for duplicate path entries, and keep the last.  Since 
+# we're trying to adopt the user's environment here. Scons won't do this until you either append
+# or prepend a path element, so we need to do a prepend (to keep the user's path in the correct
+# order first. Since the build-scripts is all custom code, there should be no harm in prepending
+# it to the PATH.
+debug_env.PrependENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
+
+debug_env.Append(CFLAGS=default_cflags)
+
+if os.environ.has_key('LD'):
+	debug_env['LINK'] = os.environ['LD']
+for t in ['CC', 'CXX', 'CPP' ]:
+	if os.environ.has_key(t):
+		debug_env[t] = os.environ[t]
+
 debug_env['SOURCE_ROOT'] = str(os.getcwd())
-debug_env.Append(CCFLAGS=flags, CFLAGS='-std=gnu99')
+
 if platform.system() == 'SunOS':
 	debug_env.PrependENVPath('PKG_CONFIG_PATH',
 			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
+	debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
+	debug_env.MergeFlags('-L/usr/local/lib -R/usr/local/lib -R/usr/local/ssl/lib')
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
-	debug_env.Append(CCFLAGS=' -D_POSIX_C_SOURCE=200112L ')
-	debug_env.Append(LINKFLAGS='-L/usr/local/lib -R/usr/local/lib -R/usr/local/ssl/lib')
+
 # Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
-(major, _, _) = debug_env['CCVERSION'].split('.')
-if int(major) >= 4:
-	debug_env.Append(CCFLAGS=' -fstack-protector --param=ssp-buffer-size=4')
+if debug_env['CC'] == 'gcc':
+	debug_env.Prepend(CCFLAGS=profiling_ccflags, LINKFLAGS=profiling_ldflags)
+	(major, _, _) = debug_env['CCVERSION'].split('.')
+	if int(major) >= 4:
+		debug_env.Prepend(CCFLAGS=stack_protector_ccflags)
+
+def merge_with_os_env(env):
+	if os.environ.has_key('LIBPATH'):
+		env.MergeFlags({'LIBPATH':os.environ['LIBPATH'].split(':')})
+	if os.environ.has_key('INCLUDE'):
+		env.MergeFlags({'CPPPATH':os.environ['INCLUDE'].split(':')})
+	if os.environ.has_key('LDFLAGS'):
+		env.MergeFlags(env.ParseFlags(os.environ['LDFLAGS']))
+	if os.environ.has_key('CCFLAGS'):
+		env.MergeFlags(env.ParseFlags(os.environ['CCFLAGS']))
+	if os.environ.has_key('CFLAGS'):
+		# ParseFlags treats things that are not defines, include
+		# paths, linker flags, etc as things that should be dropped
+		# into CCFLAGS, which is used for both C and C++ compiles.
+		d = env.ParseFlags(os.environ['CFLAGS'])
+		d['CFLAGS'] = d['CFLAGS'] + d['CCFLAGS']
+		d['CCFLAGS'] = []
+		env.MergeFlags(d)
+	if os.environ.has_key('CXXFLAGS'):
+		d = env.ParseFlags(os.environ['CXXFLAGS'])
+		if 'CXXFLAGS' not in d.keys():
+			d['CXXFLAGS'] = d['CFLAGS'] + d['CCFLAGS']
+		else:
+			d['CXXFLAGS'] = d['CXXFLAGS'] + d['CCFLAGS'] + d['CCFLAGS']
+		d['CCFLAGS'] = []
+		d['CFLAGS'] = []
+		env.MergeFlags(d)
+merge_with_os_env(debug_env)
 
 if not (GetOption("clean") or GetOption("help")):
 	conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
@@ -137,17 +193,22 @@ debug_env["santuario_ldflags"] = "-lxml-security-c"
 # linker flags for libuuid
 debug_env["libuuid_ldflags"] = "-luuid"
 
-debug_env.AppendENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
-
 all_tests = debug_env.Alias('tests')
 
 # Clone the debug environment after it's been configured, no need to re-run all the conf checks
+
 release_env = debug_env.Clone()
 
 # add appropriate flags for debug/release
-release_env.Append(CCFLAGS=release_flags)
-debug_env.Append(CCFLAGS=debug_flags, LINKFLAGS=debug_ldflags)
+release_env.Prepend(CCFLAGS=extra_release_ccflags)
+debug_env.Prepend(CCFLAGS=extra_debug_ccflags)
 
+if debug_env['CC'] == 'gcc':
+	debug_env.Prepend(CCFLAGS=profiling_ccflags, LINKFLAGS=profiling_ldflags)
+	# Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
+	(major, _, _) = debug_env['CCVERSION'].split('.')
+	if int(major) >= 4:
+		debug_env.Prepend(CCFLAGS='-fstack-protector --param=ssp-buffer-size=4'.split())
 
 # coverage target
 lcov_output_dir = "cov"
@@ -186,6 +247,7 @@ if GetOption("clean"):
 	debug_env.Default('release_dir')
 
 # docs only need to get built once, and it shouldn't matter if the debug or
-# relase flags are used.
+# release flags are used.
 
 SConscript('doc/SConscript', duplicate=0, exports={'env':debug_env})
+

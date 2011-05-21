@@ -1,17 +1,14 @@
 Import('*')
 
 lib_common_env = env.Clone()
-lib_common_env.Prepend(CPPPATH='#src/lib_common/include:#src/lib_common/src')
+lib_common_env.MergeFlags({'CPPPATH':['#src/lib_common/include', '#src/lib_common/src']})
+lib_common_env.MergeFlags(env['openssl_cflags'])
+lib_common_env.MergeFlags(env['openssl_ldflags'])
+lib_common_env.MergeFlags(env['xerces_cflags'])
 
-lib_common_env.Append(CCFLAGS=lib_common_env['openssl_cflags'])
-lib_common_env.Append(CCFLAGS=lib_common_env['xerces_cflags'])
-lib_common_env.Append(CCFLAGS=lib_common_env['santuario_ldflags'])
-
-lib_common_env.Append(LINKFLAGS=lib_common_env['openssl_ldflags'])
-lib_common_env.Append(LINKFLAGS=lib_common_env['xerces_ldflags'])
-lib_common_env.Append(LINKFLAGS=lib_common_env['libuuid_ldflags'])
-lib_common_env.Append(LINKFLAGS=lib_common_env['santuario_ldflags'])
-
+lib_common_env.MergeFlags(env['xerces_ldflags'])
+lib_common_env.MergeFlags(env['libuuid_ldflags'])
+lib_common_env.MergeFlags(env['santuario_ldflags'])
 
 SConscript('include/SConscript', exports={'env':lib_common_env})
 lib_common = SConscript('src/SConscript', exports={'env':lib_common_env})

@@ -1,17 +1,14 @@
-
 Import('*')
-
 producer_lib_env = env.Clone()
-producer_lib_env.Prepend(CPPPATH='#src/producer_lib/include:#src/lib_common/include:#src/producer_lib/src:#src/lib_common/src:.')
-producer_lib_env.Append(CCFLAGS=producer_lib_env['openssl_cflags'])
-producer_lib_env.Append(CCFLAGS=producer_lib_env['xerces_cflags'])
-producer_lib_env.Append(CCFLAGS=producer_lib_env['santuario_ldflags'])
 
-producer_lib_env.Append(CXXFLAGS="-D__STDC_FORMAT_MACROS")
-producer_lib_env.Append(LINKFLAGS=producer_lib_env['openssl_ldflags'])
-producer_lib_env.Append(LINKFLAGS=producer_lib_env['xerces_ldflags'])
-producer_lib_env.Append(LINKFLAGS=producer_lib_env['libuuid_ldflags'])
-producer_lib_env.Append(LINKFLAGS=producer_lib_env['santuario_ldflags'])
+producer_lib_env.MergeFlags(producer_lib_env['openssl_cflags'])
+producer_lib_env.MergeFlags(producer_lib_env['xerces_cflags'])
+producer_lib_env.MergeFlags(producer_lib_env['openssl_ldflags'])
+producer_lib_env.MergeFlags(producer_lib_env['xerces_ldflags'])
+producer_lib_env.MergeFlags(producer_lib_env['libuuid_ldflags'])
+producer_lib_env.MergeFlags(producer_lib_env['santuario_ldflags'])
+producer_lib_env.MergeFlags({'CXXFLAGS':['-D__STDC_FORMAT_MACROS']})
+producer_lib_env.MergeFlags({'CPPPATH':['#src/producer_lib/include', '#src/lib_common/include', '#src/producer_lib/src', '#src/lib_common/src', '.']})
 
 SConscript('include/SConscript', exports={'env':producer_lib_env, 'all_tests':all_tests, 'lib_common':lib_common})
 SConscript('test/SConscript', exports={'env':producer_lib_env, 'all_tests':all_tests, 'lib_common':lib_common, 'test_utils':test_utils})

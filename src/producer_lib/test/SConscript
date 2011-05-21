@@ -5,14 +5,16 @@ Import('*')
 tests = []
 
 testEnv = env.Clone()
-# The test-dept macros trigger this warning, so disable it for all the test
-# drivers.
-testEnv.Append(CCFLAGS=' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/test-input/\\" ')
-testEnv.Append(CPPPATH=":#/src/test_utils/src")
+
+# this completes to "debug/src/producer_lib/src"
+#env.Append(CPPPATH='../../../src')
+
+# The test code trigger warnings we'd just assume ignore.
+ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/test-input/\\" '
 
 # this is needed for the jalp_config_internal.h.
-# this completes to "debug/src/producer_lib/src"
-env.Append(CPPPATH='../../../src')
+testEnv.Append(CPPPATH="#/src/test_utils/src")
+testEnv.Append(CCFLAGS=ccflags.split())
 
 paramObj = env.SharedObject(os.path.join('..','src', 'jalp_param.c'))
 transformObj = env.SharedObject(os.path.join('..','src', 'jalp_transform.c'))

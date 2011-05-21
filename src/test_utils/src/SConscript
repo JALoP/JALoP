@@ -3,7 +3,7 @@ import ConfigDotH
 Import('*')
 
 env = env.Clone()
-env.Append(CCFLAGS='-DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" ')
+env.Append(CCFLAGS=('-DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" ').split())
 
 sources = env.Glob("*.c") + env.Glob("*.cpp")
 test_utils = env.SharedLibrary(target='jal-test-utils', source=sources)

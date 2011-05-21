@@ -9,14 +9,40 @@ Building
 This project uses the scons (www.scons.org) build tool and will compile under python 2.4 or 2.6. Later version of Python should work as well, but were not tested. You do not need to install scons to build, a version of scons is included as part of the distribution. To build, simply run the scons script in the top directory:
 
 $ scons
+This generates debug, and release directories.
 
-This generates doc, debug, and release directories. To clean the build output you can remove these directories by hand or run 
+To build the and execute the unit tests, run
+$ scons tests
+
+To generate code coverage reports, run
+$ scons cov
+code coverage reports will appear in the 'cov' directory in the root of the
+source tree.
+
+To generate doxygen documentation, run
+$ scons doc
+The generated documents will appear in the directory doc/doxygen.out
+
+To clean the build output you can simply run
 $ scons -c
 
 Scons accepts a '-j' argument for parallel builds, so
 
 $ scons -j6 
 will run 6 worker threads in parallel.
+
+
+The build environment honors a number of variables, these are:
+CFLAGS - a set of flags to use when compiling C source files. To enable flags
+for both C and C++, use the CCFLAGS environment variable.
+CCFLAGS - a set of flags to use when compiling C and C++ source files.
+CXXFLAGS - a set of flags to use when compiling C++ source fils.
+LDFLAGS - a set of flags to pass to the linker
+CC The C compiler to use
+CXX The C++ compiler to use
+LD The linker to use
+CPP The C preprocessor to use
+
 
 All of the source code for the implementation is under the 'src' directory. The src directory is divided into different sections based on functionality, subdirs such as network_lib, local_store, etc.
 
@@ -28,6 +54,11 @@ This project is built and tested in the following environments:
   RHEL 6 on i386, using gcc version 4.4.4
   Solaris 10 TX 09/10 on i386, using gcc version 3.4.3
 
+Additional Notes for Solaris
+This project requires GNU awk to build and expects the 'awk' found on the path to be GNU awk. If this is not the case, you will need to install GNU awk either from source (http://www.gnu.org/s/gawk/), Sunfree (http://www.sunfreeware.com). You may also need to modify the 'PATH' enivronment variable to get scons to see the right version, i.e.:
+
+$> PATH=/path/to/awk:$PATH scons tests
+
 This project makes use of the following libraries.
 
   libxml2 - http://xmlsoft.org/
@@ -35,5 +66,6 @@ This project makes use of the following libraries.
   openssl - http://www.openssl.org/
   libconfig - http://freshmeat.net/projects/libconfigduo
   libvortex - http://www.aspl.es/fact/files/af-arch/vortex/html/
+  libuuid - 
   test-dept - http://code.google.com/p/test-dept/
 
