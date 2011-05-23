@@ -142,3 +142,15 @@ void test_jalp_realloc_success_with_non_null_pointer_and_non_zero_size()
 	assert_not_equals(NULL, ptr);
 	free(ptr);
 }
+
+void test_jalp_strdup_return_null_if_passed_null()
+{
+	assert_equals((char *) NULL, jalp_strdup(NULL));
+}
+
+void test_jalp_strdup_success()
+{
+	char *string = jalp_strdup("test");
+	assert_not_equals((char *) NULL, string);
+	free(string);
+}
