@@ -1,0 +1,3 @@
+printf_test_dept_proxy printf
+jalp_log_severity_create_test_dept_proxy jalp_log_severity_create
+jalp_log_severity_destroy_test_dept_proxy jalp_log_severity_destroy
