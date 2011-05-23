@@ -130,7 +130,7 @@ void jalp_logger_metadata_destroy(struct jalp_logger_metadata **logger_meta);
  * The JPL does not verify that the depths follow any particular order.
  *
  * Applications must create/destroy jalp_stack_frame objects using
- * jalp_stack_frame_create() and jalp_stack_frame_destroy(). The
+ * jalp_stack_frame_append() and jalp_stack_frame_destroy(). The
  * jalp_stack_frame assumes ownership of all memory it references.
  */
 struct jalp_stack_frame {
@@ -150,8 +150,9 @@ struct jalp_stack_frame {
 	struct jalp_stack_frame *next;
 };
 /**
- * Create a new stack frame and add it to the list. If \p prev already points
- * somewhere, the new jalp_stack_frame is inserted between prev and prev->next.
+ * Create a new stack frame and add it to the list. If \p prev->next already
+ * points somewhere, the new jalp_stack_frame is inserted between prev and
+ * prev->next.
  *
  * The application must fill in the remaining fields.
  * @param[in] prev The stack frame that will come before the new one. If NULL,
@@ -159,12 +160,13 @@ struct jalp_stack_frame {
  *
  * @return The new jalp_stack_frame
  */
-struct jalp_stack_frame *jalp_stack_frame_append(struct jalp_stack_frame* prev);
+struct jalp_stack_frame *jalp_stack_frame_append(struct jalp_stack_frame *prev);
 
 /**
- * Release all memory associated with a stack frame. This will release all 
- * associated memory using the appropriate "*_destroy()" function or "free()".
- * This releases jalp_stack_frame objects in the list.
+ * Release all memory associated with a stack frame, and all parent stack
+ * frames. This will release all associated memory using the appropriate
+ * "*_destroy()" function or "free()".  This releases all jalp_stack_frame
+ * objects in the list.
  *
  * @param[in,out] stack_frame The stack frame to release. This will be set to NULL.
  */
