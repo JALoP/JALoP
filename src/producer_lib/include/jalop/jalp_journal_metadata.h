@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /**
  * @defgroup JournalMetadata Journal Metadata
  * This contains additional structures and functions to generate information
@@ -78,7 +80,7 @@ struct jalp_transform {
  * @param[in] uri A URI for the transform.
  * @param[in] xml_snippet XML for the body of the transform. This must be valid
  * XML.
- * @return A pointer to the newly created transform
+ * @return A pointer to the newly created transform, or NULL if \p uri is NULL.
  */
 struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
 		char *uri,
