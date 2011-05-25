@@ -137,6 +137,7 @@ debug_env.AlwaysBuild(coverage)
 
 debug_env.Clean(coverage, ['#cov'])
 debug_env.Clean(coverage, recursive_glob('.', '*.gcda'))
+debug_env.Clean(coverage, recursive_glob('.', '*.gcno'))
 if GetOption("clean"):
 	debug_env.Default(coverage)
 else:
