@@ -45,7 +45,7 @@ packages_at_least = {
 	}
 
 # flags are shared by both debug and release builds
-flags = ' -Wall -Werror -g '
+flags = ' -Wall -Werror -g -DHAVE_VA_COPY '
 # The debug and release flags are applied to the appropriate environments.
 # This script will build both debug and release version at the same time,
 # common flags should get added to the 'flags' variable. Flags sepcific to a
