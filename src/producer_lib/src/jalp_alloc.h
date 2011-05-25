@@ -98,7 +98,7 @@ void *jalp_realloc(void *ptr, size_t size);
  * @return a char pointer to the duplicate string, to be freed with free()
  *
  */
-char *jalp_strdup(void *str);
+char *jalp_strdup(const char *str);
 
 #ifdef __cplusplus
 }

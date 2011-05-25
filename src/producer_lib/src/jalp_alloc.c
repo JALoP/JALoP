@@ -28,6 +28,7 @@
  */
 
 
+#include <string.h>
 #include <jalop/jal_status.h>
 #include "jalp_error_callback_internal.h"
 #include "jalp_alloc.h"
@@ -68,7 +69,7 @@ void *jalp_realloc(void *ptr, size_t size)
         return tmp;
 }
 
-char *jalp_strdup(char *str)
+char *jalp_strdup(const char *str)
 {
 	if (!str) {
 		return NULL;
