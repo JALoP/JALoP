@@ -133,6 +133,10 @@ struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev
  * by \p key_size.
  * @param[in] iv The initialization vector, or NULL. If the IV is provided, it
  * is assumed to contain a 128 bit (16 byte) IV.
+ *
+ * @note If you call this function with \p key or \p iv as NULL, then this
+ * transform will be created without the <Key> or <IV> nodes, respectively.
+ *
  * @return a pointer to the newly created transform
  */
 struct jalp_transform *jalp_transform_append_aes(struct jalp_transform *prev,
