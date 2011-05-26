@@ -136,10 +136,11 @@ coverage = debug_env.Alias(target=lcov_output_dir, source=None,
 debug_env.AlwaysBuild(coverage)
 
 debug_env.Clean(coverage, ['#cov'])
+debug_env.Clean('profiling-files', recursive_glob('.', '*.gcno'))
 debug_env.Clean(coverage, recursive_glob('.', '*.gcda'))
-debug_env.Clean(coverage, recursive_glob('.', '*.gcno'))
 if GetOption("clean"):
 	debug_env.Default(coverage)
+	debug_env.Default('profiling-files')
 else:
 	debug_env.Depends(target=coverage, dependency=all_tests)
 
