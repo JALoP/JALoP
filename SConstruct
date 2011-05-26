@@ -27,14 +27,14 @@ pkg_config_version = '0.21'
 # The array must be the name of the package (according to pkg-config) and the
 # minimum version to use.
 #
-# When the package is found, this script will add a
-# key_flags to the Enviroment. These may be used when building various targets
-# to ensure the proper flags are added. For example, if the 'foo' program
-# needs openssl, something like the following should be added to
-# the SConscript for 'foo'
+# When the package is found, this script will add a key_cflags and key_ldflags
+# to the Enviroment. These may be used when building various targets to ensure
+# the proper flags are added. For example, if the 'foo' program needs openssl,
+# something like the following should be added to the SConscript for 'foo'
 #
-# flags = env['openssl_flags']
-# env.Program('foo', 'foo.c', parse_flags=flags)
+# cflags = env['openssl_cflags']
+# ldflags = env['openssl_ldflags']
+# env.Program('foo', 'foo.c', parse_flags=(cflags + " " + ldflags))
 #
 
 packages_at_least = {
@@ -87,13 +87,16 @@ for (pkg, version) in packages_at_least.values():
 conf.Finish()
 
 for key, (pkg, version) in packages_at_least.items():
-	def addFlags(debug_env, cmd, unique=1):
-		debug_env[key + "_flags"] = cmd
+	def addCFLAGS(debug_env, cmd, unique=1):
+		debug_env[key + "_cflags"] = cmd
+	def addLDFLAGS(debug_env, cmd, unique=1):
+		debug_env[key + "_ldflags"] = cmd
 
-	debug_env.ParseConfig('pkg-config --cflags --libs %s' % pkg, function=addFlags)
+	debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
+	debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
 
 # add linker flags for santuario
-debug_env["santuario_flags"] = "-lxml-security-c"
+debug_env["santuario_ldflags"] = "-lxml-security-c"
 
 debug_env.AppendENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
 
