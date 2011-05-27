@@ -7,13 +7,13 @@
 void test_jalp_param_append_returns_null_when_name_is_null()
 {
 	struct jalp_param *param = NULL;
-	assert_equals(NULL, jalp_param_append(param, NULL, "value"));
+	assert_equals((void*)NULL, jalp_param_append(param, NULL, "value"));
 }
 
 void test_jalp_param_append_returns_null_when_value_is_null()
 {
 	struct jalp_param *param = NULL;
-	assert_equals(NULL, jalp_param_append(param, "name", NULL));
+	assert_equals((void*)NULL, jalp_param_append(param, "name", NULL));
 }
 
 void test_jalp_param_append_return_new_param_when_param_is_null()
@@ -76,7 +76,7 @@ void test_jalp_param_destroy_destroys_single_node_param_list()
 	param->value = jalp_strdup("value");
 	param->next = NULL;
 	jalp_param_destroy(&param);
-	assert_equals(NULL, param);
+	assert_equals((void*)NULL, param);
 }
 void test_jalp_param_destroy_destroys_multinode_param_list()
 {
@@ -93,7 +93,7 @@ void test_jalp_param_destroy_destroys_multinode_param_list()
 	thrd_param->value = jalp_strdup("value3");
 	thrd_param->next = NULL;
 	jalp_param_destroy(&frst_param);
-	assert_equals(NULL, frst_param);
+	assert_equals((void*)NULL, frst_param);
 }
 
 void test_jalp_param_destroy_destroys_only_given_param_and_after()
@@ -111,7 +111,7 @@ void test_jalp_param_destroy_destroys_only_given_param_and_after()
 	thrd_param->value = jalp_strdup("value3");
 	jalp_param_destroy(&scnd_param);
 	assert_not_equals(NULL, frst_param);
-	assert_equals(NULL, scnd_param);
+	assert_equals((void*)NULL, scnd_param);
 }
 
 void test_jalp_param_destroy_param_list_is_null()
