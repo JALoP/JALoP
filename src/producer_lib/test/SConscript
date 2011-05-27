@@ -47,6 +47,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_logger_metadata.c',
 	other_sources=[paramObj, logSeverityObj, structDataObj, stackFrameObj, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_syslog_metadata.c',
 	other_sources=[paramObj, structDataObj, lib_common])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_context.c',
+	other_sources=[lib_common])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
