@@ -8,13 +8,17 @@ tests.append(env.TestDeptTest('test_jalp_error_callback.c', other_sources=[])[0]
 
 errorCallbackObj = env.SharedObject(os.path.join('..','src', 'jalp_error_callback.c'))
 allocObj = env.SharedObject(os.path.join('..','src', 'jalp_alloc.c'))
+paramObj = env.SharedObject(os.path.join('..','src', 'jalp_param.c'))
 
 tests.append(env.TestDeptTest('test_jalp_alloc.c', other_sources=[errorCallbackObj])[0].abspath)
-tests.append(env.TestDeptTest('test_jalp_log_severity.c', 
+tests.append(env.TestDeptTest('test_jalp_log_severity.c',
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 
 allocWrappers = env.SharedObject(os.path.join('..', 'src', 'jalp_alloc.c'))
 tests.append(env.TestDeptTest('test_jalp_param.c', other_sources=[errorCallbackObj, allocWrappers])[0].abspath)
+
+tests.append(env.TestDeptTest('test_jalp_structured_data.c',
+	other_sources=[allocObj, errorCallbackObj, paramObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
