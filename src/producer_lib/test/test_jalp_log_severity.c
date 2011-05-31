@@ -3,7 +3,7 @@
 #include <jalop/jalp_logger_metadata.h>
 #include "jalp_alloc.h"
 
-void test_jalp_app_metadata_create_returns_struct_with_zeroed_fields()
+void test_jalp_log_severity_create_returns_struct_with_zeroed_fields()
 {
 	struct jalp_log_severity *ptr = jalp_log_severity_create();
 	assert_not_equals(NULL, ptr);
@@ -12,7 +12,7 @@ void test_jalp_app_metadata_create_returns_struct_with_zeroed_fields()
 	jalp_log_severity_destroy(&ptr);
 }
 
-void test_jalp_app_metadata_destroy_frees_struct()
+void test_jalp_log_severity_destroy_frees_struct()
 {
 	// test to make sure the test doesn't crash
 	jalp_log_severity_destroy(NULL);
