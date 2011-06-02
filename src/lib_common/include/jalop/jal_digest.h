@@ -1,5 +1,5 @@
 /**
- * @file jaln_digest.h
+ * @file jal_digest.h
  *
  * APIs for implementing and registering additional digest algorithms
  *
@@ -29,7 +29,6 @@
 extern "C" {
 #endif
 
-#include <jalop/jaln_network.h>
 #include <stdint.h>
 
 /** 
@@ -87,35 +86,6 @@ struct jal_digest_ctx {
 	 */
 	void (*destroy)(void *instance);
 };
-/**
- * Register a new digest algorithm.
- *
- * @param[in] jal_ctx The jaln_context to associate with this the jal_digest_ctx.
- * @param[in] algorithm The name of the digest method. The JNL makes a copy of this
- * string. Algorithm names are case-insensitive, so sha256, SHA256, and sHa256
- * are all the same. The JNL strips any leading or trailing whitespace from the
- * algorithm name.
- * @param[in] digest_ctx The function pointers and data sizes for the digest algorithm.
- *
- * Based on the 'connect' message exchange, the JNL will choose a specific
- * digest algorithm for all records sent/received on a particular channel. The
- * For each record the JNL processes, it first calls digest_ctx#create,
- * followed by digest_ctx#init to create and initialize a context.
- * As bytes of the JAL records become available, the JNL feeds the message to
- * the digest context using digest_ctx#update. Once the entire message is read,
- * the JNL calls digest_ctx#final to complete processing and retrieve the
- * results of the digest calculation. Lastly, the JNL calls
- * jal_digtest_ctx#destroy to clean up any allocated memory.
- *
- * If a digest_ctx already exists for a given algorithm it is replaced. The JNL
- * assumes ownership of the jal_digest_ctx, and will call jal_digest_destroy as
- * appropriate.
- *
- * @returns JAL_OK on success
- */
-int jaln_register_digest_algorithm(jaln_context *jal_ctx,
-			      char *algorithm,
-			      struct jal_digest_ctx *digest_ctx);
 
 #ifdef __cplusplus
 }

@@ -36,6 +36,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <jalop/jal_digest.h>
+
+
 /**
  * @defgroup ProducerContext Producer Context
  * Each producer application that generates JAL data to send to a JALoP Local
