@@ -7,7 +7,8 @@ tests = []
 testEnv = env.Clone()
 # The test-dept macros trigger this warning, so disable it for all the test
 # drivers.
-testEnv.Append(CCFLAGS=' -Wno-format-nonliteral -Wno-unreachable-code')
+testEnv.Append(CCFLAGS=' -Wno-format-nonliteral -Wno-unreachable-code ' + testEnv['xerces_cflags'],
+		LINKFLAGS=testEnv['xerces_ldflags'])
 
 errorCallbackObj = env.SharedObject(os.path.join('..','src', 'jalp_error_callback.c'))
 allocObj = env.SharedObject(os.path.join('..','src', 'jalp_alloc.c'))
@@ -35,6 +36,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_file_info.c',
 	other_sources=[paramObj, contentTypeObj, allocObj, errorCallbackObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jalp_journal_metadata.c', 
 	other_sources=[allocObj, errorCallbackObj, transformObj, fileInfoObj, contentTypeObj, paramObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_init.cpp',
+	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)

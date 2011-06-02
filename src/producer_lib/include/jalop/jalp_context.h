@@ -36,6 +36,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
 
 
