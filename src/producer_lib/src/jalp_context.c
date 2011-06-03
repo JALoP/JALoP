@@ -30,6 +30,10 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
 #include <jalop/jal_status.h>
 #include <jalop/jalp_context.h>
@@ -127,4 +131,50 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 	}
 
 	return JAL_OK;
+}
+
+enum jal_status jalp_context_connect(jalp_context *ctx)
+{
+	int err;
+	struct sockaddr_un sock_addr;
+
+	if (!ctx) {
+		return JAL_E_INVAL;
+	}
+
+	// make sure the context has been initialized
+	if (!ctx->path || !ctx->hostname || !ctx->app_name) {
+		return JAL_E_UNINITIALIZED;
+	}
+
+	// close the socket in case it is already open
+	if (ctx->socket != -1) {
+		jalp_context_disconnect(ctx);
+	}
+
+	ctx->socket = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (ctx->socket == -1) {
+		goto err_out;
+	}
+
+	memset(&sock_addr, 0, sizeof(sock_addr));
+	sock_addr.sun_family = AF_UNIX;
+
+	size_t pathlen = strlen(ctx->path);
+	if (pathlen >= sizeof(sock_addr.sun_path)) {
+		// path to socket file is too long to fit in sockaddr_un.sun_path
+		goto err_out;
+	}
+
+	strncpy(sock_addr.sun_path, ctx->path, sizeof(sock_addr.sun_path) - 1);
+	err = connect(ctx->socket, (struct sockaddr*) &sock_addr, sizeof(sock_addr));
+	if (0 != err) {
+		goto err_out;
+	}
+
+	return JAL_OK;
+
+err_out:
+	jalp_context_disconnect(ctx);
+	return JAL_E_NOT_CONNECTED;
 }

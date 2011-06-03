@@ -48,6 +48,17 @@ struct jalp_context_t {
  * @param[in] ctx The context to disconnect with.
  */
 void jalp_context_disconnect(jalp_context *ctx);
+
+/**
+ * Connect to a local store.
+ *
+ * @param[in] ctx The context to connect with.
+ *
+ * @return JAL_OK on success.
+ *         JAL_E_NOT_CONNECTED if a connection could not be established.
+ */
+enum jal_status jalp_context_connect(jalp_context *ctx);
+
 #ifdef __cplusplus
 }
 #endif

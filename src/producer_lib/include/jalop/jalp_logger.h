@@ -71,7 +71,7 @@ extern "C" {
  *
  * @return JAL_OK on success.
  *         JAL_EINVAL if there is something wrong with the parameters
- *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
+ *         JAL_E_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
  *
  * @note The ctx will be connected if it isn't already.
