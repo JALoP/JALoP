@@ -47,3 +47,18 @@ void jalp_context_disconnect(jalp_context *ctx)
 		ctx->socket = -1;
 	}
 }
+
+void jalp_context_destroy(jalp_context **ctx)
+{
+	if (!ctx || !(*ctx)) {
+		return;
+	}
+
+	jalp_context_disconnect(*ctx);
+
+	free((*ctx)->path);
+	free((*ctx)->hostname);
+	free((*ctx)->app_name);
+	free(*ctx);
+	*ctx = NULL;
+}
