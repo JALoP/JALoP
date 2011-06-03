@@ -42,6 +42,7 @@ enum jal_status {
 	JAL_E_INVAL,
 	JAL_E_NO_MEM,
 	JAL_E_UNINITIALIZED,
+	JAL_E_INITIALIZED,
 	JAL_OK = 0,
 };
 

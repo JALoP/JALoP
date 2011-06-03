@@ -1,8 +1,14 @@
+import ConfigDotH
+
 Import('*')
 
 sources = []
 for source in (env.Glob("*.c") + env.Glob("*.cpp")):
 	sources.append(source)
+
+# build config.h
+configh = env.Command('jalp_config_internal.h',
+		'jalp_config_internal.h.in', ConfigDotH.config_h_build)
 
 producer_lib = env.SharedLibrary(target='jal-producer', source=sources)
 env.Default(producer_lib)

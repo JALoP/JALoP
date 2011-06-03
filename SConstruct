@@ -4,6 +4,7 @@ import platform
 sys.path.append(os.getcwd() + '/3rd-party/build')
 sys.path.append(os.getcwd() + '/build-scripts')
 
+import ConfigDotH
 import ConfigHelpers
 import PackageCheckHelpers
 from Utils import recursive_glob
@@ -77,6 +78,7 @@ if not GetOption("clean"):
 						     'CheckPKGAtMostVersion': ConfigHelpers.CheckPKGAtMostVersion,
 						     'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion,
 						     'CheckSantuario': PackageCheckHelpers.CheckSantuario,
+							 'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
 						   })
 
 	if not conf.CheckCC():
@@ -92,6 +94,9 @@ if not GetOption("clean"):
 		Exit(-1)
 
 	if not conf.CheckSantuario():
+		Exit(-1)
+
+	if not conf.CheckProducerLibConfigDotH():
 		Exit(-1)
 
 	for (pkg, version) in packages_at_least.values():

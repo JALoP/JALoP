@@ -41,6 +41,11 @@ extern "C" {
 
 
 /**
+ * Path to the socket used when making a connection to the JALoP Local Store.
+ */
+#define JALP_SOCKET_NAME "/var/run/jalop/jalop.sock"
+
+/**
  * @defgroup ProducerContext Producer Context
  * Each producer application that generates JAL data to send to a JALoP Local
  * Store must first create and initialize a jalp_context object. This object

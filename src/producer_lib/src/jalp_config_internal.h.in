@@ -1,0 +1,22 @@
+
+#ifndef _JALP_CONFIG_INTERNAL_H_
+#define _JALP_CONFIG_INTERNAL_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <inttypes.h>
+
+// check if we can get the current process name from /proc
+#define JALP_HAVE_PROCFS %(jalp_have_procfs)d
+
+#if JALP_HAVE_PROCFS
+#define JALP_PROCESS_NAME_PATH ("%(jalp_process_name_path)s")
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // _JALP_CONFIG_INTERNAL_H_
