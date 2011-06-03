@@ -216,6 +216,11 @@ void jalp_content_type_destroy(struct jalp_content_type **content_type);
 struct jalp_file_info {
 	/** The size of the file (in bytes) before any transforms were applied to it. */
 	uint64_t original_size;
+	/** The size of the file (in bytes) after any transforms have been applied to 
+	 *  it.  Any value given by the application will be overwritten by the producer 
+	 *  library.
+	 */
+	uint64_t size;
 	/** The name of the file. */
 	char *filename;
 	/** Indicator of whether or not this entry is considered malicious. */
@@ -232,8 +237,8 @@ struct jalp_file_info {
  */
 struct jalp_file_info *jalp_file_info_create(void);
 /**
- * Release resources associated with ajalp_file_info object. This releases all
- * members with calls the appropriate "*_destroy()" functions or free().
+ * Release resources associated with a jalp_file_info object. This releases all
+ * members with calls to the appropriate "*_destroy()" functions or free().
  * @param[in,out] file_info the object to destroy. The pointer is set to NULL.
  */
 void jalp_file_info_destroy(struct jalp_file_info **file_info);
