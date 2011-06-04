@@ -2,8 +2,15 @@ Import('*')
 
 producer_lib = env.Clone()
 producer_lib.Prepend(CPPPATH='#src/producer_lib/include:#src/lib_common/include:#src/producer_lib/src')
-producer_lib.Append(CFLAGS=producer_lib['openssl_cflags'])
-producer_lib.Append(LDFLAGS=producer_lib['openssl_ldflags'])
 
-SConscript('src/SConscript', exports={'env':producer_lib})
-SConscript('test/SConscript', exports={'env':producer_lib, 'all_tests':all_tests})
+producer_lib.Append(CCFLAGS=producer_lib['openssl_cflags'])
+producer_lib.Append(CCFLAGS=producer_lib['xerces_cflags'])
+
+producer_lib.Append(LINKFLAGS=producer_lib['openssl_ldflags'])
+producer_lib.Append(LINKFLAGS=producer_lib['xerces_ldflags'])
+
+less_warnings_env = producer_lib.Clone()
+less_warnings_env.Append(CCFLAGS=' -Wno-missing-format-attribute -Wno-unreachable-code')
+
+SConscript('src/SConscript', exports={'env':producer_lib, 'less_warnings_env':less_warnings_env})
+SConscript('test/SConscript', exports={'env':producer_lib, 'all_tests':all_tests, 'less_warnings_env':less_warnings_env})

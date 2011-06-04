@@ -58,6 +58,7 @@ debug_ldflags = ' -fprofile-arcs -ftest-coverage '
 release_flags = ' -O3 -DNDEBUG -Wno-unreachable-code'
 debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
+debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env.Append(CCFLAGS=flags, CFLAGS='-std=gnu99')
 if platform.system() == 'SunOS':
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
