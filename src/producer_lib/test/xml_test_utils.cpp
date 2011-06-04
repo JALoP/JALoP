@@ -13,16 +13,8 @@ static const XMLCh LS[]  = {	chLatin_L,
 				chLatin_S,
 				chNull
 			};
-// XMLCh version of "UTF-8"
-static const XMLCh  UTF8[] = {	chLatin_U,
-				chLatin_T,
-				chLatin_F,
-				chDash,
-				chDigit_8,
-				chNull
-			};
 // XMLCh version of "Core"
-static const XMLCh  CORE[] = {	chLatin_C,
+extern const XMLCh  TEST_XML_CORE[] = {	chLatin_C,
 				chLatin_o,
 				chLatin_r,
 				chLatin_e,
@@ -46,7 +38,7 @@ public:
 			const char *severity = failure ? "error: " : "warning: ";
 			char *message = XMLString::transcode(e.getMessage());
 			char *uri = XMLString::transcode(loc->getURI());
-			printf("%s: line %lld, col %lld\n\t %s%s\n", uri, 
+			printf("%s: line %lld, col %lld\n\t %s%s\n", uri,
 				(long long) loc->getLineNumber(),
 				(long long) loc->getColumnNumber(),
 				severity, message);
@@ -80,7 +72,7 @@ bool validate(DOMDocument *doc, const char *document_name, list<const char*>sche
 		printf("%s\n%s\n", document_name, xmldata->getRawBuffer());
 	}
 
-	impl = DOMImplementationRegistry::getDOMImplementation(CORE);
+	impl = DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
 	parser = impl->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS, 0);
 	conf = parser->getDomConfig();
 	// perform normalization of elements, i.e. ignore any processing instructions or comments for the purposes of validation.
@@ -115,7 +107,6 @@ bool validate(DOMDocument *doc, const char *document_name, list<const char*>sche
 				printf("loaded schema: %s\n", *schema);
 			}
 		}
-		
 	}
 	inputSource = new MemBufInputSource(xmldata->getRawBuffer(),
 					xmldata->getLen(),

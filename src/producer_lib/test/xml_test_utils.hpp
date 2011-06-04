@@ -15,6 +15,8 @@
 
 XERCES_CPP_NAMESPACE_USE
 
+extern const XMLCh TEST_XML_CORE[];
+
 /**
  * Validate the given document against a set of schemas
  *
@@ -36,8 +38,6 @@ bool validate(DOMDocument *, const char *, std::list<const char*>, bool debug=fa
  * @param doc The DOMDocument to serialize
  */
 MemBufFormatTarget *xml_output(DOMDocument *doc);
-
-
 
 /**
  * Macro to aid checking attribute values of DOM nodes

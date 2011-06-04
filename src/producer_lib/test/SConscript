@@ -16,6 +16,8 @@ paramObj = env.SharedObject(os.path.join('..','src', 'jalp_param.c'))
 transformObj = env.SharedObject(os.path.join('..','src', 'jalp_transform.c'))
 contentTypeObj = env.SharedObject(os.path.join('..', 'src', 'jalp_content_type.c'));
 fileInfoObj = env.SharedObject(os.path.join('..', 'src', 'jalp_file_info.c'));
+logSeverityObj = env.SharedObject(os.path.join('..','src', 'jalp_log_severity.c'))
+jalopInitObj = env.SharedObject(os.path.join('..','src', 'jalp_init.cpp'))
 
 xmlTestUtilsObj = testEnv.SharedObject("xml_test_utils.cpp");
 
@@ -41,6 +43,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_init.cpp',
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_base64.c',
 	other_sources=[errorCallbackObj, allocObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_log_severity_xml.cpp',
+	other_sources=[allocObj, errorCallbackObj, paramObj, logSeverityObj, jalopInitObj,asprintfObj, xmlTestUtilsObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
