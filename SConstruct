@@ -62,6 +62,7 @@ debug_env.Append(CCFLAGS=flags, CFLAGS='-std=gnu99')
 if platform.system() == 'SunOS':
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
 	debug_env.Append(CCFLAGS=' -D_POSIX_C_SOURCE=200112L ')
+	debug_env.Append(LINKFLAGS='-Wl,-rpath,/usr/local/lib')
 
 # Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
 (major, _, _) = debug_env['CCVERSION'].split('.')
