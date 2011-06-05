@@ -29,12 +29,12 @@
 
 #include <stdlib.h>
 #include <jalop/jalp_journal_metadata.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 struct jalp_journal_metadata *jalp_journal_metadata_create(void)
 {
 	struct jalp_journal_metadata *new_journal_metadata;
-	new_journal_metadata = jalp_calloc(1, sizeof(*new_journal_metadata));
+	new_journal_metadata = jal_calloc(1, sizeof(*new_journal_metadata));
 
 	return new_journal_metadata;
 }

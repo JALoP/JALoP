@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <jalop/jalp_structured_data.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 struct jalp_param *jalp_param_append(struct jalp_param *prev, char *name,
 							      char *value)
@@ -41,15 +41,15 @@ struct jalp_param *jalp_param_append(struct jalp_param *prev, char *name,
 
 	struct jalp_param *old_next = NULL;
 	struct jalp_param *new_jalp_param;
-	new_jalp_param = jalp_malloc(sizeof(*new_jalp_param));
+	new_jalp_param = jal_malloc(sizeof(*new_jalp_param));
 
 	if (prev) {
 		old_next = prev->next;
 		prev->next = new_jalp_param;
 	}
 
-	new_jalp_param->key = jalp_strdup(name);
-	new_jalp_param->value = jalp_strdup(value);
+	new_jalp_param->key = jal_strdup(name);
+	new_jalp_param->value = jal_strdup(value);
 	new_jalp_param->next = old_next;
 
 	return new_jalp_param;

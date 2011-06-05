@@ -1,0 +1,5 @@
+printf_test_dept_proxy printf
+jal_malloc_test_dept_proxy jal_malloc
+jal_calloc_test_dept_proxy jal_calloc
+jal_realloc_test_dept_proxy jal_realloc
+jal_strdup_test_dept_proxy jal_strdup

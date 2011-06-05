@@ -29,7 +29,7 @@
 
 #include <stdlib.h>
 #include <jalop/jalp_structured_data.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 struct jalp_structured_data *jalp_structured_data_append(struct jalp_structured_data *prev,
                                                          char *sd_id)
@@ -41,14 +41,14 @@ struct jalp_structured_data *jalp_structured_data_append(struct jalp_structured_
 
 	struct jalp_structured_data *old_next = NULL;
 	struct jalp_structured_data *new_structured_data;
-	new_structured_data = jalp_calloc(1, sizeof(*new_structured_data));
+	new_structured_data = jal_calloc(1, sizeof(*new_structured_data));
 
 	if (prev) {
 		old_next = prev->next;
 		prev->next = new_structured_data;
 	}
 
-	new_structured_data->sd_id = jalp_strdup(sd_id);
+	new_structured_data->sd_id = jal_strdup(sd_id);
 	new_structured_data->next = old_next;
 
 	return new_structured_data;

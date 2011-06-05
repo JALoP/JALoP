@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <jalop/jalp_journal_metadata.h>
 #include <jalop/jalp_structured_data.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 void test_jalp_content_type_create_returns_struct_with_zeroed_fields()
 {
@@ -32,7 +32,7 @@ void test_jalp_content_type_destroy_frees_members()
 {
 	// run under valgrind to check for leaks
 	struct jalp_content_type *ptr = jalp_content_type_create();
-	ptr->subtype = jalp_strdup("foobar");
+	ptr->subtype = jal_strdup("foobar");
 	ptr->params = jalp_param_append(NULL, "key", "value");
 	jalp_param_append(ptr->params, "key2", "value2");
 	jalp_content_type_destroy(&ptr);

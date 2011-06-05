@@ -1,0 +1,3 @@
+printf_test_dept_proxy printf
+jal_set_error_callback_test_dept_proxy jal_set_error_callback
+jal_error_handler_test_dept_proxy jal_error_handler

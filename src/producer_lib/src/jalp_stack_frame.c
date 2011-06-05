@@ -28,13 +28,13 @@
  */
 
 #include <jalop/jalp_logger_metadata.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 #include "jalp_stack_frame_internal.h"
 
 struct jalp_stack_frame *jalp_stack_frame_append(struct jalp_stack_frame *prev)
 {
 	struct jalp_stack_frame *stack_frame = NULL;
-	stack_frame = jalp_calloc(1, sizeof(*stack_frame));
+	stack_frame = jal_calloc(1, sizeof(*stack_frame));
 
 	if (prev) {
 		stack_frame->next = prev->next;

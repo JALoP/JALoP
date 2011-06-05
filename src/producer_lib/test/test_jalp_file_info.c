@@ -1,6 +1,6 @@
 #include <test-dept.h>
 #include <jalop/jalp_journal_metadata.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 
 void test_jalp_file_info_create_initializes_new_jalp_file_info()
@@ -36,7 +36,7 @@ void test_jalp_file_info_destroy_initialized_fields()
 	new_file_info = jalp_file_info_create();
 
 	new_file_info->content_type = jalp_content_type_create();
-	new_file_info->filename = jalp_strdup("name");
+	new_file_info->filename = jal_strdup("name");
 
 	jalp_file_info_destroy(&new_file_info);
 	assert_equals((struct jalp_file_info *)NULL, new_file_info);

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <test-dept.h>
 #include <jalop/jalp_journal_metadata.h>
-#include "jalp_alloc.h"
 
 void test_jalp_transform_append_return_new_transform_when_prev_is_null()
 {

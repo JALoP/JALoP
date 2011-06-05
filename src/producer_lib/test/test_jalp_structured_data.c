@@ -1,6 +1,5 @@
 #include <test-dept.h>
 #include <jalop/jalp_structured_data.h>
-#include "jalp_alloc.h"
 
 void test_jalp_structured_data_append_returns_null_when_sd_id_is_null()
 {

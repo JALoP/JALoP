@@ -1,6 +1,6 @@
 /**
- * @file jalop_asprintf_internal.h
- * Declares the jalp_asprintf function
+ * @file jal_asprintf_internal.h
+ * Declares the jal_asprintf function
  *
  * Copyright (c) 2010, 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _JALP_ASPRINTF_INTERNAL_H
-#define _JALP_ASPRINTF_INTERNAL_H
+#ifndef _JAL_ASPRINTF_INTERNAL_H_
+#define _JAL_ASPRINTF_INTERNAL_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +37,7 @@ extern "C" {
  * @returns The length of the str (not counting the '\0' character). Calls
  * error handler on error.
  */
-int jalp_asprintf(char **str, const char *fmt, ...);
+int jal_asprintf(char **str, const char *fmt, ...);
 
 #ifdef  __cplusplus
 }

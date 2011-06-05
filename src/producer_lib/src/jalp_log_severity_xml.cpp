@@ -32,7 +32,7 @@
 #include <jalop/jal_namespaces.h>
 #include <jalop/jalp_logger_metadata.h>
 #include "jalp_log_severity_xml.hpp"
-#include "jalp_asprintf_internal.h"
+#include "jal_asprintf_internal.h"
 
 #define JALP_XML_SEVERITY "Severity"
 #define JALP_XML_NAME "Name"
@@ -51,7 +51,7 @@ DOMElement *jalp_log_severity_to_elem(const struct jalp_log_severity * severity,
 	XMLCh *xml_severity = XMLString::transcode(JALP_XML_SEVERITY);
 	XMLCh *xml_severity_name = XMLString::transcode(JALP_XML_NAME);
 	char * level_val_str;
-	jalp_asprintf(&level_val_str, "%d", severity->level_val);
+	jal_asprintf(&level_val_str, "%d", severity->level_val);
 	XMLCh *xml_level_val = XMLString::transcode(level_val_str);
 
 	/* create the severity DOMElement */

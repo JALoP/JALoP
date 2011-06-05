@@ -17,5 +17,6 @@ env.Clean(all_tests, matches)
 if env.GetOption('clean'):
 	env.Default(all_tests)
 
+lib_common = env.SConscript('lib_common/SConscript', exports='env all_tests')
 for d in subdirs:
-	env.SConscript('%s/SConscript' % d, exports='env all_tests')
+	env.SConscript('%s/SConscript' % d, exports='env all_tests lib_common')

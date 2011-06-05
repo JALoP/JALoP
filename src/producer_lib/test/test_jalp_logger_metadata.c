@@ -4,7 +4,7 @@
 #include <jalop/jalp_logger_metadata.h>
 #include <jalop/jalp_structured_data.h>
 #include "jalp_stack_frame_internal.h"
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 void test_jalp_logger_metadata_create_inits_new_logger_metadata()
 {
@@ -44,8 +44,8 @@ void test_jalp_logger_metadata_destroy_inited_nonempty_new_logger_meta()
 {
 	struct jalp_logger_metadata *new_logger_metadata = NULL;
 	new_logger_metadata = jalp_logger_metadata_create();
-	new_logger_metadata->logger_name = jalp_strdup("test");
-	new_logger_metadata->message = jalp_strdup("test message");
+	new_logger_metadata->logger_name = jal_strdup("test");
+	new_logger_metadata->message = jal_strdup("test message");
 	new_logger_metadata->severity = jalp_log_severity_create();
 	new_logger_metadata->stack = jalp_stack_frame_append(new_logger_metadata->stack);
 	jalp_logger_metadata_destroy(&new_logger_metadata);

@@ -1,5 +1,5 @@
 /**
- * @file jalp_error_callback_internal.h This file defines internal functions to deal with
+ * @file jal_error_callback.h This file defines functions to deal with
  * fatal errors.
  *
  * @section LICENSE
@@ -28,26 +28,34 @@
  */
 
 
-#ifndef _JALP_ERROR_CALLBACK_INTERNAL_H_
-#define _JALP_ERROR_CALLBACK_INTERNAL_H_
 
+#ifndef _JAL_ERROR_CALLBACK_H_
+#define _JAL_ERROR_CALLBACK_H_
+
+#include <jalop/jal_status.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Executed if the Producer Library encounters a fatal error, such as
- * allocation failures. Calls the application-defined error handler.
- *
- * @param[in] err Error value to be passed. The default behavior is to
- * simply abort; however, if the application overrides this, err will be
- * passed to the application-defined error handler.
- *
+ * Pointer to the application defined function to handle fatal errors.
+ * Such functions should not attempt to return control to the application.
  */
-void jalp_error_handler(int err);
+typedef void(*jal_app_error_handler)(int err);
+
+/**
+ * Register a function to be called in case of terminating error. Applications
+ * may use this to override the default fatal error behaivor (to simply abort).
+ *
+ *
+ * @param[in] handler Application defined function to execute if the Producer
+ * Library encounters a fatal error, such as allocation failures.
+ *
+ * @return JAL_OK on success or JAL_E_INVAL if the function pointer is NULL.
+ */
+enum jal_status jal_set_error_callback(jal_app_error_handler handler);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif //_JALP_ERROR_CALLBACK_INTERNAL_H_
+#endif //_JAL_ERROR_CALLBACK_H_

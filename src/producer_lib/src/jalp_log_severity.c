@@ -30,11 +30,11 @@
 
 #include <stdlib.h>
 #include <jalop/jalp_logger_metadata.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 struct jalp_log_severity *jalp_log_severity_create(void)
 {
-	struct jalp_log_severity *new_severity = jalp_calloc(1, sizeof(*new_severity));
+	struct jalp_log_severity *new_severity = jal_calloc(1, sizeof(*new_severity));
 	return new_severity;
 }
 

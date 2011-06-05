@@ -31,11 +31,11 @@
 #include <stdlib.h>
 #include <jalop/jalp_journal_metadata.h>
 #include <jalop/jalp_structured_data.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 struct jalp_content_type *jalp_content_type_create(void)
 {
-	struct jalp_content_type *new_content_type = jalp_calloc(1, sizeof(*new_content_type));
+	struct jalp_content_type *new_content_type = jal_calloc(1, sizeof(*new_content_type));
 	// pick a sane default for media_type
 	new_content_type->media_type = JALP_MT_APPLICATION;
 	return new_content_type;

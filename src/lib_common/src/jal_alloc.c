@@ -1,5 +1,5 @@
 /**
- * @file jalp_alloc.c This file contains wrappers for malloc,
+ * @file jal_alloc.c This file contains wrappers for malloc,
  * calloc, and realloc.
  *
  * @section LICENSE
@@ -30,29 +30,29 @@
 
 #include <string.h>
 #include <jalop/jal_status.h>
-#include "jalp_error_callback_internal.h"
-#include "jalp_alloc.h"
+#include "jal_error_callback_internal.h"
+#include "jal_alloc.h"
 
 
-void *jalp_calloc(size_t nmemb, size_t size)
+void *jal_calloc(size_t nmemb, size_t size)
 {
         void *tmp = calloc(nmemb, size);
         if (!tmp) {
-               	jalp_error_handler(JAL_E_NO_MEM);
+               	jal_error_handler(JAL_E_NO_MEM);
         }
         return tmp;
 }
 
-void *jalp_malloc(size_t size)
+void *jal_malloc(size_t size)
 {
 	void * tmp = malloc(size);
 	if (!tmp) {
-		jalp_error_handler(JAL_E_NO_MEM);
+		jal_error_handler(JAL_E_NO_MEM);
 	}
 	return tmp;
 }
 
-void *jalp_realloc(void *ptr, size_t size)
+void *jal_realloc(void *ptr, size_t size)
 {
         void *tmp = realloc(ptr, size);
         if (!tmp) {
@@ -63,20 +63,20 @@ void *jalp_realloc(void *ptr, size_t size)
 			return NULL;
 		}
 		else {
-			jalp_error_handler(JAL_E_NO_MEM);
+			jal_error_handler(JAL_E_NO_MEM);
 		}
         }
         return tmp;
 }
 
-char *jalp_strdup(const char *str)
+char *jal_strdup(const char *str)
 {
 	if (!str) {
 		return NULL;
 	}
 	char *tmp = strdup(str);
 	if (!tmp) {
-		jalp_error_handler(JAL_E_NO_MEM);
+		jal_error_handler(JAL_E_NO_MEM);
 	}
 	return tmp;
 }

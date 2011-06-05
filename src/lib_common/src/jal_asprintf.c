@@ -1,6 +1,6 @@
 /*
- * @file jalop_asprintf.c
- * Defines the jalp_asprintf function and jalp_vasprintf functions
+ * @file jal_asprintf.c
+ * Defines the jal_asprintf function and jal_vasprintf functions
  *
  * Copyright (c) 2004 Darren Tucker.
  *
@@ -27,9 +27,9 @@
 #include <stdarg.h>
 #include <jalop/jal_status.h>
 
-#include "jalp_alloc.h"
-#include "jalp_asprintf_internal.h"
-#include "jalp_error_callback_internal.h"
+#include "jal_alloc.h"
+#include "jal_asprintf_internal.h"
+#include "jal_error_callback_internal.h"
 
 #ifndef VA_COPY
 #ifdef HAVE_VA_COPY
@@ -45,7 +45,7 @@
 
 #define INIT_SZ	128
 
-int jalp_vasprintf(char **str, const char *fmt, va_list ap)
+int jal_vasprintf(char **str, const char *fmt, va_list ap)
 {
 	int ret = -1;
 	va_list ap2;
@@ -53,7 +53,7 @@ int jalp_vasprintf(char **str, const char *fmt, va_list ap)
 	size_t len;
 
 	va_copy(ap2, ap);
-	string = jalp_malloc(INIT_SZ);
+	string = jal_malloc(INIT_SZ);
 
 	ret = vsnprintf(string, INIT_SZ, fmt, ap2);
 	if (ret >= 0 && ret < INIT_SZ) {	/* succeeded with initial alloc */
@@ -63,7 +63,7 @@ int jalp_vasprintf(char **str, const char *fmt, va_list ap)
 		goto fail;
 	} else {		/* bigger than initial, realloc allowing for nul */
 		len = (size_t) ret + 1;
-		newstr = jalp_realloc(string, len);
+		newstr = jal_realloc(string, len);
 		va_end(ap2);
 		VA_COPY(ap2, ap);
 		ret = vsnprintf(newstr, len, fmt, ap2);
@@ -80,18 +80,18 @@ int jalp_vasprintf(char **str, const char *fmt, va_list ap)
 fail:
 	*str = NULL;
 	va_end(ap2);
-	jalp_error_handler(JAL_E_NO_MEM);
+	jal_error_handler(JAL_E_NO_MEM);
 	return -1;
 }
 
-int jalp_asprintf(char **str, const char *fmt, ...)
+int jal_asprintf(char **str, const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
 
 	*str = NULL;
 	va_start(ap, fmt);
-	ret = jalp_vasprintf(str, fmt, ap);
+	ret = jal_vasprintf(str, fmt, ap);
 	va_end(ap);
 
 	return ret;

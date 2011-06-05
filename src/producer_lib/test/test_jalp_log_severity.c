@@ -1,7 +1,7 @@
 #include <test-dept.h>
 #include <stdlib.h>
 #include <jalop/jalp_logger_metadata.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 void test_jalp_log_severity_create_returns_struct_with_zeroed_fields()
 {
@@ -25,7 +25,7 @@ void test_jalp_log_severity_destroy_frees_struct()
 
 	ptr = jalp_log_severity_create();
 	ptr->level_val = 100;
-	ptr->level_str = jalp_calloc(5, sizeof(char));
+	ptr->level_str = jal_calloc(5, sizeof(char));
 	jalp_log_severity_destroy(&ptr);
 	assert_equals((struct jalp_log_severity *) NULL, ptr);
 }

@@ -1,6 +1,5 @@
 #include <test-dept.h>
 #include <stdlib.h>
-#include "jalp_alloc.h"
 #include "jalp_base64_internal.h"
 
 void test_jalp_base64_enc_null_input()

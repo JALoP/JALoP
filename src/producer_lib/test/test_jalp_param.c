@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <test-dept.h>
 #include <jalop/jalp_structured_data.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 void test_jalp_param_append_returns_null_when_name_is_null()
 {
@@ -28,9 +28,9 @@ void test_jalp_param_append_return_new_param_when_param_is_null()
 void test_jalp_param_append_return_list_when_param_is_not_null()
 {
 	struct jalp_param *next_param = NULL;
-	struct jalp_param *param = jalp_malloc(sizeof(*param));
-	param->key = jalp_strdup("name");
-	param->value = jalp_strdup("value");
+	struct jalp_param *param = jal_malloc(sizeof(*param));
+	param->key = jal_strdup("name");
+	param->value = jal_strdup("value");
 	param->next = NULL;
 	next_param = jalp_param_append(param, "name2", "value2");
 	assert_not_equals(NULL, param);
@@ -43,11 +43,11 @@ void test_jalp_param_append_return_list_when_param_is_not_null()
 
 void test_jalp_param_append_return_list_with_param_inserted_center()
 {
-	struct jalp_param *frst_param = jalp_malloc(sizeof(*frst_param));
-	struct jalp_param *scnd_param = jalp_malloc(sizeof(*scnd_param));
+	struct jalp_param *frst_param = jal_malloc(sizeof(*frst_param));
+	struct jalp_param *scnd_param = jal_malloc(sizeof(*scnd_param));
 	struct jalp_param *new_scnd = NULL;
-	frst_param->key = jalp_strdup("name");
-	frst_param->value = jalp_strdup("value");
+	frst_param->key = jal_strdup("name");
+	frst_param->value = jal_strdup("value");
 	frst_param->next = scnd_param;
 	scnd_param->key = "name2";
 	scnd_param->value = "value2";
@@ -71,26 +71,26 @@ void test_jalp_param_append_return_list_with_param_inserted_center()
 
 void test_jalp_param_destroy_destroys_single_node_param_list()
 {
-	struct jalp_param *param = jalp_malloc(sizeof(*param));
-	param->key = jalp_strdup("name");
-	param->value = jalp_strdup("value");
+	struct jalp_param *param = jal_malloc(sizeof(*param));
+	param->key = jal_strdup("name");
+	param->value = jal_strdup("value");
 	param->next = NULL;
 	jalp_param_destroy(&param);
 	assert_equals((void*)NULL, param);
 }
 void test_jalp_param_destroy_destroys_multinode_param_list()
 {
-	struct jalp_param *frst_param = jalp_malloc(sizeof(*frst_param));
-	struct jalp_param *scnd_param = jalp_malloc(sizeof(*scnd_param));
-	struct jalp_param *thrd_param = jalp_malloc(sizeof(*thrd_param));
-	frst_param->key = jalp_strdup("name");
-	frst_param->value = jalp_strdup("value");
+	struct jalp_param *frst_param = jal_malloc(sizeof(*frst_param));
+	struct jalp_param *scnd_param = jal_malloc(sizeof(*scnd_param));
+	struct jalp_param *thrd_param = jal_malloc(sizeof(*thrd_param));
+	frst_param->key = jal_strdup("name");
+	frst_param->value = jal_strdup("value");
 	frst_param->next = scnd_param;
-	scnd_param->key = jalp_strdup("name2");
-	scnd_param->value = jalp_strdup("value2");
+	scnd_param->key = jal_strdup("name2");
+	scnd_param->value = jal_strdup("value2");
 	scnd_param->next = thrd_param;
-	thrd_param->key = jalp_strdup("name3");
-	thrd_param->value = jalp_strdup("value3");
+	thrd_param->key = jal_strdup("name3");
+	thrd_param->value = jal_strdup("value3");
 	thrd_param->next = NULL;
 	jalp_param_destroy(&frst_param);
 	assert_equals((void*)NULL, frst_param);
@@ -98,17 +98,17 @@ void test_jalp_param_destroy_destroys_multinode_param_list()
 
 void test_jalp_param_destroy_destroys_only_given_param_and_after()
 {
-	struct jalp_param *frst_param = jalp_malloc(sizeof(*frst_param));
-	struct jalp_param *scnd_param = jalp_malloc(sizeof(*scnd_param));
-	struct jalp_param *thrd_param = jalp_malloc(sizeof(*thrd_param));
-	frst_param->key = jalp_strdup("name");
-	frst_param->value = jalp_strdup("value");
+	struct jalp_param *frst_param = jal_malloc(sizeof(*frst_param));
+	struct jalp_param *scnd_param = jal_malloc(sizeof(*scnd_param));
+	struct jalp_param *thrd_param = jal_malloc(sizeof(*thrd_param));
+	frst_param->key = jal_strdup("name");
+	frst_param->value = jal_strdup("value");
 	frst_param->next = scnd_param;
-	scnd_param->key = jalp_strdup("name2");
-	scnd_param->value = jalp_strdup("value2");
+	scnd_param->key = jal_strdup("name2");
+	scnd_param->value = jal_strdup("value2");
 	scnd_param->next = thrd_param;
-	thrd_param->key = jalp_strdup("name3");
-	thrd_param->value = jalp_strdup("value3");
+	thrd_param->key = jal_strdup("name3");
+	thrd_param->value = jal_strdup("value3");
 	jalp_param_destroy(&scnd_param);
 	assert_not_equals(NULL, frst_param);
 	assert_equals((void*)NULL, scnd_param);

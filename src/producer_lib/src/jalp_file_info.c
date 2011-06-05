@@ -29,12 +29,12 @@
 
 
 #include <jalop/jalp_journal_metadata.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 struct jalp_file_info *jalp_file_info_create(void)
 {
 	struct jalp_file_info *file_info = NULL;
-	file_info = jalp_malloc(sizeof(*file_info));
+	file_info = jal_malloc(sizeof(*file_info));
 
 	file_info->original_size = 0;
 	file_info->size = 0;

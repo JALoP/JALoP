@@ -12,7 +12,7 @@ extern "C" {
 
 #include "xml_test_utils.hpp"
 #include "jalp_log_severity_xml.hpp"
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 XERCES_CPP_NAMESPACE_USE
 struct jalp_log_severity *severity = NULL;
@@ -29,7 +29,7 @@ extern "C" void setup()
 	jalp_init();
 	severity = jalp_log_severity_create();
 	severity->level_val = LEVEL_NUM;
-	severity->level_str = jalp_strdup(LEVEL_NAME);
+	severity->level_str = jal_strdup(LEVEL_NAME);
 	expected_name_attr = XMLString::transcode("Name");
 
 	DOMImplementation *impl = DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
@@ -74,7 +74,7 @@ extern "C" void test_log_severity_to_elem_returns_valid_element_when_name_is_not
 extern "C" void test_log_severity_to_elem_returns_valid_element_when_name_is_empty()
 {
 	free(severity->level_str);
-	severity->level_str = strdup("");
+	severity->level_str = jal_strdup("");
 	DOMElement *new_elem = jalp_log_severity_to_elem(severity, doc);
 	assert_not_equals(NULL, new_elem);
 

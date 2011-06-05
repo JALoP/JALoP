@@ -2,10 +2,8 @@ Import('*')
 
 sources = []
 for source in (env.Glob("*.c") + env.Glob("*.cpp")):
-	if not source.name == 'jalp_asprintf.c':
-		sources.append(source)
+	sources.append(source)
 
-# GCC on solaris and RHEL 5 don't support #pragma GCC diagnostic to disable warnings, so disable it here.
-asprintfObj = less_warnings_env.SharedObject(source='jalp_asprintf.c')
-producer_lib = env.SharedLibrary(target='jal-producer', source=[sources, asprintfObj])
+producer_lib = env.SharedLibrary(target='jal-producer', source=sources)
 env.Default(producer_lib)
+Return("producer_lib")

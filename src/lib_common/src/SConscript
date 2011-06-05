@@ -1,0 +1,14 @@
+Import('*')
+
+sources = []
+for source in (env.Glob("*.c")):
+	if not source.name == 'jal_asprintf.c':
+		sources.append(source)
+
+# GCC on solaris and RHEL 5 don't support #pragma GCC diagnostic to disable warnings, so disable it here.
+asprintf_obj = env.SharedObject(source='jal_asprintf.c', CCFLAGS=env['CCFLAGS'] + ' -Wno-missing-format-attribute -Wno-unreachable-code')
+
+lib_common = env.SharedLibrary(target='jal-common', source=[sources, asprintf_obj])
+env.Default(lib_common)
+
+Return("lib_common")

@@ -1,3 +1,0 @@
-printf_test_dept_proxy printf
-jalp_set_error_callback_test_dept_proxy jalp_set_error_callback
-jalp_error_handler_test_dept_proxy jalp_error_handler

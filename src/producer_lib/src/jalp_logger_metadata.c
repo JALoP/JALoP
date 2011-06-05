@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <jalop/jalp_logger_metadata.h>
 #include <jalop/jalp_structured_data.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 struct jalp_logger_metadata *jalp_logger_metadata_create(void) {
 	struct jalp_logger_metadata *new_logger_metadata;
-	new_logger_metadata = jalp_calloc(1, sizeof(*new_logger_metadata));
+	new_logger_metadata = jal_calloc(1, sizeof(*new_logger_metadata));
 
 	return new_logger_metadata;
 }

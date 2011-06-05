@@ -29,7 +29,7 @@
 
 
 #include <jalop/jalp_journal_metadata.h>
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 
 
 struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
@@ -40,10 +40,10 @@ struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
 	}
 
 	struct jalp_transform *transform = NULL;
-	transform = jalp_malloc(sizeof(*transform));
+	transform = jal_malloc(sizeof(*transform));
 
-	transform->uri = jalp_strdup(uri);
-	transform->xml = jalp_strdup(xml_snippet);
+	transform->uri = jal_strdup(uri);
+	transform->xml = jal_strdup(xml_snippet);
 
 	if (prev) {
 		transform->next = prev->next;

@@ -1,5 +1,5 @@
 /**
- * @file jalp_alloc.h This file defines wrappers for malloc, calloc,
+ * @file jal_alloc.h This file defines wrappers for malloc, calloc,
  * and realloc for use by the Producer Library.
  *
  * @section LICENSE
@@ -27,8 +27,8 @@
  * limitations under the License.
  */
 
-#ifndef _JALP_ALLOC_H_
-#define _JALP_ALLOC_H_
+#ifndef _JAL_ALLOC_H_
+#define _JAL_ALLOC_H_
 
 #include <stdlib.h>
 
@@ -40,9 +40,9 @@ extern "C" {
  * @defgroup Malloc Wrappers
  * The functions here are wrappers for malloc calls.
  *
- * The jalp producer library wraps the standard malloc calls
+ * The jal producer libraries wrap the standard malloc calls
  * and checks the return code. If an allocation failure occurs,
- * this results in a call to jalp_error_handler.
+ * this results in a call to jal_error_handler.
  *
  */
 
@@ -50,7 +50,7 @@ extern "C" {
 /**
  * Calls calloc.
  * If calloc returns with no issues, returns a pointer to the allocated memory.
- * Otherwise, calls jalp_error_handler.
+ * Otherwise, calls jal_error_handler.
  *
  * @param[in] nmemb Number of elements to be allocated.
  *
@@ -59,24 +59,24 @@ extern "C" {
  * @return a void pointer to the allocated memory, to be freed with free()
  *
  */
-void *jalp_calloc(size_t nmemb, size_t size);
+void *jal_calloc(size_t nmemb, size_t size);
 
 /**
  * Calls malloc.
  * If malloc returns with no issues, returns a pointer to the allocated memory.
- * Otherwise, calls jalp_error_handler.
+ * Otherwise, calls jal_error_handler.
  *
  * @param[in] size The size of the allocation.
  *
  * @return a void pointer to the allocated memory, to be freed with free()
  *
  */
-void *jalp_malloc(size_t size);
+void *jal_malloc(size_t size);
 
 /**
  * Calls realloc.
  * If realloc returns with no issues, returns a pointer to the allocated memory.
- * Otherwise, calls jalp_error_handler.
+ * Otherwise, calls jal_error_handler.
  *
  * @param[in] ptr pointer to memory block to be changed.
  *
@@ -85,23 +85,23 @@ void *jalp_malloc(size_t size);
  * @return a void pointer to the reallocated memory, to be freed with free()
  *
  */
-void *jalp_realloc(void *ptr, size_t size);
+void *jal_realloc(void *ptr, size_t size);
 
 /**
  * Calls strdup.
  * If strdup returns with no issues, returns a pointer to the new duplicate 
  * string.
- * Otherwise, calls jalp_error_handler.
+ * Otherwise, calls jal_error_handler.
  * 
  * @param[in] str pointer to string to be duplicated.
  *
  * @return a char pointer to the duplicate string, to be freed with free()
  *
  */
-char *jalp_strdup(const char *str);
+char *jal_strdup(const char *str);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //_JALP_ALLOC_H_
+#endif //_JAL_ALLOC_H_

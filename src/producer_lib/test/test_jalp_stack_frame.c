@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <jalop/jalp_logger_metadata.h>
 #include "jalp_stack_frame_internal.h"
-#include "jalp_alloc.h"
 
 void test_jalp_stack_frame_append_returns_struct_with_zeroed_fields()
 {

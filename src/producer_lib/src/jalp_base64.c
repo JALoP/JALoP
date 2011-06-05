@@ -35,9 +35,9 @@
 
 #include <jalop/jal_status.h>
 
-#include "jalp_alloc.h"
+#include "jal_alloc.h"
 #include "jalp_base64_internal.h"
-#include "jalp_error_callback_internal.h"
+#include "jal_error_callback_internal.h"
 
 
 char *jalp_base64_enc(const unsigned char *input, int length)
@@ -57,12 +57,12 @@ char *jalp_base64_enc(const unsigned char *input, int length)
 
 	b64 = BIO_new(BIO_f_base64());
 	if (!b64) {
-		jalp_error_handler(JAL_E_NO_MEM);
+		jal_error_handler(JAL_E_NO_MEM);
 	}
 
 	bmem = BIO_new(BIO_s_mem());
 	if (!bmem) {
-		jalp_error_handler(JAL_E_NO_MEM);
+		jal_error_handler(JAL_E_NO_MEM);
 	}
 
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
@@ -84,7 +84,7 @@ char *jalp_base64_enc(const unsigned char *input, int length)
 	BIO_get_mem_ptr(bmem, &bptr);
 
 	size_t malloc_amount = bptr->length;
-	buff = jalp_malloc(malloc_amount + 1);
+	buff = jal_malloc(malloc_amount + 1);
 	memcpy(buff, bptr->data, bptr->length);
 	buff[bptr->length] = 0;
 

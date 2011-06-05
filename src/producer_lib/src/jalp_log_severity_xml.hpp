@@ -33,7 +33,6 @@
 
 #include <jalop/jal_namespaces.h>
 #include <jalop/jalp_logger_metadata.h>
-#include "jalp_asprintf_internal.h"
 
 
 #ifdef __cplusplus
