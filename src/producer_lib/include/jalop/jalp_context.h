@@ -142,9 +142,22 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 
 /** @} */
 
+/**
+ * Initialize the Producer Library
+ * Must be the first function called to prepare the library for use.
+ *
+ * @return JAL_OK on success
+ */
+enum jal_status jalp_init();
+
+/**
+ * Free data allocated by the Producer Library. Should be called by the 
+ * application to clean up resources prior to exit.
+ */
+void jalp_shutdown();
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif // _JALP_CONTEXT_H_
-

@@ -1,5 +1,6 @@
 /**
- * @file jal_status.h This file defines return codes used by the JAL libraries.
+ * @file jalp_init.cpp This file defines the Producer Library
+ * init and shutdown functions.
  *
  * @section LICENSE
  *
@@ -25,27 +26,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JAL_STATUS_H_
-#define _JAL_STATUS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <xercesc/util/PlatformUtils.hpp>
+#include <openssl/evp.h>
 
-/**
- * Enumeration for error codes returned by JALoP calls.
- */
-enum jal_status {
-	JAL_E_XML_PARSE = -1024,
-	JAL_E_XML_SCHEMA,
-	JAL_E_NOT_CONNECTED,
-	JAL_E_INVAL,
-	JAL_E_NO_MEM,
-	JAL_E_UNINITIALIZED,
-	JAL_OK = 0,
-};
+#include <jalop/jal_status.h>
+#include <jalop/jalp_context.h>
 
-#ifdef __cplusplus
+
+XERCES_CPP_NAMESPACE_USE
+
+enum jal_status jalp_init()
+{
+
+	try {
+		XMLPlatformUtils::Initialize();
+	}
+
+	catch(...) {
+		return JAL_E_UNINITIALIZED;
+	}
+
+	return JAL_OK;
 }
-#endif
-#endif // _JAL_STATUS_H_
+
+void jalp_shutdown()
+{
+	XMLPlatformUtils::Terminate();
+
+	CRYPTO_cleanup_all_ex_data();
+
+}
