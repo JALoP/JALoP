@@ -12,6 +12,7 @@ testEnv.Append(CCFLAGS=' -Wno-format-nonliteral -Wno-unreachable-code')
 errorCallbackObj = env.SharedObject(os.path.join('..','src', 'jalp_error_callback.c'))
 allocObj = env.SharedObject(os.path.join('..','src', 'jalp_alloc.c'))
 paramObj = env.SharedObject(os.path.join('..','src', 'jalp_param.c'))
+contentTypeObj = env.SharedObject(os.path.join('..', 'src', 'jalp_content_type.c'));
 
 tests.append(testEnv.TestDeptTest('test_jalp_error_callback.c', other_sources=[], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_alloc.c', other_sources=[errorCallbackObj], useProxies=True)[0].abspath)
@@ -27,6 +28,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_transform.c',
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_content_type.c',
 	other_sources=[paramObj, allocObj, errorCallbackObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_file_info.c',
+	other_sources=[paramObj, contentTypeObj, allocObj, errorCallbackObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
