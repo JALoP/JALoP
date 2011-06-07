@@ -1,0 +1,282 @@
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   obj:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   obj:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   obj:*
+   obj:*
+   fun:*
+   fun:*
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   obj:*
+   obj:*
+   obj:*
+   fun:*
+   fun:*
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   obj:*
+   obj:*
+   fun:*
+   fun:curl_global_init
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   obj:*
+   obj:*
+   obj:*
+   fun:*
+   fun:curl_global_init
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   obj:*
+   fun:*
+   fun:curl_global_init
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:*
+   obj:*
+   obj:*
+   obj:*
+   fun:*
+   fun:*
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:setup
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   obj:*
+   obj:*
+   fun:*
+   fun:*
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   obj:*
+   fun:*
+   fun:*
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   obj:*
+   fun:*
+   fun:*
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   obj:*
+   obj:*
+   fun:*
+   fun:*
+   fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+   fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+   fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+   fun:jalp_init
+   fun:setup
+}
+
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:SSL_library_init
+   fun:jalp_init
+   fun:setup
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Value8
+   fun:*
+   obj:*
+   fun:BIO_write
+   fun:jalp_base64_enc
+   fun:jalp_transform_append_aes
+   fun:test_jalp_transform_append_aes_appends_to_null
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Value8
+   fun:EVP_EncodeBlock
+   obj:/usr/lib64/libcrypto.so.1.0.0
+   fun:jalp_base64_enc
+   fun:jalp_transform_append_aes
+   fun:test_jalp_transform_append_aes_appends_to_null
+   fun:main
+}
