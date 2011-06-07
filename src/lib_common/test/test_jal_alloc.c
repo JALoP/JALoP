@@ -102,6 +102,7 @@ void test_jal_realloc_calls_error_handler_on_realloc_failure()
 	assert_not_equals(NULL, ptr);
 	jal_realloc(ptr, 20);
 	assert_equals(1, error_handler_called);
+	free(ptr);
 }
 
 void test_jal_realloc_success_null_pointer_zero_size()
