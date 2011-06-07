@@ -1,10 +1,33 @@
 #include <test-dept.h>
 #include <jalop/jalp_context.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/socket.h>
 #include "jal_alloc.h"
 #include "jalp_context_internal.h"
-#include <unistd.h>
 #define FAKE_SOCKET (int)0xdeadbeef
 static int close_called;
+static int connect_call_cnt;
+int socket_always_fails(__attribute__((unused)) int domain,
+		__attribute__((unused)) int type,
+		__attribute__((unused)) int protocol)
+{
+	return -1;
+}
+int mocked_connect(__attribute__((unused)) int fd,
+		__attribute__((unused)) const struct sockaddr *addr,
+		__attribute__((unused)) socklen_t addrlen)
+{
+	connect_call_cnt++;
+	return 0;
+}
+int connect_always_fails(__attribute__((unused)) int fd,
+		__attribute__((unused)) const struct sockaddr *addr,
+		__attribute__((unused)) socklen_t addrlen)
+{
+	connect_call_cnt++;
+	return -1;
+}
 int mocked_close(int fd)
 {
 	if (fd == FAKE_SOCKET) {
@@ -15,12 +38,17 @@ int mocked_close(int fd)
 }
 void setup()
 {
+	replace_function(connect, mocked_connect);
 	close_called = 0;
+	connect_call_cnt = 0;
 }
 void teardown()
 {
 	close_called = 0;
+	connect_call_cnt = 0;
 	restore_function(close);
+	restore_function(socket);
+	restore_function(connect);
 }
 void test_jalp_context_create_returns_struct_with_zeroed_fields()
 {
@@ -64,3 +92,51 @@ void test_jalp_context_destroy_release_memory()
 	assert_equals((void *) NULL, ptr);
 }
 
+void test_jalp_context_connect_returns_error_with_null()
+{
+	enum jal_status ret = jalp_context_connect(NULL);
+	assert_equals(JAL_E_INVAL, ret);
+}
+void test_jalp_context_connect_returns_error_with_uninitialized_context()
+{
+	jalp_context *ctx = jalp_context_create();
+	enum jal_status ret = jalp_context_connect(ctx);
+	assert_equals(JAL_E_UNINITIALIZED, ret);
+	jalp_context_destroy(&ctx);
+}
+void test_jalp_context_connect_returns_error_when_socket_fails()
+{
+	replace_function(socket, socket_always_fails);
+	jalp_context *ctx = jalp_context_create();
+	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_connect(ctx);
+	assert_equals(JAL_E_NOT_CONNECTED, ret);
+	jalp_context_destroy(&ctx);
+}
+void test_jalp_context_connect_returns_error_when_connect_fails()
+{
+	replace_function(connect, connect_always_fails);
+	jalp_context *ctx = jalp_context_create();
+	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_connect(ctx);
+	assert_equals(JAL_E_NOT_CONNECTED, ret);
+	jalp_context_destroy(&ctx);
+}
+
+void test_multiple_calls_to_jalp_context_connect_attempt_reconnection()
+{
+	jalp_context *ctx = jalp_context_create();
+	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_connect(ctx);
+	assert_equals(JAL_OK, ret);
+	assert_equals(1, connect_call_cnt);
+
+	ret = jalp_context_connect(ctx);
+	assert_equals(JAL_OK, ret);
+	assert_equals(2, connect_call_cnt);
+
+	jalp_context_destroy(&ctx);
+}
