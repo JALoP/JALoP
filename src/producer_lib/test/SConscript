@@ -38,6 +38,8 @@ tests.append(env.TestDeptTest('test_jalp_journal_metadata.c',
 	other_sources=[allocObj, errorCallbackObj, transformObj, fileInfoObj, contentTypeObj, paramObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_init.cpp',
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_base64.c',
+	other_sources=[errorCallbackObj, allocObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
