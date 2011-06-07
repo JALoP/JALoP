@@ -29,6 +29,8 @@
 #ifndef _JALP_CONTEXT_INTERNAL_H_
 #define _JALP_CONTEXT_INTERNAL_H_
 
+#include <jalop/jalp_context.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,6 +42,12 @@ struct jalp_context_t {
 	char *app_name; /**< The application name to use when generating the application metadata sections */
 };
 
+/**
+ * Disconnect to a local store. Close the file descriptor.
+ *
+ * @param[in] ctx The context to disconnect with.
+ */
+void jalp_context_disconnect(jalp_context *ctx);
 #ifdef __cplusplus
 }
 #endif

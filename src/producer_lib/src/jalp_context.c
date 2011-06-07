@@ -28,6 +28,7 @@
 
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <jalop/jalp_context.h>
 #include "jal_alloc.h"
 #include "jalp_context_internal.h"
@@ -37,4 +38,12 @@ jalp_context *jalp_context_create(void)
 	jalp_context *context = jal_calloc(1, sizeof(*context));
 	context->socket = -1;
 	return context;
+}
+
+void jalp_context_disconnect(jalp_context *ctx)
+{
+	if (ctx) {
+		close(ctx->socket);
+		ctx->socket = -1;
+	}
 }
