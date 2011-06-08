@@ -340,7 +340,7 @@ struct jalp_file_info {
 	 *  library.
 	 */
 	uint64_t size;
-	/** The name of the file. */
+	/** The name of the file (required). */
 	char *filename;
 	/** Indicator of whether or not this entry is considered malicious. */
 	enum jalp_threat_level threat_level;
