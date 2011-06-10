@@ -36,6 +36,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <openssl/pem.h>
 #include <jalop/jal_status.h>
 #include <jalop/jalp_context.h>
 #include "jal_alloc.h"
@@ -71,6 +72,7 @@ void jalp_context_destroy(jalp_context **ctx)
 	free((*ctx)->path);
 	free((*ctx)->hostname);
 	free((*ctx)->app_name);
+	free((*ctx)->signing_key);
 	free(*ctx);
 	*ctx = NULL;
 }

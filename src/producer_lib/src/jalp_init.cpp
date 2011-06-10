@@ -57,6 +57,6 @@ void jalp_shutdown()
 {
 	XMLPlatformUtils::Terminate();
 
+	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
-
 }

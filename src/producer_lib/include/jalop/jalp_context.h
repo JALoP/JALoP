@@ -110,14 +110,16 @@ void jalp_context_destroy(jalp_context **ctx);
  *
  * @param[in] ctx The context to attach the RSA keys to.
  * @param[in] keyfile The path to the private key file.
- * @param[in] password The password for the key file.
+ * @param[in] password_cb The callback function used to provide a password, if
+ * needed. If NULL, the default behavior is determined by the underlying SSL
+ * implementation.
  *
- * @return JAL_OK on success, or an error code.
- *
+ * @return JAL_OK on success or one of the following possible errors: JAL_E_INVAL, 
+ * JAL_E_EXISTS, JAL_E_FILE_OPEN, JAL_E_READ_PRIVKEY.
  */
 enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
 		const char *keyfile,
-		const char *password);
+		pem_password_cb *cb);
 
 /**
  * Load an RSA public certificate. This must be the public certificate that

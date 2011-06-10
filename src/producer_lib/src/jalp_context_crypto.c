@@ -1,5 +1,6 @@
 /**
- * @file jal_status.h This file defines return codes used by the JAL libraries.
+ * @file jalp_context_crypto.c This file contains JALoP context crypto
+ * functions.
  *
  * @section LICENSE
  *
@@ -25,38 +26,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JAL_STATUS_H_
-#define _JAL_STATUS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdio.h>
+#include <openssl/pem.h>
 
-/**
- * Enumeration for error codes returned by JALoP calls.
- */
-enum jal_status {
-	JAL_E_XML_PARSE = -1024,
-	JAL_E_XML_SCHEMA,
-	JAL_E_XML_CONVERSION,
-	JAL_E_NOT_CONNECTED,
-	JAL_E_INVAL,
-	JAL_E_INVAL_PARAM,
-	JAL_E_INVAL_CONTENT_TYPE,
-	JAL_E_INVAL_STRUCTURED_DATA,
-	JAL_E_INVAL_URI,
-	JAL_E_INVAL_TRANSFORM,
-	JAL_E_INVAL_FILE_INFO,
-	JAL_E_NO_MEM,
-	JAL_E_UNINITIALIZED,
-	JAL_E_INITIALIZED,
-	JAL_E_EXISTS,
-	JAL_E_FILE_OPEN,
-	JAL_E_READ_PRIVKEY,
-	JAL_OK = 0,
-};
+#include <jalop/jal_status.h>
+#include <jalop/jalp_context.h>
+#include "jalp_context_internal.h"
 
-#ifdef __cplusplus
+enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
+		const char *keyfile,
+		pem_password_cb *cb)
+{
+	if (!ctx || !keyfile) {
+		return JAL_E_INVAL;
+	}
+
+	FILE *fp;
+	RSA *key;
+
+	if (ctx->signing_key) {
+		return JAL_E_EXISTS;
+	}
+	fp = fopen(keyfile, "r");
+	if (!fp) {
+		return JAL_E_FILE_OPEN;
+	}
+	key = PEM_read_RSAPrivateKey(fp, NULL, cb, NULL);
+	fclose(fp);
+	if (!key) {
+		return JAL_E_READ_PRIVKEY;
+	}
+	ctx->signing_key = key;
+
+	return JAL_OK;
 }
-#endif
-#endif // _JAL_STATUS_H_

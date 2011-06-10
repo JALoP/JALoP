@@ -29,6 +29,8 @@
 #ifndef _JALP_CONTEXT_INTERNAL_H_
 #define _JALP_CONTEXT_INTERNAL_H_
 
+#include <openssl/pem.h>
+
 #include <jalop/jalp_context.h>
 
 #ifdef __cplusplus
@@ -41,6 +43,7 @@ struct jalp_context_t {
 	char *hostname; /**< The hostname to use when generating the application metadata sections */
 	char *app_name; /**< The application name to use when generating the application metadata sections */
 	struct jal_digest_ctx *digest_ctx; /**< The registered callback functions to use when creating a digest */
+	RSA *signing_key; /**< The RSA private key to use when signing application metadata documents */
 };
 
 /**
