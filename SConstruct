@@ -70,43 +70,48 @@ if platform.system() == 'SunOS':
 if int(major) >= 4:
 	debug_env.Append(CCFLAGS=' -fstack-protector --param=ssp-buffer-size=4')
 
-conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
-				       'CheckPKG': ConfigHelpers.CheckPKG,
-				       'CheckPKGAtLeastVersion': ConfigHelpers.CheckPKGAtLeastVersion,
-				       'CheckPKGAtMostVersion': ConfigHelpers.CheckPKGAtMostVersion,
-				       'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion,
-				       'CheckSantuario': PackageCheckHelpers.CheckSantuario,
-					   })
+if not GetOption("clean"):
+	conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
+						     'CheckPKG': ConfigHelpers.CheckPKG,
+						     'CheckPKGAtLeastVersion': ConfigHelpers.CheckPKGAtLeastVersion,
+						     'CheckPKGAtMostVersion': ConfigHelpers.CheckPKGAtMostVersion,
+						     'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion,
+						     'CheckSantuario': PackageCheckHelpers.CheckSantuario,
+						   })
 
-if not conf.CheckCC():
-	Exit(-1)
-
-if not conf.CheckCXX():
-	Exit(-1)
-
-if not conf.CheckHeader("test-dept.h"):
-	Exit(-1)
-
-if not conf.CheckPKGConfig(pkg_config_version):
-	Exit(-1)
-
-if not conf.CheckSantuario():
-	Exit(-1)
-
-for (pkg, version) in packages_at_least.values():
-	if not conf.CheckPKGAtLeastVersion(pkg, version):
+	if not conf.CheckCC():
 		Exit(-1)
 
-conf.Finish()
+	if not conf.CheckCXX():
+		Exit(-1)
 
-for key, (pkg, version) in packages_at_least.items():
-	def addCFLAGS(debug_env, cmd, unique=1):
-		debug_env[key + "_cflags"] = cmd
-	def addLDFLAGS(debug_env, cmd, unique=1):
-		debug_env[key + "_ldflags"] = cmd
+	if not conf.CheckHeader("test-dept.h"):
+		Exit(-1)
 
-	debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
-	debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
+	if not conf.CheckPKGConfig(pkg_config_version):
+		Exit(-1)
+
+	if not conf.CheckSantuario():
+		Exit(-1)
+
+	for (pkg, version) in packages_at_least.values():
+		if not conf.CheckPKGAtLeastVersion(pkg, version):
+			Exit(-1)
+
+	conf.Finish()
+
+	for key, (pkg, version) in packages_at_least.items():
+		def addCFLAGS(debug_env, cmd, unique=1):
+			debug_env[key + "_cflags"] = cmd
+		def addLDFLAGS(debug_env, cmd, unique=1):
+			debug_env[key + "_ldflags"] = cmd
+
+		debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
+		debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
+else:
+	for key, _ in packages_at_least.items():
+		debug_env[key + "_cflags"] = ""
+		debug_env[key + "_ldflags"] = ""
 
 # add linker flags for santuario
 debug_env["santuario_ldflags"] = "-lxml-security-c"
