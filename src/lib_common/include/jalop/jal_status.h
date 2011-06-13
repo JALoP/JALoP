@@ -53,6 +53,7 @@ enum jal_status {
 	JAL_E_EXISTS,
 	JAL_E_FILE_OPEN,
 	JAL_E_READ_PRIVKEY,
+	JAL_E_READ_X509,
 	JAL_OK = 0,
 };
 

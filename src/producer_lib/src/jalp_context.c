@@ -73,6 +73,7 @@ void jalp_context_destroy(jalp_context **ctx)
 	free((*ctx)->hostname);
 	free((*ctx)->app_name);
 	free((*ctx)->signing_key);
+	free((*ctx)->signing_cert);
 	free(*ctx);
 	*ctx = NULL;
 }

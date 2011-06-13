@@ -36,6 +36,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <openssl/pem.h>
+
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
 
@@ -128,10 +130,12 @@ enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
  * block for the certificate.
  *
  * @param[in] ctx The context to attach the certificate to.
- * @param[in] certfile The path to the x509 public certificate file.
- * @return JAL_OK on success, or an error code.
+ * @param[in] certfile The path to the pem formatted x509 public certificate file.
+ *
+ * @return JAL_OK on success, or one of the following possible errors: JAL_E_INVAL,
+ * JAL_E_FILE_OPEN, JAL_E_READ_X509.
  */
-enum jal_status jalp_context_load_x509_cert(jalp_context *ctx,
+enum jal_status jalp_context_load_pem_cert(jalp_context *ctx,
 		const char *certfile);
 
 /**

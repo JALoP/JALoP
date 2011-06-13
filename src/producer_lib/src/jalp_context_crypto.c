@@ -1,5 +1,5 @@
 /**
- * @file jalp_context_crypto.c This file contains JALoP context crypto
+ * @file jalp_context_crypto.c This file defines the JALoP context crypto
  * functions.
  *
  * @section LICENSE
@@ -58,6 +58,31 @@ enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
 		return JAL_E_READ_PRIVKEY;
 	}
 	ctx->signing_key = key;
+	return JAL_OK;
+}
 
+enum jal_status jalp_context_load_pem_cert(jalp_context *ctx,
+		const char *certfile)
+{
+	if (!ctx || !certfile) {
+		return JAL_E_INVAL;
+	}
+
+	FILE *fp;
+	X509 *cert;
+
+	if (ctx->signing_cert) {
+		free(ctx->signing_cert);
+	}
+	fp = fopen(certfile, "r");
+	if (!fp) {
+		return JAL_E_FILE_OPEN;
+	}
+	cert = PEM_read_X509(fp, NULL, NULL, NULL);
+	fclose(fp);
+	if (!cert) {
+		return JAL_E_READ_X509;
+	}
+	ctx->signing_cert = cert;
 	return JAL_OK;
 }

@@ -44,6 +44,7 @@ struct jalp_context_t {
 	char *app_name; /**< The application name to use when generating the application metadata sections */
 	struct jal_digest_ctx *digest_ctx; /**< The registered callback functions to use when creating a digest */
 	RSA *signing_key; /**< The RSA private key to use when signing application metadata documents */
+	X509 *signing_cert; /**< The certificate used for signing the application metadata */
 };
 
 /**
