@@ -29,6 +29,7 @@
 
 #include <xercesc/util/PlatformUtils.hpp>
 #include <openssl/evp.h>
+#include <openssl/ssl.h>
 
 #include <jalop/jal_status.h>
 #include <jalop/jalp_context.h>
@@ -46,6 +47,8 @@ enum jal_status jalp_init()
 	catch(...) {
 		return JAL_E_UNINITIALIZED;
 	}
+
+	SSL_library_init();
 
 	return JAL_OK;
 }
