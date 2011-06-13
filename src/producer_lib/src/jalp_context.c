@@ -1,5 +1,6 @@
 /**
- * @file jalp_context.c This file defines functions for jalp_context.
+ * @file jalp_context.c This file defines functions for dealing
+ * with the jalp_context struct.
  *
  * @section LICENSE
  *
@@ -42,6 +43,7 @@
 #include "jalp_config_internal.h"
 #include "jalp_context_internal.h"
 
+
 jalp_context *jalp_context_create(void)
 {
 	jalp_context *context = jal_calloc(1, sizeof(*context));
@@ -65,6 +67,7 @@ void jalp_context_destroy(jalp_context **ctx)
 
 	jalp_context_disconnect(*ctx);
 
+	jal_digest_ctx_destroy(&(*ctx)->digest_ctx);
 	free((*ctx)->path);
 	free((*ctx)->hostname);
 	free((*ctx)->app_name);
@@ -177,4 +180,30 @@ enum jal_status jalp_context_connect(jalp_context *ctx)
 err_out:
 	jalp_context_disconnect(ctx);
 	return JAL_E_NOT_CONNECTED;
+}
+enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
+		const struct jal_digest_ctx *digest_ctx)
+{
+	if (!ctx) {
+		return JAL_E_INVAL;
+	}
+
+	if (!digest_ctx) {
+		jal_digest_ctx_destroy(&ctx->digest_ctx);
+		return JAL_OK;
+	}
+
+	if (digest_ctx->len <= 0 || !(digest_ctx->create) || !(digest_ctx->init)
+		|| !(digest_ctx->update) || !(digest_ctx->final) || !(digest_ctx->destroy)) {
+		return JAL_E_INVAL;
+	}
+
+
+	if(!ctx->digest_ctx) {
+		ctx->digest_ctx = jal_digest_ctx_create();
+	}
+
+	memcpy(ctx->digest_ctx, digest_ctx, sizeof(*digest_ctx));
+
+	return JAL_OK;
 }

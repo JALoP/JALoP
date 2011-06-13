@@ -40,6 +40,7 @@ struct jalp_context_t {
 	char *path; /**< The path that was originally used to connect to the socket */
 	char *hostname; /**< The hostname to use when generating the application metadata sections */
 	char *app_name; /**< The application name to use when generating the application metadata sections */
+	struct jal_digest_ctx *digest_ctx; /**< The registered callback functions to use when creating a digest */
 };
 
 /**
