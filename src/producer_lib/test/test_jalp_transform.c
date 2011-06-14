@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #include <test-dept.h>
 #include <jalop/jalp_journal_metadata.h>
 #include "jal_alloc.h"
@@ -253,4 +254,50 @@ void test_jalp_transform_append_aes_works_with_different_keysizes()
 	jalp_transform_destroy(&aes_transform_128);
 	jalp_transform_destroy(&aes_transform_192);
 	jalp_transform_destroy(&aes_transform_256);
+}
+
+void test_jalp_transform_append_xor_returns_new_transform_when_null_prev_transform()
+{
+	struct jalp_transform *new_transform = NULL;
+	new_transform = jalp_transform_append_xor(NULL, 256);
+	assert_not_equals(NULL, new_transform);
+	assert_string_equals("<Key32>AAABAA==</Key32>", new_transform->xml);
+	assert_string_equals("http://www.dod.mil/algorithms/encryption#xor32-ecb", new_transform->uri);
+}
+
+void test_jalp_transform_append_xor_returns_key_when_key_is_zero()
+{
+	struct jalp_transform *new_transform = NULL;
+	new_transform = jalp_transform_append_xor(NULL, 0);
+	assert_not_equals(NULL, new_transform);
+	assert_string_equals("<Key32>AAAAAA==</Key32>", new_transform->xml);
+	assert_string_equals("http://www.dod.mil/algorithms/encryption#xor32-ecb", new_transform->uri);
+	jalp_transform_destroy(&new_transform);
+}
+
+void test_jalp_transform_append_xor_returns_list_when_prev_not_null()
+{
+	struct jalp_transform *transform = NULL;
+	struct jalp_transform *new_transform = NULL;
+	transform = jalp_transform_append(NULL, "http://www.fake.uri/", "<fake>fake</fake>");
+	new_transform = jalp_transform_append_xor(transform, 256);
+	assert_not_equals(NULL, transform);
+	assert_string_equals("<fake>fake</fake>", transform->xml);
+	assert_string_equals("http://www.fake.uri/", transform->uri);
+	assert_not_equals(NULL, transform->next);
+	assert_not_equals(NULL, new_transform);
+	assert_equals(transform->next, new_transform);
+	assert_string_equals("<Key32>AAABAA==</Key32>", new_transform->xml);
+	assert_string_equals("http://www.dod.mil/algorithms/encryption#xor32-ecb", new_transform->uri);
+	jalp_transform_destroy(&transform);
+}
+
+void test_jalp_transform_append_xor_returns_key_when_key_is_uint_max()
+{
+	struct jalp_transform *new_transform = NULL;
+	new_transform = jalp_transform_append_xor(NULL, UINT_MAX);
+	assert_not_equals(NULL, new_transform);
+	assert_string_equals("<Key32>/////w==</Key32>", new_transform->xml);
+	assert_string_equals("http://www.dod.mil/algorithms/encryption#xor32-ecb", new_transform->uri);
+	jalp_transform_destroy(&new_transform);
 }
