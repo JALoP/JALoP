@@ -131,6 +131,21 @@ void test_jalp_context_destroy_closes_socket()
 	assert_equals((void *) NULL, ptr);
 	assert_equals(1, close_called);
 }
+
+void test_jalp_disconnect_closes_the_socket()
+{
+	replace_function(close, mocked_close);
+	struct jalp_context_t *ctx = jalp_context_create();
+	// bogus file descriptor
+	ctx->socket = FAKE_SOCKET;
+
+	jalp_context_disconnect(ctx);
+	assert_equals(1, close_called);
+	assert_equals(-1, ctx->socket);
+
+	jalp_context_destroy(&ctx);
+
+}
 void test_jalp_context_destroy_release_memory()
 {
 	// test under valgrind
