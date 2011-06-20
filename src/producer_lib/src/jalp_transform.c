@@ -39,7 +39,7 @@
 
 
 struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
-		char *uri, char *xml_snippet)
+		const char *uri, const char *xml_snippet)
 {
 	if (!uri) {
 		return NULL;
@@ -92,17 +92,19 @@ struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev
 }
 
 struct jalp_transform *jalp_transform_append_xor(struct jalp_transform *prev,
-		uint32_t key)
+		const uint32_t key)
 {
 	char char_key[sizeof(key)];
 	char *b64_key = NULL;
 	char *xml = NULL;
 	struct jalp_transform * transform = NULL;
+	uint32_t nkey;
 
 	// convert key to network byte order
-	key = htonl(key);
-	memcpy(char_key, &key, sizeof(key));
-	b64_key = jalp_base64_enc((unsigned char *)char_key, sizeof(key));
+	nkey = htonl(key);
+
+	memcpy(char_key, &nkey, sizeof(nkey));
+	b64_key = jalp_base64_enc((unsigned char *)char_key, sizeof(nkey));
 	if (!b64_key) {
 		return NULL;
 	}
@@ -117,7 +119,7 @@ struct jalp_transform *jalp_transform_append_xor(struct jalp_transform *prev,
 }
 
 struct jalp_transform *jalp_transform_append_aes(struct jalp_transform *prev,
-		enum jalp_aes_key_size key_size, uint8_t *key, uint8_t *iv)
+		const enum jalp_aes_key_size key_size, const uint8_t *key, const uint8_t *iv)
 {
 	unsigned char *char_key = NULL;
 	unsigned char *char_iv = NULL;

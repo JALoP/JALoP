@@ -74,9 +74,9 @@ extern "C" {
  * @note \p ctx will be connected if it isn't already.
  */
 enum jal_status jalp_audit(jalp_context *ctx,
-		struct jalp_app_metadata *app_meta,
-		uint8_t *audit_buffer,
-		size_t audit_buffer_size);
+		const struct jalp_app_metadata *app_meta,
+		const uint8_t *audit_buffer,
+		const size_t audit_buffer_size);
 
 /** @} */
 #ifdef __cplusplus

@@ -147,8 +147,8 @@ enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
  * @returns JAL_OK on success
  */
 int jaln_register_digest_algorithm(jaln_context *jal_ctx,
-				char *algorithm,
-				struct jal_digest_ctx *digest_ctx);
+				const char *algorithm,
+				const struct jal_digest_ctx *digest_ctx);
 
 /**
  * Register the JALoP profile and start listening for connections. Once this
@@ -168,7 +168,7 @@ int jaln_register_digest_algorithm(jaln_context *jal_ctx,
  */
 struct jaln_connection *jaln_listen(jaln_context *jaln_ctx,
 				    const char *host,
-				    int port,
+				    const int port,
 				    void *user_data);
 
 /**
@@ -187,9 +187,9 @@ struct jaln_connection *jaln_listen(jaln_context *jaln_ctx,
  */
 struct jaln_connection *jaln_subscribe(
 		jaln_context *ctx,
-		char *host,
-		char *port,
-		int data_classes,
+		const char *host,
+		const char *port,
+		const int data_classes,
 		void *user_data);
 
 /**
@@ -208,9 +208,9 @@ struct jaln_connection *jaln_subscribe(
  */
 struct jaln_connection *jaln_publish(
 		jaln_context *ctx,
-		char *host,
-		char *port,
-		int data_classes,
+		const char *host,
+		const char *port,
+		const int data_classes,
 		void *user_data);
 
 /**

@@ -32,7 +32,7 @@
 #include "jal_alloc.h"
 
 struct jalp_structured_data *jalp_structured_data_append(struct jalp_structured_data *prev,
-                                                         char *sd_id)
+                                                         const char *sd_id)
 {
 
 	if (!sd_id) {

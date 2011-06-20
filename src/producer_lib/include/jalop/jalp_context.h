@@ -86,9 +86,9 @@ jalp_context *jalp_context_create(void);
  * @return JAL_OK on success, or an error code.
  */
 enum jal_status jalp_context_init(jalp_context *ctx,
-		char* path,
-		char *hostname,
-		char *app_name);
+		const char *path,
+		const char *hostname,
+		const char *app_name);
 
 /**
  * Disconnect (if needed) and destroy the connection.
@@ -138,7 +138,7 @@ enum jal_status jalp_context_load_x509_cert(jalp_context *ctx,
  * @return JAL_OK on success, or an error code.
  */
 enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
-		struct jal_digest_ctx *digest_ctx);
+		const struct jal_digest_ctx *digest_ctx);
 
 
 /** @} */

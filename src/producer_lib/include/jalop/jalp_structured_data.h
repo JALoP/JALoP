@@ -77,8 +77,8 @@ struct jalp_param {
  * @return the newly created param
  */
 struct jalp_param *jalp_param_append(struct jalp_param *prev,
-				     char *name,
-				     char *value);
+				     const char *name,
+				     const char *value);
 /**
  * Free all memory associated with a jalp_param.
  * If the structure has a 'next' element, this will be destroyed as well.
@@ -123,7 +123,7 @@ struct jalp_structured_data {
  *
  */
 struct jalp_structured_data *jalp_structured_data_append(struct jalp_structured_data *prev,
-							 char *sd_id);
+							 const char *sd_id);
 /**
  * Release all memory associated with this structured data list.
  * This frees all params of \p sd_group and all #jalp_structured_data elements.

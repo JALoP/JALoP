@@ -71,9 +71,9 @@ extern "C" {
  * @note The ctx will be connected if it isn't already.
  */
 enum jal_status jalp_journal(jalp_context *ctx,
-		struct jalp_app_metadata *app_meta,
-		uint8_t *journal_buffer,
-		uint64_t journal_buffer_size);
+		const struct jalp_app_metadata *app_meta,
+		const uint8_t *journal_buffer,
+		const size_t journal_buffer_size);
 
 /**
  * Send an open file descriptor to the JALoP Local Store.
@@ -103,8 +103,8 @@ enum jal_status jalp_journal(jalp_context *ctx,
  *
  */
 enum jal_status jalp_journal_fd(jalp_context *ctx,
-		struct jalp_app_metadata *app_meta,
-		int fd);
+		const jalp_app_metadata *app_meta,
+		const int fd);
 
 /**
  * Open the file at \p path and send it the JALoP Local Store.
@@ -130,8 +130,8 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
  *
  */
 enum jal_status jalp_journal_path(jalp_context *ctx,
-		struct jalp_app_metadata *app_meta,
-		char *path);
+		const struct jalp_app_metadata *app_meta,
+		const char *path);
 
 /** @} */
 

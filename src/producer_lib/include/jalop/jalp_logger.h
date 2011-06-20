@@ -77,9 +77,9 @@ extern "C" {
  * @note The ctx will be connected if it isn't already.
  */
 enum jal_status jalp_log(jalp_context *ctx,
-		struct jalp_app_metadata *app_meta,
-		uint8_t *log_buffer,
-		size_t log_buffer_size);
+		const struct jalp_app_metadata *app_meta,
+		const uint8_t *log_buffer,
+		const size_t log_buffer_size);
 
 /** @} */
 #ifdef __cplusplus

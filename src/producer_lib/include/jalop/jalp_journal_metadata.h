@@ -83,8 +83,8 @@ struct jalp_transform {
  * @return A pointer to the newly created transform, or NULL if \p uri is NULL.
  */
 struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
-		char *uri,
-		char *xml_snippet);
+		const char *uri,
+		const char *xml_snippet);
 /**
  * Release all memory associated with a #jalp_transform object. This frees all
  * #jalp_transform objects in the list and calls free for every data member.
@@ -104,7 +104,7 @@ void jalp_transform_destroy(struct jalp_transform **transform);
  */
 
 struct jalp_transform *jalp_transform_append_xor(struct jalp_transform *prev,
-		uint32_t key);
+		const uint32_t key);
 
 /**
  * Create a deflate transform in the chain.
@@ -140,9 +140,9 @@ struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev
  * @return a pointer to the newly created transform
  */
 struct jalp_transform *jalp_transform_append_aes(struct jalp_transform *prev,
-		enum jalp_aes_key_size key_size,
-		uint8_t *key,
-		uint8_t *iv);
+		const enum jalp_aes_key_size key_size,
+		const uint8_t *key,
+		const uint8_t *iv);
 /** 
  * Enum covering the IANA MIME types.
  * Although JALoP uses MIME types, the content of a journal record is not
