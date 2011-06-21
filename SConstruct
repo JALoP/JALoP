@@ -161,6 +161,12 @@ else:
 SConscript('SConscript', variant_dir='debug', duplicate=0, exports={'env':debug_env, 'all_tests':all_tests})
 SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env, 'all_tests':all_tests})
 
+if GetOption("clean"):
+	debug_env.Clean('debug_dir', 'debug')
+	debug_env.Clean('release_dir', 'release')
+	debug_env.Default('debug_dir')
+	debug_env.Default('release_dir')
+
 # docs only need to get built once, and it shouldn't matter if the debug or
 # relase flags are used.
 
