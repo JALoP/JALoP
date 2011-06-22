@@ -51,6 +51,7 @@ void jalp_logger_metadata_destroy(struct jalp_logger_metadata **logger_meta) {
 	jalp_log_severity_destroy(&((*logger_meta)->severity));
 	jalp_stack_frame_destroy(&((*logger_meta)->stack));
 	jalp_structured_data_destroy(&((*logger_meta)->sd));
+	free(*logger_meta);
 	*logger_meta = NULL;
 }
 
