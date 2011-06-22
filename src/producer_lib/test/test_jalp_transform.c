@@ -207,6 +207,10 @@ void test_jalp_transform_append_aes_correctly_encodes_data()
 	assert_equals(0, strcmp(xml_snippet, aes_transform->xml));
 	assert_string_equals(aes_transform->uri, "http://www.w3.org/2001/04/xmlenc#aes128-cbc");
 
+	free(char_key);
+	free(char_iv);
+	free(b64_key);
+	free(b64_iv);
 	free(xml_snippet);
 	jalp_transform_destroy(&aes_transform);
 }
@@ -247,6 +251,12 @@ void test_jalp_transform_append_aes_works_with_different_keysizes()
 	assert_equals(0, strcmp(xml_snippet_192, aes_transform_192->xml));
 	assert_equals(0, strcmp(xml_snippet_256, aes_transform_256->xml));
 
+	free(char_key);
+
+	free(b64_key_128);
+	free(b64_key_192);
+	free(b64_key_256);
+
 	free(xml_snippet_128);
 	free(xml_snippet_192);
 	free(xml_snippet_256);
@@ -263,6 +273,7 @@ void test_jalp_transform_append_xor_returns_new_transform_when_null_prev_transfo
 	assert_not_equals(NULL, new_transform);
 	assert_string_equals("<Key32>AAABAA==</Key32>", new_transform->xml);
 	assert_string_equals("http://www.dod.mil/algorithms/encryption#xor32-ecb", new_transform->uri);
+	jalp_transform_destroy(&new_transform);
 }
 
 void test_jalp_transform_append_xor_returns_key_when_key_is_zero()
