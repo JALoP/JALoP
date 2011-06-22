@@ -6,6 +6,7 @@ producer_lib_env.Prepend(CPPPATH='#src/producer_lib/include:#src/lib_common/incl
 producer_lib_env.Append(CCFLAGS=producer_lib_env['openssl_cflags'])
 producer_lib_env.Append(CCFLAGS=producer_lib_env['xerces_cflags'])
 
+producer_lib_env.Append(CXXFLAGS="-D__STDC_FORMAT_MACROS")
 producer_lib_env.Append(LINKFLAGS=producer_lib_env['openssl_ldflags'])
 producer_lib_env.Append(LINKFLAGS=producer_lib_env['xerces_ldflags'])
 
