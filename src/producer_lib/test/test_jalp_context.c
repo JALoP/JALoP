@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include "jal_alloc.h"
 #include "jalp_context_internal.h"
+
 #define FAKE_SOCKET (int)0xdeadbeef
 
 #define FAKE_PID (int)-1
@@ -17,14 +18,64 @@
 #define SOME_APP "test_jalp_context"
 #define FAKE_PID_STR "-1"
 
-/*static const char *DEFAULT_JALOP_RENDEZVOUS = "/var/run/jalop/jalop.sock";
-static const char *MOCKED_HOSTNAME = "mocked_hostname";
-static const char *MOCKED_APP_NAME = "mocked_app_name";
-static const char *SOME_HOST = "some_host";
-static const char *SOME_PATH = "/path/to/jalop/rendezvous";
-static const char *SOME_APP = "test_jalp_context";
-static const char *FAKE_PID_STR "-1"
-*/
+struct jalp_context_t *jpctx = NULL;
+struct jal_digest_ctx *dctx = NULL;
+struct jal_digest_ctx *dctx2 = NULL;
+
+// Set of dummy functions for a fake digest context
+void *fake_create()
+{
+	return NULL;
+}
+int fake_init(__attribute__((unused)) void *instance)
+{
+	return JAL_OK;
+}
+int fake_update(__attribute__((unused)) void *instance,
+		__attribute__((unused)) uint8_t *data,
+		__attribute__((unused)) uint32_t len)
+{
+	return JAL_OK;
+}
+int fake_final(__attribute__((unused)) void *instance,
+		__attribute__((unused)) uint8_t *digest,
+		__attribute__((unused)) uint32_t *len)
+
+{
+	return JAL_OK;
+}
+void fake_destroy(__attribute__((unused)) void *instance)
+{
+	// do nothing
+}
+
+// second set of function callbacks to test multiple calls to
+// jalp_set_digest_context
+void *fake_create2()
+{
+	return NULL;
+}
+int fake_init2(__attribute__((unused)) void *instance)
+{
+	return JAL_OK;
+}
+int fake_update2(__attribute__((unused)) void *instance,
+		__attribute__((unused)) uint8_t *data,
+		__attribute__((unused)) uint32_t len)
+{
+	return JAL_OK;
+}
+int fake_final2(__attribute__((unused)) void *instance,
+		__attribute__((unused)) uint8_t *digest,
+		__attribute__((unused)) uint32_t *len)
+
+{
+	return JAL_OK;
+}
+void fake_destroy2(__attribute__((unused)) void *instance)
+{
+	// do nothing
+}
 
 static int close_called;
 static int connect_call_cnt;
@@ -83,14 +134,38 @@ ssize_t mocked_readlink(__attribute__((unused)) const char *path,
 	strncpy(buf, MOCKED_APP_NAME, bufsiz);
 	return bufsiz < strlen(MOCKED_APP_NAME) ? bufsiz : strlen(MOCKED_APP_NAME);
 }
+
 void setup()
 {
 	replace_function(connect, mocked_connect);
 	close_called = 0;
 	connect_call_cnt = 0;
+
+	jpctx = jalp_context_create();
+	dctx = jal_digest_ctx_create();
+	dctx2 = jal_digest_ctx_create();
+
+	dctx->create = fake_create;
+	dctx->init = fake_init;
+	dctx->update = fake_update;
+	dctx->final = fake_final;
+	dctx->destroy = fake_destroy;
+	dctx->len = 1;
+
+	dctx2->create = fake_create2;
+	dctx2->init = fake_init2;
+	dctx2->update = fake_update2;
+	dctx2->final = fake_final2;
+	dctx2->destroy = fake_destroy2;
+	dctx2->len = 2;
+
 }
 void teardown()
 {
+	jalp_context_destroy(&jpctx);
+	jal_digest_ctx_destroy(&dctx);
+	jal_digest_ctx_destroy(&dctx2);
+
 	close_called = 0;
 	connect_call_cnt = 0;
 	restore_function(close);
@@ -368,5 +443,232 @@ void test_calling_jalp_context_init_multiple_times_does_not_reset_the_connection
 	assert_equals(0, close_called);
 	assert_equals(originalSocket, ctx->socket);
 	jalp_context_destroy(&ctx);
+}
 
+void test_jalp_set_digest_ctx_with_null_jalp_ctx_does_not_crash()
+{
+	enum jal_status ret = jalp_context_set_digest_callbacks(NULL, NULL);
+	assert_equals(JAL_E_INVAL, ret);
+
+	ret = jalp_context_set_digest_callbacks(NULL, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+}
+void test_jalp_set_digest_ctx_with_null_clears_ctx()
+{
+	// run under valgrind
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, NULL);
+	assert_equals(JAL_OK, ret);
+	assert_equals((void*)NULL, jpctx->digest_ctx);
+}
+
+void test_jalp_set_digest_ctx_fails_with_invalid_length()
+{
+	dctx->len = -1;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+
+	dctx->len = 0;
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+
+}
+
+void test_jalp_set_digest_ctx_fails_with_missing_create_function()
+{
+	dctx->create = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+}
+void test_jalp_set_digest_ctx_fails_with_missing_init_function()
+{
+	dctx->init = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+}
+void test_jalp_set_digest_ctx_fails_with_missing_update_function()
+{
+	dctx->update = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+}
+void test_jalp_set_digest_ctx_fails_with_missing_final_function()
+{
+	dctx->final = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+}
+
+void test_jalp_set_digest_ctx_fails_with_missing_destroy_function()
+{
+	dctx->destroy = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+}
+void test_jalp_set_digest_ctx_succeeds_with_valid_context()
+{
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+}
+void test_jalp_set_digest_ctx_makes_a_copy()
+{
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+
+	assert_not_equals(jpctx->digest_ctx, dctx);
+	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_equals(jpctx->digest_ctx->create, dctx->create);
+	assert_equals(jpctx->digest_ctx->init, dctx->init);
+	assert_equals(jpctx->digest_ctx->update, dctx->update);
+	assert_equals(jpctx->digest_ctx->final, dctx->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx->destroy);
+}
+
+void test_jalp_multiple_calls_to_set_digest_context_replace_functions()
+{
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_OK, ret);
+
+	assert_not_equals(jpctx->digest_ctx, dctx2);
+	assert_equals(jpctx->digest_ctx->len, dctx2->len);
+	assert_equals(jpctx->digest_ctx->create, dctx2->create);
+	assert_equals(jpctx->digest_ctx->init, dctx2->init);
+	assert_equals(jpctx->digest_ctx->update, dctx2->update);
+	assert_equals(jpctx->digest_ctx->final, dctx2->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx2->destroy);
+}
+
+void test_jalp_multiple_calls_to_set_digest_do_not_leak()
+{
+	// run under valgrind
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_OK, ret);
+
+	ret = jalp_context_set_digest_callbacks(jpctx, NULL);
+	assert_equals(JAL_OK, ret);
+}
+
+void test_multiple_calls_to_jalp_set_digest_ctx_with_null_jalp_ctx_does_not_crash()
+{
+	enum jal_status ret = jalp_context_set_digest_callbacks(NULL, NULL);
+	assert_equals(JAL_E_INVAL, ret);
+
+	ret = jalp_context_set_digest_callbacks(NULL, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+}
+void test_multiple_calls_to_jalp_set_digest_ctx_with_null_clears_ctx()
+{
+	// run under valgrind, shouldn't leak
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, NULL);
+	assert_equals(JAL_OK, ret);
+	assert_equals((void*)NULL, jpctx->digest_ctx);
+}
+
+void test_second_call_to_jalp_set_digest_ctx_with_invalid_length_retains_original_context()
+{
+	dctx2->len = -1;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_E_INVAL, ret);
+
+	// make sure it's still using the original context
+	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_equals(jpctx->digest_ctx->create, dctx->create);
+	assert_equals(jpctx->digest_ctx->init, dctx->init);
+	assert_equals(jpctx->digest_ctx->update, dctx->update);
+	assert_equals(jpctx->digest_ctx->final, dctx->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx->destroy);
+
+}
+
+void test_second_call_to_jalp_set_digest_ctx_with_missing_create_function_retains_original_context()
+{
+	dctx2->create = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_E_INVAL, ret);
+
+	// make sure it's still using the original context
+	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_equals(jpctx->digest_ctx->create, dctx->create);
+	assert_equals(jpctx->digest_ctx->init, dctx->init);
+	assert_equals(jpctx->digest_ctx->update, dctx->update);
+	assert_equals(jpctx->digest_ctx->final, dctx->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx->destroy);
+}
+void test_second_call_to_jalp_set_digest_ctx_with_missing_init_function_retains_original_context()
+{
+	dctx2->init = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_E_INVAL, ret);
+
+	// make sure it's still using the original context
+	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_equals(jpctx->digest_ctx->create, dctx->create);
+	assert_equals(jpctx->digest_ctx->init, dctx->init);
+	assert_equals(jpctx->digest_ctx->update, dctx->update);
+	assert_equals(jpctx->digest_ctx->final, dctx->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx->destroy);
+}
+void test_second_call_to_jalp_set_digest_ctx_with_missing_update_function_retains_original_context()
+{
+	dctx2->update = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_E_INVAL, ret);
+
+	// make sure it's still using the original context
+	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_equals(jpctx->digest_ctx->create, dctx->create);
+	assert_equals(jpctx->digest_ctx->init, dctx->init);
+	assert_equals(jpctx->digest_ctx->update, dctx->update);
+	assert_equals(jpctx->digest_ctx->final, dctx->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx->destroy);
+}
+void test_second_call_to_jalp_set_digest_ctx_with_missing_final_function_retains_original_context()
+{
+	dctx2->final = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_E_INVAL, ret);
+
+	// make sure it's still using the original context
+	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_equals(jpctx->digest_ctx->create, dctx->create);
+	assert_equals(jpctx->digest_ctx->init, dctx->init);
+	assert_equals(jpctx->digest_ctx->update, dctx->update);
+	assert_equals(jpctx->digest_ctx->final, dctx->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx->destroy);
+}
+
+void test_second_call_to_jalp_set_digest_ctx_with_missing_destroy_function_retains_original_context()
+{
+	dctx2->destroy = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_OK, ret);
+	ret = jalp_context_set_digest_callbacks(jpctx, dctx2);
+	assert_equals(JAL_E_INVAL, ret);
+
+	// make sure it's still using the original context
+	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_equals(jpctx->digest_ctx->create, dctx->create);
+	assert_equals(jpctx->digest_ctx->init, dctx->init);
+	assert_equals(jpctx->digest_ctx->update, dctx->update);
+	assert_equals(jpctx->digest_ctx->final, dctx->final);
+	assert_equals(jpctx->digest_ctx->destroy, dctx->destroy);
 }
