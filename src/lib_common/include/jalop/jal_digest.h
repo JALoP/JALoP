@@ -33,6 +33,8 @@ extern "C" {
 
 /** 
  * User supplied functions to implement additional digest algorithms.
+ * jal_digest_ctx objects should be created and destroyed with the
+ * jal_digest_ctx_create() and jal_digest_ctx_destroy() functions.
  */
 struct jal_digest_ctx {
 	/**
@@ -86,6 +88,20 @@ struct jal_digest_ctx {
 	 */
 	void (*destroy)(void *instance);
 };
+
+/**
+ * Create a jal_digest_ctx structure
+ * @return the newly created jal_digest_ctx
+ */
+struct jal_digest_ctx *jal_digest_ctx_create();
+
+/**
+ * Release memory associated with the jal_digest_ctx object.
+ * Does not attempt to free the function pointers associated
+ * with the object.
+ * @param[in] digest_ctx The jal_digest_ctx to destroy, this will be set to NULL
+ */
+void jal_digest_ctx_destroy(struct jal_digest_ctx **digest_ctx);
 
 #ifdef __cplusplus
 }
