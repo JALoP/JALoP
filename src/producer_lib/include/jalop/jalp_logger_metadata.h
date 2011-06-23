@@ -76,7 +76,7 @@ void jalp_log_severity_destroy(struct jalp_log_severity** log_severity);
 /**
  * Structure to represent the 'logger' type data in the application metadata.
  *
- * All fields are optional, except the logger_name.
+ * All fields are optional.
  * The jalp_logger_metadata object assumes ownership of all pointers.
  */
 struct jalp_logger_metadata {
