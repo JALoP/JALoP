@@ -60,14 +60,14 @@ int fake_init(__attribute__((unused)) void *instance)
 	return JAL_OK;
 }
 int fake_update(__attribute__((unused)) void *instance,
-		__attribute__((unused)) uint8_t *data,
-		__attribute__((unused)) uint32_t len)
+		__attribute__((unused)) const uint8_t *data,
+		__attribute__((unused)) size_t len)
 {
 	return JAL_OK;
 }
 int fake_final(__attribute__((unused)) void *instance,
 		__attribute__((unused)) uint8_t *digest,
-		__attribute__((unused)) uint32_t *len)
+		__attribute__((unused)) size_t *len)
 
 {
 	return JAL_OK;
@@ -88,14 +88,14 @@ int fake_init2(__attribute__((unused)) void *instance)
 	return JAL_OK;
 }
 int fake_update2(__attribute__((unused)) void *instance,
-		__attribute__((unused)) uint8_t *data,
-		__attribute__((unused)) uint32_t len)
+		__attribute__((unused)) const uint8_t *data,
+		__attribute__((unused)) size_t len)
 {
 	return JAL_OK;
 }
 int fake_final2(__attribute__((unused)) void *instance,
 		__attribute__((unused)) uint8_t *digest,
-		__attribute__((unused)) uint32_t *len)
+		__attribute__((unused)) size_t *len)
 
 {
 	return JAL_OK;

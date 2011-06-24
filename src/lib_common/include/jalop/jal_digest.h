@@ -62,18 +62,18 @@ struct jal_digest_ctx {
 	 * immediately after create()
 	 *
 	 * @param instance The instance pointer.
-	 * @returns JAL_OK on success, JAL_ERROR on failure
+	 * @returns JAL_OK on success, JAL_E_INVAL on failure
 	 */
-	int (*init)(void *instance);
+	enum jal_status (*init)(void *instance);
 	/**
 	 * Function to call to update a digest context.
 	 * @param[in] instance the instance pointer.
 	 * @param[in] data a buffer containing bytes to feed into the digest context
 	 * @param[in] len the number of bytes in the buffer \p data
 	 *
-	 * @returns JAL_OK on success, JAL_ERROR on failure.
+	 * @returns JAL_OK on success, JAL_E_INVAL on failure.
 	 */
-	int (*update)(void *instance, uint8_t *data, uint32_t len);
+	enum jal_status (*update)(void *instance, const uint8_t *data, size_t len);
 	/**
 	 * Function to signal that the end of a message to digest was reached. After
 	 * this call, the JNL will not call the corresponding #update() using
@@ -83,11 +83,11 @@ struct jal_digest_ctx {
 	 * @param[out] digest a buffer to hold the digest
 	 * @param[in,out] len A pointer to the size of buffer. This indicates the
 	 * number of bytes available in buffer. The implementation must set this to
-	 * the number of bytes copied into buffer, or -1 on error.
+	 * the number of bytes copied into buffer.
 	 *
-	 * @returns the number of bytes written into buffer, or -1 on error.
+	 * @returns the JAL_OK on success, or JAL_E_INVAL on error.
 	 */
-	int (*final)(void *instance, uint8_t *digest, uint32_t *len);
+	enum jal_status (*final)(void *instance, uint8_t *digest, size_t *len);
 	/**
 	 * Function to clean up resources used by a digest instance.
 	 * @param[in] instance The instance to destroy.
@@ -108,6 +108,15 @@ struct jal_digest_ctx *jal_digest_ctx_create();
  * @param[in] digest_ctx The jal_digest_ctx to destroy, this will be set to NULL
  */
 void jal_digest_ctx_destroy(struct jal_digest_ctx **digest_ctx);
+
+/**
+ * Creates a SHA256 digest context.
+ * Allocates a new jal_digest_ctx and fills with the appropriate openssl library
+ * functions for a SHA256 digest.
+ *
+ * @return the newly created SHA256 jal_digest_ctx
+ */
+struct jal_digest_ctx *jal_sha256_ctx_create();
 
 #ifdef __cplusplus
 }
