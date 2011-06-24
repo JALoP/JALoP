@@ -4,14 +4,13 @@
 	xmlns:jamt="http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
 	xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
 	elementFormDefault="qualified">
-	<import namespace="http://www.w3.org/2000/09/xmldsig#"/>
+	<import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="./xmldsig-core-schema.xsd"/>
 	<element name="ApplicationMetadata" type="jamt:ApplicationMetadataType"/>
 	<complexType name="ApplicationMetadataType">
 		<annotation><documentation>If the application is adds a Signature element, they should also add a default namespace declaration to the this node. This node must also contain namespace declarations for any namespaces included in the CanonicalizationMethod and Transform elements. This ensures that this document may be embedded into another document without breaking the signatures, regardless of how namespaces are declared elsewhere.</documentation></annotation>
 		<sequence>
 			<element name="EventID" type="string" minOccurs="0"><annotation><documentation>
-						The eventID only has meaning to the application that generates the XML. The JALoP Stores do not interpret the EventID in any way.</documentation></annotation>
-			</element>
+				The eventID only has meaning to the application that generates the XML. The JALoP Stores do not interpret the EventID in any way.</documentation></annotation></element>
 			<choice>
 				<element ref="jamt:Syslog"/>
 				<element ref="jamt:Logger"/>
@@ -19,11 +18,11 @@
 					<annotation><documentation>The custom elment is intended for applications that are not satisfied with the restrictions of the syslog and logger elements.  It's use is discouraged.</documentation></annotation>
 				</element>
 			</choice>
-			<element name="JournalMetadata" type="jamt:JournalMetadataType" minOccurs="0"/>
+			<element ref="jamt:JournalMetadata" minOccurs="0"/>
 			<element ref="ds:Signature" minOccurs="0">
 				<annotation><documentation>Applications may include a Signature element to sign this document. The Signature is validated against the XML Digital signature schema (http://www.w3.org/2000/09/xmldsig#) and JALoP does not impose any restrictions or limits on what an application may do. However, for greater interoperability, applications are encouraged to follow the scheme that follows.
 	The SignedInfo element must use the CanonicalizationMethod "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments".  Because this canonicalization excludes all namespaces by defaults, applications must include an InclusiveNamespaces elment that lists the prefixes used within the SignedInfo elmenet. Any SignatureMethod, except those using SHA1 digests, may be used. The recommended SignatureMethod is "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256".
-	The SignedInfo must contain a single Reference element. The Reference must have the URI "#xpointer(id('ID'))", where 'ID' is the JID of the ApplicationMetadata element. The reference element should have the following 2 transforms:
+		The SignedInfo must contain a single Reference element. The Reference must have the URI "#xpointer(id('ID'))", where 'ID' is the JAL id of the ApplicationMetadata element. The reference element should have the following 2 transforms:
 	The first transform must use the Algorithm "http://www.w3.org/2000/09/xmldsig#enveloped-signature".
 	The second transform must use the Algorithm "http://www.w3.org/2001/10/xml-exc-c14n#WithComments". This transform must include an InclusiveNamespaces element with a PrefixList that contains every namespace prefix used in the document.
 	Registered namespaces (including their prefixes) may be obtained with the XPath expression "//namespace::*" .
@@ -34,7 +33,8 @@
 					<documentation>The manifest allows a place for applications to embed digests for the data they submit to the JAL local store. The manifest should contain a Reference elements for the payload (journal, audit or log data).
 
 	The Reference element for the payload (journal, audit, or log data) must have the URI "jalop:paylod". Applications may use any digest method listed at  http://www.w3.org/TR/xmldsig-core1/#sec-AlgID except SHA1.
-	If the payload is journal or log data, applications must not apply any transforms.  If the payload is audit data, the application must use the conicalization method "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", and must not apply any additional transforms.
+	If the payload is journal or log data, applications must not apply any transforms.  If the payload is audit data, the application must use the canonicalization method "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", and must not apply any additional transforms.
+
 	Applications are encouraged, but not required to include this Manifest as it.</documentation></annotation>
 			</element>
 		</sequence>
@@ -60,7 +60,6 @@
 		</sequence>
 		<attribute name="SD_ID" type="string" use="required"/>
 	</complexType>
-
 	<element name="Field" type="jamt:MetadataType"/>
 	<complexType name="MetadataType">
 		<simpleContent>
@@ -82,7 +81,7 @@
 	<complexType name="SyslogType">
 		<annotation><documentation>The syslogType is provided to convey datadescribed in section 6 of RFC5424 (syslog protocol).</documentation></annotation>
 		<sequence>
-			<element name="Entry" type="string" minOccurs="0">
+				<element name="Entry" type="string" minOccurs="0">
 				<annotation><documentation>The actual log entry</documentation></annotation>
 			</element>
 			<element ref="jamt:StructuredData" minOccurs="0" maxOccurs="unbounded"/>
@@ -102,7 +101,7 @@
 		<annotation><documentation>The logger section is intended for use by application level loggers that communicate directly with JALoP.</documentation></annotation>
 		<sequence>
 			<element name="LoggerName" type="string" minOccurs="0"/>
-			<element name="Severity" type="jamt:LoggerSeverityType" minOccurs="0"/>
+			<element ref="jamt:Severity" minOccurs="0"/>
 			<element name="Timestamp" type="dateTime" minOccurs="0"/>
 			<element name="Hostname" type="string" minOccurs="0"/>
 			<element name="ApplicationName" type="string" minOccurs="0"/>
@@ -112,7 +111,7 @@
 			<element name="Location" minOccurs="0" maxOccurs="unbounded">
 				<complexType>
 					<sequence>
-						<element name="StackFrame" type="jamt:StackFrameType" maxOccurs="unbounded"/>
+						<element ref="jamt:StackFrame" maxOccurs="unbounded"/>
 					</sequence>
 				</complexType>
 			</element>
@@ -133,7 +132,6 @@
 		<attribute name="Depth" type="nonNegativeInteger"/>
 	</complexType>
 
-	<element name="MediaType" type="jamt:MediaTypeType"/>
 	<simpleType name="MediaTypeType">
 		<restriction base="string">
 			<enumeration value="application"/>
@@ -156,13 +154,14 @@
 				<annotation><documentation>Applications should set the threat level to "unknown" when the application didn't perform any sort of scan of the journal data. This is the default.</documentation></annotation>
 			</enumeration>
 			<enumeration value="safe">
-				<annotation><documentation>Designates that the entity that is submitting this piece of data for journaling scanned the document for viruses, macros, etc and deemed the file to be innoculous.  Note that it is still possible for the journal data to contain malicious code that was not detected.</documentation></annotation>
+				<annotation><documentation>Designates that the entity that is submitting this piece of data for journaling scanned the document for viruses, macros, etc and deemed the file to be innocuous.  Note that it is still possible for the journal data to contain malicious code that was not detected.</documentation></annotation>
 			</enumeration>
 		</restriction>
 	</simpleType>
-
+	
+	<element name="Transforms" type="jamt:TransformsType"/>
 	<complexType name="TransformsType">
-		<annotation><documentation>The transformsType is an ordered list of transforms the application applied to the journal data before submitting it to the local JAL handler. This may include compression algorithms, encryption, etc. Applications are recommended to encrypt potentially malicious data. The intent here is to prevent accidental execution of malicious code, not necessarily point to point security. It is recomended applications utilize a simple XOR scheme, using the URI "http://www.dod.mil/algorithms/xor".  Transforms may also include compression algorithms.
+		<annotation><documentation>The transformsType is an ordered list of transforms the application applied to the journal data before submitting it to the local JAL handler. This may include compression algorithms, encryption, etc. Applications are recommended to encrypt potentially malicious data. The intent here is to prevent accidental execution of malicious code, not necessarily point to point security. It is recomended that applications utilize a simple XOR scheme, using the URI "http://www.dod.mil/algorithms/xor".  Transforms may also include compression algorithms.
 
 The transforms must be listed in reversed order. For example, if an application compressed a document, and then encrypted it, it must list the encryption first, followed by the compression algorithm. Because the transforms here are intended to prevent an end user from accidentally opening a file, applications are encouraged to include any key info required to reverse the encryption.
 
@@ -172,67 +171,43 @@ The transforms must be listed in reversed order. For example, if an application 
 		</sequence>
 	</complexType>
 	<element name="Transform" type="jamt:TransformType"/>
-	<complexType name="TransformType" mixed="true">
-		<choice minOccurs="0" maxOccurs="unbounded"> 
-			<element name="Deflate" type="jamt:DeflateTransformType"/>
+	<complexType name="TransformType">
+		<choice minOccurs="0" maxOccurs="unbounded">
+			<element ref="jamt:XOR"/>
+			<element ref="jamt:AES128"/>
+			<element ref="jamt:AES192"/>
+			<element ref="jamt:AES256"/>
 			<any namespace="##other" processContents="lax"/>
-			<!-- (1,1) elements from (0,unbounded) namespaces -->
 		</choice>
-		<attribute name="Algorithm" type="anyURI" use="required"/> 
+		<attribute name="Algorithm" type="anyURI" use="required"/>
 	</complexType>
-	<complexType name="DeflateTransformType" mixed="true">
-		<annotation><documentation>The Algorithm attribute for the DeflateTransform must be "http://www.dod.mil/algorithms/compression#deflate"</documentation></annotation>
-		<complexContent>
-			<extension base="jamt:TransformType">
+	<element name="XOR" type="jamt:xorECBType"/>
+	<complexType name="xorECBType">
+			<sequence>
+				<element name="Key" type="jamt:Base64Binary4Bytes"/>
+			</sequence>
+	</complexType>
+	<element name="AES128" type="jamt:AES128_CBC_Type"/>
+	<complexType name="AES128_CBC_Type">
+		<sequence>
+			<element name="Key" type="jamt:Base64Binary16Bytes"/>
+			<element name="IV" type="jamt:Base64Binary16Bytes"/>
+		</sequence>
+	</complexType>
+	<element name="AES192" type="jamt:AES192_CBC_Type"/>
+	<complexType name="AES192_CBC_Type">
 				<sequence>
-					<element name="IV128" type="jamt:Base64Binary16Bytes"/>
+					<element name="Key" type="jamt:Base64Binary24Bytes"/>
+			<element name="IV" type="jamt:Base64Binary16Bytes"/>
 				</sequence>
-			</extension>
-		</complexContent>
 	</complexType>
-	<!--
-	<complexType name="xorECBType" mixed="true">
-		<annotation><documentation>The Algorithm attribute for the xorECBType must be "http://www.dod.mil/algorithms/encryption#xor32-ecb"</documentation></annotation>
-		<complexContent>
-			<extension base="jamt:TransformType">
+	<element name="AES256" type="jamt:AES256_CBC_Type"/>
+	<complexType name="AES256_CBC_Type">
 				<sequence>
-					<element name="Key32" type="jamt:Base64Binary4Bytes"/>
+					<element name="Key" type="jamt:Base64Binary32Bytes"/>
+					<element name="IV" type="jamt:Base64Binary16Bytes"/>
 				</sequence>
-			</extension>
-		</complexContent>
 	</complexType>
-	<complexType name="AES128_CBC_Type" mixed="true">
-		<annotation><documentation>The Algorithm attribute for the AES128_CBC_Type  must be "http://www.dod.mil/algorithms/encryption#aes128-cbc"</documentation></annotation>
-		<complexContent>
-			<extension base="jamt:TransformType">
-				<sequence>
-					<element name="Key128"
-						type="jamt:Base64Binary16Bytes"/>
-				</sequence>
-			</extension>
-		</complexContent>
-	</complexType>
-	<complexType name="AES192_CBC_Type" mixed="true">
-		<annotation><documentation>The Algorithm attribute for the AES192_CBC_Type  must be "http://www.dod.mil/algorithms/encryption#aes192-cbc"</documentation></annotation>
-		<complexContent>
-			<extension base="jamt:TransformType">
-				<sequence>
-					<element name="Key192" type="jamt:Base64Binary24Bytes"/>
-				</sequence>
-			</extension>
-		</complexContent>
-	</complexType>
-	<complexType name="AES256_CBC_Type" mixed="true">
-		<annotation><documentation>The Algorithm attribute for the AES256_CBC_Type  must be "http://www.dod.mil/algorithms/encryption#aes256-cbc"</documentation></annotation>
-		<complexContent>
-			<extension base="jamt:TransformType">
-				<sequence>
-					<element name="Key256" type="jamt:Base64Binary32Bytes"/>
-				</sequence>
-			</extension>
-		</complexContent>
-	</complexType>
-	-->
 	<simpleType name="Base64Binary16Bytes">
 		<restriction base="base64Binary">
 			<!--for base64Binary, length corresponds to the number of 8-bit bytes, not the number of characters -->
@@ -280,8 +255,8 @@ The transforms must be listed in reversed order. For example, if an application 
 	<complexType name="JournalMetadataType">
 		<annotation><documentation>The JournalMetadataType is primarily for Journal data.</documentation></annotation>
 		<sequence>
-			<element name="FileInfo" type="jamt:FileInfoType"/>
-			<element name="Transforms" type="jamt:TransformsType" minOccurs="0"/>
+			<element ref="jamt:FileInfo"/>
+			<element ref="jamt:Transforms" minOccurs="0"/>
 		</sequence>
 		<attribute name="ThreatLevel" type="jamt:ThreatLevelType" use="optional" default="unknown"/>
 	</complexType>
