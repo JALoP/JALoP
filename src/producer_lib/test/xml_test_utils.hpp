@@ -68,7 +68,7 @@ MemBufFormatTarget *xml_output(DOMDocument *doc);
 			if (XMLString::compareString(expected_xml_val, actual_value) != 0) { \
 				test_dept_test_failures += 1; \
 				char *actual_c_str = XMLString::transcode(actual_value); \
-				fprintf(stderr, "%s:%d: Failure: expected that %s == %s\n", \
+				fprintf(stderr, "%s:%d: Failure: expected that attribute == '%s', found '%s'\n", \
 					__FILE__, __LINE__, expected_value, actual_c_str); \
 				delete actual_c_str; \
 				XMLString::release(&expected_xml_val); \
@@ -76,6 +76,47 @@ MemBufFormatTarget *xml_output(DOMDocument *doc);
 			} \
 			XMLString::release(&expected_xml_val); \
 		} \
+	} while(0)
+
+#define assert_content_equals(expected, the_elem) \
+	do { \
+		char *expected_value = (char*) expected; \
+		DOMElement *elem = the_elem; \
+		const XMLCh *actual_text_content = elem->getTextContent(); \
+		if (expected_value == NULL) { \
+			assert_equals(NULL, actual_text_content); \
+		} else { \
+			assert_not_equals(NULL, actual_text_content); \
+			XMLCh * expected_text_content = XMLString::transcode(expected_value); \
+			if (XMLString::compareString(expected_text_content, actual_text_content) != 0) { \
+				test_dept_test_failures += 1; \
+				char *actual_c_str = XMLString::transcode(actual_text_content); \
+				fprintf(stderr, "%s:%d: Failure: expected content == '%s', found '%s'\n", \
+					__FILE__, __LINE__, expected_value, actual_c_str); \
+				delete actual_c_str; \
+				XMLString::release(&expected_text_content); \
+				return; \
+			} \
+			XMLString::release(&expected_text_content); \
+		} \
+	} while(0)
+
+#define assert_tag_equals(expected, the_elem) \
+	do { \
+		char *expected_value = (char*) expected; \
+		DOMElement *elem = the_elem; \
+		const XMLCh *actual_tag = elem->getTagName(); \
+		XMLCh * expected_tag = XMLString::transcode(expected_value); \
+		if (XMLString::compareString(expected_tag, actual_tag) != 0) { \
+			test_dept_test_failures += 1; \
+			char *actual_c_str = XMLString::transcode(actual_tag); \
+			fprintf(stderr, "%s:%d: Failure: expected tag == '%s', found '%s'\n", \
+				__FILE__, __LINE__, expected_value, actual_c_str); \
+			delete actual_c_str; \
+			XMLString::release(&expected_tag); \
+			return; \
+		} \
+		XMLString::release(&expected_tag); \
 	} while(0)
 
 #endif
