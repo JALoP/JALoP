@@ -78,7 +78,8 @@ if not GetOption("clean"):
 						     'CheckPKGAtMostVersion': ConfigHelpers.CheckPKGAtMostVersion,
 						     'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion,
 						     'CheckSantuario': PackageCheckHelpers.CheckSantuario,
-							 'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
+						     'CheckLibUUID': PackageCheckHelpers.CheckLibUUID,
+						     'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
 						   })
 
 	if not conf.CheckCC():
@@ -94,6 +95,9 @@ if not GetOption("clean"):
 		Exit(-1)
 
 	if not conf.CheckSantuario():
+		Exit(-1)
+
+	if not conf.CheckLibUUID():
 		Exit(-1)
 
 	if not conf.CheckProducerLibConfigDotH():
@@ -120,6 +124,9 @@ else:
 
 # add linker flags for santuario
 debug_env["santuario_ldflags"] = "-lxml-security-c"
+
+# linker flags for libuuid
+debug_env["libuuid_ldflags"] = "-luuid"
 
 debug_env.AppendENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
 

@@ -40,3 +40,15 @@ def CheckSantuario(context):
 
 
 
+libuuid_source = '''
+#include <uuid/uuid.h>
+int main() {
+	uuid_t uu;
+	char uuid_str[37];
+	uuid_generate(uu);
+	uuid_unparse(uu, uuid_str);
+	return 0;
+}
+'''
+def CheckLibUUID(context):
+	return __checkCanLink(context, libuuid_source, ".c", "libuuid", ["uuid"])
