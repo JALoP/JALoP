@@ -56,16 +56,16 @@
 	<element name="MetadataList" type="jamt:MetadataListType"/>
 	<complexType name="MetadataListType">
 		<sequence>
-			<element name="Field" type="jamt:MetadataType" maxOccurs="unbounded"/>
+			<element ref="jamt:Field" maxOccurs="unbounded"/>
 		</sequence>
-		<attribute name="SD_ID" type="string"/>
+		<attribute name="SD_ID" type="string" use="required"/>
 	</complexType>
 
-	<element name="Metadata" type="jamt:MetadataType"/>
+	<element name="Field" type="jamt:MetadataType"/>
 	<complexType name="MetadataType">
 		<simpleContent>
 			<extension base="string">
-				<attribute name="key" type="string" use="required"/>
+				<attribute name="Key" type="string" use="required"/>
 			</extension>
 		</simpleContent>
 
@@ -257,10 +257,11 @@ The transforms must be listed in reversed order. For example, if an application 
 			<length value="4" fixed="true"/>
 		</restriction>
 	</simpleType>
+	<element name="Parameter" type="jamt:ParameterType"/>
 	<complexType name="ParameterType">
 		<simpleContent>
 			<extension base="string">
-				<attribute name="name" type="string"/>
+				<attribute name="Name" type="string" use="required"/>
 			</extension>
 		</simpleContent>
 	</complexType>
@@ -268,8 +269,8 @@ The transforms must be listed in reversed order. For example, if an application 
 	<complexType name="ContentTypeType">
 		<annotation><documentation>The content type is modeled after the MIME content type and applications should
   follow the same guidelines as for MIME.</documentation></annotation>
-		<sequence minOccurs="0" maxOccurs="unbounded">
-			<element name="Parameter" type="jamt:ParameterType"/>
+		<sequence>
+			<element ref="jamt:Parameter" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
 		<attribute name="MediaType" type="jamt:MediaTypeType" use="required"/>
 		<attribute name="SubType" type="string" use="required"/>
