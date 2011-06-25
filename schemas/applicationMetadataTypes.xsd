@@ -258,7 +258,6 @@ The transforms must be listed in reversed order. For example, if an application 
 			<element ref="jamt:FileInfo"/>
 			<element ref="jamt:Transforms" minOccurs="0"/>
 		</sequence>
-		<attribute name="ThreatLevel" type="jamt:ThreatLevelType" use="optional" default="unknown"/>
 	</complexType>
 	<element name="FileInfo" type="jamt:FileInfoType"/>
 	<complexType name="FileInfoType">
