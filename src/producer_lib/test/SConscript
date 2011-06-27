@@ -54,6 +54,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_param_xml.cpp',
 	other_sources=[paramObj, jalopInitObj, xmlTestUtilsObj, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_structured_data_xml.cpp',
 	other_sources=[paramObj, jalopInitObj, xmlTestUtilsObj, paramXmlObj, structDataObj, lib_common])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_stack_frame_xml.cpp',
+	other_sources=[stackFrameObj, jalopInitObj, xmlTestUtilsObj, lib_common])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
