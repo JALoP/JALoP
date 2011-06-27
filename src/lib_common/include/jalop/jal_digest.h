@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdlib.h>
 
 /**
  * User supplied functions to implement additional digest algorithms.
