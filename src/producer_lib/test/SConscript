@@ -20,6 +20,7 @@ xmlTestUtilsObj = testEnv.SharedObject("xml_test_utils.cpp");
 logMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'));
 structDataObj = env.SharedObject(os.path.join('..', 'src', 'jalp_structured_data.c'))
 stackFrameObj = env.SharedObject(os.path.join('..', 'src', 'jalp_stack_frame.c'))
+paramXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_param_xml.cpp'))
 
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity.c', 
 	other_sources=[lib_common])[0].abspath)
@@ -51,6 +52,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_context.c',
 	other_sources=[lib_common], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_param_xml.cpp',
 	other_sources=[paramObj, jalopInitObj, xmlTestUtilsObj, lib_common])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_structured_data_xml.cpp',
+	other_sources=[paramObj, jalopInitObj, xmlTestUtilsObj, paramXmlObj, structDataObj, lib_common])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
