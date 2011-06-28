@@ -53,8 +53,8 @@
 			<maxInclusive value="7"/>
 		</restriction>
 	</simpleType>
-	<element name="MetadataList" type="jamt:MetadataListType"/>
-	<complexType name="MetadataListType">
+	<element name="StructuredData" type="jamt:StructuredDataType"/>
+	<complexType name="StructuredDataType">
 		<sequence>
 			<element ref="jamt:Field" maxOccurs="unbounded"/>
 		</sequence>
@@ -85,7 +85,7 @@
 			<element name="Entry" type="string" minOccurs="0">
 				<annotation><documentation>The actual log entry</documentation></annotation>
 			</element>
-			<element name="StructuredData" type="jamt:MetadataListType" minOccurs="0" maxOccurs="unbounded"/>
+			<element ref="jamt:StructuredData" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
 		<attribute name="Facility" type="jamt:FacilityType"/>
 		<attribute name="Severity" type="jamt:SyslogSeverityType"/>
@@ -118,7 +118,7 @@
 			</element>
 			<element name="NestedDiagnosticContext" minOccurs="0" type="string"/>
 			<element name="MappedDiagnosticContext" minOccurs="0" type="string"/>
-			<element name="StructuredData" type="jamt:MetadataListType" minOccurs="0"/>
+			<element ref="jamt:StructuredData" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
 	</complexType>
 	<element name="StackFrame" type="jamt:StackFrameType"/>
