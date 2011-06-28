@@ -48,9 +48,10 @@ XERCES_CPP_NAMESPACE_USE
  *
  * @param[in] severity The jalp_log_severity struct to convert.
  * @param[in] doc The DOMDocument to create the DOMElement from. Maintains the same namespace
- * @return the DOMElement representation of the jalp_log_severity struct
+ * @param[out] elem The DOMElement that holds the newly created element.
+ * @return JAL_OK on success, JAL_E_XML_CONVERSION otherwise
  */
-DOMElement *jalp_log_severity_to_elem(const struct jalp_log_severity * severity, DOMDocument *doc);
+enum jal_status jalp_log_severity_to_elem(const struct jalp_log_severity * severity, DOMDocument *doc, DOMElement **elem);
 
 #ifdef __cplusplus
 }

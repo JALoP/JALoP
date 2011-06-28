@@ -31,37 +31,37 @@
 
 #include <jalop/jal_namespaces.h>
 #include <jalop/jalp_logger_metadata.h>
+#include <jalop/jal_status.h>
 #include "jalp_log_severity_xml.hpp"
 #include "jal_asprintf_internal.h"
 
-#define JALP_XML_SEVERITY "Severity"
-#define JALP_XML_NAME "Name"
-
+static const XMLCh JALP_XML_SEVERITY[] = {
+	chLatin_S, chLatin_e, chLatin_v, chLatin_e, chLatin_r, chLatin_i, chLatin_t, chLatin_y, chNull };
+static const XMLCh JALP_XML_NAME[] = {
+	chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
 XERCES_CPP_NAMESPACE_USE
 
-DOMElement *jalp_log_severity_to_elem(const struct jalp_log_severity * severity, DOMDocument *doc)
+enum jal_status jalp_log_severity_to_elem(const struct jalp_log_severity * severity, DOMDocument *doc, DOMElement **elem)
 {
 
 	/* null checks on args */
-	if((!doc) || (!severity)) {
-		return NULL;
+	if((!doc) || (!severity) || (!elem) || (*elem)) {
+		return JAL_E_XML_CONVERSION;
 	}
 
 	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
-	XMLCh *xml_severity = XMLString::transcode(JALP_XML_SEVERITY);
-	XMLCh *xml_severity_name = XMLString::transcode(JALP_XML_NAME);
 	char * level_val_str;
 	jal_asprintf(&level_val_str, "%d", severity->level_val);
 	XMLCh *xml_level_val = XMLString::transcode(level_val_str);
 
 	/* create the severity DOMElement */
 	DOMElement *severity_elt;
-	severity_elt = doc->createElementNS(namespace_uri, xml_severity);
+	severity_elt = doc->createElementNS(namespace_uri, JALP_XML_SEVERITY);
 
 	/* add the level_str field to the severity DOMElement */
 	if(severity->level_str) {
 		XMLCh *xml_level_str = XMLString::transcode(severity->level_str);
-		severity_elt->setAttribute(xml_severity_name, xml_level_str);
+		severity_elt->setAttribute(JALP_XML_NAME, xml_level_str);
 		XMLString::release(&xml_level_str);
 	}
 
@@ -72,9 +72,8 @@ DOMElement *jalp_log_severity_to_elem(const struct jalp_log_severity * severity,
 
 	free(level_val_str);
 	XMLString::release(&namespace_uri);
-	XMLString::release(&xml_severity);
-	XMLString::release(&xml_severity_name);
 	XMLString::release(&xml_level_val);
-	return severity_elt;
+	*elem = severity_elt;
 
+	return JAL_OK;
 }

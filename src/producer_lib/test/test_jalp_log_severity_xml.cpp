@@ -17,6 +17,7 @@ extern "C" {
 XERCES_CPP_NAMESPACE_USE
 struct jalp_log_severity *severity = NULL;
 DOMDocument *doc = NULL;
+DOMElement *new_elem;
 XMLCh *expected_name_attr = NULL;
 XMLCh *expectedLevelVal = NULL;
 std::list<const char*> schemas;
@@ -47,48 +48,66 @@ extern "C" void teardown()
 	XMLString::release(&expected_name_attr);
 	schemas.clear();
 	jalp_shutdown();
+	new_elem = NULL;
 }
 
-extern "C" void test_log_severity_to_elem_returns_null_for_null()
+extern "C" void test_log_severity_to_elem_returns_error_on_bad_input()
 {
-	DOMElement *new_elem = jalp_log_severity_to_elem(NULL, NULL);
+	enum jal_status ret = jalp_log_severity_to_elem(NULL, NULL, &new_elem);
 	assert_equals(NULL, new_elem);
+	assert_not_equals(JAL_OK, ret);
 
-	new_elem = jalp_log_severity_to_elem(severity, NULL);
+	ret = jalp_log_severity_to_elem(severity, NULL, &new_elem);
 	assert_equals(NULL, new_elem);
+	assert_not_equals(JAL_OK, ret);
 
-	new_elem = jalp_log_severity_to_elem(NULL, doc);
+	ret = jalp_log_severity_to_elem(NULL, doc, &new_elem);
 	assert_equals(NULL, new_elem);
+	assert_not_equals(JAL_OK, ret);
+
+	ret = jalp_log_severity_to_elem(severity, doc, NULL);
+	assert_not_equals(JAL_OK, ret);
+
+	jalp_log_severity_to_elem(severity, doc, &new_elem);
+	DOMElement *temp = new_elem;
+	ret = jalp_log_severity_to_elem(severity, doc, &new_elem);
+	assert_equals(temp, new_elem);
+	assert_not_equals(JAL_OK, ret);
 }
 
 extern "C" void test_log_severity_to_elem_returns_valid_element_when_name_is_not_empty()
 {
-	DOMElement *new_elem = jalp_log_severity_to_elem(severity, doc);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, doc, &new_elem);
 	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
 
 	assert_attr_equals("Name", LEVEL_NAME, new_elem);
 	assert_equals(LEVEL_NUM, XMLString::parseInt(new_elem->getTextContent()));
 	doc->appendChild(new_elem);
 	assert_equals(true, validate(doc, __FUNCTION__, schemas));
 }
+
 extern "C" void test_log_severity_to_elem_returns_valid_element_when_name_is_empty()
 {
 	free(severity->level_str);
 	severity->level_str = jal_strdup("");
-	DOMElement *new_elem = jalp_log_severity_to_elem(severity, doc);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, doc, &new_elem);
 	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
 
 	assert_attr_equals("Name", "", new_elem);
 	assert_equals(LEVEL_NUM, XMLString::parseInt(new_elem->getTextContent()));
 	doc->appendChild(new_elem);
 	assert_equals(true, validate(doc, __FUNCTION__, schemas));
 }
+
 extern "C" void test_log_severity_to_elem_works_when_name_is_null()
 {
 	free(severity->level_str);
 	severity->level_str = NULL;
-	DOMElement *new_elem = jalp_log_severity_to_elem(severity, doc);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, doc, &new_elem);
 	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Name", NULL, new_elem);
 	assert_equals(LEVEL_NUM, XMLString::parseInt(new_elem->getTextContent()));
 	doc->appendChild(new_elem);
@@ -98,8 +117,9 @@ extern "C" void test_log_severity_to_elem_works_when_name_is_null()
 extern "C" void test_log_severity_to_elem_works_with_negative_levels()
 {
 	severity->level_val = -10;
-	DOMElement *new_elem = jalp_log_severity_to_elem(severity, doc);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, doc, &new_elem);
 	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
 	assert_equals(-10, XMLString::parseInt(new_elem->getTextContent()));
 	doc->appendChild(new_elem);
 	assert_equals(true, validate(doc, __FUNCTION__, schemas));
@@ -108,8 +128,9 @@ extern "C" void test_log_severity_to_elem_works_with_negative_levels()
 extern "C" void test_log_severity_to_elem_works_with_int_max()
 {
 	severity->level_val = INT_MAX;
-	DOMElement *new_elem = jalp_log_severity_to_elem(severity, doc);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, doc, &new_elem);
 	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
 	assert_equals(INT_MAX, XMLString::parseInt(new_elem->getTextContent()));
 	doc->appendChild(new_elem);
 	assert_equals(true, validate(doc, __FUNCTION__, schemas));
@@ -118,8 +139,9 @@ extern "C" void test_log_severity_to_elem_works_with_int_max()
 extern "C" void test_log_severity_to_elem_works_with_int_min()
 {
 	severity->level_val = INT_MIN;
-	DOMElement *new_elem = jalp_log_severity_to_elem(severity, doc);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, doc, &new_elem);
 	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
 	assert_equals(INT_MIN, XMLString::parseInt(new_elem->getTextContent()));
 	doc->appendChild(new_elem);
 	assert_equals(true, validate(doc, __FUNCTION__, schemas));
