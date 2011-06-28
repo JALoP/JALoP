@@ -34,6 +34,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdio.h>
 
 /**
  * @defgroup JournalMetadata Journal Metadata
@@ -49,7 +50,36 @@ extern "C" {
  * @{
  */
 /**
- * Enum to restrict AES keysizes
+ * Structure used to represent a transform that is not known to JALoP
+ * Typically this structure is not created or manipulated directly, but through
+ * calls to jalp_transform_append_other().
+ */
+struct jalp_transform_other_info {
+	/** The URI for this tranform */
+	char *uri;
+	/** An XML snippet that will be used as the child elements of the
+	 * transform */
+	char *xml;
+};
+/**
+ * Creation function for a jalp_transform_other structure.
+ * Typically applications do not need to use this directly, and should use the
+ * jalp_transform_append_other() function.
+ *
+ * @param [in] uri The URI to use for the transform.
+ * @param xml_snippet A snippet of XML that will be parsed and added as
+ * child(ren) elments of the transform.
+ * @return a new jalp_transform_other object, or NULL if \puri is NULL.
+ */
+struct jalp_transform_other_info *jalp_transform_other_info_create(const char *uri, const char *xml_snippet);
+/**
+ * Destroy a jalp_transform_other structure.
+ * @param [in, out] other_info The structure to destroy, the pointer will be
+ * set to NULL.
+ */
+void jalp_transform_other_info__destroy(struct jalp_transform_other_info **other_info);
+/**
+ * Enum to indicate which AES algirthm to create.
  */
 enum jalp_aes_key_size {
 	/** Indicates a 128 bit (16 byte) key */
@@ -59,14 +89,98 @@ enum jalp_aes_key_size {
 	/** Indicates a 256 bit (32 byte) key */
 	JALP_AES256,
 };
+
+#define JALP_TRANSFORM_AES_IVSIZE (128 / 8)
+#define JALP_TRANSFORM_AES128_KEYSIZE (128 / 8)
+#define JALP_TRANSFORM_AES192_KEYSIZE (192 / 8)
+#define JALP_TRANSFORM_AES256_KEYSIZE (256 / 8)
+#define JALP_TRANSFORM_XOR_KEYSIZE (32 / 8)
+/**
+ * A structure used to add additional information for encryption transforms.
+ */
+struct jalp_transform_encryption_info {
+	/**
+	 * a buffer that contains the key for a transform. The length of
+	 * the key is dependant on the transform type. */
+	uint8_t *key;
+	/**
+	 * a buffer that contains the IV (initialization vector) for a
+	 * tranform. The length of the IV is dependant on the transform type. 
+	 */
+	uint8_t *iv;
+};
+/**
+ * Create an encryption info struct. Typically applications do not need to
+ * access this directly and should use one of:
+ * - jalp_transform_append_aes
+ * - jalp_transform_append_xor
+ *
+ * @param[in] key a buffer that contains the key for the transform.
+ * @param[in] key_len The length of the key, in bytes.
+ * @param[in] iv a buffer that contains the iv for the transform.
+ * @param[in] iv_len The length of the iv, in bytes.
+ *
+ * @return a new jalp_transform_encryption_info object or NULL.
+ * The returned object will have NULL for the key unless key is non-null and
+ * key_len is non-zero.
+ * The returned object will have NULL for the iv unless iv is non-null and
+ * iv_len is non-zero.
+ *
+ * If both key and iv would be NULL in the new object, this simply returns
+ * NULL.
+ */
+struct jalp_transform_encryption_info *jalp_transform_encryption_info_create(const uint8_t *key, size_t key_len, const uint8_t *iv, size_t iv_len);
+/**
+ * Destroy a jalp_transform_encryption_info object.
+ * @param[in, out] enc_info The object to destroy. This will get set to NULL.
+ */
+void jalp_transform_encryption_info_destroy(struct jalp_transform_encryption_info **enc_info);
+enum jalp_transform_type {
+	JALP_TRANSFORM_OTHER,
+	JALP_TRANSFORM_AES128,
+	JALP_TRANSFORM_AES192,
+	JALP_TRANSFORM_AES256,
+	JALP_TRANSFORM_DEFLATE,
+	JALP_TRANSFORM_XOR,
+};
+
 /**
  * Structure to describe transforms applied to an entry
  */
 struct jalp_transform {
-	/** the URI for this transform */
-	char *uri;
-	/** (optional) snippet of XML code to add as a child of the transform element. */
-	char *xml;
+	/** the type for this transform.
+	 *
+	 * If the transform is JALP_TRANSFORM_AES128, and the \penc_info
+	 * is non-null, it may contain a 128 bit key element, and a 128 bit iv
+	 * element.
+	 *
+	 * If the transform is JALP_TRANSFORM_AES192, and the \penc_info
+	 * is non-null, it may contain a 192 bit key element, and a 128 bit iv
+	 * element.
+	 *
+	 * If the transform is JALP_TRANSFORM_AES256, and the \penc_info
+	 * is non-null, it may contain a 256 bit key element, and a 128 bit iv
+	 * element.
+	 *
+	 * If the transform is JALP_TRANSFORM_XOR, and the \penc_info
+	 * is non-null, it may contain a 32 bit key element, but must not
+	 * contain an IV element.
+	 *
+	 * If the transform is JALP_TRANSFORM_DEFLATE, then the \penc_info
+	 * element must be NULL.
+	 *
+	 * If the transform is JALP_TRANSFORM_OTHER, then the \pother
+	 * element must non-NULL and must contain a valid uri. It may also
+	 * contain an xml snippet that will be added to the document as child
+	 * elements for the transform.
+	 */
+	enum jalp_transform_type type;
+	union {
+		/** Extra encryption info for JALoP recognized algorithms */
+		struct jalp_transform_encryption_info *enc_info;
+		/** uri and (optional) xml snippet algorithms not recognized by * JALoP */
+		struct jalp_transform_other_info *other_info;
+	};
 	/** The next transform in the sequence, or NULL */
 	struct jalp_transform *next;
 };
@@ -76,13 +190,14 @@ struct jalp_transform {
  *
  * @param[in] prev The transform that should come directly before the new
  * transform. If \p prev already points somewhere for \p next, the new
- * transform is inserted into the list.
+ * transform is inserted into the list. The type of this transform is set to
+ * JALP_TRANSFORM_OTHER.
  * @param[in] uri A URI for the transform.
  * @param[in] xml_snippet XML for the body of the transform. This must be valid
  * XML.
  * @return A pointer to the newly created transform, or NULL if \p uri is NULL.
  */
-struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
+struct jalp_transform *jalp_transform_append_other(struct jalp_transform *prev,
 		const char *uri,
 		const char *xml_snippet);
 /**

@@ -37,34 +37,105 @@
 #include "jal_asprintf_internal.h"
 #include "jalp_base64_internal.h"
 
-
-struct jalp_transform *jalp_transform_append(struct jalp_transform *prev,
-		const char *uri, const char *xml_snippet)
+void jalp_transform_append_internal(struct jalp_transform *prev, struct jalp_transform *transform)
 {
-	if (!uri) {
-		return NULL;
-	}
-
-	struct jalp_transform *transform = NULL;
-	transform = jal_malloc(sizeof(*transform));
-
-	transform->uri = jal_strdup(uri);
-	transform->xml = jal_strdup(xml_snippet);
-
 	if (prev) {
 		transform->next = prev->next;
 		prev->next = transform;
 	} else {
 		transform->next = NULL;
 	}
-
-	return transform;
 }
 
+
+struct jalp_transform *jalp_transform_append_other(struct jalp_transform *prev,
+		const char *uri, const char *xml_snippet)
+{
+	struct jalp_transform_other_info *other_info = NULL;
+	other_info = jalp_transform_other_info_create(uri, xml_snippet);
+	if (!other_info) {
+		return NULL;
+	}
+
+	struct jalp_transform *transform = NULL;
+	transform = (struct jalp_transform*) jal_malloc(sizeof(*transform));
+	transform->type = JALP_TRANSFORM_OTHER;
+	transform->other_info = other_info;
+	jalp_transform_append_internal(prev, transform);
+	return transform;
+}
+struct jalp_transform_other_info *jalp_transform_other_info_create(const char *uri, const char *xml_snippet)
+{
+	if (!uri) {
+		return NULL;
+	}
+	struct jalp_transform_other_info *info = (struct jalp_transform_other_info *)jal_malloc(sizeof(*info));
+
+	info->uri = jal_strdup(uri);
+	info->xml = jal_strdup(xml_snippet);
+
+	return info;
+}
+void jalp_transform_other_info_destroy(struct jalp_transform_other_info **other_info)
+{
+	if (!other_info || !*other_info) {
+		return;
+	}
+	free((*other_info)->uri);
+	free((*other_info)->xml);
+	free(*other_info);
+	*other_info = NULL;
+}
+struct jalp_transform_encryption_info *jalp_transform_encryption_info_create(const uint8_t *key, const size_t key_len, const uint8_t *iv, const size_t iv_len)
+{
+	int have_key = key && key_len;
+	int have_iv = iv && iv_len;
+	if (!have_key && !have_iv) {
+		return NULL;
+	}
+	struct jalp_transform_encryption_info *info =
+		(struct jalp_transform_encryption_info *) jal_calloc(1, sizeof(*info));
+	if (have_key) {
+		info->key = (uint8_t*) jal_malloc(key_len);
+		memcpy(info->key, key, key_len);
+	}
+	if (have_iv) {
+		info->iv = (uint8_t*) jal_malloc(iv_len);
+		memcpy(info->iv, iv, iv_len);
+	}
+	return info;
+}
+
+void jalp_transform_encryption_info_destroy(struct jalp_transform_encryption_info **enc_info)
+{
+	if (!enc_info || !*enc_info) {
+		return;
+	}
+	free((*enc_info)->key);
+	free((*enc_info)->iv);
+	free(*enc_info);
+	*enc_info = NULL;
+}
 void jalp_transform_destroy_one(struct jalp_transform *transform)
 {
-	free(transform->uri);
-	free(transform->xml);
+	switch (transform->type) {
+	case JALP_TRANSFORM_AES128:
+		// fall through 
+	case JALP_TRANSFORM_AES192:
+		// fall through 
+	case JALP_TRANSFORM_AES256:
+		// fall through 
+	case JALP_TRANSFORM_XOR:
+		jalp_transform_encryption_info_destroy(&transform->enc_info);
+		break;
+	case JALP_TRANSFORM_OTHER:
+		jalp_transform_other_info_destroy(&transform->other_info);
+		break;
+	case JALP_TRANSFORM_DEFLATE:
+		// no sub elements for deflate, fall through
+	default:
+			break;
+	}
 	free(transform);
 }
 
@@ -84,103 +155,53 @@ void jalp_transform_destroy(struct jalp_transform **transform)
 	*transform = NULL;
 }
 
-
 struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev)
 {
-	return jalp_transform_append(prev,
-			"http://www.dod.mil/algorithms/compression#deflate", NULL);
+	struct jalp_transform *transform = (struct jalp_transform *)jal_malloc(sizeof(*transform));
+	transform->type = JALP_TRANSFORM_DEFLATE;
+	transform->enc_info = NULL;
+	jalp_transform_append_internal(prev, transform);
+	return transform;
 }
 
 struct jalp_transform *jalp_transform_append_xor(struct jalp_transform *prev,
 		const uint32_t key)
 {
-	char char_key[sizeof(key)];
-	char *b64_key = NULL;
-	char *xml = NULL;
-	struct jalp_transform * transform = NULL;
-	uint32_t nkey;
-
-	// convert key to network byte order
-	nkey = htonl(key);
-
-	memcpy(char_key, &nkey, sizeof(nkey));
-	b64_key = jalp_base64_enc((unsigned char *)char_key, sizeof(nkey));
-	if (!b64_key) {
+	if (!key) {
 		return NULL;
 	}
-
-	jal_asprintf(&xml, "<Key32>%s</Key32>", b64_key);
-	transform = jalp_transform_append(prev,
-			"http://www.dod.mil/algorithms/encryption#xor32-ecb", xml);
-
-	free(b64_key);
-	free(xml);
+	uint32_t net_order_key = htonl(key);
+	struct jalp_transform *transform = (struct jalp_transform*) jal_malloc(sizeof(*transform));
+	transform->type = JALP_TRANSFORM_XOR;
+	transform->enc_info = jalp_transform_encryption_info_create((void*) &net_order_key, sizeof(net_order_key), NULL, 0);
+	jalp_transform_append_internal(prev, transform);
 	return transform;
 }
 
 struct jalp_transform *jalp_transform_append_aes(struct jalp_transform *prev,
 		const enum jalp_aes_key_size key_size, const uint8_t *key, const uint8_t *iv)
 {
-	unsigned char *char_key = NULL;
-	unsigned char *char_iv = NULL;
-	char *b64_key = NULL;
-	char *b64_iv = NULL;
-	char *xml = NULL;
-	char *algorithm = NULL;
-	int key_length;
-	struct jalp_transform * transform = NULL;
-
+	size_t key_length;
+	enum jalp_transform_type type;
 	switch (key_size) {
 	case JALP_AES128:
-		key_length = 128;
+		type = JALP_TRANSFORM_AES128;
+		key_length = JALP_TRANSFORM_AES128_KEYSIZE;
 		break;
 	case JALP_AES192:
-		key_length = 192;
+		type = JALP_TRANSFORM_AES192;
+		key_length = JALP_TRANSFORM_AES192_KEYSIZE;
 		break;
 	case JALP_AES256:
-		key_length = 256;
+		type = JALP_TRANSFORM_AES256;
+		key_length = JALP_TRANSFORM_AES256_KEYSIZE;
 		break;
 	default:
-		goto aes_out;
+		return NULL;
 	}
-
-	if (key) {
-		char_key = jal_malloc(key_length);
-		memcpy(char_key, key, key_length);
-		b64_key = jalp_base64_enc(char_key, key_length);
-		if (!b64_key) {
-			goto aes_out;
-		}
-	}
-
-	if (iv) {
-		char_iv = jal_malloc(128); // IVs are always 128 bytes
-		memcpy(char_iv, iv, 128);
-		b64_iv = jalp_base64_enc(char_iv, 128);
-		if (!b64_iv) {
-			goto aes_out;
-		}
-	}
-
-	if (key && iv) {
-		jal_asprintf(&xml, "<Key%d>%s</Key%d><IV128>%s</IV128>",
-				key_length, b64_key, key_length, b64_iv);
-	} else if (key) {
-		jal_asprintf(&xml, "<Key%d>%s</Key%d>", key_length, b64_key, key_length);
-	} else if (iv) {
-		jal_asprintf(&xml, "<IV128>%s</IV128>", b64_iv);
-	}
-
-	jal_asprintf(&algorithm, "http://www.w3.org/2001/04/xmlenc#aes%d-cbc", key_length);
-	transform = jalp_transform_append(prev, algorithm, xml);
-
-aes_out:
-	free(char_key);
-	free(char_iv);
-	free(b64_key);
-	free(b64_iv);
-	free(xml);
-	free(algorithm);
-
+	struct jalp_transform *transform = (struct jalp_transform*) jal_malloc(sizeof(*transform));
+	transform->type = type;
+	transform->enc_info = jalp_transform_encryption_info_create(key, key_length, iv, JALP_TRANSFORM_AES_IVSIZE);
+	jalp_transform_append_internal(prev, transform);
 	return transform;
 }
