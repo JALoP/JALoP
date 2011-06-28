@@ -77,7 +77,7 @@ struct jalp_transform_other_info *jalp_transform_other_info_create(const char *u
  * @param [in, out] other_info The structure to destroy, the pointer will be
  * set to NULL.
  */
-void jalp_transform_other_info__destroy(struct jalp_transform_other_info **other_info);
+void jalp_transform_other_info_destroy(struct jalp_transform_other_info **other_info);
 /**
  * Enum to indicate which AES algirthm to create.
  */
