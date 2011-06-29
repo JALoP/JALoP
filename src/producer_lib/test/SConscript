@@ -62,6 +62,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_app_metadata.c',
 	other_sources=[lib_common, syslogMetaObj, logMetaObj, journalMetaObj, structDataObj,
 	logSeverityObj, stackFrameObj, paramObj, fileInfoObj, transformObj, contentTypeObj,
 	base64Obj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_content_type_xml.cpp',
+	other_sources=[paramObj, jalopInitObj, xmlTestUtilsObj, paramXmlObj, contentTypeObj, lib_common])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)

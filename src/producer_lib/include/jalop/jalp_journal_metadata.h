@@ -149,7 +149,7 @@ struct jalp_transform *jalp_transform_append_aes(struct jalp_transform *prev,
  * expected to conform to MIME, hence the omission of the 'multipart' type.
  */
 enum jalp_media_type {
-	JALP_MT_APPLICATION,
+	JALP_MT_APPLICATION = 0,
 	JALP_MT_AUDIO,
 	JALP_MT_EXAMPLE,
 	JALP_MT_IMAGE,
