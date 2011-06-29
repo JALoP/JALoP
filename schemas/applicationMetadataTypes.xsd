@@ -265,7 +265,7 @@ The transforms must be listed in reversed order. For example, if an application 
 			</extension>
 		</simpleContent>
 	</complexType>
-	<element name="ContentType" type="jamt:ContentTypeType"/>
+	<element name="Content-Type" type="jamt:ContentTypeType"/>
 	<complexType name="ContentTypeType">
 		<annotation><documentation>The content type is modeled after the MIME content type and applications should
   follow the same guidelines as for MIME.</documentation></annotation>
@@ -288,7 +288,7 @@ The transforms must be listed in reversed order. For example, if an application 
 	<element name="FileInfo" type="jamt:FileInfoType"/>
 	<complexType name="FileInfoType">
 		<sequence>
-			<element name="Content-Type" type="jamt:ContentTypeType" minOccurs="0"/>
+			<element ref="jamt:Content-Type" minOccurs="0"/>
 		</sequence>
 		<attribute name="FileName" type="string" use="required"/>
 		<attribute name="OriginalSize" type="nonNegativeInteger">
