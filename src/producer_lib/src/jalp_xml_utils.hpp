@@ -44,4 +44,24 @@ XERCES_CPP_NAMESPACE_USE
  */
 enum jal_status parse_xml_snippet(DOMElement *ctx_node, const char *snippet);
 
+/**
+ * Helper function to base64 encode a buffer and create a new DOMElement.
+ *
+ * @param[in] doc The document to use when creating elements.
+ * @param[in] buffer The byte buffer to base64 encode
+ * @param[in] buf_len The length, in bytes, of the buffer
+ * @param[in] namespace_uri The URI to use as the namespace of the new element.
+ * @param[in] elm_name The name that should be given to the new element.
+ * @param[in,out] new_elem Pointer that will be assigned to the newly created
+ * DOMElement, This new DOMElement will have the name
+ * \pelm_name, and the default namespace set to \pnamespace_uri. The text
+ * content of the new node will be the base64 encoded value of \pbuffer.
+ *
+ * @return JAL_OK on error, or JAL_E_INVAL
+ */
+enum jal_status create_base64_element(DOMDocument *doc,
+		const uint8_t *buffer, const size_t buf_len,
+		const XMLCh *namespace_uri, const XMLCh *elm_name,
+		DOMElement **new_elem);
+
 #endif // _JALP_XML_UITILS_HPPP_
