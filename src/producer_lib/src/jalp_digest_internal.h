@@ -40,3 +40,15 @@
 */
 enum jal_status jalp_digest_buffer(struct jal_digest_ctx *digest_ctx,
 		const uint8_t *data, size_t len, uint8_t **digest);
+
+/**
+ * Create a digest from an open file descriptor
+ *
+ * @param[in] digest_ctx The application supplied jal_digest_ctx to use.
+ * @param[in] fd An open file descriptor to feed into the digest context.
+ * @param[out] digest A pointer to hold the created digest. Should point to NULL.
+ *
+ * @returns JAL_OK on success.
+*/
+enum jal_status jalp_digest_fd(struct jal_digest_ctx *digest_ctx,
+		int fd, uint8_t **digest);
