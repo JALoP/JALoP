@@ -8,7 +8,6 @@ testEnv = env.Clone()
 # The test-dept macros trigger this warning, so disable it for all the test
 # drivers.
 testEnv.Append(CCFLAGS=' -Wno-format-nonliteral -Wno-unreachable-code ')
-testEnv.Append(LINKFLAGS=env["openssl_ldflags"])
 
 errorCallbackObj = env.SharedObject(os.path.join('..','src', 'jal_error_callback.c'))
 allocObj = env.SharedObject(os.path.join('..','src', 'jal_alloc.c'))

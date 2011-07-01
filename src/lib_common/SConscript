@@ -2,6 +2,8 @@ Import('*')
 
 lib_common_env = env.Clone()
 lib_common_env.Prepend(CPPPATH='#src/lib_common/include:#src/lib_common/src')
+lib_common_env.Append(CFLAGS=env['openssl_cflags'])
+lib_common_env.Append(LINKFLAGS=env['openssl_ldflags'])
 
 lib_common = SConscript('src/SConscript', exports={'env':lib_common_env})
 SConscript('test/SConscript', exports={'env':lib_common_env, 'all_tests':all_tests})

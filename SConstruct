@@ -40,7 +40,7 @@ pkg_config_version = '0.21'
 #
 
 packages_at_least = {
-	'openssl'  : ['openssl', '0.9.7'],
+	'openssl'  : ['openssl', '0.9.8'],
 	'libconfig': ['libconfig', '1.3.2'],
 	'vortex'   : ['vortex-1.1', '1.1.7'],
 	'xerces'   : ['xerces-c', '3.1.1'],
@@ -62,9 +62,11 @@ debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env.Append(CCFLAGS=flags, CFLAGS='-std=gnu99')
 if platform.system() == 'SunOS':
+	debug_env.PrependENVPath('PKG_CONFIG_PATH',
+			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
 	debug_env.Append(CCFLAGS=' -D_POSIX_C_SOURCE=200112L ')
-	debug_env.Append(LINKFLAGS='-Wl,-rpath,/usr/local/lib')
+	debug_env.Append(LINKFLAGS='-Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/local/ssl/lib')
 
 # Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
 (major, _, _) = debug_env['CCVERSION'].split('.')
