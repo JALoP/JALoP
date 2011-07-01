@@ -183,30 +183,30 @@ The transforms must be listed in reversed order. For example, if an application 
 	</complexType>
 	<element name="XOR" type="jamt:xorECBType"/>
 	<complexType name="xorECBType">
-			<sequence>
-				<element name="Key" type="jamt:Base64Binary4Bytes"/>
-			</sequence>
+		<sequence>
+			<element name="Key" type="jamt:Base64Binary4Bytes"/>
+		</sequence>
 	</complexType>
 	<element name="AES128" type="jamt:AES128_CBC_Type"/>
 	<complexType name="AES128_CBC_Type">
 		<sequence>
-			<element name="Key" type="jamt:Base64Binary16Bytes"/>
-			<element name="IV" type="jamt:Base64Binary16Bytes"/>
+			<element name="Key" type="jamt:Base64Binary16Bytes" minOccurs="0" />
+			<element name="IV" type="jamt:Base64Binary16Bytes" minOccurs="0" />
 		</sequence>
 	</complexType>
 	<element name="AES192" type="jamt:AES192_CBC_Type"/>
 	<complexType name="AES192_CBC_Type">
-				<sequence>
-					<element name="Key" type="jamt:Base64Binary24Bytes"/>
-			<element name="IV" type="jamt:Base64Binary16Bytes"/>
-				</sequence>
+		<sequence>
+			<element name="Key" type="jamt:Base64Binary24Bytes" minOccurs="0" />
+			<element name="IV" type="jamt:Base64Binary16Bytes" minOccurs="0" />
+		</sequence>
 	</complexType>
 	<element name="AES256" type="jamt:AES256_CBC_Type"/>
 	<complexType name="AES256_CBC_Type">
-				<sequence>
-					<element name="Key" type="jamt:Base64Binary32Bytes"/>
-					<element name="IV" type="jamt:Base64Binary16Bytes"/>
-				</sequence>
+		<sequence>
+			<element name="Key" type="jamt:Base64Binary32Bytes" minOccurs="0" />
+			<element name="IV" type="jamt:Base64Binary16Bytes" minOccurs="0" />
+		</sequence>
 	</complexType>
 	<simpleType name="Base64Binary16Bytes">
 		<restriction base="base64Binary">

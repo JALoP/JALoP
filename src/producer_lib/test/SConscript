@@ -17,6 +17,7 @@ fileInfoObj = env.SharedObject(os.path.join('..', 'src', 'jalp_file_info.c'));
 logSeverityObj = env.SharedObject(os.path.join('..', 'src', 'jalp_log_severity.c'))
 jalopInitObj = env.SharedObject(os.path.join('..','src', 'jalp_init.cpp'))
 base64Obj = env.SharedObject(os.path.join('..','src', 'jalp_base64.c'))
+xmlUtilsObj = env.SharedObject(os.path.join('..', 'src', 'jalp_xml_utils.cpp'));
 xmlTestUtilsObj = testEnv.SharedObject("xml_test_utils.cpp");
 logMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'));
 structDataObj = env.SharedObject(os.path.join('..', 'src', 'jalp_structured_data.c'))
@@ -70,6 +71,9 @@ tests.append(testEnv.TestDeptTest('test_jalp_xml_utils.cpp',
 tests.append(testEnv.TestDeptTest('test_jalp_file_info_xml.cpp',
 	other_sources=[jalopInitObj, xmlTestUtilsObj, lib_common, contentTypeXmlObj,
 	paramXmlObj, fileInfoObj, contentTypeObj, paramObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_transform_xml.cpp',
+	other_sources=[transformObj, xmlTestUtilsObj, jalopInitObj, base64Obj,
+	lib_common, xmlUtilsObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)
