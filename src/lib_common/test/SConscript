@@ -14,7 +14,7 @@ allocObj = env.SharedObject(os.path.join('..','src', 'jal_alloc.c'))
 
 tests.append(testEnv.TestDeptTest('test_jal_error_callback.c', other_sources=[], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_alloc.c', other_sources=[errorCallbackObj], useProxies=True)[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jal_digest.c', other_sources=[errorCallbackObj, allocObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jal_digest.c', other_sources=[errorCallbackObj, allocObj], useProxies=True)[0].abspath)
 common_tests = env.Alias('common_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(common_tests)
 env.Depends(all_tests, common_tests)
