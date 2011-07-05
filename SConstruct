@@ -54,7 +54,7 @@ flags = warningFlags + ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE_ -g -DHAVE_VA_C
 # This script will build both debug and release version at the same time,
 # common flags should get added to the 'flags' variable. Flags sepcific to a
 # particular build configuration should get added to the appropriate spot.
-debug_flags = ' -Wunreachable-code -DDEBUG -fprofile-arcs -ftest-coverage '
+debug_flags = ' -Wno-unreachable-code -DDEBUG -fprofile-arcs -ftest-coverage '
 debug_ldflags = ' -fprofile-arcs -ftest-coverage '
 release_flags = ' -O3 -DNDEBUG -Wno-unreachable-code'
 debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],

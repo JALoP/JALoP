@@ -7,7 +7,7 @@
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
  *
- * All other source code is copyright Tresys Technology and licensed as be$
+ * All other source code is copyright Tresys Technology and licensed as below.
  *
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
@@ -26,11 +26,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALP_XML_UITILS_HPPP_
-#define _JALP_XML_UITILS_HPPP_
+#ifndef _JALP_XML_UITLS_HPP_
+#define _JALP_XML_UITLS_HPP_
 
 #include <jalop/jal_status.h>
 #include <xercesc/dom/DOMElement.hpp>
+#include <unistd.h> // for size_t
 
 
 XERCES_CPP_NAMESPACE_USE
@@ -88,5 +89,23 @@ enum jal_status jal_create_reference_elem(char *reference_uri, char *digest_meth
 		uint8_t *digest_buf, size_t len,
 		DOMDocument *doc, DOMElement **elem);
 
-#endif // _JALP_XML_UITILS_HPPP_
 
+/**
+ * Use the digest context \pdgst_ctx to generate a digest for the document
+ * given by xml_buffer.
+ *
+ * @param dgst_ctx The digest method to use.
+ * @param doc The DOM Document to generate a digest for.
+ * @param digest_out On success, this will be set to a newly allocated buffer
+ * that contains the binary version of the digest. It is up to the caller to
+ * release this memory with a call to free().
+ * @param digest_len On success, this will be set to the length, in bytes, of
+ * \pdigest_buffer.
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jal_digest_xml_data(const struct jal_digest_ctx *dgst_ctx,
+		XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *doc,
+		uint8_t **digest_out,
+		int *digest_len);
+
+#endif // JAL_XML_UTILS_HPP

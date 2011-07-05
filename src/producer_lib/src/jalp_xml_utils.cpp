@@ -1,17 +1,52 @@
+/**
+ * @file jal_xml_utils.cpp This file contains utility funtions for dealing
+ * with XML.
+ *
+ * @section LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <jalop/jal_namespaces.h>
+#include <jalop/jal_status.h>
+#include <jalop/jal_digest.h>
+
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/util/XMLUri.hpp>
-// these are for the parse function...
+#include <xercesc/dom/DOMDocument.hpp>
 #include <xercesc/framework/MemBufInputSource.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
+
+#include <xsec/canon/XSECC14n20010315.hpp>
 
 #include <string.h>
 #include <time.h>
 
-#include <jalop/jal_namespaces.h>
 #include "jalp_xml_utils.hpp"
-#include "jalp_base64_internal.h"
+#include "jal_error_callback_internal.h"
 #include "jal_alloc.h"
+#include "jalp_base64_internal.h"
 
 XERCES_CPP_NAMESPACE_USE
 
@@ -186,3 +221,61 @@ err_out:
 	return ret;
 
 }
+enum jal_status jal_digest_xml_data(const struct jal_digest_ctx *dgst_ctx,
+		DOMDocument *doc,
+		uint8_t **digest_out,
+		int *digest_len) {
+#define CANON_BUF_SIZE 512
+	if (!dgst_ctx || !doc || !digest_out || *digest_out || !digest_len) {
+		return JAL_E_INVAL;
+	}
+	if (!jal_digest_ctx_is_valid(dgst_ctx)) {
+		return JAL_E_INVAL;
+	}
+	XSECC14n20010315 *canon = NULL;
+
+	size_t dlen = dgst_ctx->len;
+	uint8_t *dval = (uint8_t*)jal_malloc(dlen);
+	void *instance = dgst_ctx->create();
+	if (instance == NULL) {
+		free(dval);
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	enum jal_status ret = (enum jal_status) dgst_ctx->init(instance);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+
+	canon = new XSECC14n20010315(doc);
+	canon->setCommentsProcessing(true);
+	canon->setUseNamespaceStack(true);
+	canon->setInclusive11();
+
+	unsigned char buffer[CANON_BUF_SIZE];
+	doc->normalizeDocument();
+	{
+		xsecsize_t canon_bytes = canon->outputBuffer(buffer, CANON_BUF_SIZE);
+		while (canon_bytes) {
+			ret = (enum jal_status) dgst_ctx->update(instance, buffer, canon_bytes);
+			if (ret != JAL_OK) {
+				goto error_out;
+			}
+			canon_bytes = canon->outputBuffer(buffer, CANON_BUF_SIZE);
+		}
+	}
+	ret = (enum jal_status) dgst_ctx->final(instance, dval, &dlen);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+	goto out;
+error_out:
+	free(dval);
+	dval = NULL;
+out:
+	*digest_out = dval;
+	*digest_len = dlen;
+	dgst_ctx->destroy(instance);
+	delete canon;
+	return ret;
+}
+
