@@ -147,4 +147,22 @@ MemBufFormatTarget *xml_output(DOMDocument *doc);
 		XMLString::release(&expected_tag); \
 	} while(0)
 
+#define assert_namespace_equals(expected, the_elem) \
+	do { \
+		char *expected_value = (char*) expected; \
+		DOMElement *elem = the_elem; \
+		const XMLCh *actual_ns = elem->getNamespaceURI(); \
+		XMLCh * expected_ns = XMLString::transcode(expected_value); \
+		if (XMLString::compareString(expected_ns, actual_ns) != 0) { \
+			test_dept_test_failures += 1; \
+			char *actual_c_str = XMLString::transcode(actual_ns); \
+			fprintf(stderr, "%s:%d: Failure: expected namespace == '%s', found '%s'\n", \
+				__FILE__, __LINE__, expected_value, actual_c_str); \
+			delete actual_c_str; \
+			XMLString::release(&expected_ns); \
+			return; \
+		} \
+		XMLString::release(&expected_ns); \
+	} while(0)
+
 #endif
