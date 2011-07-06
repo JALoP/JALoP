@@ -97,8 +97,8 @@ MemBufFormatTarget *xml_output(DOMDocument *doc);
 			if (XMLString::compareString(expected_xml_val, actual_value) != 0) { \
 				test_dept_test_failures += 1; \
 				char *actual_c_str = XMLString::transcode(actual_value); \
-				fprintf(stderr, "%s:%d: Failure: expected that attribute == '%s', found '%s'\n", \
-					__FILE__, __LINE__, expected_value, actual_c_str); \
+				fprintf(stderr, "%s:%d: Failure: expected that attribute ('%s') == '%s', found '%s'\n", \
+					__FILE__, __LINE__, attr_name, expected_value, actual_c_str); \
 				delete actual_c_str; \
 				XMLString::release(&expected_xml_val); \
 				return; \
