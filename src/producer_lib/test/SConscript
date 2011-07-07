@@ -7,7 +7,11 @@ tests = []
 testEnv = env.Clone()
 # The test-dept macros trigger this warning, so disable it for all the test
 # drivers.
-testEnv.Append(CCFLAGS=' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\"')
+testEnv.Append(CCFLAGS=' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/test-input/\\" ')
+
+# this is needed for the jalp_config_internal.h.
+# this completes to "debug/src/producer_lib/src"
+env.Append(CPPPATH='../../../src')
 
 paramObj = env.SharedObject(os.path.join('..','src', 'jalp_param.c'))
 transformObj = env.SharedObject(os.path.join('..','src', 'jalp_transform.c'))
@@ -25,6 +29,7 @@ stackFrameObj = env.SharedObject(os.path.join('..', 'src', 'jalp_stack_frame.c')
 paramXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_param_xml.cpp'))
 syslogMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_syslog_metadata.c'))
 journalMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_journal_metadata.c'))
+contextObj = env.SharedObject(os.path.join('..', 'src', 'jalp_context.c'))
 
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity.c', 
 	other_sources=[lib_common])[0].abspath)
@@ -74,6 +79,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_file_info_xml.cpp',
 tests.append(testEnv.TestDeptTest('test_jalp_transform_xml.cpp',
 	other_sources=[transformObj, xmlTestUtilsObj, jalopInitObj, base64Obj,
 	lib_common, xmlUtilsObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalp_context_crypto.c',
+	other_sources=[lib_common, jalopInitObj, contextObj])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)

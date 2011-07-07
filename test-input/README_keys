@@ -1,0 +1,64 @@
+
+############
+# RSA KEYS #
+############
+
+# Create an RSA key.
+openssl genrsa -out <KEY_FILENAME>
+
+# Create an RSA key encrypted with 3DES and read pass from terminal.
+openssl genrsa -out <KEY_FILENAME> -des3
+
+# Create an RSA key encrypted with 3DES and read pass from stdin.
+openssl genrsa -out <KEY_FILENAME> -des3 -passout stdin
+
+# create an RSA key encrypted with 3DES and specify pass on command line.
+openssl genrsa -out <KEY_FILENAME> -des3 -passout pass:<PASSWORD>
+
+
+# View an RSA key. This will ask for the password if it is an encrypted key.
+openssl rsa -in <KEY_FILENAME> -text -noout
+
+# View an encrypted key, inputing the key on stdin
+openssl rsa -in <KEY_FILENAME> -text -noout -passin stdin
+
+# View an encrypted key, specifying the key on the command line.
+openssl rsa -in <KEY_FILENAME> -text -noout -passin pass:<PASSWORD>
+
+
+#########
+# CERTS #
+#########
+
+
+# Create a self-signed certificate and private key.
+# 'req' will create a request, but the '-x509'
+# flag outputs a self-signed certificate instead of a request.  You can also
+# give the '-nodes' option, so that your private key is not encrypted.
+# '-newkey' creates a new key as well as a certificate, and makes it an BITS-bit RSA key.
+# '-days' specifies how long the key will be valid for.  '-keyout' and '-out' are the 
+# files to write the cert and key to.  These can be the same file. '-subject' specifies
+# values to put into the cert.
+# (The password can be specified like above when creating an RSA private key.)
+openssl req -newkey rsa:<BITS> -x509 -days <DAYS> \
+	-keyout <KEY_FILENAME> -out <CERT_FILENAME> \
+	-subj <SUBJECT>
+# example:
+openssl req -newkey rsa:1024 -x509 -days 3650 \
+	-keyout cert.pem -out cert.pem \
+	-subj '/C=US/ST=MD/L=Columbia/CN=www.tresys.com/O=Tresys'
+
+# Like above, but create a certificate without a key.
+openssl req -new -x509 -days <DAYS> -out <CERT_FILENAME> \
+	-subj <SUBJECT>
+# example:
+openssl req -new -x509 -days 3650 -out cert_no_key.pem \
+	-subj '/C=US/ST=MD/L=Columbia/CN=www.tresys.com'
+
+
+# View contents of certificate.
+openssl x509 -text -noout -in <CERT_FILENAME>
+
+# View the private key contained in a certificate file.
+# (This is just like above.)
+openssl rsa -in <CERT_FILENAME> -text -noout
