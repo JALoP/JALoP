@@ -190,9 +190,9 @@ this is want you want, this is OK, re-run scons with the \
 
 	for key, (pkg, version) in packages_at_least.items():
 		def addCFLAGS(debug_env, cmd, unique=1):
-			debug_env[key + "_cflags"] = cmd
+			debug_env[key + "_cflags"] = cmd.split()
 		def addLDFLAGS(debug_env, cmd, unique=1):
-			debug_env[key + "_ldflags"] = cmd
+			debug_env[key + "_ldflags"] = cmd.split()
 
 		debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
 		debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
@@ -208,7 +208,7 @@ debug_env["santuario_ldflags"] = "-lxml-security-c"
 debug_env["libuuid_ldflags"] = "-luuid"
 
 # linker flags for dbxml
-debug_env["dbxml_ldflags"] = '-Wl,-rpath=/usr/local/lib -ldbxml'.split()
+debug_env["dbxml_ldflags"] = '-Wl,-R,/usr/local/lib -ldbxml'.split()
 
 all_tests = debug_env.Alias('tests')
 

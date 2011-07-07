@@ -1,0 +1,16 @@
+import os
+import string
+Import('*')
+
+tests = []
+
+env = env.Clone()
+# The test-dept macros trigger this warning, so disable it for all the test
+# drivers.
+env.Append(CCFLAGS='-Wno-format-nonliteral -Wno-unreachable-code'.split())
+
+db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
+AlwaysBuild(db_tests)
+env.Depends(all_tests, db_tests)
+
+

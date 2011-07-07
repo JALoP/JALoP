@@ -1,0 +1,13 @@
+Import('*')
+
+env = env.Clone()
+env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src:#src/db_layer/src/:.'.split(':')})
+
+env.MergeFlags(env['xerces_cflags'])
+env.MergeFlags(env['xerces_ldflags'])
+env.MergeFlags({'LINKFLAGS':env['dbxml_ldflags']})
+env.MergeFlags('-Wno-unused-parameter'.split())
+
+SConscript('test/SConscript', exports='env all_tests lib_common')
+db_lib = SConscript('src/SConscript', exports='env')
+Return("db_lib")

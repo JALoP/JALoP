@@ -1,0 +1,8 @@
+Import('*')
+
+sources = env.Glob("*.c") + env.Glob("*.cpp")
+
+db_lib = env.SharedLibrary(target='jal-db', source=[sources])
+env.Default(db_lib)
+
+Return("db_lib")
