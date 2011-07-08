@@ -126,6 +126,10 @@ bool validate(DOMDocument *doc, const char *document_name, list<const char*>sche
 	// Set the error handler so we can print info about errors.
 	conf->setParameter(XMLUni::fgDOMErrorHandler, &eh);
 
+	if (!parser->loadGrammar(TEST_XML_SCHEMA_DTD, Grammar::DTDGrammarType, true)) {
+			printf("failed to load schema: %s\n", TEST_XML_SCHEMA_DTD);
+			goto out;
+	}
 	for (list<const char*>::iterator schema = schemas.begin(); schema != schemas.end(); schema++) {
 		if (!parser->loadGrammar(*schema, Grammar::SchemaGrammarType, true)) {
 			printf("failed to load schema: %s\n", *schema);

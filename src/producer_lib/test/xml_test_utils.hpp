@@ -40,6 +40,7 @@
 #define TEST_XML_APP_META_SCHEMA  SCHEMAS_ROOT "applicationMetadata.xsd"
 #define TEST_XML_APP_META_TYPES_SCHEMA  SCHEMAS_ROOT "applicationMetadataTypes.xsd"
 #define TEST_XML_SYS_META_SCHEMA  SCHEMAS_ROOT "systemMetadata.xsd"
+#define TEST_XML_SCHEMA_DTD SCHEMAS_ROOT "XMLSchema.dtd"
 
 XERCES_CPP_NAMESPACE_USE
 
