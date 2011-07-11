@@ -40,6 +40,7 @@ void test_jalp_file_info_create_initializes_new_jalp_file_info()
 	assert_equals((char *)NULL, new_file_info->filename);
 	assert_equals(JAL_THREAT_UNKNOWN, new_file_info->threat_level);
 	assert_equals((struct jalp_content_type *)NULL, new_file_info->content_type);
+	jalp_file_info_destroy(&new_file_info);
 }
 
 void test_jalp_file_info_destroy_null()
