@@ -43,6 +43,7 @@ extern "C" {
 #include <jalop/jalp_structured_data.h>
 #include <jalop/jal_digest.h>
 
+#include "jal_alloc.h"
 #include "xml_test_utils.hpp"
 #include "jalp_xml_utils.hpp"
 #include "jalp_base64_internal.h"
@@ -53,10 +54,8 @@ static DOMDocument *doc = NULL;
 
 static const char *string = "asdf";
 static const char *base64_string = "YXNkZg==";
-
 static XMLCh *tag = NULL;
-
-#define TAG "SomeTag"
+static struct jal_digest_ctx *dgst_ctx = NULL;
 
 #define ALGORITHM "Algorithm"
 #define DIGEST_METHOD "DigestMethod"
@@ -68,6 +67,14 @@ static XMLCh *tag = NULL;
 #define EXAMPLE_BAD_URI "bad uri"
 #define EXAMPLE_DIGEST_METHOD "some digest method"
 
+#define NAMESPACE "http://foo.org/bar/"
+#define COMMENT "This is a comment, but should still show up in the canonicalized document"
+#define TAG "sometag"
+static const uint8_t EXPECTED_DGST[] = { 0xca, 0x60, 0x88, 0xd0, 0xab,
+	0x26, 0x59, 0x66, 0xa7, 0x5b, 0xbf, 0xc2, 0x24, 0xc8, 0xb3,
+	0xaa, 0x29, 0x85, 0xcb, 0x67, 0xfb, 0x3d, 0xd8, 0xbf, 0x8d,
+	0x48, 0xf0, 0x16, 0xff, 0xfd, 0xf7, 0x76};
+
 XMLCh *namespace_uri;
 
 std::list<const char*> schemas;
@@ -75,24 +82,40 @@ std::list<const char*> schemas;
 extern "C" void setup()
 {
 	jalp_init();
-
 	DOMImplementation *impl = DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
-	doc = impl->createDocument();
-
 	namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	doc = impl->createDocument();
 
 	tag = XMLString::transcode(TAG);
 
 	schemas.push_back(TEST_XML_DSIG_SCHEMA);
 	schemas.push_back(TEST_XML_APP_META_TYPES_SCHEMA);
+
+	dgst_ctx = jal_sha256_ctx_create();
 }
 
+static void generate_doc_for_canon() {
+	XMLCh* a_xml_namespace = XMLString::transcode(NAMESPACE);
+	XMLCh* a_xml_tag = XMLString::transcode(TAG);
+	XMLCh* a_xml_comment = XMLString::transcode(COMMENT);
+
+	DOMElement *root = doc->createElementNS(a_xml_namespace, a_xml_tag);
+	doc->appendChild(root);
+	DOMComment *comment = doc->createComment(a_xml_comment);
+	root->appendChild(comment);
+
+	XMLString::release(&a_xml_namespace);
+	XMLString::release(&a_xml_tag);
+	XMLString::release(&a_xml_comment);
+}
 extern "C" void teardown()
 {
 	schemas.clear();
+	delete doc;
+	jal_digest_ctx_destroy(&dgst_ctx);
+
 	XMLString::release(&tag);
 	XMLString::release(&namespace_uri);
-	delete doc;
 	jalp_shutdown();
 }
 
@@ -257,4 +280,84 @@ extern "C" void test_jal_create_reference_elem_fails_bad_url()
 			(uint8_t *)string, strlen(string), doc, &reference_elem);
 	assert_equals(JAL_E_INVAL_URI, ret);
 	assert_equals(NULL, reference_elem);
+}
+
+extern "C" void test_jal_digest_xml_data_returns_inval_for_null()
+{
+	generate_doc_for_canon();
+	uint8_t *dgst = NULL;
+	int dgst_len = 0;
+	enum jal_status ret = jal_digest_xml_data(NULL, NULL, NULL, NULL);
+
+	ret = jal_digest_xml_data(NULL, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	ret = jal_digest_xml_data(dgst_ctx, NULL, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	ret = jal_digest_xml_data(dgst_ctx, doc, NULL, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	ret = jal_digest_xml_data(dgst_ctx, doc, &dgst, NULL);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+}
+
+extern "C" void test_jal_digest_xml_data_returns_inval_for_bad_digest_ctx()
+{
+	generate_doc_for_canon();
+	uint8_t *dgst = NULL;
+	int dgst_len = 0;
+
+	free(dgst_ctx->algorithm_uri);
+	dgst_ctx->algorithm_uri = NULL;
+	enum jal_status ret = jal_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	jal_digest_ctx_destroy(&dgst_ctx);
+	dgst_ctx = jal_sha256_ctx_create();
+	dgst_ctx->init = NULL;
+	ret = jal_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+}
+
+extern "C" void test_jal_digest_xml_data_returns_inval_for_allocated_dgst_buffer()
+{
+	generate_doc_for_canon();
+	uint8_t *dgst = (uint8_t *)jal_malloc(4);
+	uint8_t *tmp = dgst;
+	int dgst_len = 0;
+	enum jal_status ret = jal_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, tmp);
+	assert_equals(0, dgst_len);
+	free(tmp);
+}
+
+extern "C" void test_jal_digest_xml_data_canonicalizes_and_digests()
+{
+	generate_doc_for_canon();
+	uint8_t *dgst = NULL;
+	int dgst_len = 0;
+	enum jal_status ret = jal_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, dgst);
+	assert_not_equals(0, dgst_len);
+
+	assert_equals(32, dgst_len);
+	assert_true(0 == memcmp(EXPECTED_DGST, dgst, dgst_len));
+
+	free(dgst);
 }

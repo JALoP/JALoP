@@ -112,6 +112,6 @@ struct jal_digest_ctx *jal_sha256_ctx_create()
 
 int jal_digest_ctx_is_valid(const struct jal_digest_ctx *ctx)
 {
-	return ctx && ctx->len > 0 && ctx->create && ctx->init && ctx->update && 
+	return ctx && ctx->len > 0 && ctx->create && ctx->init && ctx->update &&
 		ctx->final && ctx->destroy && ctx->algorithm_uri;
 }
