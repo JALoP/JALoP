@@ -71,4 +71,22 @@ enum jal_status create_base64_element(DOMDocument *doc,
  */
 char *get_timestamp();
 
+/**
+ * Creates Reference DOMElement from uri, digest method, and digest buffer
+ *
+ * Does not deal with the transfrom child Element, this will be appended later by the caller.
+ *
+ * @param[in] reference_uri A uri for the reference
+ * @param[in] digest_method A uri for the algorithm used in creating the digest.
+ * @param[in] digest_buf A pointer to the generated digest.
+ * @param[in] digest_len The length of the generated digest.
+ * @param[in] doc A pointer to the DOMDocument to use in creating the element
+ * @param[out] elem A pointer to hold the created element. Should point to NULL.
+ * @return JAL_OK on success, JAL_E_XML_CONVERSION on failure.
+*/
+enum jal_status jal_create_reference_elem(char *reference_uri, char *digest_method,
+		uint8_t *digest_buf, size_t len,
+		DOMDocument *doc, DOMElement **elem);
+
 #endif // _JALP_XML_UITILS_HPPP_
+

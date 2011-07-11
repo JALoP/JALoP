@@ -8,12 +8,27 @@
 #include <string.h>
 #include <time.h>
 
+#include <jalop/jal_namespaces.h>
 #include "jalp_xml_utils.hpp"
 #include "jalp_base64_internal.h"
 #include "jal_alloc.h"
 
 XERCES_CPP_NAMESPACE_USE
 
+static const XMLCh REFERENCE[] = {
+	chLatin_R, chLatin_e, chLatin_f, chLatin_e, chLatin_r, chLatin_e, chLatin_n,
+	chLatin_c, chLatin_e, chNull };
+static const XMLCh DIGESTMETHOD[] = {
+	chLatin_D, chLatin_i, chLatin_g, chLatin_e, chLatin_s, chLatin_t, chLatin_M,
+	chLatin_e, chLatin_t, chLatin_h, chLatin_o, chLatin_d, chNull };
+static const XMLCh ALGORITHM[] = {
+	chLatin_A, chLatin_l, chLatin_g, chLatin_o, chLatin_r, chLatin_i, chLatin_t,
+	chLatin_h, chLatin_m, chNull };
+static const XMLCh DIGESTVALUE[] = {
+	chLatin_D, chLatin_i, chLatin_g, chLatin_e, chLatin_s, chLatin_t, chLatin_V,
+	chLatin_a, chLatin_l, chLatin_u, chLatin_e, chNull };
+static const XMLCh URI[] = {
+	chLatin_U, chLatin_R, chLatin_I, chNull };
 const XMLCh JALP_XML_CORE[] = {
 	chLatin_C, chLatin_o, chLatin_r, chLatin_e, chNull };
 
@@ -115,4 +130,59 @@ char *get_timestamp()
         strcat(ftime, tz_offset);
 	free(tz_offset);
         return ftime;
+
+}
+
+enum jal_status jal_create_reference_elem(char *reference_uri, char *digest_method,
+		uint8_t *digest_buf, size_t len,
+		DOMDocument *doc, DOMElement **elem)
+{
+	if(!doc || !elem || *elem || len <= 0 || !digest_method || !digest_buf) {
+		return JAL_E_XML_CONVERSION;
+	}
+
+	XMLCh *namespace_uri = XMLString::transcode(JALP_XMLDSIG_URI);
+	XMLCh *xml_reference_uri = XMLString::transcode(reference_uri);
+	XMLCh *xml_digest_method = XMLString::transcode(digest_method);
+
+	DOMElement *digestmethod_elem = doc->createElementNS(namespace_uri, DIGESTMETHOD);
+	DOMElement *digestvalue_elem = NULL;
+	DOMElement *reference_elem = doc->createElementNS(namespace_uri, REFERENCE);
+
+	enum jal_status ret = JAL_OK;
+
+	if(reference_uri) {
+		if (!XMLUri::isValidURI(false, xml_reference_uri)) {
+			ret = JAL_E_INVAL_URI;
+			goto err_out;
+		}
+		reference_elem->setAttribute(URI, xml_reference_uri);
+	}
+
+	digestmethod_elem->setAttribute(ALGORITHM, xml_digest_method);
+
+	ret = create_base64_element(doc, digest_buf, len, namespace_uri, DIGESTVALUE, &digestvalue_elem);
+	if (ret != JAL_OK) {
+		goto err_out;
+	}
+
+	reference_elem->appendChild(digestmethod_elem);
+	reference_elem->appendChild(digestvalue_elem);
+
+	*elem = reference_elem;
+
+	XMLString::release(&namespace_uri);
+	XMLString::release(&xml_reference_uri);
+	XMLString::release(&xml_digest_method);
+
+	return JAL_OK;
+
+err_out:
+
+	XMLString::release(&namespace_uri);
+	XMLString::release(&xml_reference_uri);
+	XMLString::release(&xml_digest_method);
+
+	return ret;
+
 }
