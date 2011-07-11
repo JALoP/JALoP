@@ -54,5 +54,6 @@ void jalp_file_info_destroy(struct jalp_file_info **file_info)
 	free((*file_info)->filename);
 	jalp_content_type_destroy(&(*file_info)->content_type);
 
+	free(*file_info);
 	*file_info = NULL;
 }
