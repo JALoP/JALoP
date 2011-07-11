@@ -109,6 +109,12 @@ struct jal_digest_ctx *jal_digest_ctx_create();
  * @param[in] digest_ctx The jal_digest_ctx to destroy, this will be set to NULL
  */
 void jal_digest_ctx_destroy(struct jal_digest_ctx **digest_ctx);
+/**
+ * Utility function to sanity check a jal_digest_ctx
+ * @param [in] ctx the jal_digest_ctx to check;
+ * @return 1 if the digest context is valid, 0 otherwise.
+ */
+int jal_digest_ctx_is_valid(const struct jal_digest_ctx *ctx);
 
 /**
  * Creates a SHA256 digest context.

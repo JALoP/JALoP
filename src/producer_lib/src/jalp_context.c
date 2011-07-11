@@ -196,8 +196,7 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 		return JAL_OK;
 	}
 
-	if (!(digest_ctx->algorithm_uri) || digest_ctx->len <= 0 || !(digest_ctx->create)
-		|| !(digest_ctx->init) || !(digest_ctx->update) || !(digest_ctx->final) || !(digest_ctx->destroy)) {
+	if (!jal_digest_ctx_is_valid(digest_ctx)) {
 		return JAL_E_INVAL;
 	}
 

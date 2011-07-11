@@ -40,12 +40,11 @@
 enum jal_status jalp_digest_buffer(struct jal_digest_ctx *digest_ctx,
 		const uint8_t *data, size_t len, uint8_t **digest)
 {
-	if(!digest_ctx || !data || !digest || *digest) {
+	if(!data || !digest || *digest) {
 		return JAL_E_INVAL;
 	}
 
-	if(!digest_ctx->create || !digest_ctx->init || !digest_ctx->update
-		|| !digest_ctx->final || !digest_ctx->destroy) {
+	if (!jal_digest_ctx_is_valid(digest_ctx)) {
 		return JAL_E_INVAL;
 	}
 
@@ -86,12 +85,11 @@ err_out:
 enum jal_status jalp_digest_fd(struct jal_digest_ctx *digest_ctx,
                 int fd, uint8_t **digest)
 {
-	if(!digest_ctx || !digest || *digest || fd < 0) {
+	if(!digest || *digest || fd < 0) {
 		return JAL_E_INVAL;
 	}
 
-	if(!digest_ctx->create || !digest_ctx->init || !digest_ctx->update
-		|| !digest_ctx->final || !digest_ctx->destroy) {
+	if(!jal_digest_ctx_is_valid(digest_ctx)) {
 		return JAL_E_INVAL;
 	}
 
