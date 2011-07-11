@@ -31,12 +31,18 @@ extern "C" {
 
 #include <stdint.h>
 
-/** 
+/**
  * User supplied functions to implement additional digest algorithms.
  * jal_digest_ctx objects should be created and destroyed with the
  * jal_digest_ctx_create() and jal_digest_ctx_destroy() functions.
  */
 struct jal_digest_ctx {
+
+	/**
+	 * The uri for the algorithm used to generate the digest.
+	 * The jal_library assumes ownership of this pointer.
+	 */
+	char *algorithm_uri;
 	/**
 	 * The size, in bytes, of the digest output. For example, sha256 always
 	 * generates a 32 byte (256 bit) digest.

@@ -196,8 +196,8 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 		return JAL_OK;
 	}
 
-	if (digest_ctx->len <= 0 || !(digest_ctx->create) || !(digest_ctx->init)
-		|| !(digest_ctx->update) || !(digest_ctx->final) || !(digest_ctx->destroy)) {
+	if (!(digest_ctx->algorithm_uri) || digest_ctx->len <= 0 || !(digest_ctx->create)
+		|| !(digest_ctx->init) || !(digest_ctx->update) || !(digest_ctx->final) || !(digest_ctx->destroy)) {
 		return JAL_E_INVAL;
 	}
 
@@ -206,7 +206,9 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 		ctx->digest_ctx = jal_digest_ctx_create();
 	}
 
+	free(ctx->digest_ctx->algorithm_uri);
 	memcpy(ctx->digest_ctx, digest_ctx, sizeof(*digest_ctx));
+	ctx->digest_ctx->algorithm_uri = jal_strdup(digest_ctx->algorithm_uri);
 
 	return JAL_OK;
 }

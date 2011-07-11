@@ -37,6 +37,7 @@ void jal_digest_ctx_destroy(struct jal_digest_ctx **digest_ctx)
 	if (!digest_ctx || !*digest_ctx) {
 		return;
 	}
+	free ((*digest_ctx)->algorithm_uri);
 	free(*digest_ctx);
 	*digest_ctx = 0;
 }

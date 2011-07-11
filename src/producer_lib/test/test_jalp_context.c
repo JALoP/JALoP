@@ -179,6 +179,7 @@ void setup()
 	dctx->final = fake_final;
 	dctx->destroy = fake_destroy;
 	dctx->len = 1;
+	dctx->algorithm_uri = jal_strdup("asdf");
 
 	dctx2->create = fake_create2;
 	dctx2->init = fake_init2;
@@ -186,6 +187,7 @@ void setup()
 	dctx2->final = fake_final2;
 	dctx2->destroy = fake_destroy2;
 	dctx2->len = 2;
+	dctx2->algorithm_uri = jal_strdup("asdf2");
 
 }
 void teardown()
@@ -503,6 +505,15 @@ void test_jalp_set_digest_ctx_fails_with_invalid_length()
 
 }
 
+void test_jalp_set_digest_ctx_fails_with_null_algorithm_uri()
+{
+	free(dctx->algorithm_uri);
+	dctx->algorithm_uri = NULL;
+	enum jal_status ret = jalp_context_set_digest_callbacks(jpctx, dctx);
+	assert_equals(JAL_E_INVAL, ret);
+
+}
+
 void test_jalp_set_digest_ctx_fails_with_missing_create_function()
 {
 	dctx->create = NULL;
@@ -546,6 +557,7 @@ void test_jalp_set_digest_ctx_makes_a_copy()
 
 	assert_not_equals(jpctx->digest_ctx, dctx);
 	assert_equals(jpctx->digest_ctx->len, dctx->len);
+	assert_string_equals(jpctx->digest_ctx->algorithm_uri, dctx->algorithm_uri);
 	assert_equals(jpctx->digest_ctx->create, dctx->create);
 	assert_equals(jpctx->digest_ctx->init, dctx->init);
 	assert_equals(jpctx->digest_ctx->update, dctx->update);
@@ -563,6 +575,7 @@ void test_jalp_multiple_calls_to_set_digest_context_replace_functions()
 
 	assert_not_equals(jpctx->digest_ctx, dctx2);
 	assert_equals(jpctx->digest_ctx->len, dctx2->len);
+	assert_string_equals(jpctx->digest_ctx->algorithm_uri, dctx2->algorithm_uri);
 	assert_equals(jpctx->digest_ctx->create, dctx2->create);
 	assert_equals(jpctx->digest_ctx->init, dctx2->init);
 	assert_equals(jpctx->digest_ctx->update, dctx2->update);
