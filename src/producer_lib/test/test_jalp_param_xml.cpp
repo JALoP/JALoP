@@ -88,6 +88,10 @@ extern "C" void setup()
 extern "C" void teardown()
 {
 	jalp_param_destroy(&param1);
+	XMLString::release(&xml_p1_tag);
+	XMLString::release(&xml_p1_attr);
+	XMLString::release(&xml_p2_tag);
+	XMLString::release(&xml_p2_attr);
 	delete doc;
 	schemas.clear();
 	jalp_shutdown();
