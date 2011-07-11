@@ -280,3 +280,35 @@
    fun:test_jalp_transform_append_aes_appends_to_null
    fun:main
 }
+{  
+	<insert_a_suppression_name_here>
+	Memcheck:Leak
+	fun:malloc
+	fun:CRYPTO_malloc
+	fun:sk_new
+	obj:/lib64/libcrypto.so.0.9.8e
+	fun:engine_cleanup_add_last
+	fun:ENGINE_add
+	fun:ENGINE_load_dynamic
+	fun:Curl_ossl_init
+	fun:curl_global_init
+	fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+	fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+	fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+}
+{
+	<insert_a_suppression_name_here>
+	Memcheck:Leak
+	fun:malloc
+	fun:CRYPTO_malloc
+	fun:lh_new
+	obj:/lib64/libcrypto.so.0.9.8e
+	obj:/lib64/libcrypto.so.0.9.8e
+	obj:/lib64/libcrypto.so.0.9.8e
+	fun:ERR_clear_error
+	fun:Curl_ossl_init
+	fun:curl_global_init
+	fun:_ZN11xercesc_3_115CurlNetAccessorC1Ev
+	fun:_ZN11xercesc_3_116XMLPlatformUtils15makeNetAccessorEv
+	fun:_ZN11xercesc_3_116XMLPlatformUtils10InitializeEPKcS2_PNS_12PanicHandlerEPNS_13MemoryManagerE
+}
