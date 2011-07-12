@@ -31,8 +31,6 @@
 #include <xercesc/util/XMLDateTime.hpp>
 
 #include <sys/types.h>
-#include <string.h>
-#include <time.h>
 #include <unistd.h>
 
 #include <jalop/jal_status.h>
@@ -44,6 +42,7 @@
 #include "jalp_structured_data_xml.hpp"
 #include "jalp_stack_frame_xml.hpp"
 #include "jalp_logger_metadata_xml.hpp"
+#include "jalp_xml_utils.hpp"
 #include "jal_asprintf_internal.h"
 #include "jal_alloc.h"
 
@@ -98,28 +97,6 @@ static const XMLCh JALP_XML_MAPPED_DIAGNOSTIC_CTX[] = {
 	chLatin_e, chLatin_x, chLatin_t, chNull };
 
 XERCES_CPP_NAMESPACE_USE
-
-// Returns a timestamp of the format YYYY-MM-DDTHH:MM:SS[+-]HH:MM
-char *get_timestamp()
-{
-        char *ftime = (char*)jal_malloc(26);
-        char *tz_offset = (char*)jal_malloc(7);
-        time_t rawtime;
-        struct tm *tm;
-        time(&rawtime);
-        tm = localtime(&rawtime);
-        strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
-	/* Timezone
-	 * Inserts ':' into [+-]HHMM for [+-]HH:MM */
-        strftime(tz_offset, 7, "%z", tm);
-	tz_offset[6] = '\0';
-        tz_offset[5] = tz_offset[4];
-        tz_offset[4] = tz_offset[3];
-        tz_offset[3] = ':';
-        strcat(ftime, tz_offset);
-	free(tz_offset);
-        return ftime;
-}
 
 enum jal_status jalp_logger_metadata_to_elem(const struct jalp_logger_metadata *logmeta,
 					const struct jalp_context_t *ctx,

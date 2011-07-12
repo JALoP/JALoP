@@ -31,8 +31,6 @@
 #include <xercesc/util/XMLDateTime.hpp>
 
 #include <sys/types.h>
-#include <string.h>
-#include <time.h>
 #include <unistd.h>
 
 #include <jalop/jalp_context.h>
@@ -43,6 +41,7 @@
 #include "jalp_context_internal.h"
 #include "jalp_structured_data_xml.hpp"
 #include "jalp_syslog_metadata_xml.hpp"
+#include "jalp_xml_utils.hpp"
 
 XERCES_CPP_NAMESPACE_USE
 static const XMLCh JALP_XML_SYSLOG[] = {
@@ -64,28 +63,6 @@ static const XMLCh JALP_XML_PROCESS_ID[] = {
 	chLatin_P, chLatin_r, chLatin_o, chLatin_c, chLatin_e, chLatin_s, chLatin_s, chLatin_I, chLatin_D, chNull };
 static const XMLCh JALP_XML_MESSAGE_ID[] = {
 	chLatin_M, chLatin_e, chLatin_s, chLatin_s, chLatin_a, chLatin_g, chLatin_e, chLatin_I, chLatin_D, chNull };
-
-// Returns a timestamp of the format YYYY-MM-DDTHH:MM:SS[+-]HH:MM
-char *get_timestamp()
-{
-	char *ftime = (char*)jal_malloc(26);
-	char *tz_offset = (char*)jal_malloc(7);
-	time_t rawtime;
-	struct tm *tm;
-	time(&rawtime);
-	tm = localtime(&rawtime);
-	strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
-	/* Timezone
-	 * Inserts ':' into [+-]HHMM for [+-]HH:MM */
-	strftime(tz_offset, 7, "%z", tm);
-	tz_offset[6] = '\0';
-	tz_offset[5] = tz_offset[4];
-	tz_offset[4] = tz_offset[3];
-	tz_offset[3] = ':';
-	strcat(ftime, tz_offset);
-	free(tz_offset);
-	return ftime;
-}
 
 enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *syslog,
 					const struct jalp_context_t *ctx,

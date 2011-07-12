@@ -64,4 +64,11 @@ enum jal_status create_base64_element(DOMDocument *doc,
 		const XMLCh *namespace_uri, const XMLCh *elm_name,
 		DOMElement **new_elem);
 
+/**
+ * Helper function to create a properly formatted XML DateTime timestamp.
+ *
+ * @return formatted timestamp string
+ */
+char *get_timestamp();
+
 #endif // _JALP_XML_UITILS_HPPP_

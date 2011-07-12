@@ -85,7 +85,7 @@ tests.append(testEnv.TestDeptTest('test_jalp_transform_xml.cpp',
 tests.append(testEnv.TestDeptTest('test_jalp_context_crypto.c',
 	other_sources=[lib_common, jalopInitObj, contextObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_syslog_metadata_xml.cpp',
-	other_sources=[paramObj, jalopInitObj, xmlTestUtilsObj, paramXmlObj,
+	other_sources=[paramObj, jalopInitObj, base64Obj, xmlUtilsObj, xmlTestUtilsObj, paramXmlObj,
 	structDataXmlObj, structDataObj, contextObj, syslogMetaObj, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_digest.c',
 	other_sources=[lib_common], useProxies=True)[0].abspath)
