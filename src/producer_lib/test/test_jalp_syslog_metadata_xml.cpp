@@ -90,12 +90,7 @@ std::list<const char*> schemas;
 #define LEVEL_NUM 1
 #define LEVEL_NAME "test-level"
 char *pid_str = NULL;
-// TODO: remove when API is fixed
-extern enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *syslog,
-					const struct jalp_context_t *ctx,
-					const char *entry,
-					DOMDocument *doc,
-					DOMElement **new_elem);
+
 extern "C" void setup()
 {
 	// unfortunately, can't use test-dept mocking magic in c++ code

@@ -69,15 +69,15 @@ static const XMLCh JALP_XML_MESSAGE_ID[] = {
 char *get_timestamp()
 {
 	char *ftime = (char*)jal_malloc(26);
-	char *tz_offset = (char*)jal_malloc(6);
+	char *tz_offset = (char*)jal_malloc(7);
 	time_t rawtime;
 	struct tm *tm;
 	time(&rawtime);
 	tm = localtime(&rawtime);
-	strftime(ftime, 20, "%Y-%m-%dT%H:%M:%S", tm);
+	strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
 	/* Timezone
 	 * Inserts ':' into [+-]HHMM for [+-]HH:MM */
-	strftime(tz_offset, 6, "%z", tm);
+	strftime(tz_offset, 7, "%z", tm);
 	tz_offset[6] = '\0';
 	tz_offset[5] = tz_offset[4];
 	tz_offset[4] = tz_offset[3];

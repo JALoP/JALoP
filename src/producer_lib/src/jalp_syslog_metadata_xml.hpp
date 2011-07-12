@@ -53,7 +53,7 @@ XERCES_CPP_NAMESPACE_USE
  *
  * @return JAL_OK on success, XML_E_XML_CONVERSION otherwise.
  */
-enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata syslog,
+enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *syslog,
 					const struct jalp_context_t *ctx,
 					const char *entry,
 					DOMDocument *doc,
