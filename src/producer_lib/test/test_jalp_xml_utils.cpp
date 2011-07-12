@@ -27,7 +27,19 @@ static XMLCh *tag = NULL;
 
 #define TAG "SomeTag"
 
+#define ALGORITHM "Algorithm"
+#define DIGEST_METHOD "DigestMethod"
+#define DIGEST_VALUE "DigestValue"
+#define REFERENCE "Reference"
+#define URI "URI"
+
+#define EXAMPLE_URI "file:///somefile"
+#define EXAMPLE_BAD_URI "bad uri"
+#define EXAMPLE_DIGEST_METHOD "some digest method"
+
 XMLCh *namespace_uri;
+
+std::list<const char*> schemas;
 
 extern "C" void setup()
 {
@@ -39,10 +51,14 @@ extern "C" void setup()
 	namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
 
 	tag = XMLString::transcode(TAG);
+
+	schemas.push_back(TEST_XML_DSIG_SCHEMA);
+	schemas.push_back(TEST_XML_APP_META_TYPES_SCHEMA);
 }
 
 extern "C" void teardown()
 {
+	schemas.clear();
 	XMLString::release(&tag);
 	XMLString::release(&namespace_uri);
 	delete doc;
@@ -106,4 +122,108 @@ extern "C" void test_create_base64_element_works_with_normal_value()
 	assert_tag_equals(TAG, new_elem);
 	assert_content_equals(base64_string, new_elem);
 	assert_namespace_equals(JALP_APP_META_TYPES_NAMESPACE_URI, new_elem);
+}
+
+extern "C" void test_jal_create_reference_elem_returns_null_with_null_inputs()
+{
+	DOMElement *new_elem = NULL;
+	jal_status ret;
+
+	ret = jal_create_reference_elem(NULL, NULL, NULL, 0, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jal_create_reference_elem((char *) EXAMPLE_URI, NULL,
+			(uint8_t *)string, strlen(string), doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jal_create_reference_elem((char *) EXAMPLE_URI, (char *) EXAMPLE_DIGEST_METHOD,
+			NULL, strlen(string), doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
+}
+
+extern "C" void test_jal_create_reference_elem_succeeds_with_good_input()
+{
+	DOMElement *reference_elem = NULL;
+	DOMElement *digest_method_elem = NULL;
+	DOMElement *digest_value_elem = NULL;
+	jal_status ret;
+
+	ret = jal_create_reference_elem((char *) EXAMPLE_URI, (char *) EXAMPLE_DIGEST_METHOD,
+			(uint8_t *)string, strlen(string), doc, &reference_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, reference_elem);
+	assert_tag_equals(REFERENCE, reference_elem);
+	assert_attr_equals(URI, EXAMPLE_URI, reference_elem);
+	assert_equals(reference_elem->getChildElementCount(), 2);
+
+	digest_method_elem = reference_elem->getFirstElementChild();
+	assert_not_equals(NULL, digest_method_elem);
+	assert_tag_equals(DIGEST_METHOD, digest_method_elem);
+	assert_attr_equals(ALGORITHM, EXAMPLE_DIGEST_METHOD, digest_method_elem);
+
+	digest_value_elem = digest_method_elem->getNextElementSibling();
+	assert_not_equals(NULL, digest_value_elem);
+	assert_tag_equals(DIGEST_VALUE, digest_value_elem);
+	assert_content_equals(base64_string, digest_value_elem);
+
+	doc->appendChild(reference_elem);
+	assert_equals(true, validate(doc, __FUNCTION__, schemas));
+}
+
+extern "C" void test_jal_create_reference_elem_succeeds_with_no_uri()
+{
+	DOMElement *reference_elem = NULL;
+	DOMElement *digest_method_elem = NULL;
+	DOMElement *digest_value_elem = NULL;
+	jal_status ret;
+
+	ret = jal_create_reference_elem(NULL, (char *) EXAMPLE_DIGEST_METHOD,
+			(uint8_t *)string, strlen(string), doc, &reference_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, reference_elem);
+	assert_tag_equals(REFERENCE, reference_elem);
+	assert_equals(reference_elem->getChildElementCount(), 2);
+
+	digest_method_elem = reference_elem->getFirstElementChild();
+	assert_not_equals(NULL, digest_method_elem);
+	assert_tag_equals(DIGEST_METHOD, digest_method_elem);
+	assert_attr_equals(ALGORITHM, EXAMPLE_DIGEST_METHOD, digest_method_elem);
+
+	digest_value_elem = digest_method_elem->getNextElementSibling();
+	assert_not_equals(NULL, digest_value_elem);
+	assert_tag_equals(DIGEST_VALUE, digest_value_elem);
+	assert_content_equals(base64_string, digest_value_elem);
+
+	doc->appendChild(reference_elem);
+	assert_equals(true, validate(doc, __FUNCTION__, schemas));
+}
+
+extern "C" void test_jal_create_reference_elem_fails_does_not_overwrite_existing_pointer()
+{
+	DOMElement *reference_elem = NULL;
+	jal_status ret;
+
+	ret = jal_create_reference_elem((char *) EXAMPLE_URI, (char *) EXAMPLE_DIGEST_METHOD,
+			(uint8_t *)string, strlen(string), doc, &reference_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, reference_elem);
+
+	ret = jal_create_reference_elem((char *) EXAMPLE_URI, (char *) EXAMPLE_DIGEST_METHOD,
+			(uint8_t *)string, strlen(string), doc, &reference_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_not_equals(NULL, reference_elem);
+}
+
+extern "C" void test_jal_create_reference_elem_fails_bad_url()
+{
+	DOMElement *reference_elem = NULL;
+	jal_status ret;
+
+	ret = jal_create_reference_elem((char *) EXAMPLE_BAD_URI, (char *) EXAMPLE_DIGEST_METHOD,
+			(uint8_t *)string, strlen(string), doc, &reference_elem);
+	assert_equals(JAL_E_INVAL_URI, ret);
+	assert_equals(NULL, reference_elem);
 }
