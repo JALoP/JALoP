@@ -1,0 +1,130 @@
+<xs:schema xmlns="http://cee.mitre.org" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://cee.mitre.org">
+  <xs:element name="Log">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" minOccurs="0" ref="Event"/>
+      </xs:sequence>
+      <xs:attribute name="profileURI" type="xs:anyURI"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Event" type="ceeEventType"/>
+  <xs:complexType name="ceeEventType">
+    <xs:sequence>
+      <xs:group ref="ceeFields"/>
+      <xs:element maxOccurs="255" minOccurs="0" ref="Field"/>
+    </xs:sequence>
+    <xs:attribute name="profileURI" type="xs:anyURI"/>
+  </xs:complexType>
+  <xs:group name="ceeFields">
+    <xs:sequence>
+      <xs:element name="id" type="string"/>
+      <xs:element name="time" type="timestamp"/>
+      <xs:element name="action" type="tag"> </xs:element>
+      <xs:element name="status" type="tag"/>
+      <xs:element name="p_sys_id" type="string"/>
+      <xs:element name="p_prod_id" type="string"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="Field" type="fieldType"/>
+  <xs:complexType name="fieldType">
+    <xs:group maxOccurs="255" minOccurs="0" ref="ceeFieldType"/>
+    <xs:attribute name="name" use="required"/>
+  </xs:complexType>
+  <xs:group name="ceeFieldType">
+    <xs:choice>
+      <xs:element ref="string"/>
+      <xs:element ref="int"/>
+      <xs:element ref="bool"/>
+      <xs:element ref="tag"/>
+      <xs:element ref="float"/>
+      <xs:element ref="time"/>
+      <xs:element ref="dur"/>
+      <xs:element ref="ipv4"/>
+      <xs:element ref="ipv6"/>
+      <xs:element ref="mac"/>
+      <xs:element ref="binary"/>
+    </xs:choice>
+  </xs:group>
+  <xs:simpleType name="boolean">
+    <xs:annotation>
+      <xs:documentation>A Boolean value: "true" or "false"</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:boolean">
+      <xs:pattern value="true|false"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ipv4Address">
+    <xs:annotation>
+      <xs:documentation>An IPv4 address, represented in dot-decimal notation </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(((25[0-5])|(2[0-4]\d)|(1?\d{1,2}))\.){3}((25[0-5])|(2[0-4]\d)|(1?\d{1,2}))"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ipv6Address">
+    <xs:annotation>
+      <xs:documentation>An IPv6 address, represented in hex-colon notation according to the IETF RFC 4291 specification [http://tools.ietf.org/html/rfc4291]. The IPv6 address should adhere to the recommendations in RFC 5952 [http://tools.ietf.org/html/rfc5952]</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <!-- Normal IPv6 -->
+      <xs:pattern value="([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}"/>
+      <!-- IPv6 Hex Compressed -->
+      <xs:pattern value="(([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)::(([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)"/>
+      <!-- IPv6 Hex + IPv4 Dec -->
+      <xs:pattern value="(([0-9A-Fa-f]{1,4}:){6,6})(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}"/>
+      <!-- IPv6 Hex Compressed + IPv4 Dec -->
+      <xs:pattern value="(([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)::(([0-9A-Fa-f]{1,4}:)*)(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="macAddress">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="tag">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([A-Za-z0-9][A-Za-z0-9_-]*\.)*[A-Za-z0-9][A-Za-z0-9_-]*"/>
+      <xs:maxLength value="32"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="duration">
+    <xs:annotation>
+      <xs:documentation>To be of use, the duration value must be guaranteed to have a total order. Due to this need, the duration is restricted to only allow for durations of days and times to be expressed.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:duration">
+      <xs:pattern value="[^YM]*[DT][^\.]*(\.[0-9]{1,9})?[^\.]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="string">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="2048"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="integer">
+    <xs:restriction base="xs:long"/>
+  </xs:simpleType>
+  <xs:simpleType name="float">
+    <xs:restriction base="xs:double"/>
+  </xs:simpleType>
+  <xs:simpleType name="timestamp">
+    <xs:restriction base="xs:dateTime">
+      <xs:pattern value="[^\.]*(\.[0-9]{1,9})?[^\.]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="binary">
+    <xs:restriction base="xs:base64Binary">
+      <xs:maxLength value="2048"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="string" type="string"/>
+  <xs:element name="int" type="integer"/>
+  <xs:element name="bool" type="boolean"/>
+  <xs:element name="tag" type="tag"/>
+  <xs:element name="float" type="float"/>
+  <xs:element name="time" type="timestamp"/>
+  <xs:element name="dur" type="duration"/>
+  <xs:element name="ipv4" type="ipv4Address"/>
+  <xs:element name="ipv6" type="ipv6Address"/>
+  <xs:element name="mac" type="macAddress"/>
+  <xs:element name="binary" type="binary"/>
+</xs:schema>
