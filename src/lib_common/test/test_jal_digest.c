@@ -73,6 +73,43 @@ void teardown()
 	restore_function(SHA256_Final);
 }
 
+// Set of fake functions for a fake digest context.
+void * fake_create(void)
+{
+	return NULL;
+}
+enum jal_status fake_init(__attribute__((unused)) void *instance)
+{
+	return JAL_OK;
+}
+enum jal_status fake_update(__attribute__((unused)) void *instance,
+		__attribute__((unused)) const uint8_t *data,
+		__attribute__((unused)) size_t len)
+{
+	return JAL_OK;
+}
+enum jal_status fake_final(__attribute__((unused)) void *instance,
+		__attribute__((unused)) uint8_t *digest,
+		__attribute__((unused)) size_t *len)
+{
+	return JAL_OK;
+}
+void fake_destroy(__attribute__((unused)) void *instance)
+{
+	// Do nothing.
+}
+
+void set_digest_context(struct jal_digest_ctx *digest_ctx)
+{
+	digest_ctx->len = 1;
+	digest_ctx->algorithm_uri = jal_strdup("asdf");
+	digest_ctx->create = fake_create;
+	digest_ctx->init = fake_init;
+	digest_ctx->update = fake_update;
+	digest_ctx->final = fake_final;
+	digest_ctx->destroy = fake_destroy;
+}
+
 void test_jal_digest_ctx_create_returns_struct_with_zeroed_fields()
 {
 	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
@@ -87,7 +124,7 @@ void test_jal_digest_ctx_create_returns_struct_with_zeroed_fields()
 	jal_digest_ctx_destroy(&ptr);
 }
 
-void test_jal_digest_destroy_does_not_crash_on_null()
+void test_jal_digest_ctx_destroy_does_not_crash_on_null()
 {
 	jal_digest_ctx_destroy(NULL);
 	struct jal_digest_ctx *ptr = NULL;
@@ -96,12 +133,12 @@ void test_jal_digest_destroy_does_not_crash_on_null()
 
 void test_jal_digest_destroy_frees_struct()
 {
-	// run under valgrind to check for leaks
+	// Run under valgrind to check for leaks.
 	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
 	ptr->algorithm_uri = jal_strdup("asdf");
 	assert_not_equals(NULL, ptr);
 	jal_digest_ctx_destroy(&ptr);
-	assert_equals((struct jal_digest_ctx *) NULL, ptr);
+	assert_equals((struct jal_digest_ctx *)NULL, ptr);
 }
 
 void test_jal_sha256_ctx_create_returns_full_struct()
@@ -199,4 +236,55 @@ void test_jal_sha256_full_multiple_updates()
 	}
 	buf[64] = 0;
 	assert_string_equals(HELLO_WORLD_SUM, buf);
+}
+
+void test_jal_digest_ctx_is_valid()
+{
+	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
+	assert_not_equals(NULL, ptr);
+	set_digest_context(ptr);
+	int ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_true(ret_val);
+	jal_digest_ctx_destroy(&ptr);
+}
+
+void test_jal_digest_ctx_is_invalid()
+{
+	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
+	assert_not_equals(NULL, ptr);
+	set_digest_context(ptr);
+	ptr->len = 0;
+	int ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_false(ret_val);
+	free(ptr->algorithm_uri);
+	set_digest_context(ptr);
+	free(ptr->algorithm_uri);
+	ptr->algorithm_uri = NULL;
+	ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_false(ret_val);
+	set_digest_context(ptr);
+	ptr->create = NULL;
+	ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_false(ret_val);
+	free(ptr->algorithm_uri);
+	set_digest_context(ptr);
+	ptr->init = NULL;
+	ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_false(ret_val);
+	free(ptr->algorithm_uri);
+	set_digest_context(ptr);
+	ptr->update = NULL;
+	ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_false(ret_val);
+	free(ptr->algorithm_uri);
+	set_digest_context(ptr);
+	ptr->final = NULL;
+	ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_false(ret_val);
+	free(ptr->algorithm_uri);
+	set_digest_context(ptr);
+	ptr->destroy = NULL;
+	ret_val = jal_digest_ctx_is_valid(ptr);
+	assert_false(ret_val);
+	jal_digest_ctx_destroy(&ptr);
 }
