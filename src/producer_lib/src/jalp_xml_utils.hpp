@@ -108,4 +108,15 @@ enum jal_status jal_digest_xml_data(const struct jal_digest_ctx *dgst_ctx,
 		uint8_t **digest_out,
 		int *digest_len);
 
+/**
+ * Helper function return a Transforms element.
+ *
+ * @param[in] doc The document to use when creating elements.
+ * @param[in,out] new_elem Pointer that will be assigned to the newly created
+ * Transforms element.
+ *
+ * @return JAL_OK,  or JAL_E_XML_CONVERSION on error
+ */
+enum jal_status jalp_create_audit_transforms_elem(DOMDocument *doc, DOMElement **new_elem);
+
 #endif // JAL_XML_UTILS_HPP

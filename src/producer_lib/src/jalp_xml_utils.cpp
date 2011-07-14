@@ -66,6 +66,23 @@ static const XMLCh URI[] = {
 	chLatin_U, chLatin_R, chLatin_I, chNull };
 const XMLCh JALP_XML_CORE[] = {
 	chLatin_C, chLatin_o, chLatin_r, chLatin_e, chNull };
+static const XMLCh JALP_XML_TRANSFORMS[] = {
+	chLatin_T, chLatin_r, chLatin_a, chLatin_n, chLatin_s, chLatin_f, chLatin_o, chLatin_r,
+	chLatin_m, chLatin_s, chNull };
+static const XMLCh JALP_XML_TRANSFORM[] = {
+	chLatin_T, chLatin_r, chLatin_a, chLatin_n, chLatin_s, chLatin_f, chLatin_o, chLatin_r,
+	chLatin_m, chNull };
+static const XMLCh JALP_XML_ALGORITHM[] = {
+	chLatin_A, chLatin_l, chLatin_g, chLatin_o, chLatin_r, chLatin_i, chLatin_t,
+	chLatin_h, chLatin_m, chNull };
+static const XMLCh JALP_XML_WITH_COMMENTS[] = {
+	chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
+	chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o,
+	chLatin_r, chLatin_g, chForwardSlash, chDigit_2, chDigit_0, chDigit_0, chDigit_6,
+	chForwardSlash, chDigit_1, chDigit_2, chForwardSlash, chLatin_x, chLatin_m,
+	chLatin_l, chDash, chLatin_c, chDigit_1, chDigit_4, chLatin_n, chDigit_1, chDigit_1,
+	chPound, chLatin_W, chLatin_i, chLatin_t, chLatin_h, chLatin_C, chLatin_o, chLatin_m,
+	chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_s, chNull };
 
 
 enum jal_status parse_xml_snippet(DOMElement *ctx_node, const char* snippet)
@@ -279,3 +296,26 @@ out:
 	return ret;
 }
 
+enum jal_status jalp_create_audit_transforms_elem(DOMDocument *doc, DOMElement **new_elem)
+{
+	if (!new_elem || *new_elem || !doc) {
+		return JAL_E_XML_CONVERSION;
+	}
+
+	XMLCh *namespace_uri = XMLString::transcode(JALP_XMLDSIG_URI);
+
+	DOMElement *out_elem;
+	out_elem = doc->createElementNS(namespace_uri, JALP_XML_TRANSFORMS);
+
+	DOMElement *transform_elem;
+	transform_elem = doc->createElementNS(namespace_uri, JALP_XML_TRANSFORM);
+	out_elem->appendChild(transform_elem);
+
+	transform_elem->setAttribute(JALP_XML_ALGORITHM, JALP_XML_WITH_COMMENTS);
+
+	XMLString::release(&namespace_uri);
+
+	*new_elem = out_elem;
+
+	return JAL_OK;
+}
