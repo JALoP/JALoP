@@ -1,0 +1,2 @@
+printf_test_dept_proxy printf
+jalp_send_buffer_test_dept_proxy jalp_send_buffer
