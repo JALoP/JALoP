@@ -47,8 +47,11 @@ extern "C" {
 #include "xml_test_utils.hpp"
 #include "jalp_xml_utils.hpp"
 #include "jalp_base64_internal.h"
+#include "jal_alloc.h"
 
 XERCES_CPP_NAMESPACE_USE
+
+static std::list<const char*> schemas;
 
 static DOMDocument *doc = NULL;
 
@@ -75,9 +78,13 @@ static const uint8_t EXPECTED_DGST[] = { 0xca, 0x60, 0x88, 0xd0, 0xab,
 	0xaa, 0x29, 0x85, 0xcb, 0x67, 0xfb, 0x3d, 0xd8, 0xbf, 0x8d,
 	0x48, 0xf0, 0x16, 0xff, 0xfd, 0xf7, 0x76};
 
-XMLCh *namespace_uri;
+#define JALP_TEST_XMLUTILS_TRANSFORMS "Transforms"
+#define JALP_TEST_XMLUTILS_TRANSFORM "Transform"
+#define JALP_TEST_XMLUTILS_ALGORITHM "Algorithm"
+#define JALP_TEST_XMLUTILS_CANON_ALG "http://www.w3.org/2006/12/xml-c14n11#WithComments"
 
-std::list<const char*> schemas;
+
+XMLCh *namespace_uri;
 
 extern "C" void setup()
 {
@@ -360,4 +367,50 @@ extern "C" void test_jal_digest_xml_data_canonicalizes_and_digests()
 	assert_true(0 == memcmp(EXPECTED_DGST, dgst, dgst_len));
 
 	free(dgst);
+}
+
+extern "C" void test_jalp_create_audit_transforms_elem_null_inputs()
+{
+	DOMElement *elem = NULL;
+	enum jal_status ret;
+	ret = jalp_create_audit_transforms_elem(NULL, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+
+	ret = jalp_create_audit_transforms_elem(doc, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+
+	ret = jalp_create_audit_transforms_elem(NULL, &elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+}
+
+extern "C" void test_jalp_create_audit_transforms_elem_does_not_overwrite_elem()
+{
+	DOMElement *elem = (DOMElement *)jal_malloc(4);
+	DOMElement *temp = elem;
+	enum jal_status ret;
+	ret = jalp_create_audit_transforms_elem(doc, &elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(elem, temp);
+	free(elem);
+}
+
+extern "C" void test_jalp_create_audit_transforms_elem_outputs_correctly()
+{
+	DOMElement *transforms_elem = NULL;
+	DOMElement *temp;
+	enum jal_status ret;
+
+	ret = jalp_create_audit_transforms_elem(doc, &transforms_elem);
+	assert_equals(JAL_OK, ret);
+
+	assert_not_equals(NULL, transforms_elem);
+	assert_tag_equals(JALP_TEST_XMLUTILS_TRANSFORMS, transforms_elem);
+
+	temp = transforms_elem->getFirstElementChild();
+	assert_not_equals(NULL, temp);
+	assert_tag_equals(JALP_TEST_XMLUTILS_TRANSFORM, temp);
+	assert_attr_equals(JALP_TEST_XMLUTILS_ALGORITHM, JALP_TEST_XMLUTILS_CANON_ALG, temp);
+
+	doc->appendChild(transforms_elem);
+	assert_true(validate(doc, __FUNCTION__, schemas));
 }
