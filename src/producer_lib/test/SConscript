@@ -24,13 +24,17 @@ base64Obj = env.SharedObject(os.path.join('..','src', 'jalp_base64.c'))
 xmlUtilsObj = env.SharedObject(os.path.join('..', 'src', 'jalp_xml_utils.cpp'));
 xmlTestUtilsObj = testEnv.SharedObject("xml_test_utils.cpp");
 logMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'));
+appMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_app_metadata.c'));
 structDataObj = env.SharedObject(os.path.join('..', 'src', 'jalp_structured_data.c'))
 stackFrameObj = env.SharedObject(os.path.join('..', 'src', 'jalp_stack_frame.c'))
 paramXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_param_xml.cpp'))
 structDataXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_structured_data_xml.cpp'))
 syslogMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_syslog_metadata.c'))
+syslogMetaXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_syslog_metadata_xml.cpp'))
 journalMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_journal_metadata.c'))
+journalMetaXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_journal_metadata_xml.cpp'))
 loggerMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'))
+loggerMetaXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata_xml.cpp'))
 contextObj = env.SharedObject(os.path.join('..', 'src', 'jalp_context.c'))
 fileInfoXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_file_info_xml.cpp'))
 transformXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_transform_xml.cpp'))
@@ -107,6 +111,19 @@ tests.append(testEnv.TestDeptTest('test_jalp_logger_metadata_xml.cpp',
 	other_sources=[base64Obj, xmlUtilsObj, paramXmlObj, structDataXmlObj, stackFrameXmlObj,
 	severityXmlObj, contextObj, loggerMetaObj, paramObj, logSeverityObj, structDataObj, stackFrameObj,
 	jalopInitObj, xmlTestUtilsObj, lib_common])[0].abspath)
+
+tests.append(testEnv.TestDeptTest('test_jalp_app_metadata_xml.cpp',
+	other_sources=[jalopInitObj, xmlTestUtilsObj, contextObj, xmlUtilsObj,
+		lib_common, base64Obj, appMetaObj,
+		paramObj, paramXmlObj, structDataObj, structDataXmlObj,
+		fileInfoObj, fileInfoXmlObj, transformObj, transformXmlObj,
+		contentTypeObj, contentTypeXmlObj,
+		journalMetaObj, journalMetaXmlObj,
+		syslogMetaObj, syslogMetaXmlObj,
+		loggerMetaObj, loggerMetaXmlObj,
+		logSeverityObj, severityXmlObj,
+		stackFrameObj, stackFrameXmlObj,
+		])[0].abspath)
 
 producer_tests = env.Alias('producer_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(producer_tests)

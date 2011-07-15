@@ -9,6 +9,7 @@ producer_lib_env.Append(CCFLAGS=producer_lib_env['xerces_cflags'])
 producer_lib_env.Append(CXXFLAGS="-D__STDC_FORMAT_MACROS")
 producer_lib_env.Append(LINKFLAGS=producer_lib_env['openssl_ldflags'])
 producer_lib_env.Append(LINKFLAGS=producer_lib_env['xerces_ldflags'])
+producer_lib_env.Append(LINKFLAGS=producer_lib_env['libuuid_ldflags'])
 
 SConscript('test/SConscript', exports={'env':producer_lib_env, 'all_tests':all_tests, 'lib_common':lib_common})
 producer_lib = SConscript('src/SConscript', exports={'env':producer_lib_env})
