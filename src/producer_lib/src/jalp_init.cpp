@@ -27,6 +27,15 @@
  * limitations under the License.
  */
 
+// XML-Security-C (XSEC)
+#include <xsec/framework/XSECProvider.hpp>
+
+// Xalan
+#ifndef XSEC_NO_XALAN
+#include <xalanc/XalanTransformer/XalanTransformer.hpp>
+XALAN_USING_XALAN(XalanTransformer)
+#endif
+
 #include <xercesc/util/PlatformUtils.hpp>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
@@ -42,6 +51,10 @@ enum jal_status jalp_init()
 
 	try {
 		XMLPlatformUtils::Initialize();
+#ifndef XSEC_NO_XALAN
+		XalanTransformer::initialize();
+#endif
+		XSECPlatformUtils::Initialise();
 	}
 
 	catch(...) {
@@ -55,6 +68,10 @@ enum jal_status jalp_init()
 
 void jalp_shutdown()
 {
+	XSECPlatformUtils::Terminate();
+#ifndef XSEC_NO_XALAN
+	XalanTransformer::terminate();
+#endif
 	XMLPlatformUtils::Terminate();
 
 	EVP_cleanup();

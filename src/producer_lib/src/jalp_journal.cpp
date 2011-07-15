@@ -66,6 +66,9 @@ static const XMLCh JALP_XML_MANIFEST[] = {	chLatin_M,
 				chLatin_t,
 				chNull };
 
+const XMLCh JALP_XML_JID[] = {
+	chLatin_J, chLatin_I, chLatin_D, chNull };
+
 enum jal_status jalp_journal_fd(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
 		int fd)
@@ -90,6 +93,8 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 		impl = DOMImplementationRegistry::getDOMImplementation(JALP_XML_CORE);
 		doc = impl->createDocument();
 		status = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &app_meta_elem);
+		doc->appendChild(app_meta_elem);
+		DOMElement *last_element = app_meta_elem->getLastElementChild();
 		if (status != JAL_OK) {
 			goto out;
 		}
@@ -110,9 +115,15 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 			XMLString::release(&namespace_uri);
 			manifest->appendChild(reference_elem);
 			app_meta_elem->appendChild(manifest);
+			last_element = manifest;
 		}
 		if (ctx->signing_key) {
-			// TODO: sign the doc
+			const XMLCh *id = app_meta_elem->getAttribute(JALP_XML_JID);
+			status = jal_add_signature_block(ctx->signing_key, ctx->signing_cert, doc,
+					app_meta_elem, last_element, id);
+			if (status != JAL_OK) {
+				goto out;
+			}
 		}
 		status = jal_xml_output(doc, &buffer);
 		if (status != JAL_OK) {

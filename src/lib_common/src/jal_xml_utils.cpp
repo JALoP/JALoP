@@ -42,12 +42,31 @@
 
 #include <xsec/canon/XSECC14n20010315.hpp>
 
+// XML-Security-C (XSEC)
+#include <xsec/framework/XSECProvider.hpp>
+#include <xsec/dsig/DSIGReference.hpp>
+#include <xsec/dsig/DSIGKeyInfoX509.hpp>
+#include <xsec/enc/OpenSSL/OpenSSLCryptoKeyRSA.hpp>
+#include <xsec/enc/XSCrypt/XSCryptCryptoBase64.hpp>
+#include <xsec/framework/XSECException.hpp>
+
+// Xalan
+#ifndef XSEC_NO_XALAN
+#include <xalanc/XalanTransformer/XalanTransformer.hpp>
+XALAN_USING_XALAN(XalanTransformer)
+#endif
+
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+
 #include <string.h>
 #include <time.h>
 
 #include "jal_xml_utils.hpp"
 #include "jal_error_callback_internal.h"
 #include "jal_alloc.h"
+#include "jal_bn2b64.hpp"
 #include "jal_base64_internal.h"
 
 XERCES_CPP_NAMESPACE_USE
@@ -89,6 +108,16 @@ static const XMLCh JALP_XML_WITH_COMMENTS[] = {
 	chLatin_l, chDash, chLatin_c, chDigit_1, chDigit_4, chLatin_n, chDigit_1, chDigit_1,
 	chPound, chLatin_W, chLatin_i, chLatin_t, chLatin_h, chLatin_C, chLatin_o, chLatin_m,
 	chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_s, chNull };
+
+const XMLCh JALP_XML_DS[] = {
+	chLatin_d, chLatin_s, chNull};
+
+const XMLCh JALP_XML_XPOINTER_ID_BEG[] = {
+	chPound, chLatin_x, chLatin_p,  chLatin_o, chLatin_i, chLatin_n,
+	chLatin_t, chLatin_e, chLatin_r, chOpenParen, chLatin_i, chLatin_d,
+	chOpenParen, chSingleQuote, chNull};
+const XMLCh JALP_XML_XPOINTER_ID_END[] = {
+	chSingleQuote, chCloseParen, chCloseParen, chNull};
 
 
 enum jal_status jal_parse_xml_snippet(DOMElement *ctx_node, const char* snippet)
@@ -360,4 +389,154 @@ out:
 	delete output;
 	delete serializer;
 	return ret;
+}
+
+
+XMLCh *jalp_BN2decXMLCh(BIGNUM *bn)
+{
+	char *buff = NULL;
+	buff = BN_bn2dec(bn);
+	XMLCh *xml_serial = XMLString::transcode((char *) buff);
+
+	OPENSSL_free(buff);
+	return xml_serial;
+}
+
+XMLCh *jalp_get_xml_x509_name(X509_NAME *nm)
+{
+	BIO *bmem  = BIO_new(BIO_s_mem());
+	BUF_MEM *bptr;
+	char *buff = NULL;
+
+	X509_NAME_print_ex(bmem, nm, 0, 0);
+	BIO_get_mem_ptr(bmem, &bptr);
+
+	size_t malloc_amount = bptr->length;
+	buff = (char *) jal_malloc(malloc_amount + 1);
+	memcpy(buff, bptr->data, bptr->length);
+	buff[bptr->length] = 0;
+
+	XMLCh *xml_subject = XMLString::transcode(buff);
+
+	BIO_free(bmem);
+	free(buff);
+
+	return xml_subject;
+}
+
+XMLCh *jalp_get_xml_x509_serial(ASN1_INTEGER *i)
+{
+	BIGNUM *bn_buff = NULL;
+
+	bn_buff = ASN1_INTEGER_to_BN(i, NULL);
+	XMLCh *xml_serial = jalp_BN2decXMLCh(bn_buff);
+
+	BN_free(bn_buff);
+	return xml_serial;
+}
+
+XMLCh *jalp_get_xml_x509_cert(X509 *x509)
+{
+	unsigned char *buff = NULL;
+	char *b64_buff = NULL;
+	int len;
+
+	len = i2d_X509(x509, &buff);
+	if (len <= 0) {
+		return NULL;
+	}
+
+	b64_buff = jal_base64_enc(buff, len);
+	XMLCh *xml_cert = XMLString::transcode(b64_buff);
+
+	free(b64_buff);
+	OPENSSL_free(buff);
+
+	return xml_cert;
+}
+
+enum jal_status jal_add_signature_block(RSA *rsa, X509 *x509, DOMDocument *doc,
+		DOMElement *parent_element, DOMElement *last_element, const XMLCh *id)
+{
+	if (!doc || !parent_element || !rsa || !id) {
+		return JAL_E_INVAL;
+	}
+
+	XSECProvider prov;
+	DOMElement *sigNode = NULL;
+	DSIGSignature *sig = NULL;
+
+	RSA *new_rsa = RSAPrivateKey_dup(rsa);
+	if (!new_rsa) {
+		return JAL_E_INVAL;
+	}
+
+	// Create a signature object
+	sig = prov.newSignature();
+	sig->setDSIGNSPrefix(MAKE_UNICODE_STRING("ds"));
+
+	// Use it to create a blank signature DOM structure from the doc
+	sigNode = sig->createBlankSignature(doc, CANON_C14N_COM,
+			SIGNATURE_RSA, HASH_SHA256);
+
+	// Insert the signature DOM nodes into the doc
+	parent_element->insertBefore(sigNode, last_element);
+
+	XMLSize_t beg_len = XMLString::stringLen(JALP_XML_XPOINTER_ID_BEG);
+	XMLSize_t end_len = XMLString::stringLen(JALP_XML_XPOINTER_ID_END);
+	XMLSize_t id_len = XMLString::stringLen(id);
+
+	XMLCh *reference_uri = (XMLCh *) jal_calloc(beg_len + id_len + end_len + 1, sizeof(XMLCh));
+	XMLString::catString(reference_uri, JALP_XML_XPOINTER_ID_BEG);
+	XMLString::catString(reference_uri, id);
+	XMLString::catString(reference_uri, JALP_XML_XPOINTER_ID_END);
+
+	// Create an envelope reference for the text to be signed
+	DSIGReference *ref = sig->createReference(reference_uri, HASH_SHA256);
+
+	free(reference_uri);
+	ref->appendEnvelopedSignatureTransform();
+
+	// append the rsa key info
+	XMLCh *xml_rsa_modulus = jal_BN2b64(new_rsa->n);
+	XMLCh *xml_rsa_exponent = jal_BN2b64(new_rsa->e);
+	sig->appendRSAKeyValue(xml_rsa_modulus, xml_rsa_exponent);
+	XMLString::release(&xml_rsa_modulus);
+	XMLString::release(&xml_rsa_exponent);
+
+
+	EVP_PKEY *pkey = EVP_PKEY_new();
+	EVP_PKEY_assign_RSA(pkey, new_rsa);
+
+	// set the signing key to use
+	OpenSSLCryptoKeyRSA *rsaKey = new OpenSSLCryptoKeyRSA(pkey);
+	sig->setSigningKey(rsaKey);
+
+	// add certificate information, if available
+	if (x509) {
+		DSIGKeyInfoX509 *x509keyinfo = sig->appendX509Data();
+		XMLCh *xml_subject = jalp_get_xml_x509_name(X509_get_subject_name(x509));
+		XMLCh *xml_issuer = jalp_get_xml_x509_name(X509_get_issuer_name(x509));
+		XMLCh *xml_serial = jalp_get_xml_x509_serial(X509_get_serialNumber(x509));
+		XMLCh *xml_cert = jalp_get_xml_x509_cert(x509);
+
+		x509keyinfo->setX509SubjectName(xml_subject);
+		x509keyinfo->setX509IssuerSerial(xml_issuer, xml_serial);
+		x509keyinfo->appendX509Certificate(xml_cert);
+
+		XMLString::release(&xml_cert);
+		XMLString::release(&xml_serial);
+		XMLString::release(&xml_issuer);
+		XMLString::release(&xml_subject);
+	}
+
+	// Document needs to be normalized before it is signed.
+	doc->normalizeDocument();
+
+	// Sign
+	sig->sign();
+
+	EVP_PKEY_free(pkey);
+
+	return JAL_OK;
 }
