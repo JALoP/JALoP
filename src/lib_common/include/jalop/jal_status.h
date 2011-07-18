@@ -58,6 +58,7 @@ enum jal_status {
 	JAL_E_READ_PRIVKEY,
 	JAL_E_READ_X509,
 	JAL_E_FILE_IO,
+	JAL_E_INVAL_APP_METADATA,
 	JAL_OK = 0,
 };
 
