@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Log xmlns='http://cee.mitre.org'>
+  <Invalid>
+  <Event>
+    <id>123</id>
+    <time>2011-01-01T12:00:00Z</time>
+    <action>login</action>
+    <status>success</status>
+    <p_sys_id>10.0.0.1</p_sys_id>
+    <p_prod_id>proc</p_prod_id>
+    <Field name='acct_name'>
+      <string>bob</string>
+    </Field>
+  </Event>
+  </Invalid>
+</Log>
+
