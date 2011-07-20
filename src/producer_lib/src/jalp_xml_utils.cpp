@@ -35,8 +35,10 @@
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/util/XMLUri.hpp>
 #include <xercesc/dom/DOMDocument.hpp>
-#include <xercesc/framework/MemBufInputSource.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
+#include <xercesc/framework/MemBufInputSource.hpp>
+#include <xercesc/dom/DOMLSOutput.hpp>
+#include <xercesc/framework/XMLFormatter.hpp>
 
 #include <xsec/canon/XSECC14n20010315.hpp>
 
@@ -49,6 +51,10 @@
 #include "jalp_base64_internal.h"
 
 XERCES_CPP_NAMESPACE_USE
+
+static const XMLCh JAL_XML_LS[]  = {	chLatin_L,
+				chLatin_S,
+				chNull };
 
 static const XMLCh REFERENCE[] = {
 	chLatin_R, chLatin_e, chLatin_f, chLatin_e, chLatin_r, chLatin_e, chLatin_n,
@@ -318,4 +324,39 @@ enum jal_status jalp_create_audit_transforms_elem(DOMDocument *doc, DOMElement *
 	*new_elem = out_elem;
 
 	return JAL_OK;
+}
+enum jal_status jal_xml_output(DOMDocument *doc, MemBufFormatTarget **buffer)
+{
+	enum jal_status ret;
+	if (!doc || !buffer || *buffer) {
+		return JAL_E_INVAL;
+	}
+	DOMImplementation *impl =
+		DOMImplementationRegistry::getDOMImplementation(JAL_XML_LS);
+
+	DOMLSOutput *output = impl->createLSOutput();
+	MemBufFormatTarget *byte_stream = new MemBufFormatTarget();
+
+	DOMLSSerializer *serializer =
+		dynamic_cast<DOMLSSerializer*>(impl->createLSSerializer());
+	if (!serializer) {
+		ret = JAL_E_XML_CONVERSION;
+		goto fail;
+	}
+
+	output->setByteStream(byte_stream);
+
+	if (serializer->write(doc, output)) {
+		ret = JAL_OK;
+		goto out;
+	}
+	ret = JAL_E_XML_CONVERSION;
+fail:
+	delete byte_stream;
+	byte_stream = NULL;
+out:
+	*buffer = byte_stream;
+	delete output;
+	delete serializer;
+	return ret;
 }

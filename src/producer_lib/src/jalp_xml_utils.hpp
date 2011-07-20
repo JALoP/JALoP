@@ -1,6 +1,6 @@
 /**
  * @file jalp_xml_utils.hpp This file defines helper fucntions for dealing with
- * createing/reading XML data.
+ * creating/reading XML data.
  *
  * @section LICENSE
  *
@@ -31,6 +31,7 @@
 
 #include <jalop/jal_status.h>
 #include <xercesc/dom/DOMElement.hpp>
+#include <xercesc/framework/MemBufFormatTarget.hpp>
 #include <unistd.h> // for size_t
 
 
@@ -118,5 +119,16 @@ enum jal_status jal_digest_xml_data(const struct jal_digest_ctx *dgst_ctx,
  * @return JAL_OK,  or JAL_E_XML_CONVERSION on error
  */
 enum jal_status jalp_create_audit_transforms_elem(DOMDocument *doc, DOMElement **new_elem);
+/**
+ * Given a DOMDocument, write out the corresponding XML to a byte buffer.
+ *
+ * @param doc[in] The DOMDocument to serialize
+ * @param buffer[out] The buffer that contains the serialized XML.
+ * @return 
+ *  - JAL_OK on success
+ *  - JAL_E_XML_CONVERSION if there is an error serializing the document
+ *  - JAL_E_INVAL if one of the arguments is invalid.
+ */
+enum jal_status jal_xml_output(DOMDocument *doc, MemBufFormatTarget **buffer);
 
 #endif // JAL_XML_UTILS_HPP
