@@ -1,6 +1,6 @@
 /**
- * @file jal_status.h This file defines namespace uri's for use by jal
- * xml document functions.
+ * @file jalp_audit_helper.h C interface to helper functions for generating the
+ * application metadata XML related to an audit record.
  *
  * @section LICENSE
  *
@@ -26,20 +26,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JAL_NAMESPACES_H_
-#define _JAL_NAMESPACES_H_
+#ifndef __JALP_AUDIT_HELPER_H__
+#define __JALP_AUDIT_HELPER_H__
+#include <stdint.h>
+#include <jalop/jalp_context.h>
+#include <jalop/jalp_app_metadata.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define JALP_APP_META_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadata"
-#define JALP_APP_META_TYPES_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
-#define JALP_XMLDSIG_URI "http://www.w3.org/2000/09/xmldsig#"
-#define JAL_PAYLOAD_URI "jalop:payload"
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif //_JAL_NAMESPACES_H_
+enum jal_status jalp_audit_app_meta_helper(jalp_context *ctx, struct jalp_app_metadata *app_meta,
+		const uint8_t *audit_buffer, const size_t log_buffer_size,
+		uint8_t **app_meta_buffer, size_t *app_meta_buf_len);
+#endif // __JALP_AUDIT_HELPER_H__
