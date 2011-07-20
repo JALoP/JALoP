@@ -86,7 +86,7 @@ char *get_timestamp();
  * @param[out] elem A pointer to hold the created element. Should point to NULL.
  * @return JAL_OK on success, JAL_E_XML_CONVERSION on failure.
 */
-enum jal_status jal_create_reference_elem(char *reference_uri, char *digest_method,
+enum jal_status jal_create_reference_elem(const char *reference_uri, const char *digest_method,
 		uint8_t *digest_buf, size_t len,
 		DOMDocument *doc, DOMElement **elem);
 

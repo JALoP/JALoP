@@ -191,7 +191,7 @@ char *get_timestamp()
 
 }
 
-enum jal_status jal_create_reference_elem(char *reference_uri, char *digest_method,
+enum jal_status jal_create_reference_elem(const char *reference_uri, const char *digest_method,
 		uint8_t *digest_buf, size_t len,
 		DOMDocument *doc, DOMElement **elem)
 {

@@ -41,9 +41,9 @@ extern "C" {
  *
  */
 enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
-		char *schema_root,
-		uint8_t *buffer,
-		size_t buf_len,
+		const char *schema_root,
+		const uint8_t *buffer,
+		const size_t buf_len,
 		uint8_t**digest_value,
 		int *digest_len);
 
