@@ -414,3 +414,38 @@ extern "C" void test_jalp_create_audit_transforms_elem_outputs_correctly()
 	doc->appendChild(transforms_elem);
 	assert_true(validate(doc, __FUNCTION__, schemas));
 }
+
+extern "C" void test_jal_xml_output_bad_inputs()
+{
+	MemBufFormatTarget * buf = NULL;
+	enum jal_status ret = JAL_OK;
+
+	ret = jal_xml_output(NULL, NULL);
+	assert_equals(JAL_E_INVAL, ret);
+
+	ret = jal_xml_output(doc, NULL);
+	assert_equals(JAL_E_INVAL, ret);
+
+
+	ret = jal_xml_output(NULL, &buf);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals((MemBufFormatTarget *)NULL, buf);
+
+	void *temp = jal_malloc(4);
+	buf = (MemBufFormatTarget *)temp;
+
+	ret = jal_xml_output(doc, &buf);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals((MemBufFormatTarget *)temp, buf);
+	free(temp);
+
+}
+
+extern "C" void test_jal_xml_output_good_inputs()
+{
+	MemBufFormatTarget * buf = NULL;
+	enum jal_status ret = jal_xml_output(doc, &buf);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals((MemBufFormatTarget *)NULL, buf);
+	delete buf;
+}
