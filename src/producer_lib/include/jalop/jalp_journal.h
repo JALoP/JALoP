@@ -103,8 +103,8 @@ enum jal_status jalp_journal(jalp_context *ctx,
  *
  */
 enum jal_status jalp_journal_fd(jalp_context *ctx,
-		const jalp_app_metadata *app_meta,
-		const int fd);
+		struct jalp_app_metadata *app_meta,
+		int fd);
 
 /**
  * Open the file at \p path and send it the JALoP Local Store.
@@ -130,7 +130,7 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
  *
  */
 enum jal_status jalp_journal_path(jalp_context *ctx,
-		const struct jalp_app_metadata *app_meta,
+		struct jalp_app_metadata *app_meta,
 		const char *path);
 
 /** @} */
