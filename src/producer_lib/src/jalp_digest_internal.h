@@ -26,6 +26,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef _JALP_DIGEST_INTERNAL_H_
+#define _JALP_DIGEST_INTERNAL_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /**
@@ -52,3 +58,10 @@ enum jal_status jalp_digest_buffer(struct jal_digest_ctx *digest_ctx,
 */
 enum jal_status jalp_digest_fd(struct jal_digest_ctx *digest_ctx,
 		int fd, uint8_t **digest);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //_JALP_DIGEST_INTERNAL_H_
+
