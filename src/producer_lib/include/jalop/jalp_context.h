@@ -46,6 +46,10 @@ extern "C" {
  * Path to the socket used when making a connection to the JALoP Local Store.
  */
 #define JALP_SOCKET_NAME "/var/run/jalop/jalop.sock"
+/**
+ * Path to the schemas
+ */
+#define JALP_SCHEMA_ROOT "/usr/share/jalop/schemas"
 
 /**
  * @defgroup ProducerContext Producer Context
@@ -89,13 +93,17 @@ jalp_context *jalp_context_create(void);
  * @param[in] app_name A string to use when filling out metadata sections. If
  * this is set to NULL, or the empty string, the JPL will try to generate a
  * suitable process name.
+ * @param[in] schema_root The path to the JALoP Schemas. In most cases, this
+ * may be NULL. In rare instances, it may be necessary to provide the install
+ * path of the schemas.
  *
  * @return JAL_OK on success, or an error code.
  */
 enum jal_status jalp_context_init(jalp_context *ctx,
 		const char *path,
 		const char *hostname,
-		const char *app_name);
+		const char *app_name,
+		const char *schema_root);
 
 /**
  * Disconnect (if needed) and destroy the connection.

@@ -155,7 +155,7 @@ void setup()
 	replace_function(jalp_context_connect, fake_context_connect);
 	replace_function(sendmsg, fake_sendmsg);
 	ctx = jalp_context_create();
-	jalp_context_init(ctx, NULL, NULL, NULL);
+	jalp_context_init(ctx, NULL, NULL, NULL, NULL);
 
 	failed_version = 0;
 	failed_message_type = 0;

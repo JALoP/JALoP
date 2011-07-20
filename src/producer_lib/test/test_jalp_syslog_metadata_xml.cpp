@@ -98,7 +98,7 @@ extern "C" void setup()
 	jal_asprintf(&pid_str, "%" PRIdMAX, (intmax_t) getpid());
 	jalp_init();
 	ctx = jalp_context_create();
-	jalp_context_init(ctx, NULL, HOSTNAME_VAL_STR, APP_NAME_VAL_STR);
+	jalp_context_init(ctx, NULL, HOSTNAME_VAL_STR, APP_NAME_VAL_STR, NULL);
 	syslog = jalp_syslog_metadata_create();
 	syslog->timestamp = strdup(TIMESTAMP_WITH_SINGLE_DIGIT_VALS_STR);
 	syslog->message_id = strdup(MESSAGE_ID_VAL_STR);

@@ -87,7 +87,7 @@ extern "C" void setup()
 	app_meta->event_id = jal_strdup(EVENT_ID);
 
 	ctx = jalp_context_create();
-	jalp_context_init(ctx, NULL, NULL, NULL);
+	jalp_context_init(ctx, NULL, NULL, NULL, NULL);
 	journal_meta = jalp_journal_metadata_create();
 	journal_meta->file_info = jalp_file_info_create();
 	journal_meta->file_info->filename = jal_strdup(__FILE__);

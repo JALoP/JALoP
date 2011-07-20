@@ -74,12 +74,14 @@ void jalp_context_destroy(jalp_context **ctx)
 	free((*ctx)->app_name);
 	free((*ctx)->signing_key);
 	free((*ctx)->signing_cert);
+	free((*ctx)->schema_root);
 	free(*ctx);
 	*ctx = NULL;
 }
 
 enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
-		const char *hostname, const char *app_name)
+		const char *hostname, const char *app_name,
+		const char *schema_root)
 {
 	if (!ctx) {
 		return JAL_E_INVAL;
@@ -95,6 +97,13 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 	} else {
 		ctx->path = jal_strdup(JALP_SOCKET_NAME);
 	}
+
+	if (schema_root) {
+		ctx->schema_root = jal_strdup(schema_root);
+	} else {
+		ctx->schema_root = jal_strdup(JALP_SCHEMA_ROOT);
+	}
+
 
 	if (hostname) {
 		ctx->hostname = jal_strdup(hostname);

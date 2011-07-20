@@ -42,6 +42,7 @@ struct jalp_context_t {
 	char *path; /**< The path that was originally used to connect to the socket */
 	char *hostname; /**< The hostname to use when generating the application metadata sections */
 	char *app_name; /**< The application name to use when generating the application metadata sections */
+	char *schema_root; /**< The location of the schema files */
 	struct jal_digest_ctx *digest_ctx; /**< The registered callback functions to use when creating a digest */
 	RSA *signing_key; /**< The RSA private key to use when signing application metadata documents */
 	X509 *signing_cert; /**< The certificate used for signing the application metadata */
