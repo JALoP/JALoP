@@ -44,6 +44,7 @@ stackFrameXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_stack_frame_
 structDataXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_structured_data_xml.cpp'))
 digestAuditXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_digest_audit_xml.cpp'))
 contextCryptoObj = env.SharedObject(os.path.join('..', 'src', 'jalp_context_crypto.c'))
+digestObj = env.SharedObject(os.path.join('..', 'src', 'jalp_digest.c'))
 
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity.c',
 	other_sources=[lib_common])[0].abspath)
@@ -142,6 +143,20 @@ tests.append(testEnv.TestDeptTest('test_jalp_audit.cpp',
 		appMetaObj, appMetaXmlObj,
 		digestAuditXmlObj
 		])[0].abspath)
+
+tests.append(testEnv.TestDeptTest('test_jalp_journal.cpp',
+	other_sources=[jalopInitObj, xmlTestUtilsObj, contextObj, xmlUtilsObj,
+		lib_common, base64Obj, contextCryptoObj,
+		paramObj, paramXmlObj, structDataObj, structDataXmlObj,
+		fileInfoObj, fileInfoXmlObj, transformObj, transformXmlObj,
+		contentTypeObj, contentTypeXmlObj,
+		journalMetaObj, journalMetaXmlObj,
+		syslogMetaObj, syslogMetaXmlObj,
+		loggerMetaObj, loggerMetaXmlObj,
+		logSeverityObj, severityXmlObj,
+		stackFrameObj, stackFrameXmlObj,
+		appMetaObj, appMetaXmlObj,
+		digestObj])[0].abspath)
 
 
 
