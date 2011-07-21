@@ -48,34 +48,91 @@ extern "C" {
 #include <jalop/jal_digest.h>
 #include <jalop/jalp_context.h>
 #include <jalop/jalp_journal.h>
+#include <jalop/jalp_app_metadata.h>
 #include "jal_alloc.h"
 #include "jalp_connection_internal.h"
 
-jalp_context *ctx;
+#include "xml_test_utils.hpp"
 
-enum jal_status jalp_send_buffer(
-		__attribute__((unused)) jalp_context *jctx,
-		__attribute__((unused)) uint16_t message_type,
-		__attribute__((unused)) void *data,
-		__attribute__((unused)) uint64_t data_len,
-		__attribute__((unused)) void *meta,
-		__attribute__((unused)) uint64_t meta_len,
-		__attribute__((unused)) int fd)
+jalp_context *ctx;
+static struct jalp_app_metadata *app_meta;
+
+const char* EVENT_ID = "foo-123";
+
+// Path to the test rsa keys to use.
+#define TEST_RSA_KEY  TEST_INPUT_ROOT "rsa_key"
+#define TEST_RSA_KEY_WITH_PASS  TEST_INPUT_ROOT "rsa_key_with_pass"
+
+// Path to the test certs to use.
+#define TEST_CERT  TEST_INPUT_ROOT "cert"
+#define TEST_CERT_AND_KEY  TEST_INPUT_ROOT "cert_and_key"
+#define TEST_CERT_AND_KEY_WITH_PASS  TEST_INPUT_ROOT "cert_and_key_with_pass"
+
+// Password for the key that has a password.
+#define TEST_KEY_PASSWORD "pass"
+#define BUFFER "lalalalala"
+
+int ctx_is_null;
+int message_type_wrong;
+int data_is_null;
+int data_len_wrong;
+int meta_is_null;
+int meta_len_wrong;
+int fd_is_set;
+uint64_t expected_data_len;
+uint64_t expected_meta_len;
+
+enum jal_status jalp_send_buffer(jalp_context *jctx, uint16_t message_type,
+		void *data, uint64_t data_len, void *meta, uint64_t meta_len, int fd)
 {
+	ctx_is_null = !jctx;
+	message_type_wrong = (message_type != JALP_JOURNAL_MSG);
+	data_is_null = !data;
+	data_len_wrong = data_len != expected_data_len;
+	meta_is_null = !meta;
+	if (expected_meta_len == 0) {
+		meta_len_wrong = meta_len != 0;
+	} else {
+		meta_len_wrong = meta_len == 0;
+	}
+	fd_is_set = fd >= 0;
 	return JAL_OK;
 }
+
 extern "C" void setup()
 {
 	jalp_init();
+	app_meta = jalp_app_metadata_create();
+	app_meta->type = JALP_METADATA_NONE;
+	app_meta->event_id = jal_strdup(EVENT_ID);
+
 	ctx = jalp_context_create();
+	struct jal_digest_ctx *dgst_ctx = jal_sha256_ctx_create();
+	jalp_context_set_digest_callbacks(ctx, dgst_ctx);
+	jal_digest_ctx_destroy(&dgst_ctx);
+
+	jalp_context_load_pem_rsa(ctx, TEST_RSA_KEY, NULL);
+	jalp_context_load_pem_cert(ctx, TEST_CERT_AND_KEY);
+
+	jalp_context_init(ctx, NULL, NULL, NULL, SCHEMAS_ROOT);
+
+	ctx_is_null = 0;
+	message_type_wrong = 0;
+	data_is_null = 0;
+	data_len_wrong = 0;
+	meta_is_null = 0;
+	meta_len_wrong = 0;
+	fd_is_set = 0;
+	expected_data_len = 0;
+	expected_meta_len = 0;
 }
 
 extern "C" void teardown()
 {
+	jalp_app_metadata_destroy(&app_meta);
 	jalp_context_destroy(&ctx);
 	jalp_shutdown();
 }
-
 extern "C" void test_journal_fd_fails_with_bad_input()
 {
 	enum jal_status ret;
@@ -103,4 +160,41 @@ extern "C" void test_journal_path_fails_with_bad_file()
 	enum jal_status ret;
 	ret = jalp_journal_path(NULL, NULL, "./this/file/does/not/exist");
 	assert_equals(JAL_E_INVAL, ret);
+}
+
+extern "C" void test_jalp_journal_fails_with_bad_input()
+{
+	enum jal_status ret;
+	struct jalp_app_metadata *app_metadata;
+
+	app_metadata = jalp_app_metadata_create();
+
+	ret = jalp_journal(NULL, NULL, NULL, 0);
+	assert_equals(ret, JAL_E_INVAL);
+
+	ret = jalp_journal(NULL, app_metadata, (uint8_t *)BUFFER, strlen(BUFFER));
+	assert_equals(ret, JAL_E_INVAL);
+
+	ret = jalp_journal(ctx, app_metadata, NULL, strlen(BUFFER));
+	assert_equals(ret, JAL_E_INVAL);
+
+	ret = jalp_journal(ctx, app_metadata, (uint8_t *)BUFFER, 0);
+	assert_equals(ret, JAL_E_INVAL);
+
+	jalp_app_metadata_destroy(&app_metadata);
+}
+
+extern "C" void test_journal_works_with_good_input()
+{
+	expected_data_len = strlen(BUFFER);
+	expected_meta_len = 1;
+	enum jal_status ret = jalp_journal(ctx, app_meta, (uint8_t *)BUFFER, strlen(BUFFER));
+	assert_equals(JAL_OK, ret);
+	assert_false(ctx_is_null);
+	assert_false(message_type_wrong);
+	assert_false(data_is_null);
+	assert_false(data_len_wrong);
+	assert_false(meta_is_null);
+	assert_false(meta_len_wrong);
+	assert_false(fd_is_set);
 }
