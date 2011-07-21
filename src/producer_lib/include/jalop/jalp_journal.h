@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALP_LOGGER_H_
-#define _JALP_LOGGER_H_
+#ifndef _JALP_JOURNAL_H_
+#define _JALP_JOURNAL_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,7 +71,7 @@ extern "C" {
  * @note The ctx will be connected if it isn't already.
  */
 enum jal_status jalp_journal(jalp_context *ctx,
-		const struct jalp_app_metadata *app_meta,
+		struct jalp_app_metadata *app_meta,
 		const uint8_t *journal_buffer,
 		const size_t journal_buffer_size);
 
