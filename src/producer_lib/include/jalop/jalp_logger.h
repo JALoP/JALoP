@@ -35,6 +35,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <jalop/jalp_app_metadata.h>
 #include <jalop/jalp_context.h>
 
 /**
@@ -70,7 +71,7 @@ extern "C" {
  * @note It is an error to pass NULL for both \p app_meta and \p log_buffer.
  *
  * @return JAL_OK on success.
- *         JAL_EINVAL if there is something wrong with the parameters
+ *         JAL_E_INVAL if there is something wrong with the parameters
  *         JAL_E_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
  *
