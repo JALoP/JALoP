@@ -34,12 +34,6 @@
 #include <jalop/jal_namespaces.h>
 #include <jalop/jalp_logger_metadata.h>
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 XERCES_CPP_NAMESPACE_USE
 
 /**
@@ -52,9 +46,5 @@ XERCES_CPP_NAMESPACE_USE
  * @return JAL_OK on success, JAL_E_XML_CONVERSION otherwise
  */
 enum jal_status jalp_log_severity_to_elem(const struct jalp_log_severity * severity, DOMDocument *doc, DOMElement **elem);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //_JALP_LOG_SEVERITY_XML_HPP_
