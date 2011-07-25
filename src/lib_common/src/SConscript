@@ -1,4 +1,5 @@
 Import('*')
+import os
 
 sources = []
 for source in (env.Glob("*.c")):
@@ -10,5 +11,9 @@ asprintf_obj = env.SharedObject(source='jal_asprintf.c', CCFLAGS=env['CCFLAGS'] 
 
 lib_common = env.SharedLibrary(target='jal-common', source=[sources, asprintf_obj])
 env.Default(lib_common)
+if (env['release']):
+	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
+	env.Install(libdir, lib_common)
+	env.Alias('install', libdir)
 
 Return("lib_common")

@@ -13,6 +13,7 @@ lib_common_env.Append(LINKFLAGS=lib_common_env['libuuid_ldflags'])
 lib_common_env.Append(LINKFLAGS=lib_common_env['santuario_ldflags'])
 
 
+SConscript('include/SConscript', exports={'env':lib_common_env})
 lib_common = SConscript('src/SConscript', exports={'env':lib_common_env})
 SConscript('test/SConscript', exports={'env':lib_common_env, 'all_tests':all_tests, 'test_utils':test_utils})
 Return("lib_common")
