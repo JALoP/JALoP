@@ -9,6 +9,10 @@ import ConfigHelpers
 import PackageCheckHelpers
 from Utils import recursive_glob
 
+from InstallOptions import add_install_options
+from InstallOptions import update_env_with_install_paths
+add_install_options()
+
 # Update package version here, add actual checks below
 pkg_config_version = '0.21'
 
@@ -59,6 +63,10 @@ debug_ldflags = ' -fprofile-arcs -ftest-coverage '
 release_flags = ' -O3 -DNDEBUG -Wno-unreachable-code'
 debug_env = Environment(tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
+if os.environ.has_key('DESTDIR'):
+	debug_env['DESTDIR'] = os.environ['DESTDIR']
+debug_env['JALOP_VERSION_STR'] = '1.0'
+update_env_with_install_paths(debug_env)
 debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env.Append(CCFLAGS=flags, CFLAGS='-std=gnu99')
 if platform.system() == 'SunOS':
@@ -166,6 +174,8 @@ else:
 
 
 # build release and debug versions in seperate directories
+debug_env['release'] = False;
+release_env['release'] = True;
 SConscript('SConscript', variant_dir='debug', duplicate=0, exports={'env':debug_env, 'all_tests':all_tests})
 SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env, 'all_tests':all_tests})
 
