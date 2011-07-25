@@ -1,0 +1,9 @@
+Import('*')
+import os
+
+if env['release']:
+	schemas_dir = env['DESTDIR'] + env['JALOP_SCHEMAS_ROOT']
+	env.Install(schemas_dir, env.Glob("*.xsd"))
+	env.Install(schemas_dir, env.Glob("*.dtd"))
+	env.Alias('install', schemas_dir)
+
