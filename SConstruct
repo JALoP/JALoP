@@ -66,8 +66,7 @@ if platform.system() == 'SunOS':
 			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
 	debug_env.Append(CCFLAGS=' -D_POSIX_C_SOURCE=200112L ')
-	debug_env.Append(LINKFLAGS='-Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/local/ssl/lib')
-
+	debug_env.Append(LINKFLAGS='-L/usr/local/lib -R/usr/local/lib -R/usr/local/ssl/lib')
 # Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
 (major, _, _) = debug_env['CCVERSION'].split('.')
 if int(major) >= 4:
