@@ -44,7 +44,7 @@ XERCES_CPP_NAMESPACE_USE
  * @return JAL_OK on success or JAL_E_XML_PARSE if there was an error parsing the
  * snippet.
  */
-enum jal_status parse_xml_snippet(DOMElement *ctx_node, const char *snippet);
+enum jal_status jal_parse_xml_snippet(DOMElement *ctx_node, const char *snippet);
 
 /**
  * Helper function to base64 encode a buffer and create a new DOMElement.
@@ -61,7 +61,7 @@ enum jal_status parse_xml_snippet(DOMElement *ctx_node, const char *snippet);
  *
  * @return JAL_OK on error, or JAL_E_INVAL
  */
-enum jal_status create_base64_element(DOMDocument *doc,
+enum jal_status jal_create_base64_element(DOMDocument *doc,
 		const uint8_t *buffer, const size_t buf_len,
 		const XMLCh *namespace_uri, const XMLCh *elm_name,
 		DOMElement **new_elem);
@@ -71,7 +71,7 @@ enum jal_status create_base64_element(DOMDocument *doc,
  *
  * @return formatted timestamp string
  */
-char *get_timestamp();
+char *jal_get_timestamp();
 
 /**
  * Creates Reference DOMElement from uri, digest method, and digest buffer

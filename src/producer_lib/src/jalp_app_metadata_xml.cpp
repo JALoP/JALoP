@@ -112,7 +112,7 @@ enum jal_status jalp_app_metadata_to_elem(struct jalp_app_metadata *app_meta,
 			break;
 		case(JALP_METADATA_CUSTOM):
 			custom_elem = doc->createElementNS(namespace_uri, CUSTOM);
-			ret = parse_xml_snippet(custom_elem, app_meta->custom);
+			ret = jal_parse_xml_snippet(custom_elem, app_meta->custom);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}

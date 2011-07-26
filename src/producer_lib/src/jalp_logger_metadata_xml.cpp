@@ -147,7 +147,7 @@ enum jal_status jalp_logger_metadata_to_elem(const struct jalp_logger_metadata *
 	} else {
 		DOMElement *tmp = doc->createElementNS(namespace_uri, JALP_XML_TIMESTAMP);
 		logger_metadata_element->appendChild(tmp);
-		char *ftime = get_timestamp();
+		char *ftime = jal_get_timestamp();
 		XMLCh *xml_timestamp = XMLString::transcode(ftime);
 		tmp->setTextContent(xml_timestamp);
 		free(ftime);

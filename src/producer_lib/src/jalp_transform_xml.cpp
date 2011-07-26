@@ -219,7 +219,7 @@ enum jal_status jalp_transform_to_elem_handle_custom(DOMElement *transform_elm,
 	transform_elm->setAttribute(JALP_XML_ALGORITHM, xml_algorithm);
 
 	if (other_info->xml) {
-		ret = parse_xml_snippet(transform_elm, other_info->xml);
+		ret = jal_parse_xml_snippet(transform_elm, other_info->xml);
 	}
 out:
 	XMLString::release(&xml_algorithm);
@@ -238,7 +238,7 @@ enum jal_status jalp_transform_to_elem_handle_xor(DOMDocument *doc,
 		ret = JAL_E_INVAL_TRANSFORM;
 		goto error_out;
 	}
-	ret = create_base64_element(doc,
+	ret = jal_create_base64_element(doc,
 			enc_info->key,
 			JALP_TRANSFORM_XOR_KEYSIZE,
 			namespace_uri,
@@ -278,7 +278,7 @@ enum jal_status jalp_transform_to_elem_handle_aes(DOMDocument *doc,
 	DOMElement *aes_elm = NULL;
 	if (enc_info) {
 		if (enc_info->key) {
-			ret = create_base64_element(doc,
+			ret = jal_create_base64_element(doc,
 					enc_info->key,
 					key_size,
 					namespace_uri,
@@ -290,7 +290,7 @@ enum jal_status jalp_transform_to_elem_handle_aes(DOMDocument *doc,
 			}
 		}
 		if (enc_info->iv) {
-			ret = create_base64_element(doc,
+			ret = jal_create_base64_element(doc,
 					enc_info->iv,
 					JALP_TRANSFORM_AES_IVSIZE,
 					namespace_uri,

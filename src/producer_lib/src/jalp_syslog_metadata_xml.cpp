@@ -128,7 +128,7 @@ enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *
 		syslog_element->setAttribute(JALP_XML_TIMESTAMP, xml_timestamp);
 		XMLString::release(&xml_timestamp);
 	} else {
-		char *ftime = get_timestamp();
+		char *ftime = jal_get_timestamp();
 		XMLCh *xml_timestamp = XMLString::transcode(ftime);
 		syslog_element->setAttribute(JALP_XML_TIMESTAMP, xml_timestamp);
 		free(ftime);

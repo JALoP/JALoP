@@ -91,7 +91,7 @@ static const XMLCh JALP_XML_WITH_COMMENTS[] = {
 	chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_s, chNull };
 
 
-enum jal_status parse_xml_snippet(DOMElement *ctx_node, const char* snippet)
+enum jal_status jal_parse_xml_snippet(DOMElement *ctx_node, const char* snippet)
 {
 	Wrapper4InputSource *lsInput = NULL;
 	MemBufInputSource * inputSource = NULL;
@@ -136,7 +136,7 @@ enum jal_status parse_xml_snippet(DOMElement *ctx_node, const char* snippet)
 	return (child_node != NULL)? JAL_OK : JAL_E_XML_PARSE;
 }
 
-enum jal_status create_base64_element(DOMDocument *doc,
+enum jal_status jal_create_base64_element(DOMDocument *doc,
 		const uint8_t *buffer,
 		const size_t buf_len,
 		const XMLCh *namespace_uri,
@@ -169,25 +169,25 @@ enum jal_status create_base64_element(DOMDocument *doc,
 }
 
 // Returns a timestamp of the format YYYY-MM-DDTHH:MM:SS[+-]HH:MM
-char *get_timestamp()
+char *jal_get_timestamp()
 {
-        char *ftime = (char*)jal_malloc(26);
-        char *tz_offset = (char*)jal_malloc(7);
-        time_t rawtime;
-        struct tm *tm;
-        time(&rawtime);
-        tm = localtime(&rawtime);
-        strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
+	char *ftime = (char*)jal_malloc(26);
+	char *tz_offset = (char*)jal_malloc(7);
+	time_t rawtime;
+	struct tm *tm;
+	time(&rawtime);
+	tm = localtime(&rawtime);
+	strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
 	/* Timezone
 	 * Inserts ':' into [+-]HHMM for [+-]HH:MM */
-        strftime(tz_offset, 7, "%z", tm);
+	strftime(tz_offset, 7, "%z", tm);
 	tz_offset[6] = '\0';
-        tz_offset[5] = tz_offset[4];
-        tz_offset[4] = tz_offset[3];
-        tz_offset[3] = ':';
-        strcat(ftime, tz_offset);
+	tz_offset[5] = tz_offset[4];
+	tz_offset[4] = tz_offset[3];
+	tz_offset[3] = ':';
+	strcat(ftime, tz_offset);
 	free(tz_offset);
-        return ftime;
+	return ftime;
 
 }
 
@@ -219,7 +219,7 @@ enum jal_status jal_create_reference_elem(const char *reference_uri, const char 
 
 	digestmethod_elem->setAttribute(ALGORITHM, xml_digest_method);
 
-	ret = create_base64_element(doc, digest_buf, len, namespace_uri, DIGESTVALUE, &digestvalue_elem);
+	ret = jal_create_base64_element(doc, digest_buf, len, namespace_uri, DIGESTVALUE, &digestvalue_elem);
 	if (ret != JAL_OK) {
 		goto err_out;
 	}
@@ -247,7 +247,8 @@ err_out:
 enum jal_status jal_digest_xml_data(const struct jal_digest_ctx *dgst_ctx,
 		DOMDocument *doc,
 		uint8_t **digest_out,
-		int *digest_len) {
+		int *digest_len)
+{
 #define CANON_BUF_SIZE 512
 	if (!dgst_ctx || !doc || !digest_out || *digest_out || !digest_len) {
 		return JAL_E_INVAL;
