@@ -13,12 +13,21 @@ testEnv.Append(CPPPATH=":#/src/test_utils/src")
 errorCallbackObj = env.SharedObject(os.path.join('..','src', 'jal_error_callback.c'))
 allocObj = env.SharedObject(os.path.join('..','src', 'jal_alloc.c'))
 base64Obj = env.SharedObject(os.path.join('..','src', 'jal_base64.c'))
+digestObj = env.SharedObject(os.path.join('..','src', 'jal_digest.c'))
 
 tests.append(testEnv.TestDeptTest('test_jal_error_callback.c', other_sources=[], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_alloc.c', other_sources=[errorCallbackObj], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_digest.c', other_sources=[errorCallbackObj, allocObj], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_base64.c',
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
+
+tests.append(testEnv.TestDeptTest('test_jal_error_callback.c', other_sources=[], useProxies=True)[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jal_alloc.c', other_sources=[errorCallbackObj], useProxies=True)[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jal_digest.c', other_sources=[errorCallbackObj, allocObj], useProxies=True)[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jal_base64.c',
+	other_sources=[allocObj, errorCallbackObj])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jal_xml_utils.cpp',
+	other_sources=[test_utils, errorCallbackObj, allocObj, base64Obj, digestObj])[0].abspath)
 common_tests = env.Alias('common_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(common_tests)
 env.Depends(all_tests, common_tests)

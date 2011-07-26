@@ -36,12 +36,12 @@
 extern "C" {
 #include <test-dept.h>
 }
-#include <jalop/jalp_context.h>
 #include <jalop/jal_namespaces.h>
 #include <jalop/jal_status.h>
-#include <jalop/jalp_journal_metadata.h>
-#include <jalop/jalp_structured_data.h>
 #include <jalop/jal_digest.h>
+
+#include <openssl/evp.h>
+#include <openssl/ssl.h>
 
 #include "jal_alloc.h"
 #include "xml_test_utils.hpp"
@@ -87,7 +87,9 @@ XMLCh *namespace_uri;
 
 extern "C" void setup()
 {
-	jalp_init();
+	XMLPlatformUtils::Initialize();
+	SSL_library_init();
+
 	DOMImplementation *impl = DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
 	namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
 	doc = impl->createDocument();
@@ -122,7 +124,11 @@ extern "C" void teardown()
 
 	XMLString::release(&tag);
 	XMLString::release(&namespace_uri);
-	jalp_shutdown();
+
+	XMLPlatformUtils::Terminate();
+
+	EVP_cleanup();
+	CRYPTO_cleanup_all_ex_data();
 }
 
 extern "C" void test_create_base64_element_returns_null_with_null_inputs()

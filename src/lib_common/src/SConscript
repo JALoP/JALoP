@@ -4,7 +4,7 @@ sources = []
 for source in (env.Glob("*.c")):
 	if not source.name == 'jal_asprintf.c':
 		sources.append(source)
-
+sources = sources + env.Glob("*.cpp")
 # GCC on solaris and RHEL 5 don't support #pragma GCC diagnostic to disable warnings, so disable it here.
 asprintf_obj = env.SharedObject(source='jal_asprintf.c', CCFLAGS=env['CCFLAGS'] + ' -Wno-missing-format-attribute -Wno-unreachable-code')
 

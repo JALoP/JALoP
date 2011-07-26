@@ -22,7 +22,6 @@ connectionObj = env.SharedObject(os.path.join('..', 'src', 'jalp_connection.c'))
 fileInfoObj = env.SharedObject(os.path.join('..', 'src', 'jalp_file_info.c'));
 logSeverityObj = env.SharedObject(os.path.join('..', 'src', 'jalp_log_severity.c'))
 jalopInitObj = env.SharedObject(os.path.join('..','src', 'jalp_init.cpp'))
-xmlUtilsObj = env.SharedObject(os.path.join('..', 'src', 'jal_xml_utils.cpp'));
 logMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'));
 appMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_app_metadata.c'));
 appMetaXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalp_app_metadata_xml.cpp'));
@@ -85,23 +84,21 @@ tests.append(testEnv.TestDeptTest('test_jalp_app_metadata.c',
 	logSeverityObj, stackFrameObj, paramObj, fileInfoObj, transformObj, contentTypeObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_content_type_xml.cpp',
 	other_sources=[paramObj, jalopInitObj, test_utils, paramXmlObj, contentTypeObj, lib_common])[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jal_xml_utils.cpp',
-	other_sources=[jalopInitObj, test_utils, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_file_info_xml.cpp',
 	other_sources=[jalopInitObj, test_utils, lib_common, contentTypeXmlObj,
 	paramXmlObj, fileInfoObj, contentTypeObj, paramObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_transform_xml.cpp',
 	other_sources=[transformObj, test_utils, jalopInitObj,
-	lib_common, xmlUtilsObj])[0].abspath)
+	lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_context_crypto.c',
 	other_sources=[lib_common, jalopInitObj, contextObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_syslog_metadata_xml.cpp',
-	other_sources=[paramObj, jalopInitObj, xmlUtilsObj, test_utils, paramXmlObj,
+	other_sources=[paramObj, jalopInitObj, test_utils, paramXmlObj,
 	structDataXmlObj, structDataObj, contextObj, syslogMetaObj, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_digest.c',
 	other_sources=[lib_common], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_journal_metadata_xml.cpp',
-	other_sources=[jalopInitObj, test_utils, contextObj, xmlUtilsObj,
+	other_sources=[jalopInitObj, test_utils, contextObj,
 		lib_common,
 		paramObj, paramXmlObj, structDataObj, structDataXmlObj,
 		fileInfoObj, fileInfoXmlObj, transformObj, transformXmlObj,
@@ -109,11 +106,11 @@ tests.append(testEnv.TestDeptTest('test_jalp_journal_metadata_xml.cpp',
 		journalMetaObj,
 		])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_logger_metadata_xml.cpp',
-	other_sources=[xmlUtilsObj, paramXmlObj, structDataXmlObj, stackFrameXmlObj,
+	other_sources=[paramXmlObj, structDataXmlObj, stackFrameXmlObj,
 	severityXmlObj, contextObj, loggerMetaObj, paramObj, logSeverityObj, structDataObj, stackFrameObj,
 	jalopInitObj, test_utils, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_digest_audit_xml.c',
-	other_sources=[xmlUtilsObj, lib_common, jalopInitObj])[0].abspath)
+	other_sources=[lib_common, jalopInitObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_logger.cpp',
 	other_sources=[
 		appMetaObj, appMetaXmlObj, contentTypeObj, contentTypeXmlObj,
@@ -122,10 +119,10 @@ tests.append(testEnv.TestDeptTest('test_jalp_logger.cpp',
 		loggerMetaXmlObj, logSeverityObj, paramObj, paramXmlObj, sendHelperObj,
 		severityXmlObj, stackFrameObj, stackFrameXmlObj, structDataObj,
 		structDataXmlObj, syslogMetaObj, syslogMetaXmlObj, transformObj,
-		transformXmlObj, test_utils, xmlUtilsObj])[0].abspath)
+		transformXmlObj, test_utils])[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalp_app_metadata_xml.cpp',
-	other_sources=[jalopInitObj, test_utils, contextObj, xmlUtilsObj,
+	other_sources=[jalopInitObj, test_utils, contextObj,
 		lib_common, appMetaObj,
 		paramObj, paramXmlObj, structDataObj, structDataXmlObj,
 		fileInfoObj, fileInfoXmlObj, transformObj, transformXmlObj,
@@ -138,7 +135,7 @@ tests.append(testEnv.TestDeptTest('test_jalp_app_metadata_xml.cpp',
 		])[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalp_audit.cpp',
-	other_sources=[jalopInitObj, test_utils, contextObj, xmlUtilsObj,
+	other_sources=[jalopInitObj, test_utils, contextObj,
 		lib_common, contextCryptoObj,
 		paramObj, paramXmlObj, structDataObj, structDataXmlObj,
 		fileInfoObj, fileInfoXmlObj, transformObj, transformXmlObj,
@@ -153,7 +150,7 @@ tests.append(testEnv.TestDeptTest('test_jalp_audit.cpp',
 		])[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalp_journal.cpp',
-	other_sources=[jalopInitObj, test_utils, contextObj, xmlUtilsObj,
+	other_sources=[jalopInitObj, test_utils, contextObj,
 		lib_common, contextCryptoObj,
 		paramObj, paramXmlObj, structDataObj, structDataXmlObj,
 		fileInfoObj, fileInfoXmlObj, transformObj, transformXmlObj,
