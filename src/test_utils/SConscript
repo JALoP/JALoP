@@ -1,0 +1,4 @@
+Import('*')
+
+test_utils = env.SConscript('src/SConscript', exports="env")
+Return("test_utils")
