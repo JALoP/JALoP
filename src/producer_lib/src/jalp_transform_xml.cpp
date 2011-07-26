@@ -40,7 +40,6 @@
 #include <jalop/jal_status.h>
 #include "jalp_transform_xml.hpp"
 #include "jal_asprintf_internal.h"
-#include "jalp_base64_internal.h"
 #include "jal_xml_utils.hpp"
 
 XERCES_CPP_NAMESPACE_USE

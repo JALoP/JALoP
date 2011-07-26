@@ -101,7 +101,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 				goto out;
 			}
 			DOMElement *transforms_elem = NULL;
-			status = jalp_create_audit_transforms_elem(doc, &transforms_elem);
+			status = jal_create_audit_transforms_elem(doc, &transforms_elem);
 			if (status != JAL_OK) {
 				goto out;
 			}

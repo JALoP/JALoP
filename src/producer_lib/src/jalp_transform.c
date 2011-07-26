@@ -35,7 +35,6 @@
 #include <jalop/jalp_journal_metadata.h>
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
-#include "jalp_base64_internal.h"
 
 void jalp_transform_append_internal(struct jalp_transform *prev, struct jalp_transform *transform)
 {

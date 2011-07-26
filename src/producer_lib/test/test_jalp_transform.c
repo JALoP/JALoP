@@ -33,7 +33,6 @@
 #include <jalop/jalp_journal_metadata.h>
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
-#include "jalp_base64_internal.h"
 
 void test_jalp_transform_append_other_return_new_transform_when_prev_is_null()
 {

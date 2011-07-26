@@ -46,7 +46,6 @@ extern "C" {
 #include "jal_alloc.h"
 #include "xml_test_utils.hpp"
 #include "jal_xml_utils.hpp"
-#include "jalp_base64_internal.h"
 #include "jal_alloc.h"
 
 XERCES_CPP_NAMESPACE_USE
@@ -369,38 +368,38 @@ extern "C" void test_jal_digest_xml_data_canonicalizes_and_digests()
 	free(dgst);
 }
 
-extern "C" void test_jalp_create_audit_transforms_elem_null_inputs()
+extern "C" void test_jal_create_audit_transforms_elem_null_inputs()
 {
 	DOMElement *elem = NULL;
 	enum jal_status ret;
-	ret = jalp_create_audit_transforms_elem(NULL, NULL);
+	ret = jal_create_audit_transforms_elem(NULL, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 
-	ret = jalp_create_audit_transforms_elem(doc, NULL);
+	ret = jal_create_audit_transforms_elem(doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 
-	ret = jalp_create_audit_transforms_elem(NULL, &elem);
+	ret = jal_create_audit_transforms_elem(NULL, &elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 }
 
-extern "C" void test_jalp_create_audit_transforms_elem_does_not_overwrite_elem()
+extern "C" void test_jal_create_audit_transforms_elem_does_not_overwrite_elem()
 {
 	DOMElement *elem = (DOMElement *)jal_malloc(4);
 	DOMElement *temp = elem;
 	enum jal_status ret;
-	ret = jalp_create_audit_transforms_elem(doc, &elem);
+	ret = jal_create_audit_transforms_elem(doc, &elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(elem, temp);
 	free(elem);
 }
 
-extern "C" void test_jalp_create_audit_transforms_elem_outputs_correctly()
+extern "C" void test_jal_create_audit_transforms_elem_outputs_correctly()
 {
 	DOMElement *transforms_elem = NULL;
 	DOMElement *temp;
 	enum jal_status ret;
 
-	ret = jalp_create_audit_transforms_elem(doc, &transforms_elem);
+	ret = jal_create_audit_transforms_elem(doc, &transforms_elem);
 	assert_equals(JAL_OK, ret);
 
 	assert_not_equals(NULL, transforms_elem);

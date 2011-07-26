@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALP_XML_UITLS_HPP_
-#define _JALP_XML_UITLS_HPP_
+#ifndef _JAL_XML_UITLS_HPP_
+#define _JAL_XML_UITLS_HPP_
 
 #include <jalop/jal_status.h>
 #include <xercesc/dom/DOMElement.hpp>
@@ -118,7 +118,7 @@ enum jal_status jal_digest_xml_data(const struct jal_digest_ctx *dgst_ctx,
  *
  * @return JAL_OK,  or JAL_E_XML_CONVERSION on error
  */
-enum jal_status jalp_create_audit_transforms_elem(DOMDocument *doc, DOMElement **new_elem);
+enum jal_status jal_create_audit_transforms_elem(DOMDocument *doc, DOMElement **new_elem);
 /**
  * Given a DOMDocument, write out the corresponding XML to a byte buffer.
  *

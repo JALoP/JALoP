@@ -48,7 +48,7 @@
 #include "jal_xml_utils.hpp"
 #include "jal_error_callback_internal.h"
 #include "jal_alloc.h"
-#include "jalp_base64_internal.h"
+#include "jal_base64_internal.h"
 
 XERCES_CPP_NAMESPACE_USE
 
@@ -150,7 +150,7 @@ enum jal_status create_base64_element(DOMDocument *doc,
 	char *base64_val = NULL;
 	XMLCh *xml_base64_val = NULL;
 
-	base64_val = jalp_base64_enc(buffer, buf_len);
+	base64_val = jal_base64_enc(buffer, buf_len);
 	if (!base64_val) {
 		// this should never actually happen since the input is
 		// non-zero in length.
@@ -302,7 +302,7 @@ out:
 	return ret;
 }
 
-enum jal_status jalp_create_audit_transforms_elem(DOMDocument *doc, DOMElement **new_elem)
+enum jal_status jal_create_audit_transforms_elem(DOMDocument *doc, DOMElement **new_elem)
 {
 	if (!new_elem || *new_elem || !doc) {
 		return JAL_E_XML_CONVERSION;

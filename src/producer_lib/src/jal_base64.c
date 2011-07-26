@@ -1,5 +1,5 @@
 /*
- * @file jalop_base64.c
+ * @file jal_base64.c
  * Defines base64 encoding function.
  *
  * @section LICENSE
@@ -36,11 +36,11 @@
 #include <jalop/jal_status.h>
 
 #include "jal_alloc.h"
-#include "jalp_base64_internal.h"
+#include "jal_base64_internal.h"
 #include "jal_error_callback_internal.h"
 
 
-char *jalp_base64_enc(const unsigned char *input, int length)
+char *jal_base64_enc(const unsigned char *input, int length)
 {
 	// Openssl runtime allocates memory that needs to be freed with
 	// a call to CRYPTO_cleanup_all_ex_data() before ending the program.

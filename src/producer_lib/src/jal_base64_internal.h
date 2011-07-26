@@ -1,5 +1,5 @@
 /**
- * @file jalop_base64.c
+ * @file jal_base64.c
  * Defines base64 encoding function.
  *
  * @section LICENSE
@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALP_BASE64_INTERNAL_H_
-#define _JALP_BASE64_INTERNAL_H_
+#ifndef _JAL_BASE64_INTERNAL_H_
+#define _JAL_BASE64_INTERNAL_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +37,7 @@ extern "C" {
  * Base 64 encodes.
  * If \p input is encoded with no issues, return a char * buffer with the
  * encoded data.  If there were errors encoding data, NULL is returned.  If
- * there were errors allocating memory jalp_error_handler() is called.
+ * there were errors allocating memory jal_error_handler() is called.
  *
  * @param[in] input The input to encode.
  * @param[in] length The length of input, not counting the \0 at the end of
@@ -47,11 +47,11 @@ extern "C" {
  *			If \p input is NULL or length is less than or equal to 0,
  *			then NULL will be returned.
  */
-char *jalp_base64_enc(const unsigned char *input, int length);
+char *jal_base64_enc(const unsigned char *input, int length);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //_JALP_BASE64_INTERNAL_H_
+#endif //_JAL_BASE64_INTERNAL_H_
 

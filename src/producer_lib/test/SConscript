@@ -22,7 +22,7 @@ connectionObj = env.SharedObject(os.path.join('..', 'src', 'jalp_connection.c'))
 fileInfoObj = env.SharedObject(os.path.join('..', 'src', 'jalp_file_info.c'));
 logSeverityObj = env.SharedObject(os.path.join('..', 'src', 'jalp_log_severity.c'))
 jalopInitObj = env.SharedObject(os.path.join('..','src', 'jalp_init.cpp'))
-base64Obj = env.SharedObject(os.path.join('..','src', 'jalp_base64.c'))
+base64Obj = env.SharedObject(os.path.join('..','src', 'jal_base64.c'))
 xmlUtilsObj = env.SharedObject(os.path.join('..', 'src', 'jal_xml_utils.cpp'));
 logMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'));
 appMetaObj = env.SharedObject(os.path.join('..', 'src', 'jalp_app_metadata.c'));
@@ -67,7 +67,7 @@ tests.append(env.TestDeptTest('test_jalp_journal_metadata.c',
 	other_sources=[transformObj, fileInfoObj, contentTypeObj, paramObj, lib_common, base64Obj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_init.cpp',
 	other_sources=[lib_common])[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jalp_base64.c',
+tests.append(testEnv.TestDeptTest('test_jal_base64.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity_xml.cpp',
 	other_sources=[paramObj, logSeverityObj, jalopInitObj, test_utils, lib_common])[0].abspath)

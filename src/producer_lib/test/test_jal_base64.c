@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jalp_base64_enc.
+ * @file This file contains tests for jal_base64_enc.
  *
  * @section LICENSE
  *
@@ -28,28 +28,28 @@
 
 #include <test-dept.h>
 #include <stdlib.h>
-#include "jalp_base64_internal.h"
+#include "jal_base64_internal.h"
 
-void test_jalp_base64_enc_null_input()
+void test_jal_base64_enc_null_input()
 {
-	char *inval = jalp_base64_enc((unsigned char *)NULL, 10);
+	char *inval = jal_base64_enc((unsigned char *)NULL, 10);
 	assert_equals((char *)NULL, inval);
 }
 
-void test_jalp_base64_enc_bad_lengths()
+void test_jal_base64_enc_bad_lengths()
 {
-	char *inval = jalp_base64_enc((unsigned char *)"inval", 0);
+	char *inval = jal_base64_enc((unsigned char *)"inval", 0);
 	assert_equals((char *)NULL, inval);
 
-	inval = jalp_base64_enc((unsigned char *)"inval", -200);
+	inval = jal_base64_enc((unsigned char *)"inval", -200);
 	assert_equals((char *)NULL, inval);
 }
 
-void test_jalp_base64_enc_encodes()
+void test_jal_base64_enc_encodes()
 {
 	unsigned char bytes[4] = {(unsigned char)'a', (unsigned char)'s',
 				(unsigned char)'d', (unsigned char)'f'};
-	char *valid = jalp_base64_enc(bytes, 4);
+	char *valid = jal_base64_enc(bytes, 4);
 	assert_string_equals(valid, "YXNkZg==");
 	free(valid);
 }
