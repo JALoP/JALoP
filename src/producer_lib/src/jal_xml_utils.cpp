@@ -45,7 +45,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 #include "jal_error_callback_internal.h"
 #include "jal_alloc.h"
 #include "jalp_base64_internal.h"

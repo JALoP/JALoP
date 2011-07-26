@@ -41,7 +41,7 @@
 #include "jalp_transform_xml.hpp"
 #include "jal_asprintf_internal.h"
 #include "jalp_base64_internal.h"
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 
 XERCES_CPP_NAMESPACE_USE
 static const XMLCh JALP_XML_AES256_URI[] = {

@@ -34,7 +34,7 @@
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/dom/DOMDocument.hpp>
 
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 #include "jalp_app_metadata_xml.hpp"
 #include "jalp_digest_internal.h"
 #include "jalp_send_helper_internal.h"

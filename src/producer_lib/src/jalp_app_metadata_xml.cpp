@@ -34,7 +34,7 @@
 #include <jalop/jal_status.h>
 #include <jalop/jal_namespaces.h>
 #include "jalp_app_metadata_xml.hpp"
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 #include "jal_asprintf_internal.h"
 #include "jalp_syslog_metadata_xml.hpp"
 #include "jalp_logger_metadata_xml.hpp"

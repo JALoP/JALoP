@@ -28,7 +28,7 @@
  */
 #include "jalp_digest_audit_xml.h"
 #include "jal_asprintf_internal.h"
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 #include <xercesc/dom/DOMDocument.hpp>
 #include <xercesc/dom/DOMImplementation.hpp>
 #include <xercesc/dom/DOMImplementationRegistry.hpp>

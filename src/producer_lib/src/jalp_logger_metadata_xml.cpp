@@ -42,7 +42,7 @@
 #include "jalp_structured_data_xml.hpp"
 #include "jalp_stack_frame_xml.hpp"
 #include "jalp_logger_metadata_xml.hpp"
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 #include "jal_asprintf_internal.h"
 #include "jal_alloc.h"
 

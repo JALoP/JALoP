@@ -41,7 +41,7 @@
 #include "jalp_context_internal.h"
 #include "jalp_structured_data_xml.hpp"
 #include "jalp_syslog_metadata_xml.hpp"
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 
 XERCES_CPP_NAMESPACE_USE
 static const XMLCh JALP_XML_SYSLOG[] = {

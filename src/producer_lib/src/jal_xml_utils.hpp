@@ -1,5 +1,5 @@
 /**
- * @file jalp_xml_utils.hpp This file defines helper fucntions for dealing with
+ * @file jal_xml_utils.hpp This file defines helper fucntions for dealing with
  * creating/reading XML data.
  *
  * @section LICENSE

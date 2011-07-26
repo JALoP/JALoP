@@ -1,5 +1,5 @@
 /**
- * @file test_jalp_xml_utils.cpp This file contains unit tests for a
+ * @file test_jal_xml_utils.cpp This file contains unit tests for a
  * variety of utilities dealing with generating XML data.
  *
  * @section LICENSE
@@ -45,7 +45,7 @@ extern "C" {
 
 #include "jal_alloc.h"
 #include "xml_test_utils.hpp"
-#include "jalp_xml_utils.hpp"
+#include "jal_xml_utils.hpp"
 #include "jalp_base64_internal.h"
 #include "jal_alloc.h"
 
