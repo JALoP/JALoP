@@ -144,6 +144,7 @@ enum jal_status jalp_app_metadata_to_elem(struct jalp_app_metadata *app_meta,
 	jal_asprintf(&ncname_jid, "%s%s", UUIDDASH, str_jid);
 	xml_jid = XMLString::transcode(ncname_jid);
 	app_meta_elem->setAttribute(JID, xml_jid);
+	app_meta_elem->setIdAttribute(JID, true);
 
 	free(ncname_jid);
 	XMLString::release(&namespace_uri);
