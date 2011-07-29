@@ -72,7 +72,7 @@ enum jal_status jalp_context_load_pem_cert(jalp_context *ctx,
 	X509 *cert;
 
 	if (ctx->signing_cert) {
-		free(ctx->signing_cert);
+		X509_free(ctx->signing_cert);
 	}
 	fp = fopen(certfile, "r");
 	if (!fp) {

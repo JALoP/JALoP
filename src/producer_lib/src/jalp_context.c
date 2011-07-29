@@ -72,8 +72,8 @@ void jalp_context_destroy(jalp_context **ctx)
 	free((*ctx)->path);
 	free((*ctx)->hostname);
 	free((*ctx)->app_name);
-	free((*ctx)->signing_key);
-	free((*ctx)->signing_cert);
+	RSA_free((*ctx)->signing_key);
+	X509_free((*ctx)->signing_cert);
 	free((*ctx)->schema_root);
 	free(*ctx);
 	*ctx = NULL;
