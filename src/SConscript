@@ -19,6 +19,6 @@ if env.GetOption('clean'):
 
 test_utils = env.SConscript('test_utils/SConscript', exports='env')
 lib_common = env.SConscript('lib_common/SConscript', exports='env all_tests test_utils')
-producer_lib = env.SConscript('producer_lib/SConscript', exports='env all_tests lib_common')
+producer_lib = env.SConscript('producer_lib/SConscript', exports='env all_tests test_utils lib_common')
 for d in subdirs:
-	env.SConscript('%s/SConscript' % d, exports='env all_tests lib_common producer_lib test_utils')
+	env.SConscript('%s/SConscript' % d, exports='env all_tests test_utils lib_common producer_lib')

@@ -4,18 +4,17 @@ from Utils import recursive_glob
 Import('*')
 
 utilsEnv = env.Clone()
-utilsEnv.Prepend(CPPPATH='#src/producer_lib/include:#src/lib_common/include:.')
 
-utilsEnv.Append(CCFLAGS=utilsEnv['libconfig_cflags'])
-utilsEnv.Append(LINKFLAGS=utilsEnv['libconfig_ldflags'])
+utilsEnv.MergeFlags(utilsEnv['libconfig_cflags'])
+utilsEnv.MergeFlags(utilsEnv['libconfig_ldflags'])
 
 
 subdirs = """
-	    jal_test
-	    harness
+	    jalp_test
+	    testserver
 	  """.split()
 
-jal_test = SConscript('jalp_tests/SConscript', exports={'env':utilsEnv, 'lib_common':lib_common, 'producer_lib':producer_lib})
-harness = env.SConscript('harness/SConscript', exports='env all_tests lib_common producer_lib')
+jalp_test = utilsEnv.SConscript('jalp_test/SConscript', exports='utilsEnv all_tests lib_common producer_lib')
+testserver = utilsEnv.SConscript('testserver/SConscript', exports='utilsEnv all_tests lib_common')
 
-Return("jal_test")
+Return("jalp_test")

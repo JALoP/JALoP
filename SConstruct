@@ -100,6 +100,7 @@ if platform.system() == 'SunOS':
 	debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/lib -Wl,-R,/usr/local/lib -Wl,-R,/usr/local/ssl/lib'.split()})
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
+	debug_env.MergeFlags('-lsocket')
 
 # Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
 if debug_env['CC'] == 'gcc':
