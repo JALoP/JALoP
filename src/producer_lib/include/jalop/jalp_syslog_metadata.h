@@ -69,6 +69,10 @@ struct jalp_syslog_metadata {
 	 */
 	char *message_id;
 	/**
+	 * The (optional) log entry.
+	 */
+	char *entry;
+	/**
 	 * A linked list of structured data elements. If NULL, no elements are
 	 * added.
 	 */

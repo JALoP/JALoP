@@ -62,7 +62,7 @@ static const XMLCh JID[] = {
 static const char *UUIDDASH = "UUID-";
 
 enum jal_status jalp_app_metadata_to_elem(struct jalp_app_metadata *app_meta,
-		const struct jalp_context_t *ctx, const char* entry, 
+		const struct jalp_context_t *ctx,
 		DOMDocument *doc, DOMElement **elem)
 {
 	if(!app_meta || !ctx || !doc || !elem || *elem) {
@@ -97,7 +97,7 @@ enum jal_status jalp_app_metadata_to_elem(struct jalp_app_metadata *app_meta,
 	switch(app_meta->type) {
 
 		case(JALP_METADATA_SYSLOG):
-			ret = jalp_syslog_metadata_to_elem(app_meta->sys, ctx, entry, doc, &syslog_elem);
+			ret = jalp_syslog_metadata_to_elem(app_meta->sys, ctx, doc, &syslog_elem);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}

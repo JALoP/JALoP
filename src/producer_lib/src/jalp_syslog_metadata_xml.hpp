@@ -46,7 +46,6 @@ XERCES_CPP_NAMESPACE_USE
  *
  * @param[in] syslogmeta The jalp_syslog_metadata struct to convert.
  * @param[in] ctx The JALP context.
- * @param[in] entry The log entry.
  * @param[in] doc The DOMDocument to create the DOMElement from.
  * Maintains the same namespace.
  * @param[out] new_elem DOMElement that holds the newly created element.
@@ -55,7 +54,6 @@ XERCES_CPP_NAMESPACE_USE
  */
 enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *syslog,
 					const struct jalp_context_t *ctx,
-					const char *entry,
 					DOMDocument *doc,
 					DOMElement **new_elem);
 

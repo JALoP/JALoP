@@ -43,16 +43,13 @@ XERCES_CPP_NAMESPACE_USE
  *
  * @param[in] app_meta The struct to convert
  * @param[in] ctx The jalp_context
- * @param[in] entry The log entry (may be NULL). If this application metadata
- *            contains a syslog data, the entry will get added to the syslog
- *            metadata, otherwise it is ignored.
  * @param[in] doc A pointer to the DOMDocument to use in creating the element
  * @param[out] elem A pointer to hold the created element. Should point to NULL.
  * @return JAL_OK on success, JAL_E_XML_CONVERSION on failure.
  * will also return JAL_E_INVAL_APP_METADATA if given an invalid jalp_app_metadata as input.
 */
 enum jal_status jalp_app_metadata_to_elem(struct jalp_app_metadata *app_meta,
-		const struct jalp_context_t *ctx, const char *entry, 
+		const struct jalp_context_t *ctx,
 		DOMDocument *doc, DOMElement **elem);
 
 #endif //_JALP_APP_METADATA_XML_HPP_

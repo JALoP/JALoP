@@ -63,7 +63,6 @@ XERCES_CPP_NAMESPACE_USE
 #define APP_META_TAG "ApplicationMetadata"
 #define EVENT_ID_TAG "EventID"
 #define FOO_TAG "foo:tag"
-#define ENTRY "some log message"
 #define JID_ATTR_NAME "JID"
 #define JID_PREFIX "UUID-"
 
@@ -125,24 +124,24 @@ extern "C" void test_app_meta_to_elem_fails_with_invalid_input()
 	DOMElement *new_elem = NULL;
 	jal_status ret;
 
-	ret = jalp_app_metadata_to_elem(NULL, ctx, ENTRY, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(NULL, ctx, doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(NULL, new_elem);
 
-	ret = jalp_app_metadata_to_elem(app_meta, NULL, ENTRY, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, NULL, doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(NULL, new_elem);
 
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, NULL, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(NULL, new_elem);
 
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, NULL);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(NULL, new_elem);
 
 	DOMElement *bad_elem = (DOMElement*) 0xbadf00d;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, &bad_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &bad_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(NULL, new_elem);
 }
@@ -151,12 +150,12 @@ extern "C" void test_app_meta_to_elem_fails_with_illegal_app_meta()
 	DOMElement *new_elem = NULL;
 	jal_status ret;
 	app_meta->type = (enum jalp_metadata_type) (JALP_METADATA_NONE - 1);
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_equals(JAL_E_INVAL_APP_METADATA, ret);
 	assert_equals(NULL, new_elem);
 
 	app_meta->type = (enum jalp_metadata_type) (JALP_METADATA_CUSTOM + 1);
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_equals(JAL_E_INVAL_APP_METADATA, ret);
 	assert_equals(NULL, new_elem);
 }
@@ -167,7 +166,7 @@ extern "C" void test_app_metadata_to_elem_works_for_custom()
 	enum jal_status ret;
 	app_meta->type = JALP_METADATA_CUSTOM;
 	app_meta->custom = jal_strdup(CUSTOM_XML);
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -206,7 +205,7 @@ extern "C" void test_app_metadata_to_elem_fails_with_bad_xml_for_custom()
 	enum jal_status ret;
 	app_meta->type = JALP_METADATA_CUSTOM;
 	app_meta->custom = jal_strdup(BAD_CUSTOM_XML);
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals(NULL, new_elem);
 
@@ -215,47 +214,13 @@ extern "C" void test_app_metadata_to_elem_fails_with_bad_xml_for_custom()
 }
 
 
-extern "C" void test_app_metadata_to_elem_works_with_default_entry()
-{
-	DOMElement *new_elem = NULL;
-	enum jal_status ret;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
-	assert_equals(JAL_OK, ret);
-	assert_not_equals(NULL, new_elem);
-
-	assert_tag_equals(APP_META_TAG, new_elem);
-	doc->appendChild(new_elem);
-	assert_true(validate(doc, __FUNCTION__, schemas));
-
-	char *jid = XMLString::transcode(new_elem->getAttribute(xml_jid_attr_name));
-	assert_true(0 == strncmp(JID_PREFIX,jid, strlen(JID_PREFIX)));
-	char *uuidstr = jid + strlen(JID_PREFIX);
-	uuid_t uuid;
-	assert_true(0 == uuid_parse(uuidstr, uuid));
-	XMLString::release(&jid);
-
-	DOMElement *event_id = dynamic_cast<DOMElement*>(new_elem->getFirstChild());
-	assert_not_equals(NULL, event_id);
-	assert_tag_equals(EVENT_ID_TAG, event_id);
-	assert_content_equals(EVENT_ID, event_id);
-
-	DOMElement *custom = dynamic_cast<DOMElement*>(event_id->getNextSibling());
-	assert_not_equals(NULL, custom);
-	assert_tag_equals(CUSTOM_TAG, custom);
-
-	DOMElement *should_be_null = dynamic_cast<DOMElement*>(custom->getFirstChild());
-	assert_pointer_equals((void*)NULL, should_be_null);
-
-	should_be_null = dynamic_cast<DOMElement*>(custom->getNextSibling());
-	assert_pointer_equals((void*)NULL, should_be_null);
-}
 extern "C" void test_app_metadata_to_elem_works_without_event_id()
 {
 	DOMElement *new_elem = NULL;
 	enum jal_status ret;
 	free(app_meta->event_id);
 	app_meta->event_id = NULL;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -287,7 +252,7 @@ extern "C" void test_app_metadata_to_elem_fails_with_bad_syslog()
 	app_meta->type = JALP_METADATA_SYSLOG;
 	syslog_meta->facility = INT8_MAX; // this should be an illegal facility`
 	app_meta->sys = syslog_meta;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_pointer_equals((void*) NULL, new_elem);
 
@@ -298,7 +263,7 @@ extern "C" void test_app_metadata_to_elem_works_for_syslog()
 	enum jal_status ret;
 	app_meta->type = JALP_METADATA_SYSLOG;
 	app_meta->sys = syslog_meta;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -321,45 +286,6 @@ extern "C" void test_app_metadata_to_elem_works_for_syslog()
 	DOMElement *syslog = dynamic_cast<DOMElement*>(event_id->getNextSibling());
 	assert_not_equals(NULL, syslog);
 	assert_tag_equals(SYSLOG_TAG, syslog);
-
-	DOMElement *should_be_null = dynamic_cast<DOMElement*>(syslog->getNextSibling());
-	assert_pointer_equals((void*)NULL, should_be_null);
-
-	app_meta->sys = NULL;
-}
-extern "C" void test_app_metadata_to_elem_works_for_syslog_with_non_null_entry()
-{
-	DOMElement *new_elem = NULL;
-	enum jal_status ret;
-	app_meta->type = JALP_METADATA_SYSLOG;
-	app_meta->sys = syslog_meta;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, &new_elem);
-	assert_equals(JAL_OK, ret);
-	assert_not_equals(NULL, new_elem);
-
-	assert_tag_equals(APP_META_TAG, new_elem);
-	doc->appendChild(new_elem);
-	assert_true(validate(doc, __FUNCTION__, schemas));
-
-	char *jid = XMLString::transcode(new_elem->getAttribute(xml_jid_attr_name));
-	assert_true(0 == strncmp(JID_PREFIX,jid, strlen(JID_PREFIX)));
-	char *uuidstr = jid + strlen(JID_PREFIX);
-	uuid_t uuid;
-	assert_true(0 == uuid_parse(uuidstr, uuid));
-	XMLString::release(&jid);
-
-	DOMElement *event_id = dynamic_cast<DOMElement*>(new_elem->getFirstChild());
-	assert_not_equals(NULL, event_id);
-	assert_tag_equals(EVENT_ID_TAG, event_id);
-	assert_content_equals(EVENT_ID, event_id);
-
-	DOMElement *syslog = dynamic_cast<DOMElement*>(event_id->getNextSibling());
-	assert_not_equals(NULL, syslog);
-	assert_tag_equals(SYSLOG_TAG, syslog);
-
-	DOMElement *entry = dynamic_cast<DOMElement*>(syslog->getFirstChild());
-	assert_not_equals(NULL, entry);
-	assert_content_equals(ENTRY, entry);
 
 	DOMElement *should_be_null = dynamic_cast<DOMElement*>(syslog->getNextSibling());
 	assert_pointer_equals((void*)NULL, should_be_null);
@@ -372,42 +298,7 @@ extern "C" void test_app_metadata_to_elem_works_for_logger()
 	enum jal_status ret;
 	app_meta->type = JALP_METADATA_LOGGER;
 	app_meta->log = logger_meta;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
-	assert_equals(JAL_OK, ret);
-	assert_not_equals(NULL, new_elem);
-
-	assert_tag_equals(APP_META_TAG, new_elem);
-	doc->appendChild(new_elem);
-	assert_true(validate(doc, __FUNCTION__, schemas));
-
-	char *jid = XMLString::transcode(new_elem->getAttribute(xml_jid_attr_name));
-	assert_true(0 == strncmp(JID_PREFIX,jid, strlen(JID_PREFIX)));
-	char *uuidstr = jid + strlen(JID_PREFIX);
-	uuid_t uuid;
-	assert_true(0 == uuid_parse(uuidstr, uuid));
-	XMLString::release(&jid);
-
-	DOMElement *event_id = dynamic_cast<DOMElement*>(new_elem->getFirstChild());
-	assert_not_equals(NULL, event_id);
-	assert_tag_equals(EVENT_ID_TAG, event_id);
-	assert_content_equals(EVENT_ID, event_id);
-
-	DOMElement *logger = dynamic_cast<DOMElement*>(event_id->getNextSibling());
-	assert_not_equals(NULL, logger);
-	assert_tag_equals(LOGGER_TAG, logger);
-
-	DOMElement *should_be_null = dynamic_cast<DOMElement*>(logger->getNextSibling());
-	assert_pointer_equals((void*)NULL, should_be_null);
-
-	app_meta->sys = NULL;
-}
-extern "C" void test_app_metadata_to_elem_works_for_logger_and_ignores_entry()
-{
-	DOMElement *new_elem = NULL;
-	enum jal_status ret;
-	app_meta->type = JALP_METADATA_LOGGER;
-	app_meta->log = logger_meta;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -441,44 +332,7 @@ extern "C" void test_app_metadata_to_elem_works_with_journal_meta()
 	DOMElement *new_elem = NULL;
 	enum jal_status ret;
 	app_meta->file_metadata = journal_meta;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &new_elem);
-	app_meta->file_metadata = NULL;
-	assert_equals(JAL_OK, ret);
-	assert_not_equals(NULL, new_elem);
-
-	assert_tag_equals(APP_META_TAG, new_elem);
-	doc->appendChild(new_elem);
-	assert_true(validate(doc, __FUNCTION__, schemas));
-
-	char *jid = XMLString::transcode(new_elem->getAttribute(xml_jid_attr_name));
-	assert_true(0 == strncmp(JID_PREFIX,jid, strlen(JID_PREFIX)));
-	char *uuidstr = jid + strlen(JID_PREFIX);
-	uuid_t uuid;
-	assert_true(0 == uuid_parse(uuidstr, uuid));
-	XMLString::release(&jid);
-
-	DOMElement *event_id = dynamic_cast<DOMElement*>(new_elem->getFirstChild());
-	assert_not_equals(NULL, event_id);
-	assert_tag_equals(EVENT_ID_TAG, event_id);
-	assert_content_equals(EVENT_ID, event_id);
-
-	DOMElement *custom = dynamic_cast<DOMElement*>(event_id->getNextSibling());
-	assert_not_equals(NULL, custom);
-	assert_tag_equals(CUSTOM_TAG, custom);
-
-	DOMElement *journal = dynamic_cast<DOMElement*>(custom->getNextSibling());
-	assert_not_equals(NULL, journal);
-	assert_tag_equals(JOURNAL_TAG, journal);
-
-	DOMElement *should_be_null = dynamic_cast<DOMElement*>(journal->getNextSibling());
-	assert_pointer_equals((void*)NULL, should_be_null);
-}
-extern "C" void test_app_metadata_to_elem_ignores_entry_with_journal_meta()
-{
-	DOMElement *new_elem = NULL;
-	enum jal_status ret;
-	app_meta->file_metadata = journal_meta;
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	app_meta->file_metadata = NULL;
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
@@ -518,7 +372,7 @@ extern "C" void test_app_metadata_to_elem_fails_with_invalid_journal_meta()
 	free(journal_meta->file_info->filename);
 	journal_meta->file_info->filename = NULL;
 
-	ret = jalp_app_metadata_to_elem(app_meta, ctx, ENTRY, doc, &new_elem);
+	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	app_meta->file_metadata = NULL;
 	assert_not_equals(JAL_OK, ret);
 	assert_equals(NULL, new_elem);

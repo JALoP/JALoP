@@ -36,6 +36,7 @@ void test_jalp_syslog_metadata_create_returns_struct_with_zeroed_fields()
 	assert_not_equals(NULL, ptr);
 	assert_equals((void*) NULL, ptr->timestamp);
 	assert_equals((void*) NULL, ptr->message_id);
+	assert_equals((void*) NULL, ptr->entry);
 	assert_equals((void*) NULL, ptr->sd_head);
 	assert_equals(-1, ptr->facility);
 	assert_equals(-1, ptr->severity);

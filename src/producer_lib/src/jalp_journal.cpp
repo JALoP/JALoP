@@ -92,7 +92,7 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 	if (app_meta) {
 		impl = DOMImplementationRegistry::getDOMImplementation(JALP_XML_CORE);
 		doc = impl->createDocument();
-		status = jalp_app_metadata_to_elem(app_meta, ctx, NULL, doc, &app_meta_elem);
+		status = jalp_app_metadata_to_elem(app_meta, ctx, doc, &app_meta_elem);
 		doc->appendChild(app_meta_elem);
 		DOMElement *last_element = app_meta_elem->getLastElementChild();
 		if (status != JAL_OK) {

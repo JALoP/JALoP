@@ -66,7 +66,6 @@ static const XMLCh JALP_XML_MESSAGE_ID[] = {
 
 enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *syslog,
 					const struct jalp_context_t *ctx,
-					const char *entry,
 					DOMDocument *doc,
 					DOMElement **new_elem)
 {
@@ -139,10 +138,10 @@ enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *
 		syslog_element->setAttribute(JALP_XML_MESSAGE_ID, xml_message_id);
 		XMLString::release(&xml_message_id);
 	}
-	if (entry) {
+	if (syslog->entry) {
 		DOMElement *tmp = doc->createElementNS(namespace_uri, JALP_XML_ENTRY);
 		syslog_element->appendChild(tmp);
-		XMLCh *xml_entry = XMLString::transcode(entry);
+		XMLCh *xml_entry = XMLString::transcode(syslog->entry);
 		tmp->setTextContent(xml_entry);
 		XMLString::release(&xml_entry);
 	}

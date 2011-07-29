@@ -50,6 +50,7 @@ void jalp_syslog_metadata_destroy(struct jalp_syslog_metadata **syslog_meta)
 
 	free((*syslog_meta)->timestamp);
 	free((*syslog_meta)->message_id);
+	free((*syslog_meta)->entry);
 	jalp_structured_data_destroy(&(*syslog_meta)->sd_head);
 
 	free(*syslog_meta);
