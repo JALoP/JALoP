@@ -1,0 +1,21 @@
+import os
+from Utils import recursive_glob
+
+Import('*')
+
+utilsEnv = env.Clone()
+utilsEnv.Prepend(CPPPATH='#src/producer_lib/include:#src/lib_common/include:.')
+
+utilsEnv.Append(CCFLAGS=utilsEnv['libconfig_cflags'])
+utilsEnv.Append(LINKFLAGS=utilsEnv['libconfig_ldflags'])
+
+
+subdirs = """
+	    jal_test
+	    harness
+	  """.split()
+
+jal_test = SConscript('jalp_tests/SConscript', exports={'env':utilsEnv, 'lib_common':lib_common, 'producer_lib':producer_lib})
+harness = env.SConscript('harness/SConscript', exports='env all_tests lib_common producer_lib')
+
+Return("jal_test")

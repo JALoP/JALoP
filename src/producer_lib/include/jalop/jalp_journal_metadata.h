@@ -83,11 +83,11 @@ void jalp_transform_other_info_destroy(struct jalp_transform_other_info **other_
  */
 enum jalp_aes_key_size {
 	/** Indicates a 128 bit (16 byte) key */
-	JALP_AES128,
+	JALP_AES128 = 16,
 	/** Indicates a 192 bit (24 byte) key */
-	JALP_AES192,
+	JALP_AES192 = 24,
 	/** Indicates a 256 bit (32 byte) key */
-	JALP_AES256,
+	JALP_AES256 = 32,
 };
 
 #define JALP_TRANSFORM_AES_IVSIZE (128 / 8)

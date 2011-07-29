@@ -1,0 +1,13 @@
+Import('*')
+
+jalp_testEnv = utilsEnv.Clone()
+
+sources = jalp_testEnv.Glob("*.c")
+
+jalp_testEnv.Prepend(CPPPATH='#src/producer_lib/include:#src/lib_common/include:.')
+jalp_testEnv.Append(CCFLAGS=' -DSCHEMAS_ROOT=\\"' + jalp_testEnv['SOURCE_ROOT'] + '\\"')
+
+jalp_test = jalp_testEnv.Program(target='jalp_test', source=[sources, lib_common, producer_lib])
+jalp_testEnv.Default(jalp_test)
+
+Return("jalp_test")
