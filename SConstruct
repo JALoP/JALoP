@@ -80,7 +80,7 @@ if platform.system() == 'SunOS':
 if int(major) >= 4:
 	debug_env.Append(CCFLAGS=' -fstack-protector --param=ssp-buffer-size=4')
 
-if not GetOption("clean"):
+if not (GetOption("clean") or GetOption("help")):
 	conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
 						     'CheckPKG': ConfigHelpers.CheckPKG,
 						     'CheckPKGAtLeastVersion': ConfigHelpers.CheckPKGAtLeastVersion,
