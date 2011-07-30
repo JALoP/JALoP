@@ -1,157 +1,260 @@
+/**
+ * @file jaldb_context.h This file defines the DB context management functions.
+ *
+ * @section LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
 #ifndef _JALDB_CONTEXT_H_
 #define _JALDB_CONTEXT_H_
 
-typedef struct jaldb_context_t jaldb_context;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <jalop/jal_status.h>
+#include "jaldb_context.hpp"
+
 /**
- * Creates an empty jaldb_context_t object.
- */
-struct jaldb_context_t *jaldb_ctx_create();
-/**
- * Initialize a jaldb_context object.
- * @param [in] ctx The context to initialize
- * @param [in] db_root The path to the root of the DB Layer's files. If
- * db_root is NULL, the default is: /var/lib/jalop/db.
- * @param schemas_root The path to the directory containing JALoP related
- * schemas. If schemas_root is NULL, the default is: /usr/share/jalop/schemas
- */
-enum jal_status jaldb_init(struct jaldb_context_t *ctx, const char *db_root, const char *schemas_root);
-/**
- * Destroy a DB context.
- * Release all resources associated with this context.
- * This should remove any temporary databases that were created
+ * Creates an empty DB context.
  *
- * @param ctx[in,out] the context to destroy. *ctx will be set to NULL.
- */
-void jaldb_destroy(struct jaldb_context_t **ctx);
-
-/**
- * Insert an audit record.
- * @param ctx[in] the context
- * @param source [in] the source of the record (if NULL, this is set to the
- * @param audit_buf [in] A buffer containing the audit data
- * @param audit_len [in] The size (in bytes) of audit data
- * @param sys_meta_buf [in] A buffer containing the system metadata.
- * @param sys_meta_len [in] The size (in bytes) of sys_meta_buf
- * @param app_meta_buf [in] A buffer containing the application metadata.
- * @param app_meta_len [in] The size (in bytes) of app_meta_buf
- */
-enum jal_status jaldb_insert_audit(struct jaldb_context_t **ctx,
-		const char *source,
-		const uint8_t *audit_buf, const size_t audit_len,
-		const uint8_t *sys_meta_buf, const size_t sys_meta_len,
-		const uint8_t *app_meta_buf, const size_t app_meta_buf_len);
-
-/**
- * Insert an audit record.
- * @param ctx[in] the context
- * @param db_name[in] A name to associate with the containers.
- * @param audit_buf [in] A buffer containing the audit data
- * @param audit_len [in] The size (in bytes) of audit data
- * @param sys_meta_buf [in] A buffer containing the system metadata.
- * @param sys_meta_len [in] The size (in bytes) of sys_meta_buf
- * @param app_meta_buf [in] A buffer containing the application metadata.
- * @param app_meta_len [in] The size (in bytes) of app_meta_buf
- */
-enum jal_status jaldb_insert_audit_into_temp(struct jaldb_context_t **ctx,
-		char *db_name,
-		const uint8_t *audit_buf, const size_t audit_len,
-		const uint8_t *sys_meta_buf, const size_t sys_meta_len,
-		const uint8_t *app_meta_buf, const size_t app_meta_buf_len);
-
-/**
- * Insert a log record
- * @param ctx[in] the context
- * @param source [in] the source of the record (if NULL, this is set to the
- * string 'localhost')
- * @param log_buf [in] A buffer containing the audit data
- * @param log_len [in] The size (in bytes) of audit data
- * @param sys_meta_buf [in] A buffer containing the system metadata.
- * @param sys_meta_len [in] The size (in bytes) of sys_meta_buf
- * @param app_meta_buf [in] A buffer containing the application metadata.
- * @param app_meta_len [in] The size (in bytes) of app_meta_buf
- */
-enum jal_status jaldb_insert_log(struct jaldb_context_t **ctx,
-		const char *source,
-		const uint8_t *log_buf, const size_t log_len,
-		const uint8_t *sys_meta_buf, const size_t sys_meta_len,
-		const uint8_t *app_meta_buf, const size_t app_meta_buf_len);
-
-/**
- * Create a file in the DB layer to store Journal data.
- * @param ctx[in] the context;
- * @param path[out] The path (relative to the db_root) of the new file.
- * @param fd[out] An open file for the new file. It is the caller's
- * responsibility to close the descriptor.
- */
-enum jal_status jaldb_create_journal(struct jaldb_context_t **ctx, char **path, int *fd);
-/**
- * Insert a journal record.
- * @param ctx[in] the context
- * @param source [in] the source of the record (if NULL, this is set to the
- * @param path[in] the path of the file that is journal data, this should be
- * obtained via a call to jaldb_create_journal.
- * @param sys_meta_buf [in] A buffer containing the system metadata.
- * @param sys_meta_len [in] The size (in bytes) of sys_meta_buf
- * @param app_meta_buf [in] A buffer containing the application metadata.
- * @param app_meta_len [in] The size (in bytes) of app_meta_buf
- */
-enum jal_status jaldb_insert_journal(struct jaldb_context_t **ctx,
-		const char *source, const char *path,
-		const uint8_t *sys_meta_buf, const size_t sys_meta_len,
-		const uint8_t *app_meta_buf, const size_t app_meta_buf_len);
-
-/**
- * Retrieve a journal record by serialID.
+ * @return The created empty DB context.
  *
- * @param ctx the context
- * @param sid The serial ID to retrieve
- * @param app_meta
- * @param app_meta_len
- * @param sys_meta
- * @param sys_meta_len
  */
-enum jal_status jaldb_get_journal(struct jaldb_context_t *ctx,
-		const char *sid,
-		char **path);
-		uint8_t **app_meta,
-		size_t *app_meta_len,
-		uint8_t **sys_meta,
-		size_t *sys_meta_len,
+jaldb_context *jaldb_create_context();
 
-enum jal_status jaldb_get_audit(struct jaldb_context_t *ctx,
-		const char *sid,
-		uint8_t **audit,
-		size_t *audit_len,
-		uint8_t **app_meta,
-		size_t *app_meta_len,
-		uint8_t **sys_meta,
-		size_t *sys_meta_len);
+/**
+ * Initializes a DB context.
+ * @param[in] ctx The context to initialize.
+ * @param[in] db_root The root path of the DB Layer's files. If db_root is
+ * NULL, then the default is /var/lib/jalop/db.
+ * @param[in] schemas_root The path to the directory containing JALoP related
+ * schemas. If schemas_root is NULL, then the default is
+ * /usr/share/jalop/schemas.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jal_status jaldb_init_context(
+	jaldb_context *ctx,
+	const char *db_root,
+	const char *schemas_root);
 
-enum jal_status jaldb_get_log(struct jaldb_context_t *ctx,
-		const char *sid,
-		uint8_t **audit,
-		size_t *audit_len,
-		uint8_t **app_meta,
-		size_t *app_meta_len,
-		uint8_t **sys_meta,
-		size_t *sys_meta_len);
+/**
+ * Destroys a DB context.
+ * Release all resources associated with this context. This should remove any
+ * temporary databases that were created.
+ *
+ * @param ctx[in,out] The context to destroy. *ctx will be set to NULL.
+ */
+void jaldb_destroy_context(jaldb_context **ctx);
+
+/**
+ * Inserts an audit record.
+ * @param[in] ctx The context.
+ * @param[in] source The source of the record. If NULL, then this is set to the
+ * string 'localhost'.
+ * @param[in] sys_meta_buf A buffer containing the system metadata.
+ * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
+ * @param[in] app_meta_buf A buffer containing the application metadata.
+ * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
+ * @param[in] audit_buf A buffer containing the audit data.
+ * @param[in] audit_len The size (in bytes) of audit_buf.
+ */
+enum jal_status jaldb_insert_audit_record(
+	jaldb_context *ctx,
+	const char *source,
+	const uint8_t *sys_meta_buf,
+	const size_t sys_meta_len,
+	const uint8_t *app_meta_buf,
+	const size_t app_meta_len,
+	const uint8_t *audit_buf,
+	const size_t audit_len);
+
+/**
+ * Inserts an audit record into a temporary container.
+ * @param[in] ctx The context.
+ * @param[in] db_name A name to associate with the container.
+ * @param[in] sys_meta_buf A buffer containing the system metadata.
+ * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
+ * @param[in] app_meta_buf A buffer containing the application metadata.
+ * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
+ * @param[in] audit_buf A buffer containing the audit data.
+ * @param[in] audit_len The size (in bytes) of audit_buf.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jal_status jaldb_insert_audit_record_into_temp(
+	jaldb_context *ctx,
+	char *db_name,
+	const uint8_t *sys_meta_buf,
+	const size_t sys_meta_len,
+	const uint8_t *app_meta_buf,
+	const size_t app_meta_buf_len,
+	const uint8_t *audit_buf,
+	const size_t audit_len);
+
+/**
+ * Inserts a log record.
+ * @param[in] ctx The context.
+ * @param[in] source The source of the record. If NULL, then this is set to the
+ * string 'localhost'.
+ * @param[in] sys_meta_buf A buffer containing the system metadata.
+ * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
+ * @param[in] app_meta_buf A buffer containing the application metadata.
+ * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
+ * @param[in] log_buf A buffer containing the audit data.
+ * @param[in] log_len The size (in bytes) of audit data.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jal_status jaldb_insert_log_record(
+	jaldb_context *ctx,
+	const char *source,
+	const uint8_t *sys_meta_buf,
+	const size_t sys_meta_len,
+	const uint8_t *app_meta_buf,
+	const size_t app_meta_buf_len,
+	const uint8_t *log_buf,
+	const size_t log_len);
+
+/**
+ * Creates a journal file.
+ * @param[in] ctx The context.
+ * @param[out] path The path (relative to the db_root) of the new file.
+ * @param[out] fd An open file descriptor for the new file. It is the caller's
+ * responsibility to close the file descriptor.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jal_status jaldb_create_journal_file(
+	jaldb_context *ctx,
+	char *path,
+	int *fd);
+
+/**
+ * Inserts a journal record.
+ * @param[in] ctx The context.
+ * @param[in] source The source of the record. If NULL, then this is set to the
+ * string 'localhost'.
+ * @param[in] path The path of the file that is journal data. This should be
+ * obtained via a call to jaldb_create_journal_file.
+ * @param[in] sys_meta_buf A buffer containing the system metadata.
+ * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
+ * @param[in] app_meta_buf A buffer containing the application metadata.
+ * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jal_status jaldb_insert_journal(
+	jaldb_context *ctx,
+	const char *source,
+	const char *path,
+	const uint8_t *sys_meta_buf,
+	const size_t sys_meta_len,
+	const uint8_t *app_meta_buf,
+	const size_t app_meta_buf_len);
+
+/**
+ * Retrieves an audit record by serial ID.
+ *
+ * @param[in] ctx The context.
+ * @param[in] sid The serial ID to retrieve.
+ * @param[out] sys_meta_buf A buffer containing the system metadata.
+ * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
+ * @param[in,out] app_meta_buf A buffer containing the application metadata.
+ * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
+ * @param[in,out] audit_buf A buffer containing the audit data.
+ * @param[in] audit_len The size (in bytes) of audit_buf.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jal_status jaldb_get_audit_record(
+	jaldb_context *ctx,
+	const char *sid,
+	uint8_t **sys_meta_buf,
+	size_t *sys_meta_len,
+	uint8_t **app_meta_buf,
+	size_t *app_meta_len,
+	uint8_t **audit_buf,
+	size_t *audit_len);
+
+/**
+ * Retrieves a log record by serial ID.
+ *
+ * @param[in] ctx The context.
+ * @param[in] sid The serial ID to retrieve.
+ * @param[out] sys_meta_buf A buffer containing the system metadata.
+ * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
+ * @param[in,out] app_meta_buf A buffer containing the application metadata.
+ * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
+ * @param[in,out] log_buf A buffer containing the log data.
+ * @param[in] log_len The size (in bytes) of log_buf.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jal_status jaldb_get_log_record(
+	jaldb_context *ctx,
+	const char *sid,
+	uint8_t **sys_meta_buf,
+	size_t *sys_meta_len,
+	uint8_t **app_meta_buf,
+	size_t *app_meta_len,
+	uint8_t **log_buf,
+	size_t *log_len);
+
+/**
+ * Retrieves a journal record by serial ID.
+ *
+ * @param[in] ctx The context.
+ * @param[in] sid The serial ID to retrieve.
+ * @param[in] path The path of the file that is journal data.
+ * @param[in,out] sys_meta_buf A buffer containing the system metadata.
+ * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
+ * @param[in,out] app_meta_buf A buffer containing the application metadata.
+ * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails
+ */
+enum jal_status jaldb_get_journal_record(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *path,
+	uint8_t **sys_meta_buf,
+	size_t *sys_meta_len,
+	uint8_t **app_meta_buf,
+	size_t *app_meta_len);
 
 #ifdef __cplusplus
-
-struct jaldb_context {
-	XmlManager *manager; //<! The manager associated with the context
-	char *audit_container; //<! The path to container for audit XML
-	char *audit_app_meta_container; //<! The path to the container for audit application metadata
-	char *audit_sys_meta_container; //<! The path for the audit system metadata
-
-	char *journal_root; //<! The path for to root of the journal records
-	char *journal_app_meta_container;
-	char *journal_sys_meta_container;
-
-	char *log_db; //<! The path of the Berkeley DB used for log entries
-	char *log_app_meta_container;
-	char *log_sys_meta_container;
 }
-#endif // __cplusplus
+#endif
 
-#endif 
+#endif // _JALDB_CONTEXT_H_
