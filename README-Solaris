@@ -1,0 +1,91 @@
+Each of the following packages were either installed from sunfreeware.com (sfw)
+or from source obtained from the respective maintainer's site (src).  The order
+in which the packages are listed is the order in which they were installed.
+
+Packages:
+- binutils	  2.21	(sfw)
+- cairo		 1.4.0	(sfw)
+- coreutils	  8.11	(sfw)
+- doxygen	1.7.4	(sfw)
+- expat		 2.0.1	(sfw)
+- gawk		 3.1.8	(sfw)
+- git		 1.7.5	(sfw)
+- libiconv	1.13.1	(sfw)
+- libgcrypt	 1.2.4	(sfw)
+- openssl	1.0.0d	(sfw)
+- gcc		 3.4.6	(sfw)
+- libint	 3.4.0	(sfw)
+- libsigsegv	  2.10	(sfw)
+- libxml2	 2.7.7	(sfw)
+- libxslt	1.1.26	(sfw)
+- ncurses	   5.7	(sfw)
+- gmp		 4.2.1	(sfw)
+- xerces-c	 3.1.1	(src)
+- axl            0.6.4	(src)
+- vortex	 1.1.7	(src)
+- santuario	 1.6.1	(src)
+- test-dept	0.14.2	(src)
+- scons		 2.0.1	(sfw)
+- libconfig	 1.4.7	(src)
+- xqilla	 2.2.4  (src)
+- dbxml		2.5.16	(src)
+
+Notes:
+
+The following are notes on what was required in order to build and install the
+source packages.
+
+    A number of applications require gcc 3.4.6.
+
+    xerces:
+	http://xerces.apache.org/xerces-c/download.cgi
+
+	./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
+        Compiled and installed using make.
+
+    axl:
+        http://sourceforge.net/projects/vortexlibrary/files/
+
+	./configure CFLAGS="__EXTENSIONS__"
+        In src/axl_log.c, getpid() must be casted as an int.  A patch has been
+	supplied.
+        Compiled and installed using gmake
+
+    vortex:
+        http://sourceforge.net/projects/vortexlibrary/files/
+
+	export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
+        ./configure CFLAGS="-lsocket" --disable-py-vortex
+        Compiled and installed using gmake.
+
+    santuario:
+	http://santuario.apache.org/download.html
+
+	export PKG_CONFIG_PATH="/usr/local/ssl/lib/pkgconfig"
+        ./configure LDFLAGS="-L/usr/local/ssl/lib -R/usr/local/ssl/lib"
+        Compiled and installed using make.
+
+    libconfig:
+        http://www.hyperrealm.com/libconfig/
+
+	./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
+        Compiled and installed using make.
+
+    xqilla:
+	http://sourceforge.net/projects/xqilla/files/
+
+	./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
+	Compiled and installed using make.
+
+    dbxml:
+	http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html
+
+	The included versions of XQilla and xerces-c were removed from the package
+	and the build script was pointed to the local installations of those
+	packages.
+
+	./buildall.sh --prefix=/usr/local --build-one=berkeleydb
+	./buildall.sh --prefix=/usr/local --build-one=dbxml \
+					--with-xqilla-prefix=/usr/local \
+					--with-xerces-prefix=/usr/local \
+					--with-berkeleydb-prefix=/usr/local
