@@ -71,9 +71,6 @@ enum jal_status jalp_context_load_pem_cert(jalp_context *ctx,
 	FILE *fp;
 	X509 *cert;
 
-	if (ctx->signing_cert) {
-		X509_free(ctx->signing_cert);
-	}
 	fp = fopen(certfile, "r");
 	if (!fp) {
 		return JAL_E_FILE_OPEN;
@@ -82,6 +79,9 @@ enum jal_status jalp_context_load_pem_cert(jalp_context *ctx,
 	fclose(fp);
 	if (!cert) {
 		return JAL_E_READ_X509;
+	}
+	if (ctx->signing_cert) {
+		X509_free(ctx->signing_cert);
 	}
 	ctx->signing_cert = cert;
 	return JAL_OK;
