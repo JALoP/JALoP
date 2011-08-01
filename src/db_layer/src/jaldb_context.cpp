@@ -31,37 +31,37 @@
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
-#include "jaldb_context.h"
 
-#define DB_ROOT "/var/lib/jalop/db"
-#define SCHEMA_ROOT "/usr/local/share/jalop-v1.0/schemas"
+#define DEFAULT_DB_ROOT "/var/lib/jalop/db"
+#define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 
-jaldb_context *jaldb_create_context()
+jaldb_context *jaldb_context_create()
 {
 	jaldb_context *context = (jaldb_context *)jal_malloc(sizeof(*context));
 
 	context->manager = NULL;
-        context->audit_sys_meta_container = NULL;
-        context->audit_app_meta_container = NULL;
-        context->audit_container = NULL;
-        context->log_sys_meta_container = NULL;
-        context->log_app_meta_container = NULL;
-        context->log_db = NULL;
-        context->journal_sys_meta_container = NULL;
-        context->journal_app_meta_container = NULL;
-        context->journal_root = NULL;
+	context->audit_sys_meta_container = NULL;
+	context->audit_app_meta_container = NULL;
+	context->audit_container = NULL;
+	context->log_sys_meta_container = NULL;
+	context->log_app_meta_container = NULL;
+	context->log_db = NULL;
+	context->journal_sys_meta_container = NULL;
+	context->journal_app_meta_container = NULL;
+	context->journal_root = NULL;
+	context->schemas_root = NULL;
 
 	return context;
 }
 
-enum jal_status jaldb_init_context(
+enum jal_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root)
 {
-        if (!ctx) {
-                return JAL_E_INVAL;
-        }
+	if (!ctx) {
+		return JAL_E_INVAL;
+	}
 
 	// Make certain that the context is not already initialized.
 	if ((ctx->manager) || (ctx->audit_sys_meta_container) ||
@@ -69,7 +69,8 @@ enum jal_status jaldb_init_context(
 		(ctx->log_sys_meta_container) ||
 		(ctx->log_app_meta_container) || (ctx->log_db) ||
 		(ctx->journal_sys_meta_container) ||
-		(ctx->journal_app_meta_container) || (ctx->journal_root)) {
+		(ctx->journal_app_meta_container) || (ctx->journal_root) ||
+		(ctx->schemas_root)) {
 
 		return JAL_E_INITIALIZED;
 	}
@@ -78,75 +79,71 @@ enum jal_status jaldb_init_context(
 
 	ctx->manager = mgr;
 
-	char *dbroot = NULL;
+	if (!db_root) {
+		db_root = DEFAULT_DB_ROOT;
+	}
 
-        if (db_root) {
-                dbroot = strdup(db_root);
-        }
-        else {
-                dbroot = strdup(DB_ROOT);
-        }
+	if (!schemas_root) {
+		schemas_root = DEFAULT_SCHEMAS_ROOT;
+	}
 
-        if (db_root) {
-                dbroot = strdup(db_root);
-        }
-        else {
-                dbroot = strdup(DB_ROOT);
-        }
+	// *** TBD: ASSOCIATE THE SCHEMAS ROOT WITH THE DOCUMENT CONTAINERS. ***
 
-	// *** TBD: ASSOCIATE THE SCHEMA ROOT WITH THE DOCUMENT CONTAINERS. ***
+	char *path = NULL;
 
-        char *path = NULL;
+	jal_asprintf(&path, "%s/%s", db_root, AUDIT_SYS_META_CONT_NAME);
+	ctx->audit_sys_meta_container = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, AUDIT_SYS_META_CONT_NAME);
-        ctx->audit_sys_meta_container = path;
+	jal_asprintf(&path, "%s/%s", db_root, AUDIT_APP_META_CONT_NAME);
+	ctx->audit_app_meta_container = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, AUDIT_APP_META_CONT_NAME);
-        ctx->audit_app_meta_container = path;
+	jal_asprintf(&path, "%s/%s", db_root, AUDIT_CONT_NAME);
+	ctx->audit_container = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, AUDIT_CONT_NAME);
-        ctx->audit_container = path;
+	jal_asprintf(&path, "%s/%s", db_root, LOG_SYS_META_CONT_NAME);
+	ctx->log_sys_meta_container = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, LOG_SYS_META_CONT_NAME);
-        ctx->log_sys_meta_container = path;
+	jal_asprintf(&path, "%s/%s", db_root, LOG_APP_META_CONT_NAME);
+	ctx->log_app_meta_container = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, LOG_APP_META_CONT_NAME);
-        ctx->log_app_meta_container = path;
+	jal_asprintf(&path, "%s/%s", db_root, LOG_DB_NAME);
+	ctx->log_db = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, LOG_DB_NAME);
-        ctx->log_db = path;
+	jal_asprintf(&path, "%s/%s", db_root, JOURNAL_SYS_META_CONT_NAME);
+	ctx->journal_sys_meta_container = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, JOURNAL_SYS_META_CONT_NAME);
-        ctx->journal_sys_meta_container = path;
+	jal_asprintf(&path, "%s/%s", db_root, JOURNAL_APP_META_CONT_NAME);
+	ctx->journal_app_meta_container = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, JOURNAL_APP_META_CONT_NAME);
-        ctx->journal_app_meta_container = path;
+	jal_asprintf(&path, "%s/%s", db_root, JOURNAL_ROOT_NAME);
+	ctx->journal_root = path;
 
-        jal_asprintf(&path, "%s/%s", dbroot, JOURNAL_ROOT_NAME);
-        ctx->journal_root = path;
+	ctx->schemas_root = jal_strdup(schemas_root);
 
 	return JAL_OK;
 }
 
-void jaldb_destroy_context(jaldb_context **ctx)
+void jaldb_context_destroy(jaldb_context **ctx)
 {
-        if (!ctx || !(*ctx)) {
-                return;
-        }
+	if (!ctx || !(*ctx)) {
+		return;
+	}
 
-	free((*ctx)->manager);
-        free((*ctx)->audit_sys_meta_container);
-        free((*ctx)->audit_app_meta_container);
-        free((*ctx)->audit_container);
-        free((*ctx)->log_sys_meta_container);
-        free((*ctx)->log_app_meta_container);
-        free((*ctx)->log_db);
-        free((*ctx)->journal_sys_meta_container);
-        free((*ctx)->journal_app_meta_container);
-        free((*ctx)->journal_root);
+	delete (*ctx)->manager;
+
+	free((*ctx)->audit_sys_meta_container);
+	free((*ctx)->audit_app_meta_container);
+	free((*ctx)->audit_container);
+	free((*ctx)->log_sys_meta_container);
+	free((*ctx)->log_app_meta_container);
+	free((*ctx)->log_db);
+	free((*ctx)->journal_sys_meta_container);
+	free((*ctx)->journal_app_meta_container);
+	free((*ctx)->journal_root);
+	free((*ctx)->schemas_root);
 
 	free(*ctx);
-	ctx = NULL;
+	*ctx = NULL;
 }
 
 enum jal_status jaldb_insert_audit_record(
@@ -159,7 +156,7 @@ enum jal_status jaldb_insert_audit_record(
 	const uint8_t *audit_buf,
 	const size_t audit_len)
 {
-
+		
 
 	return JAL_OK;
 }

@@ -65,8 +65,8 @@ void jaldb_store_data(
 		string buffer = (char *)(buf);
 
 		cont.putDocument(serialId, buffer, uc);
-        }
-        catch (XmlException &e) {
-                cout << "Exception: " << e.what() << endl;
-        }
+	}
+	catch (XmlException &e) {
+		cout << "Exception: " << e.what() << endl;
+	}
 }

@@ -31,6 +31,7 @@
 #define _JALDB_CONTEXT_HPP_
 
 #include <dbxml/DbXml.hpp>
+#include "jaldb_context.h"
 
 #define AUDIT_SYS_META_CONT_NAME "audit_sys_meta.dbxml"
 #define AUDIT_APP_META_CONT_NAME "audit_app_meta.dbxml"
@@ -55,8 +56,7 @@ struct jaldb_context_t {
 	char *journal_sys_meta_container; //<! The journal system metadata container path.
 	char *journal_app_meta_container; //<! The journal application metadata container path.
 	char *journal_root; //<! The journal record root path.
+	char *schemas_root; //<! The schemas root path.
 };
-
-typedef struct jaldb_context_t jaldb_context;
 
 #endif // _JALDB_CONTEXT_HPP_

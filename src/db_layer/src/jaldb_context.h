@@ -34,7 +34,9 @@ extern "C" {
 #endif
 
 #include <jalop/jal_status.h>
-#include "jaldb_context.hpp"
+
+struct jaldb_context_t;
+typedef jaldb_context_t jaldb_context;
 
 /**
  * Creates an empty DB context.
@@ -42,7 +44,7 @@ extern "C" {
  * @return The created empty DB context.
  *
  */
-jaldb_context *jaldb_create_context();
+jaldb_context *jaldb_context_create();
 
 /**
  * Initializes a DB context.
@@ -56,7 +58,7 @@ jaldb_context *jaldb_create_context();
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_init_context(
+enum jal_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root);
@@ -68,7 +70,7 @@ enum jal_status jaldb_init_context(
  *
  * @param ctx[in,out] The context to destroy. *ctx will be set to NULL.
  */
-void jaldb_destroy_context(jaldb_context **ctx);
+void jaldb_context_destroy(jaldb_context **ctx);
 
 /**
  * Inserts an audit record.
@@ -171,7 +173,7 @@ enum jal_status jaldb_create_journal_file(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_insert_journal(
+enum jal_status jaldb_insert_journal_record(
 	jaldb_context *ctx,
 	const char *source,
 	const char *path,
