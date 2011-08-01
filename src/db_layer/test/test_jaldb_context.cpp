@@ -39,6 +39,9 @@ extern "C" {
 
 #include "jaldb_context.h"
 #include "jaldb_context.hpp"
+#include <xercesc/util/PlatformUtils.hpp>
+
+XERCES_CPP_NAMESPACE_USE
 
 #define OTHER_DB_ROOT "/foo/bar/jalop/"
 #define OTHER_SCHEMA_ROOT "/foo/bar/jalop/schemas/"
@@ -67,6 +70,7 @@ extern "C" void setup()
 
 extern "C" void teardown()
 {
+	XMLPlatformUtils::Terminate();
 }
 
 extern "C" void test_db_create_returns_initialized_struct()
