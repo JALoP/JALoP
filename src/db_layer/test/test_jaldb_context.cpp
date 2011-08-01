@@ -64,3 +64,19 @@ extern "C" void test_db_create_returns_initialized_struct()
 	assert_pointer_equals((void*) NULL, ctx->schemas_root);
 	jaldb_context_destroy(&ctx);
 }
+extern "C" void test_db_destroy_does_not_crash()
+{
+	jaldb_context *ctx = NULL;
+	jaldb_context_destroy(&ctx);
+
+	jaldb_context_destroy(NULL);
+}
+extern "C" void test_db_destroy_sets_ctx_to_null()
+{
+	jaldb_context *ctx = jaldb_context_create();
+	assert_not_equals((void*) NULL, ctx);
+	enum jal_status ret = jaldb_context_init(ctx, NULL, NULL);
+	assert_equals(JAL_OK, ret);
+	jaldb_context_destroy(&ctx);
+	assert_pointer_equals((void*) NULL, ctx);
+}
