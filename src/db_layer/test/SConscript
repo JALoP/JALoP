@@ -8,6 +8,8 @@ env = env.Clone()
 # The test-dept macros trigger this warning, so disable it for all the test
 # drivers.
 env.Append(CCFLAGS='-Wno-format-nonliteral -Wno-unreachable-code'.split())
+tests.append(env.TestDeptTest('test_jaldb_context.cpp',
+	other_sources=[lib_common])[0].abspath)
 
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(db_tests)
