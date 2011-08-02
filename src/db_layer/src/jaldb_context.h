@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 #include <jalop/jal_status.h>
 
 struct jaldb_context_t;
@@ -186,7 +187,7 @@ enum jal_status jaldb_insert_journal_record(
  * Retrieves an audit record by serial ID.
  *
  * @param[in] ctx The context.
- * @param[in] sid The serial ID to retrieve.
+ * @param[in] sid The serial ID of the record being retrieved.
  * @param[out] sys_meta_buf A buffer containing the system metadata.
  * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
  * @param[in,out] app_meta_buf A buffer containing the application metadata.
@@ -211,7 +212,7 @@ enum jal_status jaldb_get_audit_record(
  * Retrieves a log record by serial ID.
  *
  * @param[in] ctx The context.
- * @param[in] sid The serial ID to retrieve.
+ * @param[in] sid The serial ID of the record being retrieved.
  * @param[out] sys_meta_buf A buffer containing the system metadata.
  * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
  * @param[in,out] app_meta_buf A buffer containing the application metadata.
@@ -236,7 +237,7 @@ enum jal_status jaldb_get_log_record(
  * Retrieves a journal record by serial ID.
  *
  * @param[in] ctx The context.
- * @param[in] sid The serial ID to retrieve.
+ * @param[in] sid The serial ID of the record being retrieved.
  * @param[in] path The path of the file that is journal data.
  * @param[in,out] sys_meta_buf A buffer containing the system metadata.
  * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.

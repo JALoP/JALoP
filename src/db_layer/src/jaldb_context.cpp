@@ -200,7 +200,7 @@ enum jal_status jaldb_create_journal_file(
 	return JAL_OK;
 }
 
-enum jal_status jaldb_insert_journal(
+enum jal_status jaldb_insert_journal_record(
 	jaldb_context *ctx,
 	const char *source,
 	const char *path,
