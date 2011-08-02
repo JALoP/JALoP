@@ -142,6 +142,7 @@ if not (GetOption("clean") or GetOption("help")):
 						     'CheckSantuario': PackageCheckHelpers.CheckSantuario,
 						     'CheckLibUUID': PackageCheckHelpers.CheckLibUUID,
 						     'CheckSeLinux': PackageCheckHelpers.CheckSeLinux,
+						     'CheckDbXml': PackageCheckHelpers.CheckDbXml,
 						     'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
 						   })
 
@@ -175,6 +176,9 @@ this is want you want, this is OK, re-run scons with the \
 			debug_env['HAVE_SELINUX'] = True
 			debug_env['selinux_ldflags'] = '-lselinux'
 
+	if not conf.CheckDbXml():
+		Exit(-1)
+
 	if not conf.CheckProducerLibConfigDotH():
 		Exit(-1)
 
@@ -202,6 +206,9 @@ debug_env["santuario_ldflags"] = "-lxml-security-c"
 
 # linker flags for libuuid
 debug_env["libuuid_ldflags"] = "-luuid"
+
+# linker flags for dbxml
+debug_env["dbxml_ldflags"] = '-Wl,-rpath=/usr/local/lib -ldbxml'.split()
 
 all_tests = debug_env.Alias('tests')
 

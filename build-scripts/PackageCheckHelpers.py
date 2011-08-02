@@ -64,3 +64,12 @@ int main() {
 def CheckSeLinux(context):
 	return __checkCanLink(context, selinux_source, '.cpp', 'selinux', ['selinux'])
 
+dbxml_source = '''
+#include <dbxml/DbXml.hpp>
+int main() {
+	DbXml::XmlContainer c;
+	return 0;
+}
+'''
+def CheckDbXml(context):
+	return __checkCanLink(context, dbxml_source, '.cpp', 'dbxml', ['dbxml'])
