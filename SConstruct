@@ -13,7 +13,9 @@ from Utils import recursive_glob
 from InstallOptions import add_install_options
 from InstallOptions import update_env_with_install_paths
 add_install_options()
-
+AddOption('--no-selinux', dest='DISABLE_SELINUX',
+		action='store_true', default=False,
+		help='Disable support for SE Linux.')
 # Update package version here, add actual checks below
 pkg_config_version = '0.21'
 
@@ -145,6 +147,7 @@ if not (GetOption("clean") or GetOption("help")):
 						     'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion,
 						     'CheckSantuario': PackageCheckHelpers.CheckSantuario,
 						     'CheckLibUUID': PackageCheckHelpers.CheckLibUUID,
+						     'CheckSeLinux': PackageCheckHelpers.CheckSeLinux,
 						     'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
 						   })
 
@@ -165,6 +168,18 @@ if not (GetOption("clean") or GetOption("help")):
 
 	if not conf.CheckLibUUID():
 		Exit(-1)
+
+	debug_env['HAVE_SELINUX'] = False;
+	if platform.system() == 'Linux':
+		if GetOption('DISABLE_SELINUX'):
+			print 'Disabling SELinux support';
+		elif not conf.CheckSeLinux():
+			print 'Failed to find SELinux headers on Linux. If you are sure \
+this is want you want, this is OK, re-run scons with the \
+--no-selinux options'
+		else:
+			debug_env['HAVE_SELINUX'] = True
+			debug_env['selinux_ldflags'] = '-lselinux'
 
 	if not conf.CheckProducerLibConfigDotH():
 		Exit(-1)

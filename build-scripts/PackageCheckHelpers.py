@@ -52,3 +52,15 @@ int main() {
 '''
 def CheckLibUUID(context):
 	return __checkCanLink(context, libuuid_source, ".c", "libuuid", ["uuid"])
+
+selinux_source = '''
+#include <selinux/selinux.h>
+int main() {
+	security_context_t ctx;
+	getpeercon(0, &ctx);
+	return 0;
+}
+'''
+def CheckSeLinux(context):
+	return __checkCanLink(context, selinux_source, '.cpp', 'selinux', ['selinux'])
+
