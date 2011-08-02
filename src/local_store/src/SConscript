@@ -1,0 +1,9 @@
+Import('*')
+
+local_store = env.Program(target='jal-local-store', source=[env.Glob("*.c"), jal_utils])
+env.Default(local_store)
+if (env['release']):
+	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
+	env.Alias('install', env.Install(sbindir, local_store))
+
+Return("local_store")
