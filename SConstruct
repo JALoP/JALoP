@@ -104,12 +104,6 @@ if platform.system() == 'SunOS':
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
 	debug_env.MergeFlags('-lsocket')
 
-# Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
-if debug_env['CC'] == 'gcc':
-	debug_env.Prepend(CCFLAGS=profiling_ccflags, LINKFLAGS=profiling_ldflags)
-	(major, _, _) = debug_env['CCVERSION'].split('.')
-	if int(major) >= 4:
-		debug_env.Prepend(CCFLAGS=stack_protector_ccflags)
 
 def merge_with_os_env(env):
 	if os.environ.has_key('LIBPATH'):
@@ -224,7 +218,7 @@ if debug_env['CC'] == 'gcc':
 	# Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
 	(major, _, _) = debug_env['CCVERSION'].split('.')
 	if int(major) >= 4:
-		debug_env.Prepend(CCFLAGS='-fstack-protector --param=ssp-buffer-size=4'.split())
+		debug_env.Prepend(CCFLAGS=stack_protector_ccflags)
 
 # coverage target
 lcov_output_dir = "cov"
