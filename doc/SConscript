@@ -8,10 +8,9 @@ if env.GetOption('clean'):
 	env.Default(doxygen)
 
 htmldir = env['DESTDIR'] + env.subst(env['HTMLDIR'])
-env.Install(htmldir, 'doxygen.out/html')
+env.Alias('install', env.Install(htmldir, 'doxygen.out/html'))
 
 mandir = env['DESTDIR'] + env.subst(env['MANDIR'])
-env.Install(mandir, 'doxygen.out/man')
+env.Alias('install', env.Install(mandir, 'doxygen.out/man'))
 
 env.Depends('install', doxygen)
-env.Alias('install', [htmldir, mandir])

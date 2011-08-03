@@ -14,7 +14,6 @@ producer_lib = env.SharedLibrary(target='jal-producer', source=sources)
 env.Default(producer_lib)
 if (env['release']):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
-	env.Install(libdir, producer_lib)
-	env.Alias('install', libdir)
+	env.Alias('install', env.Install(libdir, producer_lib))
 
 Return("producer_lib")

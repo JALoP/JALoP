@@ -13,7 +13,6 @@ lib_common = env.SharedLibrary(target='jal-common', source=[sources, asprintf_ob
 env.Default(lib_common)
 if (env['release']):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
-	env.Install(libdir, lib_common)
-	env.Alias('install', libdir)
+	env.Alias('install', env.Install(libdir, lib_common))
 
 Return("lib_common")
