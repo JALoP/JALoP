@@ -90,7 +90,9 @@ env_names = """PREFIX EPREFIX BINDIR SBINDIR
 			INCLUDEDIR DATAROOTDIR MANDIR
 			DOCDIR HTMLDIR""".split()
 def update_env_with_install_paths(env):
-	if not env.has_key('DESTDIR'):
+	if env['ENV'].has_key('DESTDIR'):
+		env['DESTDIR'] = env['ENV']['DESTDIR']
+	else:
 		env['DESTDIR'] = '/'
 	for path in env_names:
 		env[path] = env.GetOption(path)
