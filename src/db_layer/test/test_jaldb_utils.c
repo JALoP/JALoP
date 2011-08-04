@@ -144,7 +144,7 @@ void test_store_confed_sid_returns_error_when_trying_to_insert_sid_twice()
 void test_store_confed_sid_returns_error_with_invalid_input()
 {
 	DB_TXN *transaction = NULL;
-	int db_error = env->txn_begin(env, NULL, &transaction, 0);	
+	int db_error = env->txn_begin(env, NULL, &transaction, 0);
 	db_error = db_create(&dbase, env, 0);
 	db_error = dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
 	char *rhost = jal_strdup("remote_host");

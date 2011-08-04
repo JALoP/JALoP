@@ -28,6 +28,9 @@ tests.append(env.TestDeptTest('test_jaldb_context.cpp',
 tests.append(env.TestDeptTest('test_jaldb_dom_to_event_writer.cpp',
 	other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj, serialIdObj])[0].abspath)
 
+tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
+	other_sources=[lib_common])[0].abspath)
+
 test_progs.append(env.Program('stress_get_next_serial_id', ['stress_get_next_serial_id.cpp', db_lib, lib_common]))
 
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))

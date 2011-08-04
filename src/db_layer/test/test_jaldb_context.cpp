@@ -29,7 +29,7 @@
 
 // The test-dept code doesn't work very well in C++ when __STRICT_ANSI__ is
 // not defined. It tries to use some gcc extensions that don't work well with
-// c++.
+// C++.
 
 #ifndef __STRICT_ANSI__
 #define __STRICT_ANSI__
@@ -111,14 +111,13 @@ extern "C" void test_store_confed_journal_sid_fails_with_invalid_input()
 {
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("1234");
-	int err = 0;
-	int *db_error_out = &err;
-	enum jaldb_status ret = jaldb_store_confed_journal_sid(NULL, rhost, ser_id, db_error_out);
+	int db_error_out = 0;
+	enum jaldb_status ret = jaldb_store_confed_journal_sid(NULL, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
-	ret = jaldb_store_confed_journal_sid(context, rhost, ser_id, db_error_out);
+	ret = jaldb_store_confed_journal_sid(context, rhost, ser_id, &db_error_out);
 	context->manager = tmp_mgr;
 	free(rhost);
 	free(ser_id);
@@ -131,20 +130,19 @@ extern "C" void test_store_confed_audit_sid_fails_with_invalid_input()
 {
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("1234");
-	int err = 0;
-	int *db_error_out = &err;
-	enum jaldb_status ret = jaldb_store_confed_audit_sid(NULL, rhost, ser_id, db_error_out);
+	int db_error_out = 0;
+	enum jaldb_status ret = jaldb_store_confed_audit_sid(NULL, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
-	ret = jaldb_store_confed_audit_sid(context, rhost, ser_id, db_error_out);
+	ret = jaldb_store_confed_audit_sid(context, rhost, ser_id, &db_error_out);
 	context->manager = tmp_mgr;
 	assert_equals(JALDB_E_INVAL, ret);
 
-	XmlContainer *tmp_cont = context->audit_sys_cont;	
+	XmlContainer *tmp_cont = context->audit_sys_cont;
 	context->audit_sys_cont = NULL;
-	ret = jaldb_store_confed_audit_sid(context, rhost, ser_id, db_error_out);
+	ret = jaldb_store_confed_audit_sid(context, rhost, ser_id, &db_error_out);
 	context->audit_sys_cont = tmp_cont;
 	free(rhost);
 	free(ser_id);
@@ -157,14 +155,13 @@ extern "C" void test_store_confed_log_sid_fails_with_invalid_input()
 {
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("1234");
-	int err = 0;
-	int *db_error_out = &err;
-	enum jaldb_status ret = jaldb_store_confed_log_sid(NULL, rhost, ser_id, db_error_out);
+	int db_error_out = 0;
+	enum jaldb_status ret = jaldb_store_confed_log_sid(NULL, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
-	ret = jaldb_store_confed_log_sid(context, rhost, ser_id, db_error_out);
+	ret = jaldb_store_confed_log_sid(context, rhost, ser_id, &db_error_out);
 	context->manager = tmp_mgr;
 	free(rhost);
 	free(ser_id);
@@ -182,15 +179,14 @@ extern "C" void test_store_confed_sid_helper_returns_ok_with_valid_input()
 	context->audit_sys_cont->updateDocument(doc, uc);
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("123");
-	int err = 0;
-	int *db_error_out = &err;
+	int db_error_out = 0;
 	enum jaldb_status ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_OK, ret);
 
 	char *serid = jal_strdup("124");
 	ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, serid, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, serid, &db_error_out);
 	free(rhost);
 	free(ser_id);
 	free(serid);
@@ -204,14 +200,13 @@ extern "C" void test_store_confed_sid_helper_fails_with_invalid_input()
 {
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("1234");
-	int err = 0;
-	int *db_error_out = &err;
+	int db_error_out = 0;
 	enum jaldb_status ret = jaldb_store_confed_sid_helper(
-		NULL, context->audit_conf_db, rhost, ser_id, db_error_out);
+		NULL, context->audit_conf_db, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, NULL, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, NULL, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	ret = jaldb_store_confed_sid_helper(
@@ -232,15 +227,14 @@ extern "C" void test_store_confed_sid_helper_fails_with_sid_greater_than_or_equa
 	context->audit_sys_cont->updateDocument(doc, uc);
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("123456");
-	int err = 0;
-	int *db_error_out = &err;
+	int db_error_out = 0;
 	enum jaldb_status ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_SID, ret);
 
 	char *serid = jal_strdup("12345");
 	ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, serid, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, serid, &db_error_out);
 	free(rhost);
 	free(ser_id);
 	free(serid);
