@@ -31,8 +31,9 @@
 #include <jalop/jaln_publisher_callbacks.h>
 #include <jalop/jaln_connection_callbacks.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <vortex.h>
+#include <unistd.h>
 
 #include "jal_base64_internal.h"
 

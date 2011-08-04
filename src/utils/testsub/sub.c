@@ -26,6 +26,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+#include <inttypes.h>
 #include <jalop/jaln_network.h>
 #include <jalop/jaln_subscriber_callbacks.h>
 #include <unistd.h>
@@ -63,15 +64,15 @@ int sub_on_record_info(const struct jaln_channel_info *ch_info,
 	DEBUG_LOG("ch info:%p type:%d rec_info: %p headers: %p smb: %p sms:%d amb:%p ams:%d ud:%p\n",
 		ch_info, type, record_info, headers, system_metadata_buffer, system_metadata_size,
 		application_metadata_buffer, application_metadata_size, user_data);
-	DEBUG_LOG("(%s)sys_meta[%lu/%lu] '%s'", record_info->serial_id,
+	DEBUG_LOG("(%s)sys_meta[%" PRIu64"/%zu] '%s'", record_info->serial_id,
 			record_info->sys_meta_len,
 			strlen((char*) system_metadata_buffer),
 			(char *) system_metadata_buffer);
-	DEBUG_LOG("(%s)app_meta[%lu/%lu] '%s'", record_info->serial_id,
+	DEBUG_LOG("(%s)app_meta[%"PRIu64"/%zu] '%s'", record_info->serial_id,
 			record_info->app_meta_len,
 			strlen((char*) application_metadata_buffer),
 			(char*) application_metadata_buffer);
-	DEBUG_LOG("(%s)payload_sz[%lu]", record_info->serial_id, 
+	DEBUG_LOG("(%s)payload_sz[%"PRIu64"]", record_info->serial_id, 
 			record_info->payload_len);
 
 
@@ -98,7 +99,7 @@ int sub_on_log(const struct jaln_channel_info *ch_info,
 	DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%d ud:%p\n",
 		ch_info, serial_id, buffer, cnt, user_data);
 
-	DEBUG_LOG("(%s)app_meta[%u/%lu] '%s'", serial_id,
+	DEBUG_LOG("(%s)app_meta[%"PRIu32"/%zu] '%s'", serial_id,
 			cnt,
 			strlen((char*) buffer),
 			(char*) buffer);
@@ -113,7 +114,7 @@ int sub_on_journal(const struct jaln_channel_info *ch_info,
 		const int more,
 		void *user_data)
 {
-	DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%u offset:%lu, more:%d, ud:%p\n",
+	DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%"PRIu32" offset:%"PRIu64", more:%d, ud:%p\n",
 		ch_info, serial_id, buffer, cnt, offset, more, user_data);
 	return 0;
 }
