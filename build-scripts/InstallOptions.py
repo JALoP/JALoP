@@ -54,7 +54,7 @@ def add_install_options():
 		nargs=1, type='string',
 		action='store',
 		metavar='DIR',
-		default='/usr/include',
+		default='$PREFIX/include',
 		help='user executables [usr/include]')
 
 	AddOption('--datarootdir', dest='DATAROOTDIR',
