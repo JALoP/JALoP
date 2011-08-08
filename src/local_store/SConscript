@@ -3,8 +3,12 @@ local_store_env = env.Clone()
 
 local_store_env.MergeFlags(local_store_env['libconfig_cflags'])
 local_store_env.MergeFlags(local_store_env['libconfig_ldflags'])
+local_store_env.MergeFlags(local_store_env['openssl_cflags'])
+local_store_env.MergeFlags(local_store_env['openssl_ldflags'])
 local_store_env.MergeFlags({'CPPPATH':['#src/jal_utils/src', '.']})
 local_store_env.MergeFlags(local_store_env['libuuid_ldflags'])
+local_store_env.MergeFlags('-lpthread')
+
 
 local_store = local_store_env.SConscript('src/SConscript', exports={'env':local_store_env, 'jal_utils':jal_utils})
 
