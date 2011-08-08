@@ -44,7 +44,11 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		return -1; //should never happen
 	}
 
-	*jalls_ctx = calloc(1, sizeof(jalls_ctx));
+	*jalls_ctx = calloc(1, sizeof(**jalls_ctx));
+	if (jalls_ctx == NULL) {
+		fprintf(stderr, "failed to allocate memory\n");
+		return -1;
+	}
 
 	char **private_key_file = &((*jalls_ctx)->private_key_file);
 	char **public_cert_file = &((*jalls_ctx)->public_cert_file);

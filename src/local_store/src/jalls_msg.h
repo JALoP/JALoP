@@ -1,5 +1,6 @@
 /**
- * @file jalu_daemonize.h This file contains a utility function to daemonize a process.
+ * @file jalls_msg.h This file contains helper functions to deal with
+ * recieving messages for the jal local store.
  *
  * @section LICENSE
  *
@@ -26,18 +27,13 @@
  * limitations under the License.
  */
 
-#ifndef _JALU_DAEMONIZE_H_
-#define _JALU_DAEMONIZE_H_
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 /**
- * daemonizes the process.
+ * Wrapper function for recvmsg()
  *
- * @return 0 on success, -1 on failure.
+ * @param[in] fd The file descriptor to read from.
+ * @param[in, out] msgh The msghdr structure to read into.
+ * @param[in] debug A flag to indicate whether to print debug messages to stderr.
+ *
+ * @return -1 on failure, or the number of bytes recieved on success.
  */
-int daemonize();
-
-#endif // _JALU_DAEMONIZE_H_
+int jalls_recvmsg_helper(int fd, struct msghdr *msgh, int debug);

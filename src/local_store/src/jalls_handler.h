@@ -1,5 +1,6 @@
 /**
- * @file jalu_daemonize.h This file contains a utility function to daemonize a process.
+ * @file jalls_handler.h This file contains functions to handle a connection
+ * to the jalp local store.
  *
  * @section LICENSE
  *
@@ -26,33 +27,20 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#ifndef _JALLS_HANDLER_H_
+#define _JALLS_HANDLER_H_
 
-int daemonize() {
-	pid_t pid, sid;
-	pid = fork();
-	if (pid < 0) {
-		return -1;
-	}
-	if (pid > 0) {
-		//exit the parent process
-		exit(0);
-	}
+#include "jalls_context.h"
 
-	sid = setsid();
-	if (sid < 0) {
-		return -1;
-	}
+/**
+ * Waits for data to become available on the domain socket. When data appears,
+ * calls handle_audit() handle_log(), handle_journal(), or handle_journal_fd(),
+ * depending on the message type.
+ *
+ * @param[in] thread_ctx A pointer to a jalls_thread_context struct that holds
+ * the fd for the connection, the key and cert to sign the system metadata,
+ * and the jalls_context.
+*/
+void *jalls_handler(void *thread_ctx);
 
-	if ((chdir("/")) < 0) {
-	return -1;
-	}
-
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-
-	return 0;
-}
+#endif //_JALLS_HANDLER_H_

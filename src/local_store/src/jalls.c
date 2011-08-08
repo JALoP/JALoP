@@ -37,38 +37,25 @@
 #include <openssl/pem.h>
 #include <strings.h>
 
+#include <jalop/jal_status.h>
+
+//#include "jaldb_context.h"
+
 #include "jalls_config.h"
 #include "jalu_daemonize.h"
+#include "jalls_handler.h"
+#include "jalls_msg.h"
 
 #define JALLS_LISTEN_BACKLOG 20
 #define JALLS_USAGE "usage: [--debug] FILE\n"
 
+//TODO: remove
+static jaldb_context *jaldb_context_create() {return NULL;}
+static int jaldb_context_init() {return 0;}
+
 static const char *DEBUG_FLAG = "--debug";
 
-struct jalls_thread_context {
-	//TODO: move to a separate file
-	int fd; /** the connection fd for the worker thread to revieve data */
-	struct jalls_context *ctx; /** pointer to the context loaded from the config. Should never be written to by worker threads */
-	RSA *signing_key; /** The RSA private key to use when signing application metadata documents */
-	X509 *signing_cert; /** The certificate used for signing the application metadata */
-};
-
 static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug);
-
-static void *jalls_handler(void *thread_ctx) {
-	int err = pthread_detach(pthread_self());
-	if (err < 0) {
-		if (((struct jalls_thread_context *)thread_ctx)->ctx->debug) {
-			fprintf(stderr, "Failed to detach the thread\n");
-		}
-		return NULL;
-	}
-
-	//TODO: implement worker, move jalls_handler to a separate file
-
-	free(thread_ctx);
-	return NULL;
-}
 
 int main(int argc, char **argv) {
 
@@ -113,6 +100,15 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "failed to read public cert\n");
 			goto err_out;
 		}
+	}
+
+	//create a jaldb_context to pass to work threads
+	jaldb_context *db_ctx = jaldb_context_create();
+	//TODO: collect the schemas_root to use when initializing this jaldb_context.
+	enum jal_status jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, NULL);
+	if (jal_err != JAL_OK) {
+		fprintf(stderr, "failed to create the jaldb_context\n");
+		goto err_out;
 	}
 
 	//check if the socket file already exists
@@ -170,10 +166,17 @@ int main(int argc, char **argv) {
 	struct sockaddr_un peer_addr;
 	unsigned int peer_addr_size = sizeof(peer_addr);
 	while (1) {
-		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(thread_ctx));
+		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(*thread_ctx));
+		if (thread_ctx == NULL) {
+			if (debug) {
+				fprintf(stderr, "Failed to allocate memory");
+			}
+		}
 		thread_ctx->fd = accept(sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
 		thread_ctx->signing_key = key;
 		thread_ctx->signing_cert = cert;
+		thread_ctx->db_ctx = db_ctx;
+		thread_ctx->ctx = jalls_ctx;
 		int my_errno = errno;
 		if (-1 != thread_ctx->fd) {
 			pthread_t new_thread;
@@ -192,6 +195,8 @@ int main(int argc, char **argv) {
 err_out:
 	RSA_free(key);
 	X509_free(cert);
+
+	//TODO: destroy db_context once the api has a destroy function
 
 	exit(-1);
 }

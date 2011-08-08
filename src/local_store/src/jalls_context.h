@@ -31,6 +31,13 @@
 #ifndef _JALLS_CONTEXT_H_
 #define _JALLS_CONTEXT_H_
 
+#include <openssl/pem.h>
+#include <sys/types.h>
+//#include "jaldb_context.h"
+//TODO: remove
+typedef struct jaldb_context_t {
+        int tmp;
+} jaldb_context;
 
 /** holds the fields to be passed to a worker thread */
 struct jalls_context {
@@ -51,5 +58,23 @@ struct jalls_context {
 	/** The full path to a UnixUNIX Domain Socket. The JALoP Local Store will create the socket and wait for producer applications to connect to the socket. */
 	char *socket;
 };
+
+struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */
+	/** the connection fd for the worker thread to revieve data */
+	int fd;
+	/** pointer to the context loaded from the config.*/
+	struct jalls_context *ctx;
+	/** pointer to the db layer context. */
+	jaldb_context *db_ctx;
+	/** The pid of the peer that sent the record. This will be gathered by the thread and stored in the system metadata */
+	pid_t peer_pid;
+	/** The uid of the peer that sent the record. This will be gathered by the thread and stored in the system metadata */
+	uid_t peer_uid;
+	/** The RSA private key to use when signing system metadata*/
+	RSA *signing_key;
+	/** The certificate used for signing the system metadata */
+	X509 *signing_cert;
+};
+
 
 #endif // _JALLS_CONTEXT_H_
