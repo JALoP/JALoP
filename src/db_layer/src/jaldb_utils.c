@@ -29,6 +29,7 @@
 #include "jaldb_utils.h"
 #include "jaldb_status.h"
 #include "jal_alloc.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -134,6 +135,9 @@ enum jaldb_status jaldb_create_file(
 	char **relative_path_out,
 	int *fd)
 {
+	if (!db_root || !relative_path_out || *relative_path_out || !fd) {
+		return JALDB_E_INVAL;
+	}
 	// This is for the string 'yyyy/mm/dd/journal.XXXXXXXXXX'
 	#define TEMPLATE_LEN 30
 	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
@@ -157,22 +161,14 @@ enum jaldb_status jaldb_create_file(
 		// should never happen
 		goto error_out;
 	}
-	template = (char*) malloc(TEMPLATE_LEN);
-	if (template == NULL) {
-		ret = JALDB_E_NO_MEM;
-		goto error_out;
-	}
+	template = (char*) jal_malloc(TEMPLATE_LEN);
 	if (0 == strftime(template, TEMPLATE_LEN, "./%Y/%m/%d/journal.XXXXXX", &gmt)) {
 		// a return of 0 is an error in this case, but it should never
 		// happen.
 		goto error_out;
 	}
 	len = strlen(db_root) + TEMPLATE_LEN;
-	full_path = (char*) malloc(len);
-	if (full_path == NULL) {
-		ret = JALDB_E_NO_MEM;
-		goto error_out;
-	}
+	full_path = (char*) jal_malloc(len);
 	written = snprintf(full_path, len, "%s/%s", db_root, template);
 	if (written >= len) {
 		// shouldn't happen since the size of full_path was calculated
@@ -185,6 +181,7 @@ enum jaldb_status jaldb_create_file(
 	}
 	lfd = mkstemp(full_path);
 	if (lfd == -1) {
+		ret = JALDB_E_INTERNAL_ERROR;
 		goto error_out;
 	}
 	memcpy(template, full_path + strlen(db_root) + 1, TEMPLATE_LEN);

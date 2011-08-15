@@ -575,12 +575,13 @@ enum jaldb_status jaldb_insert_log_record(
 
 enum jaldb_status jaldb_create_journal_file(
 	jaldb_context *ctx,
-	char *path,
+	char **path,
 	int *fd)
 {
-
-
-	return JALDB_OK;
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+	return jaldb_create_file(ctx->journal_root, path, fd);
 }
 
 enum jaldb_status jaldb_insert_journal_record(

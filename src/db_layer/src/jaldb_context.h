@@ -111,7 +111,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
  */
 enum jaldb_status jaldb_create_journal_file(
 	jaldb_context *ctx,
-	char *path,
+	char **path,
 	int *fd);
 
 /**
