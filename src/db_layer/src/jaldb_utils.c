@@ -29,9 +29,11 @@
 #include "jaldb_utils.h"
 #include "jaldb_status.h"
 #include "jal_alloc.h"
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include <sys/stat.h>
+#include <sys/types.h>
 
 enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote_host,
 		const char *sid, int *db_err_out)
@@ -98,3 +100,28 @@ int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_l
 	return strcmp(sid1, sid2);
 }
 
+enum jaldb_status jaldb_create_dirs(const char *path)
+{
+	if (!path) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
+	char *curr = NULL;
+	char *lpath = NULL;
+	lpath = jal_strdup(path);
+	curr = lpath;
+	while(*curr) {
+		if (*curr == '/') {
+			*curr = '\0';
+			if (-1 == mkdir(lpath, 0700) && errno != EEXIST) {
+				goto out;
+			}
+			*curr = '/';
+		}
+		curr += 1;
+	}
+	ret = JALDB_OK;
+out:
+	free(lpath);
+	return ret;
+}

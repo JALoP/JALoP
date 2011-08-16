@@ -83,10 +83,25 @@ enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote
  * the serial IDs are equal, and > 0 if sid1 comes after sid2.
  */
 int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_len);
+/**
+ * Helper function that will create (if needed) all directories in a path.
+ *
+ * A '/' is used as the path separator. The final element in the path is only
+ * created as a directory if it ends with a '/'. For example,
+ * jaldb_create_dirs("/foo/bar"); will create the directory /foo, but not the
+ * directory /foo/bar. On the other hand, jaldb_create_dires("/foo/bar/"); will
+ * create both /foo and /foo/bar as needed.
+ *
+ * @param[in] path the path containing directories to create.
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if path is NULL.
+ *  - JALDB_E_INTERNAL if another error occurred.
+ */
+enum jaldb_status jaldb_create_dirs(const char *path);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif // _JAL_DB_UTILS_H_
-
