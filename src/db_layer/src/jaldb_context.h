@@ -115,30 +115,6 @@ enum jaldb_status jaldb_create_journal_file(
 	int *fd);
 
 /**
- * Inserts a journal record.
- * @param[in] ctx The context.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * @param[in] path The path of the file that is journal data. This should be
- * obtained via a call to jaldb_create_journal_file.
- * @param[in] sys_meta_buf A buffer containing the system metadata.
- * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
- * @param[in] app_meta_buf A buffer containing the application metadata.
- * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_insert_journal_record(
-	jaldb_context *ctx,
-	const char *source,
-	const char *path,
-	const uint8_t *sys_meta_buf,
-	const size_t sys_meta_len,
-	const uint8_t *app_meta_buf,
-	const size_t app_meta_buf_len);
-
-/**
  * Retrieves an audit record by serial ID.
  *
  * @param[in] ctx The context.
