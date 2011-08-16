@@ -26,16 +26,17 @@
  * limitations under the License.
  */
 
-#include <test-dept.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <dirent.h>
 #include <db.h>
+#include <dirent.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <test-dept.h>
 #include "jal_alloc.h"
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
+#include "jaldb_utils.h"
+
 
 #define OTHER_DB_ROOT "./testdb/"
 
