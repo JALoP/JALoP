@@ -99,6 +99,18 @@ int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_l
  *  - JALDB_E_INTERNAL if another error occurred.
  */
 enum jaldb_status jaldb_create_dirs(const char *path);
+/**
+ * Helper function to create a file in the databse.
+ * @param[in] db_root The root to create the file at
+ * @param[out] path The path (relative to \p db_root) of the new file.
+ * @param[out] fd An open file descriptor for this file.
+ * @return 
+ *  - JAL_OK on success
+ */
+enum jaldb_status jaldb_create_file(
+	const char *db_root,
+	char **path,
+	int *fd);
 
 #ifdef __cplusplus
 }

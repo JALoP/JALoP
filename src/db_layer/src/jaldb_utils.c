@@ -30,10 +30,14 @@
 #include "jaldb_status.h"
 #include "jal_alloc.h"
 #include <errno.h>
-#include <string.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote_host,
 		const char *sid, int *db_err_out)
@@ -123,5 +127,78 @@ enum jaldb_status jaldb_create_dirs(const char *path)
 	ret = JALDB_OK;
 out:
 	free(lpath);
+	return ret;
+}
+enum jaldb_status jaldb_create_file(
+	const char *db_root,
+	char **relative_path_out,
+	int *fd)
+{
+	// This is for the string 'yyyy/mm/dd/journal.XXXXXXXXXX'
+	#define TEMPLATE_LEN 30
+	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
+
+	time_t current_time;
+	struct tm gmt;
+	char *full_path = NULL;
+	char *template = NULL;
+	int written = -1;
+	int len = -1;
+	int lfd = -1;
+
+	current_time = time(NULL);
+	if (current_time == (time_t) -1) {
+		// should never happen for gettimeofday
+		goto error_out;
+	}
+
+	memset(&gmt, 0, sizeof(gmt));
+	if (NULL == gmtime_r(&current_time, &gmt)) {
+		// should never happen
+		goto error_out;
+	}
+	template = (char*) malloc(TEMPLATE_LEN);
+	if (template == NULL) {
+		ret = JALDB_E_NO_MEM;
+		goto error_out;
+	}
+	if (0 == strftime(template, TEMPLATE_LEN, "./%Y/%m/%d/journal.XXXXXX", &gmt)) {
+		// a return of 0 is an error in this case, but it should never
+		// happen.
+		goto error_out;
+	}
+	len = strlen(db_root) + TEMPLATE_LEN;
+	full_path = (char*) malloc(len);
+	if (full_path == NULL) {
+		ret = JALDB_E_NO_MEM;
+		goto error_out;
+	}
+	written = snprintf(full_path, len, "%s/%s", db_root, template);
+	if (written >= len) {
+		// shouldn't happen since the size of full_path was calculated
+		// based on db_root & template
+		goto error_out;
+	}
+	ret = jaldb_create_dirs(full_path);
+	if (ret != JALDB_OK) {
+		goto error_out;
+	}
+	lfd = mkstemp(full_path);
+	if (lfd == -1) {
+		goto error_out;
+	}
+	memcpy(template, full_path + strlen(db_root) + 1, TEMPLATE_LEN);
+	goto out;
+error_out:
+	free(template);
+	template = NULL;
+	if (lfd > -1) {
+		close(lfd);
+		lfd = -1;
+	}
+out:
+	*relative_path_out = template;
+	free(full_path);
+	*fd = lfd;
 	return ret;
 }
