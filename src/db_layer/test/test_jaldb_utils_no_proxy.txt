@@ -1,4 +1,6 @@
+stat_test_dept_proxy stat
 printf_test_dept_proxy printf
 jaldb_create_dirs_test_dept_proxy jaldb_create_dirs
 jaldb_sid_cmp_test_dept_proxy jaldb_sid_cmp
 jaldb_store_confed_sid_test_dept_proxy jaldb_store_confed_sid
+dir_cleanup_test_dept_proxy dir_cleanup
