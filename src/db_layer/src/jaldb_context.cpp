@@ -31,6 +31,7 @@
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
+#include "jaldb_strings.h"
 #include "jaldb_status.h"
 
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
@@ -38,20 +39,7 @@
 
 jaldb_context *jaldb_context_create()
 {
-	jaldb_context *context = (jaldb_context *)jal_malloc(sizeof(*context));
-
-	context->manager = NULL;
-	context->audit_sys_meta_container = NULL;
-	context->audit_app_meta_container = NULL;
-	context->audit_container = NULL;
-	context->log_sys_meta_container = NULL;
-	context->log_app_meta_container = NULL;
-	context->log_db = NULL;
-	context->journal_sys_meta_container = NULL;
-	context->journal_app_meta_container = NULL;
-	context->journal_root = NULL;
-	context->schemas_root = NULL;
-
+	jaldb_context *context = (jaldb_context *)jal_calloc(1, sizeof(*context));
 	return context;
 }
 
@@ -65,20 +53,10 @@ enum jaldb_status jaldb_context_init(
 	}
 
 	// Make certain that the context is not already initialized.
-	if ((ctx->manager) || (ctx->audit_sys_meta_container) ||
-		(ctx->audit_app_meta_container) || (ctx->audit_container) ||
-		(ctx->log_sys_meta_container) ||
-		(ctx->log_app_meta_container) || (ctx->log_db) ||
-		(ctx->journal_sys_meta_container) ||
-		(ctx->journal_app_meta_container) || (ctx->journal_root) ||
+	if ((ctx->manager) || (ctx->journal_root) ||
 		(ctx->schemas_root)) {
-
 		return JALDB_E_INITIALIZED;
 	}
-
-	XmlManager *mgr = new XmlManager();
-
-	ctx->manager = mgr;
 
 	if (!db_root) {
 		db_root = DEFAULT_DB_ROOT;
@@ -87,39 +65,48 @@ enum jaldb_status jaldb_context_init(
 	if (!schemas_root) {
 		schemas_root = DEFAULT_SCHEMAS_ROOT;
 	}
-
-	// *** TBD: ASSOCIATE THE SCHEMAS ROOT WITH THE DOCUMENT CONTAINERS. ***
-
-	char *path = NULL;
-
-	jal_asprintf(&path, "%s/%s", db_root, AUDIT_SYS_META_CONT_NAME);
-	ctx->audit_sys_meta_container = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, AUDIT_APP_META_CONT_NAME);
-	ctx->audit_app_meta_container = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, AUDIT_CONT_NAME);
-	ctx->audit_container = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, LOG_SYS_META_CONT_NAME);
-	ctx->log_sys_meta_container = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, LOG_APP_META_CONT_NAME);
-	ctx->log_app_meta_container = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, LOG_DB_NAME);
-	ctx->log_db = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, JOURNAL_SYS_META_CONT_NAME);
-	ctx->journal_sys_meta_container = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, JOURNAL_APP_META_CONT_NAME);
-	ctx->journal_app_meta_container = path;
-
-	jal_asprintf(&path, "%s/%s", db_root, JOURNAL_ROOT_NAME);
-	ctx->journal_root = path;
+	if (-1 == jal_asprintf(&ctx->journal_root, "%s%s", db_root, JALDB_JOURNAL_ROOT_NAME)) {
+		return JALDB_E_NO_MEM;
+	}
 
 	ctx->schemas_root = jal_strdup(schemas_root);
+
+	uint32_t env_flags = DB_CREATE |
+		DB_INIT_LOCK |
+		DB_INIT_LOG |
+		DB_INIT_MPOOL |
+		DB_INIT_TXN |
+		DB_THREAD;
+
+	DB_ENV *env = NULL;
+	db_env_create(&env, 0);
+	int db_err = env->open(env, db_root, env_flags, 0);
+	if (db_err != 0) {
+		return JALDB_E_INVAL;
+	}
+
+	XmlManager *mgr = new XmlManager(env, DBXML_ADOPT_DBENV);
+
+	ctx->manager = mgr;
+	XmlContainerConfig cfg;
+	cfg.setAllowCreate(true);
+	cfg.setThreaded(true);
+	cfg.setTransactional(true);
+
+	XmlTransaction txn = ctx->manager->createTransaction();
+	ctx->manager->openContainer(txn, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
+	ctx->manager->openContainer(txn, JALDB_AUDIT_APP_META_CONT_NAME, cfg);
+	ctx->manager->openContainer(txn, JALDB_AUDIT_CONT_NAME, cfg);
+	ctx->manager->openContainer(txn, JALDB_JOURNAL_SYS_META_CONT_NAME, cfg);
+	ctx->manager->openContainer(txn, JALDB_JOURNAL_APP_META_CONT_NAME, cfg);
+	ctx->manager->openContainer(txn, JALDB_LOG_SYS_META_CONT_NAME, cfg);
+	ctx->manager->openContainer(txn, JALDB_LOG_APP_META_CONT_NAME, cfg);
+
+
+
+
+
+	txn.commit();
 
 	return JALDB_OK;
 }
@@ -132,14 +119,6 @@ void jaldb_context_destroy(jaldb_context **ctx)
 
 	delete (*ctx)->manager;
 
-	free((*ctx)->audit_sys_meta_container);
-	free((*ctx)->audit_app_meta_container);
-	free((*ctx)->audit_container);
-	free((*ctx)->log_sys_meta_container);
-	free((*ctx)->log_app_meta_container);
-	free((*ctx)->log_db);
-	free((*ctx)->journal_sys_meta_container);
-	free((*ctx)->journal_app_meta_container);
 	free((*ctx)->journal_root);
 	free((*ctx)->schemas_root);
 

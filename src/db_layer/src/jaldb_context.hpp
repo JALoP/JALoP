@@ -32,29 +32,12 @@
 
 #include <dbxml/DbXml.hpp>
 #include "jaldb_context.h"
-
-#define AUDIT_SYS_META_CONT_NAME "audit_sys_meta.dbxml"
-#define AUDIT_APP_META_CONT_NAME "audit_app_meta.dbxml"
-#define AUDIT_CONT_NAME "audit.dbxml"
-#define LOG_SYS_META_CONT_NAME "log_sys_meta.dbxml"
-#define LOG_APP_META_CONT_NAME "log_app_meta.dbxml"
-#define LOG_DB_NAME "log.db"
-#define JOURNAL_SYS_META_CONT_NAME "journal_sys_meta.dbxml"
-#define JOURNAL_APP_META_CONT_NAME "journal_app_meta.dbxml"
-#define JOURNAL_ROOT_NAME "journal/"
+#include <xercesc/dom/DOMDocument.hpp>
 
 using namespace DbXml;
 
 struct jaldb_context_t {
 	XmlManager *manager; //<! The manager associated with the context.
-	char *audit_sys_meta_container; //<! The audit system metadata container path.
-	char *audit_app_meta_container; //<! The audit application metadata container path.
-	char *audit_container; //<! The audit record container path.
-	char *log_sys_meta_container; //<! The log system metadata container path.
-	char *log_app_meta_container; //<! The log application metadata container path.
-	char *log_db; //<! The log database path.
-	char *journal_sys_meta_container; //<! The journal system metadata container path.
-	char *journal_app_meta_container; //<! The journal application metadata container path.
 	char *journal_root; //<! The journal record root path.
 	char *schemas_root; //<! The schemas root path.
 };
