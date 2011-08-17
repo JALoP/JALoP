@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <jalop/jal_status.h>
+#include "jaldb_status.h"
 
 struct jaldb_context_t;
 typedef jaldb_context_t jaldb_context;
@@ -59,7 +59,7 @@ jaldb_context *jaldb_context_create();
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_context_init(
+enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root);
@@ -85,7 +85,7 @@ void jaldb_context_destroy(jaldb_context **ctx);
  * @param[in] audit_buf A buffer containing the audit data.
  * @param[in] audit_len The size (in bytes) of audit_buf.
  */
-enum jal_status jaldb_insert_audit_record(
+enum jaldb_status jaldb_insert_audit_record(
 	jaldb_context *ctx,
 	const char *source,
 	const uint8_t *sys_meta_buf,
@@ -109,7 +109,7 @@ enum jal_status jaldb_insert_audit_record(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_insert_audit_record_into_temp(
+enum jaldb_status jaldb_insert_audit_record_into_temp(
 	jaldb_context *ctx,
 	char *db_name,
 	const uint8_t *sys_meta_buf,
@@ -134,7 +134,7 @@ enum jal_status jaldb_insert_audit_record_into_temp(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_insert_log_record(
+enum jaldb_status jaldb_insert_log_record(
 	jaldb_context *ctx,
 	const char *source,
 	const uint8_t *sys_meta_buf,
@@ -154,7 +154,7 @@ enum jal_status jaldb_insert_log_record(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_create_journal_file(
+enum jaldb_status jaldb_create_journal_file(
 	jaldb_context *ctx,
 	char *path,
 	int *fd);
@@ -174,7 +174,7 @@ enum jal_status jaldb_create_journal_file(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_insert_journal_record(
+enum jaldb_status jaldb_insert_journal_record(
 	jaldb_context *ctx,
 	const char *source,
 	const char *path,
@@ -198,7 +198,7 @@ enum jal_status jaldb_insert_journal_record(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_get_audit_record(
+enum jaldb_status jaldb_get_audit_record(
 	jaldb_context *ctx,
 	const char *sid,
 	uint8_t **sys_meta_buf,
@@ -223,7 +223,7 @@ enum jal_status jaldb_get_audit_record(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jal_status jaldb_get_log_record(
+enum jaldb_status jaldb_get_log_record(
 	jaldb_context *ctx,
 	const char *sid,
 	uint8_t **sys_meta_buf,
@@ -247,7 +247,7 @@ enum jal_status jaldb_get_log_record(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails
  */
-enum jal_status jaldb_get_journal_record(
+enum jaldb_status jaldb_get_journal_record(
 	jaldb_context *ctx,
 	const char *sid,
 	const char *path,

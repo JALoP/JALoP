@@ -31,6 +31,7 @@
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
+#include "jaldb_status.h"
 
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
@@ -54,13 +55,13 @@ jaldb_context *jaldb_context_create()
 	return context;
 }
 
-enum jal_status jaldb_context_init(
+enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root)
 {
 	if (!ctx) {
-		return JAL_E_INVAL;
+		return JALDB_E_INVAL;
 	}
 
 	// Make certain that the context is not already initialized.
@@ -72,7 +73,7 @@ enum jal_status jaldb_context_init(
 		(ctx->journal_app_meta_container) || (ctx->journal_root) ||
 		(ctx->schemas_root)) {
 
-		return JAL_E_INITIALIZED;
+		return JALDB_E_INITIALIZED;
 	}
 
 	XmlManager *mgr = new XmlManager();
@@ -120,7 +121,7 @@ enum jal_status jaldb_context_init(
 
 	ctx->schemas_root = jal_strdup(schemas_root);
 
-	return JAL_OK;
+	return JALDB_OK;
 }
 
 void jaldb_context_destroy(jaldb_context **ctx)
@@ -146,7 +147,7 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	*ctx = NULL;
 }
 
-enum jal_status jaldb_insert_audit_record(
+enum jaldb_status jaldb_insert_audit_record(
 	jaldb_context *ctx,
 	const char *source,
 	const uint8_t *sys_meta_buf,
@@ -158,10 +159,10 @@ enum jal_status jaldb_insert_audit_record(
 {
 		
 
-	return JAL_OK;
+	return JALDB_OK;
 }
 
-enum jal_status jaldb_insert_audit_record_into_temp(
+enum jaldb_status jaldb_insert_audit_record_into_temp(
 	jaldb_context *ctx,
 	char *db_name,
 	const uint8_t *sys_meta_buf,
@@ -172,10 +173,10 @@ enum jal_status jaldb_insert_audit_record_into_temp(
 	const size_t audit_len)
 {
 
-	return JAL_OK;
+	return JALDB_OK;
 }
 
-enum jal_status jaldb_insert_log_record(
+enum jaldb_status jaldb_insert_log_record(
 	jaldb_context *ctx,
 	const char *source,
 	const uint8_t *sys_meta_buf,
@@ -185,22 +186,20 @@ enum jal_status jaldb_insert_log_record(
 	const uint8_t *log_buf,
 	const size_t log_len)
 {
-
-
-	return JAL_OK;
+	return JALDB_OK;
 }
 
-enum jal_status jaldb_create_journal_file(
+enum jaldb_status jaldb_create_journal_file(
 	jaldb_context *ctx,
 	char *path,
 	int *fd)
 {
 
 
-	return JAL_OK;
+	return JALDB_OK;
 }
 
-enum jal_status jaldb_insert_journal_record(
+enum jaldb_status jaldb_insert_journal_record(
 	jaldb_context *ctx,
 	const char *source,
 	const char *path,
@@ -211,10 +210,10 @@ enum jal_status jaldb_insert_journal_record(
 {
 
 
-	return JAL_OK;
+	return JALDB_OK;
 }
 
-enum jal_status jaldb_get_audit_record(
+enum jaldb_status jaldb_get_audit_record(
 	jaldb_context *ctx,
 	const char *sid,
 	uint8_t **sys_meta_buf,
@@ -226,10 +225,10 @@ enum jal_status jaldb_get_audit_record(
 {
 
 
-	return JAL_OK;
+	return JALDB_OK;
 }
 
-enum jal_status jaldb_get_log_record(
+enum jaldb_status jaldb_get_log_record(
 	jaldb_context *ctx,
 	const char *sid,
 	uint8_t **sys_meta_buf,
@@ -241,10 +240,10 @@ enum jal_status jaldb_get_log_record(
 {
 
 
-	return JAL_OK;
+	return JALDB_OK;
 }
 
-enum jal_status jaldb_get_journal_record(
+enum jaldb_status jaldb_get_journal_record(
 	jaldb_context *ctx,
 	const char *sid,
 	const char *path,
@@ -254,6 +253,6 @@ enum jal_status jaldb_get_journal_record(
 	size_t *app_meta_len)
 {
 
+	return JALDB_OK;
 
-	return JAL_OK;
 }

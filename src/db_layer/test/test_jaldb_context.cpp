@@ -92,18 +92,18 @@ extern "C" void test_db_create_returns_initialized_struct()
 }
 extern "C" void test_db_init_returns_an_error_for_null_ctx()
 {
-	enum jal_status ret = jaldb_context_init(NULL, NULL, NULL);
-	assert_equals(JAL_E_INVAL, ret);
+	enum jaldb_status ret = jaldb_context_init(NULL, NULL, NULL);
+	assert_equals(JALDB_E_INVAL, ret);
 }
 
 extern "C" void test_db_init_does_not_double_init()
 {
-	enum jal_status ret;
+	enum jaldb_status ret;
 	jaldb_context *ctx = jaldb_context_create();
 
 	ctx->manager = (XmlManager*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) 0xbadf00d, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -121,7 +121,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->audit_sys_meta_container = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) 0xbadf00d, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -139,7 +139,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->audit_app_meta_container = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) 0xbadf00d, ctx->audit_app_meta_container);
@@ -157,7 +157,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->audit_container = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -175,7 +175,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->log_sys_meta_container = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -193,7 +193,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->log_app_meta_container = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -211,7 +211,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->log_db = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -229,7 +229,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->journal_sys_meta_container = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -247,7 +247,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->journal_app_meta_container = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -265,7 +265,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->journal_root = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -283,7 +283,7 @@ extern "C" void test_db_init_does_not_double_init()
 
 	ctx->schemas_root = (char*) 0xbadf00d;
 	ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_E_INITIALIZED, ret);
+	assert_equals(JALDB_E_INITIALIZED, ret);
 	assert_pointer_equals((void*) NULL, ctx->manager);
 	assert_pointer_equals((void*) NULL, ctx->audit_sys_meta_container);
 	assert_pointer_equals((void*) NULL, ctx->audit_app_meta_container);
@@ -303,8 +303,8 @@ extern "C" void test_db_init_initializes_members_with_default_paths()
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void*) NULL, ctx);
-	enum jal_status ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_OK, ret);
+	enum jaldb_status ret = jaldb_context_init(ctx, NULL, NULL);
+	assert_equals(JALDB_OK, ret);
 	assert_not_equals(NULL, ctx->manager);
 	assert_string_equals(DEFAULT_DB_ROOT AUDIT_SYS_CONT, ctx->audit_sys_meta_container);
 	assert_string_equals(DEFAULT_DB_ROOT AUDIT_APP_CONT, ctx->audit_app_meta_container);
@@ -323,8 +323,8 @@ extern "C" void test_db_init_initializes_members_correctly_with_different_db_roo
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void*) NULL, ctx);
-	enum jal_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, NULL);
-	assert_equals(JAL_OK, ret);
+	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, NULL);
+	assert_equals(JALDB_OK, ret);
 	assert_not_equals(NULL, ctx->manager);
 	assert_string_equals(OTHER_DB_ROOT "/" AUDIT_SYS_CONT, ctx->audit_sys_meta_container);
 	assert_string_equals(OTHER_DB_ROOT "/" AUDIT_APP_CONT, ctx->audit_app_meta_container);
@@ -343,8 +343,8 @@ extern "C" void test_db_init_initializes_members_correctly_with_different_schema
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void*) NULL, ctx);
-	enum jal_status ret = jaldb_context_init(ctx, NULL, OTHER_SCHEMA_ROOT);
-	assert_equals(JAL_OK, ret);
+	enum jaldb_status ret = jaldb_context_init(ctx, NULL, OTHER_SCHEMA_ROOT);
+	assert_equals(JALDB_OK, ret);
 	assert_not_equals(NULL, ctx->manager);
 	assert_string_equals(DEFAULT_DB_ROOT AUDIT_SYS_CONT, ctx->audit_sys_meta_container);
 	assert_string_equals(DEFAULT_DB_ROOT AUDIT_APP_CONT, ctx->audit_app_meta_container);
@@ -370,8 +370,8 @@ extern "C" void test_db_destroy_sets_ctx_to_null()
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void*) NULL, ctx);
-	enum jal_status ret = jaldb_context_init(ctx, NULL, NULL);
-	assert_equals(JAL_OK, ret);
+	enum jaldb_status ret = jaldb_context_init(ctx, NULL, NULL);
+	assert_equals(JALDB_OK, ret);
 	jaldb_context_destroy(&ctx);
 	assert_pointer_equals((void*) NULL, ctx);
 }
