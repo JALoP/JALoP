@@ -64,7 +64,7 @@ default_cflags = ' -std=gnu99 '
 # This script will build both debug and release version at the same time,
 # common flags should get added to the 'flags' variable. Flags sepcific to a
 # particular build configuration should get added to the appropriate spot.
-extra_debug_ccflags = '-DDEBUG'.split()
+extra_debug_ccflags = '-DDEBUG -g'.split()
 
 profiling_ccflags = '-fprofile-arcs -ftest-coverage'.split()
 profiling_ldflags = profiling_ccflags
