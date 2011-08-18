@@ -94,13 +94,27 @@ enum jaldb_status jaldb_context_init(
 	cfg.setTransactional(true);
 
 	XmlTransaction txn = ctx->manager->createTransaction();
-	ctx->manager->openContainer(txn, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	ctx->manager->openContainer(txn, JALDB_AUDIT_APP_META_CONT_NAME, cfg);
-	ctx->manager->openContainer(txn, JALDB_AUDIT_CONT_NAME, cfg);
-	ctx->manager->openContainer(txn, JALDB_JOURNAL_SYS_META_CONT_NAME, cfg);
-	ctx->manager->openContainer(txn, JALDB_JOURNAL_APP_META_CONT_NAME, cfg);
-	ctx->manager->openContainer(txn, JALDB_LOG_SYS_META_CONT_NAME, cfg);
-	ctx->manager->openContainer(txn, JALDB_LOG_APP_META_CONT_NAME, cfg);
+
+	XmlContainer cont = ctx->manager->openContainer(txn, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
+	ctx->audit_sys_cont = new XmlContainer(cont);
+
+	cont = ctx->manager->openContainer(txn, JALDB_AUDIT_APP_META_CONT_NAME, cfg);
+	ctx->audit_app_cont = new XmlContainer(cont);
+
+	cont = ctx->manager->openContainer(txn, JALDB_AUDIT_CONT_NAME, cfg);
+	ctx->audit_cont = new XmlContainer(cont);
+
+	cont = ctx->manager->openContainer(txn, JALDB_JOURNAL_SYS_META_CONT_NAME, cfg);
+	ctx->journal_sys_cont = new XmlContainer(cont);
+
+	cont = ctx->manager->openContainer(txn, JALDB_JOURNAL_APP_META_CONT_NAME, cfg);
+	ctx->journal_app_cont = new XmlContainer(cont);
+
+	cont = ctx->manager->openContainer(txn, JALDB_LOG_SYS_META_CONT_NAME, cfg);
+	ctx->log_sys_cont = new XmlContainer(cont);
+
+	cont = ctx->manager->openContainer(txn, JALDB_LOG_APP_META_CONT_NAME, cfg);
+	ctx->log_app_cont = new XmlContainer(cont);
 
 
 
@@ -116,11 +130,34 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	if (!ctx || !(*ctx)) {
 		return;
 	}
+	jaldb_context *ctxp = *ctx;
+	if (ctxp->audit_sys_cont) {
+		delete (ctxp->audit_sys_cont);
+	}
+	if (ctxp->audit_app_cont) {
+		delete (ctxp->audit_app_cont);
+	}
+	if (ctxp->audit_cont) {
+		delete (ctxp->audit_cont);
+	}
+	if (ctxp->journal_sys_cont) {
+		delete (ctxp->journal_sys_cont);
+	}
+	if (ctxp->journal_app_cont) {
+		delete (ctxp->journal_app_cont);
+	}
+	if (ctxp->log_sys_cont) {
+		delete (ctxp->log_sys_cont);
+	}
+	if (ctxp->log_app_cont) {
+		delete (ctxp->log_app_cont);
+	}
+
+	free(ctxp->journal_root);
+	free(ctxp->schemas_root);
 
 	delete (*ctx)->manager;
 
-	free((*ctx)->journal_root);
-	free((*ctx)->schemas_root);
 
 	free(*ctx);
 	*ctx = NULL;

@@ -38,6 +38,13 @@ using namespace DbXml;
 
 struct jaldb_context_t {
 	XmlManager *manager; //<! The manager associated with the context.
+	XmlContainer *audit_sys_cont; //<! Container for the audit System Metadata
+	XmlContainer *audit_app_cont; //<! Container for the audit Application Metadata
+	XmlContainer *audit_cont; //<! Container for the audit data
+	XmlContainer *journal_sys_cont; //<! Container for journal the System Metadata
+	XmlContainer *journal_app_cont; //<! Container for journal the Application Metadata
+	XmlContainer *log_sys_cont; //<! Container for the log System Metadata
+	XmlContainer *log_app_cont; //<! Container for the log Application Metadata
 	char *journal_root; //<! The journal record root path.
 	char *schemas_root; //<! The schemas root path.
 };
