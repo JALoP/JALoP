@@ -1,7 +1,7 @@
 /**
- * @file jaldb_xml_doc_storage.cpp This file implements a back-end helper
- * function for the storage of data in the appropriate Berkeley DB XML document
- * containers.
+ * @file jaldb_xml_doc_storage.cpp This file implements a back-end helper function
+ * for the storage of data in appropriate Berkeley DB XML document containers
+ * (for system metadata, application metadata, and audit records).
  *
  * @section LICENSE
  *
@@ -28,46 +28,32 @@
  * limitations under the License.
  */
 
-#include <sstream>
-#include "jaldb_context.hpp"
+#include "jaldb_dom_to_event_writer.hpp"
 #include "jaldb_xml_doc_storage.hpp"
+#include <dbxml/XmlDocument.hpp>
 
 using namespace std;
 using namespace DbXml;
+XERCES_CPP_NAMESPACE_USE
 
-void jaldb_store_data(
-	uint8_t *buf,
-	size_t buf_size,
-	const char *container,
-	XmlManager *mgr)
+enum jaldb_status jaldb_put_document_as_dom(
+	XmlTransaction &txn,
+	XmlUpdateContext &uc,
+	XmlContainer &container,
+	XmlDocument &doc,
+	std::string &doc_name,
+	const DOMDocument *dom_doc)
 {
-	try {
-		string contPath = container;
-
-		XmlContainer cont;
-
-		if (!mgr->existsContainer(contPath)) {
-			cont = mgr->createContainer(contPath);
-		}
-		else {
-			cont = mgr->openContainer(contPath);
-		}
-
-		size_t numberOfDocs = cont.getNumDocuments();
-
-		numberOfDocs++;
-
-		stringstream ss;
-		ss << (int)(numberOfDocs);
-		string serialId = ss.str();
-
-		XmlUpdateContext uc = mgr->createUpdateContext();
-
-		string buffer = (char *)(buf);
-
-		cont.putDocument(serialId, buffer, uc);
+	if (doc_name.length() == 0 || !dom_doc) {
+		return JALDB_E_INVAL;
 	}
-	catch (XmlException &e) {
-		cout << "Exception: " << e.what() << endl;
-	}
+
+	doc.setName(doc_name);
+	XmlEventWriter &writer = container.putDocumentAsEventWriter(
+		txn, doc, uc, 0);
+
+	DOMToEventWriter dom_to_event_writer(writer, dom_doc);
+	dom_to_event_writer.start();
+
+	return JALDB_OK;
 }

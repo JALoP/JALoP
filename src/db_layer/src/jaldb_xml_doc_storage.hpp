@@ -31,20 +31,33 @@
 #ifndef _JALDB_XML_DOC_STORAGE_HPP_
 #define _JALDB_XML_DOC_STORAGE_HPP_
 
-#include "jaldb_context.hpp"
+#include <xercesc/dom/DOMDocument.hpp>
+#include <dbxml/XmlManager.hpp>
+#include <dbxml/XmlContainer.hpp>
+#include <dbxml/XmlTransaction.hpp>
+
+#include "jaldb_status.h"
 
 /**
  * Stores system metadata, application metadata, and audit records in the
  * appropriate Berkeley DB XML document containers.
- * @param[in] buf The data (XML document) to store.
- * @param[in] buf_size The size (in bytes) of the data to store.
- * @param[in] container The path of the container to which to store the data.
- * @param[in] mgr The DB XML manager that handles storing of the data.
+ * @param[in] txn An object used for transaction protection.
+ * @param[in] uc The update context to use
+ * @param[in] container The container to which to store the data.
+ * @param[in] doc The DbXml Document to associate with. Any metadata should
+ * @param[in] doc_name The name to use for the document
+ * @param[in] dom_doc The document containing the data.
+ *
+ * @return
+ *  - JALDB_OK if the function succeeds or a JAL error code if the function
+ * fails.
  */
-void jaldb_store_data(
-	uint8_t *buf,
-	size_t buf_size,
-	const char *container,
-	DbXml::XmlManager *mgr);
+enum jaldb_status jaldb_put_document_as_dom(
+	DbXml::XmlTransaction &txn,
+	DbXml::XmlUpdateContext &uc,
+	DbXml::XmlContainer &container,
+	DbXml::XmlDocument &doc,
+	std::string &doc_name,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *dom_doc);
 
 #endif // _JALDB_XML_DOC_STORAGE_HPP_
