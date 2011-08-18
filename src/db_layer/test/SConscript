@@ -10,6 +10,8 @@ env = env.Clone()
 env.Append(CCFLAGS='-Wno-format-nonliteral -Wno-unreachable-code'.split())
 
 utilsObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
+tests.append(env.TestDeptTest('test_jaldb_utils.c',
+	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
 	other_sources=[utilsObj, lib_common])[0].abspath)
 
