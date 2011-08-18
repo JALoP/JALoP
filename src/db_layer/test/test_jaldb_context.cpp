@@ -72,7 +72,7 @@ extern "C" void setup()
 	}
 	closedir(dir);
 	context = jaldb_context_create();
-	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT);
+	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true);
 }
 
 extern "C" void teardown()
@@ -93,7 +93,7 @@ extern "C" void test_db_destroy_sets_ctx_to_null()
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void*) NULL, ctx);
-	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT);
+	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true);
 	assert_equals(JALDB_OK, ret);
 	jaldb_context_destroy(&ctx);
 	assert_pointer_equals((void*) NULL, ctx);
