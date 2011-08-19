@@ -1,0 +1,27 @@
+import os
+import string
+Import('*')
+
+tests = []
+
+testEnv = env.Clone()
+
+# The test code triggers warnings we'd just as soon ignore
+ccflags = " -Wno-format-nonliteral -Wno-unreachable-code"
+
+testEnv.Append(CCFLAGS=ccflags.split())
+testEnv.MergeFlags({'CPPPATH':['#src/local_store/src', '#src/lib_common/src']})
+
+jallsMsgObj = env.SharedObject(os.path.join('..', 'src', 'jalls_msg.c'))
+
+tests.append(testEnv.TestDeptTest('test_jalls_msg.c',
+	other_sources=[], useProxies=True)[0].abspath)
+
+tests.append(testEnv.TestDeptTest('test_jalls_handler.c',
+	other_sources=[jallsMsgObj, lib_common], useProxies=True)[0].abspath)
+
+local_store_tests = env.Alias('local_store_tests', tests, 'test_dept ' + " ".join(tests))
+
+AlwaysBuild(local_store_tests)
+
+env.Depends(all_tests, local_store_tests)
