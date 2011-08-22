@@ -30,6 +30,7 @@
 #define _JALDB_SERIAL_ID_HPP_
 
 #include <dbxml/DbXml.hpp>
+#include <dbxml/XmlTransaction.hpp>
 #include <string>
 
 #include "jaldb_status.h"
@@ -53,6 +54,18 @@ enum jaldb_status jaldb_get_next_serial_id(DbXml::XmlTransaction &txn,
 		DbXml::XmlUpdateContext &uc,
 		DbXml::XmlContainer &container,
 		std::string &sid);
+
+/**
+ * Helper function to insert the first serial ID for a container.
+ *
+ * @param [in] txn A transaction to use.
+ * @param [in] cont The container to insert into.
+ * @param [out] db_err An internal DB_ERROR
+ *
+ * @return JALDB_OK or an error code.
+ */
+enum jaldb_status jaldb_initialize_serial_id(DbXml::XmlTransaction &txn,
+		DbXml::XmlContainer &cont, int *db_err);
 
 /**
  * Internal helper function that increments a serial ID.

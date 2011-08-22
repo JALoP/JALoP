@@ -31,9 +31,12 @@
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
+#include "jaldb_serial_id.hpp"
 #include "jaldb_strings.h"
 #include "jaldb_status.h"
 #include "jaldb_utils.h"
+
+using namespace std;
 
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
@@ -122,6 +125,9 @@ enum jaldb_status jaldb_context_init(
 	cont = ctx->manager->openContainer(txn, JALDB_LOG_APP_META_CONT_NAME, cfg);
 	ctx->log_app_cont = new XmlContainer(cont);
 
+	jaldb_initialize_serial_id(txn, *ctx->journal_sys_cont, &db_err);
+	jaldb_initialize_serial_id(txn, *ctx->audit_sys_cont, &db_err);
+	jaldb_initialize_serial_id(txn, *ctx->log_sys_cont, &db_err);
 	DB_TXN *db_txn = txn.getDB_TXN();
 	int db_ret = 0;
 
@@ -416,3 +422,4 @@ enum jaldb_status jaldb_store_confed_sid_helper(XmlContainer *cont, DB *db,
 	}
 	return ret;
 }
+

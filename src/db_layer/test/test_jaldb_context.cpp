@@ -176,11 +176,10 @@ extern "C" void test_store_confed_log_sid_fails_with_invalid_input()
 extern "C" void test_store_confed_sid_helper_returns_ok_with_valid_input()
 {
 	XmlUpdateContext uc = context->manager->createUpdateContext();
-	XmlDocument doc = context->manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+	XmlDocument doc = context->audit_sys_cont->getDocument(JALDB_SERIAL_ID_DOC_NAME, 0);
 	XmlValue attrVal(XmlValue::STRING, "12345");
 	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
-	context->audit_sys_cont->putDocument(doc, uc, 0);
+	context->audit_sys_cont->updateDocument(doc, uc);
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("123");
 	int err = 0;
@@ -227,11 +226,10 @@ extern "C" void test_store_confed_sid_helper_fails_with_invalid_input()
 extern "C" void test_store_confed_sid_helper_fails_with_sid_greater_than_or_equal_to_next_sid()
 {
 	XmlUpdateContext uc = context->manager->createUpdateContext();
-	XmlDocument doc = context->manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+	XmlDocument doc = context->audit_sys_cont->getDocument(JALDB_SERIAL_ID_DOC_NAME, 0);
 	XmlValue attrVal(XmlValue::STRING, "12345");
 	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
-	context->audit_sys_cont->putDocument(doc, uc, 0);
+	context->audit_sys_cont->updateDocument(doc, uc);
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("123456");
 	int err = 0;

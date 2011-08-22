@@ -83,3 +83,35 @@ void jaldb_increment_serial_id(string &sid)
 		sid.insert(0, 1, '1');
 	}
 }
+enum jaldb_status jaldb_initialize_serial_id(XmlTransaction &parent_txn,
+		XmlContainer &cont, int *db_err)
+{
+	enum jaldb_status ret = JALDB_OK;
+	while (1) {
+		XmlTransaction txn = parent_txn.createChild();
+		try {
+			XmlUpdateContext uc =
+				cont.getManager().createUpdateContext();
+			XmlDocument doc = cont.getManager().createDocument();
+			string sid = "1";
+			doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+			doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, sid);
+			cont.putDocument(txn, doc, uc);
+			txn.commit();
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			if (e.getExceptionCode() == XmlException::UNIQUE_ERROR) {
+				// doc exists/already initialized.
+				ret = JALDB_OK;
+				break;
+			}
+			throw e;
+		}
+	}
+	return ret;
+}
