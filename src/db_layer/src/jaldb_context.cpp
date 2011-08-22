@@ -93,6 +93,7 @@ enum jaldb_status jaldb_context_init(
 	if (db_err != 0) {
 		return JALDB_E_INVAL;
 	}
+	env->set_lk_detect(env, DB_LOCK_DEFAULT);
 
 	XmlManager *mgr = new XmlManager(env, DBXML_ADOPT_DBENV);
 
