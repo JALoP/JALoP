@@ -56,7 +56,7 @@ packages_at_least = {
 # flags are shared by both debug and release builds
 default_ccflags = ' -Wall -W -Wundef -Wshadow -Wmissing-noreturn -Wformat=2 -Wmissing-format-attribute '
 default_ccflags += ' -Wextra -Wno-unreachable-code -Werror -D_FORTIFY_SOURCE=2 -fexceptions '
-default_ccflags += ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE_ -DHAVE_VA_COPY '
+default_ccflags += ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE -DHAVE_VA_COPY '
 default_cflags = ' -std=gnu99 '
 
 
