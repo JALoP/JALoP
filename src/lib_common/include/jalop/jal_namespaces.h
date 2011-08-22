@@ -36,6 +36,7 @@ extern "C" {
 #define JAL_APP_META_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadata"
 #define JAL_APP_META_TYPES_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
 #define JAL_XMLDSIG_URI "http://www.w3.org/2000/09/xmldsig#"
+#define JAL_SYS_META_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/systemMetadata"
 #define JAL_PAYLOAD_URI "jalop:payload"
 
 #ifdef __cplusplus

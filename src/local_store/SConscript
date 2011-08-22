@@ -10,13 +10,15 @@ local_store_env.MergeFlags(local_store_env['xerces_cflags'])
 local_store_env.MergeFlags(local_store_env['xerces_ldflags'])
 local_store_env.MergeFlags({'CXXFLAGS':['-D__STDC_FORMAT_MACROS']})
 local_store_env.MergeFlags({'CPPPATH':['#src/jal_utils/src', '#src/db_layer/src',
-	'#src/lib_common/include', '#src/producer_lib/include', '.']})
+	'#src/lib_common/include', '#src/lib_common/src', '#src/producer_lib/include', '.']})
 local_store_env.MergeFlags(local_store_env['libuuid_ldflags'])
 local_store_env.MergeFlags('-lpthread')
 local_store_env.MergeFlags('-DSCHEMAS_ROOT=\\\\\\"' + local_store_env['SOURCE_ROOT']  + '/schemas/\\\\\\"')
+if local_store_env['HAVE_SELINUX'] == True:
+	local_store_env.MergeFlags('-D__HAVE_SELINUX')
+	local_store_env.MergeFlags(local_store_env['selinux_ldflags'])
 
 SConscript('test/SConscript', exports={'env':local_store_env, 'all_tests':all_tests, 'lib_common':lib_common})
 local_store = local_store_env.SConscript('src/SConscript', exports={'env':local_store_env, 'jal_utils':jal_utils, 'lib_common':lib_common})
-
 
 Return("local_store")
