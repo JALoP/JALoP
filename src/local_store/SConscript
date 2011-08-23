@@ -18,7 +18,7 @@ if local_store_env['HAVE_SELINUX'] == True:
 	local_store_env.MergeFlags('-D__HAVE_SELINUX')
 	local_store_env.MergeFlags(local_store_env['selinux_ldflags'])
 
-SConscript('test/SConscript', exports={'env':local_store_env, 'all_tests':all_tests, 'lib_common':lib_common})
+SConscript('test/SConscript', exports={'env':local_store_env, 'all_tests':all_tests, 'lib_common':lib_common, 'test_utils':test_utils})
 local_store = local_store_env.SConscript('src/SConscript', exports={'env':local_store_env, 'jal_utils':jal_utils, 'lib_common':lib_common})
 
 Return("local_store")
