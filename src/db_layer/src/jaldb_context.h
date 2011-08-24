@@ -99,32 +99,6 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	const size_t app_meta_buf_len,
 	const uint8_t *audit_buf,
 	const size_t audit_len);
-
-/**
- * Inserts a log record.
- * @param[in] ctx The context.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * @param[in] sys_meta_buf A buffer containing the system metadata.
- * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
- * @param[in] app_meta_buf A buffer containing the application metadata.
- * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
- * @param[in] log_buf A buffer containing the audit data.
- * @param[in] log_len The size (in bytes) of audit data.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_insert_log_record(
-	jaldb_context *ctx,
-	const char *source,
-	const uint8_t *sys_meta_buf,
-	const size_t sys_meta_len,
-	const uint8_t *app_meta_buf,
-	const size_t app_meta_buf_len,
-	const uint8_t *log_buf,
-	const size_t log_len);
-
 /**
  * Creates a journal file.
  * @param[in] ctx The context.

@@ -52,6 +52,7 @@ struct jaldb_context_t {
 	DB *journal_conf_db; //<! The database for conf'ed journal records
 	DB *audit_conf_db; //<! The database for conf'ed audit records
 	DB *log_conf_db; //<! The database for conf'ed log records
+	DB *log_dbp; //<! The log database.
 	string_to_container_map *temp_containers; //<! a map from strings to XmlContainers that identifiers temporary databases for use by the network stores.
 };
 
@@ -259,6 +260,33 @@ std::string jaldb_make_temp_db_name(const std::string &id, const std::string &su
  * JALDB_E_INVAL if ctx is invalid
  */
 enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const std::string& db_name, DbXml::XmlContainer &cont);
+
+/**
+ * Inserts a log record.
+ * @param[in] ctx The context.
+ * @param[in] source The source of the record. If NULL, then this is set to the
+ * string 'localhost'.
+ * @param[in] sys_meta_doc The system metadata document
+ * @param[in] app_meta_doc The application  metadata document
+ * @param[in] log_buf A buffer containing the audit data.
+ * @param[in] log_len The size (in bytes) of audit data.
+ * @param[out] sid The serial ID for the record.
+ * @param[out] db_err Set to the Berkeley DB error when this function returns
+ * JALDB_E_DB
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ * @throw XmlException if there was an error inserting the record.
+ */
+enum jaldb_status jaldb_insert_log_record(
+	jaldb_context *ctx,
+	const std::string &source,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	uint8_t *log_buf,
+	const size_t log_len,
+	std::string &sid,
+	int *db_err);
 
 /**
  * Helper utility for inserting log records into various containers.

@@ -177,6 +177,19 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_DB;
 	}
 
+	db_ret = db_create(&ctx->log_dbp, env, 0);
+	if (db_ret != 0) {
+		txn.abort();
+		JALDB_DB_ERR((ctx->log_dbp), db_ret);
+		return JALDB_E_DB;
+	}
+	db_ret = ctx->log_dbp->open(ctx->log_dbp, db_txn,
+			JALDB_LOG_DB_NAME, NULL, DB_BTREE, DB_CREATE, 0);
+	if (db_ret != 0) {
+		txn.abort();
+		JALDB_DB_ERR((ctx->log_dbp), db_ret);
+		return JALDB_E_DB;
+	}
 	txn.commit();
 
 	ctx->temp_containers = new string_to_container_map;
@@ -227,7 +240,10 @@ void jaldb_context_destroy(jaldb_context **ctx)
 		(*ctx)->log_conf_db->close((*ctx)->log_conf_db, 0);
 	}
 
+	ctxp->log_dbp->close((*ctx)->log_dbp, 0);
+
 	delete ctxp->temp_containers;
+
 	delete (*ctx)->manager;
 
 
@@ -507,17 +523,54 @@ enum jaldb_status jaldb_insert_log_record_helper(
 out:
 	return ret;
 }
+
 enum jaldb_status jaldb_insert_log_record(
 	jaldb_context *ctx,
-	const char *source,
-	const uint8_t *sys_meta_buf,
-	const size_t sys_meta_len,
-	const uint8_t *app_meta_buf,
-	const size_t app_meta_buf_len,
-	const uint8_t *log_buf,
-	const size_t log_len)
+	const string &source,
+	const DOMDocument *sys_meta_doc,
+	const DOMDocument *app_meta_doc,
+	uint8_t *log_buf,
+	const size_t log_len,
+	string &sid,
+	int *db_err)
 {
-	return JALDB_OK;
+	if (!ctx || !ctx->manager || !ctx->log_sys_cont ||
+			!ctx->log_app_cont || !ctx->log_dbp|| !db_err) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_OK;
+	XmlUpdateContext uc = ctx->manager->createUpdateContext();
+	while(1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_get_next_serial_id(txn, uc, *ctx->log_sys_cont, sid);
+			if (ret != JALDB_OK) {
+				break;
+			}
+			ret = jaldb_insert_log_record_helper(
+				source, txn, *ctx->manager, uc,
+				*ctx->log_sys_cont, *ctx->log_app_cont,
+				ctx->log_dbp, sys_meta_doc, app_meta_doc,
+				log_buf, log_len, sid, db_err);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				if (ret == JALDB_E_DB && *db_err == DB_LOCK_DEADLOCK) {
+					continue;
+				}
+			} else {
+				txn.commit();
+			}
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+	return ret;
 }
 
 enum jaldb_status jaldb_create_journal_file(
