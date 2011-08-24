@@ -43,6 +43,7 @@
 #define JALLS_CFG_HOSTNAME "hostname"
 #define JALLS_CFG_DB_ROOT "db_root"
 #define JALLS_CFG_SOCKET "socket"
+#define JALLS_CFG_SCHEMAS_ROOT "schemas_root"
 
 /**
  * Parses the config file and fills out the jalls_context struct.

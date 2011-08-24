@@ -53,6 +53,8 @@ struct jalls_context {
 	char *system_uuid;
 	/** The hostname the JALoP Local Store should record in the system metadata */
 	char *hostname;
+	/** The full path to a directory that has the schemas */
+	char *schemas_root;
 	/** The full path to a directory to store the various database files and journal data */
 	char *db_root;
 	/** The full path to a UnixUNIX Domain Socket. The JALoP Local Store will create the socket and wait for producer applications to connect to the socket. */

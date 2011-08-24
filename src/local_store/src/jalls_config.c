@@ -54,6 +54,7 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	char **public_cert_file = &((*jalls_ctx)->public_cert_file);
 	char **system_uuid = &((*jalls_ctx)->system_uuid);
 	char **hostname = &((*jalls_ctx)->hostname);
+	char **schemas_root = &((*jalls_ctx)->schemas_root);
 	char **db_root = &((*jalls_ctx)->db_root);
 	char **socket = &((*jalls_ctx)->socket);
 
@@ -97,6 +98,14 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		goto err_out;
 	}
 
+	ret = jal_config_lookup_string(root, JALLS_CFG_SCHEMAS_ROOT, schemas_root, JALU_CFG_OPTIONAL);
+	if (-1 == ret) {
+		goto err_out;
+	}
+	if (*schemas_root == NULL) {
+		*schemas_root = strdup(SCHEMAS_ROOT);
+	}
+
 	ret = jal_config_lookup_string(root, JALLS_CFG_DB_ROOT, db_root, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
@@ -136,6 +145,7 @@ err_out:
 	free((*jalls_ctx)->public_cert_file);
 	free((*jalls_ctx)->system_uuid);
 	free((*jalls_ctx)->hostname);
+	free((*jalls_ctx)->schemas_root);
 	free((*jalls_ctx)->db_root);
 	free((*jalls_ctx)->socket);
 	free(*jalls_ctx);
