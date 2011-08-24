@@ -49,6 +49,8 @@
 #define JALLS_AUDIT_MSG 2
 #define JALLS_JOURNAL_MSG 3
 #define JALLS_JOURNAL_FD_MSG 4
+#define JALLS_BREAK_STRING "BREAK"
+#define JALLS_BREAK_LEN 5
 
 static int jalls_handle_journal(__attribute__((unused))struct jalls_thread_context *thread_ctx,
 	__attribute__((unused))uint64_t data_len,
@@ -268,3 +270,51 @@ int jalls_handle_journal_fd(__attribute__((unused))struct jalls_thread_context *
 	return -1;
 }
 
+int jalls_handle_app_meta(uint8_t **app_meta_buf, size_t app_meta_len, int fd, int debug) {
+
+	*app_meta_buf = malloc(app_meta_len);
+
+	struct iovec iov[1];
+	iov[0].iov_base = *app_meta_buf;
+	iov[0].iov_len = app_meta_len;
+
+	struct msghdr msgh;
+	memset(&msgh, 0, sizeof(msgh));
+	msgh.msg_iov = iov;
+	msgh.msg_iovlen = 1;
+
+	ssize_t bytes_recieved = jalls_recvmsg_helper(fd, &msgh, debug);
+
+	if ((unsigned)bytes_recieved == app_meta_len) {
+		return 0;
+	}
+
+	return -1;
+}
+
+int jalls_handle_break(int fd) {
+	char break_str[JALLS_BREAK_LEN + 1];
+
+	struct iovec iov[1];
+	iov->iov_base = break_str;
+	iov->iov_len = JALLS_BREAK_LEN;
+
+	struct msghdr msgh;
+	memset(&msgh, 0, sizeof(msgh));
+
+	msgh.msg_iov = iov;
+	msgh.msg_iovlen = 4;
+
+	ssize_t bytes_recieved = jalls_recvmsg_helper(fd, &msgh, 0);
+	if (bytes_recieved != JALLS_BREAK_LEN) {
+		return -1;
+	}
+
+	break_str[JALLS_BREAK_LEN] = 0;
+
+	if (0 != strcmp(JALLS_BREAK_STRING, break_str)) {
+		return -1;
+	}
+
+	return 0;
+}

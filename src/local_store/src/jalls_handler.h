@@ -1,6 +1,6 @@
 /**
  * @file jalls_handler.h This file contains functions to handle a connection
- * to the jalp local store.
+ * to the jalop local store.
  *
  * @section LICENSE
  *
@@ -30,6 +30,8 @@
 #ifndef _JALLS_HANDLER_H_
 #define _JALLS_HANDLER_H_
 
+#include <stdint.h>
+
 #include "jalls_context.h"
 
 /**
@@ -42,5 +44,17 @@
  * and the jalls_context.
 */
 void *jalls_handler(void *thread_ctx);
+
+int jalls_handle_app_meta(uint8_t **app_meta_buf, size_t app_meta_len, int fd, int debug);
+
+int jalls_handle_break(int fd);
+
+int jalls_create_sys_meta(uint8_t **sys_meta_buf);
+
+enum jalls_data_type {
+        JALLS_JOURNAL,
+        JALLS_AUDIT,
+        JALLS_LOG,
+};
 
 #endif //_JALLS_HANDLER_H_

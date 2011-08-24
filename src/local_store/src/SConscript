@@ -1,7 +1,12 @@
 Import('*')
 
-local_store_objs = env.SharedObject(source=[env.Glob("*.c")])
-local_store = env.Program(target='jal-local-store', source=[local_store_objs, jal_utils])
+sources = []
+for source in (env.Glob("*.c") + env.Glob("*.cpp")):
+	sources.append(source)
+
+local_store_objs = env.SharedObject(source=sources)
+local_store = env.Program(target='jal-local-store', source=[local_store_objs, jal_utils, lib_common])
+
 env.Default(local_store)
 if (env['release']):
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
