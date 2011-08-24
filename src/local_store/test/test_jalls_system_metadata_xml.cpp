@@ -111,6 +111,8 @@ extern "C" void teardown()
 	if (doc) {
 		doc->release();
 	}
+	RSA_free(key);
+	X509_free(cert);
 	XMLString::release(&dsig_uri);
 	XMLString::release(&dsig_manifest);
 	XMLString::release(&jid);
@@ -181,7 +183,7 @@ extern "C" void test_create_system_metadata_generates_valid_document()
 	assert_equals(JAL_OK, ret);
 
 	// With the manifest and signature block, it should validate.
-	assert_true(validate(doc, __FUNCTION__, schemas, true));
+	assert_true(validate(doc, __FUNCTION__, schemas));
 }
 
 extern "C" void test_create_system_metadata_adds_correct_info_for_audit()
