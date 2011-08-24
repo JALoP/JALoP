@@ -46,6 +46,7 @@
 #include "jalls_handler.h"
 #include "jalls_handle_journal.hpp"
 #include "jalls_handle_log.hpp"
+#include "jalls_handle_audit.hpp"
 
 #define JALLS_LOG_MSG 1
 #define JALLS_AUDIT_MSG 2
@@ -54,10 +55,7 @@
 #define JALLS_BREAK_STRING "BREAK"
 #define JALLS_BREAK_LEN 5
 
-static int jalls_handle_audit(__attribute__((unused))struct jalls_thread_context *thread_ctx,
-	__attribute__((unused))uint64_t data_len,
-	__attribute__((unused))uint64_t meta_len);
-int jalls_handle_journal_fd(__attribute__((unused))struct jalls_thread_context *thread_ctx,
+static int jalls_handle_journal_fd(__attribute__((unused))struct jalls_thread_context *thread_ctx,
 	__attribute__((unused))uint64_t data_len,
 	__attribute__((unused))uint64_t meta_len,
 	__attribute__((unused))int journal_fd);
@@ -240,13 +238,7 @@ out:
 	return NULL;
 }
 
-static int jalls_handle_audit(__attribute__((unused))struct jalls_thread_context *thread_ctx,
-	__attribute__((unused))uint64_t data_len,
-	__attribute__((unused))uint64_t meta_len)
-{
-	return -1;
-}
-int jalls_handle_journal_fd(__attribute__((unused))struct jalls_thread_context *thread_ctx,
+static int jalls_handle_journal_fd(__attribute__((unused))struct jalls_thread_context *thread_ctx,
 	__attribute__((unused))uint64_t data_len,
 	__attribute__((unused))uint64_t meta_len,
 	__attribute__((unused))int journal_fd)
