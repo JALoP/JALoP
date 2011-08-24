@@ -49,10 +49,6 @@
 #define JALLS_LISTEN_BACKLOG 20
 #define JALLS_USAGE "usage: [--debug] FILE\n"
 
-//TODO: remove
-static jaldb_context *jaldb_context_create() {return NULL;}
-static int jaldb_context_init() {return 0;}
-
 static const char *DEBUG_FLAG = "--debug";
 
 static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug);
@@ -103,13 +99,17 @@ int main(int argc, char **argv) {
 	}
 
 	//create a jaldb_context to pass to work threads
+	/*
+	 * TODO: create and init the journalDB context
+	 *
 	jaldb_context *db_ctx = jaldb_context_create();
-	//TODO: collect the schemas_root to use when initializing this jaldb_context.
 	enum jal_status jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, NULL);
 	if (jal_err != JAL_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
 		goto err_out;
 	}
+	*/
+	jaldb_context *db_ctx = NULL;
 
 	//check if the socket file already exists
 	struct stat sock_stat;

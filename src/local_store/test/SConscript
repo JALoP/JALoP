@@ -13,12 +13,16 @@ testEnv.Append(CCFLAGS=ccflags.split())
 testEnv.MergeFlags({'CPPPATH':['#src/local_store/src', '#src/lib_common/src']})
 
 jallsMsgObj = env.SharedObject(os.path.join('..', 'src', 'jalls_msg.c'))
+jallsHandleJournalObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal.cpp'))
+jallsXmlUtilsObj = env.SharedObject(os.path.join('..', 'src', 'jalls_xml_utils.cpp'))
+jallsSysMetaXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalls_system_metadata_xml.cpp'))
 
 tests.append(testEnv.TestDeptTest('test_jalls_msg.c',
 	other_sources=[], useProxies=True)[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalls_handler.c',
-	other_sources=[jallsMsgObj, lib_common], useProxies=True)[0].abspath)
+	other_sources=[jallsMsgObj, jallsHandleJournalObj, jallsXmlUtilsObj, jallsSysMetaXmlObj,
+		lib_common], useProxies=True)[0].abspath)
 
 local_store_tests = env.Alias('local_store_tests', tests, 'test_dept ' + " ".join(tests))
 

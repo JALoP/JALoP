@@ -1,6 +1,6 @@
 /**
- * @file jalls_msg.h This file contains helper functions to deal with
- * recieving messages for the jal local store.
+ * @file jalls_handle_journal.hpp This file contains functions to handle a journal
+ * to the jal local store.
  *
  * @section LICENSE
  *
@@ -27,26 +27,26 @@
  * limitations under the License.
  */
 
-#ifndef _JALLS_MSG_H_
-#define _JALLS_MSG_H_
+#ifndef _JALLS_HANDLE_JOURNAL_HPP_
+#define _JALLS_HANDLE_JOURNAL_HPP_
+
+#include <string.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "jalls_handler.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * Wrapper function for recvmsg()
- *
- * @param[in] fd The file descriptor to read from.
- * @param[in, out] msgh The msghdr structure to read into.
- * @param[in] debug A flag to indicate whether to print debug messages to stderr.
- *
- * @return -1 on failure, or the number of bytes recieved on success.
- */
-int jalls_recvmsg_helper(int fd, struct msghdr *msgh, int debug);
+int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uint64_t data_len, uint64_t meta_len);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _JALLS_MSG_H_
+#endif // _JALLS_HANDLE_JOURNAL_HPP_
+

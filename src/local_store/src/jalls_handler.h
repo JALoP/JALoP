@@ -34,6 +34,10 @@
 
 #include "jalls_context.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Waits for data to become available on the domain socket. When data appears,
  * calls handle_audit() handle_log(), handle_journal(), or handle_journal_fd(),
@@ -49,12 +53,14 @@ int jalls_handle_app_meta(uint8_t **app_meta_buf, size_t app_meta_len, int fd, i
 
 int jalls_handle_break(int fd);
 
-int jalls_create_sys_meta(uint8_t **sys_meta_buf);
-
 enum jalls_data_type {
         JALLS_JOURNAL,
         JALLS_AUDIT,
         JALLS_LOG,
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //_JALLS_HANDLER_H_

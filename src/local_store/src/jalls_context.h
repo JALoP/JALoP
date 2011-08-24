@@ -31,13 +31,20 @@
 #ifndef _JALLS_CONTEXT_H_
 #define _JALLS_CONTEXT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <openssl/pem.h>
 #include <sys/types.h>
-//#include "jaldb_context.h"
-//TODO: remove
+#include <stdint.h>
+
+//TODO: remove this stub struct and functions
 typedef struct jaldb_context_t {
-        int tmp;
+	int tmp;
 } jaldb_context;
+jaldb_context *jaldb_context_create();
+int jaldb_context_init();
 
 /** holds the fields to be passed to a worker thread */
 struct jalls_context {
@@ -57,7 +64,7 @@ struct jalls_context {
 	char *schemas_root;
 	/** The full path to a directory to store the various database files and journal data */
 	char *db_root;
-	/** The full path to a UnixUNIX Domain Socket. The JALoP Local Store will create the socket and wait for producer applications to connect to the socket. */
+	/** The full path to a UNIX Domain Socket. The JALoP Local Store will create the socket and wait for producer applications to connect to the socket. */
 	char *socket;
 };
 
@@ -78,5 +85,9 @@ struct jalls_thread_context { /* the worker thread should never write to or free
 	X509 *signing_cert;
 };
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _JALLS_CONTEXT_H_
