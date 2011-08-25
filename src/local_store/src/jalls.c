@@ -139,11 +139,14 @@ int main(int argc, char **argv) {
 	}
 
 	sock_addr.sun_family = AF_UNIX;
-	if (socket_path_len > sizeof(sock_addr.sun_path)) {
+	if (socket_path_len >= sizeof(sock_addr.sun_path)) {
 		fprintf(stderr, "could not create the socket: path %s is too long\n", jalls_ctx->socket);
 		goto err_out;
 	}
-	strcpy(sock_addr.sun_path, jalls_ctx->socket);
+
+	strncpy(sock_addr.sun_path, jalls_ctx->socket, sizeof(sock_addr.sun_path));
+	sock_addr.sun_path[sizeof(sock_addr.sun_path) - 1] = '\0';
+
 	err = bind(sock, (struct sockaddr*) &sock_addr, sizeof(sock_addr));
 	if (-1 == err) {
 		fprintf(stderr, "failed to bind %s: %s\n", jalls_ctx->socket, strerror(errno));
