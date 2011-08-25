@@ -263,6 +263,70 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const string& db
 	return JALDB_OK;
 }
 
+enum jaldb_status jaldb_insert_audit_record_into_temp(
+	jaldb_context *ctx,
+	std::string &source,
+	const DOMDocument *sys_doc,
+	const DOMDocument *app_doc,
+	const DOMDocument *audit_doc,
+	std::string &sid)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+	if ((ctx == NULL) || (sys_doc == NULL) || audit_doc == NULL) {
+		return JALDB_E_INVAL;
+	}
+	if (source.length() == 0 || sid.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+
+	string sys_db = jaldb_make_temp_db_name(source, JALDB_AUDIT_SYS_META_CONT_NAME);
+	string app_db = jaldb_make_temp_db_name(source, JALDB_AUDIT_APP_META_CONT_NAME);
+	string audit_db = jaldb_make_temp_db_name(source, JALDB_AUDIT_CONT_NAME);
+
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+	XmlContainer audit_cont;
+
+	XmlUpdateContext uc;
+
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_container(ctx, app_db, app_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_container(ctx, audit_db, audit_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	uc = ctx->manager->createUpdateContext();
+
+	while (1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_insert_audit_helper(source, txn, *ctx->manager,
+					uc, sys_cont, app_cont, audit_cont,
+					sys_doc, app_doc, audit_doc, sid);
+			if (ret != JALDB_OK) {
+				txn.abort();
+			} else {
+				txn.commit();
+			}
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+out:
+	return ret;
+}
 enum jaldb_status jaldb_insert_audit_helper(const string &source,
 		XmlTransaction &txn,
 		XmlManager &manager,
@@ -363,20 +427,6 @@ enum jaldb_status jaldb_insert_audit_record(
 		}
 	}
 	return ret;
-}
-
-enum jaldb_status jaldb_insert_audit_record_into_temp(
-	jaldb_context *ctx,
-	char *db_name,
-	const uint8_t *sys_meta_buf,
-	const size_t sys_meta_len,
-	const uint8_t *app_meta_buf,
-	const size_t app_meta_buf_len,
-	const uint8_t *audit_buf,
-	const size_t audit_len)
-{
-
-	return JALDB_OK;
 }
 
 enum jaldb_status jaldb_insert_log_record(

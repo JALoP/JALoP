@@ -212,6 +212,30 @@ enum jaldb_status jaldb_insert_audit_record(
 	std::string &sid);
 
 /**
+ * Insert an audit record into a temporary database. This caches the record
+ * for a network store until they receive a digest-conf message back from the
+ * remote local store.
+ * @param[in] ctx The context that the temporary database should be associated
+ * with.
+ * @param[in] source Where the record came from
+ * @param[in] sys_doc The system metadata document, must not be NULL;
+ * @param[in] app_doc The application metadata document, this may be NULL
+ * @param[in] auditdoc The audit document metadata document, this may not be
+ * NULL.
+ * @param[in] sid The serial ID as identified by the remote network store.
+ * 
+ * @return JALDB_OK on success
+ * JALDB_E_INVAL if any of the parameters are invalid.
+ */
+enum jaldb_status jaldb_insert_audit_record_into_temp(
+	jaldb_context *ctx,
+	std::string &source,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
+	std::string &sid);
+
+/**
  * Helper utility to generate a name for a temporary database used by the
  * network store.
  *
