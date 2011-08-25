@@ -76,6 +76,7 @@ void test_store_confed_sid_returns_ok_with_valid_input()
 	int err = 0;
 	int *db_error_out = &err;
 	int ret = jaldb_store_confed_sid(dbase, transaction, rhost, ser_id, db_error_out);
+	transaction->commit(transaction, 0);
 	DBT key;
 	DBT data;
 	memset(&key, 0, sizeof(key));
@@ -83,10 +84,11 @@ void test_store_confed_sid_returns_ok_with_valid_input()
 	key.data = jal_strdup(rhost);
 	key.size = strlen(rhost);
 	key.flags = DB_DBT_USERMEM;
-	db_error = dbase->get(dbase, transaction, &key, &data, DB_RMW);
+	data.flags = DB_DBT_MALLOC;
+	db_error = dbase->get(dbase, NULL, &key, &data, 0);
 	printf("Key: %s\n", (char *)key.data);
 	printf("Data: %s\n", (char *)data.data);
-	transaction->commit(transaction, 0);
+	free(data.data);
 	assert_equals(JALDB_OK, ret);
 }
 
