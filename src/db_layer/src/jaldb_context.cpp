@@ -35,9 +35,13 @@
 #include "jaldb_strings.h"
 #include "jaldb_status.h"
 #include "jaldb_utils.h"
+#include "jaldb_serial_id.hpp"
+#include "jaldb_xml_doc_storage.hpp"
 
 using namespace std;
 
+XERCES_CPP_NAMESPACE_USE
+using namespace std;
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 using namespace DbXml;
@@ -229,21 +233,60 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	*ctx = NULL;
 }
 
-enum jaldb_status jaldb_insert_audit_record(
-	jaldb_context *ctx,
-	const char *source,
-	const uint8_t *sys_meta_buf,
-	const size_t sys_meta_len,
-	const uint8_t *app_meta_buf,
-	const size_t app_meta_len,
-	const uint8_t *audit_buf,
-	const size_t audit_len)
+enum jaldb_status jaldb_insert_audit_helper(const string &source,
+		XmlTransaction &txn,
+		XmlManager &manager,
+		XmlUpdateContext &uc,
+		XmlContainer &sys_cont,
+		XmlContainer &app_cont,
+		XmlContainer &audit_cont,
+		const DOMDocument *sys_doc,
+		const DOMDocument *app_doc,
+		const DOMDocument *audit_doc,
+		const string &sid)
 {
-		
-
-	return JALDB_OK;
+	XmlDocument sys_db_doc;
+	XmlDocument app_db_doc;
+	XmlDocument audit_db_doc;
+	enum jaldb_status ret = JALDB_OK;
+	if (sid.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+	sys_db_doc = manager.createDocument();
+	if (source.length() != 0) {
+		sys_db_doc.setMetaData(JALDB_NS, JALDB_SOURCE, source);
+	} else {
+		sys_db_doc.setMetaData(JALDB_NS, JALDB_SOURCE, std::string(JALDB_LOCALHOST));
+	}
+	sys_db_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, app_doc != NULL);
+	ret = jaldb_put_document_as_dom(txn, uc,
+			sys_cont,
+			sys_db_doc,
+			sid, sys_doc);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	if (app_doc) {
+		app_db_doc = manager.createDocument();
+		ret = jaldb_put_document_as_dom(txn, uc,
+			app_cont,
+			app_db_doc,
+			sid, app_doc);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+	}
+	audit_db_doc = manager.createDocument();
+	ret = jaldb_put_document_as_dom(txn, uc,
+		audit_cont,
+		audit_db_doc,
+		sid, audit_doc);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+out:
+	return ret;
 }
-
 enum jaldb_status jaldb_insert_audit_record_into_temp(
 	jaldb_context *ctx,
 	char *db_name,

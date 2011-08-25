@@ -146,4 +146,42 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
  */
 enum jaldb_status jaldb_store_confed_sid_helper(DbXml::XmlContainer *cont, DB *db,
 		const char *remote_host, const char *sid, int *db_err_out);
+
+/**
+ * Helper utility for inserting and audit record into the appropriate
+ * containers
+ * The caller will need to commit the transaction.
+ *
+ * @param[in] source The 'source' identifier to use. If empty, this will be set
+ * to 'localhost'
+ * @param[in] txn The transaction to use.
+ * @param[in] manager The manager that owns the containers
+ * @param[in] uc The update context to use.
+ * @param[in] sys_cont The container that holds the system metadata
+ * @param[in] app_cont The container that holds the application metadata
+ * @param[in] audit_cont The container that holds the audit documents
+ * @param[in] sys_doc The DOMDocument that contains the System Metadata for
+ * this record.
+ * @param[in] app_doc The DOMDocument (if any) that contains the application Metadata for
+ * this record (may be NULL).
+ * @param[in] audit_doc The DOMDocument that contains the audit data for this record.
+ * @param[in,out] sid The serial ID to use. If sid is empty, then this function
+ * will attempt to get the next serial ID from \p sys_cont
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters is bad
+ */
+enum jaldb_status jaldb_insert_audit_helper(
+		const std::string &source,
+		DbXml::XmlTransaction &txn,
+		DbXml::XmlManager &manager,
+		DbXml::XmlUpdateContext &uc,
+		DbXml::XmlContainer &sys_cont,
+		DbXml::XmlContainer &app_cont,
+		DbXml::XmlContainer &audit_cont,
+		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_doc,
+		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_doc,
+		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
+		const std::string &sid);
+
 #endif // _JALDB_CONTEXT_HPP_
