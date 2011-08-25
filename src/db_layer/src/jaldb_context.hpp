@@ -31,8 +31,12 @@
 #define _JALDB_CONTEXT_HPP_
 
 #include <dbxml/DbXml.hpp>
+#include <map>
 #include "jaldb_context.h"
 #include <xercesc/dom/DOMDocument.hpp>
+#include <dbxml/XmlContainer.hpp>
+
+typedef std::map<std::string, DbXml::XmlContainer> string_to_container_map;
 
 struct jaldb_context_t {
 	DbXml::XmlManager *manager; //<! The manager associated with the context.
@@ -48,6 +52,7 @@ struct jaldb_context_t {
 	DB *journal_conf_db; //<! The database for conf'ed journal records
 	DB *audit_conf_db; //<! The database for conf'ed audit records
 	DB *log_conf_db; //<! The database for conf'ed log records
+	string_to_container_map *temp_containers; //<! a map from strings to XmlContainers that identifiers temporary databases for use by the network stores.
 };
 
 /**
@@ -206,4 +211,28 @@ enum jaldb_status jaldb_insert_audit_record(
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
 	std::string &sid);
 
+/**
+ * Helper utility to generate a name for a temporary database used by the
+ * network store.
+ *
+ * @param[in] An identifier for the database
+ * @param[suffix] A suffix to use (i.e. '_audit_meta.dbxml')
+ *
+ * @return a string to use as the database name.
+ */
+std::string jaldb_make_temp_db_name(const std::string &id, const std::string &suffix);
+
+/**
+ * Open a database for to store records in while communicating with a network
+ * store.
+ * The container is cached within the context for quicker access later.
+ * @param[in] ctx the context to associate with
+ * @param[in] db_name The name of the database
+ * @param[out] cont Once the database is opened, the new XmlContainer is
+ * assigned to \p cont.
+ *
+ * @return JALDB_OK on success
+ * JALDB_E_INVAL if ctx is invalid
+ */
+enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const std::string& db_name, DbXml::XmlContainer &cont);
 #endif // _JALDB_CONTEXT_HPP_

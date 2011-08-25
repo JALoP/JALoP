@@ -28,6 +28,7 @@
 */
 
 #include <string.h>
+#include <sstream>
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
@@ -180,6 +181,8 @@ enum jaldb_status jaldb_context_init(
 
 	txn.commit();
 
+	ctx->temp_containers = new string_to_container_map;
+
 	return JALDB_OK;
 }
 
@@ -226,11 +229,38 @@ void jaldb_context_destroy(jaldb_context **ctx)
 		(*ctx)->log_conf_db->close((*ctx)->log_conf_db, 0);
 	}
 
+	delete ctxp->temp_containers;
 	delete (*ctx)->manager;
 
 
 	free(*ctx);
 	*ctx = NULL;
+}
+std::string jaldb_make_temp_db_name(const string &id, const string &suffix)
+{
+	stringstream o;
+	o << "__" << id << "_" << suffix;
+	return o.str();
+}
+enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const string& db_name, XmlContainer &cont)
+{
+	if (!ctx || !ctx->temp_containers) {
+		return JALDB_E_INVAL;
+	}
+	if (db_name.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+	string_to_container_map::iterator iter = ctx->temp_containers->find(db_name);
+	if (iter == ctx->temp_containers->end()) {
+		XmlContainerConfig cfg;
+		cfg.setAllowCreate(true);
+		cfg.setThreaded(true);
+		cfg.setTransactional(true);
+		cont = ctx->manager->openContainer(db_name, cfg);
+	} else {
+		cont = iter->second;
+	}
+	return JALDB_OK;
 }
 
 enum jaldb_status jaldb_insert_audit_helper(const string &source,
