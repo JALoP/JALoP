@@ -77,28 +77,6 @@ enum jaldb_status jaldb_context_init(
 void jaldb_context_destroy(jaldb_context **ctx);
 
 /**
- * Inserts an audit record.
- * @param[in] ctx The context.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * @param[in] sys_meta_buf A buffer containing the system metadata.
- * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
- * @param[in] app_meta_buf A buffer containing the application metadata.
- * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
- * @param[in] audit_buf A buffer containing the audit data.
- * @param[in] audit_len The size (in bytes) of audit_buf.
- */
-enum jaldb_status jaldb_insert_audit_record(
-	jaldb_context *ctx,
-	const char *source,
-	const uint8_t *sys_meta_buf,
-	const size_t sys_meta_len,
-	const uint8_t *app_meta_buf,
-	const size_t app_meta_len,
-	const uint8_t *audit_buf,
-	const size_t audit_len);
-
-/**
  * Inserts an audit record into a temporary container.
  * @param[in] ctx The context.
  * @param[in] db_name A name to associate with the container.

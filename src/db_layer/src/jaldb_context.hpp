@@ -184,4 +184,26 @@ enum jaldb_status jaldb_insert_audit_helper(
 		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
 		const std::string &sid);
 
+/**
+ * Inserts an audit record.
+ * @param[in] ctx The context.
+ * @param[in] source The source of the record. If NULL, then this is set to the
+ * string 'localhost'.
+ * @param[in] sys_meta_doc The document containing the System Metadata for the record
+ * @param[in] app_meta_doc The document containing the Application Metadata (if any) for the record
+ * @param[in] audit_doc The audit document
+ * @param[out] sid The serial ID assigned to the record
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters is bad
+ *  - JALDB_E_CORRUPTED if there is an internal problem with the database
+ */
+enum jaldb_status jaldb_insert_audit_record(
+	jaldb_context *ctx,
+	std::string &source,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
+	std::string &sid);
+
 #endif // _JALDB_CONTEXT_HPP_

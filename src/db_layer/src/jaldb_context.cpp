@@ -287,6 +287,54 @@ enum jaldb_status jaldb_insert_audit_helper(const string &source,
 out:
 	return ret;
 }
+enum jaldb_status jaldb_insert_audit_record(
+	jaldb_context *ctx,
+	std::string &source,
+	const DOMDocument *sys_meta_doc,
+	const DOMDocument *app_meta_doc,
+	const DOMDocument *audit_doc,
+	std::string &sid)
+{
+	if (!ctx || !sys_meta_doc || !audit_doc || !ctx->manager ||
+		!ctx->audit_sys_cont || !ctx->audit_app_cont ||
+		!ctx->audit_cont) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_E_UNKNOWN;
+	XmlUpdateContext uc = ctx->manager->createUpdateContext();
+	while (1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_get_next_serial_id(txn,
+					uc,
+					*ctx->audit_sys_cont,
+					sid);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+			ret = jaldb_insert_audit_helper(source, txn, *ctx->manager,
+				uc, *ctx->audit_sys_cont, *ctx->audit_app_cont,
+				*ctx->audit_cont, sys_meta_doc, app_meta_doc,
+				audit_doc, sid);
+			if (ret != JALDB_OK) {
+				txn.abort();
+			} else {
+				txn.commit();
+			}
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+	return ret;
+}
+
 enum jaldb_status jaldb_insert_audit_record_into_temp(
 	jaldb_context *ctx,
 	char *db_name,
