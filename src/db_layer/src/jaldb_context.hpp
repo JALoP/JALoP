@@ -226,7 +226,7 @@ enum jaldb_status jaldb_insert_audit_record(
  * @param[in] auditdoc The audit document metadata document, this may not be
  * NULL.
  * @param[in] sid The serial ID as identified by the remote network store.
- * 
+ *
  * @return JALDB_OK on success
  * JALDB_E_INVAL if any of the parameters are invalid.
  */
@@ -372,7 +372,7 @@ enum jaldb_status jaldb_insert_log_record_helper(const std::string &source,
  * valid when the function returns JALDB_E_DB
  * assigned to \p cont.
  *
- * @return 
+ * @return
  *  - JALDB_OK on success
  *  - JALDB_E_INVAL if ctx is invalid
  *  - JALDB_E_DB if there was an error create the database, check db_err_out
@@ -436,5 +436,23 @@ enum jaldb_status jaldb_insert_journal_metadata(
 	const std::string &path,
 	std::string &sid);
 
+/**
+ * Store journal metadata information about a record into a temporary database.
+ *
+ * @param[in] ctx the context to use
+ * @param[in] source a string to identify where the record came from.
+ * @param[in] sys_meta_doc a document that contains the system metadata.
+ * @param[in] app_meta_doc a document that contains the app metadata (if any).
+ * @param[in] path the path to the journal file (should be obtained using to
+ *                 jaldb_create_journal_file).
+ * @param[in] sid the serial ID as identified by the remote peer.
+ */
+enum jaldb_status jaldb_insert_journal_metadata_into_temp(
+	jaldb_context *ctx,
+	const std::string &source,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const std::string &path,
+	const std::string &sid);
 
 #endif // _JALDB_CONTEXT_HPP_

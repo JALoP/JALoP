@@ -750,6 +750,66 @@ enum jaldb_status jaldb_insert_journal_metadata_helper(
 out:
 	return ret;
 }
+enum jaldb_status jaldb_insert_journal_metadata_into_temp(
+	jaldb_context *ctx,
+	const std::string &source,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const std::string &path,
+	const std::string &sid)
+{
+	if (!ctx || !sys_meta_doc) {
+		return JALDB_E_INVAL;
+	}
+	if (source.length() == 0 || path.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+	string sys_meta_name = jaldb_make_temp_db_name(source, JALDB_JOURNAL_SYS_META_CONT_NAME);
+	string app_meta_name = jaldb_make_temp_db_name(source, JALDB_JOURNAL_APP_META_CONT_NAME);
+
+	enum jaldb_status ret = JALDB_E_UNKNOWN;
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+	ret = jaldb_open_temp_container(ctx, sys_meta_name, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	ret = jaldb_open_temp_container(ctx, app_meta_name, app_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+
+	XmlUpdateContext uc = ctx->manager->createUpdateContext();
+	while(1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_insert_journal_metadata_helper(source,
+					txn,
+					*ctx->manager,
+					uc,
+					sys_cont,
+					app_cont,
+					sys_meta_doc,
+					app_meta_doc,
+					path,
+					sid);
+			if (ret != JALDB_OK) {
+				txn.abort();
+			} else {
+				txn.commit();
+			}
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+	return ret;
+}
 
 enum jaldb_status jaldb_insert_journal_metadata(
 	jaldb_context *ctx,
