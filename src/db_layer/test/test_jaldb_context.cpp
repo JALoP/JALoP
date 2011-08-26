@@ -66,6 +66,7 @@ extern "C" void setup()
 		sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
 		remove(buf);
 	}
+	closedir(dir);
 	context = jaldb_context_create();
 	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT);
 }
