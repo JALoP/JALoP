@@ -192,6 +192,7 @@ enum jaldb_status jaldb_context_init(
 	}
 	txn.commit();
 
+	ctx->temp_dbs = new string_to_db_map;
 	ctx->temp_containers = new string_to_container_map;
 
 	return JALDB_OK;
@@ -244,6 +245,14 @@ void jaldb_context_destroy(jaldb_context **ctx)
 
 	delete ctxp->temp_containers;
 
+	if (ctxp->temp_dbs) {
+		for (string_to_db_map::iterator iter = ctxp->temp_dbs->begin();
+				iter != ctxp->temp_dbs->end();
+				iter++) {
+			iter->second->close(iter->second, 0);
+		}
+		delete ctxp->temp_dbs;
+	}
 	delete (*ctx)->manager;
 
 
@@ -274,6 +283,41 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const string& db
 	} else {
 		cont = iter->second;
 	}
+	return JALDB_OK;
+}
+enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const string& db_name, DB **db_out, int *db_err_out)
+{
+	if (!ctx || !ctx->temp_dbs || !ctx->manager || !db_out || *db_out || !db_err_out) {
+		return JALDB_E_INVAL;
+	}
+	if (db_name.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+	DB *db;
+	int db_err = 0;
+	enum jaldb_status ret = JALDB_E_DB;
+	string_to_db_map::iterator iter = ctx->temp_dbs->find(db_name);
+	if (iter == ctx->temp_dbs->end()) {
+		DB_ENV *env = ctx->manager->getDB_ENV();
+		db_err = db_create(&db, env, 0);
+		if (db_err != 0) {
+			db = NULL;
+			goto out;
+		}
+		db_err = db->open(db, NULL, db_name.c_str(), NULL, DB_BTREE, DB_CREATE | DB_AUTO_COMMIT | DB_THREAD, 0);
+		if (db_err != 0) {
+			db->close(db, 0);
+			db = NULL;
+			goto out;
+		}
+		(*ctx->temp_dbs)[db_name] = db;
+	} else {
+		db = iter->second;
+	}
+	ret = JALDB_OK;
+out:
+	*db_err_out = db_err;
+	*db_out = db;
 	return JALDB_OK;
 }
 

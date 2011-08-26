@@ -37,6 +37,7 @@
 #include "jaldb_context.h"
 
 typedef std::map<std::string, DbXml::XmlContainer> string_to_container_map;
+typedef std::map<std::string, DB*> string_to_db_map;
 
 struct jaldb_context_t {
 	DbXml::XmlManager *manager; //<! The manager associated with the context.
@@ -54,6 +55,7 @@ struct jaldb_context_t {
 	DB *log_conf_db; //<! The database for conf'ed log records
 	DB *log_dbp; //<! The log database.
 	string_to_container_map *temp_containers; //<! a map from strings to XmlContainers that identifiers temporary databases for use by the network stores.
+	string_to_db_map *temp_dbs; //<! a map from strings to Berkeley DBs that that identifiers temporary databases for use by the network stores.
 };
 
 /**
@@ -330,4 +332,24 @@ enum jaldb_status jaldb_insert_log_record_helper(const std::string &source,
 		const std::string &sid,
 		int *db_err);
 
+/**
+ * Open a database for to store log records in while communicating with a network
+ * store.
+ * The DB is cached within the context for quicker access later.
+ * @param[in] ctx the context to associate with
+ * @param[in] db_name The name of the database
+ * @param[out] db_out Once the database is opened, the new DB is assigned to \p
+ * db_out;
+ * @param[out] db_err_out set to the Berkeley DB error (if any). This is only
+ * valid when the function returns JALDB_E_DB
+ * assigned to \p cont.
+ *
+ * @return 
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if ctx is invalid
+ *  - JALDB_E_DB if there was an error create the database, check db_err_out
+ *  for more information
+ *
+ */
+enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_name, DB **db_out, int *db_err_out);
 #endif // _JALDB_CONTEXT_HPP_
