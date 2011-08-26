@@ -693,6 +693,57 @@ enum jaldb_status jaldb_create_journal_file(
 	return jaldb_create_file(ctx->journal_root, path, fd);
 }
 
+enum jaldb_status jaldb_insert_journal_metadata_helper(
+	const std::string &source,
+	XmlTransaction &txn,
+	XmlManager &manager,
+	XmlUpdateContext &uc,
+	XmlContainer &sys_cont,
+	XmlContainer &app_cont,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const std::string &path,
+	std::string &sid)
+{
+	if (!sys_meta_doc || path.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+	if (sid.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+	XmlDocument sys_doc;
+	XmlDocument app_doc;
+	enum jaldb_status ret;
+	sys_doc = manager.createDocument();
+	sys_doc.setMetaData(JALDB_NS, JALDB_JOURNAL_PATH, path);
+	if (source.length() != 0) {
+		sys_doc.setMetaData(JALDB_NS, JALDB_SOURCE, source);
+	} else {
+		sys_doc.setMetaData(JALDB_NS, JALDB_SOURCE, std::string(JALDB_LOCALHOST));
+	}
+	if (app_meta_doc) {
+		sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true);
+	} else {
+		sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false);
+	}
+	ret = jaldb_put_document_as_dom(txn, uc,
+			sys_cont, sys_doc, sid,
+			sys_meta_doc);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	if (app_meta_doc) {
+		app_doc = manager.createDocument();
+		ret = jaldb_put_document_as_dom(txn, uc,
+				app_cont,
+				app_doc, sid, app_meta_doc);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+	}
+out:
+	return ret;
+}
 enum jaldb_status jaldb_insert_journal_record(
 	jaldb_context *ctx,
 	const char *source,

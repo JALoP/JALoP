@@ -380,4 +380,37 @@ enum jaldb_status jaldb_insert_log_record_helper(const std::string &source,
  *
  */
 enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_name, DB **db_out, int *db_err_out);
+
+/**
+ * Helper utility for inserting journal metadata.
+ * @param[in] source The source of the record. If NULL, then this is set to the
+ * string 'localhost'.
+ * obtained via a call to jaldb_create_journal_file.
+ * @param[in] txn The transaction to use
+ * @param[in] manager The manager to use
+ * @param[in] uc The update context to use.
+ * @param[in] sys_cont The container to insert the system metadata into
+ * @param[in] app_cont The container to insert the application metadata into
+ * @param[in] sys_meta_doc The DOMDocument that is the system metadata, must
+ * not be NULL.
+ * @param[in] app_meta_doc The DOMDocument that is the application metadata,
+ * may be NULL.
+ * @param[in] path The path of the file that is journal data. This should be
+ * @param[in] sid The serial ID for the record, this must be non-zero in
+ * length
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ */
+enum jaldb_status jaldb_insert_journal_metadata_helper(
+	const std::string &source,
+	DbXml::XmlTransaction &txn,
+	DbXml::XmlManager &manager,
+	DbXml::XmlUpdateContext &uc,
+	DbXml::XmlContainer &sys_cont,
+	DbXml::XmlContainer &app_cont,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const std::string &path,
+	std::string &sid);
+
 #endif // _JALDB_CONTEXT_HPP_
