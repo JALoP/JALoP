@@ -208,7 +208,7 @@ debug_env["santuario_ldflags"] = "-lxml-security-c"
 debug_env["libuuid_ldflags"] = "-luuid"
 
 # linker flags for dbxml
-debug_env["dbxml_ldflags"] = '-Wl,-R,/usr/local/lib -ldbxml'.split()
+debug_env["dbxml_ldflags"] = '-Wl,-R,/usr/local/lib -ldbxml -ldb-4.8'.split()
 
 all_tests = debug_env.Alias('tests')
 
