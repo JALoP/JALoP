@@ -291,6 +291,34 @@ enum jaldb_status jaldb_insert_log_record(
 	int *db_err);
 
 /**
+ * Inserts a log record into a temporary database for use when communicating
+ * with a network store.
+ * @param[in] ctx The context.
+ * @param[in] source The source of the record. If NULL, then this is set to the
+ * string 'localhost'.
+ * @param[in] sys_meta_doc The system metadata document
+ * @param[in] app_meta_doc The application  metadata document
+ * @param[in] log_buf A buffer containing the audit data.
+ * @param[in] log_len The size (in bytes) of audit data.
+ * @param[out] sid The serial ID for the record.
+ * @param[out] db_err Set to the Berkeley DB error when this function returns
+ * JALDB_E_DB
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ * @throw XmlException if there was an error inserting the record.
+ */
+enum jaldb_status jaldb_insert_log_record_into_temp(
+	jaldb_context *ctx,
+	std::string &source,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	uint8_t *log_buf,
+	const size_t log_len,
+	std::string &sid,
+	int *db_err);
+
+/**
  * Helper utility for inserting log records into various containers.
  *
  * Although either app_meta_doc or log_buf may be NULL, it is an error to

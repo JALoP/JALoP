@@ -616,6 +616,71 @@ enum jaldb_status jaldb_insert_log_record(
 	}
 	return ret;
 }
+enum jaldb_status jaldb_insert_log_record_into_temp(
+	jaldb_context *ctx,
+	string &source,
+	const DOMDocument *sys_meta_doc,
+	const DOMDocument *app_meta_doc,
+	uint8_t *log_buf,
+	const size_t log_len,
+	string &sid,
+	int *db_err)
+{
+	if (!ctx || !ctx->manager) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_OK;
+	string sys_db_name = jaldb_make_temp_db_name(source, JALDB_LOG_SYS_META_CONT_NAME);
+	string app_db_name = jaldb_make_temp_db_name(source, JALDB_LOG_APP_META_CONT_NAME);
+	string log_db_name = jaldb_make_temp_db_name(source, JALDB_LOG_DB_NAME);
+
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+	XmlUpdateContext uc;
+	DB *log_db = NULL;
+
+	ret = jaldb_open_temp_container(ctx, sys_db_name, sys_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_container(ctx, app_db_name, app_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_db(ctx, log_db_name, &log_db, db_err);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	uc = ctx->manager->createUpdateContext();
+	while(1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_insert_log_record_helper(
+				source, txn, *ctx->manager, uc,
+				sys_cont, app_cont, log_db,
+				sys_meta_doc, app_meta_doc,
+				log_buf, log_len, sid, db_err);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				if (ret == JALDB_E_DB && *db_err == DB_LOCK_DEADLOCK) {
+					continue;
+				}
+			} else {
+				txn.commit();
+			}
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+out:
+	return ret;
+}
 
 enum jaldb_status jaldb_create_journal_file(
 	jaldb_context *ctx,
