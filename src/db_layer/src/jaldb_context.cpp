@@ -33,19 +33,17 @@
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
 #include "jaldb_serial_id.hpp"
-#include "jaldb_strings.h"
 #include "jaldb_status.h"
+#include "jaldb_strings.h"
 #include "jaldb_utils.h"
-#include "jaldb_serial_id.hpp"
 #include "jaldb_xml_doc_storage.hpp"
-
-using namespace std;
 
 XERCES_CPP_NAMESPACE_USE
 using namespace std;
+using namespace DbXml;
+
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
-using namespace DbXml;
 
 jaldb_context *jaldb_context_create()
 {
@@ -429,6 +427,86 @@ enum jaldb_status jaldb_insert_audit_record(
 	return ret;
 }
 
+enum jaldb_status jaldb_insert_log_record_helper(
+	const string &source,
+	XmlTransaction &txn,
+	XmlManager &manager,
+	XmlUpdateContext &uc,
+	XmlContainer &sys_cont,
+	XmlContainer &app_cont,
+	DB *log_db,
+	const DOMDocument *sys_meta_doc,
+	const DOMDocument *app_meta_doc,
+	uint8_t *log_buf,
+	const size_t log_len,
+	const string &sid,
+	int *db_err)
+{
+	if (!log_db || !sys_meta_doc || !db_err) {
+		return JALDB_E_INVAL;
+	}
+	if (sid.length() == 0) {
+		return JALDB_E_INVAL;
+	}
+	bool has_log = log_buf && (log_len > 0);
+	if (!has_log && !app_meta_doc) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_OK;
+
+	XmlDocument sys_doc;
+	XmlDocument app_doc;
+
+	sys_doc = manager.createDocument();
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, has_log);
+	if (source.length() != 0) {
+		sys_doc.setMetaData(JALDB_NS, JALDB_SOURCE, source);
+	} else {
+		sys_doc.setMetaData(JALDB_NS, JALDB_SOURCE, std::string(JALDB_LOCALHOST));
+	}
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, app_meta_doc != NULL);
+
+	ret = jaldb_put_document_as_dom(txn, uc,
+			sys_cont, sys_doc, sid,
+			sys_meta_doc);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+
+	if (app_meta_doc) {
+		app_doc = manager.createDocument();
+		ret = jaldb_put_document_as_dom(txn, uc,
+				app_cont, app_doc, sid,
+				app_meta_doc);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+	}
+	if (has_log) {
+		DBT key;
+		DBT data;
+
+		memset(&key, 0, sizeof(DBT));
+		memset(&data, 0, sizeof(DBT));
+
+		key.data = jal_strdup(sid.c_str());
+		key.size = sid.length();
+
+		data.data = log_buf;
+		data.size = log_len;
+
+		int db_ret = log_db->put(log_db, txn.getDB_TXN(),
+				&key, &data, DB_NOOVERWRITE);
+		free(key.data);
+		if (db_ret != 0) {
+			*db_err = db_ret;
+			ret = JALDB_E_DB;
+			goto out;
+		}
+	}
+out:
+	return ret;
+}
 enum jaldb_status jaldb_insert_log_record(
 	jaldb_context *ctx,
 	const char *source,

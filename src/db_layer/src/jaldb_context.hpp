@@ -30,11 +30,11 @@
 #ifndef _JALDB_CONTEXT_HPP_
 #define _JALDB_CONTEXT_HPP_
 
-#include <dbxml/DbXml.hpp>
 #include <map>
-#include "jaldb_context.h"
-#include <xercesc/dom/DOMDocument.hpp>
+#include <dbxml/DbXml.hpp>
 #include <dbxml/XmlContainer.hpp>
+#include <xercesc/dom/DOMDocument.hpp>
+#include "jaldb_context.h"
 
 typedef std::map<std::string, DbXml::XmlContainer> string_to_container_map;
 
@@ -259,4 +259,47 @@ std::string jaldb_make_temp_db_name(const std::string &id, const std::string &su
  * JALDB_E_INVAL if ctx is invalid
  */
 enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const std::string& db_name, DbXml::XmlContainer &cont);
+
+/**
+ * Helper utility for inserting log records into various containers.
+ *
+ * Although either app_meta_doc or log_buf may be NULL, it is an error to
+ * specify NULL for both. It is also an error to specify NULL for app_meta_doc
+ * and specify the log_len as 0.
+ * @param[in] source Where the record came from. If length == 0, this will be
+ * set to localhost
+ * @param[in] txn The transaction to use
+ * @param[in] manager The manager to use
+ * @param[in] uc The update context to use
+ * @param[in] sys_cont The container to insert the system metadata into
+ * @param[in] app_cont The container to insert the application metadata into
+ * @param[in] log_db The database to store the log record in
+ * @param[in] sys_meta_doc The DOMDocument that is the system metadata, may
+ * not be NULL
+ * @param[in] app_meta_doc The DOMDocument that is the application metadata,
+ * @param[in] log_buf The byte buffer that contains the log entry
+ * @param[in] log_len The length (in bytes) of \p log_buf.
+ * may be NULL
+ * @param[in] sid The serial ID to associate with this record.
+ * @param[out] db_err Error code from Berkeley DB. This will only have a valid
+ * value if the function returns JALDB_E_DB
+ * @return
+ *   - JALDB_OK on success
+ *   - JALDB_E_DB if there was an error inserting into the log DB
+ *   - JALDB_E_INVAL if any of the parameters are invalid
+ */
+enum jaldb_status jaldb_insert_log_record_helper(const std::string &source,
+		DbXml::XmlTransaction &txn,
+		DbXml::XmlManager &manager,
+		DbXml::XmlUpdateContext &uc,
+		DbXml::XmlContainer &sys_cont,
+		DbXml::XmlContainer &app_cont,
+		DB *log_db,
+		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
+		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+		uint8_t *log_buf,
+		const size_t log_len,
+		const std::string &sid,
+		int *db_err);
+
 #endif // _JALDB_CONTEXT_HPP_

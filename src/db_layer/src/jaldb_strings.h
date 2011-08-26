@@ -51,5 +51,6 @@
 #define JALDB_SOURCE "source"
 #define JALDB_LOCALHOST "localhost"
 #define JALDB_HAS_APP_META "hasAppMeta"
+#define JALDB_HAS_LOG "hasLog"
 
 #endif // _JALDB_STRINGS_H_
