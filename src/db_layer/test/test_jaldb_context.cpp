@@ -41,6 +41,8 @@ extern "C" {
 
 #include <dirent.h>
 #include <db.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "jal_alloc.h"
 #include "jaldb_context.h"
 #include "jaldb_context.hpp"
@@ -61,6 +63,7 @@ extern "C" void setup()
 	struct dirent *d;
 	DIR *dir;
 	char buf[256];
+	mkdir(OTHER_DB_ROOT, 0700);
 	dir = opendir(OTHER_DB_ROOT);
 	while ((d = readdir(dir)) != NULL) {
 		sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
