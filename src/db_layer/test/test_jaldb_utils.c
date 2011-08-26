@@ -92,15 +92,16 @@ void test_store_confed_sid_returns_ok_with_valid_input()
 	key.flags = DB_DBT_USERMEM;
 	data.flags = DB_DBT_MALLOC;
 	db_error = dbase->get(dbase, NULL, &key, &data, 0);
+	assert_equals(0, db_error);
 	int result;
-	result = strncmp("1234", data.data, sizeof(data.data));
+	result = strncmp("1234", data.data, strlen("1234"));
+	assert_equals(0, result);
 	free(rhost);
 	free(ser_id);
 	free(data.data);
 	rhost = NULL;
 	ser_id = NULL;
 	data.data = NULL;
-	assert_equals(0, result);
 
 	assert_equals(JALDB_OK, ret);
 }
