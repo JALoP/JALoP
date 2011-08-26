@@ -103,8 +103,14 @@ extern "C" void test_store_confed_journal_sid_fails_with_invalid_input()
 	enum jaldb_status ret = jaldb_store_confed_journal_sid(NULL, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
+	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
 	ret = jaldb_store_confed_journal_sid(context, rhost, ser_id, db_error_out);
+	context->manager = tmp_mgr;
+	free(rhost);
+	free(ser_id);
+	rhost = NULL;
+	ser_id = NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
@@ -117,14 +123,20 @@ extern "C" void test_store_confed_audit_sid_fails_with_invalid_input()
 	enum jaldb_status ret = jaldb_store_confed_audit_sid(NULL, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
+	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
 	ret = jaldb_store_confed_audit_sid(context, rhost, ser_id, db_error_out);
+	context->manager = tmp_mgr;
 	assert_equals(JALDB_E_INVAL, ret);
 
-	XmlManager *mgr = new XmlManager();
-	context->manager = mgr;
+	XmlContainer *tmp_cont = context->audit_sys_cont;	
 	context->audit_sys_cont = NULL;
 	ret = jaldb_store_confed_audit_sid(context, rhost, ser_id, db_error_out);
+	context->audit_sys_cont = tmp_cont;
+	free(rhost);
+	free(ser_id);
+	rhost = NULL;
+	ser_id = NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
@@ -137,8 +149,14 @@ extern "C" void test_store_confed_log_sid_fails_with_invalid_input()
 	enum jaldb_status ret = jaldb_store_confed_log_sid(NULL, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
+	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
 	ret = jaldb_store_confed_log_sid(context, rhost, ser_id, db_error_out);
+	context->manager = tmp_mgr;
+	free(rhost);
+	free(ser_id);
+	rhost = NULL;
+	ser_id = NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
@@ -151,16 +169,22 @@ extern "C" void test_store_confed_sid_helper_returns_ok_with_valid_input()
 	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
 	context->audit_sys_cont->putDocument(doc, uc, 0);
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id_1 = jal_strdup("123");
+	char *ser_id = jal_strdup("123");
 	int err = 0;
 	int *db_error_out = &err;
 	enum jaldb_status ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id_1, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_OK, ret);
 
-	char *ser_id_2 = jal_strdup("124");
+	char *serid = jal_strdup("124");
 	ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id_2 , db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, serid, db_error_out);
+	free(rhost);
+	free(ser_id);
+	free(serid);
+	rhost = NULL;
+	ser_id = NULL;
+	serid = NULL;
 	assert_equals(JALDB_OK, ret);
 }
 
@@ -180,6 +204,10 @@ extern "C" void test_store_confed_sid_helper_fails_with_invalid_input()
 
 	ret = jaldb_store_confed_sid_helper(
 		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id, NULL);
+	free(rhost);
+	free(ser_id);
+	rhost = NULL;
+	ser_id = NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
@@ -192,15 +220,21 @@ extern "C" void test_store_confed_sid_helper_fails_with_sid_greater_than_or_equa
 	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
 	context->audit_sys_cont->putDocument(doc, uc, 0);
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id_1 = jal_strdup("i23456");
+	char *ser_id = jal_strdup("123456");
 	int err = 0;
 	int *db_error_out = &err;
 	enum jaldb_status ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id_1, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_E_SID, ret);
 
-	char *ser_id_2 = jal_strdup("12345");
+	char *serid = jal_strdup("12345");
 	ret = jaldb_store_confed_sid_helper(
-		context->audit_sys_cont, context->audit_conf_db, rhost, ser_id_2, db_error_out);
+		context->audit_sys_cont, context->audit_conf_db, rhost, serid, db_error_out);
+	free(rhost);
+	free(ser_id);
+	free(serid);
+	rhost = NULL;
+	ser_id = NULL;
+	serid = NULL;
 	assert_equals(JALDB_E_SID, ret);
 }
