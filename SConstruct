@@ -95,6 +95,7 @@ for t in ['CC', 'CXX', 'CPP' ]:
 		debug_env[t] = os.environ[t]
 
 debug_env['SOURCE_ROOT'] = str(os.getcwd())
+debug_env['HAVE_SELINUX'] = False;
 
 if platform.system() == 'SunOS':
 	debug_env.PrependENVPath('PKG_CONFIG_PATH',
@@ -164,7 +165,6 @@ if not (GetOption("clean") or GetOption("help")):
 	if not conf.CheckLibUUID():
 		Exit(-1)
 
-	debug_env['HAVE_SELINUX'] = False;
 	if platform.system() == 'Linux':
 		if GetOption('DISABLE_SELINUX'):
 			print 'Disabling SELinux support';
