@@ -3,20 +3,29 @@ import string
 Import('*')
 
 tests = []
+
 dbEnv = env;
+
 env = env.Clone()
 # The test-dept macros trigger this warning, so disable it for all the test
 # drivers.
+env.Append(CPPPATH='#/src/test_utils/src')
 env.Append(CCFLAGS='-Wno-format-nonliteral -Wno-unreachable-code'.split())
 
+contextObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_context.cpp'))
 utilsObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
+xmlDocStorageObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_xml_doc_storage.cpp'))
+eventWriterObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_dom_to_event_writer.cpp'))
+
 tests.append(env.TestDeptTest('test_jaldb_utils.c',
 	other_sources=[lib_common])[0].abspath)
+
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
-	other_sources=[utilsObj, lib_common])[0].abspath)
+	other_sources=[lib_common, xmlDocStorageObj, eventWriterObj, utilsObj])[0].abspath)
+
+tests.append(env.TestDeptTest('test_jaldb_dom_to_event_writer.cpp',
+        other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj])[0].abspath)
 
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(db_tests)
 env.Depends(all_tests, db_tests)
-
-

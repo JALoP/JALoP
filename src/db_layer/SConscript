@@ -8,6 +8,6 @@ env.MergeFlags(env['xerces_ldflags'])
 env.MergeFlags({'LINKFLAGS':env['dbxml_ldflags']})
 env.MergeFlags('-Wno-shadow -Wno-unused-parameter'.split())
 
-SConscript('test/SConscript', exports='env all_tests lib_common')
 db_lib = SConscript('src/SConscript', exports='env')
+SConscript('test/SConscript', exports='env all_tests lib_common db_lib test_utils ')
 Return("db_lib")
