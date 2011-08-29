@@ -37,6 +37,7 @@
 
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
+using namespace DbXml;
 
 jaldb_context *jaldb_context_create()
 {

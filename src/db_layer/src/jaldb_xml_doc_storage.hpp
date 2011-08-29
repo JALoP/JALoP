@@ -45,6 +45,6 @@ void jaldb_store_data(
 	uint8_t *buf,
 	size_t buf_size,
 	const char *container,
-	XmlManager *mgr);
+	DbXml::XmlManager *mgr);
 
 #endif // _JALDB_XML_DOC_STORAGE_HPP_

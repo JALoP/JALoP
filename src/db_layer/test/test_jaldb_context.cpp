@@ -50,6 +50,7 @@ extern "C" {
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
 XERCES_CPP_NAMESPACE_USE
+using namespace DbXml;
 
 #define OTHER_DB_ROOT "./testdb/"
 #define OTHER_SCHEMA_ROOT "./schemas/"

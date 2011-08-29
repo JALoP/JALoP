@@ -33,6 +33,7 @@
 #include "jaldb_xml_doc_storage.hpp"
 
 using namespace std;
+using namespace DbXml;
 
 void jaldb_store_data(
 	uint8_t *buf,

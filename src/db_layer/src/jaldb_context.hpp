@@ -34,17 +34,15 @@
 #include "jaldb_context.h"
 #include <xercesc/dom/DOMDocument.hpp>
 
-using namespace DbXml;
-
 struct jaldb_context_t {
-	XmlManager *manager; //<! The manager associated with the context.
-	XmlContainer *audit_sys_cont; //<! Container for the audit System Metadata
-	XmlContainer *audit_app_cont; //<! Container for the audit Application Metadata
-	XmlContainer *audit_cont; //<! Container for the audit data
-	XmlContainer *journal_sys_cont; //<! Container for the journal System Metadata
-	XmlContainer *journal_app_cont; //<! Container for the journal Application Metadata
-	XmlContainer *log_sys_cont; //<! Container for the log System Metadata
-	XmlContainer *log_app_cont; //<! Container for the log Application Metadata
+	DbXml::XmlManager *manager; //<! The manager associated with the context.
+	DbXml::XmlContainer *audit_sys_cont; //<! Container for the audit System Metadata
+	DbXml::XmlContainer *audit_app_cont; //<! Container for the audit Application Metadata
+	DbXml::XmlContainer *audit_cont; //<! Container for the audit data
+	DbXml::XmlContainer *journal_sys_cont; //<! Container for the journal System Metadata
+	DbXml::XmlContainer *journal_app_cont; //<! Container for the journal Application Metadata
+	DbXml::XmlContainer *log_sys_cont; //<! Container for the log System Metadata
+	DbXml::XmlContainer *log_app_cont; //<! Container for the log Application Metadata
 	char *journal_root; //<! The journal record root path.
 	char *schemas_root; //<! The schemas root path.
 	DB *journal_conf_db; //<! The database for conf'ed journal records
@@ -143,6 +141,6 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
  * @throw XmlException
  *
  */
-enum jaldb_status jaldb_store_confed_sid_helper(XmlContainer *cont, DB *db,
+enum jaldb_status jaldb_store_confed_sid_helper(DbXml::XmlContainer *cont, DB *db,
 		const char *remote_host, const char *sid, int *db_err_out);
 #endif // _JALDB_CONTEXT_HPP_
