@@ -129,7 +129,7 @@ enum jaldb_status jaldb_create_journal_file(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-enum jaldb_status jaldb_get_audit_record(
+enum jaldb_status jaldb_lookup_audit_record(
 	jaldb_context *ctx,
 	const char *sid,
 	uint8_t **sys_meta_buf,

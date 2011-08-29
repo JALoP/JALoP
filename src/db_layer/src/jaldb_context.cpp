@@ -796,7 +796,7 @@ enum jaldb_status jaldb_insert_journal_metadata(
 	return ret;
 }
 
-enum jaldb_status jaldb_get_audit_record(
+enum jaldb_status jaldb_lookup_audit_record(
 	jaldb_context *ctx,
 	const char *sid,
 	uint8_t **sys_meta_buf,
@@ -806,8 +806,96 @@ enum jaldb_status jaldb_get_audit_record(
 	uint8_t **audit_buf,
 	size_t *audit_len)
 {
+	if (!ctx || !ctx->manager || !ctx->audit_sys_cont ||
+			!ctx->audit_app_cont || !ctx->audit_cont ||
+			!sid) {
+		return JALDB_E_INVAL;
+	}
+	if (!sys_meta_buf || *sys_meta_buf || !sys_meta_len ||
+			!app_meta_buf || *app_meta_buf || !app_meta_len ||
+			!audit_buf || *audit_buf || !audit_len) {
+		return JALDB_E_INVAL;
+	}
+	while (true) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			XmlDocument sys_doc;
+			try {
+				sys_doc = ctx->audit_sys_cont->getDocument(txn, sid, DB_READ_COMMITTED);
+			} catch (XmlException &e) {
+				if (e.getExceptionCode() == XmlException::DOCUMENT_NOT_FOUND) {
+					txn.abort();
+					return JALDB_E_NOT_FOUND;
+				}
+				// re-throw e, it will get caught by the outer
+				// try/catch block.
+				throw(e);
+			}
+			XmlValue val;
+			if (!sys_doc.getMetaData(JALDB_NS, JALDB_HAS_APP_META, val)) {
+				txn.abort();
+				return JALDB_E_CORRUPTED;
+			}
+			XmlDocument app_doc;
+			bool has_app_meta = val.equals(true);
+			if (has_app_meta) {
+				try {
+					app_doc = ctx->audit_app_cont->getDocument(txn, sid, DB_READ_COMMITTED);
+				} catch (XmlException &e) {
+					if (e.getExceptionCode() == XmlException::DOCUMENT_NOT_FOUND) {
+						txn.abort();
+						return JALDB_E_CORRUPTED;
+					}
+					// re-throw e, it will get caught by the outer
+					// try/catch block.
+					throw(e);
+				}
+			} else {
+				app_meta_buf = NULL;
+				app_meta_len = 0;
+			}
 
+			XmlDocument audit_doc;
+			try {
+				audit_doc = ctx->audit_cont->getDocument(txn, sid, DB_READ_COMMITTED);
+			} catch (XmlException &e) {
+				if (e.getExceptionCode() == XmlException::DOCUMENT_NOT_FOUND) {
+					txn.abort();
+					return JALDB_E_CORRUPTED;
+				}
+				// re-throw e, it will get caught by the outer
+				// try/catch block.
+				throw e;
+			}
 
+			XmlData sys_data = sys_doc.getContent();
+			*sys_meta_buf = (uint8_t*)jal_malloc(sys_data.get_size());
+			*sys_meta_len = sys_data.get_size();
+			memcpy(*sys_meta_buf, sys_data.get_data(), sys_data.get_size());
+
+			if (has_app_meta) {
+				XmlData app_data = app_doc.getContent();
+				*app_meta_buf = (uint8_t*)jal_malloc(app_data.get_size());
+				*app_meta_len = app_data.get_size();
+				memcpy(*app_meta_buf, app_data.get_data(), app_data.get_size());
+			}
+
+			XmlData audit_data = audit_doc.getContent();
+			*audit_buf = (uint8_t*)jal_malloc(audit_data.get_size());
+			*audit_len = audit_data.get_size();
+			memcpy(*audit_buf, audit_data.get_data(), audit_data.get_size());
+
+			txn.commit();
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
 	return JALDB_OK;
 }
 
