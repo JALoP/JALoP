@@ -188,14 +188,14 @@ enum jaldb_status jaldb_lookup_log_record(
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails
  */
-enum jaldb_status jaldb_get_journal_record(
+enum jaldb_status jaldb_lookup_journal_record(
 	jaldb_context *ctx,
 	const char *sid,
-	const char *path,
 	uint8_t **sys_meta_buf,
 	size_t *sys_meta_len,
 	uint8_t **app_meta_buf,
-	size_t *app_meta_len);
+	size_t *app_meta_len,
+	int *fd, size_t *fd_sz);
 
 #ifdef __cplusplus
 }
