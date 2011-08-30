@@ -27,8 +27,10 @@
  * limitations under the License.
 */
 
+#include <fcntl.h>
 #include <string.h>
 #include <sstream>
+#include <sys/stat.h>
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
@@ -917,16 +919,146 @@ enum jaldb_status jaldb_get_log_record(
 	return JALDB_OK;
 }
 
-enum jaldb_status jaldb_get_journal_record(
+enum jaldb_status jaldb_lookup_log_record(
 	jaldb_context *ctx,
 	const char *sid,
-	const char *path,
 	uint8_t **sys_meta_buf,
 	size_t *sys_meta_len,
 	uint8_t **app_meta_buf,
-	size_t *app_meta_len)
+	size_t *app_meta_len,
+	uint8_t **log_buf,
+	size_t *log_len,
+	int *db_err_out)
 {
+	if (!ctx || !ctx->manager || !ctx->log_sys_cont ||
+			!ctx->log_app_cont || !ctx->log_dbp ||
+			!db_err_out || !sid) {
+		return JALDB_E_INVAL;
+	}
+	if (!sys_meta_buf || *sys_meta_buf || !sys_meta_len ||
+			!app_meta_buf || *app_meta_buf || !app_meta_len ||
+			!log_buf || *log_buf || !log_len) {
+		return JALDB_E_INVAL;
+	}
 
+
+	while (true) {
+		*sys_meta_buf = NULL;
+		*app_meta_buf = NULL;
+		*log_buf = NULL;
+		*sys_meta_len = 0;
+		*app_meta_len = 0;
+		*log_len = 0;
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			XmlDocument sys_doc;
+			try {
+				sys_doc = ctx->log_sys_cont->getDocument(txn, sid, DB_READ_COMMITTED);
+			} catch (XmlException &e) {
+				if (e.getExceptionCode() == XmlException::DOCUMENT_NOT_FOUND) {
+					txn.abort();
+					return JALDB_E_NOT_FOUND;
+				}
+				// re-throw e, it will get caught by the outer
+				// try/catch block.
+				throw(e);
+			}
+			XmlValue val;
+			if (!sys_doc.getMetaData(JALDB_NS, JALDB_HAS_APP_META, val)) {
+				txn.abort();
+				return JALDB_E_CORRUPTED;
+			}
+			bool has_app_meta = val.equals(true);
+			if (!sys_doc.getMetaData(JALDB_NS, JALDB_HAS_LOG, val)) {
+				txn.abort();
+				return JALDB_E_CORRUPTED;
+			}
+			bool has_log = val.equals(true);
+			if (!has_log && !has_app_meta) {
+				txn.abort();
+				return JALDB_E_CORRUPTED;
+			}
+
+			XmlDocument app_doc;
+			if (has_app_meta) {
+				try {
+					app_doc = ctx->log_app_cont->getDocument(txn, sid, DB_READ_COMMITTED);
+				} catch (XmlException &e) {
+					if (e.getExceptionCode() == XmlException::DOCUMENT_NOT_FOUND) {
+						txn.abort();
+						return JALDB_E_CORRUPTED;
+					}
+					// re-throw e, it will get caught by the outer
+					// try/catch block.
+					throw(e);
+				}
+			} else {
+				app_meta_buf = NULL;
+				app_meta_len = 0;
+			}
+			XmlData sys_data = sys_doc.getContent();
+			*sys_meta_buf = (uint8_t*)jal_malloc(sys_data.get_size());
+			*sys_meta_len = sys_data.get_size();
+			memcpy(*sys_meta_buf, sys_data.get_data(), sys_data.get_size());
+
+			if (has_app_meta) {
+				XmlData app_data = app_doc.getContent();
+				*app_meta_buf = (uint8_t*)jal_malloc(app_data.get_size());
+				*app_meta_len = app_data.get_size();
+				memcpy(*app_meta_buf, app_data.get_data(), app_data.get_size());
+			}
+
+			if (has_log) {
+				DBT key;
+				DBT data;
+				memset(&key, 0, sizeof(DBT));
+				memset(&data, 0, sizeof(DBT));
+				key.data = jal_strdup(sid);
+				key.size = strlen(sid);
+				data.flags = DB_DBT_MALLOC;
+				int db_ret = ctx->log_dbp->get(ctx->log_dbp, txn.getDB_TXN(),
+						&key, &data, DB_READ_COMMITTED);
+				free(key.data);
+				if (db_ret != 0) {
+					txn.abort();
+					free(*sys_meta_buf);
+					*sys_meta_buf = NULL;
+					free(*app_meta_buf);
+					*app_meta_buf = NULL;
+					free(data.data);
+					free(key.data);
+					if (db_ret == DB_LOCK_DEADLOCK) {
+						continue;
+					}
+					*db_err_out = db_ret;
+					return JALDB_E_DB;
+				}
+				*log_buf = (uint8_t*) data.data;
+				*log_len = data.size;
+			}
+			txn.commit();
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (*sys_meta_buf) {
+				free(*sys_meta_buf);
+			}
+			*sys_meta_buf = NULL;
+			if (*app_meta_buf) {
+				free(*app_meta_buf);
+			}
+			*app_meta_buf = NULL;
+			if (*log_buf) {
+				free(*log_buf);
+			}
+			*log_buf = NULL;
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
 	return JALDB_OK;
 }
 
