@@ -102,3 +102,40 @@ extern "C" void test_jalls_parse_audit_returns_failure_given_bad_input()
 	assert_equals(-1, ret);
 	assert_pointer_equals((void *)NULL, doc);
 }
+
+extern "C" void test_jalls_parse_app_metadata_returns_success_given_good_input()
+{
+	int ret = 0;
+	FILE *f = NULL;
+
+	f = fopen(TEST_INPUT_ROOT "good_app_meta_input.xml", "rb");
+	assert_not_equals(NULL, f);
+
+	ret = fseek(f, 0, SEEK_END);
+	assert_equals(0, ret);
+
+	buff_len = ftell(f);
+	assert_true(buff_len > 0);
+
+	ret = fseek(f, 0, SEEK_SET);
+	assert_equals(0, ret);
+
+	buffer = (uint8_t *)malloc(buff_len);
+	assert_not_equals(NULL, buffer);
+
+	ret = fread(buffer, buff_len, 1, f);
+	assert_not_equals(ret, 0);
+
+	fclose(f);
+
+	ret = jalls_parse_app_metadata(buffer, (size_t)buff_len, (char *)SCHEMAS_ROOT, &doc, 1);
+	assert_equals(0, ret);
+	assert_not_equals(NULL, doc);
+}
+
+extern "C" void test_jalls_parse_app_metadata_returns_failure_given_bad_input()
+{
+	int ret = jalls_parse_app_metadata((uint8_t *)BAD_BUFFER, strlen(BAD_BUFFER), (char *)SCHEMAS_ROOT, &doc, 0);
+	assert_equals(-1, ret);
+	assert_pointer_equals((void *)NULL, doc);
+}

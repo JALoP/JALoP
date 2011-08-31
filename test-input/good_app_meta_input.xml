@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<ApplicationMetadata xmlns="http://www.dod.mil/jalop-1.0/applicationMetadataTypes" JID="UUID-c8c82971-bbeb-42b1-b014-53a8d0ddf002">
+	<Logger>
+		<LoggerName>jalauditd</LoggerName>
+		<Timestamp>2011-08-31T08:39:23-04:00</Timestamp>
+		<Hostname>ubuntu</Hostname>
+		<ApplicationName>jalauditd</ApplicationName>
+		<ProcessID>1498</ProcessID>
+		<Message>node=ubuntu type=USER msg=audit(1314794363.337:94): user pid=1565 uid=0 auid=4294967295 ses=4294967295 msg='test='test': exe="/sbin/auditctl" (hostname=?, addr=?, terminal=pts/9 res=success)'</Message>
+		<StructuredData SD_ID="audit">
+			<Field Key="node">ubuntu</Field>
+			<Field Key="type">USER</Field>
+			<Field Key="pid">1565</Field>
+			<Field Key="uid">0</Field>
+			<Field Key="auid">4294967295</Field>
+			<Field Key="ses">4294967295</Field>
+			<Field Key="test">'test</Field>
+			<Field Key="exe">"/sbin/auditctl"</Field>
+			<Field Key="hostname">?</Field>
+			<Field Key="addr">?</Field>
+			<Field Key="terminal">pts/9</Field>
+			<Field Key="res">success</Field>
+		</StructuredData>
+	</Logger>
+</ApplicationMetadata>
