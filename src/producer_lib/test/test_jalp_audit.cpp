@@ -115,29 +115,25 @@ extern "C" void setup()
 
 	jalp_context_init(ctx, NULL, NULL, NULL, SCHEMAS_ROOT);
 
-	FILE *f = fopen(TEST_INPUT_ROOT "good_input.xml", "rb");
-	if (!f) {
-		printf("Failed to open file\n");
-		exit(-1);
-	}
-	if (fseek(f, 0, SEEK_END) != 0) {
-		printf("Failed to seek to end of file\n");
-		exit(-1);
-	}
+	int ret = 0;
+	FILE *f = NULL;
+	f = fopen(TEST_INPUT_ROOT "good_audit_input.xml", "rb");
+
+	ret = fseek(f, 0, SEEK_END);
+	assert_equals(0, ret);
+
 	buff_len = ftell(f);
-	if (buff_len < 0) {
-		printf("Failed to get file point position\n");
-		exit(-1);
-	}
-	if (fseek(f, 0, SEEK_SET) != 0) {
-		printf("Failed to seek to beginning of file\n");
-		exit(-1);
-	}
+	assert_true(buff_len > 0);
+
+	ret = fseek(f, 0, SEEK_SET);
+	assert_equals(0, ret);
+
 	buffer = (uint8_t *)jal_malloc(buff_len);
-	if (!fread(buffer, buff_len, 1, f)) {
-		printf("Failed to read file\n");
-		exit(-1);
-	}
+	assert_not_equals(NULL, buffer);
+
+	ret = fread(buffer, buff_len, 1, f);
+	assert_not_equals(0, ret);
+
 	fclose(f);
 
 	ctx_is_null = 0;

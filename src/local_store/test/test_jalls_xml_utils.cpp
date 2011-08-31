@@ -71,7 +71,7 @@ extern "C" void test_jalls_parse_audit_returns_success_given_good_input()
 	int ret = 0;
 	FILE *f = NULL;
 
-	f = fopen(TEST_INPUT_ROOT "good_input.xml", "rb");
+	f = fopen(TEST_INPUT_ROOT "good_audit_input.xml", "rb");
 	assert_not_equals(NULL, f);
 
 	ret = fseek(f, 0, SEEK_END);
