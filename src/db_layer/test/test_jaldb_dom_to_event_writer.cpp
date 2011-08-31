@@ -60,8 +60,28 @@ extern "C" {
 using namespace DbXml;
 XERCES_CPP_NAMESPACE_USE
 
+class ErrorHandler: public DOMErrorHandler
+{
+public:
+	ErrorHandler()
+	:
+	failed(false)
+	{
+	}
+	virtual bool handleError(const DOMError &e)
+	{
+		bool failure = !(e.getSeverity() == DOMError::DOM_SEVERITY_WARNING);
+		if (failure) {
+			failed = true;
+		}
+		return !failed;
+	}
+	bool failed;
+};
+
 static DOMLSParser *parser = NULL;
 static DOMDocument *domdoc = NULL;
+static ErrorHandler err_handler;
 static jaldb_context *context = NULL;
 
 extern "C" void setup()
@@ -88,6 +108,7 @@ extern "C" void setup()
 	parser = impl->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS, 0);
 	DOMConfiguration *config = parser->getDomConfig();
 	config->setParameter(XMLUni::fgDOMDatatypeNormalization, true);
+	config->setParameter(XMLUni::fgDOMErrorHandler, &err_handler);
 	config->setParameter(XMLUni::fgDOMEntities, true);
 	config->setParameter(XMLUni::fgDOMNamespaces, true);
 	config->setParameter(XMLUni::fgDOMValidate, false);
@@ -145,7 +166,7 @@ extern "C" void test_put_document_as_dom_fails_with_empty_document()
 	}
 	catch (XmlException &e) {
 		assert_equals(JALDB_E_INVAL, ret);
-		return; 
+		return;
 	}
 	assert_true(0);
 }
@@ -187,4 +208,10 @@ extern "C" void test_put_document_as_dom_fails_with_invalid_input()
 	docname = "docname";
 	ret = jaldb_put_document_as_dom(transaction, update_ctx, cont, document, docname, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_error_handler_does_not_report_parse_error()
+{
+	domdoc = parser->parseURI(TEST_XML_DOC);
+	assert_true(!err_handler.failed);
 }
