@@ -40,81 +40,54 @@ extern "C" {
 #include <test-dept.h>
 }
 
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <dirent.h>
-#include <db.h>
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
-#include <xercesc/util/PanicHandler.hpp>
 #include "xml_test_utils.hpp"
 #include "jaldb_context.h"
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
 #include "jaldb_xml_doc_storage.hpp"
-XERCES_CPP_NAMESPACE_USE
 
 #define OTHER_DB_ROOT "./testdb/"
 #define OTHER_SCHEMAS_ROOT "./schemas/"
-#define VALID_TEST_XML_DOC "./test-input/domwriter.xml"
-#define INVALID_TEST_XML_DOC "./test-input/invalid_input.xml"
+#define TEST_XML_DOC "./test-input/domwriter.xml"
 #define EMPTY_TEST_XML_DOC "./test-input/no_input.xml"
 
 using namespace DbXml;
+XERCES_CPP_NAMESPACE_USE
 
-class MyHandler: public PanicHandler
-{
-	__attribute__((noreturn)) void panic(xercesc_3_1::PanicHandler::PanicReasons)
-	{
-		abort();
-	}
-};
-
-class ErrorHandler: public DOMErrorHandler
-{
-public:
-	ErrorHandler()
-	:
-	failed(false)
-	{
-	}
-	virtual bool handleError(const DOMError &e)
-	{
-		bool failure = !(e.getSeverity() == DOMError::DOM_SEVERITY_WARNING);
-		if (failure) {
-			failed = true;
-		}
-		char *msg = XMLString::transcode(e.getMessage());
-		XMLString::release(&msg);
-		return !failed;
-	}
-	bool failed;
-};
-
-static DOMDocument *dom_doc = NULL;
 static DOMLSParser *parser = NULL;
-static DOMImplementation *impl = NULL;
-static DOMConfiguration *config = NULL;
-static ErrorHandler err_handler;
-jaldb_context *context = NULL;
+static DOMDocument *domdoc = NULL;
+static jaldb_context *context = NULL;
 
 extern "C" void setup()
 {
 	XMLPlatformUtils::Initialize();
-	struct dirent *d;
-	DIR *dir;
-	char buf[256];
-	dir = opendir(OTHER_DB_ROOT);
-	while ((d = readdir(dir)) != NULL) {
-		sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
-		remove(buf);
+	struct stat st;
+	if (stat(OTHER_DB_ROOT, &st) != 0) {
+		int status;
+		status = mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	}
-	int ret_val;
-	ret_val = closedir(dir);
-	impl = DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
+	else {
+		struct dirent *d;
+		DIR *dir;
+		char buf[256];
+		dir = opendir(OTHER_DB_ROOT);
+		while ((d = readdir(dir)) != NULL) {
+			sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
+			remove(buf);
+		}
+		int ret_val;
+		ret_val = closedir(dir);
+	}
+	DOMImplementation *impl = DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
 	parser = impl->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS, 0);
-	config = parser->getDomConfig();
+	DOMConfiguration *config = parser->getDomConfig();
 	config->setParameter(XMLUni::fgDOMDatatypeNormalization, true);
-	config->setParameter(XMLUni::fgDOMErrorHandler, &err_handler);
 	config->setParameter(XMLUni::fgDOMEntities, true);
 	config->setParameter(XMLUni::fgDOMNamespaces, true);
 	config->setParameter(XMLUni::fgDOMValidate, false);
@@ -131,91 +104,87 @@ extern "C" void setup()
 
 extern "C" void teardown()
 {
-	dom_doc = NULL;
+	delete parser;
 	parser = NULL;
-	impl = NULL;
-	config = NULL;
+	domdoc = NULL;
 	jaldb_context_destroy(&context);
 	XMLPlatformUtils::Terminate();
 }
 
-extern "C" void test_error_handler_does_not_fail()
-{
-	assert_true(!err_handler.failed);
-}
-
 extern "C" void test_dom_to_event_writer_inserts_dom_doc()
 {
-	dom_doc = parser->parseURI(VALID_TEST_XML_DOC);
-	assert_true(dom_doc != NULL);
+	domdoc = parser->parseURI(TEST_XML_DOC);
+	assert_true(domdoc != NULL);
 
-	XmlTransaction txn = context->manager->createTransaction();
+	XmlTransaction transaction = context->manager->createTransaction();
 	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
 	XmlContainer cont = *(context->audit_sys_cont);
 	XmlDocument document = context->manager->createDocument();
-	std::string doc_name("doc_name");
+	std::string docname("docname");
 	enum jaldb_status ret;
-	ret = jaldb_put_document_as_dom(txn, update_ctx, cont, document, doc_name, dom_doc);
-	txn.commit();
+	ret = jaldb_put_document_as_dom(transaction, update_ctx, cont, document, docname, domdoc);
+	transaction.commit();
 	assert_equals(JALDB_OK, ret);
-}
 
-extern "C" void test_put_document_as_dom_fails_with_invalid_document()
-{
-	enum jaldb_status ret = JALDB_E_INVAL;
-	XmlTransaction txn = context->manager->createTransaction();
-	try {
-		dom_doc = parser->parseURI(INVALID_TEST_XML_DOC);
-		XmlUpdateContext update_ctx = context->manager->createUpdateContext();
-		XmlContainer cont = *(context->audit_app_cont);
-		XmlDocument document = context->manager->createDocument();
-		std::string doc_name("doc_name");
-		ret = jaldb_put_document_as_dom(
-			txn, update_ctx, cont, document, doc_name, dom_doc);
-		txn.commit();
-	}
-	catch (XmlException &e) {
-		txn.abort();
-		ret = JALDB_E_INVAL;
-	}
-
-	assert_equals(JALDB_OK, ret);
+	XmlDocument doc = cont.getDocument(docname);
+	assert_equals(doc, document);
 }
 
 extern "C" void test_put_document_as_dom_fails_with_empty_document()
 {
+	XmlTransaction transaction = context->manager->createTransaction();
+	domdoc = parser->parseURI(EMPTY_TEST_XML_DOC);
+	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
+	XmlContainer cont = *(context->audit_cont);
+	XmlDocument document = context->manager->createDocument();
+	std::string docname("docname");
 	enum jaldb_status ret = JALDB_E_INVAL;
-	XmlTransaction txn = context->manager->createTransaction();
 	try {
-		dom_doc = parser->parseURI(EMPTY_TEST_XML_DOC);
-		XmlUpdateContext update_ctx = context->manager->createUpdateContext();
-		XmlContainer cont = *(context->audit_cont);
-		XmlDocument document = context->manager->createDocument();
-		std::string doc_name("doc_name");
 		ret = jaldb_put_document_as_dom(
-			txn, update_ctx, cont, document, doc_name, dom_doc);
-		txn.commit();
+			transaction, update_ctx, cont, document, docname, domdoc);
 	}
 	catch (XmlException &e) {
-		txn.abort();
-		ret = JALDB_E_INVAL;
+		assert_equals(JALDB_E_INVAL, ret);
+		return; 
 	}
-	assert_equals(JALDB_E_INVAL, ret);
+	assert_true(0);
+}
+
+extern "C" void test_put_document_as_dom_fails_with_dom_document_with_no_root_element()
+{
+	DOMImplementation *dom_impl =
+		DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
+	DOMDocument *domdocument = dom_impl->createDocument();
+	XmlTransaction transaction = context->manager->createTransaction();
+	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
+	XmlContainer cont = *(context->audit_sys_cont);
+	XmlDocument document = context->manager->createDocument();
+	std::string docname("docname");
+	enum jaldb_status ret = JALDB_E_INVAL;
+	try {
+		ret = jaldb_put_document_as_dom(
+			transaction, update_ctx, cont, document, docname, domdocument);
+	}
+	catch (XmlException &e) {
+		assert_equals(JALDB_E_INVAL, ret);
+		return;
+	}
+	assert_true(0);
 }
 
 extern "C" void test_put_document_as_dom_fails_with_invalid_input()
 {
-	dom_doc = parser->parseURI(VALID_TEST_XML_DOC);
-	XmlTransaction txn = context->manager->createTransaction();
+	domdoc = parser->parseURI(TEST_XML_DOC);
+	XmlTransaction transaction = context->manager->createTransaction();
 	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
 	XmlContainer cont = *(context->audit_sys_cont);
 	XmlDocument document = context->manager->createDocument();
-	std::string doc_name("");
+	std::string docname("");
 	enum jaldb_status ret;
-	ret = jaldb_put_document_as_dom(txn, update_ctx, cont, document, doc_name, dom_doc);
+	ret = jaldb_put_document_as_dom(transaction, update_ctx, cont, document, docname, domdoc);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	doc_name = "doc_name";
-	ret = jaldb_put_document_as_dom(txn, update_ctx, cont, document, doc_name, NULL);
+	docname = "docname";
+	ret = jaldb_put_document_as_dom(transaction, update_ctx, cont, document, docname, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 }

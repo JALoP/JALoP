@@ -39,38 +39,46 @@ extern "C" {
 #include <test-dept.h>
 }
 
-#include <dirent.h>
-#include <db.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
+#include <db.h>
 #include "jal_alloc.h"
 #include "jaldb_context.h"
 #include "jaldb_context.hpp"
 #include <xercesc/util/PlatformUtils.hpp>
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
-XERCES_CPP_NAMESPACE_USE
-using namespace DbXml;
 
 #define OTHER_DB_ROOT "./testdb/"
 #define OTHER_SCHEMA_ROOT "./schemas/"
 #define JOURNAL_ROOT "/journal/"
 
-jaldb_context *context = NULL;
+XERCES_CPP_NAMESPACE_USE
+using namespace DbXml;
+
+static jaldb_context *context = NULL;
 
 extern "C" void setup()
 {
 	XMLPlatformUtils::Initialize();
-	struct dirent *d;
-	DIR *dir;
-	char buf[256];
-	mkdir(OTHER_DB_ROOT, 0700);
-	dir = opendir(OTHER_DB_ROOT);
-	while ((d = readdir(dir)) != NULL) {
-		sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
-		remove(buf);
+	struct stat st;
+	if (stat(OTHER_DB_ROOT, &st) != 0) {
+		int status;
+		status = mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	}
-	closedir(dir);
+	else {
+		struct dirent *d;
+		DIR *dir;
+		char buf[256];
+		dir = opendir(OTHER_DB_ROOT);
+		while ((d = readdir(dir)) != NULL) {
+			sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
+			remove(buf);
+		}
+		int ret_val;
+		ret_val = closedir(dir);
+	}
 	context = jaldb_context_create();
 	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true);
 }

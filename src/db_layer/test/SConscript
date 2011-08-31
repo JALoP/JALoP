@@ -24,7 +24,7 @@ tests.append(env.TestDeptTest('test_jaldb_context.cpp',
 	other_sources=[lib_common, xmlDocStorageObj, eventWriterObj, utilsObj])[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaldb_dom_to_event_writer.cpp',
-        other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj])[0].abspath)
+	other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj])[0].abspath)
 
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(db_tests)
