@@ -137,6 +137,8 @@ extern "C" void test_dom_to_event_writer_inserts_dom_doc()
 	domdoc = parser->parseURI(TEST_XML_DOC);
 	assert_true(domdoc != NULL);
 
+	assert_false(err_handler.failed);
+
 	XmlTransaction transaction = context->manager->createTransaction();
 	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
 	XmlContainer cont = *(context->audit_sys_cont);
@@ -208,10 +210,4 @@ extern "C" void test_put_document_as_dom_fails_with_invalid_input()
 	docname = "docname";
 	ret = jaldb_put_document_as_dom(transaction, update_ctx, cont, document, docname, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
-}
-
-extern "C" void test_error_handler_does_not_report_parse_error()
-{
-	domdoc = parser->parseURI(TEST_XML_DOC);
-	assert_true(!err_handler.failed);
 }
