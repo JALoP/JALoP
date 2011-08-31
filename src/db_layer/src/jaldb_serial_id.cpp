@@ -58,35 +58,13 @@ enum jaldb_status jaldb_get_next_serial_id(XmlTransaction &txn, XmlUpdateContext
 	}
 	return JALDB_E_CORRUPTED;
 }
-void jaldb_increment_serial_id(string &sid)
-{
-	int inc = 1;
-	int idx;
-	for (idx = sid.length() - 1; (inc == 1 && idx >= 0); idx--) {
-		inc = 0;
-		switch (sid[idx]) {
-		case '9':
-			sid[idx] = 'A';
-			break;
-		case 'Z':
-			sid[idx] = 'a';
-			break;
-		case 'z':
-			sid[idx] = '0';
-			inc = 1;
-			break;
-		default:
-			sid[idx] += 1;
-		}
-	}
-	if (inc) {
-		sid.insert(0, 1, '1');
-	}
-}
+
 enum jaldb_status jaldb_initialize_serial_id(XmlTransaction &parent_txn,
 		XmlContainer &cont, int *db_err)
 {
-	enum jaldb_status ret = JALDB_OK;
+	if (!db_err) {
+		return JALDB_E_INVAL;
+	}
 	while (1) {
 		XmlTransaction txn = parent_txn.createChild();
 		try {
@@ -107,11 +85,36 @@ enum jaldb_status jaldb_initialize_serial_id(XmlTransaction &parent_txn,
 			}
 			if (e.getExceptionCode() == XmlException::UNIQUE_ERROR) {
 				// doc exists/already initialized.
-				ret = JALDB_OK;
 				break;
 			}
 			throw e;
 		}
 	}
-	return ret;
+	return JALDB_OK;
+}
+
+void jaldb_increment_serial_id(string &sid)
+{
+	int inc = 1;
+	int idx;
+	for (idx = (sid.length() - 1); (inc == 1 && idx >= 0); idx--) {
+		inc = 0;
+		switch (sid[idx]) {
+		case '9':
+			sid[idx] = 'A';
+			break;
+		case 'Z':
+			sid[idx] = 'a';
+			break;
+		case 'z':
+			sid[idx] = '0';
+			inc = 1;
+			break;
+		default:
+			sid[idx] += 1;
+		}
+	}
+	if (inc) {
+		sid.insert(0, 1, '1');
+	}
 }
