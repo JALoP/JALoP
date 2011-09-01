@@ -60,7 +60,7 @@ enum jal_status jalp_stack_frame_to_elem(const struct jalp_stack_frame *stack_fr
 	if (!stack_frame || !doc || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	DOMElement *stack_frame_element = doc->createElementNS(namespace_uri, JALP_XML_STACK_FRAME);
 	if (stack_frame->caller_name) {
 		DOMElement *tmp = doc->createElementNS(namespace_uri, JALP_XML_CALLER_NAME);

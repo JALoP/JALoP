@@ -58,7 +58,7 @@ enum jal_status jalp_journal_metadata_to_elem(const struct jalp_journal_metadata
 	}
 
 	enum jal_status ret;
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	DOMElement *jmeta_element = doc->createElementNS(namespace_uri, JALP_XML_JOURNAL_META);
 
 	if (journal->file_info) {

@@ -73,7 +73,7 @@ enum jal_status jalp_syslog_metadata_to_elem(const struct jalp_syslog_metadata *
 		return JAL_E_XML_CONVERSION;
 	}
 	enum jal_status ret;
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	DOMElement *syslog_element = doc->createElementNS(namespace_uri, JALP_XML_SYSLOG);
 	char *proc_id_str = NULL;
 	pid_t pid = getpid();

@@ -125,7 +125,7 @@ enum jal_status jalp_transform_to_elem(const struct jalp_transform *transform,
 
 	*out = NULL;
 	XMLCh *namespace_uri =
-		XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+		XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	DOMElement *transform_elm =
 		doc->createElementNS(namespace_uri, JALP_XML_TRANSFORM);
 

@@ -80,7 +80,7 @@ enum jal_status jalp_content_type_to_elem(const struct jalp_content_type * conte
 		return JAL_E_INVAL_CONTENT_TYPE;
 	}
 
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 
 	XMLCh *xml_val_subtype;
 

@@ -69,7 +69,7 @@ enum jal_status jalp_file_info_to_elem(const struct jalp_file_info * file_info, 
 		return JAL_E_INVAL_FILE_INFO;
 	}
 
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	DOMElement *file_info_elt = doc->createElementNS(namespace_uri, JALP_XML_FILE_INFO);
 	XMLCh *xml_original_size;
 	XMLCh *xml_size;

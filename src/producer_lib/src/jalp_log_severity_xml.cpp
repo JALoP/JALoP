@@ -49,7 +49,7 @@ enum jal_status jalp_log_severity_to_elem(const struct jalp_log_severity * sever
 		return JAL_E_XML_CONVERSION;
 	}
 
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	char * level_val_str;
 	jal_asprintf(&level_val_str, "%d", severity->level_val);
 	XMLCh *xml_level_val = XMLString::transcode(level_val_str);

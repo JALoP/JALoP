@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _JALP_BN2B64_HPP_
-#define _JALP_BN2B64_HPP_
+#ifndef _JAL_BN2B64_HPP_
+#define _JAL_BN2B64_HPP_
 
 #include <jalop/jal_status.h>
 
@@ -36,4 +36,4 @@
  */
 XMLCh * jal_BN2b64(BIGNUM * bn);
 
-#endif // _JALP_BN2B64_HPP_
+#endif // _JAL_BN2B64_HPP_

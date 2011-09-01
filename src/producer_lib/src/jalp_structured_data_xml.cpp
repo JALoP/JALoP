@@ -60,7 +60,7 @@ enum jal_status jalp_structured_data_to_elem(const struct jalp_structured_data *
 		return JAL_E_INVAL_STRUCTURED_DATA;
 	}
 	enum jal_status ret;
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	XMLCh *xml_sd_id = XMLString::transcode(sd->sd_id);
 	DOMElement *sd_element = doc->createElementNS(namespace_uri, JALP_XML_STRUCTURED_DATA);
 	sd_element->setAttribute(JALP_XML_SD_ID, xml_sd_id);

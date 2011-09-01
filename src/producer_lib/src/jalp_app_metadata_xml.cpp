@@ -77,7 +77,7 @@ enum jal_status jalp_app_metadata_to_elem(struct jalp_app_metadata *app_meta,
 	XMLCh *xml_jid;
 
 
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 
 	DOMElement *app_meta_elem = doc->createElementNS(namespace_uri, APPLICATIONMETADATA);
 

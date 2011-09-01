@@ -4,7 +4,7 @@
  *
  * @section LICENSE
  *
- * Source code in 3rd-party is licensed and owned by their respective
+ * Source code in 3rd-partfy is licensed and owned by their respective
  * copyright holders.
  *
  * All other source code is copyright Tresys Technology and licensed as below.
@@ -89,18 +89,18 @@ static const XMLCh DIGESTVALUE[] = {
 	chLatin_a, chLatin_l, chLatin_u, chLatin_e, chNull };
 static const XMLCh URI[] = {
 	chLatin_U, chLatin_R, chLatin_I, chNull };
-const XMLCh JALP_XML_CORE[] = {
+const XMLCh JAL_XML_CORE[] = {
 	chLatin_C, chLatin_o, chLatin_r, chLatin_e, chNull };
-static const XMLCh JALP_XML_TRANSFORMS[] = {
+static const XMLCh JAL_XML_TRANSFORMS[] = {
 	chLatin_T, chLatin_r, chLatin_a, chLatin_n, chLatin_s, chLatin_f, chLatin_o, chLatin_r,
 	chLatin_m, chLatin_s, chNull };
-static const XMLCh JALP_XML_TRANSFORM[] = {
+static const XMLCh JAL_XML_TRANSFORM[] = {
 	chLatin_T, chLatin_r, chLatin_a, chLatin_n, chLatin_s, chLatin_f, chLatin_o, chLatin_r,
 	chLatin_m, chNull };
-static const XMLCh JALP_XML_ALGORITHM[] = {
+static const XMLCh JAL_XML_ALGORITHM[] = {
 	chLatin_A, chLatin_l, chLatin_g, chLatin_o, chLatin_r, chLatin_i, chLatin_t,
 	chLatin_h, chLatin_m, chNull };
-static const XMLCh JALP_XML_WITH_COMMENTS[] = {
+static const XMLCh JAL_XML_WITH_COMMENTS[] = {
 	chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
 	chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o,
 	chLatin_r, chLatin_g, chForwardSlash, chDigit_2, chDigit_0, chDigit_0, chDigit_6,
@@ -109,14 +109,14 @@ static const XMLCh JALP_XML_WITH_COMMENTS[] = {
 	chPound, chLatin_W, chLatin_i, chLatin_t, chLatin_h, chLatin_C, chLatin_o, chLatin_m,
 	chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_s, chNull };
 
-const XMLCh JALP_XML_DS[] = {
+const XMLCh JAL_XML_DS[] = {
 	chLatin_d, chLatin_s, chNull};
 
-const XMLCh JALP_XML_XPOINTER_ID_BEG[] = {
+const XMLCh JAL_XML_XPOINTER_ID_BEG[] = {
 	chPound, chLatin_x, chLatin_p,  chLatin_o, chLatin_i, chLatin_n,
 	chLatin_t, chLatin_e, chLatin_r, chOpenParen, chLatin_i, chLatin_d,
 	chOpenParen, chSingleQuote, chNull};
-const XMLCh JALP_XML_XPOINTER_ID_END[] = {
+const XMLCh JAL_XML_XPOINTER_ID_END[] = {
 	chSingleQuote, chCloseParen, chCloseParen, chNull};
 
 
@@ -131,7 +131,7 @@ enum jal_status jal_parse_xml_snippet(DOMElement *ctx_node, const char* snippet)
 	if (!ctx_node) {
 		return JAL_E_INVAL;
 	}
-	impl = DOMImplementationRegistry::getDOMImplementation(JALP_XML_CORE);
+	impl = DOMImplementationRegistry::getDOMImplementation(JAL_XML_CORE);
 	parser = impl->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS, 0);
 	conf = parser->getDomConfig();
 	conf->setParameter(XMLUni::fgDOMEntities, false);
@@ -228,7 +228,7 @@ enum jal_status jal_create_reference_elem(const char *reference_uri, const char 
 		return JAL_E_XML_CONVERSION;
 	}
 
-	XMLCh *namespace_uri = XMLString::transcode(JALP_XMLDSIG_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_XMLDSIG_URI);
 	XMLCh *xml_reference_uri = XMLString::transcode(reference_uri);
 	XMLCh *xml_digest_method = XMLString::transcode(digest_method);
 
@@ -338,16 +338,16 @@ enum jal_status jal_create_audit_transforms_elem(DOMDocument *doc, DOMElement **
 		return JAL_E_XML_CONVERSION;
 	}
 
-	XMLCh *namespace_uri = XMLString::transcode(JALP_XMLDSIG_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_XMLDSIG_URI);
 
 	DOMElement *out_elem;
-	out_elem = doc->createElementNS(namespace_uri, JALP_XML_TRANSFORMS);
+	out_elem = doc->createElementNS(namespace_uri, JAL_XML_TRANSFORMS);
 
 	DOMElement *transform_elem;
-	transform_elem = doc->createElementNS(namespace_uri, JALP_XML_TRANSFORM);
+	transform_elem = doc->createElementNS(namespace_uri, JAL_XML_TRANSFORM);
 	out_elem->appendChild(transform_elem);
 
-	transform_elem->setAttribute(JALP_XML_ALGORITHM, JALP_XML_WITH_COMMENTS);
+	transform_elem->setAttribute(JAL_XML_ALGORITHM, JAL_XML_WITH_COMMENTS);
 
 	XMLString::release(&namespace_uri);
 
@@ -392,7 +392,7 @@ out:
 }
 
 
-XMLCh *jalp_BN2decXMLCh(BIGNUM *bn)
+XMLCh *jal_BN2decXMLCh(BIGNUM *bn)
 {
 	char *buff = NULL;
 	buff = BN_bn2dec(bn);
@@ -402,7 +402,7 @@ XMLCh *jalp_BN2decXMLCh(BIGNUM *bn)
 	return xml_serial;
 }
 
-XMLCh *jalp_get_xml_x509_name(X509_NAME *nm)
+XMLCh *jal_get_xml_x509_name(X509_NAME *nm)
 {
 	BIO *bmem  = BIO_new(BIO_s_mem());
 	BUF_MEM *bptr;
@@ -424,18 +424,18 @@ XMLCh *jalp_get_xml_x509_name(X509_NAME *nm)
 	return xml_subject;
 }
 
-XMLCh *jalp_get_xml_x509_serial(ASN1_INTEGER *i)
+XMLCh *jal_get_xml_x509_serial(ASN1_INTEGER *i)
 {
 	BIGNUM *bn_buff = NULL;
 
 	bn_buff = ASN1_INTEGER_to_BN(i, NULL);
-	XMLCh *xml_serial = jalp_BN2decXMLCh(bn_buff);
+	XMLCh *xml_serial = jal_BN2decXMLCh(bn_buff);
 
 	BN_free(bn_buff);
 	return xml_serial;
 }
 
-XMLCh *jalp_get_xml_x509_cert(X509 *x509)
+XMLCh *jal_get_xml_x509_cert(X509 *x509)
 {
 	unsigned char *buff = NULL;
 	char *b64_buff = NULL;
@@ -482,14 +482,14 @@ enum jal_status jal_add_signature_block(RSA *rsa, X509 *x509, DOMDocument *doc,
 	// Insert the signature DOM nodes into the doc
 	parent_element->insertBefore(sigNode, last_element);
 
-	XMLSize_t beg_len = XMLString::stringLen(JALP_XML_XPOINTER_ID_BEG);
-	XMLSize_t end_len = XMLString::stringLen(JALP_XML_XPOINTER_ID_END);
+	XMLSize_t beg_len = XMLString::stringLen(JAL_XML_XPOINTER_ID_BEG);
+	XMLSize_t end_len = XMLString::stringLen(JAL_XML_XPOINTER_ID_END);
 	XMLSize_t id_len = XMLString::stringLen(id);
 
 	XMLCh *reference_uri = (XMLCh *) jal_calloc(beg_len + id_len + end_len + 1, sizeof(XMLCh));
-	XMLString::catString(reference_uri, JALP_XML_XPOINTER_ID_BEG);
+	XMLString::catString(reference_uri, JAL_XML_XPOINTER_ID_BEG);
 	XMLString::catString(reference_uri, id);
-	XMLString::catString(reference_uri, JALP_XML_XPOINTER_ID_END);
+	XMLString::catString(reference_uri, JAL_XML_XPOINTER_ID_END);
 
 	// Create an envelope reference for the text to be signed
 	DSIGReference *ref = sig->createReference(reference_uri, HASH_SHA256);
@@ -515,10 +515,10 @@ enum jal_status jal_add_signature_block(RSA *rsa, X509 *x509, DOMDocument *doc,
 	// add certificate information, if available
 	if (x509) {
 		DSIGKeyInfoX509 *x509keyinfo = sig->appendX509Data();
-		XMLCh *xml_subject = jalp_get_xml_x509_name(X509_get_subject_name(x509));
-		XMLCh *xml_issuer = jalp_get_xml_x509_name(X509_get_issuer_name(x509));
-		XMLCh *xml_serial = jalp_get_xml_x509_serial(X509_get_serialNumber(x509));
-		XMLCh *xml_cert = jalp_get_xml_x509_cert(x509);
+		XMLCh *xml_subject = jal_get_xml_x509_name(X509_get_subject_name(x509));
+		XMLCh *xml_issuer = jal_get_xml_x509_name(X509_get_issuer_name(x509));
+		XMLCh *xml_serial = jal_get_xml_x509_serial(X509_get_serialNumber(x509));
+		XMLCh *xml_cert = jal_get_xml_x509_cert(x509);
 
 		x509keyinfo->setX509SubjectName(xml_subject);
 		x509keyinfo->setX509IssuerSerial(xml_issuer, xml_serial);

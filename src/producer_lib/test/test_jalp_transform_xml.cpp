@@ -83,7 +83,7 @@ extern "C" void setup()
 	transform2 = jalp_transform_append_other(transform1, "http://otheruri.com/",
 			"<some2 xmlns='foo:bar'>x</some2>");
 
-	namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	transform_elm = doc->createElementNS(namespace_uri, xml_transform);
 
 	schemas.push_back(TEST_XML_DSIG_SCHEMA);

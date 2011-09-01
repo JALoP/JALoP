@@ -1,5 +1,5 @@
 /**
- * @file jal_xml_utils.hpp This file defines helper fucntions for dealing with
+ * @file jal_xml_utils.hpp This file defines helper functions for dealing with
  * creating/reading XML data.
  *
  * @section LICENSE
@@ -146,7 +146,7 @@ enum jal_status jal_xml_output(DOMDocument *doc, MemBufFormatTarget **buffer);
  * @return XMLCh pointer to the decimal representation of the BIGNUM.  This needs
  * to be free'd with XMLString::release().
  */
-XMLCh *jalp_BN2decXMLCh(BIGNUM *bn);
+XMLCh *jal_BN2decXMLCh(BIGNUM *bn);
 
 /**
  * Convert a certificate name to a XMLCh pointer.
@@ -155,7 +155,7 @@ XMLCh *jalp_BN2decXMLCh(BIGNUM *bn);
  *
  * @return Certificate subject name as a XMLCh pointer.
  */
-XMLCh *jalp_get_xml_x509_name(X509_NAME *nm);
+XMLCh *jal_get_xml_x509_name(X509_NAME *nm);
 
 /**
  * Convert a certificate serial number to a XMLCh pointer.
@@ -164,7 +164,7 @@ XMLCh *jalp_get_xml_x509_name(X509_NAME *nm);
  *
  * @return Certificate serial number as a XMLCh pointer.
  */
-XMLCh *jalp_get_xml_x509_serial(ASN1_INTEGER *i);
+XMLCh *jal_get_xml_x509_serial(ASN1_INTEGER *i);
 
 /**
  * Convert a base64-encoded certificate to a XMLCh pointer.
@@ -173,7 +173,7 @@ XMLCh *jalp_get_xml_x509_serial(ASN1_INTEGER *i);
  *
  * @return Certificate as a XMLCh pointer.
  */
-XMLCh *jalp_get_xml_x509_cert(X509 *x509);
+XMLCh *jal_get_xml_x509_cert(X509 *x509);
 
 /**
  * Add a signature block to a document.
@@ -195,4 +195,4 @@ XMLCh *jalp_get_xml_x509_cert(X509 *x509);
 enum jal_status jal_add_signature_block(RSA *rsa, X509 *x509, DOMDocument *doc,
 		DOMElement *parent_element, DOMElement *last_element, const XMLCh *id);
 
-#endif // _JALP_XML_UITILS_HPP_
+#endif // _JAL_XML_UITILS_HPP_

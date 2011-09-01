@@ -156,7 +156,7 @@ extern "C" void setup()
 	SSL_library_init();
 
 	DOMImplementation *impl = DOMImplementationRegistry::getDOMImplementation(TEST_XML_CORE);
-	namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	id_val = XMLString::transcode(ID_STR);
 	doc = impl->createDocument();
 
@@ -260,7 +260,7 @@ extern "C" void test_jal_create_base64_element_works_with_normal_value()
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals(TAG, new_elem);
 	assert_content_equals(base64_string, new_elem);
-	assert_namespace_equals(JALP_APP_META_TYPES_NAMESPACE_URI, new_elem);
+	assert_namespace_equals(JAL_APP_META_TYPES_NAMESPACE_URI, new_elem);
 }
 
 extern "C" void test_jal_create_reference_elem_returns_null_with_null_inputs()

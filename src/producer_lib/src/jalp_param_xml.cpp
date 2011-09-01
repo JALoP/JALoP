@@ -50,7 +50,7 @@ enum jal_status jalp_param_to_elem(const struct jalp_param *param,
 		return JAL_E_INVAL_PARAM;
 	}
 
-	XMLCh *namespace_uri = XMLString::transcode(JALP_APP_META_TYPES_NAMESPACE_URI);
+	XMLCh *namespace_uri = XMLString::transcode(JAL_APP_META_TYPES_NAMESPACE_URI);
 	XMLCh *xml_attr_val = XMLString::transcode(param->key);
 	XMLCh *xml_elem_val;
 	DOMElement *new_elem;

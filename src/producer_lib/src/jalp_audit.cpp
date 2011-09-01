@@ -111,7 +111,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 				goto out;
 			}
 			reference_elem->appendChild(transforms_elem);
-			XMLCh *namespace_uri = XMLString::transcode(JALP_XMLDSIG_URI);
+			XMLCh *namespace_uri = XMLString::transcode(JAL_XMLDSIG_URI);
 			DOMElement *manifest = doc->createElementNS(namespace_uri, JALP_XML_MANIFEST);
 			XMLString::release(&namespace_uri);
 			manifest->appendChild(reference_elem);
