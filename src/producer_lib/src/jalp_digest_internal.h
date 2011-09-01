@@ -1,5 +1,5 @@
 /**
- * @file jalp_logger_metadata.h This file defines functions for calculating
+ * @file jalp_digest_internal.h This file defines functions for calculating
  * digests.
  *
  * @section LICENSE
