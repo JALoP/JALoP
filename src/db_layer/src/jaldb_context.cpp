@@ -435,7 +435,6 @@ enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
 	if (!ctx || !ctx->manager) {
 		return JALDB_E_INVAL;
 	}
-	
 	return jaldb_store_confed_sid_helper(ctx->journal_sys_cont,
 			ctx->journal_conf_db, remote_host, sid, db_err_out);
 }
@@ -456,7 +455,6 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
 	}
 	return jaldb_store_confed_sid_helper(ctx->log_sys_cont,
 			ctx->log_conf_db, remote_host, sid, db_err_out);
-	
 }
 enum jaldb_status jaldb_store_confed_sid_helper(XmlContainer *cont, DB *db,
 		const char *remote_host, const char *sid, int *db_err_out)
