@@ -68,6 +68,9 @@ int main(int argc, char **argv) {
 
 	struct jalls_context *jalls_ctx = NULL;
 	err = jalls_parse_config(config_path, &jalls_ctx);
+	if (err < 0) {
+		goto err_out;
+	}
 	jalls_ctx->debug = debug;
 
 	//load the private key

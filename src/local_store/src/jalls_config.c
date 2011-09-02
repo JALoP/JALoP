@@ -64,6 +64,7 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	int ret = config_read_file(&jalls_config, config_file_path);
 
 	if (ret == CONFIG_FALSE) {
+		ret = -1;
 		fprintf(stderr, "parse error: \"%s\" line %d\n",
 			config_error_text(&jalls_config), config_error_line(&jalls_config));
 		goto err_out;
