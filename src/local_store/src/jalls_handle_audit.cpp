@@ -84,9 +84,12 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 
 	int err;
 
-	DOMDocument *sys_meta_doc;
-	DOMDocument *app_meta_doc;
-	DOMDocument *audit_doc;
+	DOMDocument *sys_meta_doc = NULL;
+	DOMDocument *app_meta_doc = NULL;
+	DOMDocument *audit_doc = NULL;
+
+	struct jal_digest_ctx *digest_ctx = NULL;
+	uint8_t *digest = NULL;
 
 	bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 	if (bytes_recieved < 0) {
@@ -152,9 +155,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 
         //digest the audit
 	enum jal_status jal_err;
-	struct jal_digest_ctx *digest_ctx;
 	digest_ctx = jal_sha256_ctx_create();
-	uint8_t *digest;
 	int digest_len;
 	jal_err = jal_digest_xml_data(digest_ctx, audit_doc, &digest, &digest_len);
 
@@ -213,5 +214,14 @@ err_out:
 	jal_digest_ctx_destroy(&digest_ctx);
 	free(data_buf);
 	free(app_meta_buf);
+	if (sys_meta_doc) {
+		delete sys_meta_doc;
+	}
+	if (app_meta_doc) {
+		delete app_meta_doc;
+	}
+	if (audit_doc) {
+		delete audit_doc;
+	}
 	return ret;
 }
