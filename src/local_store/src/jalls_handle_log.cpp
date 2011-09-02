@@ -98,15 +98,13 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		}
 	}
 
-	if (data_len != 0) {
-		//get first break string. If the log was empty, this is omitted
-		err = jalls_handle_break(thread_ctx->fd);
-		if (err < 0) {
-			if (debug) {
-				fprintf(stderr, "could not recieve first BREAK\n");
-			}
-			goto err_out;
+	//get first break string. If the log was empty, this is omitted
+	err = jalls_handle_break(thread_ctx->fd);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "%s: could not recieve first BREAK\n", __FILE__);
 		}
+		goto err_out;
 	}
 
 	//get the app_metadata
