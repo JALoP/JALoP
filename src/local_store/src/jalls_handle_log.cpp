@@ -167,6 +167,16 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		goto err_out;
 	}
 
+	//create system metadata
+	err = jalls_create_system_metadata(JALLS_JOURNAL, thread_ctx->ctx->hostname, thread_ctx->ctx->system_uuid,
+		thread_ctx->fd, thread_ctx->peer_pid, thread_ctx->peer_uid, &sys_meta_doc);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "could not create system metadata\n");
+		}
+		goto err_out;
+	}
+
 	//append a manifest element to the system metadata
 	DOMElement *manifest;
 	manifest = sys_meta_doc->createElementNS(manifest_namespace_uri, JALLS_XML_MANIFEST);
@@ -196,15 +206,6 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	}
 
 
-	//create system metadata
-	err = jalls_create_system_metadata(JALLS_JOURNAL, thread_ctx->ctx->hostname, thread_ctx->ctx->system_uuid,
-		thread_ctx->fd, thread_ctx->peer_pid, thread_ctx->peer_uid, &sys_meta_doc);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "could not create system metadata\n");
-		}
-		goto err_out;
-	}
 
 
 	/*
