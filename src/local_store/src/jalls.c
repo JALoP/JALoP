@@ -45,6 +45,7 @@
 #include "jalu_daemonize.h"
 #include "jalls_handler.h"
 #include "jalls_msg.h"
+#include "jalls_init.h"
 
 #define JALLS_LISTEN_BACKLOG 20
 #define JALLS_USAGE "usage: [--debug] FILE\n"
@@ -59,7 +60,9 @@ int main(int argc, char **argv) {
 	FILE *fp;
 	RSA *key = NULL;
 	X509 *cert = NULL;
-
+	if (0 != jalls_init()) {
+		goto err_out;
+	}
 	int debug = 0;
 	int err = parse_cmdline(argc, argv, &config_path, &debug);
 	if (err < 0) {
@@ -198,6 +201,7 @@ int main(int argc, char **argv) {
 err_out:
 	RSA_free(key);
 	X509_free(cert);
+	jalls_shutdown();
 
 	//TODO: destroy db_context once the api has a destroy function
 
