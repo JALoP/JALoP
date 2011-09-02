@@ -116,20 +116,20 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		goto err_out;
 	}
 
-	//Parse and Validate the app metadata
-	err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "could not parse the application metadata\n");
-		}
-		goto err_out;
-	}
-
 	//get second break string
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
 			fprintf(stderr, "could not recieve second BREAK\n");
+		}
+		goto err_out;
+	}
+
+	//Parse and Validate the app metadata
+	err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "could not parse the application metadata\n");
 		}
 		goto err_out;
 	}
