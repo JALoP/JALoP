@@ -66,6 +66,8 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	XMLCh *manifest_namespace_uri = XMLString::transcode(JAL_XMLDSIG_URI);
 
 	int db_payload_fd = -1;
+	char *db_payload_path = NULL;
+	db_payload_path = NULL;
 	enum jal_status jal_err;
 
 	uint8_t *app_meta_buf = NULL;
@@ -100,7 +102,11 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 
 	struct iovec iov[1];
 	iov[0].iov_base = data_buf;
-	iov[0].iov_len = JALLS_JOURNAL_BUF_LEN;
+	if (data_len > JALLS_JOURNAL_BUF_LEN) {
+			iov[0].iov_len = JALLS_JOURNAL_BUF_LEN;
+	} else {
+			iov[0].iov_len = data_len;
+	}
 
 	struct msghdr msgh;
 	memset(&msgh, 0, sizeof(msgh));
@@ -143,6 +149,9 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 			}
 			goto err_out;
 		}
+		if (bytes_remaining == 0) {
+				break;
+		}
 		iov[0].iov_len = (bytes_remaining < JALLS_JOURNAL_BUF_LEN) ? bytes_remaining : JALLS_JOURNAL_BUF_LEN;
 		bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 	}
@@ -180,20 +189,20 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		goto err_out;
 	}
 
-	//Parse and Validate the app metadata
-	err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "could not parse the application metadata\n");
-		}
-		goto err_out;
-	}
-
 	//get second break string
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
 			fprintf(stderr, "could not recieve second BREAK\n");
+		}
+		goto err_out;
+	}
+
+	//Parse and Validate the app metadata
+	err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "could not parse the application metadata\n");
 		}
 		goto err_out;
 	}
