@@ -75,6 +75,9 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	DOMDocument *app_meta_doc = NULL;
 	DOMDocument *sys_meta_doc = NULL;
 
+	struct jal_digest_ctx *digest_ctx = NULL;
+	uint8_t *digest = NULL;
+
 	void *sha256_instance = NULL;
 
 	//get the payload, write it to the db file.
@@ -96,7 +99,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	uint64_t bytes_remaining = data_len;
 	size_t bytes_to_read = JALLS_JOURNAL_BUF_LEN;
 	int bytes_written;
-	ssize_t bytes_recieved;
+	ssize_t bytes_read = 0;
 
 	int db_payload_fd = -1;
 	//char *db_payload_path = NULL;
@@ -114,10 +117,8 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	*/
 
 	//digest and write the file
-	struct jal_digest_ctx *digest_ctx;
 	digest_ctx = jal_sha256_ctx_create();
 	sha256_instance = digest_ctx->create();
-	uint8_t *digest;
 	digest = (uint8_t *)jal_malloc(digest_ctx->len);
 	jal_err = digest_ctx->init(sha256_instance);
 	if(jal_err != JAL_OK) {
@@ -127,33 +128,37 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 		goto err_out;
 	}
 
-	bytes_recieved = read(journal_fd, data_buf, bytes_to_read);
-	while (bytes_recieved > 0 && bytes_remaining >= (uint64_t)bytes_recieved) {
-		bytes_remaining -= (uint64_t)bytes_recieved;
-		jal_err = digest_ctx->update(sha256_instance, (uint8_t *)data_buf, bytes_recieved);
+	if ((off_t) -1 == lseek(journal_fd, 0, SEEK_SET)) {
+		if (debug) {
+			fprintf(stderr, "failed to reset journal file to the beginning\n");
+		}
+	}
+	while (bytes_remaining > 0) {
+		bytes_to_read = (bytes_remaining < JALLS_JOURNAL_BUF_LEN) ? bytes_remaining : JALLS_JOURNAL_BUF_LEN;
+		bytes_read = read(journal_fd, data_buf, bytes_to_read);
+		if (bytes_read < 0) {
+			if (debug) {
+				fprintf(stderr, "failed to read from file descriptor\n");
+			}
+			goto err_out;
+		}
+		jal_err = digest_ctx->update(sha256_instance, (uint8_t *)data_buf, bytes_read);
 		if (jal_err != JAL_OK) {
 			if (debug) {
 				fprintf(stderr, "could not digest the journal data\n");
 			}
 			goto err_out;
 		}
-		bytes_written = write(db_payload_fd, data_buf, bytes_recieved);
+		bytes_written = write(db_payload_fd, data_buf, bytes_read);
 		if (bytes_written < 0) {
 			if (debug) {
 				fprintf(stderr, "could not write journal to file");
 			}
 			goto err_out;
 		}
-		bytes_to_read = (bytes_remaining < JALLS_JOURNAL_BUF_LEN) ? bytes_remaining : JALLS_JOURNAL_BUF_LEN;
-		bytes_recieved = read(journal_fd, data_buf, bytes_to_read);
+		bytes_remaining -= (uint64_t)bytes_read;
 	}
 
-	if (bytes_recieved < 0) {
-		if (debug) {
-			fprintf(stderr, "could not recieve journal data\n");
-		}
-		goto err_out;
-	}
 	size_t digest_length;
 	digest_length = digest_ctx->len;
 	jal_err = digest_ctx->final(sha256_instance, digest, &digest_length);
@@ -173,21 +178,20 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 		goto err_out;
 	}
 
+	//get the break string at the end of the app metadata
+	err = jalls_handle_break(thread_ctx->fd);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "could not recieve BREAK\n");
+		}
+		goto err_out;
+	}
+
 	//Parse and Validate the app metadata
 	err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
 	if (err < 0) {
 		if (debug) {
 			fprintf(stderr, "could not parse the application metadata\n");
-		}
-		goto err_out;
-	}
-
-
-	//get second break string (there was no first break)
-	err = jalls_handle_break(thread_ctx->fd);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "could not recieve BREAK\n");
 		}
 		goto err_out;
 	}
@@ -242,10 +246,19 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	ret = 0;
 
 err_out:
-	digest_ctx->destroy(sha256_instance);
 	XMLString::release(&namespace_uri);
 	XMLString::release(&manifest_namespace_uri);
-	jal_digest_ctx_destroy(&digest_ctx);
 	free(app_meta_buf);
+	if (app_meta_doc) {
+		delete app_meta_doc;
+	}
+	if (sys_meta_doc) {
+		delete sys_meta_doc;
+	}
+	if (digest_ctx) {
+		digest_ctx->destroy(sha256_instance);
+		jal_digest_ctx_destroy(&digest_ctx);
+	}
+	free(digest);
 	return ret;
 }
