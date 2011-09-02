@@ -33,7 +33,7 @@
 #include <jalop/jal_status.h>
 #include "jal_error_callback_internal.h"
 
-/** The default behavior for the jalp error handler is to abort */
+/** The default behavior for the JAL error handler is to abort */
 __attribute__((noreturn)) static void jal_default_fatal_error_callback(__attribute__((unused))int err)
 {
 	abort();

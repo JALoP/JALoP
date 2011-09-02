@@ -4,7 +4,7 @@
  *
  * @section LICENSE
  *
- * Source code in 3rd-partfy is licensed and owned by their respective
+ * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
  *
  * All other source code is copyright Tresys Technology and licensed as below.
