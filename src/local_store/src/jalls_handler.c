@@ -135,6 +135,12 @@ void *jalls_handler(void *thread_ctx_p) {
 			}
 			goto out;
 		}
+		if (bytes_recv == 0) {
+			if (debug) {
+				fprintf(stderr, "The peer has shutdown\n");
+			}
+			goto out;
+		}
 
 		//recieve fd
 		struct cmsghdr *cmsg;
@@ -183,6 +189,8 @@ void *jalls_handler(void *thread_ctx_p) {
 		thread_ctx->peer_pid = *pid;
 		thread_ctx->peer_uid = *uid;
 		if (debug && *pid == -1) {
+			thread_ctx->peer_pid = 0;
+			thread_ctx->peer_uid = 0;
 
 			fprintf(stderr, "Did not recieve credentials\n");
 		}
@@ -267,7 +275,7 @@ int jalls_handle_break(int fd) {
 	memset(&msgh, 0, sizeof(msgh));
 
 	msgh.msg_iov = iov;
-	msgh.msg_iovlen = 4;
+	msgh.msg_iovlen = 1;
 
 	ssize_t bytes_recieved = jalls_recvmsg_helper(fd, &msgh, 0);
 	if (bytes_recieved != JALLS_BREAK_LEN) {
