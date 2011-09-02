@@ -58,6 +58,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	if (!thread_ctx || !(thread_ctx->ctx) || (!thread_ctx->signing_key)) {
 		return -1; //should never happen.
 	}
+	struct jal_digest_ctx *digest_ctx = NULL;
 
 	XMLCh *namespace_uri = XMLString::transcode(JAL_SYS_META_NAMESPACE_URI);
 	XMLCh *manifest_namespace_uri = XMLString::transcode(JAL_XMLDSIG_URI);
@@ -137,7 +138,6 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 
 	//digest the log data
 	enum jal_status jal_err;
-	struct jal_digest_ctx *digest_ctx;
 	digest_ctx = jal_sha256_ctx_create();
 	uint8_t *digest;
 
