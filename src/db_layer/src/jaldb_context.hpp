@@ -71,6 +71,7 @@ struct jaldb_context_t {
  */
 enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
 		const char *remote_host, const char *sid, int *db_err_out);
+
 /**
  * Store the most recently confirmed audit record for a particular host.
  * @param[in] ctx The jaldb_context to use
@@ -92,6 +93,7 @@ enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
  */
 enum jaldb_status jaldb_store_confed_audit_sid(jaldb_context *ctx,
 		const char *remote_host, const char *sid, int *db_err_out);
+
 /**
  * Store the most recently confirmed log record for a particular host.
  * @param[in] ctx The jaldb_context to use
@@ -113,6 +115,7 @@ enum jaldb_status jaldb_store_confed_audit_sid(jaldb_context *ctx,
  */
 enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
 		const char *remote_host, const char *sid, int *db_err_out);
+
 /**
  * Helper function for storing conf'ed serial IDs
  *
