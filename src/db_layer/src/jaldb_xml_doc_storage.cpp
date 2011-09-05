@@ -41,7 +41,7 @@ enum jaldb_status jaldb_put_document_as_dom(
 	XmlUpdateContext &uc,
 	XmlContainer &container,
 	XmlDocument &doc,
-	std::string &doc_name,
+	const std::string &doc_name,
 	const DOMDocument *dom_doc)
 {
 	if (doc_name.length() == 0 || !dom_doc) {

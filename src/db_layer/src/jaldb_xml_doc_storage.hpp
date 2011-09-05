@@ -57,7 +57,7 @@ enum jaldb_status jaldb_put_document_as_dom(
 	DbXml::XmlUpdateContext &uc,
 	DbXml::XmlContainer &container,
 	DbXml::XmlDocument &doc,
-	std::string &doc_name,
+	const std::string &doc_name,
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *dom_doc);
 
 #endif // _JALDB_XML_DOC_STORAGE_HPP_
