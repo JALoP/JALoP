@@ -29,12 +29,17 @@
 #include <db.h>
 #include <dirent.h>
 #include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <test-dept.h>
+#include <time.h>
+#include <unistd.h>
+
 #include "jal_alloc.h"
 #include "jaldb_strings.h"
-#include "jaldb_utils.h"
 #include "jaldb_utils.h"
 #include "test_utils.h"
 
@@ -47,6 +52,11 @@ int mkdir_fails_with_eperm(__attribute__((unused)) const char *path,
 		__attribute__((unused))mode_t mode)
 {
 	errno = EPERM;
+	return -1;
+}
+
+time_t time_always_fails(__attribute__((unused)) time_t *timer)
+{
 	return -1;
 }
 
@@ -259,4 +269,81 @@ void test_jaldb_create_dirs_continues_when_mkdir_fails_errno_eexist()
 	enum jaldb_status ret = jaldb_create_dirs("./foo/bar/");
 	assert_equals(JALDB_OK, ret);
 	restore_function(mkdir);
+}
+
+struct tm *gmtime_r_always_fails(__attribute__((unused)) const time_t *timer,
+			__attribute__((unused)) struct tm *out)
+{
+	return NULL;
+}
+
+size_t strftime_always_fails(__attribute__((unused)) char *str,
+			__attribute__((unused)) size_t maxsize,
+			__attribute__((unused)) const char *format,
+			__attribute__((unused)) const struct tm *timeptr)
+{
+	return 0;
+}
+
+int mkstemp_always_fails(__attribute__((unused)) char *template)
+{
+	return -1;
+}
+
+void test_jaldb_create_file_returns_cleanly_when_time_fails()
+{
+	replace_function(time, time_always_fails);
+	char *path = NULL;
+	int fd = -1;
+	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
+	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
+	assert_pointer_equals((void*) NULL, path);
+	assert_equals(-1, fd);
+	restore_function(time);
+}
+
+void test_jaldb_create_file_returns_cleanly_when_gmtime_r_fails()
+{
+	replace_function(gmtime_r, gmtime_r_always_fails);
+	char *path = NULL;
+	int fd = -1;
+	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
+	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
+	assert_pointer_equals((void*) NULL, path);
+	assert_equals(-1, fd);
+	restore_function(gmtime_r);
+}
+
+void test_jaldb_create_file_returns_cleanly_when_strftime_fails()
+{
+	replace_function(strftime, strftime_always_fails);
+	char *path = NULL;
+	int fd = -1;
+	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
+	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
+	assert_pointer_equals((void*) NULL, path);
+	assert_equals(-1, fd);
+	restore_function(strftime);
+}
+
+void test_jaldb_create_file_returns_cleanly_when_mkstemp_fails()
+{
+	replace_function(mkstemp, mkstemp_always_fails);
+	char *path = NULL;
+	int fd = -1;
+	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
+	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
+	assert_pointer_equals((void*) NULL, path);
+	assert_equals(-1, fd);
+	restore_function(mkstemp);
+}
+
+void test_jaldb_create_file_returns_cleanly_when_db_root_is_null()
+{
+	char *path = NULL;
+	int fd = -1;
+	enum jaldb_status ret = jaldb_create_file(NULL, &path, &fd);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, path);
+	assert_equals(-1, fd);
 }

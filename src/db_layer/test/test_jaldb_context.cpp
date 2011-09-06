@@ -1153,3 +1153,11 @@ extern "C" void test_insert_log_record_fails_with_invalid_input()
 		logbuf,	loglen, ser_id, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 }
+extern "C" void test_db_create_journal_file()
+{
+	char *path = NULL;
+	int fd;
+	jaldb_create_journal_file(context, &path, &fd);
+	free(path);
+	close(fd);
+}
