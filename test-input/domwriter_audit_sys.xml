@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?PI_target_one PI_data_one?>
+<!DOCTYPE foo [
+<!ENTITY blah "blah blah blah">
+]>
+
+<audit_sys moreattrs='1234'>
+	<_123>&blah;</_123>
+	<def attr1="foo" atrr2="bar">
+		<!-- a comment -->
+		<?PI_target2 PI_data2?>
+		<![CDATA[ This is a cdata section]]> With following text
+		<ghi>Some text</ghi>
+	</def>
+</audit_sys>

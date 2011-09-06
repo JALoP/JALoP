@@ -21,13 +21,10 @@ serialIdObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_serial_id.cpp'
 
 tests.append(env.TestDeptTest('test_jaldb_utils.c',
 	other_sources=[lib_common])[0].abspath)
-
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
-	other_sources=[lib_common, xmlDocStorageObj, eventWriterObj, serialIdObj, utilsObj])[0].abspath)
-
+	other_sources=[test_utils, lib_common, xmlDocStorageObj, eventWriterObj, serialIdObj, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_dom_to_event_writer.cpp',
 	other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj, serialIdObj])[0].abspath)
-
 tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
 	other_sources=[lib_common])[0].abspath)
 
