@@ -114,12 +114,6 @@ int main()
 	std::string log = "blah blah blah";
 	int db_err;
 	ret = jaldb_insert_log_record(ctx, source, smd, smd, (uint8_t*) log.c_str(), log.length(), sid, &db_err);
-	XmlTransaction txn = ctx->manager->createTransaction();
-	XmlUpdateContext uc = ctx->manager->createUpdateContext();
-	
-	ret = jaldb_insert_log_record_helper(source, txn, *ctx->manager, uc, *ctx->log_sys_cont,
-			*ctx->log_app_cont, ctx->log_dbp, smd, smd, 
-			(uint8_t*) log.c_str(), log.length(), sid, &db_err);
 	if (JALDB_OK != ret) {
 		printf ("failed to put doc...");
 	}
