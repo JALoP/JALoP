@@ -57,6 +57,8 @@ jaldb_context *jaldb_context_create();
  * /usr/share/jalop/schemas.
  * @param[in] db_recover_flag A flag which indicates whether DB_RECOVER should
  * be passed to the DB environment open function.
+ * @param[in] db_rdonly_flag A flag which indicates whether DB_RDONLY should
+ * be passed to the DB open function.
  *
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
@@ -65,7 +67,8 @@ enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root,
-	int db_recover_flag);
+	int db_recover_flag,
+	int db_rdonly_flag);
 
 /**
  * Destroys a DB context.

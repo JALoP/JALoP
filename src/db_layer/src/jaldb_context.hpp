@@ -56,6 +56,7 @@ struct jaldb_context_t {
 	DB *log_dbp; //<! The log database.
 	string_to_container_map *temp_containers; //<! a map from strings to XmlContainers that identifies temporary databases for use by the network stores.
 	string_to_db_map *temp_dbs; //<! a map from strings to Berkeley DBs that identifies temporary databases for use by the network stores.
+	int db_read_only; //<! Whether or not to open the databases read only
 };
 
 /**

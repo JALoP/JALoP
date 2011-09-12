@@ -120,7 +120,7 @@ extern "C" void setup()
 	config->setParameter(XMLUni::fgXercesHandleMultipleImports, true);
 	config->setParameter(XMLUni::fgXercesUserAdoptsDOMDocument, false);
 	context = jaldb_context_create();
-	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMAS_ROOT, 1);
+	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMAS_ROOT, 1, 0);
 }
 
 extern "C" void teardown()

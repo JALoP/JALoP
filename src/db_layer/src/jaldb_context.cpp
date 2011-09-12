@@ -57,7 +57,8 @@ enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root,
-	int db_recover_flag)
+	int db_recover_flag,
+	int db_rdonly_flag)
 {
 	if (!ctx) {
 		return JALDB_E_INVAL;
@@ -82,6 +83,9 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_NO_MEM;
 	}
 
+	// set readonly flag if specified
+	ctx->db_read_only = db_rdonly_flag;
+
 	uint32_t env_flags = DB_CREATE |
 		DB_INIT_LOCK |
 		DB_INIT_LOG |
@@ -104,9 +108,13 @@ enum jaldb_status jaldb_context_init(
 
 	ctx->manager = mgr;
 	XmlContainerConfig cfg;
-	cfg.setAllowCreate(true);
 	cfg.setThreaded(true);
 	cfg.setTransactional(true);
+	if (db_rdonly_flag) {
+		cfg.setReadOnly(true);
+	} else {
+		cfg.setAllowCreate(true);
+	}
 
 	XmlTransaction txn = ctx->manager->createTransaction();
 
@@ -137,6 +145,13 @@ enum jaldb_status jaldb_context_init(
 	DB_TXN *db_txn = txn.getDB_TXN();
 	int db_ret = 0;
 
+	uint32_t db_flags = DB_THREAD;
+	if (db_rdonly_flag) {
+		db_flags |= DB_RDONLY;
+	} else {
+		db_flags |= DB_CREATE;
+	}
+
 	db_ret = db_create(&ctx->journal_conf_db, env, 0);
 	if (db_ret != 0) {
 		txn.abort();
@@ -144,7 +159,7 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_DB;
 	}
 	db_ret = ctx->journal_conf_db->open(ctx->journal_conf_db, db_txn,
-			JALDB_CONF_DB, JALDB_JOURNAL_CONF_NAME, DB_BTREE, DB_CREATE, 0);
+			JALDB_CONF_DB, JALDB_JOURNAL_CONF_NAME, DB_BTREE, db_flags, 0);
 	if (db_ret != 0) {
 		txn.abort();
 		JALDB_DB_ERR((ctx->journal_conf_db), db_ret);
@@ -158,7 +173,7 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_DB;
 	}
 	db_ret = ctx->audit_conf_db->open(ctx->audit_conf_db, db_txn,
-			JALDB_CONF_DB, JALDB_AUDIT_CONF_NAME, DB_BTREE, DB_CREATE, 0);
+			JALDB_CONF_DB, JALDB_AUDIT_CONF_NAME, DB_BTREE, db_flags, 0);
 	if (db_ret != 0) {
 		txn.abort();
 		JALDB_DB_ERR((ctx->audit_conf_db), db_ret);
@@ -172,7 +187,7 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_DB;
 	}
 	db_ret = ctx->log_conf_db->open(ctx->log_conf_db, db_txn,
-			JALDB_CONF_DB, JALDB_LOG_CONF_NAME, DB_BTREE, DB_CREATE, 0);
+			JALDB_CONF_DB, JALDB_LOG_CONF_NAME, DB_BTREE, db_flags, 0);
 	if (db_ret != 0) {
 		txn.abort();
 		JALDB_DB_ERR((ctx->log_conf_db), db_ret);
@@ -186,7 +201,7 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_DB;
 	}
 	db_ret = ctx->log_dbp->open(ctx->log_dbp, db_txn,
-			JALDB_LOG_DB_NAME, NULL, DB_BTREE, DB_CREATE, 0);
+			JALDB_LOG_DB_NAME, NULL, DB_BTREE, db_flags, 0);
 	if (db_ret != 0) {
 		txn.abort();
 		JALDB_DB_ERR((ctx->log_dbp), db_ret);
@@ -278,7 +293,11 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const string& db
 	string_to_container_map::iterator iter = ctx->temp_containers->find(db_name);
 	if (iter == ctx->temp_containers->end()) {
 		XmlContainerConfig cfg;
-		cfg.setAllowCreate(true);
+		if (ctx->db_read_only) {
+			cfg.setReadOnly(true);
+		} else {
+			cfg.setAllowCreate(true);
+		}
 		cfg.setThreaded(true);
 		cfg.setTransactional(true);
 		cont = ctx->manager->openContainer(db_name, cfg);
@@ -298,6 +317,7 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const string& db_name, 
 	}
 	DB *db;
 	int db_err = 0;
+	uint32_t db_flags = DB_AUTO_COMMIT | DB_THREAD;
 	enum jaldb_status ret = JALDB_E_DB;
 	string_to_db_map::iterator iter = ctx->temp_dbs->find(db_name);
 	if (iter == ctx->temp_dbs->end()) {
@@ -307,7 +327,12 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const string& db_name, 
 			db = NULL;
 			goto out;
 		}
-		db_err = db->open(db, NULL, db_name.c_str(), NULL, DB_BTREE, DB_CREATE | DB_AUTO_COMMIT | DB_THREAD, 0);
+		if (ctx->db_read_only) {
+			db_flags |= DB_RDONLY;
+		} else {
+			db_flags |= DB_CREATE;
+		}
+		db_err = db->open(db, NULL, db_name.c_str(), NULL, DB_BTREE, db_flags, 0);
 		if (db_err != 0) {
 			db->close(db, 0);
 			db = NULL;

@@ -123,7 +123,7 @@ extern "C" void setup()
 	log_sys_meta_doc = parser->parseURI(LOG_SYS_TEST_XML_DOC);
 	log_app_meta_doc = parser->parseURI(LOG_APP_TEST_XML_DOC);
 	context = jaldb_context_create();
-	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true);
+	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true, false);
 }
 
 extern "C" void teardown()
@@ -151,7 +151,7 @@ extern "C" void test_db_destroy_sets_ctx_to_null()
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void *)NULL, ctx);
-	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false);
+	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false, false);
 	assert_equals(JALDB_OK, ret);
 	jaldb_context_destroy(&ctx);
 	assert_pointer_equals((void *)NULL, ctx);
