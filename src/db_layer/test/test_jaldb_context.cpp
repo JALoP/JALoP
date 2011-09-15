@@ -65,6 +65,8 @@ using namespace std;
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
 #define AUDIT_TEST_XML_DOC "./test-input/domwriter_audit.xml"
+#define LOG_SYS_TEST_XML_DOC "./test-input/domwriter_log_sys.xml"
+#define LOG_APP_TEST_XML_DOC "./test-input/domwriter_log_app.xml"
 #define REMOTE_HOST "remote_host"
 #define TEST_XML_DOC "./test-input/domwriter.xml"
 #define LOG_DATA_X "Log Buffer\nLog Entry 1\n"
@@ -116,8 +118,8 @@ extern "C" void setup()
 	audit_sys_meta_doc = parser->parseURI(AUDIT_SYS_TEST_XML_DOC);
 	audit_app_meta_doc = parser->parseURI(AUDIT_APP_TEST_XML_DOC);
 	audit_doc = parser->parseURI(AUDIT_TEST_XML_DOC);
-	log_sys_meta_doc = parser->parseURI(TEST_XML_DOC);
-	log_app_meta_doc = parser->parseURI(TEST_XML_DOC);
+	log_sys_meta_doc = parser->parseURI(LOG_SYS_TEST_XML_DOC);
+	log_app_meta_doc = parser->parseURI(LOG_APP_TEST_XML_DOC);
 	context = jaldb_context_create();
 	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true);
 }
@@ -146,11 +148,11 @@ extern "C" void test_db_destroy_does_not_crash()
 extern "C" void test_db_destroy_sets_ctx_to_null()
 {
 	jaldb_context *ctx = jaldb_context_create();
-	assert_not_equals((void*) NULL, ctx);
+	assert_not_equals((void *)NULL, ctx);
 	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false);
 	assert_equals(JALDB_OK, ret);
 	jaldb_context_destroy(&ctx);
-	assert_pointer_equals((void*) NULL, ctx);
+	assert_pointer_equals((void *)NULL, ctx);
 }
 
 extern "C" void test_store_confed_journal_sid_fails_with_invalid_input()
@@ -158,7 +160,8 @@ extern "C" void test_store_confed_journal_sid_fails_with_invalid_input()
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("1234");
 	int db_error_out = 0;
-	enum jaldb_status ret = jaldb_store_confed_journal_sid(NULL, rhost, ser_id, &db_error_out);
+	enum jaldb_status ret =
+		jaldb_store_confed_journal_sid(NULL, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlManager *tmp_mgr = context->manager;
@@ -177,7 +180,8 @@ extern "C" void test_store_confed_audit_sid_fails_with_invalid_input()
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("1234");
 	int db_error_out = 0;
-	enum jaldb_status ret = jaldb_store_confed_audit_sid(NULL, rhost, ser_id, &db_error_out);
+	enum jaldb_status ret =
+		jaldb_store_confed_audit_sid(NULL, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlManager *tmp_mgr = context->manager;
@@ -202,7 +206,8 @@ extern "C" void test_store_confed_log_sid_fails_with_invalid_input()
 	char *rhost = jal_strdup("remote_host");
 	char *ser_id = jal_strdup("1234");
 	int db_error_out = 0;
-	enum jaldb_status ret = jaldb_store_confed_log_sid(NULL, rhost, ser_id, &db_error_out);
+	enum jaldb_status ret =
+		jaldb_store_confed_log_sid(NULL, rhost, ser_id, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlManager *tmp_mgr = context->manager;
@@ -216,7 +221,7 @@ extern "C" void test_store_confed_log_sid_fails_with_invalid_input()
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
-extern "C" void test_store_confed_sid_helper_returns_ok_with_valid_input()
+extern "C" void test_store_confed_sid_helper_returns_ok()
 {
 	XmlUpdateContext uc = context->manager->createUpdateContext();
 	XmlDocument doc = context->audit_sys_cont->getDocument(JALDB_SERIAL_ID_DOC_NAME, 0);
@@ -811,19 +816,16 @@ extern "C" void test_insert_log_record_helper_returns_ok()
 {
 	std::string src = "";
 	XmlTransaction transaction = context->manager->createTransaction();
-	XmlManager manager = *(context->manager);
 	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
-	XmlContainer log_sys_cont = *(context->log_sys_cont);
-	XmlContainer log_app_cont = *(context->log_app_cont);
 	const char *log_buffer_x = LOG_DATA_X;
 	uint8_t *logbuf = (uint8_t *)log_buffer_x;
 	size_t loglen = strlen(log_buffer_x);
-	std::string ser_id = "333";
+	std::string ser_id = "1";
 	int db_error = 0;
-	enum jaldb_status ret;
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	enum jaldb_status ret = jaldb_insert_log_record_helper(src, transaction,
+		*context->manager, update_ctx, *context->log_sys_cont,
+		*context->log_app_cont, context->log_dbp, log_sys_meta_doc,
+		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
 	assert_equals(JALDB_OK, ret);
 
 	DBT key;
@@ -835,18 +837,19 @@ extern "C" void test_insert_log_record_helper_returns_ok()
 	key.flags = DB_DBT_USERMEM;
 	data.flags = DB_DBT_MALLOC;
 	int db_err;
-	db_err = context->log_dbp->get(context->log_dbp, transaction.getDB_TXN(), &key, &data, 0);
-	int result;
-	result = strncmp(LOG_DATA_X, (char *)(data.data), sizeof(data.data));
+	db_err = context->log_dbp->get(context->log_dbp, transaction.getDB_TXN(), &key,
+		&data, 0);
+	int result = strncmp(LOG_DATA_X, (char *)data.data, sizeof(data.data));
 	assert_equals(0, result);
 
 	const char *log_buffer_y = LOG_DATA_Y;
 	logbuf = (uint8_t *)log_buffer_y;
 	loglen = strlen(log_buffer_y);
-	std::string next_ser_id = "334";
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, next_ser_id, &db_error);
+	std::string next_ser_id = "2";
+	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager,
+		update_ctx, *context->log_sys_cont, *context->log_app_cont,
+		context->log_dbp, log_sys_meta_doc, log_app_meta_doc, logbuf, loglen,
+		next_ser_id, &db_error);
 	assert_equals(JALDB_OK, ret);
 
 	memset(&key, 0, sizeof(DBT));
@@ -855,32 +858,64 @@ extern "C" void test_insert_log_record_helper_returns_ok()
 	key.size = next_ser_id.length();
 	key.flags = DB_DBT_USERMEM;
 	data.flags = DB_DBT_MALLOC;
-	db_err = context->log_dbp->get(context->log_dbp, transaction.getDB_TXN(), &key, &data, 0);
-	result = strncmp(LOG_DATA_Y, (char *)(data.data), sizeof(data.data));
+	db_err = context->log_dbp->get(context->log_dbp, transaction.getDB_TXN(), &key,
+		&data, 0);
+	result = strncmp(LOG_DATA_Y, (char *)data.data, sizeof(data.data));
 	free(key.data);
 	free(data.data);
 	key.data = NULL;
 	data.data = NULL;
 	assert_equals(0, result);
+
+	XmlDocument log_sys_document =
+		context->log_sys_cont->getDocument(transaction, next_ser_id);
+	std::string content = "";
+	MemBufInputSource *log_sys_mbis = NULL;
+	Wrapper4InputSource *log_sys_wfis = NULL;
+	DOMDocument *log_sys_dom_doc = NULL;
+	DOMElement *log_sys_elem = NULL;
+	content = log_sys_document.getContent(content);
+	log_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), next_ser_id.c_str(), false);
+	log_sys_wfis = new Wrapper4InputSource(log_sys_mbis);
+	log_sys_dom_doc = parser->parse(log_sys_wfis);
+	log_sys_elem = log_sys_dom_doc->getDocumentElement();
+	delete log_sys_wfis;
+	log_sys_wfis = NULL;
+	assert_tag_equals("log_sys", log_sys_elem);
+
+	XmlDocument log_app_document =
+		context->log_app_cont->getDocument(transaction, next_ser_id);
+	content = "";
+	MemBufInputSource *log_app_mbis = NULL;
+	Wrapper4InputSource *log_app_wfis = NULL;
+	DOMDocument *log_app_dom_doc = NULL;
+	DOMElement *log_app_elem = NULL;
+	content = log_app_document.getContent(content);
+	log_app_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), next_ser_id.c_str(), false);
+	log_app_wfis = new Wrapper4InputSource(log_app_mbis);
+	log_app_dom_doc = parser->parse(log_app_wfis);
+	log_app_elem = log_app_dom_doc->getDocumentElement();
+	delete log_app_wfis;
+	log_app_wfis = NULL;
+	assert_tag_equals("log_app", log_app_elem);
 }
 
 extern "C" void test_insert_log_record_helper_fails_when_trying_to_insert_same_sid_twice()
 {
 	std::string src = "";
 	XmlTransaction transaction = context->manager->createTransaction();
-	XmlManager manager = *(context->manager);
 	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
-	XmlContainer log_sys_cont = *(context->log_sys_cont);
-	XmlContainer log_app_cont = *(context->log_app_cont);
 	const char *log_buffer_x = LOG_DATA_X;
 	uint8_t *logbuf = (uint8_t *)log_buffer_x;
 	size_t loglen = strlen(log_buffer_x);
-	std::string ser_id = "444";
+	std::string ser_id = "1";
 	int db_error = 0;
-	enum jaldb_status ret;
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	enum jaldb_status ret = jaldb_insert_log_record_helper(src, transaction,
+		*context->manager, update_ctx, *context->log_sys_cont,
+		*context->log_app_cont, context->log_dbp, log_sys_meta_doc,
+		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
 	assert_equals(JALDB_OK, ret);
 
 	const char *log_buffer_y = LOG_DATA_Y;
@@ -889,8 +924,8 @@ extern "C" void test_insert_log_record_helper_fails_when_trying_to_insert_same_s
 	try {
 		ret = jaldb_insert_log_record_helper(src, transaction, *context->manager,
 			update_ctx, *context->log_sys_cont, *context->log_app_cont,
-			context->log_dbp, log_sys_meta_doc, log_app_meta_doc, logbuf, loglen,
-			ser_id, &db_error);
+			context->log_dbp, log_sys_meta_doc, log_app_meta_doc, logbuf,
+			loglen,	ser_id, &db_error);
 	}
 	catch (XmlException &e) {
 		return;
@@ -908,42 +943,47 @@ extern "C" void test_insert_log_record_helper_fails_with_invalid_input()
 	size_t loglen = strlen(log_buffer);
 	std::string ser_id = "1";
 	int db_error = 0;
-	enum jaldb_status ret;
 	DB *tmp_log_dbp = context->log_dbp;
 	context->log_dbp = NULL;
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	enum jaldb_status ret = jaldb_insert_log_record_helper(src, transaction,
+		*context->manager, update_ctx, *context->log_sys_cont,
+		*context->log_app_cont, context->log_dbp, log_sys_meta_doc,
+		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
 	context->log_dbp = tmp_log_dbp;
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp, NULL,
-		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager,
+		update_ctx, *context->log_sys_cont, *context->log_app_cont,
+		context->log_dbp, NULL,	log_app_meta_doc, logbuf, loglen, ser_id,
+		&db_error);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, NULL);
+	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager,
+		update_ctx, *context->log_sys_cont, *context->log_app_cont,
+		context->log_dbp, log_sys_meta_doc, log_app_meta_doc, logbuf,
+		loglen, ser_id, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	ser_id = "";
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager,
+		update_ctx, *context->log_sys_cont, *context->log_app_cont,
+		context->log_dbp, log_sys_meta_doc, log_app_meta_doc, logbuf, loglen,
+		ser_id, &db_error);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	loglen = 0;
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, NULL, logbuf, loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager,
+		update_ctx, *context->log_sys_cont, *context->log_app_cont,
+		context->log_dbp, log_sys_meta_doc, NULL, logbuf, loglen, ser_id,
+		&db_error);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	logbuf = NULL;
 	loglen = 11;
-	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager, update_ctx,
-		*context->log_sys_cont, *context->log_app_cont, context->log_dbp,
-		log_sys_meta_doc, NULL, logbuf, loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record_helper(src, transaction, *context->manager,
+		update_ctx, *context->log_sys_cont, *context->log_app_cont,
+		context->log_dbp, log_sys_meta_doc, NULL, logbuf, loglen, ser_id,
+		&db_error);
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
@@ -953,11 +993,10 @@ extern "C" void test_insert_log_record_returns_ok()
 	const char *log_buffer_x = LOG_DATA_X;
 	uint8_t *logbuf = (uint8_t *)log_buffer_x;
 	size_t loglen = strlen(log_buffer_x);
-	std::string ser_id = "222";
+	std::string ser_id = "1";
 	int db_error = 0;
-	enum jaldb_status ret;
-	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, ser_id, &db_error);
+	enum jaldb_status ret = jaldb_insert_log_record(context, src, log_sys_meta_doc,
+		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
 	assert_equals(JALDB_OK, ret);
 
 	DBT key;
@@ -970,16 +1009,15 @@ extern "C" void test_insert_log_record_returns_ok()
 	data.flags = DB_DBT_MALLOC;
 	int db_err;
 	db_err = context->log_dbp->get(context->log_dbp, NULL, &key, &data, 0);
-	int result;
-	result = strncmp(LOG_DATA_X, (char *)(data.data), sizeof(data.data));
+	int result = strncmp(LOG_DATA_X, (char *)data.data, sizeof(data.data));
 	assert_equals(0, result);
 
 	const char *log_buffer_y = LOG_DATA_Y;
 	logbuf = (uint8_t *)log_buffer_y;
 	loglen = strlen(log_buffer_y);
-	std::string next_ser_id = "223";
-	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, next_ser_id, &db_error);
+	std::string next_ser_id = "2";
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+		logbuf, loglen, next_ser_id, &db_error);
 	assert_equals(JALDB_OK, ret);
 
 	memset(&key, 0, sizeof(DBT));
@@ -989,12 +1027,74 @@ extern "C" void test_insert_log_record_returns_ok()
 	key.flags = DB_DBT_USERMEM;
 	data.flags = DB_DBT_MALLOC;
 	db_err = context->log_dbp->get(context->log_dbp, NULL, &key, &data, 0);
-	result = strncmp(LOG_DATA_Y, (char *)(data.data), sizeof(data.data));
+	result = strncmp(LOG_DATA_Y, (char *)data.data, sizeof(data.data));
 	free(key.data);
 	free(data.data);
 	key.data = NULL;
 	data.data = NULL;
 	assert_equals(0, result);
+
+	XmlDocument log_sys_document = context->log_sys_cont->getDocument(ser_id);
+	std::string content = "";
+	MemBufInputSource *log_sys_mbis = NULL;
+	Wrapper4InputSource *log_sys_wfis = NULL;
+	DOMDocument *log_sys_dom_doc = NULL;
+	DOMElement *log_sys_elem = NULL;
+	content = log_sys_document.getContent(content);
+	log_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), ser_id.c_str(), false);
+	log_sys_wfis = new Wrapper4InputSource(log_sys_mbis);
+	log_sys_dom_doc = parser->parse(log_sys_wfis);
+	log_sys_elem = log_sys_dom_doc->getDocumentElement();
+	delete log_sys_wfis;
+	log_sys_wfis = NULL;
+	assert_tag_equals("log_sys", log_sys_elem);
+
+	XmlDocument log_app_document = context->log_app_cont->getDocument(ser_id);
+	content = "";
+	MemBufInputSource *log_app_mbis = NULL;
+	Wrapper4InputSource *log_app_wfis = NULL;
+	DOMDocument *log_app_dom_doc = NULL;
+	DOMElement *log_app_elem = NULL;
+	content = log_app_document.getContent(content);
+	log_app_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), ser_id.c_str(), false);
+	log_app_wfis = new Wrapper4InputSource(log_app_mbis);
+	log_app_dom_doc = parser->parse(log_app_wfis);
+	log_app_elem = log_app_dom_doc->getDocumentElement();
+	delete log_app_wfis;
+	log_app_wfis = NULL;
+	assert_tag_equals("log_app", log_app_elem);
+}
+
+extern "C" void test_insert_log_record_does_not_insert_same_sid_twice()
+{
+	std::string src = "";
+	XmlTransaction transaction = context->manager->createTransaction();
+	XmlUpdateContext update_ctx = context->manager->createUpdateContext();
+	const char *log_buffer_x = LOG_DATA_X;
+	uint8_t *logbuf = (uint8_t *)log_buffer_x;
+	size_t loglen = strlen(log_buffer_x);
+	std::string ser_id = "1";
+	int db_error = 0;
+	enum jaldb_status ret = jaldb_insert_log_record(context, src, log_sys_meta_doc,
+		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	assert_equals(JALDB_OK, ret);
+
+	assert_string_equals("1", ser_id.c_str());
+
+	const char *log_buffer_y = LOG_DATA_Y;
+	logbuf = (uint8_t *)log_buffer_y;
+	loglen = strlen(log_buffer_y);
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+		logbuf,	loglen, ser_id, &db_error);
+	assert_equals(JALDB_OK, ret);
+
+	assert_string_equals("2", ser_id.c_str());
+
+	assert_equals(3, context->log_sys_cont->getNumDocuments());
+
+	assert_equals(2, context->log_app_cont->getNumDocuments());
 }
 
 extern "C" void test_insert_log_record_fails_with_invalid_input()
@@ -1005,40 +1105,39 @@ extern "C" void test_insert_log_record_fails_with_invalid_input()
 	size_t loglen = strlen(log_buffer);
 	std::string ser_id = "1";
 	int db_error = 0;
-	enum jaldb_status ret;
-	ret = jaldb_insert_log_record(NULL, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, ser_id, &db_error);
+	enum jaldb_status ret = jaldb_insert_log_record(NULL, src, log_sys_meta_doc,
+		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
-	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+		logbuf, loglen, ser_id, &db_error);
 	context->manager = tmp_mgr;
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlContainer *tmp_log_sys_cont = context->log_sys_cont;
 	context->log_sys_cont = NULL;
-	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+		logbuf,	loglen, ser_id, &db_error);
 	context->log_sys_cont = tmp_log_sys_cont;
 	assert_equals(JALDB_E_INVAL, ret);
 
 	XmlContainer *tmp_log_app_cont = context->log_app_cont;
 	context->log_app_cont = NULL;
-	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+		logbuf,	loglen, ser_id, &db_error);
 	context->log_app_cont = tmp_log_app_cont;
 	assert_equals(JALDB_E_INVAL, ret);
 
 	DB *tmp_log_dbp = context->log_dbp;
 	context->log_dbp = NULL;
-	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, ser_id, &db_error);
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+		logbuf, loglen, ser_id, &db_error);
 	context->log_dbp = tmp_log_dbp;
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc, logbuf,
-		loglen, ser_id, NULL);
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+		logbuf,	loglen, ser_id, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 }
