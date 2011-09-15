@@ -76,7 +76,6 @@ static DOMLSParser *parser = NULL;
 static DOMDocument *audit_sys_meta_doc = NULL;
 static DOMDocument *audit_app_meta_doc = NULL;
 static DOMDocument *audit_doc = NULL;
-
 static DOMDocument *log_sys_meta_doc = NULL;
 static DOMDocument *log_app_meta_doc = NULL;
 static jaldb_context *context = NULL;
@@ -1153,6 +1152,7 @@ extern "C" void test_insert_log_record_fails_with_invalid_input()
 		logbuf,	loglen, ser_id, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 }
+
 extern "C" void test_db_create_journal_file()
 {
 	char *path = NULL;
@@ -1160,4 +1160,223 @@ extern "C" void test_db_create_journal_file()
 	jaldb_create_journal_file(context, &path, &fd);
 	free(path);
 	close(fd);
+}
+
+extern "C" void test_open_temp_db_returns_ok()
+{
+	std::string log_db_name = jaldb_make_temp_db_name(REMOTE_HOST, JALDB_LOG_DB_NAME);
+	DB *dbase_out = NULL;
+	int db_error_out = 0;
+	enum jaldb_status ret =
+		jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
+	assert_equals(JALDB_OK, ret);
+
+	const char *file_name;
+	int db_error;
+	db_error = dbase_out->get_dbname(dbase_out, &file_name, NULL);
+	assert_string_equals(log_db_name.c_str(), file_name);
+}
+
+extern "C" void test_open_temp_db_fails_with_invalid_input()
+{
+	std::string log_db_name = jaldb_make_temp_db_name(REMOTE_HOST, JALDB_LOG_DB_NAME);
+	DB *dbase_out = NULL;
+	int db_error_out = 0;
+	enum jaldb_status ret =
+		jaldb_open_temp_db(NULL, log_db_name, &dbase_out, &db_error_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	string_to_db_map *tmp_temp_dbs = context->temp_dbs;
+	context->temp_dbs = NULL;
+	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
+	context->temp_dbs = tmp_temp_dbs;
+	assert_equals(JALDB_E_INVAL, ret);
+
+	XmlManager *tmp_mgr = context->manager;
+	context->manager = NULL;
+	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
+	context->manager = tmp_mgr;
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_open_temp_db(context, log_db_name, NULL, &db_error_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	DB *database_out;
+	ret = jaldb_open_temp_db(context, log_db_name, &database_out, &db_error_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	log_db_name = "";
+	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_insert_log_record_into_temp_returns_ok()
+{
+	std::string src = REMOTE_HOST;
+	const char *log_buffer = LOG_DATA_X;
+	uint8_t *logbuf = (uint8_t *)log_buffer;
+	size_t loglen = strlen(log_buffer);
+	std::string ser_id = "1";
+	int db_error = 0;
+	enum jaldb_status ret = jaldb_insert_log_record_into_temp(context, src,
+		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	assert_equals(JALDB_OK, ret);
+
+	std::string log_sys_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer temp_log_sys_cont;
+	ret = jaldb_open_temp_container(context, log_sys_db_name, temp_log_sys_cont);
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument log_sys_document = temp_log_sys_cont.getDocument(ser_id);
+	metadataFound = log_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(REMOTE_HOST, source.c_str());
+
+	std::string doc_name = log_sys_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	std::string log_app_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_LOG_APP_META_CONT_NAME);
+	XmlContainer temp_log_app_cont;
+	ret = jaldb_open_temp_container(context, log_app_db_name, temp_log_app_cont);
+	XmlDocument log_app_document = temp_log_app_cont.getDocument(ser_id);
+	doc_name = log_app_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *log_sys_mbis = NULL;
+	Wrapper4InputSource *log_sys_wfis = NULL;
+	DOMDocument *log_sys_dom_doc = NULL;
+	DOMElement *log_sys_elem = NULL;
+	content = log_sys_document.getContent(content);
+	log_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	log_sys_wfis = new Wrapper4InputSource(log_sys_mbis);
+	log_sys_dom_doc = parser->parse(log_sys_wfis);
+	log_sys_elem = log_sys_dom_doc->getDocumentElement();
+	delete log_sys_wfis;
+	log_sys_wfis = NULL;
+	assert_tag_equals("log_sys", log_sys_elem);
+
+	content = "";
+	MemBufInputSource *log_app_mbis = NULL;
+	Wrapper4InputSource *log_app_wfis = NULL;
+	DOMDocument *log_app_dom_doc = NULL;
+	DOMElement *log_app_elem = NULL;
+	content = log_app_document.getContent(content);
+	log_app_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	log_app_wfis = new Wrapper4InputSource(log_app_mbis);
+	log_app_dom_doc = parser->parse(log_app_wfis);
+	log_app_elem = log_app_dom_doc->getDocumentElement();
+	delete log_app_wfis;
+	log_app_wfis = NULL;
+	assert_tag_equals("log_app", log_app_elem);
+
+	DBT key;
+	DBT data;
+	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
+	key.data = jal_strdup(ser_id.c_str());
+	key.size = ser_id.length();
+	key.flags = DB_DBT_USERMEM;
+	data.flags = DB_DBT_MALLOC;
+	int db_err;
+	std::string log_db_name = jaldb_make_temp_db_name(REMOTE_HOST, JALDB_LOG_DB_NAME);
+	XmlTransaction txn = context->manager->createTransaction();
+	db_err = (*context->temp_dbs)[log_db_name]->get((*context->temp_dbs)[log_db_name],
+		txn.getDB_TXN(), &key, &data, 0);
+	int result = strncmp(LOG_DATA_X, (char *)(data.data), sizeof(data.data));
+	free(key.data);
+	free(data.data);
+	key.data = NULL;
+	data.data = NULL;
+	assert_equals(0, result);
+}
+
+extern "C" void test_insert_log_record_into_temp_with_no_app_metadata_returns_ok()
+{
+	std::string src = REMOTE_HOST;
+	const char *log_buffer = LOG_DATA_X;
+	uint8_t *logbuf = (uint8_t *)log_buffer;
+	size_t loglen = strlen(log_buffer);
+	std::string ser_id = "1";
+	int db_error = 0;
+	enum jaldb_status ret = jaldb_insert_log_record_into_temp(context, src,
+		log_sys_meta_doc, NULL, logbuf, loglen, ser_id, &db_error);
+	assert_equals(JALDB_OK, ret);
+
+	std::string log_sys_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer temp_log_sys_cont;
+	ret = jaldb_open_temp_container(context, log_sys_db_name, temp_log_sys_cont);
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument log_sys_document = temp_log_sys_cont.getDocument(ser_id);
+	metadataFound = log_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(REMOTE_HOST, source.c_str());
+
+	std::string doc_name = log_sys_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	XmlValue has_app_meta_val;
+	log_sys_document.getMetaData(JALDB_NS, JALDB_HAS_APP_META, has_app_meta_val);
+	assert_false(has_app_meta_val.asBoolean());
+
+	std::string content = "";
+	MemBufInputSource *log_sys_mbis = NULL;
+	Wrapper4InputSource *log_sys_wfis = NULL;
+	DOMDocument *log_sys_dom_doc = NULL;
+	DOMElement *log_sys_elem = NULL;
+	content = log_sys_document.getContent(content);
+	log_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	log_sys_wfis = new Wrapper4InputSource(log_sys_mbis);
+	log_sys_dom_doc = parser->parse(log_sys_wfis);
+	log_sys_elem = log_sys_dom_doc->getDocumentElement();
+	delete log_sys_wfis;
+	log_sys_wfis = NULL;
+	assert_tag_equals("log_sys", log_sys_elem);
+
+	DBT key;
+	DBT data;
+	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
+	key.data = jal_strdup(ser_id.c_str());
+	key.size = ser_id.length();
+	key.flags = DB_DBT_USERMEM;
+	data.flags = DB_DBT_MALLOC;
+	int db_err;
+	std::string log_db_name = jaldb_make_temp_db_name(REMOTE_HOST, JALDB_LOG_DB_NAME);
+	XmlTransaction txn = context->manager->createTransaction();
+	db_err = (*context->temp_dbs)[log_db_name]->get((*context->temp_dbs)[log_db_name],
+		txn.getDB_TXN(), &key, &data, 0);
+	int result = strncmp(LOG_DATA_X, (char *)(data.data), sizeof(data.data));
+	free(key.data);
+	free(data.data);
+	key.data = NULL;
+	data.data = NULL;
+	assert_equals(0, result);
+}
+
+extern "C" void test_insert_log_record_into_temp_fails_with_invalid_input()
+{
+	std::string src = REMOTE_HOST;
+	const char *log_buffer = LOG_DATA_X;
+	uint8_t *logbuf = (uint8_t *)log_buffer;
+	size_t loglen = strlen(log_buffer);
+	std::string ser_id = "1";
+	int db_error = 0;
+	enum jaldb_status ret = jaldb_insert_log_record_into_temp(NULL, src,
+		log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	XmlManager *tmp_mgr = context->manager;
+	context->manager = NULL;
+	ret = jaldb_insert_log_record_into_temp(context, src, log_sys_meta_doc,
+		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
+	context->manager = tmp_mgr;
+	assert_equals(JALDB_E_INVAL, ret);
 }
