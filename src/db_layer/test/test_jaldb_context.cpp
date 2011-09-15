@@ -39,20 +39,25 @@ extern "C" {
 #include <test-dept.h>
 }
 
+#include <dirent.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <dirent.h>
-#include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/dom/DOMDocument.hpp>
 #include <xercesc/framework/MemBufInputSource.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 #include <xercesc/dom/DOM.hpp>
-#include "xml_test_utils.hpp"
+#include <xercesc/util/PlatformUtils.hpp>
 #include "jal_alloc.h"
-#include "jaldb_context.h"
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
+#include "xml_test_utils.hpp"
+
+XERCES_CPP_NAMESPACE_USE;
+using namespace DbXml;
+using namespace std;
 
 #define OTHER_DB_ROOT "./testdb/"
 #define OTHER_SCHEMA_ROOT "./schemas/"
@@ -60,9 +65,7 @@ extern "C" {
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
 #define AUDIT_TEST_XML_DOC "./test-input/domwriter_audit.xml"
-
-XERCES_CPP_NAMESPACE_USE
-using namespace DbXml;
+#define REMOTE_HOST "remote_host"
 
 static DOMLSParser *parser = NULL;
 static DOMDocument *audit_sys_meta_doc = NULL;
@@ -547,5 +550,249 @@ extern "C" void test_insert_audit_record_fails_with_invalid_input()
 	ret = jaldb_insert_audit_record(
 		context, src, audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
 	context->audit_cont = tmp_audit_cont;
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_make_temp_db_name_returns_ok()
+{
+	std::string dbase_name = "__remote_host_audit_sys_meta.dbxml";
+	std::string db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_SYS_META_CONT_NAME);
+	assert_string_equals(dbase_name.c_str(), db_name.c_str());
+
+	dbase_name = "__remote_host_audit_app_meta.dbxml";
+	db_name = jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_APP_META_CONT_NAME);
+	assert_string_equals(dbase_name.c_str(), db_name.c_str());
+
+	dbase_name = "__remote_host_audit.dbxml";
+	db_name = jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_CONT_NAME);
+	assert_string_equals(dbase_name.c_str(), db_name.c_str());
+}
+
+extern "C" void test_open_temp_container_returns_ok()
+{
+	std::string audit_sys_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_SYS_META_CONT_NAME);
+	XmlContainer temp_audit_sys_cont;
+	enum jaldb_status ret = jaldb_open_temp_container(
+		context, audit_sys_db_name, temp_audit_sys_cont);
+	assert_equals(JALDB_OK, ret);
+
+	std::string audit_app_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_APP_META_CONT_NAME);
+	XmlContainer temp_audit_app_cont;
+	ret = jaldb_open_temp_container(context, audit_app_db_name, temp_audit_app_cont);
+	assert_equals(JALDB_OK, ret);
+
+	std::string audit_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_CONT_NAME);
+	XmlContainer temp_audit_cont;
+	ret = jaldb_open_temp_container(context, audit_db_name, temp_audit_cont);
+	assert_equals(JALDB_OK, ret);
+
+	int containerExists = context->manager->existsContainer(audit_sys_db_name);
+	assert_not_equals(0, containerExists);
+
+	containerExists = context->manager->existsContainer(audit_app_db_name);
+	assert_not_equals(0, containerExists);
+
+	containerExists = context->manager->existsContainer(audit_db_name);
+	assert_not_equals(0, containerExists);
+}
+
+extern "C" void test_open_temp_container_fails_with_invalid_input()
+{
+	std::string dbase_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_APP_META_CONT_NAME);
+	XmlContainer temp_container;
+	enum jaldb_status ret = jaldb_open_temp_container(NULL, dbase_name, temp_container);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	string_to_container_map *tmp_containers = context->temp_containers;
+	context->temp_containers = NULL;
+	XmlContainer temp_cont;
+	ret = jaldb_open_temp_container(context, "", temp_cont);
+	context->temp_containers = tmp_containers;
+	assert_equals(JALDB_E_INVAL, ret);
+
+	XmlContainer tmp_container;
+	ret = jaldb_open_temp_container(context, "", tmp_container);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_insert_audit_record_into_temp_returns_ok()
+{
+	std::string src = REMOTE_HOST;
+	std::string ser_id = "1";
+	enum jaldb_status ret = jaldb_insert_audit_record_into_temp(context, src,
+		audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
+	assert_equals(JALDB_OK, ret);
+
+	std::string audit_sys_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_SYS_META_CONT_NAME);
+	XmlContainer temp_audit_sys_cont;
+	ret = jaldb_open_temp_container(context, audit_sys_db_name, temp_audit_sys_cont);
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument audit_sys_document = temp_audit_sys_cont.getDocument(ser_id);
+	metadataFound = audit_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(REMOTE_HOST, source.c_str());
+
+	std::string doc_name = audit_sys_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	std::string audit_app_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_APP_META_CONT_NAME);
+	XmlContainer temp_audit_app_cont;
+	ret = jaldb_open_temp_container(context, audit_app_db_name, temp_audit_app_cont);
+	XmlDocument audit_app_document = temp_audit_app_cont.getDocument(ser_id);
+	doc_name = audit_app_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	std::string audit_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_CONT_NAME);
+	XmlContainer temp_audit_cont;
+	ret = jaldb_open_temp_container(context, audit_db_name, temp_audit_cont);
+	XmlDocument audit_document = temp_audit_cont.getDocument(ser_id);
+	doc_name = audit_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *audit_sys_mbis = NULL;
+	Wrapper4InputSource *audit_sys_wfis = NULL;
+	DOMDocument *audit_sys_dom_doc = NULL;
+	DOMElement *audit_sys_elem = NULL;
+	content = audit_sys_document.getContent(content);
+	audit_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	audit_sys_wfis = new Wrapper4InputSource(audit_sys_mbis);
+	audit_sys_dom_doc = parser->parse(audit_sys_wfis);
+	audit_sys_elem = audit_sys_dom_doc->getDocumentElement();
+	delete audit_sys_wfis;
+	audit_sys_wfis = NULL;
+	assert_tag_equals("audit_sys", audit_sys_elem);
+
+	content = "";
+	MemBufInputSource *audit_app_mbis = NULL;
+	Wrapper4InputSource *audit_app_wfis = NULL;
+	DOMDocument *audit_app_dom_doc = NULL;
+	DOMElement *audit_app_elem = NULL;
+	content = audit_app_document.getContent(content);
+	audit_app_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	audit_app_wfis = new Wrapper4InputSource(audit_app_mbis);
+	audit_app_dom_doc = parser->parse(audit_app_wfis);
+	audit_app_elem = audit_app_dom_doc->getDocumentElement();
+	delete audit_app_wfis;
+	audit_app_wfis = NULL;
+	assert_tag_equals("audit_app", audit_app_elem);
+
+	content = "";
+	MemBufInputSource *audit_mbis = NULL;
+	Wrapper4InputSource *audit_wfis = NULL;
+	DOMDocument *audit_dom_doc = NULL;
+	DOMElement *audit_elem = NULL;
+	content = audit_document.getContent(content);
+	audit_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	audit_wfis = new Wrapper4InputSource(audit_mbis);
+	audit_dom_doc = parser->parse(audit_wfis);
+	audit_elem = audit_dom_doc->getDocumentElement();
+	delete audit_wfis;
+	audit_wfis = NULL;
+	assert_tag_equals("audit", audit_elem);
+}
+
+extern "C" void test_insert_audit_record_into_temp_with_no_app_metadata_returns_ok()
+{
+	std::string src = REMOTE_HOST;
+	std::string ser_id = "1";
+	enum jaldb_status ret = jaldb_insert_audit_record_into_temp(context, src,
+		audit_sys_meta_doc, NULL, audit_doc, ser_id);
+	assert_equals(JALDB_OK, ret);
+
+	std::string audit_sys_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_SYS_META_CONT_NAME);
+	XmlContainer temp_audit_sys_cont;
+	ret = jaldb_open_temp_container(context, audit_sys_db_name, temp_audit_sys_cont);
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument audit_sys_document = temp_audit_sys_cont.getDocument(ser_id);
+	metadataFound = audit_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(REMOTE_HOST, source.c_str());
+
+	std::string doc_name = audit_sys_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	XmlValue has_app_meta_val;
+	audit_sys_document.getMetaData(JALDB_NS, JALDB_HAS_APP_META, has_app_meta_val);
+	assert_false(has_app_meta_val.asBoolean());
+
+	std::string audit_db_name =
+		jaldb_make_temp_db_name(REMOTE_HOST, JALDB_AUDIT_CONT_NAME);
+	XmlContainer temp_audit_cont;
+	ret = jaldb_open_temp_container(context, audit_db_name, temp_audit_cont);
+	XmlDocument audit_document = temp_audit_cont.getDocument(ser_id);
+	doc_name = audit_document.getName();
+	assert_string_equals(ser_id.c_str(), doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *audit_sys_mbis = NULL;
+	Wrapper4InputSource *audit_sys_wfis = NULL;
+	DOMDocument *audit_sys_dom_doc = NULL;
+	DOMElement *audit_sys_elem = NULL;
+	content = audit_sys_document.getContent(content);
+	audit_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	audit_sys_wfis = new Wrapper4InputSource(audit_sys_mbis);
+	audit_sys_dom_doc = parser->parse(audit_sys_wfis);
+	audit_sys_elem = audit_sys_dom_doc->getDocumentElement();
+	delete audit_sys_wfis;
+	audit_sys_wfis = NULL;
+	assert_tag_equals("audit_sys", audit_sys_elem);
+
+	content = "";
+	MemBufInputSource *audit_mbis = NULL;
+	Wrapper4InputSource *audit_wfis = NULL;
+	DOMDocument *audit_dom_doc = NULL;
+	DOMElement *audit_elem = NULL;
+	content = audit_document.getContent(content);
+	audit_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	audit_wfis = new Wrapper4InputSource(audit_mbis);
+	audit_dom_doc = parser->parse(audit_wfis);
+	audit_elem = audit_dom_doc->getDocumentElement();
+	delete audit_wfis;
+	audit_wfis = NULL;
+	assert_tag_equals("audit", audit_elem);
+}
+
+extern "C" void test_insert_audit_record_into_temp_fails_with_invalid_input()
+{
+	std::string src = REMOTE_HOST;
+	std::string ser_id = "1";
+	enum jaldb_status ret = jaldb_insert_audit_record_into_temp(NULL, src,
+		audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_insert_audit_record_into_temp(context, src, NULL, audit_app_meta_doc,
+		audit_doc, ser_id);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_insert_audit_record_into_temp(context, src, audit_sys_meta_doc,
+		audit_app_meta_doc, NULL, ser_id);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	src = "";
+	ret = jaldb_insert_audit_record_into_temp(context, src, audit_sys_meta_doc,
+		audit_app_meta_doc, audit_doc, ser_id);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ser_id = "";
+	src = REMOTE_HOST;
+	ret = jaldb_insert_audit_record_into_temp(context, src, audit_sys_meta_doc,
+		audit_app_meta_doc, audit_doc, ser_id);
 	assert_equals(JALDB_E_INVAL, ret);
 }
