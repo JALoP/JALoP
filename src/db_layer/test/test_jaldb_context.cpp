@@ -64,6 +64,7 @@ using namespace std;
 #define JOURNAL_ROOT "/journal/"
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
+#define FAKE_SID "12341234"
 #define AUDIT_TEST_XML_DOC "./test-input/domwriter_audit.xml"
 #define LOG_SYS_TEST_XML_DOC "./test-input/domwriter_log_sys.xml"
 #define LOG_APP_TEST_XML_DOC "./test-input/domwriter_log_app.xml"
@@ -1393,4 +1394,288 @@ extern "C" void test_insert_log_record_into_temp_fails_with_invalid_input()
 		log_app_meta_doc, logbuf, loglen, ser_id, &db_error);
 	context->manager = tmp_mgr;
 	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_returns_inval_when_ctx_is_null()
+{
+	std::string sid = FAKE_SID;
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata(NULL, JALDB_LOCALHOST,
+			audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_returns_inval_when_ctx_journal_sys_cont_is_null()
+{
+	std::string sid = FAKE_SID;
+
+	delete context->journal_sys_cont;
+	context->journal_sys_cont = NULL;
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata(context, JALDB_LOCALHOST,
+			audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_helper_returns_inval_when_ctx_journal_app_cont_is_null()
+{
+	std::string sid = FAKE_SID;
+
+	delete context->journal_app_cont;
+	context->journal_app_cont = NULL;
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata(context, JALDB_LOCALHOST,
+			audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_returns_inval_when_sys_meta_doc_is_null()
+{
+	std::string sid = FAKE_SID;
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata(context, JALDB_LOCALHOST,
+			NULL, audit_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_returns_inval_when_path_len_zero()
+{
+	std::string sid = FAKE_SID;
+	std::string path = "";
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata(context, JALDB_LOCALHOST,
+			audit_sys_meta_doc, audit_app_meta_doc, path, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_helper_returns_inval_when_sys_meta_doc_null()
+{
+	std::string sid = FAKE_SID;
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata_helper(JALDB_LOCALHOST,
+								txn,
+								*context->manager,
+								uc,
+								*context->journal_sys_cont,
+								*context->journal_app_cont,
+								NULL,
+								audit_app_meta_doc,
+								JOURNAL_ROOT,
+								sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_helper_returns_inval_when_path_len_zero()
+{
+	std::string sid = FAKE_SID;
+	std::string path = "";
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata_helper(JALDB_LOCALHOST,
+								txn,
+								*context->manager,
+								uc,
+								*context->journal_sys_cont,
+								*context->journal_app_cont,
+								audit_sys_meta_doc,
+								audit_app_meta_doc,
+								path,
+								sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_helper_returns_inval_when_sid_len_zero()
+{
+	std::string sid = "";
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata_helper(JALDB_LOCALHOST,
+								txn,
+								*context->manager,
+								uc,
+								*context->journal_sys_cont,
+								*context->journal_app_cont,
+								audit_sys_meta_doc,
+								audit_app_meta_doc,
+								JOURNAL_ROOT,
+								sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_helper_returns_success()
+{
+	std::string sid = FAKE_SID;
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata_helper(JALDB_LOCALHOST,
+								txn,
+								*context->manager,
+								uc,
+								*context->journal_sys_cont,
+								*context->journal_app_cont,
+								audit_sys_meta_doc,
+								audit_app_meta_doc,
+								JOURNAL_ROOT,
+								sid);
+	assert_equals(JALDB_OK, ret);
+	txn.commit();
+
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument journal_sys_document = context->journal_sys_cont->getDocument(sid);
+	metadataFound = journal_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(JALDB_LOCALHOST, source.c_str());
+
+	std::string doc_name = "";
+	doc_name = journal_sys_document.getName();
+	assert_string_equals(FAKE_SID, doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *journal_sys_mbis = NULL;
+	Wrapper4InputSource *journal_sys_wfis = NULL;
+	DOMDocument *journal_sys_dom_doc = NULL;
+	DOMElement *journal_sys_elem = NULL;
+	content = journal_sys_document.getContent(content);
+	journal_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), FAKE_SID, false);
+	journal_sys_wfis = new Wrapper4InputSource(journal_sys_mbis);
+	journal_sys_dom_doc = parser->parse(journal_sys_wfis);
+	journal_sys_elem = journal_sys_dom_doc->getDocumentElement();
+	assert_tag_equals("audit_sys", journal_sys_elem);
+	delete journal_sys_wfis;
+	journal_sys_wfis = NULL;
+
+	doc_name = "";
+	XmlDocument journal_app_document = context->journal_app_cont->getDocument(sid);
+	doc_name = journal_app_document.getName();
+	assert_string_equals(FAKE_SID, doc_name.c_str());
+
+	content = "";
+	MemBufInputSource *journal_app_mbis = NULL;
+	Wrapper4InputSource *journal_app_wfis = NULL;
+	DOMDocument *journal_app_dom_doc = NULL;
+	DOMElement *journal_app_elem = NULL;
+	content = journal_app_document.getContent(content);
+	journal_app_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), FAKE_SID, false);
+	journal_app_wfis = new Wrapper4InputSource(journal_app_mbis);
+	journal_app_dom_doc = parser->parse(journal_app_wfis);
+	journal_app_elem = journal_app_dom_doc->getDocumentElement();
+	assert_tag_equals("audit_app", journal_app_elem);
+	delete journal_app_wfis;
+	journal_app_wfis = NULL;
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_helper_returns_ok_when_app_meta_doc_null()
+{
+	std::string sid = FAKE_SID;
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+
+	enum jaldb_status ret = jaldb_insert_journal_metadata_helper(JALDB_LOCALHOST,
+								txn,
+								*context->manager,
+								uc,
+								*context->journal_sys_cont,
+								*context->journal_app_cont,
+								audit_sys_meta_doc,
+								NULL,
+								JOURNAL_ROOT,
+								sid);
+	assert_equals(JALDB_OK, ret);
+	txn.commit();
+
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument journal_sys_document = context->journal_sys_cont->getDocument(sid);
+	metadataFound = journal_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(JALDB_LOCALHOST, source.c_str());
+
+	std::string doc_name = "";
+	doc_name = journal_sys_document.getName();
+	assert_string_equals(FAKE_SID, doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *journal_sys_mbis = NULL;
+	Wrapper4InputSource *journal_sys_wfis = NULL;
+	DOMDocument *journal_sys_dom_doc = NULL;
+	DOMElement *journal_sys_elem = NULL;
+	content = journal_sys_document.getContent(content);
+	journal_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), FAKE_SID, false);
+	journal_sys_wfis = new Wrapper4InputSource(journal_sys_mbis);
+	journal_sys_dom_doc = parser->parse(journal_sys_wfis);
+	journal_sys_elem = journal_sys_dom_doc->getDocumentElement();
+	assert_tag_equals("audit_sys", journal_sys_elem);
+	delete journal_sys_wfis;
+	journal_sys_wfis = NULL;
+
+	try {
+		XmlDocument journal_app_document = context->journal_app_cont->getDocument(sid);
+	} catch (XmlException &e) {
+		assert_equals(XmlException::DOCUMENT_NOT_FOUND, e.getExceptionCode());
+	}
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_returns_success()
+{
+	std::string src = "";
+	std::string sid = "1";
+	jaldb_status ret;
+	ret = jaldb_insert_journal_metadata(
+		context, src, audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_OK, ret);
+
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument journal_sys_document = context->journal_sys_cont->getDocument(sid);
+	metadataFound = journal_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(JALDB_LOCALHOST, source.c_str());
+
+	std::string doc_name = "";
+	doc_name = journal_sys_document.getName();
+	assert_string_equals("1", doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *journal_sys_mbis = NULL;
+	Wrapper4InputSource *journal_sys_wfis = NULL;
+	DOMDocument *journal_sys_dom_doc = NULL;
+	DOMElement *journal_sys_elem = NULL;
+	content = journal_sys_document.getContent(content);
+	journal_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	journal_sys_wfis = new Wrapper4InputSource(journal_sys_mbis);
+	journal_sys_dom_doc = parser->parse(journal_sys_wfis);
+	journal_sys_elem = journal_sys_dom_doc->getDocumentElement();
+	assert_tag_equals("audit_sys", journal_sys_elem);
+	delete journal_sys_wfis;
+	journal_sys_wfis = NULL;
+
+	doc_name = "";
+	XmlDocument journal_app_document = context->journal_app_cont->getDocument(sid);
+	doc_name = journal_app_document.getName();
+	assert_string_equals("1", doc_name.c_str());
+
+	content = "";
+	MemBufInputSource *journal_app_mbis = NULL;
+	Wrapper4InputSource *journal_app_wfis = NULL;
+	DOMDocument *journal_app_dom_doc = NULL;
+	DOMElement *journal_app_elem = NULL;
+	content = journal_app_document.getContent(content);
+	journal_app_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	journal_app_wfis = new Wrapper4InputSource(journal_app_mbis);
+	journal_app_dom_doc = parser->parse(journal_app_wfis);
+	journal_app_elem = journal_app_dom_doc->getDocumentElement();
+	assert_tag_equals("audit_app", journal_app_elem);
+	delete journal_app_wfis;
+	journal_app_wfis = NULL;
 }
