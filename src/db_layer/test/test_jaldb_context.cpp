@@ -41,6 +41,7 @@ extern "C" {
 
 #include <db.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -2064,4 +2065,298 @@ extern "C" void test_jaldb_lookup_log_record_succeeds_when_no_log_meta()
 	assert_equals(0, db_err);
 	free(sys_buf);
 	free(app_buf);
+}
+
+extern "C" void test_jaldb_lookup_journal_record_fails_on_invalid_input()
+{
+	enum jaldb_status ret;
+	int fd = -1;
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t fd_sz = 0;
+	std::string sid = "12341234";
+
+	ret = jaldb_lookup_journal_record(context, sid.c_str(), NULL,
+				&sys_sz, &app_buf, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+
+	ret = jaldb_lookup_journal_record(context, NULL, &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+
+	ret = jaldb_lookup_journal_record(NULL, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+
+	ret = jaldb_lookup_journal_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				NULL, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+
+	ret = jaldb_lookup_journal_record(context, sid.c_str(), NULL, &sys_sz,
+				&app_buf, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+
+	sys_buf = (uint8_t *)malloc(sizeof(*sys_buf));
+	ret = jaldb_lookup_journal_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_not_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+	free(sys_buf);
+	sys_buf = NULL;
+
+	app_buf = (uint8_t *)malloc(sizeof(*sys_buf));
+	ret = jaldb_lookup_journal_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_not_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+	free(app_buf);
+	app_buf = NULL;
+
+
+	fd = 0;
+	ret = jaldb_lookup_journal_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &fd, &fd_sz);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == 0);
+}
+
+extern "C" void test_jaldb_lookup_journal_record_succeeds()
+{
+	int rc = 0;
+	int fd = -1;
+	std::string source;
+	std::string sid;
+	std::string msg = "journal";
+	char *buf = NULL;
+	char *path = NULL;
+	enum jaldb_status ret;
+
+	ret = jaldb_create_journal_file(context, &path, &fd);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, path);
+	assert_not_equals(-1, fd);
+
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	assert_not_equals(-1, rc);
+	close(fd);
+
+	ret = jaldb_insert_journal_metadata(context,
+					source,
+					audit_sys_meta_doc,
+					audit_app_meta_doc,
+					path,
+					sid);
+
+	assert_equals(JALDB_OK, ret);
+
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t fd_sz = 0;
+	fd = -1;
+
+	ret = jaldb_lookup_journal_record(context,
+				sid.c_str(),
+				&sys_buf,
+				&sys_sz,
+				&app_buf,
+				&app_sz,
+				&fd,
+				&fd_sz);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, sys_buf);
+	assert_true(sys_sz > 0);
+	assert_not_equals(NULL, app_buf);
+	assert_true(app_sz > 0);
+	assert_true(fd > -1);
+	assert_true(fd_sz > 0);
+
+	buf = (char *)malloc(fd_sz);
+	rc = read(fd, buf, fd_sz);
+	assert_not_equals(-1, rc);
+	assert_true(!strcmp(buf, msg.c_str()));
+	close(fd);
+	free(path);
+	free(buf);
+	free(sys_buf);
+	free(app_buf);
+}
+
+extern "C" void test_jaldb_lookup_journal_record_succeeds_with_no_app_meta()
+{
+	int rc = 0;
+	int fd = -1;
+	std::string source;
+	std::string sid;
+	std::string msg = "journal";
+	char *buf = NULL;
+	char *path = NULL;
+	enum jaldb_status ret;
+
+	ret = jaldb_create_journal_file(context, &path, &fd);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, path);
+	assert_not_equals(-1, fd);
+
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	assert_not_equals(-1, rc);
+	close(fd);
+
+	ret = jaldb_insert_journal_metadata(context,
+					source,
+					audit_sys_meta_doc,
+					NULL,
+					path,
+					sid);
+
+	assert_equals(JALDB_OK, ret);
+
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t fd_sz = 0;
+	fd = -1;
+
+	ret = jaldb_lookup_journal_record(context,
+				sid.c_str(),
+				&sys_buf,
+				&sys_sz,
+				&app_buf,
+				&app_sz,
+				&fd,
+				&fd_sz);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, sys_buf);
+	assert_true(sys_sz > 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd > -1);
+	assert_true(fd_sz > 0);
+
+	buf = (char *)malloc(fd_sz);
+	rc = read(fd, buf, fd_sz);
+	assert_not_equals(-1, rc);
+	assert_true(!strcmp(buf, msg.c_str()));
+	close(fd);
+	free(path);
+	free(buf);
+	free(sys_buf);
+}
+
+extern "C" void test_jaldb_lookup_journal_record_returns_not_found()
+{
+	int fd = -1;
+	std::string sid;
+	enum jaldb_status ret;
+
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t fd_sz = 0;
+
+	ret = jaldb_lookup_journal_record(context,
+				sid.c_str(),
+				&sys_buf,
+				&sys_sz,
+				&app_buf,
+				&app_sz,
+				&fd,
+				&fd_sz);
+
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+	assert_true(fd_sz == 0);
+}
+
+extern "C" void test_jaldb_lookup_journal_record_returns_corrupted_when_no_journal_file()
+{
+	int fd = -1;
+	std::string source;
+	std::string sid;
+	char *path = strdup("/foo/bar/journal.asdf");
+	enum jaldb_status ret;
+
+	ret = jaldb_insert_journal_metadata(context,
+					source,
+					audit_sys_meta_doc,
+					audit_app_meta_doc,
+					path,
+					sid);
+
+	assert_equals(JALDB_OK, ret);
+
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t fd_sz = 0;
+	fd = -1;
+
+	ret = jaldb_lookup_journal_record(context,
+				sid.c_str(),
+				&sys_buf,
+				&sys_sz,
+				&app_buf,
+				&app_sz,
+				&fd,
+				&fd_sz);
+
+	assert_equals(JALDB_E_CORRUPTED, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_true(fd == -1);
+	assert_true(fd_sz == 0);
+	free(path);
 }
