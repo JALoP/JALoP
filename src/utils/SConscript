@@ -15,6 +15,7 @@ subdirs = """
 	  """.split()
 
 jalp_test = utilsEnv.SConscript('jalp_test/SConscript', exports='utilsEnv all_tests lib_common producer_lib')
+jalp_dump = utilsEnv.SConscript('jal_dump/SConscript', exports='utilsEnv all_tests lib_common db_layer')
 testserver = utilsEnv.SConscript('testserver/SConscript', exports='utilsEnv all_tests lib_common')
 
 Return("jalp_test")
