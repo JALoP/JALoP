@@ -81,6 +81,7 @@ static DOMDocument *log_sys_meta_doc = NULL;
 static DOMDocument *log_app_meta_doc = NULL;
 static jaldb_context *context = NULL;
 
+
 extern "C" void setup()
 {
 	XMLPlatformUtils::Initialize();
@@ -1678,4 +1679,140 @@ extern "C" void test_jaldb_insert_journal_metadata_returns_success()
 	assert_tag_equals("audit_app", journal_app_elem);
 	delete journal_app_wfis;
 	journal_app_wfis = NULL;
+}
+extern "C" void test_audit_record_lookup_returns_ok()
+{
+
+        std::string src = "";
+        audit_app_meta_doc = NULL;
+        std::string ser_id = "2";
+        jaldb_status ret;
+        ret = jaldb_insert_audit_record(
+               context, src, audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
+        assert_equals(JALDB_OK, ret);
+
+	
+	//Test Vars
+        uint8_t *sys_meta_buf = NULL;
+        size_t sys_meta_len = 0;
+        uint8_t *app_meta_buf = NULL;
+        size_t app_meta_len = 0;
+        uint8_t *audit_buf = NULL;
+        size_t audit_len = 0;
+	jaldb_context *ctx = NULL;
+        ctx = jaldb_context_create();
+        jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true);
+
+	ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		 &app_meta_buf, &app_meta_len, &audit_buf, &audit_len );
+
+	assert_equals(JALDB_OK, ret);
+	assert_equals(NULL, app_meta_buf);
+	assert_equals(0, app_meta_len);
+	assert_not_equals(NULL, sys_meta_buf);
+	assert_not_equals(0, sys_meta_len);
+	assert_not_equals(NULL, audit_buf);
+	assert_not_equals(0, audit_len);
+
+	XmlValue src_val;
+        XmlDocument audit_sys_document = ctx->audit_sys_cont->getDocument(ser_id);
+        audit_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, src_val);
+	std::string content = "";
+
+	content = audit_sys_document.getContent(content);
+	assert_string_equals(content.c_str(), sys_meta_buf);
+
+	XmlDocument audit_app_document;
+        try {
+                audit_app_document = ctx->audit_app_cont->getDocument(ser_id);
+		audit_app_document.getMetaData(JALDB_NS, JALDB_SOURCE, src_val);
+		content = "";
+
+		content = audit_app_document.getContent(content);
+		assert_string_equals(content.c_str(), app_meta_buf);
+
+        }
+       	catch (XmlException &e) {
+         	//Document not found -> No App Data.
+		
+        }
+
+        XmlDocument audit_document = ctx->audit_cont->getDocument(ser_id);
+        audit_document.getMetaData(JALDB_NS, JALDB_SOURCE, src_val);
+
+	content = "";
+	content = audit_document.getContent(content);
+	assert_string_equals(content.c_str(), audit_buf);
+}
+
+//TODO: Test that audit lookup fails
+extern "C" void test_audit_record_lookup_fails_on_invalid_input()
+{
+
+        std::string src = "";
+        audit_app_meta_doc = NULL;
+        std::string ser_id = "2";
+        jaldb_status ret;
+        ret = jaldb_insert_audit_record(
+               context, src, audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
+        assert_equals(JALDB_OK, ret);
+
+
+        //Test Vars
+        uint8_t *sys_meta_buf = NULL;
+        size_t sys_meta_len = 0;
+        uint8_t *app_meta_buf = NULL;
+        size_t app_meta_len = 0;
+        uint8_t *audit_buf = NULL;
+        size_t audit_len = 0;
+        jaldb_context *ctx = NULL;
+        ctx = jaldb_context_create();
+        jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, true);
+
+        ret = jaldb_lookup_audit_record(NULL, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+                 &app_meta_buf, &app_meta_len, &audit_buf, &audit_len );
+        assert_equals(JALDB_E_INVAL, ret);
+
+        ret = jaldb_lookup_audit_record(ctx, NULL, &sys_meta_buf, &sys_meta_len,
+                 &app_meta_buf, &app_meta_len, &audit_buf, &audit_len );
+        assert_equals(JALDB_E_INVAL, ret);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), NULL, &sys_meta_len,
+                 &app_meta_buf, &app_meta_len, &audit_buf, &audit_len );
+        assert_equals(JALDB_E_INVAL, ret);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, NULL,
+                 &app_meta_buf, &app_meta_len, &audit_buf, &audit_len );
+        assert_equals(JALDB_E_INVAL, ret);
+
+	size_t throwaway;
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &throwaway,
+                 &app_meta_buf, &app_meta_len, &audit_buf, &audit_len );
+	assert_false( !throwaway);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+                 NULL, &app_meta_len, &audit_buf, &audit_len );
+        assert_equals(JALDB_E_INVAL, ret);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+                 &app_meta_buf, NULL, &audit_buf, &audit_len );
+        assert_equals(JALDB_E_INVAL, ret);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+                 &app_meta_buf, &throwaway, &audit_buf, &audit_len );
+        assert_false(!throwaway);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+                 &app_meta_buf, &app_meta_len, NULL, &audit_len );
+        assert_equals(JALDB_E_INVAL, ret);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+                 &app_meta_buf, &app_meta_len, &audit_buf, NULL );
+        assert_equals(JALDB_E_INVAL, ret);
+
+        ret = jaldb_lookup_audit_record(ctx, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+                 &app_meta_buf, &app_meta_len, &audit_buf, &throwaway );
+        assert_false(!throwaway);
+
+
 }
