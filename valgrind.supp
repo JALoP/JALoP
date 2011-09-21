@@ -1081,6 +1081,47 @@
    fun:*
    fun:*
    fun:teardown
+   fun:main{
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:free
+   fun:free_mem
+   fun:__libc_freeres
+   fun:_vgnU_freeres
+   fun:exit
+   fun:(below main)
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:_ZN11xercesc_3_17XMemorynwEmPNS_13MemoryManagerE
+   fun:_ZN11xercesc_3_116XMLPlatformUtils12makeMutexMgrEPNS_13MemoryManagerE
+   fun:_GLOBAL__I_MutexLock.cpp
+   obj:/usr/local/lib/libdbxml-2.5.so
+   obj:/usr/local/lib/libdbxml-2.5.so
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:_ZN11xercesc_3_17XMemorynwEmPNS_13MemoryManagerE
+   fun:_ZN11xercesc_3_113PosixMutexMgr6createEPNS_13MemoryManagerE
+   fun:_ZN5DbXml7Globals10initializeEP8__db_env
+   fun:_ZN5DbXml7ManagerC1EP8__db_envj
+   fun:_ZN5DbXml10XmlManagerC1EP8__db_envj
+   fun:jaldb_context_init
+   fun:setup
    fun:main
 }
 {
