@@ -30,8 +30,6 @@ tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
 
 test_progs.append(env.Program('stress_get_next_serial_id', ['stress_get_next_serial_id.cpp', db_lib, lib_common]))
 
-test_progs.append(env.Program('stest', ['test_jaldb_main.cpp', db_lib, lib_common, test_utils]))
-
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
 env.Alias('db_tests', test_progs)
 AlwaysBuild(db_tests)
