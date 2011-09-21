@@ -839,8 +839,14 @@ extern "C" void test_insert_log_record_helper_returns_ok()
 	int db_err;
 	db_err = context->log_dbp->get(context->log_dbp, transaction.getDB_TXN(), &key,
 		&data, 0);
-	int result = strncmp(LOG_DATA_X, (char *)data.data, sizeof(data.data));
+	assert_equals(0, db_err);
+	assert_equals(strlen(LOG_DATA_X), data.size);
+	int result = strncmp(LOG_DATA_X, (char *)data.data, strlen(LOG_DATA_X));
 	assert_equals(0, result);
+	free(key.data);
+	free(data.data);
+	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
 
 	const char *log_buffer_y = LOG_DATA_Y;
 	logbuf = (uint8_t *)log_buffer_y;
@@ -852,15 +858,15 @@ extern "C" void test_insert_log_record_helper_returns_ok()
 		next_ser_id, &db_error);
 	assert_equals(JALDB_OK, ret);
 
-	memset(&key, 0, sizeof(DBT));
-	memset(&data, 0, sizeof(DBT));
 	key.data = jal_strdup(next_ser_id.c_str());
 	key.size = next_ser_id.length();
 	key.flags = DB_DBT_USERMEM;
 	data.flags = DB_DBT_MALLOC;
 	db_err = context->log_dbp->get(context->log_dbp, transaction.getDB_TXN(), &key,
 		&data, 0);
-	result = strncmp(LOG_DATA_Y, (char *)data.data, sizeof(data.data));
+	assert_equals(0, db_err);
+	assert_equals(strlen(LOG_DATA_Y), data.size);
+	result = strncmp(LOG_DATA_Y, (char *)data.data, strlen(LOG_DATA_Y));
 	free(key.data);
 	free(data.data);
 	key.data = NULL;
@@ -1009,8 +1015,14 @@ extern "C" void test_insert_log_record_returns_ok()
 	data.flags = DB_DBT_MALLOC;
 	int db_err;
 	db_err = context->log_dbp->get(context->log_dbp, NULL, &key, &data, 0);
-	int result = strncmp(LOG_DATA_X, (char *)data.data, sizeof(data.data));
+	assert_equals(0, db_err);
+	assert_equals(strlen(LOG_DATA_X), data.size);
+	int result = strncmp(LOG_DATA_X, (char *)data.data, strlen(LOG_DATA_X));
 	assert_equals(0, result);
+	free(key.data);
+	free(data.data);
+	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
 
 	const char *log_buffer_y = LOG_DATA_Y;
 	logbuf = (uint8_t *)log_buffer_y;
@@ -1020,14 +1032,14 @@ extern "C" void test_insert_log_record_returns_ok()
 		logbuf, loglen, next_ser_id, &db_error);
 	assert_equals(JALDB_OK, ret);
 
-	memset(&key, 0, sizeof(DBT));
-	memset(&data, 0, sizeof(DBT));
 	key.data = jal_strdup(next_ser_id.c_str());
 	key.size = next_ser_id.length();
 	key.flags = DB_DBT_USERMEM;
 	data.flags = DB_DBT_MALLOC;
 	db_err = context->log_dbp->get(context->log_dbp, NULL, &key, &data, 0);
-	result = strncmp(LOG_DATA_Y, (char *)data.data, sizeof(data.data));
+	assert_equals(0, db_err);
+	assert_equals(strlen(LOG_DATA_Y), data.size);
+	result = strncmp(LOG_DATA_Y, (char *)data.data, strlen(LOG_DATA_Y));
 	free(key.data);
 	free(data.data);
 	key.data = NULL;
