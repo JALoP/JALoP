@@ -629,6 +629,9 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 	if (!ctx || !ctx->manager) {
 		return JALDB_E_INVAL;
 	}
+	if (source.length() == 0) {
+		return JALDB_E_INVAL;
+	}
 	enum jaldb_status ret = JALDB_OK;
 	string sys_db_name = jaldb_make_temp_db_name(source, JALDB_LOG_SYS_META_CONT_NAME);
 	string app_db_name = jaldb_make_temp_db_name(source, JALDB_LOG_APP_META_CONT_NAME);
