@@ -327,7 +327,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	const DOMDocument *sys_doc,
 	const DOMDocument *app_doc,
 	const DOMDocument *audit_doc,
-	std::string &sid)
+	const std::string &sid)
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
 	if ((ctx == NULL) || (sys_doc == NULL) || audit_doc == NULL) {
@@ -623,7 +623,7 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 	const DOMDocument *app_meta_doc,
 	uint8_t *log_buf,
 	const size_t log_len,
-	string &sid,
+	const string &sid,
 	int *db_err)
 {
 	if (!ctx || !ctx->manager) {

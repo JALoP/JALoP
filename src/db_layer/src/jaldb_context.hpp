@@ -236,7 +236,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_doc,
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_doc,
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
-	std::string &sid);
+	const std::string &sid);
 
 /**
  * Helper utility to generate a name for a temporary database used by the
@@ -315,7 +315,7 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
 	uint8_t *log_buf,
 	const size_t log_len,
-	std::string &sid,
+	const std::string &sid,
 	int *db_err);
 
 /**
