@@ -1174,6 +1174,7 @@ extern "C" void test_open_temp_db_returns_ok()
 	const char *file_name;
 	int db_error;
 	db_error = dbase_out->get_dbname(dbase_out, &file_name, NULL);
+	assert_equals(0, db_error);
 	assert_string_equals(log_db_name.c_str(), file_name);
 }
 
@@ -1185,29 +1186,39 @@ extern "C" void test_open_temp_db_fails_with_invalid_input()
 	enum jaldb_status ret =
 		jaldb_open_temp_db(NULL, log_db_name, &dbase_out, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, dbase_out);
 
 	string_to_db_map *tmp_temp_dbs = context->temp_dbs;
 	context->temp_dbs = NULL;
 	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
 	context->temp_dbs = tmp_temp_dbs;
 	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, dbase_out);
 
 	XmlManager *tmp_mgr = context->manager;
 	context->manager = NULL;
 	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
 	context->manager = tmp_mgr;
 	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, dbase_out);
 
 	ret = jaldb_open_temp_db(context, log_db_name, NULL, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, dbase_out);
 
-	DB *database_out;
-	ret = jaldb_open_temp_db(context, log_db_name, &database_out, &db_error_out);
+	dbase_out = (DB*) 0xDEADBEEF;
+	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) 0xDEADBEEF, dbase_out);
+	dbase_out = NULL;
+	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, NULL);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, dbase_out);
 
 	log_db_name = "";
 	ret = jaldb_open_temp_db(context, log_db_name, &dbase_out, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, dbase_out);
 }
 
 extern "C" void test_insert_log_record_into_temp_returns_ok()
@@ -1287,7 +1298,8 @@ extern "C" void test_insert_log_record_into_temp_returns_ok()
 	XmlTransaction txn = context->manager->createTransaction();
 	db_err = (*context->temp_dbs)[log_db_name]->get((*context->temp_dbs)[log_db_name],
 		txn.getDB_TXN(), &key, &data, 0);
-	int result = strncmp(LOG_DATA_X, (char *)(data.data), sizeof(data.data));
+	assert_equals(strlen(LOG_DATA_X), data.size);
+	int result = strncmp(LOG_DATA_X, (char *)(data.data), strlen(LOG_DATA_X));
 	free(key.data);
 	free(data.data);
 	key.data = NULL;
@@ -1353,7 +1365,9 @@ extern "C" void test_insert_log_record_into_temp_with_no_app_metadata_returns_ok
 	XmlTransaction txn = context->manager->createTransaction();
 	db_err = (*context->temp_dbs)[log_db_name]->get((*context->temp_dbs)[log_db_name],
 		txn.getDB_TXN(), &key, &data, 0);
-	int result = strncmp(LOG_DATA_X, (char *)(data.data), sizeof(data.data));
+	assert_equals(0, db_err);
+	assert_equals(strlen(LOG_DATA_X), data.size);
+	int result = strncmp(LOG_DATA_X, (char *)(data.data), strlen(LOG_DATA_X));
 	free(key.data);
 	free(data.data);
 	key.data = NULL;
