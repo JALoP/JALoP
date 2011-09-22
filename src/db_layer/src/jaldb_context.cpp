@@ -282,6 +282,7 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const string& db
 		cfg.setThreaded(true);
 		cfg.setTransactional(true);
 		cont = ctx->manager->openContainer(db_name, cfg);
+		(*ctx->temp_containers)[db_name] = cont;
 	} else {
 		cont = iter->second;
 	}
