@@ -54,8 +54,8 @@ struct jaldb_context_t {
 	DB *audit_conf_db; //<! The database for conf'ed audit records
 	DB *log_conf_db; //<! The database for conf'ed log records
 	DB *log_dbp; //<! The log database.
-	string_to_container_map *temp_containers; //<! a map from strings to XmlContainers that identifiers temporary databases for use by the network stores.
-	string_to_db_map *temp_dbs; //<! a map from strings to Berkeley DBs that that identifiers temporary databases for use by the network stores.
+	string_to_container_map *temp_containers; //<! a map from strings to XmlContainers that identifies temporary databases for use by the network stores.
+	string_to_db_map *temp_dbs; //<! a map from strings to Berkeley DBs that identifies temporary databases for use by the network stores.
 };
 
 /**
@@ -250,7 +250,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 std::string jaldb_make_temp_db_name(const std::string &id, const std::string &suffix);
 
 /**
- * Open a database for to store records in while communicating with a network
+ * Open a temporary database for storing records while communicating with a network
  * store.
  * The container is cached within the context for quicker access later.
  * @param[in] ctx the context to associate with
@@ -276,7 +276,7 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const std::strin
  * @param[out] db_err Set to the Berkeley DB error when this function returns
  * JALDB_E_DB
  *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * @return JALDB_OK if the function succeeds or a JAL error code if the function
  * fails.
  * @throw XmlException if there was an error inserting the record.
  */
@@ -304,7 +304,7 @@ enum jaldb_status jaldb_insert_log_record(
  * @param[out] db_err Set to the Berkeley DB error when this function returns
  * JALDB_E_DB
  *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * @return JALDB_OK if the function succeeds or a JAL error code if the function
  * fails.
  * @throw XmlException if there was an error inserting the record.
  */
@@ -361,7 +361,7 @@ enum jaldb_status jaldb_insert_log_record_helper(const std::string &source,
 		int *db_err);
 
 /**
- * Open a database for to store log records in while communicating with a network
+ * Open a temporary database for storing log records while communicating with a network
  * store.
  * The DB is cached within the context for quicker access later.
  * @param[in] ctx the context to associate with
@@ -379,7 +379,8 @@ enum jaldb_status jaldb_insert_log_record_helper(const std::string &source,
  *  for more information
  *
  */
-enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_name, DB **db_out, int *db_err_out);
+enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_name,
+		DB **db_out, int *db_err_out);
 
 /**
  * Helper utility for inserting journal metadata.
@@ -399,7 +400,7 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_n
  * @param[in] sid The serial ID for the record, this must be non-zero in
  * length
  *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * @return JALDB_OK if the function succeeds or a JAL error code if the function
  */
 enum jaldb_status jaldb_insert_journal_metadata_helper(
 	const std::string &source,
@@ -424,7 +425,7 @@ enum jaldb_status jaldb_insert_journal_metadata_helper(
  * @param[in] path The path of the file that is journal data. This should be
  * @param[out] sid The serial ID for the record.
  *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * @return JALDB_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
 enum jaldb_status jaldb_insert_journal_metadata(
