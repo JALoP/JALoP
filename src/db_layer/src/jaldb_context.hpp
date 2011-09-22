@@ -412,7 +412,7 @@ enum jaldb_status jaldb_insert_journal_metadata_helper(
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
 	const std::string &path,
-	std::string &sid);
+	const std::string &sid);
 
 /**
  * Inserts journal metadata.
