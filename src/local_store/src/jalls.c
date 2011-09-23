@@ -39,8 +39,6 @@
 
 #include <jalop/jal_status.h>
 
-//#include "jaldb_context.h"
-
 #include "jalls_config.h"
 #include "jalu_daemonize.h"
 #include "jalls_handler.h"
@@ -60,6 +58,9 @@ int main(int argc, char **argv) {
 	FILE *fp;
 	RSA *key = NULL;
 	X509 *cert = NULL;
+	jaldb_context *db_ctx = NULL;
+	struct jalls_context *jalls_ctx = NULL;
+
 	if (0 != jalls_init()) {
 		goto err_out;
 	}
@@ -69,7 +70,6 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
-	struct jalls_context *jalls_ctx = NULL;
 	err = jalls_parse_config(config_path, &jalls_ctx);
 	if (err < 0) {
 		goto err_out;
@@ -105,17 +105,13 @@ int main(int argc, char **argv) {
 	}
 
 	//create a jaldb_context to pass to work threads
-	/*
-	 * TODO: create and init the journalDB context
-	 *
-	jaldb_context *db_ctx = jaldb_context_create();
-	enum jal_status jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, NULL);
+	db_ctx = jaldb_context_create();
+	enum jal_status jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, 
+			jalls_ctx->schemas_root, 1);
 	if (jal_err != JAL_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
 		goto err_out;
 	}
-	*/
-	jaldb_context *db_ctx = NULL;
 
 	//check if the socket file already exists
 	struct stat sock_stat;
@@ -203,7 +199,7 @@ err_out:
 	X509_free(cert);
 	jalls_shutdown();
 
-	//TODO: destroy db_context once the api has a destroy function
+	jaldb_context_destroy(&db_ctx);
 
 	exit(-1);
 }
