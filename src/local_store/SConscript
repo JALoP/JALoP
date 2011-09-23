@@ -1,25 +1,25 @@
 Import('*')
 
-local_store_env = env.Clone()
+env = env.Clone()
 
-local_store_env.MergeFlags(local_store_env['libconfig_cflags'])
-local_store_env.MergeFlags(local_store_env['libconfig_ldflags'])
-local_store_env.MergeFlags(local_store_env['openssl_cflags'])
-local_store_env.MergeFlags(local_store_env['openssl_ldflags'])
-local_store_env.MergeFlags(local_store_env['xerces_cflags'])
-local_store_env.MergeFlags(local_store_env['xerces_ldflags'])
-local_store_env.MergeFlags(local_store_env['santuario_ldflags'])
-local_store_env.MergeFlags({'CXXFLAGS':['-D__STDC_FORMAT_MACROS']})
-local_store_env.MergeFlags({'CPPPATH':['#src/jal_utils/src', '#src/db_layer/src',
+env.MergeFlags(env['libconfig_cflags'])
+env.MergeFlags(env['libconfig_ldflags'])
+env.MergeFlags(env['openssl_cflags'])
+env.MergeFlags(env['openssl_ldflags'])
+env.MergeFlags(env['xerces_cflags'])
+env.MergeFlags(env['xerces_ldflags'])
+env.MergeFlags(env['santuario_ldflags'])
+env.MergeFlags({'CXXFLAGS':['-D__STDC_FORMAT_MACROS']})
+env.MergeFlags({'CPPPATH':['#src/jal_utils/src', '#src/db_layer/src',
 	'#src/lib_common/include', '#src/lib_common/src', '#src/producer_lib/include', '.']})
-local_store_env.MergeFlags(local_store_env['libuuid_ldflags'])
-local_store_env.MergeFlags('-lpthread')
-local_store_env.MergeFlags('-DSCHEMAS_ROOT=\\\\\\"' + local_store_env['SOURCE_ROOT']  + '/schemas/\\\\\\"')
-if local_store_env['HAVE_SELINUX'] == True:
-	local_store_env.MergeFlags('-D__HAVE_SELINUX')
-	local_store_env.MergeFlags(local_store_env['selinux_ldflags'])
+env.MergeFlags(env['libuuid_ldflags'])
+env.MergeFlags('-lpthread')
+env.MergeFlags('-DSCHEMAS_ROOT=\\\\\\"' + env['SOURCE_ROOT']  + '/schemas/\\\\\\"')
+if env['HAVE_SELINUX'] == True:
+	env.MergeFlags('-D__HAVE_SELINUX')
+	env.MergeFlags(env['selinux_ldflags'])
 
-SConscript('test/SConscript', exports={'env':local_store_env, 'all_tests':all_tests, 'lib_common':lib_common, 'test_utils':test_utils})
-local_store = local_store_env.SConscript('src/SConscript', exports={'env':local_store_env, 'jal_utils':jal_utils, 'lib_common':lib_common})
+SConscript('test/SConscript', exports='env all_tests lib_common test_utils db_layer')
+local_store = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer')
 
 Return("local_store")
