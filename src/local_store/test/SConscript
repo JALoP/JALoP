@@ -28,14 +28,14 @@ tests.append(testEnv.TestDeptTest('test_jalls_msg.c',
 
 tests.append(testEnv.TestDeptTest('test_jalls_handler.c',
 	other_sources=[jallsMsgObj, jallsHandleJournalObj, jallsXmlUtilsObj, jallsSysMetaXmlObj,
-		jallsHandleLogObj, jallsHandleAuditObj, jallsHandleJournalFDObj, lib_common], 
+		jallsHandleLogObj, jallsHandleAuditObj, jallsHandleJournalFDObj, lib_common, db_layer],
 	useProxies=True)[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalls_xml_utils.cpp',
 	other_sources=[jallsMsgObj, jallsHandlerObj, jallsHandleLogObj,
 			jallsHandleAuditObj, jallsHandleJournalObj,
 			jallsHandleJournalFDObj, jallsSysMetaXmlObj,
-			lib_common], useProxies=False)[0].abspath)
+			lib_common, db_layer], useProxies=False)[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalls_system_metadata_xml.cpp',
 	other_sources=[test_utils, lib_common])[0].abspath)

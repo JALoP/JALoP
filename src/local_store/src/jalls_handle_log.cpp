@@ -41,6 +41,7 @@
 #include "jalls_msg.h"
 #include "jalls_context.h"
 #include "jalls_handler.h"
+#include "jaldb_context.hpp"
 #include "jalls_xml_utils.hpp"
 #include "jalls_system_metadata_xml.hpp"
 #include "jalls_handle_log.hpp"
@@ -74,8 +75,15 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	DOMDocument *sys_meta_doc = NULL;
 
 	void *instance = NULL;
-	//get the log
 
+	enum jal_status jal_err;
+	enum jaldb_status db_err;
+	int bdb_err;
+	uint8_t *digest;
+	std::string source;
+	std::string sid;
+
+	//get the log
 	struct iovec iov[1];
 	iov[0].iov_base = data_buf;
 	iov[0].iov_len = data_len;
@@ -135,9 +143,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	}
 
 	//digest the log data
-	enum jal_status jal_err;
 	digest_ctx = jal_sha256_ctx_create();
-	uint8_t *digest;
 
 	instance = digest_ctx->create();
 	digest = (uint8_t *)jal_malloc(digest_ctx->len);
@@ -205,17 +211,17 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		goto err_out;
 	}
 
-
-
-
-	/*
-	 * TODO: insert into the database
-	jal_err = jaldb_insert_log_record(thread_ctx->db_ctx, NULL, sys_meta_doc,
-		app_meta_doc, NULL);
-	if (jal_err != JAL_OK) {
+	db_err =  jaldb_insert_log_record(
+			thread_ctx->db_ctx,
+			source, sys_meta_doc,
+			app_meta_doc, data_buf,
+			data_len, sid, &bdb_err);
+	if (db_err != JALDB_OK) {
 		goto err_out;
+		if (debug) {
+			fprintf(stderr, "failed to insert log record\n");
+		}
 	}
-	*/
 
 	ret = 0;
 
