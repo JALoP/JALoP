@@ -39,12 +39,7 @@ extern "C" {
 #include <sys/types.h>
 #include <stdint.h>
 
-//TODO: remove this stub struct and functions
-typedef struct jaldb_context_t {
-	int tmp;
-} jaldb_context;
-jaldb_context *jaldb_context_create();
-int jaldb_context_init();
+#include "jaldb_context.h"
 
 /** holds the fields to be passed to a worker thread */
 struct jalls_context {
