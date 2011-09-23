@@ -37,7 +37,7 @@ extern "C" {
 #include "jaldb_status.h"
 
 struct jaldb_context_t;
-typedef jaldb_context_t jaldb_context;
+typedef struct jaldb_context_t jaldb_context;
 
 /**
  * Creates an empty DB context.
