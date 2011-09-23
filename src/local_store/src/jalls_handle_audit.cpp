@@ -41,6 +41,7 @@
 #include "jalls_context.h"
 #include "jalls_handler.h"
 #include "jalls_xml_utils.hpp"
+#include "jaldb_context.hpp"
 #include "jalls_system_metadata_xml.hpp"
 #include "jalls_handle_audit.hpp"
 
@@ -68,6 +69,9 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	uint8_t *data_buf = (uint8_t *)malloc(data_len);
 	uint8_t *app_meta_buf = NULL;
 
+	std::string sid = "";
+	std::string source = "";
+	enum jaldb_status db_err = JALDB_OK;
 	//get the payload audit
 
 	struct iovec iov[1];
@@ -197,14 +201,19 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		goto err_out;
 	}
 
-	/*
-	 * TODO: actually insert into the database
-	jal_err = jaldb_insert_audit_record(thread_ctx->db_ctx, NULL,
-		sys_meta_doc, app_meta_doc, audit_doc, NULL);
-	if (jal_err != JAL_OK) {
+	db_err = jaldb_insert_audit_record(
+			thread_ctx->db_ctx,
+			source,
+			sys_meta_doc,
+			app_meta_doc,
+			audit_doc,
+			sid);
+	if (db_err != JALDB_OK) {
+		if (debug) {
+			fprintf(stderr, "could not insert audit record into database\n");
+		}
 		goto err_out;
 	}
-	*/
 
 	ret = 0;
 
