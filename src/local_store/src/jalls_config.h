@@ -32,7 +32,7 @@
 #define _JALLS_CONFIG_H_
 
 #include <libconfig.h>
-#include <jalls_context.h>
+#include "jalls_context.h"
 
 #define JALLS_CFG_DB_DEFAULT "/var/lib/jalop/db"
 #define JALLS_CFG_SOCKET_DEFAULT "/var/run/jalop/jalop.sock"
