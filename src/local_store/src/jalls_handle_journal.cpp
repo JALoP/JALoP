@@ -43,6 +43,7 @@
 #include "jalls_handler.h"
 #include "jalls_xml_utils.hpp"
 #include "jalls_handle_journal.hpp"
+#include "jaldb_context.hpp"
 #include "jalls_system_metadata_xml.hpp"
 
 #define JALLS_JOURNAL_BUF_LEN 8192
@@ -67,8 +68,11 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 
 	int db_payload_fd = -1;
 	char *db_payload_path = NULL;
-	db_payload_path = NULL;
+	std::string path;
+	std::string sid;
+	std::string source;
 	enum jal_status jal_err;
+	enum jaldb_status db_err;
 
 	uint8_t *app_meta_buf = NULL;
 	int err;
@@ -82,18 +86,15 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	DOMDocument *sys_meta_doc = NULL;
 
 	void *sha256_instance = NULL;
-
 	//get a file from the db layer to write the journal data to.
-	/*
-	 * TODO: Add real code to create the file descriptor
-	jal_err = jaldb_create_journal_file(thread_ctx->db_ctx, db_payload_path, &db_payload_fd);
-	if (jal_err != JAL_OK) {
+	db_err = jaldb_create_journal_file(thread_ctx->db_ctx, &db_payload_path, &db_payload_fd);
+	if (db_err != JALDB_OK) {
 		if (debug) {
 			fprintf(stderr, "could not create a file to store journal data\n");
 		}
 		goto err_out;
 	}
-	*/
+	path.assign(db_payload_path);
 
 	//get the payload, write it to the db file.
 	//digests the payload as well
@@ -245,14 +246,16 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		goto err_out;
 	}
 
-	/*
-	 * TODO: add real code to insert into database.
-	jal_err = jaldb_insert_journal_record(thread_ctx->db_ctx, NULL, sys_meta_doc,
-		app_meta_doc, NULL);
-	if (jal_err != JAL_OK) {
+	db_err = jaldb_insert_journal_metadata(thread_ctx->db_ctx,
+			source,
+			sys_meta_doc,
+			app_meta_doc,
+			path,
+			sid);
+
+	if (db_err != JALDB_OK) {
 		goto err_out;
 	}
-	*/
 
 	ret = 0;
 
