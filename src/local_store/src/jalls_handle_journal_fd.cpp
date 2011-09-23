@@ -38,12 +38,16 @@
 
 #include "jal_alloc.h"
 #include "jal_xml_utils.hpp"
+
+#include "jaldb_context.hpp"
+
 #include "jalls_msg.h"
 #include "jalls_context.h"
 #include "jalls_handler.h"
 #include "jalls_xml_utils.hpp"
 #include "jalls_system_metadata_xml.hpp"
 #include "jalls_handle_journal_fd.hpp"
+
 
 #define JALLS_JOURNAL_BUF_LEN 8192
 
@@ -66,6 +70,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 
 	int err;
 	enum jal_status jal_err;
+	enum jaldb_status db_err;
 	int ret = -1;
 
 	int debug = thread_ctx->ctx->debug;
@@ -102,19 +107,21 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	ssize_t bytes_read = 0;
 
 	int db_payload_fd = -1;
-	//char *db_payload_path = NULL;
+	char *db_payload_path = NULL;
+	std::string path;
+	std::string source;
+	std::string sid;
 
 	//get a file from the db layer to write the journal data to.
-	/*
-	 * TODO: create the file descriptor from the database
-	jal_err = (enum jal_status)jaldb_create_journal_file(thread_ctx->db_ctx, db_payload_path, &db_payload_fd);
+	jal_err = (enum jal_status)jaldb_create_journal_file(thread_ctx->db_ctx, 
+			&db_payload_path, &db_payload_fd);
 	if (jal_err != JAL_OK) {
 		if (debug) {
 			fprintf(stderr, "could not create a file to store journal data\n");
 		}
 		goto err_out;
 	}
-	*/
+	path.assign(db_payload_path);
 
 	//digest and write the file
 	digest_ctx = jal_sha256_ctx_create();
@@ -234,14 +241,18 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 		goto err_out;
 	}
 
-	/*
-	 * TODO: insert into the database
-	jal_err = jaldb_insert_journal_record(thread_ctx->db_ctx, NULL, sys_meta_doc,
-		app_meta_doc, NULL);
-	if (jal_err != JAL_OK) {
+	db_err = jaldb_insert_journal_metadata(thread_ctx->db_ctx,
+			source,
+			sys_meta_doc,
+			app_meta_doc,
+			path,
+			sid);
+	if (db_err != JALDB_OK) {
+		if (debug) {
+			fprintf(stderr, "could not insert journal record");
+		}
 		goto err_out;
 	}
-	*/
 
 	ret = 0;
 
