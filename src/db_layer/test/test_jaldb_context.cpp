@@ -1855,3 +1855,213 @@ extern "C" void test_audit_record_lookup_fails_on_invalid_input()
 		&app_meta_buf, NULL, &audit_buf, &audit_len);
 	assert_equals(JALDB_E_INVAL, ret);
 }
+
+extern "C" void test_jaldb_lookup_log_record_fails_on_invalid_input()
+{
+	const char *log_buffer_x = LOG_DATA_X;
+	uint8_t *logbuf = (uint8_t *)log_buffer_x;
+	size_t loglen = strlen(log_buffer_x);
+	int db_err = 0;
+	std::string src = "";
+	audit_app_meta_doc = NULL;
+	std::string ser_id = "3";
+	jaldb_status ret;
+
+	ret = jaldb_insert_log_record(
+			context, src, log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_err);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(0, db_err);
+
+	//Test Vars
+	uint8_t *sys_meta_buf = NULL;
+	size_t sys_meta_len = 0;
+	uint8_t *app_meta_buf = NULL;
+	size_t app_meta_len = 0;
+	uint8_t *log_buf = NULL;
+	uint8_t *bad_pointer = (uint8_t*)0xDEADBEEF;
+	size_t log_len = 0;
+
+	ret = jaldb_lookup_log_record(NULL, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, NULL, &sys_meta_buf, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), NULL, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &bad_pointer, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, NULL,
+		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		NULL, &app_meta_len, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		&bad_pointer, &app_meta_len, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		&app_meta_buf, NULL, &log_buf, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, NULL, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, &bad_pointer, &log_len, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, &log_buf, NULL, &db_err);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_lookup_log_record(context, ser_id.c_str(), &sys_meta_buf, &sys_meta_len,
+		&app_meta_buf, &app_meta_len, &log_buf, &log_len, NULL);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_lookup_log_record_succeeds()
+{
+	std::string src;
+	std::string sid;
+	const char *log_buffer_x = LOG_DATA_X;
+	uint8_t *logbuf = (uint8_t *)log_buffer_x;
+	size_t loglen = strlen(log_buffer_x);
+	int db_err = 0;
+	enum jaldb_status ret;
+
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+				logbuf, loglen, sid, &db_err);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(0, db_err);
+
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	uint8_t *log_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t log_sz = 0;
+
+	ret = jaldb_lookup_log_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &log_buf, &log_sz, &db_err);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, sys_buf);
+	assert_true(sys_sz > 0);
+	assert_not_equals(NULL, app_buf);
+	assert_true(app_sz > 0);
+	assert_not_equals(NULL, log_buf);
+	assert_true(log_sz > 0);
+	assert_equals(0, db_err);
+
+	free(sys_buf);
+	free(app_buf);
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_lookup_log_record_succeeds_with_no_app_meta()
+{
+	std::string src;
+	std::string sid;
+	const char *log_buffer_x = LOG_DATA_X;
+	uint8_t *logbuf = (uint8_t *)log_buffer_x;
+	size_t loglen = strlen(log_buffer_x);
+	int db_err = 0;
+	enum jaldb_status ret;
+
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, NULL,
+				logbuf, loglen, sid, &db_err);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(0, db_err);
+
+
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	uint8_t *log_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t log_sz = 0;
+
+	ret = jaldb_lookup_log_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &log_buf, &log_sz, &db_err);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, sys_buf);
+	assert_true(sys_sz > 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_not_equals(NULL, log_buf);
+	assert_true(log_sz > 0);
+	assert_equals(0, db_err);
+	free(sys_buf);
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_lookup_log_record_returns_not_found()
+{
+	std::string sid = "1";
+	enum jaldb_status ret;
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	uint8_t *log_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t log_sz = 0;
+	int db_err = 0;
+
+	ret = jaldb_lookup_log_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &log_buf, &log_sz, &db_err);
+
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+	assert_equals(NULL, sys_buf);
+	assert_true(sys_sz == 0);
+	assert_equals(NULL, app_buf);
+	assert_true(app_sz == 0);
+	assert_equals(NULL, log_buf);
+	assert_true(log_sz == 0);
+}
+
+extern "C" void test_jaldb_lookup_log_record_succeeds_when_no_log_meta()
+{
+	std::string src;
+	std::string sid;
+	int db_err = 0;
+	enum jaldb_status ret;
+
+	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, log_app_meta_doc,
+				NULL, 0, sid, &db_err);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(0, db_err);
+
+
+	uint8_t *sys_buf = NULL;
+	uint8_t *app_buf = NULL;
+	uint8_t *log_buf = NULL;
+	size_t sys_sz = 0;
+	size_t app_sz = 0;
+	size_t log_sz = 0;
+
+	ret = jaldb_lookup_log_record(context, sid.c_str(), &sys_buf, &sys_sz,
+				&app_buf, &app_sz, &log_buf, &log_sz, &db_err);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, sys_buf);
+	assert_true(sys_sz > 0);
+	assert_not_equals(NULL, app_buf);
+	assert_true(app_sz > 0);
+	assert_equals(NULL, log_buf);
+	assert_true(log_sz == 0);
+	assert_equals(0, db_err);
+	free(sys_buf);
+	free(app_buf);
+}
