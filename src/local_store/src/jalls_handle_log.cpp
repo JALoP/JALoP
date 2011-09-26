@@ -87,12 +87,14 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 
 	ssize_t bytes_recieved;
 
-	bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
-	if (bytes_recieved < 0) {
-		if (debug) {
-			fprintf(stderr, "could not recieve log data\n");
+	if (data_len > 0) {
+		bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
+		if (bytes_recieved < 0) {
+			if (debug) {
+				fprintf(stderr, "could not recieve log data\n");
+			}
+			goto err_out;
 		}
-		goto err_out;
 	}
 
 	if (data_len != 0) {
