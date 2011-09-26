@@ -138,8 +138,8 @@ enum jaldb_status jaldb_create_file(
 	if (!db_root || !relative_path_out || *relative_path_out || !fd) {
 		return JALDB_E_INVAL;
 	}
-	// This is for the string 'yyyy/mm/dd/journal.XXXXXXXXXX'
-	#define TEMPLATE_LEN 30
+	// This is for the string 'yyyy/mm/dd/journal.XXXXXX'
+	#define TEMPLATE_LEN 26
 	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
 
 	time_t current_time;
@@ -162,12 +162,12 @@ enum jaldb_status jaldb_create_file(
 		goto error_out;
 	}
 	template = (char*) jal_malloc(TEMPLATE_LEN);
-	if (0 == strftime(template, TEMPLATE_LEN, "./%Y/%m/%d/journal.XXXXXX", &gmt)) {
+	if (0 == strftime(template, TEMPLATE_LEN, "%Y/%m/%d/journal.XXXXXX", &gmt)) {
 		// a return of 0 is an error in this case, but it should never
 		// happen.
 		goto error_out;
 	}
-	len = strlen(db_root) + TEMPLATE_LEN;
+	len = strlen(db_root) + 1 + TEMPLATE_LEN;
 	full_path = (char*) jal_malloc(len);
 	written = snprintf(full_path, len, "%s/%s", db_root, template);
 	if (written >= len) {
