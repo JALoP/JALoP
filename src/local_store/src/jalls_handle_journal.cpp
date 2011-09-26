@@ -115,7 +115,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	msgh.msg_iov = iov;
 	msgh.msg_iovlen = 1;
 
-	ssize_t bytes_recieved;
+	ssize_t bytes_received;
 
 	bytes_remaining = data_len;
 	int bytes_written;
@@ -133,17 +133,17 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		goto err_out;
 	}
 
-	bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
-	while (bytes_recieved > 0 && bytes_remaining >= (uint64_t)bytes_recieved) {
-		bytes_remaining -= (uint64_t)bytes_recieved;
-		jal_err = digest_ctx->update(sha256_instance, (uint8_t *)data_buf, bytes_recieved);
+	bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
+	while (bytes_received > 0 && bytes_remaining >= (uint64_t)bytes_received) {
+		bytes_remaining -= (uint64_t)bytes_received;
+		jal_err = digest_ctx->update(sha256_instance, (uint8_t *)data_buf, bytes_received);
 		if (jal_err != JAL_OK) {
 			if (debug) {
 				fprintf(stderr, "could not digest the journal data\n");
 			}
 			goto err_out;
 		}
-		bytes_written = write(db_payload_fd, data_buf, bytes_recieved);
+		bytes_written = write(db_payload_fd, data_buf, bytes_received);
 		if (bytes_written < 0) {
 			if (debug) {
 				fprintf(stderr, "could not write journal to file\n");
@@ -154,11 +154,11 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 				break;
 		}
 		iov[0].iov_len = (bytes_remaining < JALLS_JOURNAL_BUF_LEN) ? bytes_remaining : JALLS_JOURNAL_BUF_LEN;
-		bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
+		bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 	}
-	if (bytes_recieved < 0) {
+	if (bytes_received < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve journal data\n");
+			fprintf(stderr, "could not receive journal data\n");
 		}
 		goto err_out;
 	}
@@ -176,7 +176,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve first BREAK\n");
+			fprintf(stderr, "could not receive first BREAK\n");
 		}
 		goto err_out;
 	}
@@ -185,7 +185,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	err = jalls_handle_app_meta(&app_meta_buf, meta_len, thread_ctx->fd, debug);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve the application metadata\n");
+			fprintf(stderr, "could not receive the application metadata\n");
 		}
 		goto err_out;
 	}
@@ -194,7 +194,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve second BREAK\n");
+			fprintf(stderr, "could not receive second BREAK\n");
 		}
 		goto err_out;
 	}

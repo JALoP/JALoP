@@ -1,6 +1,6 @@
 /**
  * @file jalls_msg.h This file contains helper functions to deal with
- * recieving messages for the jal local store.
+ * receiving messages for the jal local store.
  *
  * @section LICENSE
  *
@@ -41,7 +41,7 @@ extern "C" {
  * @param[in, out] msgh The msghdr structure to read into.
  * @param[in] debug A flag to indicate whether to print debug messages to stderr.
  *
- * @return -1 on failure, or the number of bytes recieved on success.
+ * @return -1 on failure, or the number of bytes received on success.
  */
 int jalls_recvmsg_helper(int fd, struct msghdr *msgh, int debug);
 

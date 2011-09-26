@@ -84,7 +84,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	msgh.msg_iov = iov;
 	msgh.msg_iovlen = 1;
 
-	ssize_t bytes_recieved;
+	ssize_t bytes_received;
 
 	int err;
 
@@ -95,10 +95,10 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	struct jal_digest_ctx *digest_ctx = NULL;
 	uint8_t *digest = NULL;
 
-	bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
-	if (bytes_recieved < 0) {
+	bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
+	if (bytes_received < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve audit data\n");
+			fprintf(stderr, "could not receive audit data\n");
 		}
 		goto err_out;
 	}
@@ -116,7 +116,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve first BREAK\n");
+			fprintf(stderr, "could not receive first BREAK\n");
 		}
 		goto err_out;
 	}
@@ -125,7 +125,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	err = jalls_handle_app_meta(&app_meta_buf, meta_len, thread_ctx->fd, debug);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve application metadata\n");
+			fprintf(stderr, "could not receive application metadata\n");
 		}
 		goto err_out;
 	}
@@ -143,7 +143,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve second BREAK\n");
+			fprintf(stderr, "could not receive second BREAK\n");
 		}
 		goto err_out;
 	}

@@ -94,13 +94,13 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	msgh.msg_iov = iov;
 	msgh.msg_iovlen = 1;
 
-	ssize_t bytes_recieved;
+	ssize_t bytes_received;
 
 	if (data_len > 0) {
-		bytes_recieved = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
-		if (bytes_recieved < 0) {
+		bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
+		if (bytes_received < 0) {
 			if (debug) {
-				fprintf(stderr, "could not recieve log data\n");
+				fprintf(stderr, "could not receive log data\n");
 			}
 			goto err_out;
 		}
@@ -110,7 +110,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "%s: could not recieve first BREAK\n", __FILE__);
+			fprintf(stderr, "%s: could not receive first BREAK\n", __FILE__);
 		}
 		goto err_out;
 	}
@@ -119,7 +119,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	err = jalls_handle_app_meta(&app_meta_buf, meta_len, thread_ctx->fd, debug);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve the application metadata\n");
+			fprintf(stderr, "could not receive the application metadata\n");
 		}
 		goto err_out;
 	}
@@ -128,7 +128,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve second BREAK\n");
+			fprintf(stderr, "could not receive second BREAK\n");
 		}
 		goto err_out;
 	}

@@ -247,7 +247,7 @@ int handler(int fd)
 			}
 			close(new_tmpfile_fd);
 			if(read_size < 0) {
-				printf("Read of the recieved fd failed\n");
+				printf("Read of the received fd failed\n");
 			}
 		}
 	}

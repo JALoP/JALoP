@@ -1,6 +1,6 @@
 /**
  * @file jalls_msg.c This file contains helper functions to deal with
- * recieving messages for the jal local store.
+ * receiving messages for the jal local store.
  *
  * @section LICENSE
  *

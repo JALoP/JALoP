@@ -180,7 +180,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	err = jalls_handle_app_meta(&app_meta_buf, meta_len, thread_ctx->fd, debug);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve the application metadata\n");
+			fprintf(stderr, "could not receive the application metadata\n");
 		}
 		goto err_out;
 	}
@@ -189,7 +189,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	err = jalls_handle_break(thread_ctx->fd);
 	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not recieve BREAK\n");
+			fprintf(stderr, "could not receive BREAK\n");
 		}
 		goto err_out;
 	}

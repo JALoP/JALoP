@@ -131,7 +131,7 @@ void *jalls_handler(void *thread_ctx_p) {
 		ssize_t bytes_recv = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 		if (bytes_recv < 0) {
 			if (debug) {
-				fprintf(stderr, "Failed to recieve the message header\n");
+				fprintf(stderr, "Failed to receive the message header\n");
 			}
 			goto out;
 		}
@@ -142,13 +142,13 @@ void *jalls_handler(void *thread_ctx_p) {
 			goto out;
 		}
 
-		//recieve fd
+		//receive fd
 		struct cmsghdr *cmsg;
 		cmsg = CMSG_FIRSTHDR(&msgh);
 		while (cmsg != NULL) {
 			if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type  == cred_type) {
 				if (debug && (*uid != 0 || *pid != -1)) {
-					fprintf(stderr, "Recieved duplicate ancillary data: multiple credentials.\nFirst credentials will be overwritten\n");
+					fprintf(stderr, "received duplicate ancillary data: multiple credentials.\nFirst credentials will be overwritten\n");
 				}
 #ifdef SCM_CREDENTIALS
 				memcpy(&cred, CMSG_DATA(cmsg), sizeof(cred));
@@ -162,24 +162,24 @@ void *jalls_handler(void *thread_ctx_p) {
 				&& cmsg->cmsg_len == CMSG_LEN(sizeof(msg_fd))) {
 				if (message_type != JALLS_JOURNAL_FD_MSG) {
 					if (debug) {
-						fprintf(stderr, "Recieved an fd for a message type that was not journal_fd\n");
+						fprintf(stderr, "received an fd for a message type that was not journal_fd\n");
 					}
 					goto out;
 				}
 				void *tmp_fd = CMSG_DATA(cmsg);
 				if (debug && msg_fd != -1) {
-					fprintf(stderr, "Recieved duplicate ancillary data: overwrote the fd\n");
+					fprintf(stderr, "received duplicate ancillary data: overwrote the fd\n");
 				}
 				msg_fd = *((int *)tmp_fd);
 				if (msg_fd < 0) {
 					if (debug) {
-						fprintf(stderr, "Recieved an fd < 0\n");
+						fprintf(stderr, "received an fd < 0\n");
 					}
 					goto out;
 				}
 			} else {
 				if (debug) {
-					fprintf(stderr, "Recieved unrecognized ancillary data\n");
+					fprintf(stderr, "received unrecognized ancillary data\n");
 				}
 				goto out;
 			}
@@ -192,12 +192,12 @@ void *jalls_handler(void *thread_ctx_p) {
 			thread_ctx->peer_pid = 0;
 			thread_ctx->peer_uid = 0;
 
-			fprintf(stderr, "Did not recieve credentials\n");
+			fprintf(stderr, "Did not receive credentials\n");
 		}
 
 		if (protocol_version != 1) {
 			if (debug) {
-				fprintf(stderr, "Recieved protocol version != 1\n");
+				fprintf(stderr, "received protocol version != 1\n");
 			}
 			return NULL;
 		}
@@ -216,7 +216,7 @@ void *jalls_handler(void *thread_ctx_p) {
 			case JALLS_JOURNAL_FD_MSG:
 				if (msg_fd < 0) {
 					if (debug) {
-						fprintf(stderr, "Message type is journal_fd, but no fd was recieved\n");
+						fprintf(stderr, "Message type is journal_fd, but no fd was received\n");
 					}
 					goto out;
 				}
@@ -255,9 +255,9 @@ int jalls_handle_app_meta(uint8_t **app_meta_buf, size_t app_meta_len, int fd, i
 	msgh.msg_iov = iov;
 	msgh.msg_iovlen = 1;
 
-	ssize_t bytes_recieved = jalls_recvmsg_helper(fd, &msgh, debug);
+	ssize_t bytes_received = jalls_recvmsg_helper(fd, &msgh, debug);
 
-	if ((unsigned)bytes_recieved == app_meta_len) {
+	if ((unsigned)bytes_received == app_meta_len) {
 		return 0;
 	}
 
@@ -277,8 +277,8 @@ int jalls_handle_break(int fd) {
 	msgh.msg_iov = iov;
 	msgh.msg_iovlen = 1;
 
-	ssize_t bytes_recieved = jalls_recvmsg_helper(fd, &msgh, 0);
-	if (bytes_recieved != JALLS_BREAK_LEN) {
+	ssize_t bytes_received = jalls_recvmsg_helper(fd, &msgh, 0);
+	if (bytes_received != JALLS_BREAK_LEN) {
 		return -1;
 	}
 
