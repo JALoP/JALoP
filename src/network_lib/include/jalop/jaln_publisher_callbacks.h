@@ -343,6 +343,20 @@ struct jaln_publisher_callbacks {
 			void *user_data);
 };
 
+/**
+ * Create a jaln_publisher_callbacks structure
+ *
+ * @return a newly created and initialized jaln_publisher_callbacks structure.
+ */
+struct jaln_publisher_callbacks *jaln_publisher_callbacks_create();
+
+/**
+ * Destroy a jaln_publisher_callbacks structure
+ *
+ * @param[in,out] handlers The structure to destroy. This will be set to NULL.
+ */
+void jaln_publisher_callbacks_destroy(struct jaln_publisher_callbacks **callbacks);
+
 
 #ifdef __cplusplus
 }
