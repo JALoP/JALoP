@@ -905,21 +905,6 @@ enum jaldb_status jaldb_lookup_audit_record(
 	return JALDB_OK;
 }
 
-enum jaldb_status jaldb_get_log_record(
-	jaldb_context *ctx,
-	const char *sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	uint8_t **log_buf,
-	size_t *log_len)
-{
-
-
-	return JALDB_OK;
-}
-
 enum jaldb_status jaldb_lookup_log_record(
 	jaldb_context *ctx,
 	const char *sid,
