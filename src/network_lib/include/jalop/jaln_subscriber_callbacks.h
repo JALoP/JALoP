@@ -275,6 +275,21 @@ struct jaln_subscriber_callbacks {
 			void *user_data);
 };
 
+/**
+ * Create a jaln_subscriber_callbacks structure
+ *
+ * @return a newly created and initialized jaln_subscriber_callbacks structure.
+ */
+struct jaln_subscriber_callbacks *jaln_subscriber_callbacks_create();
+
+/**
+ * Destroy a jaln_subscriber_callbacks structure
+ *
+ * @param[in,out] callbacks The structure to destroy. This will be set to NULL.
+ */
+void jaln_subscriber_callbacks_destroy(struct jaln_subscriber_callbacks **callbacks);
+
+
 #ifdef __cplusplus
 }
 #endif
