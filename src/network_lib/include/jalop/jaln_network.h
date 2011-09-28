@@ -31,13 +31,16 @@ extern "C" {
 
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
-#include <jalop/jaln_network_callbacks.h>
 #include <jalop/jaln_network_types.h>
+#include <jalop/jaln_connection_callbacks.h>
+#include <jalop/jaln_publisher_callbacks.h>
+
 /**
  * Create and initialize a new jaln_context
  * @return A pointer to the new context
  */
 jaln_context *jaln_context_create(void);
+
 /**
  * Destroy a jaln_context
  * All connections using this context must have already been shutdown via
@@ -51,7 +54,7 @@ jaln_context *jaln_context_create(void);
  *
  * @return JAL_OK if the context was destroyed, or an error code.
  */
-enum jal_status jaln_context_destroy(jaln_context *jaln_ctx);
+enum jal_status jaln_context_destroy(jaln_context **jaln_ctx);
 
 /**
  * Adds the TLS profile and a connection handler to prevent showing the JALoP
@@ -89,6 +92,7 @@ enum jal_status jaln_register_tls(jaln_context *jaln_ctx,
  */
 enum jal_status jaln_register_encoding(jaln_context *jaln_ctx,
 				  const char *encoding);
+
 /**
  * Register a callbacks that the JNL executes when channels are created and
  * closed.

@@ -29,6 +29,7 @@ extern "C" {
 
 #include <jalop/jaln_network_types.h>
 #include <stdlib.h>
+
 /**
  * @struct jaln_publisher_callbacks
  * The application must fill one of these in for each accepted connection.
@@ -54,7 +55,9 @@ struct jaln_publisher_callbacks {
 	 */
 	int (*on_journal_resume)(const struct jaln_channel_info *ch_info,
 			struct jaln_record_info *record_info,
-			struct jaln_mime_header *headers);
+			struct jaln_mime_header *headers,
+			void *user_data);
+
 	/**
 	 * The JNL executes this callback to inform the application of a
 	 * 'subscribe' message. This callback is purely informational.
@@ -72,6 +75,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			struct jaln_mime_header *headers,
 			void *user_data);
+
 	/**
 	 * The JNL will execute this callback to obtain the record info for the
 	 * next record that should be sent on this channel.
@@ -108,6 +112,7 @@ struct jaln_publisher_callbacks {
 			uint8_t **system_metadata_buffer,
 			uint8_t **application_metadata_buffer,
 			void *user_data);
+
 	/**
 	 * The JNL execute this callback when it is no longer using the bytes
 	 * of the system metadata and application metadata. 
@@ -132,6 +137,7 @@ struct jaln_publisher_callbacks {
 			uint8_t *system_metadata_buffer,
 			uint8_t *application_metadata_buffer,
 			void *user_data);
+
 	/**
 	 * Acquire a pointer to the log payload. The buffer must contain the
 	 * same number of bytes as were designated in the
@@ -152,6 +158,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			uint8_t **buffer,
 			void *user_data);
+
 	/**
 	 * Release the log buffer.
 	 *
@@ -169,6 +176,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			uint8_t *buffer,
 			void *user_data);
+
 	/**
 	 * Acquire a pointer to audit data. The buffer must contain the
 	 * same number of bytes as were designated in the jaln_record_info
@@ -189,6 +197,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			uint8_t **buffer,
 			void *user_data);
+
 	/**
 	 * Release the audit buffer.
 	 *
@@ -206,6 +215,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			uint8_t *buffer,
 			void *user_data);
+
 	/**
 	 * Acquire a payload feeder for the journal record identified by serial_id.
 	 * When the JNL is finished with the feeder, it will call #release_journal_feeder()
@@ -224,6 +234,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
+
 	/**
 	 * Release a payload feeder for journal record identified by \p serial_id.
 	 *
@@ -238,6 +249,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
+
 	/**
 	 * The JNL calls this once the record is fully sent, or the
 	 * connection/channel is severed. It provides a chance for the
@@ -254,6 +266,7 @@ struct jaln_publisher_callbacks {
 			enum jaln_record_type type,
 			char *serial_id,
 			void *user_data);
+
 	/**
 	 * The JNL executes this callback when it receives a 'sync' message
 	 * from the peer.
@@ -270,6 +283,7 @@ struct jaln_publisher_callbacks {
 			const char *serial_id,
 			struct jaln_mime_header *headers,
 			void *user_data);
+
 	/**
 	 * Informs the application of the calculated checksum of the record
 	 * identified by serial_id. This is the checksum calculated as the
@@ -296,6 +310,7 @@ struct jaln_publisher_callbacks {
 			const uint8_t *digest,
 			const uint32_t size,
 			void *user_data);
+
 	/**
 	 * Inform the application of the calculated checksum sent by the peer.
 	 * The JNL tracks the serial_id and digests for all records sent on each

@@ -76,6 +76,7 @@ struct jaln_connection_handlers {
 			int *selected_encoding,
 			int *selected_digest,
 			void *user_data);
+
 	/**
 	 * Notify the application that a channel was closed.
 	 * @param[in] channel_info Information about the channel that is closing.
@@ -105,6 +106,7 @@ struct jaln_connection_handlers {
 	 */
 	void (*connect_ack)(const struct jaln_connect_ack *ack,
 			    void *user_data);
+
 	/**
 	 * The JNL will execute this callback when it receives a 'connect-nack'
 	 * message from the remote peer.

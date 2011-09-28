@@ -29,6 +29,7 @@ extern "C" {
 
 #include <jalop/jaln_network_types.h>
 #include <stdlib.h>
+
 /**
  * @struct jaln_subscriber_callbacks
  * The JAL network store fills this in for each accepted connection.
@@ -69,6 +70,7 @@ struct jaln_subscriber_callbacks {
 			enum jaln_record_type type,
 			char **serial_id,
 			uint64_t *offset);
+
 	/**
 	 * The JNL will execute this function after it receives and parses the
 	 * MIME headers and has the system and application metadata sections of
@@ -103,6 +105,7 @@ struct jaln_subscriber_callbacks {
 			const uint8_t *application_metadata_buffer,
 			const uint32_t application_metadata_size,
 			void *user_data);
+
 	/**
 	 * The JNL calls this function to deliver the entire contents of the
 	 * audit entry.
@@ -124,6 +127,7 @@ struct jaln_subscriber_callbacks {
 			const uint8_t *buffer,
 			const uint32_t cnt,
 			void *user_data);
+
 	/**
 	 * The JNL calls this function to deliver the entire contents of a log
 	 * entry.
@@ -145,6 +149,7 @@ struct jaln_subscriber_callbacks {
 			const uint8_t *buffer,
 			const uint32_t cnt,
 			void *user_data);
+
 	/**
 	 * The JNL calls this function to deliver bytes of a journal entry to the
 	 * application. This function may be called multiple times for a single
@@ -172,6 +177,7 @@ struct jaln_subscriber_callbacks {
 			const uint64_t offset,
 			const int more,
 			void *user_data);
+
 	/**
 	 * The JNL calls this to inform the JAL Network store of the digest it
 	 * calculated for a particular record.
@@ -194,6 +200,7 @@ struct jaln_subscriber_callbacks {
 			const uint8_t *digest,
 			const uint32_t len,
 			const void *user_data);
+
 	/**
 	 * The JNL will execute this callback for every record in a
 	 * 'digest-response' message.
@@ -215,6 +222,7 @@ struct jaln_subscriber_callbacks {
 			const char *serial_id,
 			const enum jaln_digest_status status,
 			const void *user_data);
+
 	/**
 	 * Called when the remote peer completes a subscribe message.
 	 * @param[in] ch_info Information about the connection
@@ -225,6 +233,7 @@ struct jaln_subscriber_callbacks {
 	void (*message_complete)(const struct jaln_channel_info *ch_info,
 			enum jaln_record_type,
 			void *user_data);
+
 	/**
 	 * Get a payload feeder to process the already downloaded portion of a
 	 * journal record.
@@ -249,6 +258,7 @@ struct jaln_subscriber_callbacks {
 			const char *serial_id,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
+
 	/**
 	 * Release a payload feeder for the identified serial_id.
 	 *

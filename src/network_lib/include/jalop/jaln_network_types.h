@@ -42,6 +42,7 @@ enum jaln_record_type {
 	/** Indicates a Log Record */
 	JALN_RTYPE_LOG = 1 << 2,
 };
+
 /**
  * Structure to encompass MIME headers
  */
@@ -53,6 +54,20 @@ struct jaln_mime_header {
 	/** The next header in the list */
 	struct jaln_mime_header *next;
 };
+
+/**
+ * Create a jaln_mime_header list.
+ * @return a newly created jaln_mime_header_list
+ */
+struct jaln_mime_header *jaln_mime_header_create(struct jaln_mime_header **headers);
+
+/**
+ * Destroy a list of MIME headers
+ *
+ * @param[in,out] headers The headers to free. This will be set to NULL.
+ */
+void jaln_mime_header_destroy(struct jaln_mime_header **headers);
+
 /**
  * Information about a connected JALoP Channel
  */
@@ -68,12 +83,7 @@ struct jaln_channel_info {
 	/** The type of JAL records exchanged on this channel */
 	enum jaln_record_type type;
 };
-/**
- * Destroy a list of MIME headers
- *
- * @param[in,out] headers The headers to free. This will be set to NULL.
- */
-void jaln_mime_header_free(struct jaln_mime_header **headers);
+
 /**
  * Provides some metadata about a specific JAL record.
  */
@@ -103,6 +113,7 @@ enum jaln_digest_status {
 	/** Indicates the serial_id was not recognized */
 	JALN_DIGEST_STATUS_UNKNOWN,
 };
+
 /**
  * Enum used to indicate the role a particular peer is supposed to fill.
  * @see #jaln_connect_ack
@@ -154,6 +165,7 @@ struct jaln_connect_ack {
 	 */
 	struct jaln_mime_header *headers;
 };
+
 /**
  * This represents the data that is sent as part of a 'connect' message.
  */
@@ -198,6 +210,7 @@ struct jaln_connect_request {
 	 */
 	struct jaln_mime_header *headers;
 };
+
 /**
  * The JNL fills out the #jaln_connect_nack and passes it to the application
  * when the peer sends a 'connect-nack' message.
@@ -215,6 +228,7 @@ struct jaln_connect_nack {
 	 */
 	struct jaln_mime_header *headers;
 };
+
 /**
  * @struct jaln_payload_feeder
  * The jaln_payload_feeder is used to send bytes of the payload (journal,
@@ -247,6 +261,17 @@ struct jaln_payload_feeder {
 			   uint32_t *size,
 			   void *feeder_data);
 };
+
+/**
+ * Used to indicate whether a connection should be accepted or rejected
+ */
+enum jaln_connect_error {
+	JALN_CE_ACCEPT = 0,
+	JALN_CE_REJECT,
+};
+
+struct jaln_connection;
+
 /**
  * This holds global data such as base publisher
  * callbacks, and channel creation handlers.
