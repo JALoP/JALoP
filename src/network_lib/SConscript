@@ -1,5 +1,8 @@
 import os
 Import('*')
+env = env.Clone()
 
-#uncomment when we have some actual source code.
-#env.SharedLibrary(target='jal-network', source=env.Glob("*.c"))
+env.MergeFlags({'CPPPATH': '#src/network_lib/include:#src/lib_common/include:#src/lib_common/src:.'.split(':')})
+SConscript('include/SConscript', exports='env all_tests lib_common')
+#SConscript('test/SConscript', exports='env all_tests lib_common test_utils'})
+network_lib = SConscript('src/SConscript', exports='env')
