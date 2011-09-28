@@ -2360,3 +2360,189 @@ extern "C" void test_jaldb_lookup_journal_record_returns_corrupted_when_no_journ
 	assert_true(fd_sz == 0);
 	free(path);
 }
+
+extern "C" void test_jaldb_insert_journal_metadata_into_temp_succeeds()
+{
+	XMLPlatformUtils::Initialize();
+	std::string sid = "1";
+	std::string src = "localhost";
+	char *path = NULL;
+	int rc = 0;
+	int fd = -1;
+	std::string msg = "journal";
+	enum jaldb_status ret;
+
+	ret = jaldb_create_journal_file(context, &path, &fd);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, path);
+	assert_not_equals(-1, fd);
+
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	assert_not_equals(-1, rc);
+	close(fd);
+
+	ret = jaldb_insert_journal_metadata_into_temp(context, src, log_sys_meta_doc,
+						log_app_meta_doc, path, sid);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sys_meta_name = jaldb_make_temp_db_name(src, JALDB_JOURNAL_SYS_META_CONT_NAME);
+	assert_not_equals("", sys_meta_name);
+
+	std::string app_meta_name = jaldb_make_temp_db_name(src, JALDB_JOURNAL_APP_META_CONT_NAME);
+	assert_not_equals("", app_meta_name);
+
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+
+	ret = jaldb_open_temp_container(context, sys_meta_name, sys_cont);
+	assert_equals(ret, JALDB_OK);
+
+	ret = jaldb_open_temp_container(context, app_meta_name, app_cont);
+	assert_equals(ret, JALDB_OK);
+
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument journal_sys_document = sys_cont.getDocument(sid);
+	metadataFound = journal_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(JALDB_LOCALHOST, source.c_str());
+
+	std::string doc_name = "";
+	doc_name = journal_sys_document.getName();
+	assert_string_equals("1", doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *journal_sys_mbis = NULL;
+	Wrapper4InputSource *journal_sys_wfis = NULL;
+	DOMDocument *journal_sys_dom_doc = NULL;
+	DOMElement *journal_sys_elem = NULL;
+	content = journal_sys_document.getContent(content);
+	journal_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	journal_sys_wfis = new Wrapper4InputSource(journal_sys_mbis);
+	journal_sys_dom_doc = parser->parse(journal_sys_wfis);
+	journal_sys_elem = journal_sys_dom_doc->getDocumentElement();
+	assert_tag_equals("log_sys", journal_sys_elem);
+	delete journal_sys_wfis;
+	journal_sys_wfis = NULL;
+
+	doc_name = "";
+	XmlDocument journal_app_document = app_cont.getDocument(sid);
+	doc_name = journal_app_document.getName();
+	assert_string_equals("1", doc_name.c_str());
+
+	content = "";
+	MemBufInputSource *journal_app_mbis = NULL;
+	Wrapper4InputSource *journal_app_wfis = NULL;
+	DOMDocument *journal_app_dom_doc = NULL;
+	DOMElement *journal_app_elem = NULL;
+	content = journal_app_document.getContent(content);
+	journal_app_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	journal_app_wfis = new Wrapper4InputSource(journal_app_mbis);
+	journal_app_dom_doc = parser->parse(journal_app_wfis);
+	journal_app_elem = journal_app_dom_doc->getDocumentElement();
+	assert_tag_equals("log_app", journal_app_elem);
+	delete journal_app_wfis;
+	journal_app_wfis = NULL;
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_into_temp_succeeds_with_no_app_meta()
+{
+	XMLPlatformUtils::Initialize();
+	std::string sid = "1";
+	std::string src = "localhost";
+	char *path = NULL;
+	int rc = 0;
+	int fd = -1;
+	std::string msg = "journal";
+	enum jaldb_status ret;
+
+	ret = jaldb_create_journal_file(context, &path, &fd);
+
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, path);
+	assert_not_equals(-1, fd);
+
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	assert_not_equals(-1, rc);
+	close(fd);
+
+	ret = jaldb_insert_journal_metadata_into_temp(context, src, log_sys_meta_doc,
+						NULL, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sys_meta_name = jaldb_make_temp_db_name(src, JALDB_JOURNAL_SYS_META_CONT_NAME);
+	assert_not_equals("", sys_meta_name);
+
+	std::string app_meta_name = jaldb_make_temp_db_name(src, JALDB_JOURNAL_APP_META_CONT_NAME);
+	assert_not_equals("", app_meta_name);
+
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+
+	ret = jaldb_open_temp_container(context, sys_meta_name, sys_cont);
+	assert_equals(ret, JALDB_OK);
+
+	ret = jaldb_open_temp_container(context, app_meta_name, app_cont);
+	assert_equals(ret, JALDB_OK);
+
+	bool metadataFound = false;
+	XmlValue val;
+	XmlDocument journal_sys_document = sys_cont.getDocument(sid);
+	metadataFound = journal_sys_document.getMetaData(JALDB_NS, JALDB_SOURCE, val);
+	std::string source = val.asString();
+	assert_string_equals(JALDB_LOCALHOST, source.c_str());
+
+	std::string doc_name = "";
+	doc_name = journal_sys_document.getName();
+	assert_string_equals("1", doc_name.c_str());
+
+	std::string content = "";
+	MemBufInputSource *journal_sys_mbis = NULL;
+	Wrapper4InputSource *journal_sys_wfis = NULL;
+	DOMDocument *journal_sys_dom_doc = NULL;
+	DOMElement *journal_sys_elem = NULL;
+	content = journal_sys_document.getContent(content);
+	journal_sys_mbis = new MemBufInputSource(reinterpret_cast<const XMLByte *>(content.c_str()),
+		strlen(content.c_str()), "1", false);
+	journal_sys_wfis = new Wrapper4InputSource(journal_sys_mbis);
+	journal_sys_dom_doc = parser->parse(journal_sys_wfis);
+	journal_sys_elem = journal_sys_dom_doc->getDocumentElement();
+	assert_tag_equals("log_sys", journal_sys_elem);
+	delete journal_sys_wfis;
+	journal_sys_wfis = NULL;
+
+	try {
+		XmlDocument journal_app_document = context->journal_app_cont->getDocument(sid);
+		assert_false(true);
+	} catch (XmlException &e) {
+		assert_equals(XmlException::DOCUMENT_NOT_FOUND, e.getExceptionCode());
+	}
+}
+
+extern "C" void test_jaldb_insert_journal_metadata_into_temp_fails_on_invalid_data()
+{
+	XMLPlatformUtils::Initialize();
+	std::string sid = "1";
+	std::string src = "localhost";
+
+	enum jaldb_status ret;
+
+	ret = jaldb_insert_journal_metadata_into_temp(NULL, src, log_sys_meta_doc,
+						log_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_insert_journal_metadata_into_temp(context, "", log_sys_meta_doc,
+						log_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_insert_journal_metadata_into_temp(context, src, NULL,
+						log_app_meta_doc, JOURNAL_ROOT, sid);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_insert_journal_metadata_into_temp(context, src, log_sys_meta_doc,
+						log_app_meta_doc, "", sid);
+	assert_equals(JALDB_E_INVAL, ret);
+}
