@@ -120,6 +120,20 @@ struct jaln_connection_handlers {
 			     void *user_data);
 };
 
+/**
+ * Create a jaln_connection_handlers structure
+ *
+ * @return a newly created and initialized jaln_conection_handlers structure.
+ */
+struct jaln_connection_handlers *jaln_connection_handlers_create();
+
+/**
+ * Destroy a jaln_connection_handlers structure
+ *
+ * @param[in,out] handlers The structure to destroy
+ */
+void jaln_connection_handlers_destroy(struct jaln_connection_handlers **handlers);
+
 #ifdef __cplusplus
 }
 #endif
