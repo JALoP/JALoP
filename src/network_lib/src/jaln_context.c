@@ -1,12 +1,9 @@
 /**
- * @file jaln_subscriber_callbacks.c
+ * @file jaln_context.c
+ *
+ * Public functions for creating and configuring a jaln_context.
  *
  * @section LICENSE
- *
- * Source code in 3rd-party is licensed and owned by their respective
- * copyright holders.
- *
- * All other source code is copyright Tresys Technology and licensed as below.
  *
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
@@ -27,21 +24,31 @@
  */
 
 #include <stdlib.h>
+#include <jalop/jaln_network.h>
+#include <jalop/jaln_network_types.h>
+#include <jalop/jaln_publisher_callbacks.h>
 #include <jalop/jaln_subscriber_callbacks.h>
+#include <jalop/jaln_connection_callbacks.h>
 #include "jal_alloc.h"
+#include "jaln_context.h"
 
-struct jaln_subscriber_callbacks *jaln_subscriber_callbacks_create()
+jaln_context *jaln_context_create(void)
 {
-	struct jaln_subscriber_callbacks *new_callbacks;
-	new_callbacks = jal_calloc(1, sizeof(*new_callbacks));
-	return new_callbacks;
+	jaln_context *ctx = jal_calloc(1, sizeof(*ctx));
+	return ctx;
 }
 
-void jaln_subscriber_callbacks_destroy(struct jaln_subscriber_callbacks **callbacks)
+enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 {
-	if (!callbacks || !(*callbacks)) {
-		return;
+	if (!jaln_ctx || !(*jaln_ctx)) {
+		return JAL_E_INVAL;
 	}
-	free(*callbacks);
-	*callbacks = NULL;
+
+	jaln_publisher_callbacks_destroy(&(*jaln_ctx)->pub_callbacks);
+	jaln_subscriber_callbacks_destroy(&(*jaln_ctx)->sub_callbacks);
+	jaln_connection_callbacks_destroy(&(*jaln_ctx)->conn_callbacks);
+	free(*jaln_ctx);
+	*jaln_ctx = NULL;
+
+	return JAL_OK;
 }

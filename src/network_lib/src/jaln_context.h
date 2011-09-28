@@ -1,12 +1,9 @@
 /**
- * @file jaln_subscriber_callbacks.c
+ * @file jaln_context.h
+ *
+ * Public functions for creating and configuring a jaln_context.
  *
  * @section LICENSE
- *
- * Source code in 3rd-party is licensed and owned by their respective
- * copyright holders.
- *
- * All other source code is copyright Tresys Technology and licensed as below.
  *
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
@@ -25,23 +22,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef _JALN_CONTEXT_H_
+#define _JALN_CONTEXT_H_
 
-#include <stdlib.h>
-#include <jalop/jaln_subscriber_callbacks.h>
-#include "jal_alloc.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-struct jaln_subscriber_callbacks *jaln_subscriber_callbacks_create()
-{
-	struct jaln_subscriber_callbacks *new_callbacks;
-	new_callbacks = jal_calloc(1, sizeof(*new_callbacks));
-	return new_callbacks;
-}
+struct jaln_context_t {
+	struct jaln_publisher_callbacks *pub_callbacks;
+	struct jaln_subscriber_callbacks *sub_callbacks;
+	struct jaln_connection_callbacks *conn_callbacks;
+	void *user_data;
+};
 
-void jaln_subscriber_callbacks_destroy(struct jaln_subscriber_callbacks **callbacks)
-{
-	if (!callbacks || !(*callbacks)) {
-		return;
-	}
-	free(*callbacks);
-	*callbacks = NULL;
-}
+#endif //_JALN_CONTEXT_H_
