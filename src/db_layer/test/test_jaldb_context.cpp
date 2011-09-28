@@ -2546,3 +2546,37 @@ extern "C" void test_jaldb_insert_journal_metadata_into_temp_fails_on_invalid_da
 						log_app_meta_doc, "", sid);
 	assert_equals(JALDB_E_INVAL, ret);
 }
+
+extern "C" void test_read_only_flag_prevents_writing_to_db()
+{
+	jaldb_context *ctx = jaldb_context_create();
+	enum jaldb_status ret;
+	int db_err;
+	ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, 0, 1);
+	assert_equals(JALDB_OK, ret);
+
+	std::string src = "foo";
+	XmlTransaction transaction = ctx->manager->createTransaction();
+	XmlUpdateContext update_ctx = ctx->manager->createUpdateContext();
+	std::string ser_id = "1";
+
+	ret = jaldb_insert_audit_record(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+
+	ret = jaldb_insert_audit_record_into_temp(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+
+	ret = jaldb_insert_log_record(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, (uint8_t*) LOG_DATA_X, strlen(LOG_DATA_X), ser_id, &db_err);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+
+	ret = jaldb_insert_log_record_into_temp(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, (uint8_t*) LOG_DATA_X, strlen(LOG_DATA_X), ser_id, &db_err);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+
+	ret = jaldb_insert_journal_metadata(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, ser_id);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+
+	ret = jaldb_insert_journal_metadata_into_temp(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, ser_id);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+
+	jaldb_context_destroy(&ctx);
+}
