@@ -34,7 +34,7 @@ extern "C" {
  * Structure that contains all the callback methods an application should
  * implement to allow/deny connections and be notified when channels close.
  */
-struct jaln_connection_handlers {
+struct jaln_connection_callbacks {
 	/**
 	 * The JNL will execute this callback when it receives a 'connect'
 	 * message from the remote peer.
@@ -121,18 +121,18 @@ struct jaln_connection_handlers {
 };
 
 /**
- * Create a jaln_connection_handlers structure
+ * Create a jaln_connection_callbacks structure
  *
- * @return a newly created and initialized jaln_conection_handlers structure.
+ * @return a newly created and initialized jaln_conection_callbacks structure.
  */
-struct jaln_connection_handlers *jaln_connection_handlers_create();
+struct jaln_connection_callbacks *jaln_connection_callbacks_create();
 
 /**
- * Destroy a jaln_connection_handlers structure
+ * Destroy a jaln_connection_callbacks structure
  *
- * @param[in,out] handlers The structure to destroy
+ * @param[in,out] callbacks The structure to destroy
  */
-void jaln_connection_handlers_destroy(struct jaln_connection_handlers **handlers);
+void jaln_connection_callbacks_destroy(struct jaln_connection_callbacks **callbacks);
 
 #ifdef __cplusplus
 }

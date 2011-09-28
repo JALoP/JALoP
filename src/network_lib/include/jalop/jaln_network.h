@@ -97,12 +97,12 @@ enum jal_status jaln_register_encoding(jaln_context *jaln_ctx,
  * Register a callbacks that the JNL executes when channels are created and
  * closed.
  * @param jaln_ctx The context object
- * @param connection_handlers The connection handlers.
+ * @param connection_callbacks The connection callbacks.
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_register_connection_handlers(jaln_context *jaln_ctx,
-		struct jaln_connection_handlers *connection_handlers);
+enum jal_status jaln_register_connection_callbacks(jaln_context *jaln_ctx,
+		struct jaln_connection_callbacks *connection_callbacks);
 
 /**
  * Register the callbacks required to act as a subscriber.
@@ -231,7 +231,7 @@ struct jaln_connection *jaln_publish(
  * digest-response messages.
  *
  * Once the connection is closed, the JNL will execute
- * jaln_connection_handlers::on_connection_close
+ * jaln_connection_callbacks::on_connection_close
  *
  * @param jal_conn The connection to shutdown.
  * @return JAL_OK if everything was successful, an error otherwise.
