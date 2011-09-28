@@ -139,9 +139,11 @@ enum jaldb_status jaldb_context_init(
 	cont = ctx->manager->openContainer(txn, JALDB_LOG_APP_META_CONT_NAME, cfg);
 	ctx->log_app_cont = new XmlContainer(cont);
 
-	jaldb_initialize_serial_id(txn, *ctx->journal_sys_cont, &db_err);
-	jaldb_initialize_serial_id(txn, *ctx->audit_sys_cont, &db_err);
-	jaldb_initialize_serial_id(txn, *ctx->log_sys_cont, &db_err);
+	if (!db_rdonly_flag) {
+		jaldb_initialize_serial_id(txn, *ctx->journal_sys_cont, &db_err);
+		jaldb_initialize_serial_id(txn, *ctx->audit_sys_cont, &db_err);
+		jaldb_initialize_serial_id(txn, *ctx->log_sys_cont, &db_err);
+	}
 	DB_TXN *db_txn = txn.getDB_TXN();
 	int db_ret = 0;
 
@@ -290,6 +292,9 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const string& db
 	if (db_name.length() == 0) {
 		return JALDB_E_INVAL;
 	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
 	string_to_container_map::iterator iter = ctx->temp_containers->find(db_name);
 	if (iter == ctx->temp_containers->end()) {
 		XmlContainerConfig cfg;
@@ -314,6 +319,9 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const string& db_name, 
 	}
 	if (db_name.length() == 0) {
 		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
 	}
 	DB *db;
 	int db_err = 0;
@@ -363,6 +371,9 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	}
 	if (source.length() == 0 || sid.length() == 0) {
 		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
 	}
 
 	string sys_db = jaldb_make_temp_db_name(source, JALDB_AUDIT_SYS_META_CONT_NAME);
@@ -467,6 +478,7 @@ enum jaldb_status jaldb_insert_audit_helper(const string &source,
 out:
 	return ret;
 }
+
 enum jaldb_status jaldb_insert_audit_record(
 	jaldb_context *ctx,
 	std::string &source,
@@ -479,6 +491,9 @@ enum jaldb_status jaldb_insert_audit_record(
 		!ctx->audit_sys_cont || !ctx->audit_app_cont ||
 		!ctx->audit_cont) {
 		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
 	}
 	enum jaldb_status ret = JALDB_E_UNKNOWN;
 	XmlUpdateContext uc = ctx->manager->createUpdateContext();
@@ -610,6 +625,9 @@ enum jaldb_status jaldb_insert_log_record(
 			!ctx->log_app_cont || !ctx->log_dbp|| !db_err) {
 		return JALDB_E_INVAL;
 	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
 	enum jaldb_status ret = JALDB_OK;
 	XmlUpdateContext uc = ctx->manager->createUpdateContext();
 	while(1) {
@@ -659,6 +677,9 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 	}
 	if (source.length() == 0) {
 		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
 	}
 	enum jaldb_status ret = JALDB_OK;
 	string sys_db_name = jaldb_make_temp_db_name(source, JALDB_LOG_SYS_META_CONT_NAME);
@@ -720,6 +741,9 @@ enum jaldb_status jaldb_create_journal_file(
 {
 	if (!ctx) {
 		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
 	}
 	return jaldb_create_file(ctx->journal_root, path, fd);
 }
@@ -789,6 +813,9 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	if (source.length() == 0 || path.length() == 0) {
 		return JALDB_E_INVAL;
 	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
 	string sys_meta_name = jaldb_make_temp_db_name(source, JALDB_JOURNAL_SYS_META_CONT_NAME);
 	string app_meta_name = jaldb_make_temp_db_name(source, JALDB_JOURNAL_APP_META_CONT_NAME);
 
@@ -848,6 +875,9 @@ enum jaldb_status jaldb_insert_journal_metadata(
 			!ctx->journal_app_cont || 
 			!sys_meta_doc || path.length() == 0) {
 		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
 	}
 	enum jaldb_status ret = JALDB_OK;
 	XmlUpdateContext uc = ctx->manager->createUpdateContext();
@@ -1261,6 +1291,9 @@ enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
 	if (!ctx || !ctx->manager) {
 		return JALDB_E_INVAL;
 	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
 	return jaldb_store_confed_sid_helper(ctx->journal_sys_cont,
 			ctx->journal_conf_db, remote_host, sid, db_err_out);
 }
@@ -1270,6 +1303,9 @@ enum jaldb_status jaldb_store_confed_audit_sid(jaldb_context *ctx,
 	if (!ctx || !ctx->manager || !ctx->audit_sys_cont) {
 		return JALDB_E_INVAL;
 	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
 	return jaldb_store_confed_sid_helper(ctx->audit_sys_cont,
 			ctx->audit_conf_db, remote_host, sid, db_err_out);
 }
@@ -1278,6 +1314,9 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
 {
 	if (!ctx || !ctx->manager) {
 		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
 	}
 	return jaldb_store_confed_sid_helper(ctx->log_sys_cont,
 			ctx->log_conf_db, remote_host, sid, db_err_out);

@@ -47,6 +47,7 @@ enum jaldb_status {
 	JALDB_E_CORRUPTED,
 	JALDB_E_SID,
 	JALDB_E_NOT_FOUND,
+	JALDB_E_READ_ONLY,
 	JALDB_OK = 0,
 };
 
