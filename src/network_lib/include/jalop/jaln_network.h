@@ -151,9 +151,8 @@ enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
  *
  * @returns JAL_OK on success
  */
-int jaln_register_digest_algorithm(jaln_context *jal_ctx,
-				const char *algorithm,
-				const struct jal_digest_ctx *digest_ctx);
+enum jal_status jaln_register_digest_algorithm(jaln_context *jal_ctx,
+				struct jal_digest_ctx *digest_ctx);
 
 /**
  * Register the JALoP profile and start listening for connections. Once this

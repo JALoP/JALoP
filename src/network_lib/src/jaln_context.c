@@ -52,3 +52,16 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 
 	return JAL_OK;
 }
+
+enum jal_status jaln_register_digest_algorithm(jaln_context *ctx,
+				struct jal_digest_ctx *dgst_ctx)
+{
+	if (!ctx || !ctx->dgst_algs || !dgst_ctx || !jal_digest_ctx_is_valid(dgst_ctx)) {
+		return JAL_E_INVAL;
+	}
+
+	axl_list_remove(ctx->dgst_algs, dgst_ctx);
+	axl_list_append(ctx->dgst_algs, dgst_ctx);
+
+	return JAL_OK;
+}

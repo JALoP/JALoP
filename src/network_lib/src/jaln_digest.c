@@ -1,7 +1,6 @@
 /**
- * @file jaln_context.h
- *
- * Public functions for creating and configuring a jaln_context.
+ * @file jaln_digest.c This file contains function definitions for code related
+ * to the digest used during JALoP communications.
  *
  * @section LICENSE
  *
@@ -22,19 +21,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALN_CONTEXT_H_
-#define _JALN_CONTEXT_H_
-#include <axl.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "jaln_digest.h"
 
-struct jaln_context_t {
-	struct jaln_publisher_callbacks *pub_callbacks;
-	struct jaln_subscriber_callbacks *sub_callbacks;
-	struct jaln_connection_callbacks *conn_callbacks;
-	axlList *dgst_algs;
-	void *user_data;
-};
+void jaln_digest_list_destroy(axlPointer ptr)
+{
+	struct jal_digest_ctx *ctx = (struct jal_digest_ctx*)ptr;
+	jal_digest_ctx_destroy(&ctx);
+}
 
-#endif //_JALN_CONTEXT_H_
+int jaln_digest_list_equal_func(axlPointer a, axlPointer b)
+{
+	struct jal_digest_ctx *dgst_a = (struct jal_digest_ctx*)a;
+	struct jal_digest_ctx *dgst_b = (struct jal_digest_ctx*)b;
+	return strcasecmp(dgst_a->algorithm_uri, dgst_b->algorithm_uri);
+}
+
