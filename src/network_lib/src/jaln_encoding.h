@@ -1,7 +1,6 @@
 /**
- * @file jaln_context.h
- *
- * Public functions for creating and configuring a jaln_context.
+ * @file This file contains function declarations for code related
+ * to the xml encodings.
  *
  * @section LICENSE
  *
@@ -22,20 +21,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALN_CONTEXT_H_
-#define _JALN_CONTEXT_H_
+#ifndef _JALN_ENCODING_INTERNAL_H_
+#define _JALN_ENCODING_INTERNAL_H_
 #include <axl.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <jalop/jal_digest.h>
+#include <jalop/jaln_network.h>
+#include <jalop/jaln_network_types.h>
 
-struct jaln_context_t {
-	struct jaln_publisher_callbacks *pub_callbacks;
-	struct jaln_subscriber_callbacks *sub_callbacks;
-	struct jaln_connection_callbacks *conn_callbacks;
-	axlList *dgst_algs;
-	axlList *xml_encodings;
-	void *user_data;
-};
-
-#endif //_JALN_CONTEXT_H_
+/**
+ * Case-insensitive comparison function for a list of strings.
+ *
+ * @param[in] a the first string
+ * @param[in] b the second string
+ * @return
+ *  - 0 if the strings are equal
+ *  - a negative value if a is '<' b
+ *  - a positive value if b is '<' a
+ */
+int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b);
+#endif // _JALN_ENCODING_INTERNAL_H_

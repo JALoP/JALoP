@@ -1,7 +1,6 @@
 /**
- * @file jaln_context.h
- *
- * Public functions for creating and configuring a jaln_context.
+ * @file jaln_encodings.c This file contains function definitions for code related
+ * to the XML encodings
  *
  * @section LICENSE
  *
@@ -22,20 +21,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALN_CONTEXT_H_
-#define _JALN_CONTEXT_H_
-#include <axl.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "jal_alloc.h"
+#include "jaln_context.h"
+#include "jaln_encoding.h"
 
-struct jaln_context_t {
-	struct jaln_publisher_callbacks *pub_callbacks;
-	struct jaln_subscriber_callbacks *sub_callbacks;
-	struct jaln_connection_callbacks *conn_callbacks;
-	axlList *dgst_algs;
-	axlList *xml_encodings;
-	void *user_data;
-};
+int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b)
+{
+	char *str_a = (char *)a;
+	char *str_b = (char *)b;
+	return strcasecmp(str_a, str_b);
+}
 
-#endif //_JALN_CONTEXT_H_
+int jaln_register_encoding(jaln_context *ctx,
+				const char *encoding)
+{
+	if (!ctx || !ctx->xml_encodings || !encoding) {
+		return JAL_E_INVAL;
+	}
+	char *enc_to_insert = jal_strdup(encoding);
+
+	axl_list_remove(ctx->xml_encodings, enc_to_insert);
+	axl_list_append(ctx->xml_encodings, enc_to_insert);
+
+	return JAL_OK;
+}

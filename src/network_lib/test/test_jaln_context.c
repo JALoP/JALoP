@@ -42,6 +42,7 @@ void test_context_create()
 	assert_equals((void*) NULL, ctx->sub_callbacks);
 	assert_equals((void*) NULL, ctx->conn_callbacks);
 	assert_not_equals((void*) NULL, ctx->dgst_algs);
+	assert_not_equals((void*) NULL, ctx->xml_encodings);
 	jaln_context_destroy(&ctx);
 }
 
