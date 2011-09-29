@@ -19,7 +19,7 @@
 #include "jalp_test_app_meta.h"
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type);
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path);
 
 static void print_usage();
 
@@ -42,8 +42,9 @@ int main(int argc, char **argv)
 	int stdin_payload = 0;
 	int calculate_sha = 0;
 	char record_type = 0;
+	char *socket_path = NULL;
 
-	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path, &stdin_payload, &calculate_sha, &record_type);
+	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path, &stdin_payload, &calculate_sha, &record_type, &socket_path);
 
 	struct jalp_app_metadata *app_meta = NULL;
 	uint8_t *payload_buf = NULL;
@@ -77,7 +78,7 @@ int main(int argc, char **argv)
 
 	jalp_context *ctx = jalp_context_create();
 	struct jal_digest_ctx *digest_ctx = NULL;
-	jalp_ret = jalp_context_init(ctx, NULL, hostname, appname, SCHEMAS_ROOT);
+	jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, SCHEMAS_ROOT);
 	if (jalp_ret != JAL_OK) {
 		goto err_out;
 	}
@@ -180,9 +181,9 @@ err_out:
 }
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type)
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path)
 {
-	static const char *optstring = "a:p:st:hk:c:d";
+	static const char *optstring = "a:p:st:hj:k:c:d";
 	static const struct option long_options[] = { {"type", 1, 0, 't'} };
 
 	int ret_opt;
@@ -211,6 +212,9 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 			case 'h':
 				print_usage();
 				exit(0);
+			case 'j':
+				*socket_path = strdup(optarg);
+				break;
 			case 'k':
 				*key_path = strdup(optarg);
 				break;
@@ -275,6 +279,7 @@ static void print_usage()
 	-t, --type=T	Indicates which type of data to send: “j” (journal record), “a” (an audit record),\n\
 		or “l” (log entry), or “f” (journal record using file descriptor passing).\n\
 	-h	Print a summary of options.\n\
+	-j	The full or relative path to the JALoP socket.\n\
 	-k	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
 	-c	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
 	-d	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.";
