@@ -27,8 +27,11 @@
  */
 
 #include <stdlib.h>
+#include <jalop/jaln_network.h>
 #include <jalop/jaln_connection_callbacks.h>
 #include "jal_alloc.h"
+#include "jaln_context.h"
+#include "jaln_connection_callbacks_internal.h"
 
 struct jaln_connection_callbacks *jaln_connection_callbacks_create()
 {
@@ -58,3 +61,13 @@ int jaln_connection_callbacks_is_valid(struct jaln_connection_callbacks *callbac
 	return 1;
 }
 
+enum jal_status jaln_register_connection_callbacks(jaln_context *jaln_ctx,
+		struct jaln_connection_callbacks *conn_callbacks)
+{
+	if (!jaln_ctx || jaln_ctx->conn_callbacks ||
+			!jaln_connection_callbacks_is_valid(conn_callbacks)) {
+		return JAL_E_INVAL;
+	}
+	jaln_ctx->conn_callbacks = conn_callbacks;
+	return JAL_OK;
+}

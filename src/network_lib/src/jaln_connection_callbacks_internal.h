@@ -1,5 +1,5 @@
 /**
- * @file jaln_connection_callbacks_internal.h This file contains function 
+ * @file jaln_connection_callbacks_internal.h This file contains function
  * declarations for internal library functions related to connection
  * creation/configuration.
  *
@@ -24,16 +24,12 @@
  */
 #ifndef _JALN_CONNECTION_HANDLERS_INTERNAL_H_
 #define _JALN_CONNECTION_HANDLERS_INTERNAL_H_
-#include <jalop/jaln_network.h>
 #include <jalop/jaln_connection_callbacks.h>
 
-struct jaln_context_t {
-	struct jaln_connection_handlers *connection_handlers;
-};
 /**
  * Check that a given connection handlers structure is valid()
  * @param[in] callbacks The callbacks to check.
- * @return 
+ * @return
  *  - 0 if the callbacks are invalid (i.e. missing a function)
  *  - 1 if the callbacks are valid.
  */
