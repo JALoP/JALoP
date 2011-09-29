@@ -4,6 +4,7 @@ Import('*')
 
 tests = []
 
+lib_env = env
 env = env.Clone()
 
 # The test code trigger warnings we'd just assume ignore.
@@ -13,6 +14,8 @@ env.Append(CCFLAGS=ccflags.split())
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_connection_callbacks.c',
+	other_sources=[lib_common])[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_subscriber_callbacks.c',
 	other_sources=[lib_common])[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
