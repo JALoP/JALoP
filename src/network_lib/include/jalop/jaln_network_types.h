@@ -45,7 +45,7 @@ enum jaln_record_type {
 	/** Indicates a Log Record */
 	JALN_RTYPE_LOG = 1 << 2,
 };
-
+#define JALN_RTYPE_ALL (JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT | JALN_RTYPE_LOG)
 /**
  * Structure to encompass MIME headers
  */
