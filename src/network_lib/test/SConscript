@@ -12,6 +12,8 @@ env.Append(CCFLAGS=ccflags.split())
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common])[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_connection_callbacks.c',
+	other_sources=[lib_common])[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
