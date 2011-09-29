@@ -34,6 +34,7 @@ extern "C" {
 #include <jalop/jaln_network_types.h>
 #include <jalop/jaln_connection_callbacks.h>
 #include <jalop/jaln_publisher_callbacks.h>
+#include <jalop/jaln_subscriber_callbacks.h>
 
 /**
  * Create and initialize a new jaln_context
@@ -112,7 +113,7 @@ enum jal_status jaln_register_connection_callbacks(jaln_context *jaln_ctx,
  * @return JAL_OK on success, or an error code.
  */
 enum jal_status jaln_register_subscriber_callbacks(jaln_context *jaln_ctx,
-				    struct jaln_publisher_callbacks subscriber_callbacks);
+				    struct jaln_subscriber_callbacks *subscriber_callbacks);
 
 /**
  * Register the callbacks required to act as a publisher.
@@ -122,7 +123,7 @@ enum jal_status jaln_register_subscriber_callbacks(jaln_context *jaln_ctx,
  * @return JAL_OK on success, or an error code.
  */
 enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
-				    struct jaln_publisher_callbacks publisher_callbacks);
+				    struct jaln_publisher_callbacks *publisher_callbacks);
 
 /**
  * Register a new digest algorithm.
