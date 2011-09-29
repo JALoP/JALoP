@@ -19,7 +19,7 @@
 #include "jalp_test_app_meta.h"
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path);
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path);
 
 static void print_usage();
 
@@ -42,9 +42,11 @@ int main(int argc, char **argv)
 	int stdin_payload = 0;
 	int calculate_sha = 0;
 	char record_type = 0;
+	char *schema_path = NULL;
 	char *socket_path = NULL;
 
-	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path, &stdin_payload, &calculate_sha, &record_type, &socket_path);
+	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path,
+			&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path);
 
 	struct jalp_app_metadata *app_meta = NULL;
 	uint8_t *payload_buf = NULL;
@@ -78,7 +80,7 @@ int main(int argc, char **argv)
 
 	jalp_context *ctx = jalp_context_create();
 	struct jal_digest_ctx *digest_ctx = NULL;
-	jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, SCHEMAS_ROOT);
+	jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
 	if (jalp_ret != JAL_OK) {
 		goto err_out;
 	}
@@ -181,9 +183,9 @@ err_out:
 }
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path)
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char ** schema_path)
 {
-	static const char *optstring = "a:p:st:hj:k:c:d";
+	static const char *optstring = "a:p:st:hj:k:c:dx:";
 	static const struct option long_options[] = { {"type", 1, 0, 't'} };
 
 	int ret_opt;
@@ -226,6 +228,9 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 					goto err_usage;
 				}
 				*calculate_sha = 1;
+				break;
+			case 'x':
+				*schema_path = strdup(optarg);
 				break;
 			case ':':
 			case '?':
@@ -282,7 +287,8 @@ static void print_usage()
 	-j	The full or relative path to the JALoP socket.\n\
 	-k	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
 	-c	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
-	-d	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.";
+	-d	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
+	-x	The full or relative path to the JALoP Schemas";
 
 	printf("%s\n", usage);
 }
