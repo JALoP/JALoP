@@ -1,0 +1,10 @@
+Import('*')
+
+env = utilsEnv.Clone()
+env.MergeFlags({'CPPPATH':'#src/network_lib/src:#src/lib_common/include:#src/network_lib/include:#src/lib_common/src:#src/db_layer/src/:.'.split(':')})
+env.MergeFlags(env['vortex_cflags'])
+env.MergeFlags(env['vortex_ldflags'])
+
+testsub = env.Program(target='dummy_sub', source=["sub.c", lib_common, network_lib])
+
+env.Default(testsub)

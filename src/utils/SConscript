@@ -19,5 +19,6 @@ jalp_dump = utilsEnv.SConscript('jal_dump/SConscript', exports='utilsEnv all_tes
 testserver = utilsEnv.SConscript('testserver/SConscript', exports='utilsEnv all_tests lib_common')
 testpush = utilsEnv.SConscript('testpush/SConscript', exports='utilsEnv lib_common network_lib')
 dummy_net_server = utilsEnv.SConscript('dummy_net_server/SConscript', exports='utilsEnv lib_common network_lib')
+testsub = utilsEnv.SConscript('testsub/SConscript', exports='utilsEnv lib_common network_lib')
 
 Return("jalp_test")
