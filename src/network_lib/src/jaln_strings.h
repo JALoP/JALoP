@@ -1,0 +1,89 @@
+/**
+ * @file jaln_strings.h This file contains various strings used by the network
+ * library.
+ *
+ * @section LICENSE
+ *
+ * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef _JALN_STRINGS_H_
+#define _JALN_STRINGS_H_
+#include <jalop/jaln_network.h>
+
+#define JALN_CRLF "\x0d\x0A"
+
+// defines for the various MIME headers
+#define JALN_HDRS_ACCEPT_DIGEST "JAL-Accept-Digest"
+#define JALN_HDRS_ACCEPT_ENCODING "JAL-Accept-Encoding"
+#define JALN_HDRS_APP_META_LEN "JAL-Application-Metadata-Length"
+#define JALN_HDRS_AUDIT_LEN "JAL-Audit-Length"
+#define JALN_HDRS_AGENT "JAL-Agent"
+#define JALN_HDRS_CONTENT_TXFR_ENCODING "Content-Transfer-Encoding"
+#define JALN_HDRS_CONTENT_TYPE "Content-Type"
+#define JALN_HDRS_COUNT "JAL-Count"
+#define JALN_HDRS_DATA_CLASS "JAL-Data-Class"
+#define JALN_HDRS_ENCODING "JAL-Encoding"
+#define JALN_HDRS_DIGEST "JAL-Digest"
+#define JALN_HDRS_JOURNAL_LEN "JAL-Journal-Length"
+#define JALN_HDRS_JOURNAL_OFFSET "JAL-Journal-Offset"
+#define JALN_HDRS_LOG_LEN "JAL-Log-Length"
+#define JALN_HDRS_MESSAGE "JAL-Message"
+#define JALN_HDRS_MODE "JAL-Mode"
+#define JALN_HDRS_SERIAL_ID "JAL-Serial-Id"
+#define JALN_HDRS_SYS_META_LEN "JAL-System-Metadata-Length"
+#define JALN_HDRS_UNAUTHORIZED_MODE "JAL-Unauthorized-Mode"
+#define JALN_HDRS_UNSUPPORTED_MODE "JAL-Unsupported-Mode"
+#define JALN_HDRS_UNSUPPORTED_ENCODING "JAL-Unsupported-Encoding"
+#define JALN_HDRS_UNSUPPORTED_VERSION "JAL-Unsupported-Version"
+#define JALN_HDRS_UNSUPPORTED_DIGEST "JAL-Unsupported-Digest"
+
+#define JALN_COLON_SPACE ": "
+
+#define JALN_MIME_PREAMBLE \
+	JALN_HDRS_CONTENT_TYPE JALN_COLON_SPACE JALN_STR_CT_JALOP JALN_CRLF \
+	JALN_HDRS_CONTENT_TXFR_ENCODING JALN_COLON_SPACE JALN_STR_BINARY JALN_CRLF \
+	JALN_HDRS_MESSAGE JALN_COLON_SPACE
+
+// defines for the various message JALoP message types
+#define JALN_MSG_AUDIT "audit-record"
+#define JALN_MSG_DIGEST "digest"
+#define JALN_MSG_DIGEST_RESP "digest-response"
+#define JALN_MSG_INIT "initialize"
+#define JALN_MSG_INIT_ACK "initialize-ack"
+#define JALN_MSG_INIT_NACK "initialize-nack"
+#define JALN_MSG_JOURNAL "journal-record"
+#define JALN_MSG_JOURNAL_RESUME "journal-resume"
+#define JALN_MSG_LOG "log-record"
+#define JALN_MSG_PUBLISH "publish"
+#define JALN_MSG_SUBSCRIBE "subscribe"
+#define JALN_MSG_SYNC "sync"
+
+#define JALN_DGST_SHA256 "sha256"
+
+#define JALN_STR_BINARY "binary"
+#define JALN_STR_BREAK "BREAK"
+#define JALN_STR_CT_JALOP "application/beep+jalop"
+#define JALN_STR_JOURNAL "journal"
+#define JALN_STR_AUDIT "audit"
+#define JALN_STR_LOG "log"
+
+
+#define JALN_JALOP_1_0_PROFILE "http://www.dod.mil/logging/jalop-1.0"
+
+#endif // _JALN_STRINGS_H_
+
