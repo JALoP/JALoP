@@ -7,6 +7,9 @@ env.MergeFlags(env['vortex_cflags'])
 env.MergeFlags(env['vortex_ldflags'])
 # The vortex libraries shadow global variables, so disable the warning here.
 env.MergeFlags({'CCFLAGS': '-Wno-shadow'.split()})
+
 SConscript('include/SConscript', exports='env all_tests lib_common')
 SConscript('test/SConscript', exports='env all_tests lib_common test_utils')
+
 network_lib = SConscript('src/SConscript', exports='env')
+Return('network_lib')
