@@ -222,7 +222,7 @@ struct jaln_connect_nack {
 	/** Information about the channel. */
 	struct jaln_channel_info *ch_info;
 	/** Array of failure reasons given by the remote peer. */
-	struct jaln_string_list **error_list;
+	char **error_list;
 	/** Number of elements in the \p error_list */
 	int error_cnt;
 	/**
