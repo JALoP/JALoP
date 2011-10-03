@@ -27,6 +27,8 @@
  */
 
 #include <jalop/jaln_subscriber_callbacks.h>
+#include <jalop/jaln_network.h>
+#include "jaln_context.h"
 #include "jaln_subscriber_callbacks_internal.h"
 
 #include <test-dept.h>
@@ -133,9 +135,12 @@ void dummy_release_journal_feeder(
 }
 
 static struct jaln_subscriber_callbacks *sub_cbs;
+static jaln_context *ctx;
 
 void setup()
 {
+	ctx = jaln_context_create();
+
 	sub_cbs = jaln_subscriber_callbacks_create();
 	sub_cbs->get_subscribe_request = dummy_get_subscribe_request;
 	sub_cbs->on_record_info = dummy_on_record_info;
@@ -152,6 +157,8 @@ void setup()
 void teardown()
 {
 	jaln_subscriber_callbacks_destroy(&sub_cbs);
+
+	jaln_context_destroy(&ctx);
 }
 
 void test_subscriber_callbacks_create()
@@ -256,3 +263,37 @@ void test_subscriber_callbacks_is_valid_returns_false_when_struct_is_null()
 	assert_equals(0, ret);
 }
 
+void test_register_subscriber_callbacks_succeeds()
+{
+	enum jal_status ret;
+	ret = jaln_register_subscriber_callbacks(ctx, sub_cbs);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(ctx->sub_callbacks, sub_cbs);
+	assert_equals(0, memcmp(ctx->sub_callbacks, sub_cbs, sizeof(*sub_cbs)));
+}
+
+void test_register_subscriber_callbacks_fails_with_bad_callbacks()
+{
+	enum jal_status ret;
+	sub_cbs->release_journal_feeder = NULL;
+	ret = jaln_register_subscriber_callbacks(ctx, sub_cbs);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals((void*) NULL, ctx->sub_callbacks);
+}
+
+void test_register_subscriber_callbacks_fails_to_overwrite_existing_subscriber_callbacks()
+{
+	enum jal_status ret;
+	ctx->sub_callbacks = (struct jaln_subscriber_callbacks*) 0xbadf00d;
+	ret = jaln_register_subscriber_callbacks(ctx, sub_cbs);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals((void*) 0xbadf00d, ctx->sub_callbacks);
+	ctx->sub_callbacks = NULL;
+}
+
+void test_register_subscriber_callbacks_fails_with_null_ctx()
+{
+	enum jal_status ret;
+	ret = jaln_register_subscriber_callbacks(NULL, sub_cbs);
+	assert_equals(JAL_E_INVAL, ret);
+}
