@@ -29,6 +29,7 @@
 extern "C" {
 #endif
 
+#include <jalop/jal_status.h>
 #include <stdint.h>
 
 /**

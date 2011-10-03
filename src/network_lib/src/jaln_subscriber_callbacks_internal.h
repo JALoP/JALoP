@@ -34,8 +34,8 @@ extern "C" {
  * Check that the subscriber callbacks is valid.
  * @param subscriber_callbacks The structure containing all the callbacks.
  *
- * @return JAL_OK on success or JAL_E_INVAL otherwise.
+ * @return 1 if subscriber_callbacks is valid, 0 otherwise
  */
-enum jal_status jaln_subscriber_callbacks_is_valid(struct jaln_subscriber_callbacks *subscriber_callbacks);
+int jaln_subscriber_callbacks_is_valid(struct jaln_subscriber_callbacks *subscriber_callbacks);
 
 #endif // _JALN_SUBSCRIBER_CALLBACKS_INTERNAL_H_
