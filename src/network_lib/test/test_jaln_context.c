@@ -38,7 +38,10 @@ void test_context_create()
 	memset(&empty_ctx, 0, sizeof(empty_ctx));
 	struct jaln_context_t *ctx = jaln_context_create();
 	assert_not_equals((void*) NULL, ctx);
-	assert_equals(0, memcmp(&empty_ctx, ctx, sizeof(*ctx)));
+	assert_equals((void*) NULL, ctx->pub_callbacks);
+	assert_equals((void*) NULL, ctx->sub_callbacks);
+	assert_equals((void*) NULL, ctx->conn_callbacks);
+	assert_not_equals((void*) NULL, ctx->dgst_algs);
 	jaln_context_destroy(&ctx);
 }
 
