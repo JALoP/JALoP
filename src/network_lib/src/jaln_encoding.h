@@ -44,4 +44,14 @@
  *  - a positive value if b is '<' a
  */
 int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b);
+
+/**
+ * Function to perform a case-insensitive search in an axl_list object that
+ * contains strings.
+ *
+ * @param[in] ptr The object in the list
+ * @param[in] data The string to look for
+ */
+axl_bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointer data);
+
 #endif // _JALN_ENCODING_INTERNAL_H_
