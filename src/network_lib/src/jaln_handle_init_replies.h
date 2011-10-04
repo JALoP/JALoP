@@ -46,6 +46,21 @@ extern "C" {
 axl_bool jaln_handle_initialize_nack(struct jaln_session *sess,
 		VortexFrame *frame);
 
+/**
+ * Common utility to process an 'initialize-ack' message.
+ * This will fill in the \p session object with the data obtained in the response.
+ * In addition, this function will execute the user initialize_ack() function
+ * of the connection_callbacks
+ *
+ * @param[in] session Then session to operate on.
+ * @param[in] role The role for this channel (publish or subscribe)
+ * @param[in] frame The frame that contains the 'initialze-ack' message.
+ * @return 0 if there were errors processing the message, 1 otherwise.
+ */
+axl_bool jaln_handle_initialize_ack(struct jaln_session *session,
+		enum jaln_role role,
+		VortexFrame *frame);
+
 #ifdef __cplusplus
 }
 #endif

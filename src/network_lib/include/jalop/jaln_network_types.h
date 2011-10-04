@@ -32,6 +32,8 @@ extern "C" {
 #include <jalop/jal_status.h>
 #include <stdint.h>
 
+#define JALN_JALOP_VERSION_ONE 1
+
 /**
  * Enum used to distinguish between record types
  */
