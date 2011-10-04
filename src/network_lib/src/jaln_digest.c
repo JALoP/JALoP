@@ -27,6 +27,7 @@
  * limitations under the License.
  */
 #include "jaln_digest.h"
+#include "jaln_encoding.h"
 
 void jaln_digest_list_destroy(axlPointer ptr)
 {
@@ -41,3 +42,8 @@ int jaln_digest_list_equal_func(axlPointer a, axlPointer b)
 	return strcasecmp(dgst_a->algorithm_uri, dgst_b->algorithm_uri);
 }
 
+axl_bool jaln_digest_lookup_func(axlPointer ptr, axlPointer data)
+{
+	struct jal_digest_ctx *dgst = (struct jal_digest_ctx*)ptr;
+	return 0 == jaln_string_list_case_insensitive_func(dgst->algorithm_uri, data);
+}

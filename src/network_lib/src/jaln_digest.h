@@ -54,4 +54,16 @@ void jaln_digest_list_destroy(axlPointer ptr);
  */
 int jaln_digest_list_equal_func(axlPointer a, axlPointer b);
 
+/**
+ * Function to perform a case-insensitive search in an axl_list object that
+ * contains jal_digest objects.
+ *
+ * This function compares the algorithm URI for a jal_digest against the
+ * expected string.
+ *
+ * @param[in] ptr The object in the list
+ * @param[in] data A string that is the digest algorithm to look for
+ */
+axl_bool jaln_digest_lookup_func(axlPointer ptr, axlPointer data);
+
 #endif // _JALN_DIGEST_INTERNAL_H_
