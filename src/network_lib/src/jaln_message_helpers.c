@@ -145,3 +145,27 @@ enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out,
 out:
 	return ret;
 }
+
+axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
+{
+	if (!frame) {
+		return axl_false;
+	}
+	const char *ct = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_CONTENT_TYPE));
+	if (!ct) {
+		return axl_false;
+	}
+	if (0 != strcasecmp(ct, JALN_STR_CT_JALOP)) {
+		return axl_false;
+	}
+	// the assumption for beep is if there is no content transfer encoding,
+	// it is binary.
+	const char *te = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_CONTENT_TXFR_ENCODING));
+	if (te) {
+		if (0 != strcasecmp(te, JALN_STR_BINARY)) {
+			return axl_false;
+		}
+	}
+	return axl_true;
+}
+

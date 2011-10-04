@@ -30,6 +30,7 @@
 
 #include <inttypes.h>
 #include <stddef.h>
+#include <vortex.h>
 
 /**
  * Helper function to create a journal_resume_msg
@@ -68,5 +69,11 @@ enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, size_t *
  *
  */
 enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, size_t *msg_out_len);
+
+/**
+ * Sanity check to make sure the MIME headers for a particular frame contain
+ * the correct content-type and transfer encoding.
+ */
+int jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
 
 #endif // _JALN_MESSAGE_HELPERS_H_
