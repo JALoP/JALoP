@@ -46,5 +46,15 @@ extern "C" {
  */
 axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
 
+/**
+ * Convert an ascii string to a size_t
+ * The same rules apply as for jal_ascii_to_uint64, with the exception that the
+ * output is limited to a size_t type.
+ *
+ * @param[in] str The string to convert
+ * @param[out] The converted value
+ * @return axl_true on success, axl_false otherwise
+ */
+axl_bool jal_ascii_to_size_t(const char *str, size_t *out);
 
 #endif // _JALN_STRING_UTILS_H_

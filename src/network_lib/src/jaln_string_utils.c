@@ -65,3 +65,18 @@ out:
 	free(tmp);
 	return ret;
 }
+
+axl_bool jal_ascii_to_size_t(const char *str, size_t *out)
+{
+	uint64_t tmp_out;
+	if (!jaln_ascii_to_uint64(str, &tmp_out)) {
+		return axl_false;
+	}
+	if (tmp_out > SIZE_MAX) {
+		// overflow...
+		return axl_false;
+	}
+	*out = (size_t) tmp_out;
+	return axl_true;
+}
+
