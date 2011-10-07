@@ -1,5 +1,7 @@
 Import('*')
-
+from Utils import install_for_build
+from Utils import add_project_lib
+utilsEnv = utilsEnv.Clone();
 sources = utilsEnv.Glob("*.c")
 
 ccflags = '-DSCHEMAS_ROOT=\\"' + utilsEnv['SOURCE_ROOT']  + '/schemas/\\"'
@@ -8,7 +10,13 @@ utilsEnv.Append(CCFLAGS=ccflags.split())
 
 utilsEnv.MergeFlags({'CPPPATH':'#src/producer_lib/include:#src/lib_common/include:.'.split(':')})
 
-jalp_test = utilsEnv.Program(target='jalp_test', source=[sources, lib_common, producer_lib])
+add_project_lib(utilsEnv, 'producer_lib', 'jal-producer')
+add_project_lib(utilsEnv, 'lib_common', 'jal-common')
+
+
+jalp_test = utilsEnv.Program(target='jalp_test', source=sources)
+utilsEnv.Depends(jalp_test, [lib_common, producer_lib])
 utilsEnv.Default(jalp_test)
 
+install_for_build(utilsEnv, 'bin', jalp_test)
 Return("jalp_test")

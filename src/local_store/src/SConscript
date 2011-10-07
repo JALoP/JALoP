@@ -1,15 +1,23 @@
 Import('*')
+from Utils import add_project_lib
+from Utils import install_for_build
 
 sources = []
 for source in (env.Glob("*.c") + env.Glob("*.cpp")):
 	sources.append(source)
 
 local_store_objs = env.SharedObject(source=sources)
-local_store = env.Program(target='jal-local-store', source=[local_store_objs, jal_utils, lib_common, db_layer])
+
+
+local_store = env.Program(target='jal-local-store', source=local_store_objs)
+env.Depends(local_store, [lib_common, db_layer, jal_utils])
 
 env.Default(local_store)
 if (env['release']):
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
 	env.Alias('install', env.Install(sbindir, local_store))
+
+
+install_for_build(env, 'bin', local_store)
 
 Return("local_store")

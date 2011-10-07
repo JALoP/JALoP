@@ -1,11 +1,13 @@
 Import('*')
 import os
+from Utils import install_for_build
 
 sources = []
 sources = env.Glob("*.c")
 
 network_lib = env.SharedLibrary(target='jal-network', source=[sources])
 env.Default(network_lib)
+install_for_build(env, 'lib', network_lib)
 if (env['release']):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, network_lib))

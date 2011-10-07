@@ -1,7 +1,10 @@
 Import('*')
+from Utils import install_for_build
 
 jal_utils = env.SharedLibrary(target='jal-utils', source=env.Glob("*.c"))
 env.Default(jal_utils)
+
+install_for_build(env, 'lib', jal_utils)
 if (env['release']):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, jal_utils))
