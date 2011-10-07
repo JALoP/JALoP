@@ -177,12 +177,14 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	}
 
 	//get the app_metadata
-	err = jalls_handle_app_meta(&app_meta_buf, meta_len, thread_ctx->fd, debug);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "could not receive the application metadata\n");
+	if (meta_len) {
+		err = jalls_handle_app_meta(&app_meta_buf, meta_len, thread_ctx->fd, debug);
+		if (err < 0) {
+			if (debug) {
+				fprintf(stderr, "could not receive the application metadata\n");
+			}
+			goto err_out;
 		}
-		goto err_out;
 	}
 
 	//get the break string at the end of the app metadata
@@ -195,12 +197,14 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	}
 
 	//Parse and Validate the app metadata
-	err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "could not parse the application metadata\n");
+	if (meta_len) {
+		err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
+		if (err < 0) {
+			if (debug) {
+				fprintf(stderr, "could not parse the application metadata\n");
+			}
+			goto err_out;
 		}
-		goto err_out;
 	}
 
 	//create system metadata
