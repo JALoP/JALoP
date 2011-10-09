@@ -27,7 +27,11 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
+#include <jalop/jal_status.h>
 #include <jalop/jaln_publisher_callbacks.h>
+#include "jaln_publisher_callbacks_internal.h"
+#include "jaln_context.h"
 #include "jal_alloc.h"
 
 struct jaln_publisher_callbacks *jaln_publisher_callbacks_create()
@@ -44,4 +48,47 @@ void jaln_publisher_callbacks_destroy(struct jaln_publisher_callbacks **pub_call
 	}
 	free(*pub_callbacks);
 	*pub_callbacks = NULL;
+}
+
+int jaln_publisher_callbacks_is_valid(struct jaln_publisher_callbacks *publisher_callbacks)
+{
+	if (!publisher_callbacks ||
+			!publisher_callbacks->on_journal_resume ||
+			!publisher_callbacks->on_subscribe ||
+			!publisher_callbacks->get_next_record_info_and_metadata ||
+			!publisher_callbacks->release_metadata_buffers ||
+			!publisher_callbacks->acquire_log_data ||
+			!publisher_callbacks->release_log_data ||
+			!publisher_callbacks->acquire_audit_data ||
+			!publisher_callbacks->release_audit_data ||
+			!publisher_callbacks->acquire_journal_feeder ||
+			!publisher_callbacks->release_journal_feeder ||
+			!publisher_callbacks->on_record_complete ||
+			!publisher_callbacks->sync ||
+			!publisher_callbacks->notify_digest ||
+			!publisher_callbacks->peer_digest) {
+		return 0;
+	}
+
+	return 1;
+}
+
+enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
+					struct jaln_publisher_callbacks *publisher_callbacks)
+{
+	if (!jaln_ctx || jaln_ctx->pub_callbacks) {
+		return JAL_E_INVAL;
+	}
+	struct jaln_publisher_callbacks *new_callbacks = NULL;
+
+	if (!jaln_publisher_callbacks_is_valid(publisher_callbacks)) {
+		return JAL_E_INVAL;
+	}
+
+	new_callbacks = jaln_publisher_callbacks_create();
+	memcpy(new_callbacks, publisher_callbacks, sizeof(*new_callbacks));
+
+	jaln_ctx->pub_callbacks = new_callbacks;
+
+	return JAL_OK;
 }
