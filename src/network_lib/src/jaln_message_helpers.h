@@ -29,6 +29,7 @@
 #define _JALN_MESSAGE_HELPERS_H_
 
 #include <inttypes.h>
+#include <jalop/jaln_network_types.h>
 #include <stddef.h>
 #include <vortex.h>
 
@@ -137,5 +138,22 @@ enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_
  * not happen is when \p base is NULL, or *base + inc would overflow size_t.
  */
 axl_bool jaln_safe_add_size(size_t *base, size_t inc);
+
+/*
+ * Helper function to create an 'initialize' message
+ *
+ * @param[in] role The role (publisher or subscriber)
+ * @param[in] type The type of data to send over this channel.
+ * @param[in] digest_list A list of digest_ctxs that can be used
+ * @param[in] xml_encodings A list of XML encodings that that can be used.
+ * @param[out] msg_out This will contain the contents of the initialize message.
+ * @param[out] msg_len_out The length of the initialize message
+ *
+ * @return JAL_E_INVAL if there is something wrong with the parameters, or
+ * JAL_OK on success
+ *
+ */
+enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type type,
+		axlList *dgst_algs, axlList *xml_encodings, char **msg_out, size_t *msg_len_out);
 
 #endif // _JALN_MESSAGE_HELPERS_H_

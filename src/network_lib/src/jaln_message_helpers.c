@@ -298,3 +298,164 @@ axl_bool jaln_safe_add_size(size_t *base, size_t inc)
 	return axl_true;
 }
 
+enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type type,
+		axlList *dgst_list, axlList *enc_list, char **msg_out, size_t *msg_len_out)
+{
+	if (!dgst_list || !enc_list ||
+			!msg_out || *msg_out || !msg_len_out) {
+		return JAL_E_INVAL;
+	}
+	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT JALN_CRLF \
+			       JALN_HDRS_MODE JALN_COLON_SPACE;
+	axlListCursor *cursor = NULL;
+	enum jal_status ret = JAL_E_INVAL;
+
+	// +1 for the NULL terminator
+	size_t char_cnt = strlen(preamble) + 1;
+	char *role_str;
+	switch (role) {
+		case JALN_ROLE_SUBSCRIBER:
+			role_str = JALN_MSG_SUBSCRIBE;
+			break;
+		case JALN_ROLE_PUBLISHER:
+			role_str = JALN_MSG_PUBLISH;
+			break;
+		default:
+			return JAL_E_INVAL;
+	}
+	if (!jaln_safe_add_size(&char_cnt, strlen(role_str))) {
+		goto out;
+	}
+	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_CRLF))) {
+		goto out;
+	}
+	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_HDRS_DATA_CLASS JALN_COLON_SPACE))) {
+		goto out;
+	}
+
+	char *type_str;
+	switch (type) {
+		case JALN_RTYPE_JOURNAL:
+			type_str = JALN_STR_JOURNAL;
+			break;
+		case JALN_RTYPE_AUDIT:
+			type_str = JALN_STR_AUDIT;
+			break;
+		case JALN_RTYPE_LOG:
+			type_str = JALN_STR_LOG;
+			break;
+		default:
+			return JAL_E_INVAL;
+	}
+	if (!jaln_safe_add_size(&char_cnt, strlen(type_str))) {
+		goto out;
+	}
+	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_CRLF))) {
+		goto out;
+	}
+
+	if (!axl_list_is_empty(dgst_list)) {
+		cursor = axl_list_cursor_new(dgst_list);
+		axl_list_cursor_first(cursor);
+		if (!jaln_safe_add_size(&char_cnt, strlen(JALN_HDRS_ACCEPT_DIGEST JALN_COLON_SPACE))) {
+			goto out;
+		}
+		int dgst_cnt = 0;
+		while(axl_list_cursor_has_item(cursor)) {
+			struct jal_digest_ctx *dgst = (struct jal_digest_ctx *)axl_list_cursor_get(cursor);
+			if (!jaln_safe_add_size(&char_cnt, strlen(dgst->algorithm_uri))) {
+				goto out;
+			}
+			dgst_cnt += 1;
+			axl_list_cursor_next(cursor);
+		}
+		// for each dgst in the list (except the last one), need to add
+		// a ", ".
+		if (!jaln_safe_add_size(&char_cnt, 2 * (dgst_cnt - 1) + strlen(JALN_CRLF))) {
+			goto out;
+		}
+		axl_list_cursor_free(cursor);
+		cursor = NULL;
+	}
+
+	if (!axl_list_is_empty(enc_list)) {
+		cursor = axl_list_cursor_new(enc_list);
+		axl_list_cursor_first(cursor);
+		if (!jaln_safe_add_size(&char_cnt, strlen(JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE))) {
+			goto out;
+		}
+		int enc_cnt = 0;
+		while(axl_list_cursor_has_item(cursor)) {
+			char *enc = (char *)axl_list_cursor_get(cursor);
+			if (!jaln_safe_add_size(&char_cnt, strlen(enc))) {
+				goto out;
+			}
+			enc_cnt += 1;
+			axl_list_cursor_next(cursor);
+		}
+		// for each dgst in the list (except the last one), need to add
+		// a ", ".
+		if (!jaln_safe_add_size(&char_cnt, 2 * (enc_cnt - 1) + strlen(JALN_CRLF))) {
+			goto out;
+		}
+		axl_list_cursor_free(cursor);
+		cursor = NULL;
+	}
+
+	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_CRLF))) {
+		goto out;
+	}
+
+	char *init_msg = (char*) jal_malloc(char_cnt);
+	init_msg[0] = '\0';
+	strcat(init_msg, preamble);
+	strcat(init_msg, role_str);
+	strcat(init_msg, JALN_CRLF JALN_HDRS_DATA_CLASS JALN_COLON_SPACE);
+	strcat(init_msg, type_str);
+	strcat(init_msg, JALN_CRLF);
+
+	if (!axl_list_is_empty(dgst_list)) {
+		strcat(init_msg, JALN_HDRS_ACCEPT_DIGEST JALN_COLON_SPACE);
+		cursor = axl_list_cursor_new(dgst_list);
+		axl_list_cursor_first(cursor);
+		while(axl_list_cursor_has_item(cursor)) {
+			struct jal_digest_ctx *dgst =
+				(struct jal_digest_ctx *)axl_list_cursor_get(cursor);
+			strcat(init_msg, dgst->algorithm_uri);
+			axl_list_cursor_next(cursor);
+			if (axl_list_cursor_has_item(cursor)) {
+				strcat(init_msg, ", ");
+			}
+		}
+		strcat(init_msg, JALN_CRLF);
+		axl_list_cursor_free(cursor);
+		cursor = NULL;
+	}
+
+	if (!axl_list_is_empty(enc_list)) {
+		strcat(init_msg, JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE);
+		cursor = axl_list_cursor_new(enc_list);
+		axl_list_cursor_first(cursor);
+		while(axl_list_cursor_has_item(cursor)) {
+			char *enc = (char *)axl_list_cursor_get(cursor);
+			strcat(init_msg, enc);
+			axl_list_cursor_next(cursor);
+			if (axl_list_cursor_has_item(cursor)) {
+				strcat(init_msg, ", ");
+			}
+		}
+		strcat(init_msg, JALN_CRLF);
+		axl_list_cursor_free(cursor);
+		cursor = NULL;
+	}
+	strcat(init_msg, JALN_CRLF);
+	*msg_out = init_msg;
+	*msg_len_out = char_cnt;
+	ret = JAL_OK;
+out:
+	if (cursor) {
+		axl_list_cursor_free(cursor);
+	}
+	return ret;
+}
+
