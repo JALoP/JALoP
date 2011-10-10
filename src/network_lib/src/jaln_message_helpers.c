@@ -117,3 +117,31 @@ out:
 
 }
 
+enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, size_t *msg_out_len)
+{
+	static const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_SUBSCRIBE JALN_CRLF \
+		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE;
+	enum jal_status ret = JAL_E_INVAL;
+	if (!msg_out || *msg_out || !msg_out_len) {
+		goto out;
+	}
+	if (!serial_id) {
+		goto out;
+	}
+	size_t cnt = strlen(preamble) + 1;
+	size_t tmp = strlen(serial_id) + 2 * strlen(JALN_CRLF);
+	if (cnt > (SIZE_MAX - tmp)) {
+		goto out;
+	}
+	cnt += tmp;
+	char *msg = (char*) jal_malloc(cnt);
+	msg[0] = '\0';
+	strcat(msg, preamble);
+	strcat(msg, serial_id);
+	strcat(msg, JALN_CRLF JALN_CRLF);
+	*msg_out = msg;
+	*msg_out_len = cnt;
+	ret = JAL_OK;
+out:
+	return ret;
+}

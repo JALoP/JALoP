@@ -29,6 +29,7 @@
 #define _JALN_MESSAGE_HELPERS_H_
 
 #include <inttypes.h>
+#include <stddef.h>
 
 /**
  * Helper function to create a journal_resume_msg
@@ -42,7 +43,8 @@
  * JAL_OK on success
  *
  */
-enum jal_status jaln_create_journal_resume_msg(const char *serial_id, uint64_t offset, char **msg_out, size_t *msg_out_len);
+enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
+		uint64_t offset, char **msg_out, size_t *msg_out_len);
 
 /**
  * Helper function to create a sync msg
@@ -53,5 +55,18 @@ enum jal_status jaln_create_journal_resume_msg(const char *serial_id, uint64_t o
  * terminator
  */
 enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, size_t *msg_len);
+
+/**
+ * Helper function to create a 'subscribe' message
+ *
+ * @param[in] serial_id The last serial_id to send
+ * @param[out] msg_out This will contain the contents of the initialize message.
+ * @param[out] msg_len_out The length of the initialize message
+ *
+ * @return JAL_E_INVAL if there is something wrong with the parameters, or
+ * JAL_OK on success
+ *
+ */
+enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, size_t *msg_out_len);
 
 #endif // _JALN_MESSAGE_HELPERS_H_
