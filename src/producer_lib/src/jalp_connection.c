@@ -116,7 +116,6 @@ enum jal_status jalp_sendmsg(jalp_context *ctx, struct msghdr *msgh)
 {
 	int flags = 0;
 	int err;
-	int my_errno;
 	enum jal_status status;
 
 	if (!ctx || !msgh) {
@@ -131,7 +130,6 @@ enum jal_status jalp_sendmsg(jalp_context *ctx, struct msghdr *msgh)
 			return JAL_E_NOT_CONNECTED;
 		}
 		err = sendmsg(ctx->socket, msgh, flags);
-		my_errno = errno;
 		if (err < 0) {
 			return JAL_E_NOT_CONNECTED;
 		}

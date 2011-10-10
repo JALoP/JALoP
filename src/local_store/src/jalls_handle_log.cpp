@@ -102,7 +102,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 			if (debug) {
 				fprintf(stderr, "could not receive log data\n");
 			}
-			goto err_out;
+			goto out;
 		}
 	}
 
@@ -112,7 +112,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "%s: could not receive first BREAK\n", __FILE__);
 		}
-		goto err_out;
+		goto out;
 	}
 
 	//get the app_metadata
@@ -122,7 +122,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 			if (debug) {
 				fprintf(stderr, "could not receive the application metadata\n");
 			}
-			goto err_out;
+			goto out;
 		}
 	}
 
@@ -132,7 +132,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "could not receive second BREAK\n");
 		}
-		goto err_out;
+		goto out;
 	}
 
 	//Parse and Validate the app metadata
@@ -142,7 +142,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 			if (debug) {
 				fprintf(stderr, "could not parse the application metadata\n");
 			}
-			goto err_out;
+			goto out;
 		}
 	}
 
@@ -157,7 +157,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "could not init sha256 digest\n");
 		}
-		goto err_out;
+		goto out;
 	}
 
 	jal_err = digest_ctx->update(instance, data_buf, data_len);
@@ -165,7 +165,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "could not digest the log\n");
 		}
-		goto err_out;
+		goto out;
 	}
 	size_t digest_length;
 	digest_length = digest_ctx->len;
@@ -174,7 +174,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "could not digest the log\n");
 		}
-		goto err_out;
+		goto out;
 	}
 
 	//create system metadata
@@ -184,7 +184,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "could not create system metadata\n");
 		}
-		goto err_out;
+		goto out;
 	}
 
 	//append a manifest element to the system metadata
@@ -201,7 +201,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "could not create system metadata manifest\n");
 		}
-		goto err_out;
+		goto out;
 	}
 	manifest->appendChild(reference_elem);
 
@@ -212,7 +212,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		if (debug) {
 			fprintf(stderr, "could not create system metadata signature\n");
 		}
-		goto err_out;
+		goto out;
 	}
 
 	db_err =  jaldb_insert_log_record(
@@ -221,7 +221,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 			app_meta_doc, data_buf,
 			data_len, sid, &bdb_err);
 	if (db_err != JALDB_OK) {
-		goto err_out;
+		goto out;
 		if (debug) {
 			fprintf(stderr, "failed to insert log record\n");
 		}
@@ -229,11 +229,11 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 
 	ret = 0;
 
-err_out:
+out:
 	XMLString::release(&namespace_uri);
 	XMLString::release(&manifest_namespace_uri);
 	jal_digest_ctx_destroy(&digest_ctx);
 	free(data_buf);
 	free(app_meta_buf);
-	return -1;
+	return ret;
 }

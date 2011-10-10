@@ -354,7 +354,7 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const string& db_name, 
 out:
 	*db_err_out = db_err;
 	*db_out = db;
-	return JALDB_OK;
+	return ret;
 }
 
 enum jaldb_status jaldb_insert_audit_record_into_temp(
