@@ -21,7 +21,7 @@ enc_obj = lib_env.SharedObject("../src/jaln_encoding.c")
 hlpr_obj = lib_env.SharedObject("../src/jaln_message_helpers.c")
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
-	other_sources=[lib_common])[0].abspath)
+	other_sources=[lib_common, ctx_obj, conn_cb_obj, dgst_obj, enc_obj, sub_cb_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_connection_callbacks.c',
 	other_sources=[lib_common, ctx_obj, dgst_obj, enc_obj, sub_cb_obj, pub_cb_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_subscriber_callbacks.c',
