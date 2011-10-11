@@ -125,3 +125,187 @@ void test_register_digest_algorithm_case_insensitive_duplicates()
 	assert_string_equals("case Duplicate URI", last->algorithm_uri);
 }
 
+void test_compare_encoding_case_insensitive_where_text_exists_same_case()
+{
+	// Value we are looking for
+	char *dig5 = "some text";
+
+	/* Register digests. */
+	struct jal_digest_ctx *dig1 = jal_sha256_ctx_create();
+
+	free(dig1->algorithm_uri);
+	dig1->algorithm_uri = NULL;
+	dig1->algorithm_uri = jal_strdup("some TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig1));
+
+	struct jal_digest_ctx *dig2 = jal_sha256_ctx_create();
+
+	free(dig2->algorithm_uri);
+	dig2->algorithm_uri = NULL;
+	dig2->algorithm_uri = jal_strdup("some text");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig2));
+
+	struct jal_digest_ctx *dig3 = jal_sha256_ctx_create();
+
+	free(dig3->algorithm_uri);
+	dig3->algorithm_uri = NULL;
+	dig3->algorithm_uri = jal_strdup("some more TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig3));
+
+	struct jal_digest_ctx *dig4 = jal_sha256_ctx_create();
+
+	free(dig4->algorithm_uri);
+	dig4->algorithm_uri = NULL;
+	dig4->algorithm_uri = jal_strdup("some TexT more");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->dgst_algs, jaln_digest_lookup_func, dig5);
+
+	assert_not_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_where_text_exists_diff_case()
+{
+	// Value we are looking for
+	char *dig5 = "SoMe tEXt";
+
+	/* Register digests. */
+	struct jal_digest_ctx *dig1 = jal_sha256_ctx_create();
+
+	free(dig1->algorithm_uri);
+	dig1->algorithm_uri = NULL;
+	dig1->algorithm_uri = jal_strdup("some TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig1));
+
+	struct jal_digest_ctx *dig2 = jal_sha256_ctx_create();
+
+	free(dig2->algorithm_uri);
+	dig2->algorithm_uri = NULL;
+	dig2->algorithm_uri = jal_strdup("some text");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig2));
+
+	struct jal_digest_ctx *dig3 = jal_sha256_ctx_create();
+
+	free(dig3->algorithm_uri);
+	dig3->algorithm_uri = NULL;
+	dig3->algorithm_uri = jal_strdup("some more TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig3));
+
+	struct jal_digest_ctx *dig4 = jal_sha256_ctx_create();
+
+	free(dig4->algorithm_uri);
+	dig4->algorithm_uri = NULL;
+	dig4->algorithm_uri = jal_strdup("some TexT more");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->dgst_algs, jaln_digest_lookup_func, dig5);
+
+	assert_not_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_where_text_not_exists()
+{
+	char *dig5 = "Uh Oh!";
+
+	/* Register digests. */
+	struct jal_digest_ctx *dig1 = jal_sha256_ctx_create();
+
+	free(dig1->algorithm_uri);
+	dig1->algorithm_uri = NULL;
+	dig1->algorithm_uri = jal_strdup("some TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig1));
+
+	struct jal_digest_ctx *dig2 = jal_sha256_ctx_create();
+
+	free(dig2->algorithm_uri);
+	dig2->algorithm_uri = NULL;
+	dig2->algorithm_uri = jal_strdup("some text");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig2));
+
+	struct jal_digest_ctx *dig3 = jal_sha256_ctx_create();
+
+	free(dig3->algorithm_uri);
+	dig3->algorithm_uri = NULL;
+	dig3->algorithm_uri = jal_strdup("some more TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig3));
+
+	struct jal_digest_ctx *dig4 = jal_sha256_ctx_create();
+
+	free(dig4->algorithm_uri);
+	dig4->algorithm_uri = NULL;
+	dig4->algorithm_uri = jal_strdup("some TexT more");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->dgst_algs, jaln_digest_lookup_func, dig5);
+
+	assert_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_where_partial_text_exists()
+{
+	char *dig5 = "some ";
+
+	/* Register digests. */
+	struct jal_digest_ctx *dig1 = jal_sha256_ctx_create();
+
+	free(dig1->algorithm_uri);
+	dig1->algorithm_uri = NULL;
+	dig1->algorithm_uri = jal_strdup("some TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig1));
+
+	struct jal_digest_ctx *dig2 = jal_sha256_ctx_create();
+
+	free(dig2->algorithm_uri);
+	dig2->algorithm_uri = NULL;
+	dig2->algorithm_uri = jal_strdup("some text");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig2));
+
+	struct jal_digest_ctx *dig3 = jal_sha256_ctx_create();
+
+	free(dig3->algorithm_uri);
+	dig3->algorithm_uri = NULL;
+	dig3->algorithm_uri = jal_strdup("some more TexT");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig3));
+
+	struct jal_digest_ctx *dig4 = jal_sha256_ctx_create();
+
+	free(dig4->algorithm_uri);
+	dig4->algorithm_uri = NULL;
+	dig4->algorithm_uri = jal_strdup("some TexT more");
+	assert_equals(JAL_OK, jaln_register_digest_algorithm(ctx, dig4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->dgst_algs, jaln_digest_lookup_func, dig5);
+
+	assert_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_where_list_null()
+{
+	char *dig1 = "wouldn't this be a suprise!";
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(NULL, jaln_digest_lookup_func, dig1);
+
+	assert_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_where_text_null()
+{
+	char *dig1 = NULL;
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->dgst_algs, jaln_digest_lookup_func, dig1);
+
+	assert_equals(ptr, NULL);
+}
+
