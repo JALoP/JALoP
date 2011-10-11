@@ -103,3 +103,167 @@ void test_register_encoding_case_insensitive_duplicates()
 	assert_string_equals(duplicate_enc_alt, last);
 }
 
+void test_compare_encoding_case_insensitive_lookup_where_text_exists_same_case()
+{
+	/* Register original encoding. */
+	char *enc1 = strdup("some TexT");
+	char *enc2 = strdup("some texT");
+	char *enc3 = strdup("some more TexT");
+	char *enc4 = strdup("some TexT more");
+
+	// Add some string values to the axl encoding list of ctx
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc1));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc2));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc3));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->xml_encodings,
+			jaln_string_list_case_insensitive_lookup_func,
+			enc1);
+
+	assert_not_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_lookup_where_text_exists_diff_case()
+{
+	/* Register original encoding. */
+	char *enc1 = strdup("some TexT");
+	char *enc2 = strdup("some texT");
+	char *enc3 = strdup("some more TexT");
+	char *enc4 = strdup("some TexT more");
+	char *enc5 = strdup("SoMe tEXt");
+
+	// Add some string values to the axl encoding list of ctx
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc1));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc2));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc3));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->xml_encodings,
+			jaln_string_list_case_insensitive_lookup_func,
+			enc5);
+
+	assert_not_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_lookup_where_text_not_exists()
+{
+	/* Register original encoding. */
+	char *enc1 = strdup("some TexT");
+	char *enc2 = strdup("some texT");
+	char *enc3 = strdup("some more TexT");
+	char *enc4 = strdup("some TexT more");
+	char *enc5 = strdup("uh OH!");
+
+	// Add some string values to the axl encoding list of ctx
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc1));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc2));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc3));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->xml_encodings,
+			jaln_string_list_case_insensitive_lookup_func,
+			enc5);
+
+	assert_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_lookup_where_partial_text_exists()
+{
+	/* Register original encoding. */
+	char *enc1 = strdup("some TexT");
+	char *enc2 = strdup("some texT");
+	char *enc3 = strdup("some more TexT");
+	char *enc4 = strdup("some TexT more");
+	char *enc5 = strdup("some ");
+
+	// Add some string values to the axl encoding list of ctx
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc1));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc2));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc3));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->xml_encodings,
+			jaln_string_list_case_insensitive_lookup_func,
+			enc5);
+
+	assert_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_lookup_where_list_null()
+{
+	/* Register original encoding. */
+	char *enc1 = strdup("some TexT");
+	char *enc2 = strdup("some texT");
+	char *enc3 = strdup("some more TexT");
+	char *enc4 = strdup("some TexT more");
+
+	// Add some string values to the axl encoding list of ctx
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc1));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc2));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc3));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(NULL,
+			jaln_string_list_case_insensitive_lookup_func,
+			enc4);
+
+	assert_equals(ptr, NULL);
+}
+
+void test_compare_encoding_case_insensitive_lookup_where_text_null()
+{
+	/* Register original encoding. */
+	char *enc1 = strdup("some TexT");
+	char *enc2 = strdup("some texT");
+	char *enc3 = strdup("some more TexT");
+	char *enc4 = strdup("some TexT more");
+	char *enc5 = NULL;
+
+	// Add some string values to the axl encoding list of ctx
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc1));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc2));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc3));
+	assert_equals(JAL_OK, jaln_register_encoding(ctx, enc4));
+
+	axlPointer ptr = NULL;
+
+	ptr = axl_list_lookup(ctx->xml_encodings,
+			jaln_string_list_case_insensitive_lookup_func,
+			enc5);
+
+	assert_equals(ptr ,NULL);
+}
+
+void test_compare_encoding_case_insensitive_lookup_where_null_vs_null()
+{
+	char *valA = NULL;
+	char *valB = NULL;
+	
+	// NULL and NULL are considered the same, therefore expect a true result.
+	assert_equals(axl_true, jaln_string_list_case_insensitive_lookup_func(valA,valB));
+}
+
+void test_compare_encoding_case_insensitive_lookup_where_text_vs_null()
+{
+	char *valA = "text!";
+	char *valB = NULL;
+
+	assert_equals(axl_false, jaln_string_list_case_insensitive_lookup_func(valA,valB));
+	assert_equals(axl_false, jaln_string_list_case_insensitive_lookup_func(valB,valA));
+}
+
+
+
+
+
