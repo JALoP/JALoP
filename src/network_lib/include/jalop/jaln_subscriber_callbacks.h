@@ -42,7 +42,7 @@ struct jaln_subscriber_callbacks {
 	/**
 	 * After a connection is accepted where the local peer is slated as the
 	 * 'subscriber' the JNL calls this function to get the parameters
-	 * needed to send a 'subscribe' of 'journal-resume' message. For
+	 * needed to send a 'subscribe' or 'journal-resume' message. For
 	 * journal and audit records, the application only needs to set the
 	 * serial_id. The JNL interprets this as the last serial_id the
 	 * application downloaded and received a 'digest-conf' for. The JNL
