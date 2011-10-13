@@ -99,8 +99,6 @@ struct jaln_record_info {
 	uint64_t app_meta_len;
 	/** The length of the payload (raw journal, audit, or log data) */
 	uint64_t payload_len;
-	/** Any additional headers the application would like to send.  */
-	struct jaln_mime_header *headers;
 };
 
 /**
