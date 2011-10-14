@@ -45,5 +45,8 @@ int jaln_digest_list_equal_func(axlPointer a, axlPointer b)
 axl_bool jaln_digest_lookup_func(axlPointer ptr, axlPointer data)
 {
 	struct jal_digest_ctx *dgst = (struct jal_digest_ctx*)ptr;
+	if (dgst == NULL) {
+		return axl_false;
+	}
 	return 0 == jaln_string_list_case_insensitive_func(dgst->algorithm_uri, data);
 }

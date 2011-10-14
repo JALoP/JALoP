@@ -309,3 +309,9 @@ void test_compare_encoding_case_insensitive_where_text_null()
 	assert_equals(ptr, NULL);
 }
 
+void test_compare_digest_insensitive_when_digest_is_null()
+{
+	assert_false(jaln_digest_lookup_func(NULL, "some_dgst"));
+}
+
+
