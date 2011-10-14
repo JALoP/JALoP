@@ -17,6 +17,7 @@ conn_cb_obj = lib_env.SharedObject("../src/jaln_connection_callbacks.c")
 ctx_obj = lib_env.SharedObject("../src/jaln_context.c")
 dgst_obj = lib_env.SharedObject("../src/jaln_digest.c")
 enc_obj = lib_env.SharedObject("../src/jaln_encoding.c")
+hlpr_obj = lib_env.SharedObject("../src/jaln_message_helpers.c")
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common])[0].abspath)
@@ -30,6 +31,8 @@ tests.append(env.TestDeptTest('test_jaln_digest.c',
 	other_sources=[lib_common, ctx_obj, sub_cb_obj, pub_cb_obj, conn_cb_obj, enc_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_encoding.c',
 	other_sources=[lib_common, ctx_obj, dgst_obj, sub_cb_obj, pub_cb_obj, conn_cb_obj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_message_helpers.c',
+	other_sources=[lib_common])[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
