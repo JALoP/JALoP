@@ -20,7 +20,15 @@ test_utils = env.SConscript('test_utils/SConscript', exports='env')
 lib_common = env.SConscript('lib_common/SConscript', exports='env all_tests test_utils')
 producer_lib = env.SConscript('producer_lib/SConscript', exports='env all_tests test_utils lib_common')
 db_layer = env.SConscript('db_layer/SConscript', exports='env all_tests lib_common test_utils')
+
 network_lib = env.SConscript('network_lib/SConscript', exports='env all_tests lib_common test_utils')
+
+#net_lib = env.SConscript('network_lib/SConscript', exports='env all_tests lib_common test_utils')
+# bug-xyz: Stubbing out build environment for jal_subscribe
 jal_utils = env.SConscript('jal_utils/SConscript', exports='env')
+
 for d in subdirs:
+
 	env.SConscript('%s/SConscript' % d, exports='env all_tests test_utils lib_common producer_lib db_layer jal_utils network_lib')
+	#env.SConscript('%s/SConscript' % d, exports='env all_tests test_utils lib_common producer_lib db_layer jal_utils net_lib')
+

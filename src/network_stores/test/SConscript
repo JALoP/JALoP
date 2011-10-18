@@ -1,0 +1,17 @@
+import os
+import string
+Import('*')
+
+tests = []
+
+# The test code triggers warnings we'd just as soon ignore
+ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/test-input/\\" '
+
+testEnv.Append(CCFLAGS=ccflags.split())
+testEnv.MergeFlags({'CPPPATH':'#src/network_stores/src:#src/lib_common/src:#src/test_utils/src'.split(':'))
+
+net_store_tests = env.Alias('net_store_tests', tests, 'test_dept ' + " ".join(tests))
+
+AlwaysBuild(net_store_tests)
+
+env.Depends(all_tests, net_store_tests)

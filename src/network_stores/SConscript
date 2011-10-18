@@ -1,3 +1,25 @@
 Import('*')
+from Utils import add_project_lib
 
-#env.Program('jal_push', [ 'jal_push_main.c' ]
+env = env.Clone()
+
+env.MergeFlags({'CPPPATH':('#src/jal_utils/src:#src/db_layer/src:#src/lib_common/include:' +
+	'#src/lib_common/src:#src/network_lib/include').split(':')})
+
+env.MergeFlags(env['libconfig_cflags'])
+env.MergeFlags(env['libconfig_ldflags'])
+env.MergeFlags(env['openssl_cflags'])
+env.MergeFlags(env['openssl_ldflags'])
+env.MergeFlags(env['vortex_cflags'])
+env.MergeFlags(env['vortex_ldflags'])
+env.MergeFlags({'LINKFLAGS':env['dbxml_ldflags']})
+env.MergeFlags('-DSCHEMAS_ROOT=\\\\\\"' + env['SOURCE_ROOT']  + '/schemas/\\\\\\"')
+
+add_project_lib(env, 'lib_common', 'jal-common')
+add_project_lib(env, 'db_layer', 'jal-db')
+add_project_lib(env, 'jal_utils', 'jal-utils')
+add_project_lib(env, 'network_lib', 'jal-network')
+
+network_stores = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer network_lib')
+
+Return("network_stores")

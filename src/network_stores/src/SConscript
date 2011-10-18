@@ -1,0 +1,22 @@
+Import('*')
+from Utils import add_project_lib
+from Utils import install_for_build
+
+sources = []
+for source in (env.Glob("jsub*.cpp") + env.Glob("jal_subscribe.cpp")):
+	sources.append(source)
+
+jal_subscribe_objs = env.SharedObject(source=sources)
+
+jal_subscribe = env.Program(target='jal_subscribe', source=jal_subscribe_objs)
+
+env.Depends(jal_subscribe, [lib_common, db_layer, jal_utils, network_lib])
+
+env.Default(jal_subscribe)
+if (env['release']):
+	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
+	env.Alias('install', env.Install(sbindir, jal_subscribe))
+
+install_for_build(env, 'bin', jal_subscribe)
+
+Return("jal_subscribe")
