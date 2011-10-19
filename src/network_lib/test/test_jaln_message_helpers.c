@@ -452,3 +452,32 @@ void test_digest_info_strlen_returns_0_when_digest_len_is_0()
 	size_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(0, len);
 }
+
+void test_digest_info_strcat_works_for_good_info()
+{
+	char *ret = jaln_digest_info_strcat(output_str, di_1);
+	assert_string_equals(di_1_str, output_str);
+	assert_pointer_equals(output_str, ret);
+}
+
+void test_digest_info_strcat_returns_null_with_null_string()
+{
+	char *ret = jaln_digest_info_strcat(NULL, di_1);
+	assert_pointer_equals((void*)NULL, ret);
+}
+
+void test_digest_info_strcat_returns_null_for_null_digest_info()
+{
+	char *ret = jaln_digest_info_strcat(output_str, NULL);
+	assert_pointer_equals((void*)NULL, ret);
+}
+
+
+void test_digest_info_strcat_returns_null_for_bad_digest_info()
+{
+	free(di_1->serial_id);
+	di_1->serial_id = NULL;
+
+	char *ret = jaln_digest_info_strcat(output_str, di_1);
+	assert_pointer_equals((void*)NULL, ret);
+}
