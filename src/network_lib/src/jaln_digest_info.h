@@ -70,4 +70,15 @@ void jaln_digest_info_destroy(struct jaln_digest_info **dgst_info);
  * @param[in] ptr A jaln_digest_info object to destroy;
  */
 void jaln_axl_destroy_digest_info(axlPointer ptr);
+
+/**
+ * Function to use with an \p axlList to check for equality
+ *
+ * @param[in] a The first jaln_digest_info object to compare
+ * @param[in] b The second jaln_digest_info object ot compare
+ *
+ * For this case, only the serial_id member is checked for equality
+ */
+int jaln_axl_equals_func_digest_info_serial_id(axlPointer a, axlPointer b);
+
 #endif //JALN_DIGEST_INFO_H

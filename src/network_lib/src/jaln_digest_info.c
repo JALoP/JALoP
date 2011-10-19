@@ -64,3 +64,16 @@ void jaln_axl_destroy_digest_info(axlPointer ptr)
 	struct jaln_digest_info* di = (struct jaln_digest_info*) ptr;
 	jaln_digest_info_destroy(&di);
 }
+
+int jaln_axl_equals_func_digest_info_serial_id(axlPointer a, axlPointer b)
+{
+	struct jaln_digest_info *di_a = (struct jaln_digest_info*) a;
+	struct jaln_digest_info *di_b = (struct jaln_digest_info*) b;
+	if (!di_a || !di_a->serial_id) {
+		return -1;
+	}
+	if (!di_b || !di_b->serial_id) {
+		return 1;
+	}
+	return strcmp(di_a->serial_id, di_b->serial_id);
+}
