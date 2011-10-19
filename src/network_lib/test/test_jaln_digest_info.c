@@ -31,6 +31,7 @@
 
 #define DGST_LEN 10
 static  char *sid = "some_sid";
+static  char *sid_2 = "other_sid";
 static uint8_t digest[DGST_LEN] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
 void setup()
@@ -94,5 +95,43 @@ void test_axl_digest_info_destroy_does_not_crash()
 {
 	axlPointer p = NULL;
 	jaln_axl_destroy_digest_info(p);
+}
+
+void test_axl_equals_digest_returns_zero_when_equal() {
+	struct jaln_digest_info *di_a = jaln_digest_info_create(sid, digest, DGST_LEN);
+	struct jaln_digest_info *di_b = jaln_digest_info_create(sid, digest, DGST_LEN);
+	assert_equals(0, jaln_axl_equals_func_digest_info_serial_id(di_a, di_b));
+	jaln_digest_info_destroy(&di_a);
+	jaln_digest_info_destroy(&di_b);
+	assert_pointer_equals((void*) NULL, di_a);
+	assert_pointer_equals((void*) NULL, di_b);
+}
+
+void test_axl_equals_digest_returns_non_zero_when_not_equal() {
+	struct jaln_digest_info *di_a = jaln_digest_info_create(sid, digest, DGST_LEN);
+	struct jaln_digest_info *di_b = jaln_digest_info_create(sid_2, digest, DGST_LEN);
+	assert_not_equals(0, jaln_axl_equals_func_digest_info_serial_id(di_a, di_b));
+	jaln_digest_info_destroy(&di_a);
+	jaln_digest_info_destroy(&di_b);
+	assert_pointer_equals((void*) NULL, di_a);
+	assert_pointer_equals((void*) NULL, di_b);
+}
+
+void test_axl_equals_digest_returns_non_zero_with_bad_input() {
+	struct jaln_digest_info *di_a = jaln_digest_info_create(sid, digest, DGST_LEN);
+	struct jaln_digest_info *di_b = jaln_digest_info_create(sid, digest, DGST_LEN);
+
+	assert_not_equals(0, jaln_axl_equals_func_digest_info_serial_id(NULL, di_a));
+	assert_not_equals(0, jaln_axl_equals_func_digest_info_serial_id(di_a, NULL));
+
+	free(di_a->serial_id);
+	di_a->serial_id = NULL;
+	assert_not_equals(0, jaln_axl_equals_func_digest_info_serial_id(di_a, di_b));
+	assert_not_equals(0, jaln_axl_equals_func_digest_info_serial_id(di_b, di_a));
+
+	jaln_digest_info_destroy(&di_a);
+	jaln_digest_info_destroy(&di_b);
+	assert_pointer_equals((void*) NULL, di_a);
+	assert_pointer_equals((void*) NULL, di_b);
 }
 

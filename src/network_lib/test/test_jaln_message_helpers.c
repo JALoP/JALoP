@@ -129,7 +129,6 @@ void teardown()
 {
 	restore_function(vortex_frame_get_mime_header);
 	restore_function(vortex_frame_mime_header_content);
-	jaln_digest_info_destroy(&di_1);
 	free(output_str);
 }
 
