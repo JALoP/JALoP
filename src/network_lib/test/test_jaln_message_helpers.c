@@ -36,6 +36,7 @@
 
 #include "jaln_message_helpers.h"
 
+#include "jaln_digest_info.h"
 #include <test-dept.h>
 #include <string.h>
 #include <ctype.h>
@@ -112,16 +113,24 @@ const char *fake_get_mime_content(VortexMimeHeader *header)
 	return (const char*) header;
 }
 
-
+static struct jaln_digest_info *di_1;
+#define DGST_LEN 7
+static uint8_t di_buf_1[DGST_LEN] = {  0,  1,  2,  3,  4, 5,   6 };
+static char *output_str;
+#define di_1_str "00010203040506=sid_1\r\n"
 void setup()
 {
 	replace_function(vortex_frame_mime_header_content, fake_get_mime_content);
+	di_1 = jaln_digest_info_create("sid_1", di_buf_1, DGST_LEN);
+	output_str = jal_calloc(strlen(di_1_str) + 1, sizeof(char));
 }
 
 void teardown()
 {
 	restore_function(vortex_frame_get_mime_header);
 	restore_function(vortex_frame_mime_header_content);
+	jaln_digest_info_destroy(&di_1);
+	free(output_str);
 }
 
 void test_create_journal_resume_msg_with_valid_parameters()
@@ -405,4 +414,41 @@ void test_check_ct_and_txf_encoding_are_valid_returns_success_when_missing_trans
 void test_check_ct_and_txf_encoding_are_valid_returns_failure_on_null()
 {
 	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid(NULL));
+}
+
+void test_digest_info_strlen_works_for_valid_input()
+{
+	size_t len = jaln_digest_info_strlen(di_1);
+	assert_equals(strlen(di_1_str), len);
+}
+
+void test_digest_info_strlen_returns_0_when_missing_sid()
+{
+	free(di_1->serial_id);
+	di_1->serial_id = NULL;
+	size_t len = jaln_digest_info_strlen(di_1);
+	assert_equals(0, len);
+}
+
+void test_digest_info_strlen_fails_for_zero_length_sid()
+{
+	free(di_1->serial_id);
+	di_1->serial_id = jal_strdup("");;
+	size_t len = jaln_digest_info_strlen(di_1);
+	assert_equals(0, len);
+}
+
+void test_digest_info_strlen_returns_0_when_missing_digest()
+{
+	free(di_1->digest);
+	di_1->digest = NULL;
+	size_t len = jaln_digest_info_strlen(di_1);
+	assert_equals(0, len);
+}
+
+void test_digest_info_strlen_returns_0_when_digest_len_is_0()
+{
+	di_1->digest_len = 0;
+	size_t len = jaln_digest_info_strlen(di_1);
+	assert_equals(0, len);
 }
