@@ -32,6 +32,8 @@
 #include <stddef.h>
 #include <vortex.h>
 
+#include "jaln_digest_info.h"
+
 /**
  * Helper function to create a journal_resume_msg
  *
@@ -75,5 +77,14 @@ enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out,
  * the correct content-type and transfer encoding.
  */
 int jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
+
+/**
+ * Helper function to calculate the number of bytes needed to to convert a
+ * jaln_digest_info to a string for sending as part of a digest message.
+ *
+ * @param[in] di the digest info object.
+ * @param return the length of the resulting string, or 0 if an error occurred.
+ */
+size_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
 
 #endif // _JALN_MESSAGE_HELPERS_H_

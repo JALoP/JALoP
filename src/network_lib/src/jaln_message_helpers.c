@@ -35,6 +35,8 @@
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 
+#include "jaln_context.h"
+#include "jaln_digest_info.h"
 #include "jaln_message_helpers.h"
 #include "jaln_strings.h"
 
@@ -167,5 +169,39 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 		}
 	}
 	return axl_true;
+}
+
+size_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
+{
+	// output for each line should be:
+	// <dgst_as_hex>=<serial_id>CRLF
+	if (!di || !di->serial_id || !di->digest || 0 == di->digest_len) {
+		return 0;
+	}
+	if (0 == strlen(di->serial_id)) {
+		return 0;
+	}
+	// start with cnt == 3 ('=' CR LF)
+	size_t cnt = 3;
+	size_t tmp = strlen(di->serial_id);
+	if (cnt > (SIZE_MAX - tmp)) {
+		cnt = 0;
+		goto out;
+	}
+	cnt += tmp;
+	tmp = di->digest_len;
+	if (cnt > (SIZE_MAX - tmp)) {
+		cnt = 0;
+		goto out;
+	}
+	cnt += tmp;
+	// check again since 1 byte is represented as 2 hex characters
+	if (cnt > (SIZE_MAX - tmp)) {
+		cnt = 0;
+		goto out;
+	}
+	cnt += tmp;
+out:
+	return cnt;
 }
 
