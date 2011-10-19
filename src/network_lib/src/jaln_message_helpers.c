@@ -205,3 +205,21 @@ out:
 	return cnt;
 }
 
+char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di)
+{
+	// output for each line should be:
+	// <dgst_as_hex>=<serial_id>CRLF
+	// start with cnt == 4 ('=' CR LF and NULL terminator)
+	if (!dst || 0 == jaln_digest_info_strlen(di)) {
+		return NULL;
+	}
+	char *orig = dst;
+	dst = dst + strlen(dst);
+	size_t i;
+	for (i = 0; i < di->digest_len; i++) {
+		sprintf(dst + (i * 2), "%02x", di->digest[i]);
+	}
+	sprintf(dst + (i * 2), "=%s" JALN_CRLF, di->serial_id);
+	return orig;
+}
+

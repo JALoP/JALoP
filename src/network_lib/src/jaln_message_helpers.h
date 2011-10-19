@@ -87,4 +87,20 @@ int jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
  */
 size_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
 
+/**
+ * Helper function to append a jaln_digest_info as line for a digest message.
+ * This works similar to strcat, and appends the string 'dgst=sid\r\n', i.e.
+ * the digest value (as a hex string with no leading 0x) followed by the equals
+ * symbol ('=') followed by the serial ID, and finished with a carriage return
+ * and line feed.
+ * The string \p dst must contain enough space for the entire message and the
+ * trailing NULL terminator.
+ *
+ * @param[in,out] dst The character string to append to.
+ * @param[in] di The jaln_digest_info object to output.
+ *
+ * @return a pointer to \p dst.
+ */
+char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di);
+
 #endif // _JALN_MESSAGE_HELPERS_H_
