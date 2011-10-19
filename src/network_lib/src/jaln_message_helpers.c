@@ -223,3 +223,69 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di)
 	return orig;
 }
 
+enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_t *msg_len)
+{
+#define DGST_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_DIGEST JALN_CRLF \
+		JALN_HDRS_COUNT JALN_COLON_SPACE "%d" JALN_CRLF JALN_CRLF
+	if (!dgst_list || !msg_out || *msg_out || !msg_len) {
+		return JAL_E_INVAL;
+	}
+	enum jal_status ret = JAL_E_INVAL;
+	int dgst_cnt = axl_list_length(dgst_list);
+	size_t len = 1;
+	size_t tmp = 0;
+	char *msg = NULL;
+	axlListCursor *iter = NULL;
+
+	if (0 >= dgst_cnt) {
+		goto err_out;
+	}
+
+	tmp = snprintf(NULL, 0, DGST_MSG_HDRS, dgst_cnt);
+	if (len > (SIZE_MAX - tmp)) {
+		goto err_out;
+	}
+	len += tmp;
+
+	iter = axl_list_cursor_new(dgst_list);
+	axl_list_cursor_first(iter);
+
+	while(axl_list_cursor_has_item(iter)) {
+		// major assumption that the list here contains valid
+		// digest_info objects;
+		struct jaln_digest_info *di = (struct jaln_digest_info *) axl_list_cursor_get(iter);
+		tmp = jaln_digest_info_strlen(di);
+		if (0 == tmp || len > (SIZE_MAX - tmp)) {
+			goto err_out;
+		}
+		len += tmp;
+		axl_list_cursor_next(iter);
+	}
+
+	msg = jal_malloc(len);
+	sprintf(msg, DGST_MSG_HDRS, dgst_cnt);
+
+	axl_list_cursor_first(iter);
+	while(axl_list_cursor_has_item(iter)) {
+		// major assumption that the list here contains valid
+		// digest_info objects;
+		struct jaln_digest_info *di = (struct jaln_digest_info *) axl_list_cursor_get(iter);
+		jaln_digest_info_strcat(msg, di);
+		axl_list_cursor_next(iter);
+	}
+
+	*msg_out = msg;
+	*msg_len = len;
+	ret = JAL_OK;
+	goto out;
+
+err_out:
+	free(msg);
+out:
+	if (iter) {
+		axl_list_cursor_free(iter);
+	}
+	return ret;
+
+}
+

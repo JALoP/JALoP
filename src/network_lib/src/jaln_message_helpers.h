@@ -103,4 +103,23 @@ size_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
  */
 char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di);
 
+/**
+ * Create the 'digest' message.
+ *
+ * It is an error to try and create a digest message for an empty list.
+ * It is also an error if any of the digest_info objects in the list are not
+ * valid.
+ *
+ * @param[in] dgst_list The list of jaln_digest_info structures to send in the
+ * message.
+ * @param[out] msg_out The resulting message
+ * @param[out] msg_len The length of the resulting message
+ *
+ *
+ * @return
+ *  - JAL_OK on success
+ *  - JAL_E_INVAL on error
+ */
+enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_t *msg_len);
+
 #endif // _JALN_MESSAGE_HELPERS_H_
