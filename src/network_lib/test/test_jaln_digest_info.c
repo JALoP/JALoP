@@ -80,3 +80,19 @@ void test_digest_info_destroy_does_not_crash()
 	assert_pointer_equals((void*) NULL, di);
 	jaln_digest_info_destroy(NULL);
 }
+
+void test_axl_digest_info_destroy_works()
+{
+	struct jaln_digest_info *di;
+	di = jaln_digest_info_create(sid, digest, DGST_LEN);
+	axlPointer p = (axlPointer) di;
+
+	jaln_axl_destroy_digest_info(p);
+}
+
+void test_axl_digest_info_destroy_does_not_crash()
+{
+	axlPointer p = NULL;
+	jaln_axl_destroy_digest_info(p);
+}
+
