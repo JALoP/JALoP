@@ -31,6 +31,7 @@
 
 #ifndef JALN_DIGEST_INFO_H
 #define JALN_DIGEST_INFO_H
+#include <axl.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -63,4 +64,10 @@ struct jaln_digest_info *jaln_digest_info_create(const char *serial_id,
  */
 void jaln_digest_info_destroy(struct jaln_digest_info **dgst_info);
 
+/**
+ * Function to use with an \p axlList to destroy jaln_digest_info elements
+ *
+ * @param[in] ptr A jaln_digest_info object to destroy;
+ */
+void jaln_axl_destroy_digest_info(axlPointer ptr);
 #endif //JALN_DIGEST_INFO_H

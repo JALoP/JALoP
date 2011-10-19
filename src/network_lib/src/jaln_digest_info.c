@@ -59,3 +59,8 @@ void jaln_digest_info_destroy(struct jaln_digest_info **dgst_info)
 	*dgst_info = NULL;
 }
 
+void jaln_axl_destroy_digest_info(axlPointer ptr)
+{
+	struct jaln_digest_info* di = (struct jaln_digest_info*) ptr;
+	jaln_digest_info_destroy(&di);
+}
