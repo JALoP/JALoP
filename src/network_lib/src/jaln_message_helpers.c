@@ -289,3 +289,12 @@ out:
 
 }
 
+axl_bool jaln_safe_add_size(size_t *base, size_t inc)
+{
+	if (!base || (*base > (SIZE_MAX - inc))) {
+		return axl_false;
+	}
+	*base += inc;
+	return axl_true;
+}
+

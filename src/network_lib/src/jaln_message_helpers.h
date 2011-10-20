@@ -126,4 +126,16 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di);
  */
 enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_t *msg_len);
 
+/**
+ * Helper function to increment a counter when determining the required number of
+ * bytes for a message.
+ *
+ * @param[in,out] base On success, base will be equal to (base + inc)
+ * @param[in] inc The increment to add
+ * @return axl_true if the addition was performed
+ * axl_false if the addition was NOT performed. The only time the addition will
+ * not happen is when \p base is NULL, or *base + inc would overflow size_t.
+ */
+axl_bool jaln_safe_add_size(size_t *base, size_t inc);
+
 #endif // _JALN_MESSAGE_HELPERS_H_
