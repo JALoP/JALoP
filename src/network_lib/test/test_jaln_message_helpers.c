@@ -39,6 +39,14 @@
 #include <string.h>
 #include <ctype.h>
 
+#define sid_1_str "sid_1"
+
+#define EXPECTED_SYNC_MSG \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: sync\r\n" \
+	"JAL-Serial-Id: " sid_1_str "\r\n\r\n"
+
 void test_create_journal_resume_msg_with_valid_parameters()
 {
 	enum jal_status ret = JAL_OK;
@@ -179,3 +187,23 @@ void test_create_journal_resume_msg_with_valid_parameters_offset_is_very_large()
 	assert_equals(offset, strtoull(final_offset_string, NULL, 10));
 }
 
+void test_create_sync_msg_works()
+{
+	char *msg_out = NULL;
+	size_t len;
+	assert_equals(JAL_OK, jaln_create_sync_msg(sid_1_str, &msg_out, &len));
+	assert_equals(strlen(EXPECTED_SYNC_MSG) + 1, len);
+	assert_equals(0, memcmp(EXPECTED_SYNC_MSG, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_sync_msg_does_not_crash_on_bad_input()
+{
+	char *msg_out = NULL;
+	size_t len;
+	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(NULL, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, NULL, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, &msg_out, NULL));
+	msg_out = (char*)0xbadf00d;
+	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, &msg_out, &len));
+}
