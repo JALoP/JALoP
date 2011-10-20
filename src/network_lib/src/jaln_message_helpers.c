@@ -37,6 +37,7 @@
 
 #include "jaln_context.h"
 #include "jaln_digest_info.h"
+#include "jaln_digest_resp_info.h"
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
 #include "jaln_strings.h"
@@ -498,5 +499,45 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
 			length_header, rec_info->payload_len);
 
 	return JAL_OK;
+}
+
+size_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di)
+{
+	// output for each line should be:
+	// <dgst_as_hex>=<serial_id>CRLF
+	if (!di || !di->serial_id) {
+		return 0;
+	}
+	if (0 == strlen(di->serial_id)) {
+		return 0;
+	}
+	// start with cnt == 2 (CR LF)
+	size_t cnt = 2;
+	if (!jaln_safe_add_size(&cnt, strlen(di->serial_id))) {
+		cnt = 0;
+		goto out;
+	}
+	const char *status_str = NULL;
+	switch (di->status) {
+	case (JALN_DIGEST_STATUS_CONFIRMED):
+		status_str = JALN_STR_CONFIRMED_EQUALS;
+		break;
+	case (JALN_DIGEST_STATUS_INVALID):
+		status_str = JALN_STR_INVALID_EQUALS;
+		break;
+	case (JALN_DIGEST_STATUS_UNKNOWN):
+		status_str = JALN_STR_UNKNOWN_EQUALS;
+		break;
+	default:
+		cnt = 0;
+		goto out;
+	}
+
+	if (!jaln_safe_add_size(&cnt, strlen(status_str))) {
+		cnt = 0;
+		goto out;
+	}
+out:
+	return cnt;
 }
 

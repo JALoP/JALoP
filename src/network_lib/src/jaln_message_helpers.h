@@ -34,6 +34,7 @@
 #include <vortex.h>
 
 #include "jaln_digest_info.h"
+#include "jaln_digest_resp_info.h"
 
 /**
  * Helper function to create a journal_resume_msg
@@ -126,6 +127,15 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di);
  *  - JAL_E_INVAL on error
  */
 enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_t *msg_len);
+
+/**
+ * Helper function to calculate the number of bytes needed to to convert a
+ * jaln_digest_resp_info to a string for sending as part of a digest message.
+ *
+ * @param[in] di the digest_resp_info object.
+ * @param return the length of the resulting string, or 0 if an error occurred.
+ */
+size_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di);
 
 /**
  * Helper function to increment a counter when determining the required number of
