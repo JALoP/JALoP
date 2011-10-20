@@ -87,3 +87,33 @@ out:
 	return ret;
 }
 
+enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg_out, size_t *msg_len)
+{
+#define SYNC_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_SYNC JALN_CRLF \
+		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF
+
+	if (!serial_id || !msg_out || *msg_out || !msg_len) {
+		return JAL_E_INVAL;
+	}
+	enum jal_status ret = JAL_E_INVAL;
+	char *msg = NULL;
+
+	int len = jal_asprintf(&msg, SYNC_MSG_HDRS, serial_id);
+	if (len <= 0) {
+		goto err_out;
+	}
+	// +1 since asprintf will return the length (not including NULL
+	// terminator) and this returns the full size of the data.
+	*msg_len = (size_t) len + 1;
+	*msg_out = msg;
+	ret = JAL_OK;
+
+	goto out;
+
+err_out:
+	free(msg);
+out:
+	return ret;
+
+}
+

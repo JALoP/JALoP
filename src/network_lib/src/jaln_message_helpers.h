@@ -44,4 +44,14 @@
  */
 enum jal_status jaln_create_journal_resume_msg(const char *serial_id, uint64_t offset, char **msg_out, size_t *msg_out_len);
 
+/**
+ * Helper function to create a sync msg
+ *
+ * @param[in] serial_id The serial ID to sync
+ * @param[out] msg The full message to send to the remote.
+ * @param[out] msg_len The length of the resulting message (including the NULL
+ * terminator
+ */
+enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, size_t *msg_len);
+
 #endif // _JALN_MESSAGE_HELPERS_H_
