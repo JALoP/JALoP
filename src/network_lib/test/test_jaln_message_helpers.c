@@ -553,3 +553,28 @@ void test_create_returns_error_with_bad_digest_info()
 
 }
 
+void test_safe_add_does_not_crash()
+{
+	assert_false(jaln_safe_add_size(NULL, 1));
+}
+void test_safe_add_prevents_overflow()
+{
+	size_t cnt = SIZE_MAX - 100;
+	assert_false(jaln_safe_add_size(&cnt, 101));
+	assert_equals(SIZE_MAX - 100, cnt);
+}
+
+void test_safe_add_works_at_size_max()
+{
+	size_t cnt = SIZE_MAX - 100;
+	assert_true(jaln_safe_add_size(&cnt, 100));
+	assert_equals(SIZE_MAX, cnt);
+}
+
+void test_safe_add_works()
+{
+	size_t cnt = 12;
+	assert_true(jaln_safe_add_size(&cnt, 43));
+	assert_equals(12 + 43, cnt);
+}
+
