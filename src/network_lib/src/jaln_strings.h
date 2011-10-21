@@ -75,13 +75,15 @@
 
 #define JALN_DGST_SHA256 "sha256"
 
+#define JALN_STR_AUDIT "audit"
 #define JALN_STR_BINARY "binary"
 #define JALN_STR_BREAK "BREAK"
+#define JALN_STR_CONFIRMED_EQUALS "confirmed="
 #define JALN_STR_CT_JALOP "application/beep+jalop"
 #define JALN_STR_JOURNAL "journal"
-#define JALN_STR_AUDIT "audit"
+#define JALN_STR_INVALID_EQUALS "invalid="
 #define JALN_STR_LOG "log"
-
+#define JALN_STR_UNKNOWN_EQUALS "unknown="
 
 #define JALN_JALOP_1_0_PROFILE "http://www.dod.mil/logging/jalop-1.0"
 
