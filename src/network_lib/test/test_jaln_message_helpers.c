@@ -30,6 +30,7 @@
 #include <jalop/jal_status.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <vortex.h>
 
 #include "jal_alloc.h"
 
@@ -46,6 +47,82 @@
 	"Content-Transfer-Encoding: binary\r\n" \
 	"JAL-Message: sync\r\n" \
 	"JAL-Serial-Id: " sid_1_str "\r\n\r\n"
+
+VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
+{
+	if (!frame) {
+		return NULL;
+	}
+	if (strcasecmp(header_name, "content-type") == 0) {
+		return (VortexMimeHeader*) "application/beep+jalop";
+	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
+		return (VortexMimeHeader*) "utf-16";
+	}
+	return NULL;
+}
+VortexMimeHeader *wrong_content_type_get_mime_header(VortexFrame *frame, const char *header_name)
+{
+	if (!frame) {
+		return NULL;
+	}
+	if (strcasecmp(header_name, "content-type") == 0) {
+		return (VortexMimeHeader*) "application/flubber";
+	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
+		return (VortexMimeHeader*) "binary";
+	}
+	return NULL;
+}
+VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *header_name)
+{
+	if (!frame) {
+		return NULL;
+	}
+	if (strcasecmp(header_name, "content-type") == 0) {
+		return (VortexMimeHeader*) "application/beep+jalop";
+	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
+		return (VortexMimeHeader*) "binary";
+	}
+	return NULL;
+}
+
+VortexMimeHeader *only_content_type_get_mime_header(VortexFrame *frame, const char *header_name)
+{
+	if (!frame) {
+		return NULL;
+	}
+	if (strcasecmp(header_name, "content-type") == 0) {
+		return (VortexMimeHeader*) "application/beep+jalop";
+	}
+	return NULL;
+}
+
+VortexMimeHeader *only_enc_get_mime_header(VortexFrame *frame, const char *header_name)
+{
+	if (!frame) {
+		return NULL;
+	}
+	if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
+		return (VortexMimeHeader*) "binary";
+	}
+	return NULL;
+}
+
+const char *fake_get_mime_content(VortexMimeHeader *header)
+{
+	return (const char*) header;
+}
+
+
+void setup()
+{
+	replace_function(vortex_frame_mime_header_content, fake_get_mime_content);
+}
+
+void teardown()
+{
+	restore_function(vortex_frame_get_mime_header);
+	restore_function(vortex_frame_mime_header_content);
+}
 
 void test_create_journal_resume_msg_with_valid_parameters()
 {
@@ -294,3 +371,38 @@ void test_create_subscribe_msg_with_invalid_parameters_msg_out_len_is_null()
 	assert_equals(JAL_E_INVAL, ret);
 }
 
+
+void test_check_ct_and_txf_encoding_are_valid_returns_success_with_correct_ct_and_txf_enc()
+{
+	replace_function(vortex_frame_get_mime_header, fake_get_mime_header);
+	assert_true(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
+}
+
+void test_check_ct_and_txf_encoding_are_valid_returns_failure_when_missing_content_type()
+{
+	replace_function(vortex_frame_get_mime_header, only_enc_get_mime_header);
+	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
+}
+
+void test_check_ct_and_txf_encoding_are_valid_returns_failure_with_incorrect_content_type()
+{
+	replace_function(vortex_frame_get_mime_header, wrong_content_type_get_mime_header);
+	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
+}
+
+void test_check_ct_and_txf_encoding_are_valid_returns_failure_with_incorrect_encoding()
+{
+	replace_function(vortex_frame_get_mime_header, wrong_encoding_get_mime_header);
+	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
+}
+
+void test_check_ct_and_txf_encoding_are_valid_returns_success_when_missing_transfer_encoding()
+{
+	replace_function(vortex_frame_get_mime_header, only_content_type_get_mime_header);
+	assert_true(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
+}
+
+void test_check_ct_and_txf_encoding_are_valid_returns_failure_on_null()
+{
+	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid(NULL));
+}

@@ -32,7 +32,7 @@ tests.append(env.TestDeptTest('test_jaln_digest.c',
 tests.append(env.TestDeptTest('test_jaln_encoding.c',
 	other_sources=[lib_common, ctx_obj, dgst_obj, sub_cb_obj, pub_cb_obj, conn_cb_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_message_helpers.c',
-	other_sources=[lib_common])[0].abspath)
+	other_sources=[lib_common], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_channel_info.c',
 	other_sources=[lib_common])[0].abspath)
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
