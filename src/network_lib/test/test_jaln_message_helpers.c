@@ -61,6 +61,7 @@ void test_create_journal_resume_msg_with_valid_parameters()
 
 	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
 	assert_equals(JAL_OK, ret);
+	free(msg_out);
 }
 
 void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly()
@@ -81,6 +82,7 @@ void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly
 
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(correct_msg, msg_out);
+	free(msg_out);
 }
 
 void test_create_journal_resume_msg_with_invalid_parameters_serial_id_is_null()
@@ -185,6 +187,8 @@ void test_create_journal_resume_msg_with_valid_parameters_offset_is_very_large()
 	}
 
 	assert_equals(offset, strtoull(final_offset_string, NULL, 10));
+	free(msg_out);
+	free(final_offset_string);
 }
 
 void test_create_sync_msg_works()
