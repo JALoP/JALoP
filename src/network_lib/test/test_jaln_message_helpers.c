@@ -26,24 +26,23 @@
  * limitations under the License.
  */
 
+#include <ctype.h>
 #include <inttypes.h>
 #include <jalop/jal_status.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <test-dept.h>
 #include <vortex.h>
 
 #include "jal_alloc.h"
 
 #include "jaln_digest.c"
 #include "jaln_digest_info.h"
+#include "jaln_digest_resp_info.h"
 #include "jaln_encoding.c"
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
-
-#include "jaln_digest_info.h"
-#include <test-dept.h>
-#include <string.h>
-#include <ctype.h>
 
 #define sid_1_str "sid_1"
 
@@ -120,6 +119,10 @@ const char *fake_get_mime_content(VortexMimeHeader *header)
 static struct jaln_digest_info *di_1;
 static struct jaln_digest_info *di_2;
 static struct jaln_digest_info *di_3;
+
+static struct jaln_digest_resp_info *dr_1;
+static struct jaln_digest_resp_info *dr_2;
+static struct jaln_digest_resp_info *dr_3;
 
 #define DGST_LEN 7
 static uint8_t di_buf_1[DGST_LEN] = {  0,  1,  2,  3,  4, 5,   6 };
@@ -218,10 +221,18 @@ static char *output_str;
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Log-Length: 30\r\n\r\n"
 
+#define dr_1_str "confirmed=sid_1\r\n"
+#define dr_2_str "invalid=sid_2\r\n"
+#define dr_3_str "unknown=sid_3\r\n"
+
+static struct jaln_record_info *rec_info;
+
 axlList *dgst_list;
 axlList *dgst_algs;
 axlList *xml_encs;
-static struct jaln_record_info *rec_info;
+axlList *dgst_list;
+axlList *dgst_resp_list;
+
 void setup()
 {
 	replace_function(vortex_frame_mime_header_content, fake_get_mime_content);
@@ -257,6 +268,15 @@ void setup()
 	rec_info->sys_meta_len = 10;
 	rec_info->app_meta_len = 20;
 	rec_info->payload_len = 30;
+
+	dr_1 = jaln_digest_resp_info_create("sid_1", JALN_DIGEST_STATUS_CONFIRMED);
+	dr_2 = jaln_digest_resp_info_create("sid_2", JALN_DIGEST_STATUS_INVALID);
+	dr_3 = jaln_digest_resp_info_create("sid_3", JALN_DIGEST_STATUS_UNKNOWN);
+	dgst_resp_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id,
+			jaln_axl_destroy_digest_resp_info);
+	axl_list_append(dgst_resp_list, dr_1);
+	axl_list_append(dgst_resp_list, dr_2);
+	axl_list_append(dgst_resp_list, dr_3);
 }
 
 void teardown()
@@ -267,6 +287,7 @@ void teardown()
 	axl_list_free(dgst_list);
 	axl_list_free(dgst_algs);
 	axl_list_free(xml_encs);
+	axl_list_free(dgst_resp_list);
 	jaln_record_info_destroy(&rec_info);
 }
 
@@ -839,4 +860,39 @@ void test_create_record_ans_rpy_headers_works_for_log()
 	assert_equals(strlen(EXPECTED_LOG_REC_HDRS), headers_out_len);
 	assert_equals(0, memcmp(EXPECTED_LOG_REC_HDRS, headers_out, headers_out_len));
 	free(headers_out);
+}
+
+void test_digest_resp_info_strlen_works_for_valid_input()
+{
+	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	assert_equals(strlen(dr_1_str), len);
+
+	len = jaln_digest_resp_info_strlen(dr_2);
+	assert_equals(strlen(dr_2_str), len);
+
+	len = jaln_digest_resp_info_strlen(dr_3);
+	assert_equals(strlen(dr_3_str), len);
+}
+
+void test_digest_resp_info_strlen_returns_0_when_missing_sid()
+{
+	free(dr_1->serial_id);
+	dr_1->serial_id = NULL;
+	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	assert_equals(0, len);
+}
+
+void test_digest_resp_info_strlen_returns_0_when_sid_is_emtpy()
+{
+	free(dr_1->serial_id);
+	dr_1->serial_id = jal_strdup("");
+	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	assert_equals(0, len);
+}
+
+void test_digest_resp_info_strlen_returns_0_with_bad_status()
+{
+	dr_1->status = JALN_DIGEST_STATUS_UNKNOWN + 1;;
+	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	assert_equals(0, len);
 }
