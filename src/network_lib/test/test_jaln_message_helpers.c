@@ -64,6 +64,7 @@ VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char 
 	}
 	return NULL;
 }
+
 VortexMimeHeader *wrong_content_type_get_mime_header(VortexFrame *frame, const char *header_name)
 {
 	if (!frame) {
@@ -76,6 +77,7 @@ VortexMimeHeader *wrong_content_type_get_mime_header(VortexFrame *frame, const c
 	}
 	return NULL;
 }
+
 VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *header_name)
 {
 	if (!frame) {
@@ -221,6 +223,15 @@ static char *output_str;
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Log-Length: 30\r\n\r\n"
 
+#define EXPECTED_DGST_RESP_MSG \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n"\
+	"JAL-Message: digest-response\r\n" \
+	"JAL-Count: 3\r\n\r\n" \
+	dr_1_str \
+	dr_2_str \
+	dr_3_str
+
 #define dr_1_str "confirmed=sid_1\r\n"
 #define dr_2_str "invalid=sid_2\r\n"
 #define dr_3_str "unknown=sid_3\r\n"
@@ -230,7 +241,6 @@ static struct jaln_record_info *rec_info;
 axlList *dgst_list;
 axlList *dgst_algs;
 axlList *xml_encs;
-axlList *dgst_list;
 axlList *dgst_resp_list;
 
 void setup()
@@ -937,5 +947,52 @@ void test_digest_resp_info_strcat_returns_null_for_bad_digest_resp_info()
 
 	char *ret = jaln_digest_resp_info_strcat(output_str, dr_1);
 	assert_pointer_equals((void*)NULL, ret);
+}
+
+void test_create_digest_resp_message_works()
+{
+	char *msg_out = NULL;
+	size_t msg_out_len = 0;
+	assert_equals(JAL_OK, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+
+	assert_equals(0, strcmp(EXPECTED_DGST_RESP_MSG, msg_out));
+	assert_equals(strlen(EXPECTED_DGST_RESP_MSG) + 1, msg_out_len);
+	free(msg_out);
+}
+
+void test_create_digest_resp_returns_error_with_bad_input()
+{
+	char *msg_out = NULL;
+	size_t msg_out_len = 0;
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(NULL, &msg_out, &msg_out_len));
+
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, NULL, &msg_out_len));
+
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, NULL));
+
+	msg_out = (char*) 0xbadf00d;
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+
+}
+
+void test_create_digest_resp_returns_error_with_bad_digest_list()
+{
+	char *msg_out = NULL;
+	size_t msg_out_len = 0;
+
+	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id, jaln_axl_destroy_digest_resp_info);
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(empty_list, &msg_out, &msg_out_len));
+	axl_list_free(empty_list);
+
+}
+
+void test_create_digest_resp_returns_error_with_bad_digest_info()
+{
+	char *msg_out = NULL;
+	size_t msg_out_len = 0;
+
+	axl_list_append(dgst_resp_list, NULL);
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+
 }
 
