@@ -138,6 +138,19 @@ enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_
 size_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di);
 
 /**
+ * Helper function to append a jaln_digest_resp_info as line for a digest message.
+ * This works similar to strcat, and appends the string '<status>=sid\r\n', i.e.
+ * the status (confirmed, invalid, or unknown) followed by the equals
+ * symbol ('=') followed by the serial ID, and finished with a carriage return
+ * and line feed.
+ * The string \p must contain enough space for the entire message and the
+ * trailing NULL terminator.
+ * @param[in,out] dst The character string to append to.
+ * @param[in] di The jaln_digest_info object to output.
+ */
+char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info *di);
+
+/**
  * Helper function to increment a counter when determining the required number of
  * bytes for a message.
  *

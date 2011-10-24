@@ -541,3 +541,31 @@ out:
 	return cnt;
 }
 
+char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info *di)
+{
+	// output for each line should be:
+	// <dgst_status>=<serial_id>CRLF
+	// start with cnt == 4 ('=' CR LF and NULL terminator)
+	if (!dst || 0 == jaln_digest_resp_info_strlen(di)) {
+		return NULL;
+	}
+	char *status_str = NULL;
+	switch (di->status) {
+	case (JALN_DIGEST_STATUS_CONFIRMED):
+		status_str = JALN_STR_CONFIRMED_EQUALS;
+		break;
+	case (JALN_DIGEST_STATUS_INVALID):
+		status_str = JALN_STR_INVALID_EQUALS;
+		break;
+	case (JALN_DIGEST_STATUS_UNKNOWN):
+		status_str = JALN_STR_UNKNOWN_EQUALS;
+		break;
+	default:
+		return NULL;
+	}
+	strcat(dst, status_str);
+	strcat(dst, di->serial_id);
+	strcat(dst, JALN_CRLF);
+	return dst;
+}
+
