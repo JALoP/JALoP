@@ -78,12 +78,15 @@
 #define JALN_STR_AUDIT "audit"
 #define JALN_STR_BINARY "binary"
 #define JALN_STR_BREAK "BREAK"
-#define JALN_STR_CONFIRMED_EQUALS "confirmed="
+#define JALN_STR_CONFIRMED "confirmed"
+#define JALN_STR_CONFIRMED_EQUALS JALN_STR_CONFIRMED "="
 #define JALN_STR_CT_JALOP "application/beep+jalop"
 #define JALN_STR_JOURNAL "journal"
-#define JALN_STR_INVALID_EQUALS "invalid="
+#define JALN_STR_INVALID "invalid"
+#define JALN_STR_INVALID_EQUALS JALN_STR_INVALID "="
 #define JALN_STR_LOG "log"
-#define JALN_STR_UNKNOWN_EQUALS "unknown="
+#define JALN_STR_UNKNOWN "unknown"
+#define JALN_STR_UNKNOWN_EQUALS JALN_STR_UNKNOWN "="
 
 #define JALN_JALOP_1_0_PROFILE "http://www.dod.mil/logging/jalop-1.0"
 
