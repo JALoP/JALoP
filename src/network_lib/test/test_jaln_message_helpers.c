@@ -896,3 +896,46 @@ void test_digest_resp_info_strlen_returns_0_with_bad_status()
 	size_t len = jaln_digest_resp_info_strlen(dr_1);
 	assert_equals(0, len);
 }
+
+void test_digest_resp_info_strcat_works_for_good_confirmed()
+{
+	char *ret = jaln_digest_resp_info_strcat(output_str, dr_1);
+	assert_string_equals(dr_1_str, output_str);
+	assert_pointer_equals(output_str, ret);
+}
+
+void test_digest_resp_info_strcat_works_for_good_invalid()
+{
+	char *ret = jaln_digest_resp_info_strcat(output_str, dr_2);
+	assert_string_equals(dr_2_str, output_str);
+	assert_pointer_equals(output_str, ret);
+}
+
+void test_digest_resp_info_strcat_works_for_good_unknown()
+{
+	char *ret = jaln_digest_resp_info_strcat(output_str, dr_3);
+	assert_string_equals(dr_3_str, output_str);
+	assert_pointer_equals(output_str, ret);
+}
+
+void test_digest_resp_info_strcat_returns_null_with_null_string()
+{
+	char *ret = jaln_digest_resp_info_strcat(NULL, dr_1);
+	assert_pointer_equals((void*)NULL, ret);
+}
+
+void test_digest_resp_info_strcat_returns_null_for_null_digest_resp_info()
+{
+	char *ret = jaln_digest_resp_info_strcat(output_str, NULL);
+	assert_pointer_equals((void*)NULL, ret);
+}
+
+void test_digest_resp_info_strcat_returns_null_for_bad_digest_resp_info()
+{
+	free(dr_1->serial_id);
+	dr_1->serial_id = NULL;
+
+	char *ret = jaln_digest_resp_info_strcat(output_str, dr_1);
+	assert_pointer_equals((void*)NULL, ret);
+}
+
