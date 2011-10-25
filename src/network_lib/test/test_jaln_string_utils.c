@@ -96,3 +96,84 @@ void test_jaln_ascii_to_uint64_fails_with_null_inputs()
 	assert_false(jaln_ascii_to_uint64(VALID_NUMERIC_STRING, NULL));
 }
 
+void test_jaln_hex_to_bin_fails_for_bad_input()
+{
+	uint8_t out;
+	assert_equals(JAL_E_INVAL, jaln_hex_to_bin('\0', &out));
+	assert_equals(JAL_E_INVAL, jaln_hex_to_bin('0' - 1, &out));
+	assert_equals(JAL_E_INVAL, jaln_hex_to_bin('9' + 1, &out));
+	assert_equals(JAL_E_INVAL, jaln_hex_to_bin('a' - 1, &out));
+	assert_equals(JAL_E_INVAL, jaln_hex_to_bin('A' - 1, &out));
+	assert_equals(JAL_E_INVAL, jaln_hex_to_bin('f' + 1, &out));
+	assert_equals(JAL_E_INVAL, jaln_hex_to_bin('F' + 1, &out));
+}
+
+void test_jaln_hex_to_bin_works_for_valid_input()
+{
+	uint8_t out;
+	assert_equals(JAL_OK, jaln_hex_to_bin('0', &out));
+	assert_equals(0, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('1', &out));
+	assert_equals(1, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('2', &out));
+	assert_equals(2, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('3', &out));
+	assert_equals(3, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('4', &out));
+	assert_equals(4, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('5', &out));
+	assert_equals(5, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('6', &out));
+	assert_equals(6, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('7', &out));
+	assert_equals(7, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('8', &out));
+	assert_equals(8, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('9', &out));
+	assert_equals(9, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('a', &out));
+	assert_equals(10, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('A', &out));
+	assert_equals(10, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('b', &out));
+	assert_equals(11, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('B', &out));
+	assert_equals(11, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('c', &out));
+	assert_equals(12, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('C', &out));
+	assert_equals(12, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('d', &out));
+	assert_equals(13, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('D', &out));
+	assert_equals(13, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('e', &out));
+	assert_equals(14, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('E', &out));
+	assert_equals(14, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('f', &out));
+	assert_equals(15, out);
+
+	assert_equals(JAL_OK, jaln_hex_to_bin('F', &out));
+	assert_equals(15, out);
+}
