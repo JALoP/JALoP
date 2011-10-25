@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "jal_alloc.h"
 #include "jaln_string_utils.h"
 
 axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out)
@@ -150,3 +151,39 @@ enum jal_status jaln_hex_to_bin(char c, uint8_t *out)
 	*out = val;
 	return JAL_OK;
 }
+
+enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, size_t hex_buf_len, uint8_t **dgst_buf_out, size_t *dgst_buf_len_out)
+{
+	if (!hex_buf || (0 == hex_buf_len) || !dgst_buf_out || *dgst_buf_out || !dgst_buf_len_out) {
+		return JAL_E_INVAL;
+	}
+	int res_off = 0;
+	size_t res_len = hex_buf_len / 2;
+	unsigned src_mod_check = 0;
+	// Need to adjust the offset/length if the input isn't a multiple of 2
+	if (hex_buf_len % 2) {
+		res_len += 1;
+		src_mod_check = 1;
+	}
+	
+	uint8_t *result = jal_calloc(res_len, sizeof(*result));
+	for (size_t src_off = 0; src_off < hex_buf_len; src_off++) {
+		uint8_t val;
+		if (JAL_OK != jaln_hex_to_bin(hex_buf[src_off], &val)) {
+			goto err_out;
+		}
+		if ((src_off % 2) == src_mod_check) {
+			result[res_off] |= val << 4;
+		} else {
+			result[res_off] |= val;
+			res_off++;
+		}
+	}
+	*dgst_buf_out = result;
+	*dgst_buf_len_out = res_len;
+	return JAL_OK;
+err_out:
+	free(result);
+	return JAL_E_INVAL;
+}
+

@@ -66,4 +66,22 @@ axl_bool jal_ascii_to_size_t(const char *str, size_t *out);
  */
 enum jal_status jaln_hex_to_bin(char c, uint8_t *out);
 
+/**
+ * Helper function to convert a buffer of hex characters to a buffer of uint8_t
+ * values. The input buffer is not treated as a string, but as an array of
+ * hex characters. That is to say, there should be no leading '0x' specifier,
+ * and not trailing garbage (a '\0' is considered garbage).
+ *
+ * @param [in] hex_buf A buffer containing hex characters to convert.
+ * @param [in] hex_buf_len The length of \p hex_buf
+ * @param [out] dgst_buf_out The results of the conversion will be stored in
+ * dgst_buf_out.
+ * @param [out] dgst_buf_len_out The length of \p dgst_buf_out
+ *
+ * @return JAL_OK on success, or JAL_E_INVAL if any of the characters in the
+ * string are not valid hex characters.
+ */
+enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, size_t hex_buf_len,
+		uint8_t **dgst_buf_out, size_t *dgst_buf_len_out);
+
 #endif // _JALN_STRING_UTILS_H_
