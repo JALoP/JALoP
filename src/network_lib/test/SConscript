@@ -40,6 +40,9 @@ tests.append(env.TestDeptTest('test_jaln_message_helpers.c',
 tests.append(env.TestDeptTest('test_jaln_channel_info.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_digest_info.c', other_sources=[lib_common])[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_digest_resp_info.c', other_sources=[lib_common])[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_digest_msg_handler.c',
+	other_sources=[lib_common, dgst_info_obj, hlpr_obj, rec_info_obj, str_utils_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_string_utils.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_record_info.c',
