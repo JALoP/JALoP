@@ -26,14 +26,16 @@
  * limitations under the License.
  */
 
-#include "jaln_string_utils.h"
-#include "jal_asprintf_internal.h"
 #include <axl.h>
-#include <test-dept.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <limits.h>
+#include <test-dept.h>
+
+#include "jal_asprintf_internal.h"
+
+#include "jaln_string_utils.h"
 
 #define VALID_NUMERIC_STRING "65"
 #define NOT_VALID_NUMERIC_STRING "A"
@@ -176,4 +178,138 @@ void test_jaln_hex_to_bin_works_for_valid_input()
 
 	assert_equals(JAL_OK, jaln_hex_to_bin('F', &out));
 	assert_equals(15, out);
+}
+
+void test_hex_str_to_buf_works_for_00()
+{
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf("00", strlen("00"), &buf, &buf_len));
+	assert_equals(buf_len, 1);
+	assert_equals(0x00, buf[0]);
+	free(buf);
+}
+
+void test_hex_str_to_buf_works_for_10()
+{
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf("10", strlen("10"), &buf, &buf_len));
+	assert_equals(buf_len, 1);
+	assert_equals(0x10, buf[0]);
+	free(buf);
+}
+
+void test_hex_str_to_buf_works_for_ff()
+{
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf("ff", strlen("ff"), &buf, &buf_len));
+	assert_equals(buf_len, 1);
+	assert_equals(0xff, buf[0]);
+	free(buf);
+}
+
+void test_hex_str_to_buf_works_for_f0()
+{
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf("f0", strlen("f0"), &buf, &buf_len));
+	assert_equals(buf_len, 1);
+	assert_equals(0xf0, buf[0]);
+	free(buf);
+}
+
+void test_hex_str_to_buf_works_for_f()
+{
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf("f", strlen("f"), &buf, &buf_len));
+	assert_equals(buf_len, 1);
+	assert_equals(0xf, buf[0]);
+	free(buf);
+}
+void test_hex_str_to_buf_works_for_5()
+{
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf("5", strlen("5"), &buf, &buf_len));
+	assert_equals(buf_len, 1);
+	assert_equals(0x5, buf[0]);
+	free(buf);
+}
+void test_hex_str_to_buf_works_for_0()
+{
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf("0", strlen("0"), &buf, &buf_len));
+	assert_equals(buf_len, 1);
+	assert_equals(0x0, buf[0]);
+	free(buf);
+}
+void test_hex_str_to_buf_works_for_long_even_cnt()
+{
+	const char *str = "abcd123411aaff22";
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf(str, strlen(str), &buf, &buf_len));
+	assert_equals(buf_len, 8);
+	assert_equals(0xab, buf[0]);
+	assert_equals(0xcd, buf[1]);
+	assert_equals(0x12, buf[2]);
+	assert_equals(0x34, buf[3]);
+	assert_equals(0x11, buf[4]);
+	assert_equals(0xaa, buf[5]);
+	assert_equals(0xff, buf[6]);
+	assert_equals(0x22, buf[7]);
+	free(buf);
+}
+
+void test_hex_str_to_buf_works_for_long_even_cnt_fails_with_bad_string()
+{
+	const char *str = "bcd12341z1aaff22";
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(str, strlen(str), &buf, &buf_len));
+}
+
+void test_hex_str_to_buf_works_for_long_odd_cnt()
+{
+	const char *str = "abcd123411aaff223";
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_OK, jaln_hex_str_to_bin_buf(str, strlen(str), &buf, &buf_len));
+	assert_equals(buf_len, 9);
+	assert_equals(0x0a, buf[0]);
+	assert_equals(0xbc, buf[1]);
+	assert_equals(0xd1, buf[2]);
+	assert_equals(0x23, buf[3]);
+	assert_equals(0x41, buf[4]);
+	assert_equals(0x1a, buf[5]);
+	assert_equals(0xaf, buf[6]);
+	assert_equals(0xf2, buf[7]);
+	assert_equals(0x23, buf[8]);
+	free(buf);
+}
+
+void test_hex_str_to_buf_works_for_long_odd_cnt_fails_with_bad_string()
+{
+	const char *str = "abcd12341z1aaff22";
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(str, strlen(str), &buf, &buf_len));
+}
+
+void test_hex_fails_with_null_inputs()
+{
+	const char *str = "abcd123411aaff223";
+	uint8_t *buf = NULL;
+	size_t buf_len;
+	//assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(str, strlen(str), &buf, &buf_len));
+	assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(NULL, strlen(str), &buf, &buf_len));
+	assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(str, 0, &buf, &buf_len));
+	assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(str, strlen(str), NULL, &buf_len));
+	assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(str, strlen(str), &buf, NULL));
+	buf = (uint8_t*) 0xbadf00d;
+	assert_equals(JAL_E_INVAL, jaln_hex_str_to_bin_buf(str, strlen(str), &buf, &buf_len));
 }
