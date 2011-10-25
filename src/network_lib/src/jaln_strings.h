@@ -75,6 +75,8 @@
 
 #define JALN_DGST_SHA256 "sha256"
 
+#define JALN_ENC_XML "xml"
+
 #define JALN_STR_AUDIT "audit"
 #define JALN_STR_BINARY "binary"
 #define JALN_STR_BREAK "BREAK"
