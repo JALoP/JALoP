@@ -75,8 +75,12 @@ enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out,
 /**
  * Sanity check to make sure the MIME headers for a particular frame contain
  * the correct content-type and transfer encoding.
+ *
+ * @param[in] frame the VortexFrame to inspect
+ * @return axl_true if the content-type and content-transfer encoding are
+ * valid, axl_false otherwise.
  */
-int jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
+axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
 
 /**
  * Helper function to calculate the number of bytes needed to to convert a
