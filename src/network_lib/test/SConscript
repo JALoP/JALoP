@@ -11,8 +11,6 @@ env = env.Clone()
 ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code '
 env.Append(CCFLAGS=ccflags.split())
 
-sub_cb_obj = lib_env.SharedObject("../src/jaln_subscriber_callbacks.c")
-pub_cb_obj = lib_env.SharedObject("../src/jaln_publisher_callbacks.c")
 conn_cb_obj = lib_env.SharedObject("../src/jaln_connection_callbacks.c")
 ctx_obj = lib_env.SharedObject("../src/jaln_context.c")
 ch_info_obj = lib_env.SharedObject("../src/jaln_channel_info.c")
@@ -21,8 +19,11 @@ dgst_info_obj = lib_env.SharedObject("../src/jaln_digest_info.c")
 dgst_resp_info_obj = lib_env.SharedObject("../src/jaln_digest_resp_info.c")
 enc_obj = lib_env.SharedObject("../src/jaln_encoding.c")
 hlpr_obj = lib_env.SharedObject("../src/jaln_message_helpers.c")
+init_info_obj = lib_env.SharedObject("../src/jaln_init_info.c")
+pub_cb_obj = lib_env.SharedObject("../src/jaln_publisher_callbacks.c")
 rec_info_obj = lib_env.SharedObject("../src/jaln_record_info.c")
 str_utils_obj = lib_env.SharedObject("../src/jaln_string_utils.c")
+sub_cb_obj = lib_env.SharedObject("../src/jaln_subscriber_callbacks.c")
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common, ctx_obj, conn_cb_obj, dgst_obj, enc_obj, sub_cb_obj])[0].abspath)
@@ -57,6 +58,8 @@ tests.append(env.TestDeptTest('test_jaln_journal_resume_msg_handler.c',
 	other_sources=[lib_common, hlpr_obj, rec_info_obj, str_utils_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_subscribe_msg_handler.c',
 	other_sources=[lib_common, hlpr_obj, rec_info_obj], useProxies=True)[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_init_info.c',
+	other_sources=[lib_common, enc_obj])[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
