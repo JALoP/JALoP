@@ -55,6 +55,8 @@ tests.append(env.TestDeptTest('test_jaln_session.c',
 	other_sources=[lib_common, ch_info_obj, conn_cb_obj, ctx_obj, dgst_info_obj, dgst_obj, enc_obj, pub_cb_obj, sub_cb_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_journal_resume_msg_handler.c',
 	other_sources=[lib_common, hlpr_obj, rec_info_obj, str_utils_obj], useProxies=True)[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_subscribe_msg_handler.c',
+	other_sources=[lib_common, hlpr_obj, rec_info_obj], useProxies=True)[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
