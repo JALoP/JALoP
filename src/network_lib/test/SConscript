@@ -58,6 +58,8 @@ tests.append(env.TestDeptTest('test_jaln_journal_resume_msg_handler.c',
 	other_sources=[lib_common, hlpr_obj, rec_info_obj, str_utils_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_subscribe_msg_handler.c',
 	other_sources=[lib_common, hlpr_obj, rec_info_obj], useProxies=True)[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_init_msg_handler.c',
+	other_sources=[lib_common, enc_obj, hlpr_obj, init_info_obj, rec_info_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_init_info.c',
 	other_sources=[lib_common, enc_obj])[0].abspath)
 
