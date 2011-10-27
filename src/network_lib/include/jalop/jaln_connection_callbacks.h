@@ -36,7 +36,7 @@ extern "C" {
  */
 struct jaln_connection_callbacks {
 	/**
-	 * The JNL will execute this callback when it receives a 'connect'
+	 * The JNL will execute this callback when it receives a 'initialize'
 	 * message from the remote peer.
 	 * @param[in] req A structure containing the connection info requested by
 	 * the peer, including additional MIME headers.
@@ -64,8 +64,8 @@ struct jaln_connection_callbacks {
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
-	 * @returns JALN_CONNECT_ERR_NONE to accept the connection, or any of the
-	 * jaln_connect_errors to indicate the failure to return.
+	 * @returns JALN_CE_ACCEPT to accept the connection, or any of the
+	 * or'ed combination of jaln_connect_errors to indicate the failure to return.
 	 *
 	 * @note: This limits applications to a single error code. In
 	 * practice this is probably fine, but not sure it should be so limited...

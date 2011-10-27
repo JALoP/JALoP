@@ -270,7 +270,11 @@ struct jaln_payload_feeder {
  */
 enum jaln_connect_error {
 	JALN_CE_ACCEPT = 0,
-	JALN_CE_REJECT,
+	JALN_CE_UNSUPPORTED_VERSION   = 1 << 0,
+	JALN_CE_UNSUPPORTED_ENCODING  = 1 << 1,
+	JALN_CE_UNSUPPORTED_DIGEST    = 1 << 2,
+	JALN_CE_UNSUPPORTED_MODE      = 1 << 3,
+	JALN_CE_UNAUTHORIZED_MODE     = 1 << 4,
 };
 
 struct jaln_connection;
