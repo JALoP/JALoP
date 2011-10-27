@@ -92,6 +92,15 @@
 	"JAL-Unsupported-Mode: \r\n" \
 	"JAL-Unauthorized-Mode: \r\n\r\n"
 
+#define SOME_ENCODING "an_encoding"
+#define SOME_DIGEST "a_digest"
+#define EXPECTED_ACK\
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: initialize-ack\r\n" \
+	"JAL-Encoding: " SOME_ENCODING "\r\n" \
+	"JAL-Digest: " SOME_DIGEST "\r\n\r\n" \
+
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
 {
 	if (!frame) {
@@ -1130,3 +1139,34 @@ void test_create_init_nack_msg_does_not_crash_on_bad_input()
 	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_VERSION, &msg_out, &len));
 }
 
+void test_create_init_ack_msg_works_for_valid_input()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_OK, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, &len));
+	assert_not_equals((void*) NULL, msg_out);
+	assert_equals(strlen(EXPECTED_ACK) + 1, len);
+	assert_equals(0, memcmp(EXPECTED_ACK, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_init_ack_msg_returns_error_on_bad_input()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(NULL, SOME_DIGEST, &msg_out, &len));
+
+	msg_out = NULL;
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, NULL, &msg_out, &len));
+
+	msg_out = NULL;
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, NULL, &len));
+
+	msg_out = (char*) 0xbadf00d;
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, &len));
+
+	msg_out = NULL;
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, NULL));
+
+}
