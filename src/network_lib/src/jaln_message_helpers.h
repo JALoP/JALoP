@@ -208,4 +208,19 @@ enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type 
  */
 enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, size_t *headers_len_out);
 
+/**
+ * Create an 'initialize-nack' message.
+ *
+ * @param[in] err_codes A bit mask of jaln_connect_error reasons that the
+ * connection cannot be established.
+ * @param[out] msg_out This will contain the contents of the initialize-nack
+ * message
+ * @param[out] msg_len_out This will contain the length of the initialize-nack
+ * message.
+ *
+ * @return JAL_OK on success of JAL_E_INVAL if there is something wrong with
+ * the parameters.
+ */
+enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, char **msg_out, size_t *msg_len_out);
+
 #endif // _JALN_MESSAGE_HELPERS_H_

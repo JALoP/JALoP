@@ -632,6 +632,83 @@ out:
 		axl_list_cursor_free(iter);
 	}
 	return ret;
+}
 
+enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, char **msg_out, size_t *msg_len_out)
+{
+	if (err_codes == JALN_CE_ACCEPT || !msg_out || *msg_out || !msg_len_out) {
+		return JAL_E_INVAL;
+	}
+	enum jal_status ret = JAL_E_INVAL;
+	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT_NACK JALN_CRLF;
+	size_t msg_size = strlen(preamble) + 1;
+	char *msg = NULL;
+	axl_bool errors_listed = axl_false;
+	if (err_codes & JALN_CE_UNSUPPORTED_VERSION) {
+		errors_listed = axl_true;
+		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_VERSION JALN_COLON_SPACE JALN_CRLF))) {
+			goto err_out;
+		}
+	}
+	if (err_codes & JALN_CE_UNSUPPORTED_ENCODING) {
+		errors_listed = axl_true;
+		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_ENCODING JALN_COLON_SPACE JALN_CRLF))) {
+			goto err_out;
+		}
+	}
+	if (err_codes & JALN_CE_UNSUPPORTED_DIGEST) {
+		errors_listed = axl_true;
+		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_DIGEST JALN_COLON_SPACE JALN_CRLF))) {
+			goto err_out;
+		}
+	}
+	if (err_codes & JALN_CE_UNSUPPORTED_MODE) {
+		errors_listed = axl_true;
+		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_MODE JALN_COLON_SPACE JALN_CRLF))) {
+			goto err_out;
+		}
+	}
+	if (err_codes & JALN_CE_UNAUTHORIZED_MODE) {
+		errors_listed = axl_true;
+		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNAUTHORIZED_MODE JALN_COLON_SPACE JALN_CRLF))) {
+			goto err_out;
+		}
+	}
+	if (!errors_listed) {
+		goto err_out;
+	}
+	if (!jaln_safe_add_size(&msg_size, strlen(JALN_CRLF))) {
+		goto err_out;
+	}
+
+	msg = jal_malloc(msg_size);
+	msg[0] = '\0';
+	strcat(msg, preamble);
+
+	if (err_codes & JALN_CE_UNSUPPORTED_VERSION) {
+		strcat(msg, JALN_HDRS_UNSUPPORTED_VERSION JALN_COLON_SPACE JALN_CRLF);
+	}
+	if (err_codes & JALN_CE_UNSUPPORTED_ENCODING) {
+		strcat(msg, JALN_HDRS_UNSUPPORTED_ENCODING JALN_COLON_SPACE JALN_CRLF);
+	}
+	if (err_codes & JALN_CE_UNSUPPORTED_DIGEST) {
+		strcat(msg, JALN_HDRS_UNSUPPORTED_DIGEST JALN_COLON_SPACE JALN_CRLF);
+	}
+	if (err_codes & JALN_CE_UNSUPPORTED_MODE) {
+		strcat(msg, JALN_HDRS_UNSUPPORTED_MODE JALN_COLON_SPACE JALN_CRLF);
+	}
+	if (err_codes & JALN_CE_UNAUTHORIZED_MODE) {
+		strcat(msg, JALN_HDRS_UNAUTHORIZED_MODE JALN_COLON_SPACE JALN_CRLF);
+	}
+	strcat(msg, JALN_CRLF);
+
+	*msg_out = msg;
+	*msg_len_out = msg_size - 1;
+	ret = JAL_OK;
+	goto out;
+err_out:
+	free(msg);
+out:
+	return ret;
 }
 
