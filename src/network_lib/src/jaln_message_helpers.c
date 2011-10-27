@@ -712,3 +712,15 @@ out:
 	return ret;
 }
 
+enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, size_t *msg_len_out)
+{
+	if (!encoding || !digest || !msg_out || *msg_out || !msg_len_out) {
+		return JAL_E_INVAL;
+	}
+	// plus 1 for the NULL terminator
+	*msg_len_out = 1 + jal_asprintf(msg_out, JALN_MIME_PREAMBLE JALN_MSG_INIT_ACK JALN_CRLF \
+			  JALN_HDRS_ENCODING JALN_COLON_SPACE "%s" JALN_CRLF
+			  JALN_HDRS_DIGEST JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF,
+			  encoding, digest);
+	return JAL_OK;
+}

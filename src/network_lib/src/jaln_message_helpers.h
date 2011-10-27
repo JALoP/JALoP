@@ -223,4 +223,19 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
  */
 enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, char **msg_out, size_t *msg_len_out);
 
+/**
+ * Create an 'initialize-ack' message.
+ *
+ * @param[in] encoding The selected encoding
+ * @param[in] digest The selected digest
+ * @param[out] msg_out This will contain the contents of the initialize-ack
+ * message
+ * @param[out] msg_len_out This will contain the length of the initialize-ack
+ * message.
+ *
+ * @return JAL_OK on success of JAL_E_INVAL if there is something wrong with
+ * the parameters.
+ */
+enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, size_t *msg_len_out);
+
 #endif // _JALN_MESSAGE_HELPERS_H_
