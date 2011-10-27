@@ -52,6 +52,46 @@
 	"JAL-Message: sync\r\n" \
 	"JAL-Serial-Id: " sid_1_str "\r\n\r\n"
 
+#define EXPECTED_NACK_UNSUPP_VERSION \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: initialize-nack\r\n" \
+	"JAL-Unsupported-Version: \r\n\r\n"
+
+#define EXPECTED_NACK_UNSUPP_ENC \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: initialize-nack\r\n" \
+	"JAL-Unsupported-Encoding: \r\n\r\n"
+
+#define EXPECTED_NACK_UNSUPP_DIGEST \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: initialize-nack\r\n" \
+	"JAL-Unsupported-Digest: \r\n\r\n"
+
+#define EXPECTED_NACK_UNSUPP_MODE \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: initialize-nack\r\n" \
+	"JAL-Unsupported-Mode: \r\n\r\n"
+
+#define EXPECTED_NACK_UNAUTH_MODE \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: initialize-nack\r\n" \
+	"JAL-Unauthorized-Mode: \r\n\r\n"
+
+#define EXPECTED_NACK_ALL_ERRORS \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n" \
+	"JAL-Message: initialize-nack\r\n" \
+	"JAL-Unsupported-Version: \r\n" \
+	"JAL-Unsupported-Encoding: \r\n" \
+	"JAL-Unsupported-Digest: \r\n" \
+	"JAL-Unsupported-Mode: \r\n" \
+	"JAL-Unauthorized-Mode: \r\n\r\n"
+
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
 {
 	if (!frame) {
@@ -993,6 +1033,100 @@ void test_create_digest_resp_returns_error_with_bad_digest_info()
 
 	axl_list_append(dgst_resp_list, NULL);
 	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+}
 
+void test_create_init_nack_msg_works_for_unsupported_version()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_VERSION, &msg_out, &len));
+	assert_not_equals((void*) NULL, msg_out);
+	assert_equals(strlen(EXPECTED_NACK_UNSUPP_VERSION), len);
+	assert_equals(0, memcmp(EXPECTED_NACK_UNSUPP_VERSION, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_init_nack_msg_works_for_unsupported_encoding()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_ENCODING, &msg_out, &len));
+	assert_not_equals((void*) NULL, msg_out);
+	assert_equals(strlen(EXPECTED_NACK_UNSUPP_ENC), len);
+	assert_equals(0, memcmp(EXPECTED_NACK_UNSUPP_ENC, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_init_nack_msg_works_for_unsupported_digest()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_DIGEST, &msg_out, &len));
+	assert_not_equals((void*) NULL, msg_out);
+	assert_equals(strlen(EXPECTED_NACK_UNSUPP_DIGEST), len);
+	assert_equals(0, memcmp(EXPECTED_NACK_UNSUPP_DIGEST, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_init_nack_msg_works_for_unsupported_mode()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_MODE, &msg_out, &len));
+	assert_not_equals((void*) NULL, msg_out);
+	assert_equals(strlen(EXPECTED_NACK_UNSUPP_MODE), len);
+	assert_equals(0, memcmp(EXPECTED_NACK_UNSUPP_MODE, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_init_nack_msg_works_with_all_errors()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	enum jaln_connect_error errs =
+			JALN_CE_UNSUPPORTED_VERSION   |
+			JALN_CE_UNSUPPORTED_ENCODING  |
+			JALN_CE_UNSUPPORTED_DIGEST    |
+			JALN_CE_UNSUPPORTED_MODE      |
+			JALN_CE_UNAUTHORIZED_MODE;
+	assert_equals(JAL_OK, jaln_create_init_nack_msg(errs, &msg_out, &len));
+	assert_not_equals((void*) NULL, msg_out);
+	assert_equals(strlen(EXPECTED_NACK_ALL_ERRORS), len);
+	assert_equals(0, memcmp(EXPECTED_NACK_ALL_ERRORS, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_init_nack_msg_works_for_unauth_mode()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNAUTHORIZED_MODE, &msg_out, &len));
+	assert_not_equals((void*) NULL, msg_out);
+	assert_equals(strlen(EXPECTED_NACK_UNAUTH_MODE), len);
+	assert_equals(0, memcmp(EXPECTED_NACK_UNAUTH_MODE, msg_out, len));
+	free(msg_out);
+}
+
+void test_create_init_nack_msg_fails_if_no_err_specified()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(JALN_CE_ACCEPT, &msg_out, &len));
+}
+
+void test_create_init_nack_msg_does_not_crash_on_bad_input()
+{
+	char *msg_out = NULL;
+	size_t len = 0;
+	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(1 << 5, &msg_out, &len));
+
+	msg_out = NULL;
+	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_VERSION, NULL, &len));
+
+	msg_out = NULL;
+	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_VERSION, &msg_out, NULL));
+
+	msg_out = (char*) 0xbadf00d;;
+	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_VERSION, &msg_out, &len));
 }
 
