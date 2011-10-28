@@ -26,21 +26,20 @@
  * limitations under the License.
  */
 
+#include <ctype.h>
 #include <inttypes.h>
 #include <jalop/jal_status.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <test-dept.h>
 #include <vortex.h>
 
 #include "jal_alloc.h"
 
 #include "jaln_message_helpers.h"
-
 #include "jaln_digest_info.h"
 #include "jaln_digest_msg_handler.h"
-#include <test-dept.h>
-#include <string.h>
-#include <ctype.h>
 
 #define sid_1_str "sid_1"
 #define sid_2_str "sid_2"
@@ -286,6 +285,8 @@ void test_process_dgst_works_with_good_input()
 	assert_string_equals(sid_3_str, di->serial_id);
 	assert_equals(dgst_len, di->digest_len);
 	assert_equals(0, memcmp(dgst_3_val, di->digest, di->digest_len));
+
+	axl_list_cursor_free(cursor);
 }
 
 void test_process_dgst_fails_when_ct_and_xfr_check_fails()

@@ -43,6 +43,7 @@ extern "C" {
  *
  * @param[in] str The string to convert
  * @param[out] out The converted value
+ *
  * @return axl_true on success, axl_false otherwise.
  */
 axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
@@ -60,8 +61,10 @@ axl_bool jal_ascii_to_size_t(const char *str, size_t *out);
 
 /**
  * Helper function to convert a hex character to a uint8_t value.
+ *
  * @param [in] c The character to convert (0-9, a-f, or A-F)
  * @param [out] out The corresponding hex value.
+ *
  * @return JAL_OK on success, or JAL_E_INVAL
  */
 enum jal_status jaln_hex_to_bin(char c, uint8_t *out);
