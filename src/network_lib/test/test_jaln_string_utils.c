@@ -51,11 +51,8 @@ void teardown()
 
 void test_jaln_ascii_to_uint64_succeeds()
 {
-	axl_bool ret = axl_false;
 	uint64_t out = 0;
-	ret = jaln_ascii_to_uint64(VALID_NUMERIC_STRING, &out);
-	assert_true(ret);
-	assert_not_equals(axl_true, out);
+	assert_true(jaln_ascii_to_uint64(VALID_NUMERIC_STRING, &out));
 	assert_equals(65, out);
 }
 
@@ -91,3 +88,11 @@ void test_jal_ascii_to_size_t_fails_with_invalid_input()
 	ret = jal_ascii_to_size_t(NOT_VALID_NUMERIC_STRING, &out);
 	assert_equals(axl_false, ret);
 }
+
+void test_jaln_ascii_to_uint64_fails_with_null_inputs()
+{
+	uint64_t out = 0;
+	assert_false(jaln_ascii_to_uint64(NULL, &out));
+	assert_false(jaln_ascii_to_uint64(VALID_NUMERIC_STRING, NULL));
+}
+

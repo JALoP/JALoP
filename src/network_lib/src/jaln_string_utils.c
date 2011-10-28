@@ -35,11 +35,14 @@
 
 axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out)
 {
+	if (!str || !out) {
+		return axl_false;
+	}
 	char *tmp = strdup(str);
 	axl_stream_trim(tmp);
 	char *end;
 	axl_bool ret = axl_false;
-	if (tmp[0] < '1' || tmp[0] > '9') {
+	if ('0' > tmp[0] || '9' < tmp[0]) {
 		goto out;
 	}
 	errno = 0;
@@ -47,15 +50,15 @@ axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out)
 	int my_errno = errno;
 	// strtoull() will stop processing at the first non-numeric
 	// value, make sure there is no trailing garbage.
-	if (*end != '\0') {
+	if ('\0' != *end) {
 		goto out;
 	}
-	if (((val == 0) || (val == ULLONG_MAX)) &&
-			(my_errno != 0)) {
+	if (((0 == val) || (ULLONG_MAX == val)) &&
+			(0 != my_errno)) {
 		// error parsing the number
 		goto out;
 	}
-	if (val > UINT64_MAX) {
+	if (UINT64_MAX < val) {
 		// add an error if the value overflows
 		goto out;
 	}
