@@ -78,4 +78,11 @@ void jaln_axl_destroy_digest_resp_info(axlPointer ptr);
  */
 int jaln_axl_equals_func_digest_resp_info_serial_id(axlPointer a, axlPointer b);
 
+/**
+ * Function to create an axlList that can hold jaln_digest_resp_info objects.
+ *
+ * @return an axlList
+ */
+axlList *jaln_digest_resp_list_create();
+
 #endif //JALN_DIGEST_RESP_INFO_H

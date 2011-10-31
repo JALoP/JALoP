@@ -81,4 +81,26 @@ void jaln_axl_destroy_digest_info(axlPointer ptr);
  */
 int jaln_axl_equals_func_digest_info_serial_id(axlPointer a, axlPointer b);
 
+/**
+ * Simple function to compare the digest values for 2 jaln_digest_info
+ * structures.
+ * This function only compares the digest values, it ignores the serial_ids.
+ * Two digests are considered equal IFF the digests have the same length AND
+ * every byte is equals. If either input is NULL, or has a NULL digest, or
+ * length of 0, then the digests are considered unequal.
+ *
+ * @param[in] a The first digest_info
+ * @param[in] b The second digest_info
+ *
+ * @return axl_true if both digest values are the same.
+ */
+axl_bool jaln_digests_are_equal(struct jaln_digest_info *a, struct jaln_digest_info *b);
+
+/**
+ * Create an axlLIst suitable for storing struct jaln_digest_info objects
+ *
+ * @return a new axlList
+ */
+axlList *jaln_digest_info_list_create();
+
 #endif //JALN_DIGEST_INFO_H

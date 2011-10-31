@@ -28,8 +28,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <jalop/jal_status.h>
 #include <string.h>
+
 #include "jal_alloc.h"
+#include "jal_error_callback_internal.h"
 #include "jaln_digest_resp_info.h"
 
 struct jaln_digest_resp_info *jaln_digest_resp_info_create(const char *serial_id,
@@ -73,3 +76,14 @@ int jaln_axl_equals_func_digest_resp_info_serial_id(axlPointer a, axlPointer b)
 	}
 	return strcmp(di_a->serial_id, di_b->serial_id);
 }
+
+axlList *jaln_digest_resp_list_create()
+{
+	axlList *resps = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id,
+			jaln_axl_destroy_digest_resp_info);
+	if (!resps) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	return resps;
+}
+

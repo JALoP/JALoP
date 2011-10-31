@@ -28,8 +28,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <jalop/jal_status.h>
 #include <string.h>
+
 #include "jal_alloc.h"
+#include "jal_error_callback_internal.h"
 #include "jaln_digest_info.h"
 
 struct jaln_digest_info *jaln_digest_info_create(const char *serial_id,
@@ -76,4 +79,25 @@ int jaln_axl_equals_func_digest_info_serial_id(axlPointer a, axlPointer b)
 		return 1;
 	}
 	return strcmp(di_a->serial_id, di_b->serial_id);
+}
+
+axlList *jaln_digest_info_list_create()
+{
+	axlList *infos = axl_list_new(jaln_axl_equals_func_digest_info_serial_id,
+			jaln_axl_destroy_digest_info);
+	if (!infos) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	return infos;
+}
+
+axl_bool jaln_digests_are_equal(struct jaln_digest_info *a, struct jaln_digest_info *b)
+{
+	if (!a || !a->digest || !b || !b->digest) {
+		return axl_false;
+	}
+	if (a->digest_len != b->digest_len) {
+		return axl_false;
+	}
+	return 0 == memcmp(a->digest, b->digest, a->digest_len);
 }
