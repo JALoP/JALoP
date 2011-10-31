@@ -72,7 +72,7 @@ struct jaln_connection_callbacks {
 	 *
 	 *
 	 */
-	enum jaln_connect_error (*connect_request_handler)(const struct jaln_connect_request *req,
+	enum jaln_connect_error (*connect_request_handler)(const struct jaln_connect_request *const req,
 			int *selected_encoding,
 			int *selected_digest,
 			void *user_data);
@@ -83,7 +83,7 @@ struct jaln_connection_callbacks {
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
-	void (*on_channel_close)(const struct jaln_channel_info *channel_info,
+	void (*on_channel_close)(const struct jaln_channel_info *const channel_info,
 		void *user_data);
 
 	/**
@@ -92,7 +92,7 @@ struct jaln_connection_callbacks {
 	 * @param[in] jaln_conn The connection object. The JNL releases this
 	 * object when the function returns.
 	 */
-	void (*on_connection_close)(const struct jaln_connection *jal_conn, void *user_data);
+	void (*on_connection_close)(const struct jaln_connection *const jal_conn, void *user_data);
 
 	/**
 	 * The JNL will execute this callback when it receives a 'connect-ack'
@@ -104,7 +104,7 @@ struct jaln_connection_callbacks {
 	 *
 	 * @see jaln_connect_ack
 	 */
-	void (*connect_ack)(const struct jaln_connect_ack *ack,
+	void (*connect_ack)(const struct jaln_connect_ack *const ack,
 			    void *user_data);
 
 	/**
@@ -116,7 +116,7 @@ struct jaln_connection_callbacks {
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 */
-	void (*connect_nack)(const struct jaln_connect_nack *nack,
+	void (*connect_nack)(const struct jaln_connect_nack *const nack,
 			     void *user_data);
 };
 
