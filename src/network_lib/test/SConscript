@@ -62,6 +62,8 @@ tests.append(env.TestDeptTest('test_jaln_init_msg_handler.c',
 	other_sources=[lib_common, enc_obj, hlpr_obj, init_info_obj, rec_info_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_init_info.c',
 	other_sources=[lib_common, enc_obj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_sync_msg_handler.c',
+	other_sources=[lib_common, hlpr_obj, rec_info_obj], useProxies=True)[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
