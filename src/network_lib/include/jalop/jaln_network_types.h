@@ -180,7 +180,7 @@ struct jaln_connect_request {
 	/** The address of the remote peer */
 	char *addr;
 	/** Information about the connection request; */
-	struct jaln_channel_info ch_info;
+	struct jaln_channel_info *ch_info;
 	/** The requested type of data to transfer using this channel. */
 	enum jaln_record_type type;
 	/** The version of JALoP that the peers are using to communicate. */
@@ -193,7 +193,7 @@ struct jaln_connect_request {
 	/** The number of encodings in the array. */
 	int enc_cnt;
 	/** The proposed digest methods. */
-	char **digest;
+	char **digests;
 	/** The number of digests in the array. */
 	int dgst_cnt;
 	/**
@@ -209,11 +209,6 @@ struct jaln_connect_request {
 	 * sender of the 'connect' message.
 	 */
 	char *jaln_agent;
-	/**
-	 * This list contains any extra headers not processed by the JNL. It
-	 * only contains additional headers not included the JALoP spec.
-	 */
-	struct jaln_mime_header *headers;
 };
 
 /**
