@@ -39,6 +39,8 @@ tests.append(env.TestDeptTest('test_jaln_channel_info.c',
 tests.append(env.TestDeptTest('test_jaln_digest_info.c', other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_string_utils.c',
 	other_sources=[lib_common])[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_record_info.c',
+	other_sources=[lib_common])[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
