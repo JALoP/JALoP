@@ -38,6 +38,7 @@
 #include "jaln_digest_info.h"
 #include "jaln_encoding.c"
 #include "jaln_message_helpers.h"
+#include "jaln_record_info.h"
 
 #include "jaln_digest_info.h"
 #include <test-dept.h>
@@ -190,9 +191,37 @@ static char *output_str;
 	"JAL-Data-Class: log\r\n" \
 	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
 
+#define EXPECTED_JOURNAL_REC_HDRS \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n"\
+	"JAL-Message: journal-record\r\n" \
+	"JAL-Serial-Id: " sid_1_str "\r\n" \
+	"JAL-System-Metadata-Length: 10\r\n" \
+	"JAL-Application-Metadata-Length: 20\r\n" \
+	"JAL-Journal-Length: 30\r\n\r\n"
+
+#define EXPECTED_AUDIT_REC_HDRS \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n"\
+	"JAL-Message: audit-record\r\n" \
+	"JAL-Serial-Id: " sid_1_str "\r\n" \
+	"JAL-System-Metadata-Length: 10\r\n" \
+	"JAL-Application-Metadata-Length: 20\r\n" \
+	"JAL-Audit-Length: 30\r\n\r\n"
+
+#define EXPECTED_LOG_REC_HDRS \
+	"Content-Type: application/beep+jalop\r\n" \
+	"Content-Transfer-Encoding: binary\r\n"\
+	"JAL-Message: log-record\r\n" \
+	"JAL-Serial-Id: " sid_1_str "\r\n" \
+	"JAL-System-Metadata-Length: 10\r\n" \
+	"JAL-Application-Metadata-Length: 20\r\n" \
+	"JAL-Log-Length: 30\r\n\r\n"
+
 axlList *dgst_list;
 axlList *dgst_algs;
 axlList *xml_encs;
+static struct jaln_record_info *rec_info;
 void setup()
 {
 	replace_function(vortex_frame_mime_header_content, fake_get_mime_content);
@@ -220,6 +249,14 @@ void setup()
 	xml_encs = axl_list_new(jaln_string_list_case_insensitive_func, free);
 	axl_list_append(xml_encs, strdup("xml_enc_1"));
 	axl_list_append(xml_encs, strdup("xml_enc_2"));
+
+	rec_info = jaln_record_info_create();
+	rec_info->type = JALN_RTYPE_LOG;
+	rec_info->serial_id = jal_strdup(sid_1_str);
+
+	rec_info->sys_meta_len = 10;
+	rec_info->app_meta_len = 20;
+	rec_info->payload_len = 30;
 }
 
 void teardown()
@@ -230,6 +267,7 @@ void teardown()
 	axl_list_free(dgst_list);
 	axl_list_free(dgst_algs);
 	axl_list_free(xml_encs);
+	jaln_record_info_destroy(&rec_info);
 }
 
 void test_create_journal_resume_msg_with_valid_parameters()
@@ -747,3 +785,58 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, type, dgst_algs, xml_encs, &msg_out, &len));
 }
 
+void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()
+{
+	char *headers_out = NULL;
+	size_t headers_out_len = 0;
+	rec_info->type = 0;
+	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
+}
+
+void test_create_record_ans_rpy_headers_fails_for_bad_input()
+{
+	char *headers_out = NULL;
+	size_t headers_out_len = 0;
+	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(NULL, &headers_out, &headers_out_len));
+	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, NULL, &headers_out_len));
+	headers_out = (char*) 0xbadf00d;
+	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
+	headers_out = NULL;
+	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, NULL));
+}
+
+void test_create_record_ans_rpy_headers_works_for_journal()
+{
+	char *headers_out = NULL;
+	size_t headers_out_len = 0;
+	rec_info->type = JALN_RTYPE_JOURNAL;
+	assert_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
+	assert_not_equals((void*)NULL, headers_out);
+	assert_equals(strlen(EXPECTED_JOURNAL_REC_HDRS), headers_out_len);
+	assert_equals(0, memcmp(EXPECTED_JOURNAL_REC_HDRS, headers_out, headers_out_len));
+	free(headers_out);
+}
+
+void test_create_record_ans_rpy_headers_works_for_audit()
+{
+	char *headers_out = NULL;
+	size_t headers_out_len = 0;
+	rec_info->type = JALN_RTYPE_AUDIT;
+	assert_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
+	assert_not_equals((void*)NULL, headers_out);
+	assert_equals(strlen(EXPECTED_AUDIT_REC_HDRS), headers_out_len);
+	assert_equals(0, memcmp(EXPECTED_AUDIT_REC_HDRS, headers_out, headers_out_len));
+	free(headers_out);
+}
+
+void test_create_record_ans_rpy_headers_works_for_log()
+{
+	char *headers_out = NULL;
+	size_t headers_out_len = 0;
+	rec_info->type = JALN_RTYPE_LOG;
+	assert_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
+	assert_not_equals((void*)NULL, headers_out);
+	assert_equals(strlen(EXPECTED_LOG_REC_HDRS), headers_out_len);
+	assert_equals(0, memcmp(EXPECTED_LOG_REC_HDRS, headers_out, headers_out_len));
+	free(headers_out);
+}
