@@ -27,6 +27,8 @@
  */
 #ifndef _JALN_RECORD_INFO_H_
 #define _JALN_RECORD_INFO_H_
+
+#include <axl.h>
 #include <jalop/jaln_network.h>
 
 /**
@@ -40,6 +42,15 @@ struct jaln_record_info *jaln_record_info_create();
  * @param[in] rec_info The record_info object to destroy.
  */
 void jaln_record_info_destroy(struct jaln_record_info **rec_info);
+
+/**
+ * Check to see if a jaln_record_info structure is valid.
+ *
+ * @param[in] info The jaln_record_info object to check.
+ *
+ * @return axl_true if the record is valid, axl_false otherwise.
+ */
+axl_bool jaln_record_info_is_valid(struct jaln_record_info *info);
 
 #endif // _JALN_RECORD_INFO_H_
 

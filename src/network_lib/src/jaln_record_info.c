@@ -45,3 +45,33 @@ void jaln_record_info_destroy(struct jaln_record_info **rec_info) {
 	*rec_info = NULL;
 }
 
+axl_bool jaln_record_info_is_valid(struct jaln_record_info *rec_info)
+{
+	if (!rec_info) {
+		return axl_false;;
+	}
+	if (0 == rec_info->sys_meta_len) {
+		return axl_false;;
+	}
+	if (NULL == rec_info->serial_id) {
+		return axl_false;
+	}
+	switch (rec_info->type) {
+	case JALN_RTYPE_AUDIT:
+		// fall through
+	case JALN_RTYPE_JOURNAL:
+		if (0 == rec_info->payload_len) {
+			return axl_false;;
+		}
+		break;
+	case JALN_RTYPE_LOG:
+		if ((0 == rec_info->payload_len) && (0 == rec_info->app_meta_len)) {
+			return axl_false;;
+		}
+		break;
+	default:
+		return axl_false;
+	}
+	return axl_true;;
+}
+
