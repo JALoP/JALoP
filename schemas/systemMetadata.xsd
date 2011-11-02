@@ -71,7 +71,7 @@
 		<restriction base="string">
 			<enumeration value="journal"/>
 			<enumeration value="audit"/>
-			<enumeration value="jog"/>
+			<enumeration value="log"/>
 		</restriction>
 	</simpleType>
 </schema>
