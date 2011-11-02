@@ -19,6 +19,7 @@ dgst_obj = lib_env.SharedObject("../src/jaln_digest.c")
 dgst_info_obj = lib_env.SharedObject("../src/jaln_digest_info.c")
 enc_obj = lib_env.SharedObject("../src/jaln_encoding.c")
 hlpr_obj = lib_env.SharedObject("../src/jaln_message_helpers.c")
+rec_info_obj = lib_env.SharedObject("../src/jaln_record_info.c")
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common, ctx_obj, conn_cb_obj, dgst_obj, enc_obj, sub_cb_obj])[0].abspath)
@@ -33,7 +34,7 @@ tests.append(env.TestDeptTest('test_jaln_digest.c',
 tests.append(env.TestDeptTest('test_jaln_encoding.c',
 	other_sources=[lib_common, ctx_obj, dgst_obj, sub_cb_obj, pub_cb_obj, conn_cb_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_message_helpers.c',
-	other_sources=[lib_common, dgst_info_obj], useProxies=True)[0].abspath)
+	other_sources=[lib_common, dgst_info_obj, rec_info_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_channel_info.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_digest_info.c', other_sources=[lib_common])[0].abspath)

@@ -156,4 +156,16 @@ axl_bool jaln_safe_add_size(size_t *base, size_t inc);
 enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type type,
 		axlList *dgst_algs, axlList *xml_encodings, char **msg_out, size_t *msg_len_out);
 
+/**
+ * Create the headers for a ANS reply to a 'subscribe' message.
+ *
+ * @param[in] rec_info The record info structure describing the record to be
+ * sent.
+ * @param[out] headers_out This will contain the full MIME headers, including
+ * the pair of CR LF to designate the end of the headers.
+ * @param[out] headers_len_out This will be set to the length of the headers
+ * (not including the trailing '\0' character.
+ */
+enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, size_t *headers_len_out);
+
 #endif // _JALN_MESSAGE_HELPERS_H_

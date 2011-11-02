@@ -38,6 +38,7 @@
 #include "jaln_context.h"
 #include "jaln_digest_info.h"
 #include "jaln_message_helpers.h"
+#include "jaln_record_info.h"
 #include "jaln_strings.h"
 
 enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
@@ -457,5 +458,45 @@ out:
 		axl_list_cursor_free(cursor);
 	}
 	return ret;
+}
+
+enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, size_t *headers_len_out)
+{
+	if (!rec_info || !headers_out || *headers_out || !headers_len_out) {
+		return JAL_E_INVAL;;
+	}
+	if (!jaln_record_info_is_valid(rec_info)) {
+		return JAL_E_INVAL;
+	}
+
+#define REC_FORMAT_STR JALN_MIME_PREAMBLE "%s" JALN_CRLF \
+		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE "%s" JALN_CRLF \
+		JALN_HDRS_SYS_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
+		JALN_HDRS_APP_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
+		"%s" JALN_COLON_SPACE "%" PRIu64 JALN_CRLF JALN_CRLF
+
+	const char *length_header = NULL;
+	const char *msg = NULL;
+	switch(rec_info->type) {
+	case JALN_RTYPE_JOURNAL:
+		length_header = JALN_HDRS_JOURNAL_LEN;
+		msg = JALN_MSG_JOURNAL;
+		break;
+	case JALN_RTYPE_AUDIT:
+		length_header = JALN_HDRS_AUDIT_LEN;
+		msg = JALN_MSG_AUDIT;
+		break;
+	case JALN_RTYPE_LOG:
+		length_header = JALN_HDRS_LOG_LEN;
+		msg = JALN_MSG_LOG;
+		break;
+	default:
+		return JAL_E_INVAL;
+	}
+	*headers_len_out = jal_asprintf(headers_out, REC_FORMAT_STR, msg, rec_info->serial_id,
+			rec_info->sys_meta_len, rec_info->app_meta_len,
+			length_header, rec_info->payload_len);
+
+	return JAL_OK;
 }
 
