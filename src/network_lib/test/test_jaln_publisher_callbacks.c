@@ -114,31 +114,31 @@ int my_release_audit_data(
 	return 0;
 }
 
-int my_acquire_journal_feeder(
+enum jal_status my_acquire_journal_feeder(
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
-	return 0;
+	return JAL_OK;
 }
 
-void my_release_journal_feeder(
+enum jal_status my_release_journal_feeder(
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
-	return;
+	return JAL_OK;
 }
 
-void my_on_record_complete(
+enum jal_status my_on_record_complete(
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) char *serial_id,
 		__attribute__((unused)) void *user_data)
 {
-	return;
+	return JAL_OK;
 }
 
 void my_sync(
