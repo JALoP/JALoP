@@ -1,5 +1,5 @@
 /**
- * @file jal_string_utils.h
+ * @file jaln_string_utils.h
  *
  * APIs for implementing and registering additional digest algorithms
  *
@@ -57,7 +57,7 @@ axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
  * @param[out] The converted value
  * @return axl_true on success, axl_false otherwise
  */
-axl_bool jal_ascii_to_size_t(const char *str, size_t *out);
+axl_bool jaln_ascii_to_size_t(const char *str, size_t *out);
 
 /**
  * Helper function to convert a hex character to a uint8_t value.

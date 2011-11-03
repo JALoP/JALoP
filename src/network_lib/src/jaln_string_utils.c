@@ -1,5 +1,5 @@
 /**
- * @file jal_string_utils.c
+ * @file jaln_string_utils.c
  *
  * Various string utilities
  *
@@ -70,7 +70,7 @@ out:
 	return ret;
 }
 
-axl_bool jal_ascii_to_size_t(const char *str, size_t *out)
+axl_bool jaln_ascii_to_size_t(const char *str, size_t *out)
 {
 	uint64_t tmp_out;
 	if (!jaln_ascii_to_uint64(str, &tmp_out)) {
