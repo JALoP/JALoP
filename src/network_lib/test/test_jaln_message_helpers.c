@@ -501,7 +501,7 @@ void test_create_sync_msg_works()
 	char *msg_out = NULL;
 	size_t len;
 	assert_equals(JAL_OK, jaln_create_sync_msg(sid_1_str, &msg_out, &len));
-	assert_equals(strlen(EXPECTED_SYNC_MSG) + 1, len);
+	assert_equals(strlen(EXPECTED_SYNC_MSG), len);
 	assert_equals(0, memcmp(EXPECTED_SYNC_MSG, msg_out, len));
 	free(msg_out);
 }
@@ -705,7 +705,7 @@ void test_create_digest_message_works()
 	assert_equals(JAL_OK, jaln_create_digest_msg(dgst_list, &msg_out, &msg_out_len));
 
 	assert_equals(0, strcmp(EXPECTED_DGST_MSG, msg_out));
-	assert_equals(strlen(EXPECTED_DGST_MSG) + 1, msg_out_len);
+	assert_equals(strlen(EXPECTED_DGST_MSG), msg_out_len);
 	free(msg_out);
 }
 
@@ -776,7 +776,7 @@ void test_create_init_msg_works_for_publish()
 	size_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_PUBLISHER, JALN_RTYPE_LOG,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_PUB_LOG) + 1, len);
+	assert_equals(strlen(INIT_PUB_LOG), len);
 	assert_equals(0, memcmp(INIT_PUB_LOG, msg_out, len));
 	free(msg_out);
 }
@@ -787,7 +787,7 @@ void test_create_init_msg_works_for_log()
 	size_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG) + 1, len);
+	assert_equals(strlen(INIT_SUB_LOG), len);
 	assert_equals(0, memcmp(INIT_SUB_LOG, msg_out, len));
 	free(msg_out);
 }
@@ -798,7 +798,7 @@ void test_create_init_msg_works_for_audit()
 	size_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_AUDIT,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_AUDIT) + 1, len);
+	assert_equals(strlen(INIT_SUB_AUDIT), len);
 	assert_equals(0, memcmp(INIT_SUB_AUDIT, msg_out, len));
 	free(msg_out);
 }
@@ -809,7 +809,7 @@ void test_create_init_msg_works_for_journal_data()
 	size_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_JOURNAL,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_JOURNAL) + 1, len);
+	assert_equals(strlen(INIT_SUB_JOURNAL), len);
 	assert_equals(0, memcmp(INIT_SUB_JOURNAL, msg_out, len));
 	free(msg_out);
 }
@@ -821,7 +821,7 @@ void test_create_init_msg_works_with_no_enc()
 	size_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
 				dgst_algs, empty_list, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG_NO_ENC) + 1, len);
+	assert_equals(strlen(INIT_SUB_LOG_NO_ENC), len);
 	assert_equals(0, memcmp(INIT_SUB_LOG_NO_ENC, msg_out, len));
 	axl_list_free(empty_list);
 	free(msg_out);
@@ -834,7 +834,7 @@ void test_create_init_msg_works_with_no_digests()
 	size_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
 				empty_list, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG_NO_DGST) + 1, len);
+	assert_equals(strlen(INIT_SUB_LOG_NO_DGST), len);
 	assert_equals(0, memcmp(INIT_SUB_LOG_NO_DGST, msg_out, len));
 	axl_list_free(empty_list);
 	free(msg_out);
@@ -1005,7 +1005,7 @@ void test_create_digest_resp_message_works()
 	assert_equals(JAL_OK, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
 
 	assert_equals(0, strcmp(EXPECTED_DGST_RESP_MSG, msg_out));
-	assert_equals(strlen(EXPECTED_DGST_RESP_MSG) + 1, msg_out_len);
+	assert_equals(strlen(EXPECTED_DGST_RESP_MSG), msg_out_len);
 	free(msg_out);
 }
 
@@ -1145,7 +1145,7 @@ void test_create_init_ack_msg_works_for_valid_input()
 	size_t len = 0;
 	assert_equals(JAL_OK, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
-	assert_equals(strlen(EXPECTED_ACK) + 1, len);
+	assert_equals(strlen(EXPECTED_ACK), len);
 	assert_equals(0, memcmp(EXPECTED_ACK, msg_out, len));
 	free(msg_out);
 }

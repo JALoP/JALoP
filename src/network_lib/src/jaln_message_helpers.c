@@ -83,7 +83,7 @@ enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
 	strcat(msg, offset_str);
 	strcat(msg, JALN_CRLF JALN_CRLF);
 	*msg_out = msg;
-	*msg_out_len = cnt;
+	*msg_out_len = cnt - 1;
 	ret = JAL_OK;
 	goto out;
 out:
@@ -106,9 +106,7 @@ enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg_out, size
 	if (len <= 0) {
 		goto err_out;
 	}
-	// +1 since asprintf will return the length (not including NULL
-	// terminator) and this returns the full size of the data.
-	*msg_len = (size_t) len + 1;
+	*msg_len = (size_t) len;
 	*msg_out = msg;
 	ret = JAL_OK;
 
@@ -144,7 +142,7 @@ enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out,
 	strcat(msg, serial_id);
 	strcat(msg, JALN_CRLF JALN_CRLF);
 	*msg_out = msg;
-	*msg_out_len = cnt;
+	*msg_out_len = cnt - 1;
 	ret = JAL_OK;
 out:
 	return ret;
@@ -277,7 +275,7 @@ enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_
 	}
 
 	*msg_out = msg;
-	*msg_len = len;
+	*msg_len = len - 1;
 	ret = JAL_OK;
 	goto out;
 
@@ -452,7 +450,7 @@ enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type 
 	}
 	strcat(init_msg, JALN_CRLF);
 	*msg_out = init_msg;
-	*msg_len_out = char_cnt;
+	*msg_len_out = char_cnt - 1;
 	ret = JAL_OK;
 out:
 	if (cursor) {
@@ -621,7 +619,7 @@ enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **
 	}
 
 	*msg_out = msg;
-	*msg_len = len;
+	*msg_len = len - 1;
 	ret = JAL_OK;
 	goto out;
 
@@ -717,8 +715,7 @@ enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *diges
 	if (!encoding || !digest || !msg_out || *msg_out || !msg_len_out) {
 		return JAL_E_INVAL;
 	}
-	// plus 1 for the NULL terminator
-	*msg_len_out = 1 + jal_asprintf(msg_out, JALN_MIME_PREAMBLE JALN_MSG_INIT_ACK JALN_CRLF \
+	*msg_len_out = jal_asprintf(msg_out, JALN_MIME_PREAMBLE JALN_MSG_INIT_ACK JALN_CRLF \
 			  JALN_HDRS_ENCODING JALN_COLON_SPACE "%s" JALN_CRLF
 			  JALN_HDRS_DIGEST JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF,
 			  encoding, digest);

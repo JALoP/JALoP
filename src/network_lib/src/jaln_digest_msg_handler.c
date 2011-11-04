@@ -81,7 +81,7 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 	}
 	int last_tok_idx = 0;
 	int idx;
-	for (idx = 0; idx <= payload_sz; idx++) {
+	for (idx = 0; idx < payload_sz; idx++) {
 		axl_bool looking_for_sid = axl_false;
 		if ('=' == payload[idx]) {
 			size_t len = idx - last_tok_idx;
@@ -127,16 +127,10 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 			if (looking_for_sid) {
 				goto err_out;
 			}
-		} else if ('\0' == payload[idx]) {
-			if (idx != payload_sz) {
-				// more garbage after this '\0'
-				goto err_out;
-			}
-			if (last_tok_idx != idx) {
-				// trailing garbage after the last entry;
-				goto err_out;
-			}
 		}
+	}
+	if (last_tok_idx != idx) {
+		goto err_out;
 	}
 	int rec_cnt = axl_list_length(dgst_list);
 	if ((0 >= rec_cnt) || ((uint64_t) rec_cnt != expected_cnt)) {

@@ -76,7 +76,7 @@ enum jal_status jaln_process_digest_resp(VortexFrame *frame, axlList **dgst_resp
 	char *status_str;
 	int last_tok_idx = 0;
 	int idx;
-	for (idx = 0; idx <= payload_sz; idx++) {
+	for (idx = 0; idx < payload_sz; idx++) {
 		axl_bool looking_for_sid = axl_false;
 		enum jaln_digest_status status = JALN_DIGEST_STATUS_UNKNOWN;
 		if ('=' == payload[idx]) {
@@ -132,16 +132,11 @@ enum jal_status jaln_process_digest_resp(VortexFrame *frame, axlList **dgst_resp
 			if (looking_for_sid) {
 				goto err_out;
 			}
-		} else if ('\0' == payload[idx]) {
-			if (idx != payload_sz) {
-				// more garbage after this '\0'
-				goto err_out;
-			}
-			if (last_tok_idx != idx) {
-				// trailing garbage after the last entry;
-				goto err_out;
-			}
 		}
+	}
+	if (last_tok_idx != idx) {
+		// trailing garbage after the last entry;
+		goto err_out;
 	}
 	int rec_cnt = axl_list_length(dgst_resp_list);
 	if ((0 >= rec_cnt) || ((uint64_t) rec_cnt != expected_cnt)) {
