@@ -274,3 +274,15 @@ enum jal_status jaln_session_add_to_dgst_list(struct jaln_session *sess, char *s
 	return JAL_OK;
 }
 
+int jaln_ptrs_equal(axlPointer a, axlPointer b)
+{
+	// this function is used only for storing struct jaln_session objects
+	// in an axlHash. A comparison against the pointer value is sufficient.
+	return a - b;
+}
+
+axlList *jaln_session_list_create()
+{
+	return axl_list_new(jaln_ptrs_equal, NULL);
+}
+

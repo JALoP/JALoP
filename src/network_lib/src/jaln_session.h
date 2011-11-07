@@ -151,6 +151,24 @@ void jaln_session_destroy(struct jaln_session **sess);
 struct jaln_sub_data *jaln_sub_data_create();
 
 /**
+ * Create an axlList to hold jaln_session objects. For this list, jaln_session
+ * objects are considered equal iff they have the same pointer value. This
+ * does not perform a deep comparison of any of the internal members.
+ *
+ * @return an axlList
+ */
+axlList *jaln_session_list_create();
+
+/**
+ * Generic helper utility for the jaln_session_list_create and the axlList.
+ * This function merely returns the difference between the pointer values \p a
+ * and \p b.
+ *
+ * @return the difference between \p a and \p b.
+ */
+int jaln_ptrs_equal(axlPointer a, axlPointer b);
+
+/**
  * Destroy a jaln_sub_data structure.
  *
  * @param[in,out] sub_data The jaln_sub_data to destroy
