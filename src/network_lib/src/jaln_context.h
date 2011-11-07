@@ -29,12 +29,16 @@
  */
 #ifndef _JALN_CONTEXT_H_
 #define _JALN_CONTEXT_H_
-#include <axl.h>
-#include <vortex.h>
-#include <jalop/jaln_network.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <axl.h>
+#include <vortex.h>
+#include <jalop/jaln_network.h>
+
+#include "jaln_strings.h"
 
 struct jaln_session;
 
@@ -44,6 +48,7 @@ struct jaln_context_t {
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_subscriber_callbacks *sub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;
+	struct jal_digest_ctx *sha256_digest;
 	axlList *dgst_algs;
 	axlList *xml_encodings;
 	void *user_data;
@@ -64,4 +69,9 @@ void jaln_ctx_ref(jaln_context *ctx);
  * @param[in] ctx The context to decrease the reference count on.
  */
 void jaln_ctx_unref(jaln_context *ctx);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //_JALN_CONTEXT_H_
