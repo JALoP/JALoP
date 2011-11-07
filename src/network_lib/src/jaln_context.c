@@ -61,6 +61,14 @@ jaln_context *jaln_context_create(void)
 	if (!ctx->xml_encodings) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
+	ctx->vortex_ctx = vortex_ctx_new();
+	if (!ctx->vortex_ctx) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	if (!vortex_init_ctx(ctx->vortex_ctx)) {
+		jaln_context_destroy(&ctx);
+		jal_error_handler(JAL_E_UNINITIALIZED);
+	}
 	return ctx;
 }
 
@@ -79,6 +87,9 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	}
 	if ((*jaln_ctx)->xml_encodings) {
 		axl_list_free((*jaln_ctx)->xml_encodings);
+	}
+	if ((*jaln_ctx)->vortex_ctx) {
+		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, axl_true);
 	}
 	free(*jaln_ctx);
 	*jaln_ctx = NULL;

@@ -45,12 +45,14 @@ struct jaln_session;
 struct jaln_context_t {
 	VortexMutex lock;
 	int ref_cnt;
+	axl_bool is_connected;
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_subscriber_callbacks *sub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;
 	struct jal_digest_ctx *sha256_digest;
 	axlList *dgst_algs;
 	axlList *xml_encodings;
+	VortexCtx *vortex_ctx;
 	void *user_data;
 };
 
