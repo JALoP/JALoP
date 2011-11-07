@@ -112,8 +112,7 @@ void jaln_session_destroy(struct jaln_session **psession) {
 		return;
 	}
 	struct jaln_session *sess = *psession;
-	// TODO: remove this session from the context.
-	// jaln_ctx_remove_session(sess->jaln_ctx, sess);
+	jaln_ctx_remove_session(sess->jaln_ctx, sess);
 	jaln_ctx_unref(sess->jaln_ctx);
 	if (JALN_ROLE_SUBSCRIBER == sess->role ) {
 		jaln_sub_data_destroy(&sess->sub_data);

@@ -52,6 +52,7 @@ struct jaln_context_t {
 	struct jal_digest_ctx *sha256_digest;
 	axlList *dgst_algs;
 	axlList *xml_encodings;
+	axlHash *sessions_by_conn;
 	VortexCtx *vortex_ctx;
 	void *user_data;
 };
@@ -71,6 +72,68 @@ void jaln_ctx_ref(jaln_context *ctx);
  * @param[in] ctx The context to decrease the reference count on.
  */
 void jaln_ctx_unref(jaln_context *ctx);
+
+/**
+ * Removes a given session from the context.
+ *
+ * @param [in] ctx The ctx to operate on.
+ * @param [in] sess The session to remove.
+ */
+void jaln_ctx_remove_session(jaln_context *ctx, struct jaln_session *sess);
+
+/**
+ * Removes a session from the context. The calling thread must already hold jaln_context::lock.
+ *
+ * @param [in] ctx The ctx to operate on.
+ * @param [in] sess The session to remove.
+ *
+ * @see jaln_ctx_remove_session_no_lock
+ */
+void jaln_ctx_remove_session_no_lock(jaln_context *ctx, struct jaln_session *sess);
+
+/**
+ * Add a session to the context. The jaln_context::lock must already be held by
+ * the calling thread.
+ *
+ * @param [in] ctx The ctx to operate on.
+ * @param [in] sess The session to add.
+ *
+ * @return JAL_OK on success, or an error.
+ */
+enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, struct jaln_session *sess);
+
+/**
+ * Lookup a session by by hostname and record channel number. The calling
+ * thread must already hold the jaln_context::lock.
+ *
+ * @param[in] ctx The context to operate on.
+ * @param[in] hostname The hostname of the remote.
+ * @param[in] rec_channel_num The BEEP channel number for the record channel of
+ * the session to find.
+ *
+ * @return the jaln_session for the provided hostname and rec_channel_num
+ */
+struct jaln_session *jaln_ctx_find_session_by_rec_channel_no_lock(jaln_context *ctx, char * hostname, int rec_channel_num);
+
+/**
+ * Utility function for use with axl_list_lookup() to find a session by
+ * jaln_session::rec_chan_num
+ *
+ * @param[in] ptr A jaln_session pointer.
+ * @param[in] data An int pointer.
+ *
+ * @return axl_true if the jaln_session pointed to by \p ptr has the \p
+ * rec_chan_num equal to \p data, false otherwise.
+ */
+axl_bool jaln_ctx_cmp_session_rec_channel_to_channel(axlPointer ptr, axlPointer data);
+
+/**
+ * Wrapper function to for use by the sessions_by_conn hash.
+ *
+ * @param[in] ptr This is expected to be an axlList*, and will be freed as if
+ * it were.
+ */
+void jaln_axl_list_destroy_wrapper(axlPointer ptr);
 
 #ifdef __cplusplus
 }

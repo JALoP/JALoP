@@ -39,6 +39,8 @@
 #include "jaln_context.h"
 #include "jaln_encoding.h"
 #include "jaln_digest.h"
+#include "jaln_strings.h"
+#include "jaln_session.h"
 
 jaln_context *jaln_context_create(void)
 {
@@ -59,6 +61,10 @@ jaln_context *jaln_context_create(void)
 	}
 	ctx->xml_encodings = axl_list_new(jaln_string_list_case_insensitive_func, free);
 	if (!ctx->xml_encodings) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	ctx->sessions_by_conn = axl_hash_new(axl_hash_string, axl_hash_equal_string);
+	if (!ctx->sessions_by_conn) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
 	ctx->vortex_ctx = vortex_ctx_new();
@@ -92,11 +98,83 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	if ((*jaln_ctx)->vortex_ctx) {
 		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, axl_true);
 	}
+	if ((*jaln_ctx)->sessions_by_conn) {
+		axl_hash_free((*jaln_ctx)->sessions_by_conn);
+	}
 	free(*jaln_ctx);
 	*jaln_ctx = NULL;
 
 	return JAL_OK;
 }
+
+void jaln_ctx_remove_session(jaln_context *ctx, struct jaln_session *sess)
+{
+	if (!ctx) {
+		return;
+	}
+	vortex_mutex_lock(&ctx->lock);
+	jaln_ctx_remove_session_no_lock(ctx, sess);
+	vortex_mutex_unlock(&ctx->lock);
+}
+
+void jaln_ctx_remove_session_no_lock(jaln_context *ctx, struct jaln_session *sess)
+{
+	if (!ctx || !ctx->sessions_by_conn || !sess || !sess->ch_info || !sess->ch_info->hostname) {
+		return;
+	}
+	axlList *sessions = axl_hash_get(ctx->sessions_by_conn, sess->ch_info->hostname);
+	if (!sessions) {
+		return;
+	}
+	axl_list_remove(sessions, sess);
+	if (0 == axl_list_length(sessions)) {
+		axl_hash_remove(ctx->sessions_by_conn, sess->ch_info->hostname);
+	}
+}
+
+enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, struct jaln_session *sess)
+{
+	if (!ctx || !ctx->sessions_by_conn || !sess || !sess->ch_info || !sess->ch_info->hostname) {
+		return JAL_E_INVAL;
+	}
+	struct jaln_session *exists =
+		jaln_ctx_find_session_by_rec_channel_no_lock(ctx, sess->ch_info->hostname, sess->rec_chan_num);
+	if (exists) {
+		return JAL_E_EXISTS;
+	}
+	axlList *sessions = axl_hash_get(ctx->sessions_by_conn, sess->ch_info->hostname);
+	if (!sessions) {
+		sessions = jaln_session_list_create();
+		char *key = jal_strdup(sess->ch_info->hostname);
+		axl_hash_insert_full(ctx->sessions_by_conn, key, free, sessions, jaln_axl_list_destroy_wrapper);
+	}
+	axl_list_append(sessions, sess);
+	return JAL_OK;
+}
+
+axl_bool jaln_ctx_cmp_session_rec_channel_to_channel(axlPointer ptr, axlPointer data)
+{
+	if (!ptr || !data) {
+		return axl_false;
+	}
+	int chan_num = *((int*) data);
+	if (0 >= chan_num) {
+		return axl_false;
+	}
+	struct jaln_session *sess = (struct jaln_session*) ptr;
+	return (sess->rec_chan_num == chan_num);
+}
+
+struct jaln_session *jaln_ctx_find_session_by_rec_channel_no_lock(jaln_context *ctx, char *server_name, int rec_channel_num)
+{
+	axlList *sessions = axl_hash_get(ctx->sessions_by_conn, server_name);
+	if (!sessions) {
+		return NULL;
+	}
+	return (struct jaln_session*)
+		axl_list_lookup(sessions, jaln_ctx_cmp_session_rec_channel_to_channel, &rec_channel_num);
+}
+
 
 enum jal_status jaln_register_digest_algorithm(jaln_context *ctx,
 				struct jal_digest_ctx *dgst_ctx)
@@ -144,4 +222,9 @@ void jaln_ctx_unref(jaln_context *ctx)
 		return;
 	}
 	vortex_mutex_unlock(&ctx->lock);
+}
+
+void jaln_axl_list_destroy_wrapper(axlPointer ptr) {
+	axlList *l = (axlList*) ptr;
+	axl_list_free(l);
 }
