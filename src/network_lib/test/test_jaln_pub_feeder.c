@@ -108,6 +108,9 @@ enum jal_status fake_add_to_dgst_list(
 enum jal_status my_on_journal_resume(
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) struct jaln_record_info *record_info,
+		__attribute__((unused)) uint64_t offset,
+		__attribute__((unused)) uint8_t **system_metadata_buffer,
+		__attribute__((unused)) uint8_t **application_metadata_buffer,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {

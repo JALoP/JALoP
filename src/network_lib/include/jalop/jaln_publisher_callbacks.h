@@ -38,23 +38,30 @@ extern "C" {
 struct jaln_publisher_callbacks {
 	/**
 	 * The JNL will execute this callback when it receives a
-	 * 'journal-resume' message. This function allows the application to
-	 * create an application defined subscriber context that the JNL will
-	 * pass to the subsequent jaln_publisher_callbacks
+	 * 'journal-resume' message.
 	 *
+	 * @param[in] serial_id The serial ID of the record that is being resumed.
+	 * @param[in] offset The offset into the record the peer would like to
+	 * begin transferring from.
+	 * @param[in,out] record_info The JNL will fill in the serial ID,
+	 * applications must fill in the rest of this structure.
+	 * @param[out] system_metadata_buffer a user allocated buffer that contains the bytes
+	 * of the system metadata. The \p sys_meta_len field of \p record_info
+	 * indicates the size of this buffer.
+	 * @param[out] application_metadata_buffer a user allocated buffer that contains the bytes
+	 * of the application metadata. The \p sys_meta_len field of
+	 * \p record_info indicates the size of this buffer.
 	 * @param[in] headers additional mime headers sent as part of this message
-	 * @param[in,out] record_info Information about this record. The JNL
-	 * fills in the serial_id field and the application must fill in the
-	 * rest. The JNL assumes ownership of this structure and all it data
-	 * members. The JNL will call free() and jaln_mime_headers_free()
-	 * when the record_info is no longer needed.
-	 *
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 *
 	 * @return JAL_OK to continue sending records, anything else to stop.
 	 */
 	enum jal_status (*on_journal_resume)(const struct jaln_channel_info *ch_info,
 			struct jaln_record_info *record_info,
+			uint64_t offset,
+			uint8_t **system_metadata_buffer,
+			uint8_t **application_metadata_buffer,
 			struct jaln_mime_header *headers,
 			void *user_data);
 
