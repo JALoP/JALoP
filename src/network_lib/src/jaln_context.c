@@ -43,6 +43,12 @@
 jaln_context *jaln_context_create(void)
 {
 	jaln_context *ctx = jal_calloc(1, sizeof(*ctx));
+
+	if (!vortex_mutex_create(&ctx->lock)) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+
+	ctx->ref_cnt = 1;
 	ctx->dgst_algs = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
 	if (!ctx->dgst_algs) {
 		jal_error_handler(JAL_E_NO_MEM);
@@ -86,4 +92,39 @@ enum jal_status jaln_register_digest_algorithm(jaln_context *ctx,
 	axl_list_append(ctx->dgst_algs, dgst_ctx);
 
 	return JAL_OK;
+}
+
+void jaln_ctx_ref(jaln_context *ctx)
+{
+	if (!ctx) {
+		return;
+	}
+	vortex_mutex_lock(&ctx->lock);
+	if (0 >= ctx->ref_cnt) {
+		// this would be bad, already deleted
+		vortex_mutex_unlock(&ctx->lock);
+		return;
+	}
+	ctx->ref_cnt++;
+	vortex_mutex_unlock(&ctx->lock);
+}
+
+void jaln_ctx_unref(jaln_context *ctx)
+{
+	if (!ctx) {
+		return;
+	}
+	vortex_mutex_lock(&ctx->lock);
+	if (0 >= ctx->ref_cnt) {
+		vortex_mutex_unlock(&ctx->lock);
+		// shouldn't happen, already deleted
+		return;
+	}
+	ctx->ref_cnt--;
+	if (0 == ctx->ref_cnt) {
+		vortex_mutex_unlock(&ctx->lock);
+		jaln_context_destroy(&ctx);
+		return;
+	}
+	vortex_mutex_unlock(&ctx->lock);
 }

@@ -30,11 +30,17 @@
 #ifndef _JALN_CONTEXT_H_
 #define _JALN_CONTEXT_H_
 #include <axl.h>
+#include <vortex.h>
+#include <jalop/jaln_network.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct jaln_session;
+
 struct jaln_context_t {
+	VortexMutex lock;
+	int ref_cnt;
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_subscriber_callbacks *sub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;
@@ -43,4 +49,19 @@ struct jaln_context_t {
 	void *user_data;
 };
 
+/**
+ * Increase the reference count on the context.
+ *
+ * @param[in] ctx The context to increase the reference count on.
+ */
+void jaln_ctx_ref(jaln_context *ctx);
+
+/**
+ * Decrease the reference count on the context. This function will decrement
+ * the reference count on the context and, potentially, delete the context.
+ * Callers should not access \p ctx after calling this function.
+ *
+ * @param[in] ctx The context to decrease the reference count on.
+ */
+void jaln_ctx_unref(jaln_context *ctx);
 #endif //_JALN_CONTEXT_H_
