@@ -119,6 +119,10 @@ enum jaln_digest_status {
  */
 enum jaln_role {
 	/**
+	 * The role is has not been determined yet.
+	 */
+	 JALN_ROLE_UNSET,
+	/**
 	 * The peer should act as a subscriber. They are expected to send only
 	 * 'subscribe', 'journal-resume', 'digest', and 'sync' messages.
 	 *
