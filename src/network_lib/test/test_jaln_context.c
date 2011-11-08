@@ -53,6 +53,8 @@ void test_context_create()
 	assert_not_equals((void*) NULL, ctx->xml_encodings);
 	assert_equals(1, ctx->ref_cnt);
 	assert_not_equals((void*)NULL, ctx->sha256_digest);
+	assert_not_equals((void*)NULL, ctx->vortex_ctx);
+	assert_false(ctx->is_connected);
 }
 
 void test_context_destroy_does_not_crash()
