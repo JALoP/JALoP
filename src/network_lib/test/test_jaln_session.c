@@ -30,19 +30,42 @@
 #include <test-dept.h>
 #include <string.h>
 
+#include "jal_alloc.h"
+
 #include "jaln_context.h"
 #include "jaln_session.h"
+#include "jaln_digest_info.h"
+
+#define SID "sid_1234"
 
 static struct jaln_session *sess = NULL;
 static struct jaln_pub_data *pub_data = NULL;
 static struct jaln_sub_data *sub_data = NULL;
 static struct jaln_payload_feeder zeroed_feeder;
+static char *sid = NULL;
+static uint8_t *dgst_buf = NULL;
+static size_t dgst_len;
+static axl_bool cond_signal_called;
+
+void fake_cond_signal(__attribute__((unused)) VortexCond *cond)
+{
+	cond_signal_called = axl_true;
+}
+
 void setup()
 {
 	sess = jaln_session_create();
 	pub_data = jaln_pub_data_create();
 	sub_data = jaln_sub_data_create();
 	memset(&zeroed_feeder, 0, sizeof(zeroed_feeder));
+	sid = jal_strdup(SID);
+	dgst_len = 4;
+	dgst_buf = (uint8_t*) jal_malloc(dgst_len);
+	dgst_buf[0] = 0xa;
+	dgst_buf[1] = 0x1;
+	dgst_buf[2] = 0xb;
+	dgst_buf[3] = 0x0;
+	cond_signal_called = axl_false;
 }
 
 void teardown()
@@ -50,6 +73,8 @@ void teardown()
 	jaln_session_destroy(&sess);
 	jaln_pub_data_destroy(&pub_data);
 	jaln_sub_data_destroy(&sub_data);
+	free(sid);
+	free(dgst_buf);
 }
 
 void test_session_destroy_unrefs_jaln_ctx()
@@ -399,3 +424,47 @@ void test_on_close_channel_does_nothing_with_bad_channel()
 	assert_equals(1, sess->ref_cnt);
 }
 
+void test_add_to_dgst_list_works()
+{
+	assert_equals(0, axl_list_length(sess->dgst_list));
+	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, dgst_len));
+	assert_equals(1, axl_list_length(sess->dgst_list));
+	struct jaln_digest_info *di = axl_list_get_first(sess->dgst_list);
+	assert_not_equals((void*) NULL, di);
+	assert_equals(0, memcmp(di->serial_id, sid, strlen(sid) + 1));
+	assert_equals(dgst_len, di->digest_len);
+	assert_equals(0, memcmp(di->digest, dgst_buf, dgst_len));
+}
+
+void test_add_to_dgst_list_signals_for_subscriber()
+{
+	replace_function(vortex_cond_signal, fake_cond_signal);
+	assert_equals(0, axl_list_length(sess->dgst_list));
+	sess->dgst_list_max = 1;
+	sess->role = JALN_ROLE_SUBSCRIBER;
+	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, dgst_len));
+	assert_true(cond_signal_called);
+}
+
+void test_add_to_dgst_list_does_not_signal_for_publisher()
+{
+	replace_function(vortex_cond_signal, fake_cond_signal);
+	assert_equals(0, axl_list_length(sess->dgst_list));
+	sess->dgst_list_max = 1;
+	sess->role = JALN_ROLE_PUBLISHER;
+	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, dgst_len));
+	assert_false(cond_signal_called);
+}
+
+void test_add_to_dgst_fails_with_bad_input()
+{
+	assert_equals(0, axl_list_length(sess->dgst_list));
+	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(NULL, sid, dgst_buf, dgst_len));
+	assert_equals(0, axl_list_length(sess->dgst_list));
+	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, NULL, dgst_buf, dgst_len));
+	assert_equals(0, axl_list_length(sess->dgst_list));
+	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, sid, NULL, dgst_len));
+	assert_equals(0, axl_list_length(sess->dgst_list));
+	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, 0));
+	assert_equals(0, axl_list_length(sess->dgst_list));
+}
