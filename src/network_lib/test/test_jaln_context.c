@@ -32,18 +32,26 @@
 #include <test-dept.h>
 #include <string.h>
 
+static jaln_context *ctx = NULL;
+void setup()
+{
+	ctx = jaln_context_create();
+}
+
+void teardown()
+{
+	jaln_context_destroy(&ctx);
+}
+
 void test_context_create()
 {
-	struct jaln_context_t empty_ctx;
-	memset(&empty_ctx, 0, sizeof(empty_ctx));
-	struct jaln_context_t *ctx = jaln_context_create();
 	assert_not_equals((void*) NULL, ctx);
 	assert_equals((void*) NULL, ctx->pub_callbacks);
 	assert_equals((void*) NULL, ctx->sub_callbacks);
 	assert_equals((void*) NULL, ctx->conn_callbacks);
 	assert_not_equals((void*) NULL, ctx->dgst_algs);
 	assert_not_equals((void*) NULL, ctx->xml_encodings);
-	jaln_context_destroy(&ctx);
+	assert_equals(1, ctx->ref_cnt);
 }
 
 void test_context_destroy_does_not_crash()
@@ -51,4 +59,18 @@ void test_context_destroy_does_not_crash()
 	struct jaln_context_t *ctx = NULL;
 	jaln_context_destroy(NULL);
 	jaln_context_destroy(&ctx);
+}
+
+void test_ref_and_unref_work()
+{
+	assert_equals(1, ctx->ref_cnt);
+	jaln_ctx_ref(ctx);
+	assert_equals(2, ctx->ref_cnt);
+
+	jaln_ctx_unref(ctx);
+	assert_equals(1, ctx->ref_cnt);
+	jaln_ctx_unref(ctx);
+	// The second unref should destroy the ctx, run on valgrind to check
+	// for leaks.
+	ctx = NULL;
 }
