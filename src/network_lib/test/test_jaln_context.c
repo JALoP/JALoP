@@ -52,6 +52,7 @@ void test_context_create()
 	assert_not_equals((void*) NULL, ctx->dgst_algs);
 	assert_not_equals((void*) NULL, ctx->xml_encodings);
 	assert_equals(1, ctx->ref_cnt);
+	assert_not_equals((void*)NULL, ctx->sha256_digest);
 }
 
 void test_context_destroy_does_not_crash()
