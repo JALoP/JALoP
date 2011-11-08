@@ -249,3 +249,28 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 	vortex_mutex_unlock(&sess->lock);
 	jaln_session_unref(sess);
 }
+
+enum jal_status jaln_session_add_to_dgst_list(struct jaln_session *sess, char *serial_id, uint8_t *dgst_buf, size_t dgst_len)
+{
+	if (!sess || !serial_id || !dgst_buf || (0 == dgst_len)) {
+		return JAL_E_INVAL;
+	}
+	struct jaln_digest_info *dgst_info = jaln_digest_info_create(serial_id, dgst_buf, dgst_len);
+
+	vortex_mutex_lock(&sess->lock);
+	axl_list_append(sess->dgst_list, dgst_info);
+	if (JALN_ROLE_SUBSCRIBER == sess->role) {
+		axl_bool notify = axl_false;
+		if (axl_list_length(sess->dgst_list) >= sess->dgst_list_max) {
+			notify = axl_true;
+		}
+		if (notify) {
+			// wake up the thread that is supposed to be sending
+			// digest/sync messages
+			vortex_cond_signal(&sess->sub_data->dgst_list_cond);
+		}
+	}
+	vortex_mutex_unlock(&sess->lock);
+	return JAL_OK;
+}
+

@@ -172,12 +172,27 @@ struct jaln_pub_data *jaln_pub_data_create();
 void jaln_pub_data_destroy(struct jaln_pub_data **pub_data);
 
 /**
- * Flag this subscriber context as 'errored'
+ * Cache the calculations of a digest to be sent at a later time.
+ *
+ * @param[in] session The session that the digests are associated with.
+ * @param[in] serial_id The serial_id of the record
+ * @param[in] dgst_len The length of the digest (in bytes).
+ *
+ * @return JAL_OK on success or an error.
+ */
+enum jal_status jaln_session_add_to_dgst_list(struct jaln_session *sess,
+		char *serial_id,
+		uint8_t *dgst_buf,
+		size_t dgst_len);
+
+/**
+ * Flag this session as 'errored'
+ *
  * @param[in] ctx The jaln_session that encountered an error;
  */
-void jaln_session_set_errored_no_lock(struct jaln_session *ctx);
+void jaln_session_set_errored_no_lock(struct jaln_session *sess);
 
-void jaln_session_set_errored(struct jaln_session *ctx);
+void jaln_session_set_errored(struct jaln_session *sess);
 
 /**
  * Callback that must get notified with vortex for when a channel related to a
