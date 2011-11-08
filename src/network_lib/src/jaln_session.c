@@ -32,7 +32,9 @@
 #include "jaln_channel_info.h"
 #include "jaln_context.h"
 #include "jaln_digest_info.h"
+#include "jaln_publisher.h"
 #include "jaln_session.h"
+#include "jaln_sub_dgst_channel.h"
 
 struct jaln_session *jaln_session_create()
 {
@@ -286,5 +288,43 @@ int jaln_ptrs_equal(axlPointer a, axlPointer b)
 axlList *jaln_session_list_create()
 {
 	return axl_list_new(jaln_ptrs_equal, NULL);
+}
+
+axl_bool jaln_session_associate_digest_channel_no_lock(struct jaln_session *session, VortexChannel *chan, int chan_num)
+{
+	if (!session || session->dgst_chan != NULL || !chan) {
+		return axl_false;
+	}
+	vortex_channel_set_automatic_mime(chan, 2);
+	vortex_channel_set_serialize(chan, axl_true);
+	session->dgst_chan = chan;
+	session->dgst_chan_num = chan_num;
+	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, session);
+	vortex_channel_set_close_handler(chan, jaln_session_on_close_channel, session);
+	if (JALN_ROLE_SUBSCRIBER == session->role) {
+		jaln_create_sub_digest_channel_thread_no_lock(session);
+		return axl_true;
+	} else if (JALN_ROLE_PUBLISHER == session->role) {
+		vortex_channel_set_received_handler(chan, jaln_publisher_digest_and_sync_frame_handler, session);
+		return axl_true;
+	}
+	return axl_false;
+}
+
+void jaln_session_on_dgst_channel_create(
+		__attribute__((unused)) int channel_num,
+		__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) VortexConnection *conn,
+		__attribute__((unused)) axlPointer user_data)
+{
+	struct jaln_session *sess = (struct jaln_session*) user_data;
+	if ((channel_num == -1) || !chan) {
+		jaln_session_set_errored(sess);
+		return;
+	}
+	jaln_session_ref(sess);
+	vortex_mutex_lock(&sess->lock);
+	jaln_session_associate_digest_channel_no_lock(sess, chan, channel_num);
+	vortex_mutex_unlock(&sess->lock);
 }
 

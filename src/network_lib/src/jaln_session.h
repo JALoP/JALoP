@@ -228,6 +228,24 @@ void jaln_session_set_errored(struct jaln_session *sess);
 void jaln_session_notify_unclean_channel_close(VortexChannel *channel, axlPointer user_data);
 
 /**
+ * Callback function registered with Vortex for when use when creating a
+ * 'digest' channel. The initiator of the communications should register this
+ * callback when creating a channel for use as a 'digest' channel.
+ *
+ * @param[in] channel_num the channel number, -1 if the channel wasn't created
+ * @param[in] chan The vortex channel, NULL if the channel wasn't created
+ * @param[in] conn The vortex connection
+ * @param[in] user_data Expected to be a pointer to a jaln_session. 
+ *
+ * @see vortex_channel_new
+ */
+void jaln_session_on_dgst_channel_create(
+		int channel_num,
+		VortexChannel *chan,
+		VortexConnection *conn,
+		axlPointer user_data);
+
+/**
  * Callback function that can be used when closing a vortex channel associated
  * with a jaln_session.
  *
@@ -252,6 +270,21 @@ void jaln_session_notify_close(
 axl_bool jaln_session_on_close_channel(int channel_num,
 		VortexConnection *connection,
 		axlPointer user_data);
+
+/**
+ * Helper to associate a Vortex channel for use as a 'digest' channel for the
+ * session.
+ *
+ * @param[in] session The session to associate with.
+ * @param[in] chan The vortex channel
+ * @param[in] chan_num The channel number
+ *
+ * @return axl_true if \p chan was associated with \p session, axl_false
+ * otherwise.
+ */
+axl_bool jaln_session_associate_digest_channel_no_lock(struct jaln_session *session,
+		VortexChannel *chan,
+		int chan_num);
 
 #ifdef __cplusplus
 }
