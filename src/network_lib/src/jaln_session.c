@@ -164,3 +164,88 @@ void jaln_pub_data_destroy(struct jaln_pub_data **ppub_data) {
 	*ppub_data = NULL;
 }
 
+axl_bool jaln_session_on_close_channel(int channel_num,
+		__attribute__((unused)) VortexConnection *connection,
+		axlPointer user_data)
+{
+	struct jaln_session *sess = (struct jaln_session*) user_data;
+	if (!sess) {
+		// shouldn't happen, but if it does, there is no session
+		// associated with the channel, so should be safe to close it.
+		return axl_true;
+	}
+	vortex_mutex_lock(&sess->lock);
+	if (channel_num == sess->rec_chan_num) {
+		sess->closing = axl_true;
+		sess->rec_chan = NULL;
+		sess->rec_chan_num = -1;
+	} else if (channel_num == sess->dgst_chan_num) {
+		sess->closing = axl_true;
+		sess->dgst_chan = NULL;
+		sess->dgst_chan_num = -1;
+	} else {
+		vortex_mutex_unlock(&sess->lock);
+		return axl_true;
+	}
+	vortex_mutex_unlock(&sess->lock);
+	jaln_session_unref(sess);
+	return axl_true;
+}
+
+void jaln_session_notify_close(
+		__attribute__((unused)) VortexConnection *conn,
+		int channel_num,
+		axl_bool was_closed,
+		__attribute__((unused)) const char *code,
+		__attribute__((unused)) const char *msg,
+		void *user_data)
+{
+	if (!was_closed) {
+		return;
+	}
+	struct jaln_session *sess = (struct jaln_session*) user_data;
+	if (!sess) {
+		// shouldn't happen
+		return;
+	}
+	vortex_mutex_lock(&sess->lock);
+	if (channel_num == sess->rec_chan_num) {
+		sess->closing = axl_true;
+		sess->rec_chan = NULL;
+		sess->rec_chan_num = -1;
+	} else if (channel_num == sess->dgst_chan_num) {
+		sess->closing = axl_true;
+		sess->dgst_chan = NULL;
+		sess->dgst_chan_num = -1;
+	} else {
+		vortex_mutex_unlock(&sess->lock);
+		return;
+	}
+	vortex_mutex_unlock(&sess->lock);
+	jaln_session_unref(sess);
+}
+
+void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
+		axlPointer user_data)
+{
+	struct jaln_session *sess = (struct jaln_session*) user_data;
+	if (!sess) {
+		// shouldn't happen
+		return;
+	}
+	vortex_mutex_lock(&sess->lock);
+	if (channel == sess->rec_chan) {
+		sess->closing = axl_true;
+		sess->rec_chan = NULL;
+		sess->rec_chan_num = -1;
+	} else if (channel == sess->dgst_chan) {
+		sess->closing = axl_true;
+		sess->dgst_chan = NULL;
+		sess->dgst_chan_num = -1;
+	} else {
+		vortex_mutex_unlock(&sess->lock);
+		return;
+	}
+	vortex_mutex_unlock(&sess->lock);
+	jaln_session_unref(sess);
+}

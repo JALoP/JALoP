@@ -179,6 +179,42 @@ void jaln_session_set_errored_no_lock(struct jaln_session *ctx);
 
 void jaln_session_set_errored(struct jaln_session *ctx);
 
+/**
+ * Callback that must get notified with vortex for when a channel related to a
+ * particular jaln_session gets closed. If the channel closed was the 'record'
+ * (main) channel, then this will try to shutdown the other channel.
+ *
+ * @param[in] channel The VortexChannel that was closed.
+ * @param[in] user_data This is expected to be a pointer to a jaln_session.
+ */
+void jaln_session_notify_unclean_channel_close(VortexChannel *channel, axlPointer user_data);
+
+/**
+ * Callback function that can be used when closing a vortex channel associated
+ * with a jaln_session.
+ *
+ * @see VortexOnClosedNotificationFull
+ *
+ */
+void jaln_session_notify_close(
+		VortexConnection *conn,
+		int channel_num,
+		axl_bool was_closed,
+		const char *code,
+		const char *msg,
+		axlPointer user_data);
+
+
+/**
+ * Callback function that is used to respond to incoming requests to close the
+ * channel.
+ *
+ * @see VortexOnCloseChannel
+ */
+axl_bool jaln_session_on_close_channel(int channel_num,
+		VortexConnection *connection,
+		axlPointer user_data);
+
 #ifdef __cplusplus
 }
 #endif
