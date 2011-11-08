@@ -171,6 +171,14 @@ struct jaln_pub_data *jaln_pub_data_create();
  */
 void jaln_pub_data_destroy(struct jaln_pub_data **pub_data);
 
+/**
+ * Flag this subscriber context as 'errored'
+ * @param[in] ctx The jaln_session that encountered an error;
+ */
+void jaln_session_set_errored_no_lock(struct jaln_session *ctx);
+
+void jaln_session_set_errored(struct jaln_session *ctx);
+
 #ifdef __cplusplus
 }
 #endif

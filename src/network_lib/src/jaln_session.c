@@ -89,6 +89,24 @@ void jaln_session_unref(struct jaln_session *sess)
 	vortex_mutex_unlock(&sess->lock);
 }
 
+void jaln_session_set_errored_no_lock(struct jaln_session *sess)
+{
+	if (!sess) {
+		return;
+	}
+	sess->errored = axl_true;
+}
+
+void jaln_session_set_errored(struct jaln_session *sess)
+{
+	if (!sess) {
+		return;
+	}
+	vortex_mutex_lock(&sess->lock);
+	jaln_session_set_errored_no_lock(sess);
+	vortex_mutex_unlock(&sess->lock);
+}
+
 void jaln_session_destroy(struct jaln_session **psession) {
 	if (!psession || !*psession) {
 		return;
