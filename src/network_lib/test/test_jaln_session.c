@@ -151,6 +151,30 @@ void test_ref_and_unref_work()
 	sess = NULL;
 }
 
+void test_jaln_session_list_create_works()
+{
+	axlList *sessions = jaln_session_list_create();
+	assert_not_equals((void*) NULL, sessions);
+	axl_list_free(sessions);
+}
+
+void test_jaln_session_does_not_free_sessions()
+{
+	// run under valgrind to look for invalid frees
+	axlList *sessions = jaln_session_list_create();
+	axl_list_append(sessions, sess);
+	axl_list_free(sessions);
+}
+
+void test_jaln_ptrs_equals()
+{
+	axlPointer a = (axlPointer) 0x12345;
+	axlPointer  b = (axlPointer) 0x54321;
+	assert_equals((a - b), jaln_ptrs_equal(a, b));
+	assert_equals((b - a), jaln_ptrs_equal(b, a));
+	assert_equals(0, jaln_ptrs_equal(a,a));
+}
+
 void test_pub_data_create()
 {
 	assert_not_equals((void*) NULL, pub_data);
