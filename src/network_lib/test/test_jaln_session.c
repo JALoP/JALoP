@@ -178,3 +178,10 @@ void test_sub_data_create()
 	assert_equals((void*) NULL, sub_data->curr_frame_handler);
 	assert_equals((void*) NULL, sub_data->sm);
 }
+
+void test_set_errored_works()
+{
+	assert_false(sess->errored);
+	jaln_session_set_errored_no_lock(sess);
+	assert_true(sess->errored);
+}
