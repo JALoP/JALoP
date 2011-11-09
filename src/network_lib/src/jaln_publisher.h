@@ -116,6 +116,22 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan,
  */
 struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
 
+/**
+ * Function to process a 'subscribe' message.
+ *
+ * @param[in] session The session that is receiving the message
+ * @param[in] chan The channel that received the message
+ * @param[in] frame The frame for the subscribe message
+ * @param[in] msg_no The message number of the 'subscribe' message.
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_pub_handle_subscribe(struct jaln_session *session,
+		VortexChannel *chan,
+		VortexFrame *frame,
+		int msg_no);
+
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

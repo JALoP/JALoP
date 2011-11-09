@@ -24,10 +24,12 @@ hlpr_obj = lib_env.SharedObject("../src/jaln_message_helpers.c")
 hndl_obj = lib_env.SharedObject("../src/jaln_handle_init_replies.c")
 init_info_obj = lib_env.SharedObject("../src/jaln_init_info.c")
 pub_cb_obj = lib_env.SharedObject("../src/jaln_publisher_callbacks.c")
+pub_feeder_obj = lib_env.SharedObject("../src/jaln_pub_feeder.c")
 rec_info_obj = lib_env.SharedObject("../src/jaln_record_info.c")
 sess_obj = lib_env.SharedObject("../src/jaln_session.c")
 str_utils_obj = lib_env.SharedObject("../src/jaln_string_utils.c")
 sub_cb_obj = lib_env.SharedObject("../src/jaln_subscriber_callbacks.c")
+sub_msg_handler_obj = lib_env.SharedObject("../src/jaln_subscribe_msg_handler.c")
 sub_state_mach_obj = lib_env.SharedObject("../src/jaln_subscriber_state_machine.c")
 sync_msg_handler_obj = lib_env.SharedObject("../src/jaln_sync_msg_handler.c")
 
@@ -88,7 +90,8 @@ tests.append(env.TestDeptTest('test_jaln_handle_init_replies.c',
 tests.append(env.TestDeptTest('test_jaln_publisher.c',
 	other_sources=[lib_common, ch_info_obj, conn_cb_obj, ctx_obj, dgst_info_obj,
 		dgst_obj, dgst_msg_handler_obj, dgst_resp_info_obj, enc_obj, hlpr_obj, pub_cb_obj,
-		rec_info_obj, str_utils_obj, sess_obj, sub_cb_obj, sync_msg_handler_obj],
+		pub_feeder_obj, rec_info_obj, sess_obj, str_utils_obj, sub_cb_obj,
+		sub_msg_handler_obj, sub_state_mach_obj, sync_msg_handler_obj],
 	useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_pub_feeder.c',

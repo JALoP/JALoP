@@ -36,8 +36,10 @@
 #include "jaln_digest_resp_info.h"
 #include "jaln_message_helpers.h"
 #include "jaln_publisher.h"
+#include "jaln_pub_feeder.h"
 #include "jaln_session.h"
 #include "jaln_sync_msg_handler.h"
+#include "jaln_subscribe_msg_handler.h"
 
 void jaln_pub_notify_digests_and_create_digest_response(
 		struct jaln_session *sess,
@@ -214,6 +216,57 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexCon
 err_out:
 	vortex_connection_shutdown(conn);
 }
+
+enum jal_status jaln_pub_handle_subscribe(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
+{
+	enum jal_status ret = JAL_E_INVAL;
+	if (!sess || !chan || !frame || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks ||
+			!sess->ch_info || !sess->pub_data) {
+		return ret;
+	}
+	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
+	struct jaln_pub_data *pd = sess->pub_data;
+	struct jaln_channel_info *ch_info = sess->ch_info;
+	enum jaln_record_type type = ch_info->type;
+	void *user_data = sess->jaln_ctx->user_data;
+	char *sid = NULL;
+	ret = jaln_process_subscribe(frame, &sid);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+	ret = cbs->on_subscribe(ch_info, type, sid, NULL, user_data);
+
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+
+	sess->pub_data->msg_no = msg_no;
+	sess->pub_data->serial_id = sid;
+	sid = NULL;
+
+	struct jaln_record_info rec_info;
+	memset(&rec_info, 0, sizeof(rec_info));
+	rec_info.type = type;
+
+	ret = cbs->get_next_record_info_and_metadata(ch_info, type,
+			pd->serial_id, &rec_info, &pd->sys_meta, &pd->app_meta, user_data);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+	ret = jaln_pub_begin_next_record_ans(sess, 0, &rec_info, chan);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+	goto out;
+
+err_out:
+	vortex_channel_finalize_ans_rpy(chan, msg_no);
+	jaln_session_set_errored(sess);
+out:
+	free(sid);
+	return ret;
+}
+
 struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
 {
 	if (!ctx || !host) {
