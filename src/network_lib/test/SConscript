@@ -12,7 +12,6 @@ ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code '
 env.Append(CCFLAGS=ccflags.split())
 
 conn_cb_obj = lib_env.SharedObject("../src/jaln_connection_callbacks.c")
-chan_info_obj = lib_env.SharedObject("../src/jaln_channel_info.c")
 ctx_obj = lib_env.SharedObject("../src/jaln_context.c")
 ch_info_obj = lib_env.SharedObject("../src/jaln_channel_info.c")
 dgst_obj = lib_env.SharedObject("../src/jaln_digest.c")
@@ -27,19 +26,20 @@ rec_info_obj = lib_env.SharedObject("../src/jaln_record_info.c")
 sess_obj = lib_env.SharedObject("../src/jaln_session.c")
 str_utils_obj = lib_env.SharedObject("../src/jaln_string_utils.c")
 sub_cb_obj = lib_env.SharedObject("../src/jaln_subscriber_callbacks.c")
+sync_msg_handler_obj = lib_env.SharedObject("../src/jaln_sync_msg_handler.c")
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common, ch_info_obj, conn_cb_obj, ctx_obj, dgst_info_obj, dgst_obj, enc_obj, sess_obj, sub_cb_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_connection_callbacks.c',
-	other_sources=[lib_common, ctx_obj, chan_info_obj, dgst_obj, dgst_info_obj, enc_obj, pub_cb_obj, sub_cb_obj, sess_obj])[0].abspath)
+	other_sources=[lib_common, ctx_obj, ch_info_obj, dgst_obj, dgst_info_obj, enc_obj, pub_cb_obj, sub_cb_obj, sess_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_subscriber_callbacks.c',
-	other_sources=[lib_common, ctx_obj, chan_info_obj, conn_cb_obj, dgst_obj, dgst_info_obj, enc_obj, pub_cb_obj, sess_obj])[0].abspath)
+	other_sources=[lib_common, ctx_obj, ch_info_obj, conn_cb_obj, dgst_obj, dgst_info_obj, enc_obj, pub_cb_obj, sess_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_context.c',
-	other_sources=[lib_common, sub_cb_obj, chan_info_obj, conn_cb_obj, dgst_obj, dgst_info_obj, enc_obj, pub_cb_obj, sess_obj])[0].abspath)
+	other_sources=[lib_common, sub_cb_obj, ch_info_obj, conn_cb_obj, dgst_obj, dgst_info_obj, enc_obj, pub_cb_obj, sess_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_digest.c',
-	other_sources=[lib_common, ctx_obj, chan_info_obj, conn_cb_obj, dgst_info_obj, enc_obj, pub_cb_obj, sub_cb_obj, sess_obj])[0].abspath)
+	other_sources=[lib_common, ctx_obj, ch_info_obj, conn_cb_obj, dgst_info_obj, enc_obj, pub_cb_obj, sub_cb_obj, sess_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_encoding.c',
-	other_sources=[lib_common, ctx_obj, chan_info_obj, conn_cb_obj, dgst_obj, dgst_info_obj, pub_cb_obj, sub_cb_obj, sess_obj])[0].abspath)
+	other_sources=[lib_common, ctx_obj, ch_info_obj, conn_cb_obj, dgst_obj, dgst_info_obj, pub_cb_obj, sub_cb_obj, sess_obj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_message_helpers.c',
 	other_sources=[lib_common, dgst_info_obj, dgst_resp_info_obj, rec_info_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_channel_info.c',
@@ -74,6 +74,8 @@ tests.append(env.TestDeptTest('test_jaln_connection.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_handle_init_replies.c',
 	other_sources=[lib_common, ch_info_obj, conn_cb_obj, ctx_obj, dgst_info_obj, dgst_obj, enc_obj, sess_obj, sub_cb_obj, pub_cb_obj], useProxies=True)[0].abspath)
+tests.append(env.TestDeptTest('test_jaln_publisher.c',
+	other_sources=[lib_common, ch_info_obj, conn_cb_obj, ctx_obj, dgst_info_obj, dgst_resp_info_obj, dgst_obj, hlpr_obj, enc_obj, pub_cb_obj, rec_info_obj, sess_obj, sub_cb_obj, sync_msg_handler_obj])[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)

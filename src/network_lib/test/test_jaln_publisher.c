@@ -1,0 +1,155 @@
+/**
+ * @file This file contains tests for jaln_publisher.c functions.
+ *
+ * @section LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <test-dept.h>
+#include "jaln_publisher.h"
+#include "jaln_context.h"
+#include "jaln_channel_info.h"
+#include "jaln_digest_info.h"
+#include "jaln_digest_resp_info.h"
+
+static axlList *calc_dgsts;
+static axlList *peer_dgsts;
+static axlList *dgst_resp_infos;
+static struct jaln_session *sess;
+static jaln_context *ctx;
+static int peer_digest_call_cnt;
+
+void peer_digest(__attribute__((unused)) const struct jaln_channel_info *ch_info,
+			__attribute__((unused)) enum jaln_record_type type,
+			__attribute__((unused)) const char *serial_id,
+			__attribute__((unused)) const uint8_t *local_digest,
+			__attribute__((unused)) const uint32_t local_size,
+			__attribute__((unused)) const uint8_t *peer_digest,
+			__attribute__((unused)) const uint32_t peer_size,
+			__attribute__((unused)) void *user_data)
+{
+	peer_digest_call_cnt++;
+}
+
+void setup()
+{
+	calc_dgsts = jaln_digest_info_list_create();
+	peer_dgsts = jaln_digest_info_list_create();
+	dgst_resp_infos = NULL;
+	ctx = jaln_context_create();
+	sess = jaln_session_create();
+	sess->jaln_ctx = ctx;
+	ctx->pub_callbacks = jaln_publisher_callbacks_create();
+	ctx->pub_callbacks->peer_digest = peer_digest;
+
+	int dgst_val = 0xf001;
+	axl_list_append(calc_dgsts, jaln_digest_info_create("sid1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	dgst_val = 0xf002;
+	axl_list_append(calc_dgsts, jaln_digest_info_create("sid2", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	dgst_val = 0xf002;
+	axl_list_append(calc_dgsts, jaln_digest_info_create("sid3", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	dgst_val = 0xf004;
+	axl_list_append(calc_dgsts, jaln_digest_info_create("sid4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+
+	axl_list_append(peer_dgsts, jaln_digest_info_create("sid4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	dgst_val = 0xf003;
+	axl_list_append(peer_dgsts, jaln_digest_info_create("sid3", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	dgst_val = 0xf002;
+	axl_list_append(peer_dgsts, jaln_digest_info_create("sid2", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	dgst_val = 0xf001;
+	axl_list_append(peer_dgsts, jaln_digest_info_create("sid1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+
+	peer_digest_call_cnt = 0;
+}
+
+void teardown()
+{
+	jaln_session_unref(sess);
+
+	axl_list_free(calc_dgsts);
+	axl_list_free(peer_dgsts);
+}
+
+void test_pub_does_not_crash_with_bad_input()
+{
+	axlList *dgst_resp_infos = NULL;
+	jaln_pub_notify_digests_and_create_digest_response(NULL, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, NULL, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, NULL, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, NULL);
+
+	dgst_resp_infos = (axlList*) 0xbadf00d;
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	dgst_resp_infos = NULL;
+
+	sess->jaln_ctx = NULL;
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	sess->jaln_ctx = ctx;
+
+	sess->jaln_ctx->pub_callbacks->peer_digest = NULL;
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	sess->jaln_ctx->pub_callbacks->peer_digest = peer_digest;
+
+	jaln_publisher_callbacks_destroy(&sess->jaln_ctx->pub_callbacks);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+
+}
+
+void test_pub_notify_digests_works()
+{
+	axlList *dgst_resp_infos = NULL;
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	assert_not_equals((void*) NULL, dgst_resp_infos);
+	assert_equals(4, peer_digest_call_cnt);
+	assert_equals(0, axl_list_length(calc_dgsts));
+	assert_equals(4, axl_list_length(peer_dgsts));
+	axl_list_free(dgst_resp_infos);
+}
+
+void test_pub_notify_digests_works_when_peer_has_extra_dgts()
+{
+	axlList *dgst_resp_infos = NULL;
+	int dgst_val = 0xf005;
+	axl_list_append(peer_dgsts, jaln_digest_info_create("sid5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	assert_not_equals((void*) NULL, dgst_resp_infos);
+	assert_equals(5, peer_digest_call_cnt);
+	assert_equals(0, axl_list_length(calc_dgsts));
+	assert_equals(5, axl_list_length(peer_dgsts));
+	axl_list_free(dgst_resp_infos);
+}
+
+void test_pub_notify_digests_works_when_peer_has_missing_dgst()
+{
+	axlList *dgst_resp_infos = NULL;
+	int dgst_val = 0xf005;
+	axl_list_append(calc_dgsts, jaln_digest_info_create("sid5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	assert_not_equals((void*) NULL, dgst_resp_infos);
+	assert_equals(4, peer_digest_call_cnt);
+	assert_equals(1, axl_list_length(calc_dgsts));
+	assert_equals(4, axl_list_length(peer_dgsts));
+	axl_list_free(dgst_resp_infos);
+}
+
