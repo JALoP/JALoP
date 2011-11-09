@@ -28,6 +28,8 @@
 #include <vortex.h>
 #include <jalop/jaln_publisher_callbacks.h>
 
+#include "jal_alloc.h"
+
 #include "jaln_context.h"
 #include "jaln_digest_info.h"
 #include "jaln_digest_msg_handler.h"
@@ -211,4 +213,30 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexCon
 	return;
 err_out:
 	vortex_connection_shutdown(conn);
+}
+struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
+{
+	if (!ctx || !host) {
+		return NULL;
+	}
+	switch(type) {
+	case JALN_RTYPE_JOURNAL:
+	case JALN_RTYPE_AUDIT:
+	case JALN_RTYPE_LOG:
+		break;
+	default:
+		return NULL;
+	}
+	struct jaln_session *sess = NULL;
+	sess = jaln_session_create();
+	jaln_ctx_ref(ctx);
+	sess->jaln_ctx = ctx;
+	sess->role = JALN_ROLE_PUBLISHER;
+
+	struct jaln_channel_info *ch_info = sess->ch_info;
+	sess->pub_data = jaln_pub_data_create();
+	ch_info->hostname = jal_strdup(host);
+	ch_info->type = type;
+
+	return sess;
 }

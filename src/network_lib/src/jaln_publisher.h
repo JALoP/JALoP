@@ -105,6 +105,17 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan,
 		VortexFrame *frame,
 		axlPointer user_data);
 
+/**
+ * Helper function to create a jaln_session for use as a publisher.
+ *
+ * @param[in] ctx The jaln_context associated with the session.
+ * @param[in] host The IP/hostname of the remote
+ * @param[in] type The type of records that will be sent using this session.
+ *
+ * @return a configured jaln_session.
+ */
+struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
