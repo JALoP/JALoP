@@ -217,6 +217,39 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexCon
 err_out:
 	vortex_connection_shutdown(conn);
 }
+
+void jaln_pub_channel_frame_handler(
+		VortexChannel *chan,
+		VortexConnection *conn,
+		VortexFrame *frame,
+		axlPointer user_data)
+{
+	struct jaln_session *sess = (struct jaln_session*) user_data;
+	if (!sess || !sess->ch_info) {
+		goto err_out;
+	}
+	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
+		goto err_out;
+	}
+	int msg_no = vortex_frame_get_msgno(frame);
+	const char *msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
+	if (0 == strcasecmp(msg, JALN_MSG_SUBSCRIBE)) {
+		if (JAL_OK != jaln_pub_handle_subscribe(sess, chan, frame, msg_no)) {
+			goto err_out;
+		}
+	} else if (0 == strcasecmp(msg, JALN_MSG_JOURNAL_RESUME) && (JALN_RTYPE_JOURNAL == sess->ch_info->type)) {
+		if (JAL_OK != jaln_pub_handle_journal_resume(sess, chan, frame, msg_no)) {
+			goto err_out;
+		}
+	} else {
+		goto err_out;
+	}
+	return;
+err_out:
+	vortex_connection_shutdown(conn);
+	return;
+}
+
 enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
 {
 	enum jal_status ret = JAL_E_INVAL;

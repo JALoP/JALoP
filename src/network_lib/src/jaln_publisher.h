@@ -117,6 +117,19 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan,
 struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
 
 /**
+ * Top level vortex frame handler for the 'record' channel of a session.
+ *
+ * @param[in] chan The vortex channel
+ * @param[in] conn The vortex connection
+ * @param[in] frame The vortex frame
+ * @param[in] user_data Expected to be a jaln_session pointer.
+ */
+void jaln_pub_channel_frame_handler(VortexChannel *chan,
+		VortexConnection *v_conn,
+		VortexFrame *frame,
+		axlPointer user_data);
+
+/**
  * Function to process a 'subscribe' message.
  *
  * @param[in] session The session that is receiving the message
