@@ -27,11 +27,15 @@
  */
 
 #include <test-dept.h>
+
+#include "jal_alloc.h"
+
 #include "jaln_publisher.h"
 #include "jaln_context.h"
 #include "jaln_channel_info.h"
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
+#include "jaln_sync_msg_handler.h"
 
 static axlList *calc_dgsts;
 static axlList *peer_dgsts;
@@ -39,6 +43,7 @@ static axlList *dgst_resp_infos;
 static struct jaln_session *sess;
 static jaln_context *ctx;
 static int peer_digest_call_cnt;
+static int sync_cnt;
 
 void peer_digest(__attribute__((unused)) const struct jaln_channel_info *ch_info,
 			__attribute__((unused)) enum jaln_record_type type,
@@ -52,8 +57,35 @@ void peer_digest(__attribute__((unused)) const struct jaln_channel_info *ch_info
 	peer_digest_call_cnt++;
 }
 
+void on_sync(__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) struct jaln_mime_header *headers,
+		__attribute__((unused)) void *user_data)
+{
+	sync_cnt++;
+}
+enum jal_status process_sync_fails(__attribute__((unused)) VortexFrame *frame, __attribute__((unused)) char **serial_id)
+{
+	return JAL_E_INVAL;
+}
+
+enum jal_status process_sync_success(__attribute__((unused)) VortexFrame *frame, char **serial_id)
+{
+	*serial_id = jal_strdup("sync_sid");
+	return JAL_OK;
+}
+
+axl_bool fake_finalize_ans_rpy(__attribute__((unused)) VortexChannel* chan, __attribute__((unused)) int msg_no_rpy)
+
+{
+	return axl_true;
+}
+
 void setup()
 {
+	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
+	replace_function(jaln_process_sync, process_sync_success);
 	calc_dgsts = jaln_digest_info_list_create();
 	peer_dgsts = jaln_digest_info_list_create();
 	dgst_resp_infos = NULL;
@@ -62,6 +94,7 @@ void setup()
 	sess->jaln_ctx = ctx;
 	ctx->pub_callbacks = jaln_publisher_callbacks_create();
 	ctx->pub_callbacks->peer_digest = peer_digest;
+	ctx->pub_callbacks->sync = on_sync;
 
 	int dgst_val = 0xf001;
 	axl_list_append(calc_dgsts, jaln_digest_info_create("sid1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
@@ -81,6 +114,7 @@ void setup()
 	axl_list_append(peer_dgsts, jaln_digest_info_create("sid1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 
 	peer_digest_call_cnt = 0;
+	sync_cnt = 0;
 }
 
 void teardown()
@@ -153,3 +187,31 @@ void test_pub_notify_digests_works_when_peer_has_missing_dgst()
 	axl_list_free(dgst_resp_infos);
 }
 
+void test_pub_handle_sync_works()
+{
+	assert_equals(JAL_OK, jaln_publisher_handle_sync(sess, (VortexChannel*) 0xbadf00d, (VortexFrame*) 0xdeadbeef, 1));
+}
+
+void test_pub_handle_sync_fails_on_bad_input()
+{
+	assert_not_equals(JAL_OK, jaln_publisher_handle_sync(NULL, (VortexChannel*) 0xbadf00d, (VortexFrame*) 0xdeadbeef, 1));
+
+
+	sess->jaln_ctx = NULL;
+	assert_not_equals(JAL_OK, jaln_publisher_handle_sync(sess, (VortexChannel*) 0xbadf00d, (VortexFrame*) 0xdeadbeef, 1));
+	sess->jaln_ctx = ctx;
+
+	struct jaln_publisher_callbacks *tmp = sess->jaln_ctx->pub_callbacks;
+	sess->jaln_ctx->pub_callbacks = NULL;
+	assert_not_equals(JAL_OK, jaln_publisher_handle_sync(sess, (VortexChannel*) 0xbadf00d, (VortexFrame*) 0xdeadbeef, 1));
+	sess->jaln_ctx->pub_callbacks = tmp;
+
+	sess->jaln_ctx->pub_callbacks->sync = NULL;
+	assert_not_equals(JAL_OK, jaln_publisher_handle_sync(sess, (VortexChannel*) 0xbadf00d, (VortexFrame*) 0xdeadbeef, 1));
+	sess->jaln_ctx->pub_callbacks->sync = on_sync;
+
+	struct jaln_channel_info *ch_info = sess->ch_info;
+	sess->ch_info = NULL;
+	assert_not_equals(JAL_OK, jaln_publisher_handle_sync(sess, (VortexChannel*) 0xbadf00d, (VortexFrame*) 0xdeadbeef, 1));
+	sess->ch_info = ch_info;
+}
