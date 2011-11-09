@@ -172,6 +172,20 @@ void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
 		void *user_data);
 
 /**
+ * Callback registered with vortex to finish configuring a jaln_session for use
+ * as a publisher. The Vortex library will call this once the new channel is
+ * created, or if the remote peer rejects the creation of the channel.
+ *
+ * @param[in] channel_num The channel number, or -1 if there was an error.
+ * @param[in] chan The Vortex Channel, or NULL if there was an error.
+ * @param[in] conn The vortex connection
+ * @param[in] user_data a pointer to a jaln_session.
+ */
+void jaln_publisher_on_channel_create(int channel_num,
+		VortexChannel *chan, VortexConnection *conn,
+		axlPointer user_data);
+
+/**
  * Configure a jaln_session for use as a publisher. Before modifying the
  * jaln_session, this function will obtain the jaln_session::lock.
  *

@@ -201,7 +201,7 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexCon
 	}
 	const char *msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
 	if (!msg) {
-		goto err_out;;
+		goto err_out;
 	}
 	if (0 == strcmp(msg, JALN_MSG_DIGEST)) {
 		if (JAL_OK != jaln_publisher_handle_digest(sess, chan, frame, msg_no)) {
@@ -348,6 +348,51 @@ err_out:
 out:
 	free(sid);
 	return ret;
+}
+
+void jaln_publisher_on_channel_create(int channel_num,
+		VortexChannel *chan, VortexConnection *conn,
+		axlPointer user_data)
+{
+	char *init_msg = NULL;
+	size_t init_msg_len = 0;
+	struct jaln_session *session = (struct jaln_session*)user_data;
+	if (!chan) {
+		// channel creation failed, cleanup the session and bail.
+		jaln_session_unref(session);
+		return;
+	}
+	if (!session || !session->ch_info || !session->jaln_ctx) {
+		// shouldn't ever happen
+		goto err_out;
+	}
+
+	vortex_channel_set_serialize(chan, axl_true);
+	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, session);
+	vortex_channel_set_close_handler(chan, jaln_session_on_close_channel, session);
+	vortex_channel_set_automatic_mime(chan, 2);
+	session->rec_chan = chan;
+	session->rec_chan_num = channel_num;
+	session->ch_info->addr = strdup(vortex_connection_get_host(conn));
+
+	vortex_channel_set_received_handler(chan, jaln_publisher_init_reply_frame_handler, session);
+
+	enum jal_status ret = jaln_create_init_msg(JALN_ROLE_PUBLISHER, session->ch_info->type,
+			session->jaln_ctx->dgst_algs, session->jaln_ctx->xml_encodings, &init_msg, &init_msg_len);
+
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+	if (!vortex_channel_send_msg(chan, init_msg, init_msg_len, NULL)) {
+		goto err_out;
+	}
+	goto out;
+
+err_out:
+	vortex_channel_close_full(chan, jaln_session_notify_close, session);
+out:
+	free(init_msg);
+	return;
 }
 
 void jaln_publisher_init_reply_frame_handler(__attribute__((unused)) VortexChannel *chan,
