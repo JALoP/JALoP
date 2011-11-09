@@ -181,3 +181,34 @@ out:
 	return ret;
 }
 
+void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexConnection *conn,
+		VortexFrame *frame, axlPointer user_data)
+{
+	struct jaln_session *sess = (struct jaln_session*) user_data;
+	int msg_no = -1;
+	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
+		goto err_out;
+	}
+	msg_no = vortex_frame_get_msgno(frame);
+	if (msg_no < 0) {
+		goto err_out;
+	}
+	const char *msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
+	if (!msg) {
+		goto err_out;;
+	}
+	if (0 == strcmp(msg, JALN_MSG_DIGEST)) {
+		if (JAL_OK != jaln_publisher_handle_digest(sess, chan, frame, msg_no)) {
+			goto err_out;
+		}
+	} else if (0 == strcmp(msg, JALN_MSG_SYNC)) {
+		if (JAL_OK != jaln_publisher_handle_sync(sess, chan, frame, msg_no)) {
+			goto err_out;
+		}
+	} else {
+		goto err_out;
+	}
+	return;
+err_out:
+	vortex_connection_shutdown(conn);
+}

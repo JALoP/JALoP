@@ -92,6 +92,19 @@ enum jal_status jaln_publisher_handle_digest(struct jaln_session *sess,
 		VortexFrame *frame,
 		int msg_no);
 
+/**
+ * Vortex Frame handler for responding to 'digest' and 'sync' messages.
+ *
+ * @param[in] chan The vortex channel
+ * @param[in] conn The vortex connection
+ * @param[in] frame The vortex frame
+ * @param[in] user_data Expected to be a jaln_session object.
+ */
+void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan,
+		VortexConnection *conn,
+		VortexFrame *frame,
+		axlPointer user_data);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
