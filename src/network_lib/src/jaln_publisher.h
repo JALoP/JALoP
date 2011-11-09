@@ -159,6 +159,19 @@ enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *session,
 		int msg_no);
 
 /**
+ * Vortex frame handler to process the replies from an 'init' message.
+ *
+ * @param[in] chan The vortex channel that received the message
+ * @param[in] conn The vortex connection
+ * @param[in] frame The frame containing the message
+ * @param[in] user_data Expected to be a pointer to a jaln_session
+ */
+void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
+		VortexConnection *v_conn,
+		VortexFrame *frame,
+		void *user_data);
+
+/**
  * Configure a jaln_session for use as a publisher. Before modifying the
  * jaln_session, this function will obtain the jaln_session::lock.
  *

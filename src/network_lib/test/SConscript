@@ -166,6 +166,7 @@ tests.append(env.TestDeptTest('test_jaln_subscriber_state_machine.c',
 		pub_cb_obj, pub_feeder_obj, rec_info_obj, sess_obj, str_utils_obj,
 		sub_cb_obj, sub_dgst_chan_obj, sub_msg_handler_obj,
 		sync_msg_handler_obj], useProxies=True)[0].abspath)
+
 tests.append(env.TestDeptTest('test_jaln_connection.c',
 	other_sources=[lib_common])[0].abspath)
 
@@ -209,7 +210,6 @@ tests.append(env.TestDeptTest('test_jaln_listen.c',
 		sub_msg_handler_obj, sub_state_mach_obj, sess_obj, str_utils_obj,
 		sub_dgst_chan_obj, sub_cb_obj, sync_msg_handler_obj],
 	useProxies=True)[0].abspath)
-
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)

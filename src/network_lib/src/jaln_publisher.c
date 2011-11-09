@@ -34,6 +34,7 @@
 #include "jaln_digest_info.h"
 #include "jaln_digest_msg_handler.h"
 #include "jaln_digest_resp_info.h"
+#include "jaln_handle_init_replies.h"
 #include "jaln_journal_resume_msg_handler.h"
 #include "jaln_message_helpers.h"
 #include "jaln_publisher.h"
@@ -347,6 +348,48 @@ err_out:
 out:
 	free(sid);
 	return ret;
+}
+
+void jaln_publisher_init_reply_frame_handler(__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) VortexConnection *conn,
+		VortexFrame *frame,
+		void *user_data)
+{
+	struct jaln_session *sess = (struct jaln_session*) user_data;
+	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
+		vortex_connection_shutdown(conn);
+		goto out;
+	}
+	const char *msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
+	if (!msg) {
+		vortex_connection_shutdown(conn);
+		goto out;
+	}
+	if (0 == strcasecmp(msg, JALN_MSG_INIT_ACK)) {
+		if (!jaln_handle_initialize_ack(sess, JALN_ROLE_PUBLISHER, frame)) {
+			goto out;
+		}
+		vortex_channel_set_received_handler(chan, jaln_pub_channel_frame_handler, sess);
+
+		int chan_num = vortex_channel_get_number(chan);
+		if (chan_num == -1) {
+			vortex_connection_shutdown(conn);
+			goto out;
+		}
+
+		vortex_channel_new_fullv(conn, 0, NULL, JALN_JALOP_1_0_PROFILE,
+				EncodingNone,
+				NULL, NULL, // close handler, user data,
+				NULL, NULL, // frame handler, user data,
+				jaln_session_on_dgst_channel_create, sess,
+				"digest:%d", chan_num);
+	} else if (0 == strcasecmp(msg, JALN_MSG_INIT_NACK)) {
+		jaln_handle_initialize_nack(sess, frame);
+	} else {
+		vortex_connection_shutdown(conn);
+	}
+out:
+	return;
 }
 
 struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
