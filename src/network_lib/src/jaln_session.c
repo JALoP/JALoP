@@ -35,6 +35,7 @@
 #include "jaln_publisher.h"
 #include "jaln_session.h"
 #include "jaln_sub_dgst_channel.h"
+#include "jaln_subscriber_state_machine.h"
 
 struct jaln_session *jaln_session_create()
 {
@@ -146,8 +147,7 @@ void jaln_sub_data_destroy(struct jaln_sub_data **psub_data) {
 		return;
 	}
 	struct jaln_sub_data *sub_data = *psub_data;
-	// TODO: destroy the sub_data->sm.
-	// jaln_sub_state_machine_destroy(&sub_data->sm);
+	jaln_sub_state_machine_destroy(&sub_data->sm);
 	vortex_cond_destroy(&sub_data->dgst_list_cond);
 	free(sub_data);
 	*psub_data = NULL;
