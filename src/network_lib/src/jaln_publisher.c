@@ -5,6 +5,9 @@
  *
  * @section LICENSE
  *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
@@ -27,7 +30,9 @@
 
 #include "jaln_context.h"
 #include "jaln_digest_info.h"
+#include "jaln_digest_msg_handler.h"
 #include "jaln_digest_resp_info.h"
+#include "jaln_message_helpers.h"
 #include "jaln_publisher.h"
 #include "jaln_session.h"
 #include "jaln_sync_msg_handler.h"
@@ -123,6 +128,56 @@ out:
 	if (!ans_rpy_sent) {
 		ret = JAL_E_COMM;
 	}
+	return ret;
+}
+
+enum jal_status jaln_publisher_handle_digest(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
+{
+	axlList *calc_dgsts = NULL;
+	axlList *dgst_from_remote = NULL;
+	axlList *resps = NULL;
+	char *msg = NULL;
+	size_t len = 0;
+
+	enum jal_status ret;
+	ret = jaln_process_digest(frame, &dgst_from_remote);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+
+	vortex_mutex_lock(&sess->lock);
+	calc_dgsts = sess->dgst_list;
+	sess->dgst_list = jaln_digest_info_list_create();
+	vortex_mutex_unlock(&sess->lock);
+
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, dgst_from_remote, &resps);
+
+	vortex_mutex_lock(&sess->lock);
+	axlListCursor *cursor = axl_list_cursor_new(sess->dgst_list);
+	axl_list_cursor_first(cursor);
+	while(axl_list_cursor_has_item(cursor)) {
+		axlPointer from_sess = axl_list_cursor_get(cursor);
+		axl_list_append(calc_dgsts, from_sess);
+		axl_list_cursor_unlink(cursor);
+		axl_list_cursor_next(cursor);
+	}
+	axl_list_cursor_free(cursor);
+	axlList *tmp_list = sess->dgst_list;
+	sess->dgst_list = calc_dgsts;
+	vortex_mutex_unlock(&sess->lock);
+
+	axl_list_free(tmp_list);
+	tmp_list = NULL;
+	calc_dgsts = NULL;
+
+	ret = jaln_create_digest_response_msg(resps, &msg, &len);
+	axl_list_free(resps);
+	resps = NULL;
+	vortex_channel_send_rpy(chan, msg, len, msg_no);
+	goto out;
+err_out:
+	vortex_channel_close_full(chan, jaln_session_notify_close, sess);
+out:
 	return ret;
 }
 

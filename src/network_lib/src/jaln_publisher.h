@@ -4,6 +4,9 @@
  *
  * @section LICENSE
  *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
@@ -21,6 +24,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef JALN_PUBLISHER_H
 #define JALN_PUBLISHER_H
 
@@ -28,11 +32,11 @@
 #include <vortex.h>
 #include <jalop/jaln_network.h>
 
-#ifdef __cplusplu
-extern "C" {
-#endif // __cplusplu
-
 #include "jaln_session.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
 
 /**
  * Compare 2 lists of jaln_digest_info structures to determine if the remote
@@ -72,9 +76,24 @@ enum jal_status jaln_publisher_handle_sync(
 		VortexFrame *frame,
 		int msg_no);
 
-#ifdef __cplusplu
+/**
+ * Helper utility to parse and process a 'digest' message.
+ *
+ * @param[in] sess The session
+ * @param[in] chan The vortex channel that received the message.
+ * @param[in] frame The frame that contains the message
+ * @param[in] msg_no The message number
+ *
+ * @return JAL_OK if the message successfully parsed and dealt with, or an
+ * error code.
+ */
+enum jal_status jaln_publisher_handle_digest(struct jaln_session *sess,
+		VortexChannel *chan,
+		VortexFrame *frame,
+		int msg_no);
+
+#ifdef __cplusplus
 }
-#endif // __cplusplu
+#endif // __cplusplus
 
 #endif // JALN_PUBLISHER_H
-
