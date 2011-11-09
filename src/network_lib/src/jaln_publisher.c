@@ -30,6 +30,7 @@
 #include "jaln_digest_resp_info.h"
 #include "jaln_publisher.h"
 #include "jaln_session.h"
+#include "jaln_sync_msg_handler.h"
 
 void jaln_pub_notify_digests_and_create_digest_response(
 		struct jaln_session *sess,
@@ -98,5 +99,30 @@ void jaln_pub_notify_digests_and_create_digest_response(
 	axl_list_cursor_free(peer_cursor);
 	axl_list_cursor_free(calc_cursor);
 	*dgst_resp_infos = resps;
+}
+
+enum jal_status jaln_publisher_handle_sync(struct jaln_session *sess,
+		VortexChannel *chan,
+		VortexFrame *frame,
+		int msg_no)
+{
+	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(chan, msg_no);
+	char *serial_id = NULL;
+	enum jal_status ret = JAL_E_INVAL;
+	if (!sess || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks || 
+			!sess->jaln_ctx->pub_callbacks->sync || !sess->ch_info) {
+		goto out;
+	}
+	ret = jaln_process_sync(frame, &serial_id);
+	if (ret != JAL_OK) {
+		goto out;
+	}
+	sess->jaln_ctx->pub_callbacks->sync(sess->ch_info, sess->ch_info->type, serial_id, NULL, sess->jaln_ctx->user_data);
+	free(serial_id);
+out:
+	if (!ans_rpy_sent) {
+		ret = JAL_E_COMM;
+	}
+	return ret;
 }
 

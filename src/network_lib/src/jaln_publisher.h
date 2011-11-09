@@ -57,6 +57,21 @@ void jaln_pub_notify_digests_and_create_digest_response(
 		axlList *peer_dgsts,
 		axlList **dgst_resp_infos);
 
+/**
+ * Helper function for a publisher to process (and reply to) a 'sync' message.
+ * @param[in] sess The session
+ * @param[in] chan The channel that received the message
+ * @param[in] frame The frame for the sync message
+ * @param[in] msg_no The message number for the frame.
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_publisher_handle_sync(
+		struct jaln_session *sess,
+		VortexChannel *chan,
+		VortexFrame *frame,
+		int msg_no);
+
 #ifdef __cplusplu
 }
 #endif // __cplusplu
