@@ -131,6 +131,19 @@ enum jal_status jaln_pub_handle_subscribe(struct jaln_session *session,
 		VortexFrame *frame,
 		int msg_no);
 
+/**
+ * Handle to process a 'journal-resume' message.
+ *
+ * @param[in] chan The channel that received the message
+ * @param[in] frame The frame containing the message
+ * @param[in] msg_no The message number
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *session,
+		VortexChannel *chan,
+		VortexFrame *frame,
+		int msg_no);
 
 #ifdef __cplusplus
 }

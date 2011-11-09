@@ -34,6 +34,7 @@
 #include "jaln_digest_info.h"
 #include "jaln_digest_msg_handler.h"
 #include "jaln_digest_resp_info.h"
+#include "jaln_journal_resume_msg_handler.h"
 #include "jaln_message_helpers.h"
 #include "jaln_publisher.h"
 #include "jaln_pub_feeder.h"
@@ -215,6 +216,54 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexCon
 	return;
 err_out:
 	vortex_connection_shutdown(conn);
+}
+enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
+{
+	enum jal_status ret = JAL_E_INVAL;
+	if (!sess || !sess->ch_info || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks || !chan || !frame) {
+		return ret;
+	}
+	struct jaln_channel_info *ch_info = sess->ch_info;
+	enum jaln_record_type type = ch_info->type;
+	if  (JALN_RTYPE_JOURNAL != type) {
+		return JAL_E_INVAL;
+	}
+	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
+	struct jaln_pub_data *pd = sess->pub_data;
+	void *ud = sess->jaln_ctx->user_data;
+	char *sid = NULL;
+	uint64_t offset;
+	ret = jaln_process_journal_resume(frame, &sid, &offset);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+
+	sess->pub_data->payload_off = offset;
+	struct jaln_record_info rec_info;
+	memset(&rec_info, 0, sizeof(rec_info));
+	rec_info.type = type;
+	rec_info.serial_id = sid;
+
+	ret = cbs->on_journal_resume(ch_info, &rec_info, offset, &pd->sys_meta, &pd->app_meta, NULL, ud);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+
+	sess->pub_data->msg_no = msg_no;
+	sess->pub_data->serial_id = sid;
+
+	ret = jaln_pub_begin_next_record_ans(sess, offset, &rec_info, chan);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+	goto out;
+
+err_out:
+	vortex_channel_finalize_ans_rpy(chan, msg_no);
+	jaln_session_set_errored(sess);
+out:
+	free(sid);
+	return ret;
 }
 
 enum jal_status jaln_pub_handle_subscribe(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
