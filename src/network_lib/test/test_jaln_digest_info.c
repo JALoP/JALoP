@@ -33,6 +33,7 @@
 static  char *sid = "some_sid";
 static  char *sid_2 = "other_sid";
 static uint8_t digest[DGST_LEN] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+static uint8_t digest_2[DGST_LEN] = { 5, 4, 3, 2, 1, 0, 0xa, 0xb, 0xc, 0xd };
 
 void setup()
 {
@@ -133,5 +134,38 @@ void test_axl_equals_digest_returns_non_zero_with_bad_input() {
 	jaln_digest_info_destroy(&di_b);
 	assert_pointer_equals((void*) NULL, di_a);
 	assert_pointer_equals((void*) NULL, di_b);
+}
+
+void test_dgst_info_axl_equlity_checks_works()
+{
+	struct jaln_digest_info *di_a = jaln_digest_info_create(sid, digest, DGST_LEN);
+	struct jaln_digest_info *di_a_clone = jaln_digest_info_create(sid, digest, DGST_LEN);
+	struct jaln_digest_info *di_a_short = jaln_digest_info_create(sid, digest, DGST_LEN - 1);
+	struct jaln_digest_info *di_b = jaln_digest_info_create(sid_2, digest_2, DGST_LEN);
+
+	assert_true(jaln_digests_are_equal(di_a, di_a_clone));
+	assert_true(jaln_digests_are_equal(di_a, di_a_clone));
+
+	assert_false(jaln_digests_are_equal(di_a, di_b));
+	assert_false(jaln_digests_are_equal(di_a, di_a_short));
+
+	assert_false(jaln_digests_are_equal(di_b, di_a));
+	assert_false(jaln_digests_are_equal(di_a_short, di_a));
+
+	jaln_digest_info_destroy(&di_a);
+	jaln_digest_info_destroy(&di_a_clone);
+	jaln_digest_info_destroy(&di_b);
+	jaln_digest_info_destroy(&di_a_short);
+}
+
+void test_axl_equlity_check_does_not_crash_with_bad_inputs()
+{
+	struct jaln_digest_info *di_a = jaln_digest_info_create(sid, digest, DGST_LEN);
+
+	assert_false(jaln_digests_are_equal(NULL, di_a));
+	assert_false(jaln_digests_are_equal(di_a, NULL));
+	assert_false(jaln_digests_are_equal(NULL, NULL));
+
+	jaln_digest_info_destroy(&di_a);
 }
 
