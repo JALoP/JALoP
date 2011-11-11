@@ -28,6 +28,8 @@
 
 #include <vortex.h>
 
+#include "jaln_session.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -42,6 +44,20 @@ extern "C" {
  */
 void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *conn,
 		VortexFrame *frame, axlPointer user_data);
+
+/**
+ * Frame handler for use when the subscriber is expecting 'ANS' frames in
+ * response to a 'subscribe'
+ *
+ * @param[in] session
+ * @param[in] chan The channel that received the frame
+ * @param[in] conn The connection that holds the channel.
+ * @param[in] frame Teh frame of the message.
+ */
+void jaln_subscriber_record_frame_handler(struct jaln_session *session,
+		VortexChannel *chan,
+		__attribute__((unused)) VortexConnection *v_conn,
+		VortexFrame *frame);
 
 #ifdef __cplusplus
 }

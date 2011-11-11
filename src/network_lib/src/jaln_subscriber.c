@@ -24,6 +24,7 @@
  */
 
 #include "jaln_session.h"
+#include "jaln_subscriber_state_machine.h"
 
 void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *conn,
 		VortexFrame *frame, axlPointer user_data)
@@ -35,5 +36,32 @@ void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *co
 		return;
 	}
 	session->sub_data->curr_frame_handler(session, chan, conn, frame);
+}
+
+void jaln_subscriber_record_frame_handler(struct jaln_session *session,
+		VortexChannel *chan,
+		__attribute__((unused)) VortexConnection *conn,
+		VortexFrame *frame)
+{
+	if (!session || !session->sub_data || !session->sub_data->sm ||
+			!session->sub_data->sm->curr_state ||
+			!session->sub_data->sm->curr_state->frame_handler) {
+		goto err_out;
+	}
+
+	VortexFrameType frame_type = vortex_frame_get_type(frame);
+	if (frame_type != VORTEX_FRAME_TYPE_ANS) {
+		goto err_out;
+	}
+	int flag_more = vortex_frame_get_more_flag(frame);
+	int ret = session->sub_data->sm->curr_state->frame_handler(session, frame, 0, flag_more);
+	if (!ret) {
+		goto err_out;
+	}
+	return;
+
+err_out:
+	vortex_channel_close_full(chan, jaln_session_notify_close, session);
+	return;
 }
 
