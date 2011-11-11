@@ -89,6 +89,15 @@ out:
 	return;
 }
 
+void jaln_subscriber_unexpected_frame_handler(
+		__attribute__((unused)) struct jaln_session *session,
+		__attribute__((unused)) VortexChannel *chan,
+		VortexConnection *conn,
+		__attribute__((unused)) VortexFrame *frame)
+{
+	vortex_connection_shutdown(conn);
+}
+
 void jaln_subscriber_record_frame_handler(struct jaln_session *session,
 		VortexChannel *chan,
 		__attribute__((unused)) VortexConnection *conn,

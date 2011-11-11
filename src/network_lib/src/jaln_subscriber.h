@@ -61,6 +61,20 @@ void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,
 		VortexFrame *frame);
 
 /**
+ * Frame handler that is used before any messages are sent by the publisher.
+ *
+ * @param[in] sess The jaln_session
+ * @param[in] chan The vortex channel that received the frame
+ * @param[in] conn The vortex connection for the channel.
+ * @param[in] frame The frame
+ */
+void jaln_subscriber_unexpected_frame_handler(
+		struct jaln_session *session,
+		VortexChannel *chan,
+		VortexConnection *conn,
+		VortexFrame *frame);
+
+/**
  * Frame handler for use when the subscriber is expecting 'ANS' frames in
  * response to a 'subscribe'
  *
