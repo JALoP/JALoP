@@ -24,6 +24,7 @@
  */
 
 #include "jaln_session.h"
+#include "jaln_subscriber.h"
 #include "jaln_subscriber_state_machine.h"
 
 void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *conn,
@@ -63,5 +64,39 @@ void jaln_subscriber_record_frame_handler(struct jaln_session *session,
 err_out:
 	vortex_channel_close_full(chan, jaln_session_notify_close, session);
 	return;
+}
+
+enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_session *session)
+{
+	vortex_mutex_lock(&session->lock);
+	enum jal_status ret = jaln_configure_sub_session_no_lock(chan, session);
+	vortex_mutex_unlock(&session->lock);
+	return ret;
+}
+
+enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct jaln_session *session)
+{
+	if (!chan || !session || session->sub_data || session->rec_chan) {
+		return JAL_E_INVAL;
+	}
+	session->rec_chan = chan;
+	session->rec_chan_num = vortex_channel_get_number(chan);
+	session->role = JALN_ROLE_PUBLISHER;
+	session->sub_data = jaln_sub_data_create();
+	switch (session->ch_info->type) {
+	case (JALN_RTYPE_JOURNAL):
+		session->sub_data->sm = jaln_sub_state_create_journal_machine();
+		break;
+	case (JALN_RTYPE_AUDIT):
+		session->sub_data->sm = jaln_sub_state_create_audit_machine();
+		break;
+	case (JALN_RTYPE_LOG):
+		session->sub_data->sm = jaln_sub_state_create_log_machine();
+		break;
+	}
+	jaln_sub_state_reset(session);
+	session->sub_data->curr_frame_handler = jaln_subscriber_record_frame_handler;
+	vortex_channel_set_received_handler(chan, jaln_subscriber_on_frame_received, session);
+	return JAL_OK;
 }
 

@@ -27,6 +27,7 @@
 #define _JALN_SUBSCRIBER_H_
 
 #include <vortex.h>
+#include "jaln_session.h"
 
 #include "jaln_session.h"
 
@@ -58,6 +59,31 @@ void jaln_subscriber_record_frame_handler(struct jaln_session *session,
 		VortexChannel *chan,
 		__attribute__((unused)) VortexConnection *v_conn,
 		VortexFrame *frame);
+
+/**
+ * Configure a session for use as a subscriber
+ * This function acquires a lock on the session, at configures it for use as a
+ * publisher.
+ *
+ * @param[in] chan The vortex channel, this should be the channel to be used as
+ * a record channel.
+ * @param[in] sess The jaln_session to configure
+ *
+ * @return JAL_OK on success, or an error.
+ */
+enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_session *session);
+
+/**
+ * Configure a session for use as a subscriber
+ * This is the same as jaln_configure_sub_session, except no lock is acquired.
+ *
+ * @param[in] chan The vortex channel, this should be the channel to be used as
+ * a record channel.
+ * @param[in] sess The jaln_session to configure
+ *
+ * @return JAL_OK on success, or an error.
+ */
+enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct jaln_session *session);
 
 #ifdef __cplusplus
 }
