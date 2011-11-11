@@ -23,6 +23,8 @@
  * limitations under the License.
  */
 
+#include "jaln_context.h"
+#include "jaln_message_helpers.h"
 #include "jaln_session.h"
 #include "jaln_subscriber.h"
 #include "jaln_subscriber_state_machine.h"
@@ -98,5 +100,55 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct j
 	session->sub_data->curr_frame_handler = jaln_subscriber_record_frame_handler;
 	vortex_channel_set_received_handler(chan, jaln_subscriber_on_frame_received, session);
 	return JAL_OK;
+}
+
+void jaln_subscriber_send_subscribe_request(struct jaln_session *session)
+{
+	char *msg = NULL;
+
+	if (!session || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks ||
+			!session->ch_info || !session->rec_chan) {
+		goto err_out;
+	}
+	char *serial_id = NULL;
+	uint64_t offset = 0;
+	enum jal_status ret = session->jaln_ctx->sub_callbacks->get_subscribe_request(
+			session->ch_info,
+			session->ch_info->type,
+			&serial_id,
+			&offset);
+	if ((JAL_OK != ret) ||
+		(!serial_id)) {
+		goto err_out;
+	}
+	axl_stream_trim(serial_id);
+	if (0 == strlen(serial_id)) {
+		goto err_out;
+	}
+
+	size_t msg_len = 0;
+	if ((JALN_RTYPE_JOURNAL == session->ch_info->type) && (0 < offset)) {
+		if (JAL_OK != jaln_create_journal_resume_msg(serial_id, offset, &msg, &msg_len)) {
+			goto err_out;
+		}
+	} else {
+		if (JAL_OK != jaln_create_subscribe_msg(serial_id, &msg, &msg_len)) {
+			goto err_out;
+		}
+	}
+	int msg_no;
+	vortex_channel_set_complete_flag(session->rec_chan, axl_false);
+
+	if (!(vortex_channel_send_msg(session->rec_chan, msg, strlen(msg), &msg_no))) {
+		goto err_out;
+	}
+	goto out;
+err_out:
+	if (session && session->rec_chan) {
+		vortex_channel_close_full(session->rec_chan, jaln_session_notify_close, session);
+	}
+out:
+	free(msg);
+	return;
 }
 

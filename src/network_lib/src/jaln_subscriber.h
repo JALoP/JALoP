@@ -85,6 +85,13 @@ enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_sess
  */
 enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct jaln_session *session);
 
+/**
+ * Send the 'subscribe' message.
+ *
+ * @param[in] session The jaln_session to send the message on.
+ */
+void jaln_subscriber_send_subscribe_request(struct jaln_session *session);
+
 #ifdef __cplusplus
 }
 #endif
