@@ -27,6 +27,7 @@
  */
 
 #include <test-dept.h>
+#include <jalop/jaln_network_types.h>
 
 #include "jal_alloc.h"
 
@@ -215,3 +216,37 @@ void test_pub_handle_sync_fails_on_bad_input()
 	assert_not_equals(JAL_OK, jaln_publisher_handle_sync(sess, (VortexChannel*) 0xbadf00d, (VortexFrame*) 0xdeadbeef, 1));
 	sess->ch_info = ch_info;
 }
+
+void test_pub_create_session_fails_with_bad_input()
+{
+	struct jaln_session *my_sess = jaln_publisher_create_session(NULL, "some_host", JALN_RTYPE_JOURNAL);
+	assert_equals(1, ctx->ref_cnt);
+	assert_pointer_equals((void*) NULL, my_sess);
+	assert_equals(1, ctx->ref_cnt);
+
+	my_sess = jaln_publisher_create_session(ctx, NULL, JALN_RTYPE_JOURNAL);
+	assert_pointer_equals((void*) NULL, my_sess);
+	assert_equals(1, ctx->ref_cnt);
+
+	my_sess = jaln_publisher_create_session(ctx, "some_host", 0);
+	assert_pointer_equals((void*) NULL, my_sess);
+	assert_equals(1, ctx->ref_cnt);
+
+}
+
+void test_pub_create_session_works()
+{
+	const char *host = "some_host";
+	assert_equals(1, ctx->ref_cnt);
+	struct jaln_session *my_sess = jaln_publisher_create_session(ctx, "some_host", JALN_RTYPE_JOURNAL);
+	assert_not_equals((void*) NULL, my_sess);
+	assert_equals(2, ctx->ref_cnt);
+	assert_equals(JALN_ROLE_PUBLISHER, my_sess->role);
+	assert_equals(JALN_RTYPE_JOURNAL, my_sess->ch_info->type);
+	assert_not_equals(host, my_sess->ch_info->hostname);
+	assert_not_equals((void*) NULL, my_sess->ch_info->hostname);
+	assert_string_equals(host, my_sess->ch_info->hostname);
+
+	jaln_session_unref(my_sess);
+}
+
