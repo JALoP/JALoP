@@ -25,6 +25,7 @@
 
 #include "jaln_context.h"
 #include "jaln_message_helpers.h"
+#include "jaln_handle_init_replies.h"
 #include "jaln_session.h"
 #include "jaln_subscriber.h"
 #include "jaln_subscriber_state_machine.h"
@@ -39,6 +40,53 @@ void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *co
 		return;
 	}
 	session->sub_data->curr_frame_handler(session, chan, conn, frame);
+}
+
+void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,
+		VortexChannel *chan,
+		VortexConnection *conn,
+		VortexFrame *frame)
+{
+	if (!session || !chan || !conn || !frame) {
+		goto out;
+	}
+
+	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
+		vortex_connection_shutdown(conn);
+		goto out;
+	}
+	const char *msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
+	if (!msg) {
+		vortex_connection_shutdown(conn);
+		goto out;
+	}
+	if (0 == strcasecmp(msg, JALN_MSG_INIT_ACK)) {
+		if (!jaln_handle_initialize_ack(session, JALN_ROLE_SUBSCRIBER, frame)) {
+			goto out;
+		}
+		jaln_configure_sub_session(chan, session);
+
+		jaln_subscriber_send_subscribe_request(session);
+		// create the 'digest' channel
+
+		int chan_num = vortex_channel_get_number(chan);
+		if (chan_num == -1) {
+			vortex_connection_shutdown(conn);
+			goto out;
+		}
+		vortex_channel_new_fullv(conn, 0, NULL, JALN_JALOP_1_0_PROFILE,
+				EncodingNone,
+				NULL, NULL, // close handler, user data,
+				NULL, NULL, // frame handler, user data,
+				jaln_session_on_dgst_channel_create, session,
+				"digest:%d", chan_num);
+	} else if (0 == strcasecmp(msg, JALN_MSG_INIT_NACK)) {
+		jaln_handle_initialize_nack(session, frame);
+	} else {
+		vortex_connection_shutdown(conn);
+	}
+out:
+	return;
 }
 
 void jaln_subscriber_record_frame_handler(struct jaln_session *session,

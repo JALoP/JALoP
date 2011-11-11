@@ -47,6 +47,20 @@ void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *co
 		VortexFrame *frame, axlPointer user_data);
 
 /**
+ * Frame handler for a subscriber to deal with the response to an 'init'
+ * message.
+ *
+ * @param[in] chan The vortex channel that received the frame
+ * @param[in] conn The vortex connection for the channel.
+ * @param[in] frame The frame
+ * @param[in] user_data This is expected to be a jaln_session.
+ */
+void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,
+		VortexChannel *chan,
+		VortexConnection *conn,
+		VortexFrame *frame);
+
+/**
  * Frame handler for use when the subscriber is expecting 'ANS' frames in
  * response to a 'subscribe'
  *
