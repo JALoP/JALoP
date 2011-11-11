@@ -23,6 +23,8 @@
  * limitations under the License.
  */
 
+#include "jal_alloc.h"
+
 #include "jaln_context.h"
 #include "jaln_message_helpers.h"
 #include "jaln_handle_init_replies.h"
@@ -40,6 +42,36 @@ void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *co
 		return;
 	}
 	session->sub_data->curr_frame_handler(session, chan, conn, frame);
+}
+
+struct jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
+{
+	if (!ctx || !host) {
+		return NULL;
+	}
+
+	switch (type) {
+	case JALN_RTYPE_JOURNAL:
+	case JALN_RTYPE_AUDIT:
+	case JALN_RTYPE_LOG:
+		break;
+	default:
+		return NULL;
+	}
+	struct jaln_session *session = NULL;
+
+	session = jaln_session_create();
+	struct jaln_channel_info *ch_info = session->ch_info;
+
+	jaln_ctx_ref(ctx);
+	session->jaln_ctx = ctx;
+	session->role = JALN_ROLE_SUBSCRIBER;
+	session->sub_data = jaln_sub_data_create();
+	session->sub_data->curr_frame_handler = jaln_subscriber_unexpected_frame_handler;
+	ch_info->hostname = jal_strdup(host);
+	ch_info->type = type;
+
+	return session;
 }
 
 void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,

@@ -137,6 +137,17 @@ void jaln_subscriber_on_channel_create(int channel_num,
 		VortexChannel *channel, VortexConnection *v_conn,
 		axlPointer user_data);
 
+/**
+ * Helper utility to create/configure a session for use as a subscriber.
+ *
+ * @param[in] ctx The context to associate with.
+ * @param[in] host A string for the remote host.
+ * @param[in] type The type of records to transfer.
+ *
+ * @return a new jaln_session
+ */
+struct jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
+
 #ifdef __cplusplus
 }
 #endif
