@@ -23,13 +23,18 @@
  * limitations under the License.
  */
 
+#include <jalop/jaln_network.h>
+
 #include "jal_alloc.h"
 
+#include "jaln_connection.h"
+#include "jaln_connection_callbacks_internal.h"
 #include "jaln_context.h"
 #include "jaln_message_helpers.h"
 #include "jaln_handle_init_replies.h"
 #include "jaln_session.h"
 #include "jaln_subscriber.h"
+#include "jaln_subscriber_callbacks_internal.h"
 #include "jaln_subscriber_state_machine.h"
 
 void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *conn,
@@ -72,6 +77,67 @@ struct jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const cha
 	ch_info->type = type;
 
 	return session;
+}
+
+struct jaln_connection *jaln_subscribe(
+		jaln_context *ctx,
+		const char *host,
+		const char *port,
+		const int data_classes,
+		void *user_data)
+{
+	if (!ctx || !host || !port ||
+		!ctx->vortex_ctx ||
+		!jaln_subscriber_callbacks_is_valid(ctx->sub_callbacks) ||
+		!jaln_connection_callbacks_is_valid(ctx->conn_callbacks)) {
+		return NULL;
+	}
+
+	vortex_mutex_lock(&ctx->lock);
+	if (ctx->is_connected) {
+		vortex_mutex_unlock(&ctx->lock);
+		return NULL;
+	}
+
+	ctx->is_connected = axl_true;
+	ctx->user_data = user_data;
+	vortex_mutex_unlock(&ctx->lock);
+
+	if (!(data_classes & JALN_RTYPE_ALL)) {
+		return NULL;
+	}
+	VortexConnection *v_conn = NULL;
+	VortexCtx *v_ctx = ctx->vortex_ctx;
+	v_conn = vortex_connection_new(v_ctx, host, port, NULL, NULL);
+	if (!vortex_connection_is_ok(v_conn, axl_true)) {
+		return NULL;
+	}
+	struct jaln_connection *jconn = jaln_connection_create();
+	jconn->jaln_ctx = ctx;
+	jconn->v_conn = v_conn;
+
+	if (data_classes & JALN_RTYPE_JOURNAL) {
+		struct jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_JOURNAL);
+		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
+				jaln_session_on_close_channel, session,
+				jaln_subscriber_on_frame_received, session,
+				jaln_subscriber_on_channel_create, session);
+	}
+	if (data_classes & JALN_RTYPE_AUDIT) {
+		struct jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_AUDIT);
+		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
+				jaln_session_on_close_channel, session,
+				jaln_subscriber_on_frame_received, session,
+				jaln_subscriber_on_channel_create, session);
+	}
+	if (data_classes & JALN_RTYPE_LOG) {
+		struct jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_LOG);
+		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
+				jaln_session_on_close_channel, session,
+				jaln_subscriber_on_frame_received, session,
+				jaln_subscriber_on_channel_create, session);
+	}
+	return jconn;
 }
 
 void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,
