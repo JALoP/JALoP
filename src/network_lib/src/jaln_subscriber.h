@@ -106,6 +106,23 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct j
  */
 void jaln_subscriber_send_subscribe_request(struct jaln_session *session);
 
+/** Callback that needs to get registered when a subscriber initiates a
+ * connection to a remote.
+ *
+ * The function will get called after the channel is created, and this function
+ * will send finish configuring the channel and send the 'initialize' message
+ * to the peer.
+ *
+ * @param[in] channel_num The channel number assigned to the channel
+ * @param[in] channel The Vortex Channel
+ * @param[in] v_conn The Vortex Connection
+ * @param[in] user_data This is expected to be a pointer to a jaln_session
+ * object.
+ */
+void jaln_subscriber_on_channel_create(int channel_num,
+		VortexChannel *channel, VortexConnection *v_conn,
+		axlPointer user_data);
+
 #ifdef __cplusplus
 }
 #endif

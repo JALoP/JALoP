@@ -200,3 +200,47 @@ out:
 	return;
 }
 
+void jaln_subscriber_on_channel_create(int channel_num,
+		VortexChannel *chan, VortexConnection *conn,
+		axlPointer user_data)
+{
+	struct jaln_session *sess = (struct jaln_session*)user_data;
+	if (-1 == channel_num || !chan) {
+		// channel wasn't created, so need to free up the session
+		// object.
+		jaln_session_unref(sess);
+		return;
+	}
+	if (!sess || !sess->ch_info || !sess->jaln_ctx || !sess->sub_data) {
+		goto err_out;
+	}
+
+	vortex_channel_set_serialize(chan, axl_true);
+
+	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, sess);
+	sess->rec_chan = chan;
+	sess->ch_info->addr = strdup(vortex_connection_get_host(conn));
+	char *init_msg = NULL;
+	size_t init_msg_len = 0;
+
+	// setting '2' disables MIME generation completely.
+	vortex_channel_set_automatic_mime(chan, 2);
+
+	enum jal_status ret = jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, sess->ch_info->type,
+			sess->jaln_ctx->dgst_algs, sess->jaln_ctx->xml_encodings, &init_msg,
+			&init_msg_len);
+	if (ret != JAL_OK) {
+		// something went terribly wrong...
+		goto err_out;
+	}
+	sess->sub_data->curr_frame_handler = jaln_subscriber_init_reply_frame_handler;
+	if (!vortex_channel_send_msg(chan, init_msg, init_msg_len, NULL)) {
+		goto err_out;
+	}
+	goto out;
+err_out:
+	vortex_channel_close_full(chan, jaln_session_notify_close, sess);
+out:
+	free(init_msg);
+}
+
