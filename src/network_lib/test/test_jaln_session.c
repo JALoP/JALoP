@@ -60,6 +60,7 @@ void test_session_destroy_unrefs_jaln_ctx()
 	assert_equals(2, ctx->ref_cnt);
 	jaln_session_destroy(&sess);
 	assert_equals(1, ctx->ref_cnt);
+	jaln_ctx_unref(ctx);
 }
 
 void test_session_create()
@@ -185,3 +186,216 @@ void test_set_errored_works()
 	jaln_session_set_errored_no_lock(sess);
 	assert_true(sess->errored);
 }
+
+void test_notify_unclean_for_rec_channel_unrefs_session_and_clears_rec_info()
+{
+	jaln_session_ref(sess);
+
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_notify_unclean_channel_close(sess->rec_chan, sess);
+	assert_equals((void*)NULL, sess->rec_chan);
+	assert_equals(-1, sess->rec_chan_num);
+
+	assert_equals((void*) 0xdeadbeef, sess->dgst_chan);
+	assert_equals(5, sess->dgst_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_notify_unclean_for_dgst_channel_unrefs_session_and_clears_rec_info()
+{
+	jaln_session_ref(sess);
+
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_notify_unclean_channel_close(sess->dgst_chan, sess);
+	assert_equals((void*)NULL, sess->dgst_chan);
+	assert_equals(-1, sess->dgst_chan_num);
+
+	assert_equals((void*) 0xbadf00d, sess->rec_chan);
+	assert_equals(3, sess->rec_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_notify_unclean_does_nothing_with_bad_channel()
+{
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_notify_unclean_channel_close((VortexChannel*) 0xcdcdcdcd, sess);
+
+	assert_equals((void*) 0xbadf00d, sess->rec_chan);
+	assert_equals(3, sess->rec_chan_num);
+
+	assert_equals((void*)0xdeadbeef, sess->dgst_chan);
+	assert_equals(5, sess->dgst_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_notify_unclean_channel_close_ignores_dgst_channel_if_null()
+{
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = NULL;
+	sess->dgst_chan_num = -1;
+
+	jaln_session_ref(sess);
+	jaln_session_notify_unclean_channel_close(sess->rec_chan, sess);
+
+	assert_equals((void*) NULL, sess->rec_chan);
+	assert_equals(-1, sess->rec_chan_num);
+
+	assert_equals((void*)NULL, sess->dgst_chan);
+	assert_equals(-1, sess->dgst_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_notify_close_for_rec_channel_unrefs_session_and_clears_rec_info()
+{
+	jaln_session_ref(sess);
+
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_notify_close((VortexConnection*) 0xbadf00d,
+			sess->rec_chan_num, axl_true, NULL, NULL, sess);
+	assert_equals((void*)NULL, sess->rec_chan);
+	assert_equals(-1, sess->rec_chan_num);
+
+	assert_equals((void*) 0xdeadbeef, sess->dgst_chan);
+	assert_equals(5, sess->dgst_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_notify_close_for_rec_channel_does_nothing_if_channel_was_not_closed()
+{
+	jaln_session_ref(sess);
+
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_notify_close((VortexConnection*) 0xbadf00d,
+			sess->rec_chan_num, axl_false, NULL, NULL, sess);
+	assert_equals((void*)0xbadf00d, sess->rec_chan);
+	assert_equals(3, sess->rec_chan_num);
+
+	assert_equals((void*) 0xdeadbeef, sess->dgst_chan);
+	assert_equals(5, sess->dgst_chan_num);
+
+	assert_equals(2, sess->ref_cnt);
+
+	jaln_session_unref(sess);
+}
+
+void test_notify_close_for_dgst_channel_unrefs_session_and_clears_rec_info()
+{
+	jaln_session_ref(sess);
+
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_notify_close((VortexConnection*) 0xbadf00d,
+			sess->dgst_chan_num, axl_true, NULL, NULL, sess);
+	assert_equals((void*)NULL, sess->dgst_chan);
+	assert_equals(-1, sess->dgst_chan_num);
+
+	assert_equals((void*) 0xbadf00d, sess->rec_chan);
+	assert_equals(3, sess->rec_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_notify_close_does_nothing_with_bad_channel()
+{
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_notify_close((VortexConnection*) 0xbadf00d, 12,
+			axl_true, NULL, NULL, sess);
+
+	assert_equals((void*) 0xbadf00d, sess->rec_chan);
+	assert_equals(3, sess->rec_chan_num);
+
+	assert_equals((void*)0xdeadbeef, sess->dgst_chan);
+	assert_equals(5, sess->dgst_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_on_close_channel_for_rec_channel_unrefs_session_and_clears_rec_info()
+{
+	jaln_session_ref(sess);
+
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_on_close_channel(sess->rec_chan_num, (VortexConnection*) 0xdeadbeef, sess);
+	assert_equals((void*)NULL, sess->rec_chan);
+	assert_equals(-1, sess->rec_chan_num);
+
+	assert_equals((void*) 0xdeadbeef, sess->dgst_chan);
+	assert_equals(5, sess->dgst_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_on_close_channel_for_dgst_channel_unrefs_session_and_clears_rec_info()
+{
+	jaln_session_ref(sess);
+
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_on_close_channel(sess->dgst_chan_num, (VortexConnection*) 0xdeadbeef, sess);
+	assert_equals((void*)NULL, sess->dgst_chan);
+	assert_equals(-1, sess->dgst_chan_num);
+
+	assert_equals((void*) 0xbadf00d, sess->rec_chan);
+	assert_equals(3, sess->rec_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+
+void test_on_close_channel_does_nothing_with_bad_channel()
+{
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->rec_chan_num = 3;
+	sess->dgst_chan = (VortexChannel*) 0xdeadbeef;
+	sess->dgst_chan_num = 5;
+
+	jaln_session_on_close_channel(12, (VortexConnection*) 0xdeadbeef, sess);
+
+	assert_equals((void*) 0xbadf00d, sess->rec_chan);
+	assert_equals(3, sess->rec_chan_num);
+
+	assert_equals((void*)0xdeadbeef, sess->dgst_chan);
+	assert_equals(5, sess->dgst_chan_num);
+
+	assert_equals(1, sess->ref_cnt);
+}
+

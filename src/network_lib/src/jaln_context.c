@@ -88,6 +88,7 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	if ((*jaln_ctx)->xml_encodings) {
 		axl_list_free((*jaln_ctx)->xml_encodings);
 	}
+	vortex_mutex_destroy(&(*jaln_ctx)->lock);
 	if ((*jaln_ctx)->vortex_ctx) {
 		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, axl_true);
 	}
