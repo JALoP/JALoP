@@ -50,7 +50,7 @@ axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
 
 /**
  * Convert an ascii string to a size_t
- * The same rules apply as for jal_ascii_to_uint64, with the exception that the
+ * The same rules apply as for jaln_ascii_to_uint64, with the exception that the
  * output is limited to a size_t type.
  *
  * @param[in] str The string to convert
