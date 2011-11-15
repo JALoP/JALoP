@@ -96,6 +96,7 @@ void test_session_create()
 	assert_equals((void*) NULL, sess->dgst);
 	assert_equals((void*) NULL, sess->rec_chan);
 	assert_equals((void*) NULL, sess->dgst_chan);
+	assert_equals((void*) NULL, sess->dgst);
 	assert_equals(-1, sess->rec_chan_num);
 	assert_equals(-1, sess->dgst_chan_num);
 	assert_not_equals((void*) NULL, sess->ch_info);
