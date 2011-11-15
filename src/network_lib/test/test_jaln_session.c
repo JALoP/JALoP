@@ -103,8 +103,8 @@ void test_session_create()
 	assert_false(sess->errored);
 	assert_not_equals((void*) NULL, sess->dgst_list);
 	assert_equals(JALN_ROLE_UNSET, sess->role);
-	assert_equals(100, sess->dgst_list_max);
-	assert_equals(30 * 60 * 1000000, sess->dgst_timeout);
+	assert_equals(JALN_SESSION_DEFAULT_DGST_LIST_MAX, sess->dgst_list_max);
+	assert_equals(JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS, sess->dgst_timeout);
 	assert_equals((void*) NULL, sess->sub_data);
 	assert_equals((void*) NULL, sess->pub_data);
 }

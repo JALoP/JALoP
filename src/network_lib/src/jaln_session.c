@@ -48,8 +48,8 @@ struct jaln_session *jaln_session_create()
 	if (!sess->dgst_list) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
-	sess->dgst_list_max = 100;
-	sess->dgst_timeout = 30 * 60 * 1000000;
+	sess->dgst_list_max = JALN_SESSION_DEFAULT_DGST_LIST_MAX;
+	sess->dgst_timeout = JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS;
 	sess->errored = axl_false;
 	return sess;
 }

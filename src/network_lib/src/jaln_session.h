@@ -35,6 +35,11 @@
 extern "C" {
 #endif
 
+#define JALN_SESSION_DEFAULT_DGST_LIST_MAX 100
+
+// 30 minute timeout
+#define JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS (30 * 60 * 100000)
+
 struct jaln_session;
 struct jaln_sub_state_machine;
 struct jaln_sub_data;
