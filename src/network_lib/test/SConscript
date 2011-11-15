@@ -28,6 +28,7 @@ rec_info_obj = lib_env.SharedObject("../src/jaln_record_info.c")
 sess_obj = lib_env.SharedObject("../src/jaln_session.c")
 str_utils_obj = lib_env.SharedObject("../src/jaln_string_utils.c")
 sub_cb_obj = lib_env.SharedObject("../src/jaln_subscriber_callbacks.c")
+sub_state_mach_obj = lib_env.SharedObject("../src/jaln_subscriber_state_machine.c")
 sync_msg_handler_obj = lib_env.SharedObject("../src/jaln_sync_msg_handler.c")
 
 tests.append(env.TestDeptTest('test_jaln_sub_dgst_channel.c',
@@ -89,6 +90,13 @@ tests.append(env.TestDeptTest('test_jaln_publisher.c',
 		dgst_obj, dgst_msg_handler_obj, dgst_resp_info_obj, enc_obj, hlpr_obj, pub_cb_obj,
 		rec_info_obj, str_utils_obj, sess_obj, sub_cb_obj, sync_msg_handler_obj],
 	useProxies=True)[0].abspath)
+
+tests.append(env.TestDeptTest('test_jaln_pub_feeder.c',
+	other_sources=[lib_common, ch_info_obj, conn_cb_obj, ctx_obj, dgst_info_obj,
+		dgst_msg_handler_obj, dgst_resp_info_obj, dgst_obj, enc_obj, hlpr_obj,
+		pub_cb_obj, rec_info_obj, sess_obj, str_utils_obj, sub_cb_obj,
+		sub_state_mach_obj, sync_msg_handler_obj], useProxies=True)[0].abspath)
+
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)

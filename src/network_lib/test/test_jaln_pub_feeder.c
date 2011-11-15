@@ -1,0 +1,576 @@
+/**
+ * @file This file contains tests for jaln_subscribe_msg_handler.c functions.
+ *
+ * @section LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <ctype.h>
+#include <inttypes.h>
+#include <jalop/jal_status.h>
+#include <limits.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <test-dept.h>
+#include <vortex.h>
+
+#include "jal_alloc.h"
+
+#include "jaln_context.h"
+#include "jaln_pub_feeder.h"
+#include "jaln_message_helpers.h"
+#include "jaln_session.h"
+
+#define SID "sid_1234"
+#define HEADERS "some headers"
+#define SYS_META "system meta"
+#define APP_META "app meta"
+#define PAYLOAD "payload text"
+
+#define VORTEX_SZ (strlen(HEADERS) + strlen(SYS_META) + strlen(APP_META) + \
+		strlen(PAYLOAD) + (3 * strlen("BREAK")))
+
+#define EXPECTED_MSG HEADERS SYS_META "BREAK" APP_META "BREAK" PAYLOAD "BREAK"
+
+static axl_bool finalized_called;
+
+static VortexPayloadFeeder *fake_vortex_payload_feeder_new (
+		__attribute__((unused)) VortexPayloadFeederHandler handler,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return (VortexPayloadFeeder*) 0xbadf00d;
+}
+
+static void fake_vortex_payload_feeder_set_on_finished(
+		__attribute__((unused)) VortexPayloadFeeder *feeder,
+		__attribute__((unused)) VortexPayloadFeederFinishedHandler on_finished,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
+enum jal_status fake_create_record_ans_rpy_headers(
+		__attribute__((unused)) struct jaln_record_info *rec_info,
+		char **buffer,
+		size_t *sz)
+{
+	*buffer = jal_strdup(HEADERS);
+	*sz = strlen(HEADERS);
+	return JAL_OK;
+}
+
+axl_bool fake_finalize_ans_rpy(
+		__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) int msg_no)
+{
+	finalized_called = axl_true;
+	return axl_true;
+}
+axl_bool fake_send_ans_rpy_from_feeder(
+		__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) VortexPayloadFeeder *feeder,
+		__attribute__((unused)) int msg_no)
+{
+	return axl_true;
+}
+
+enum jal_status fake_add_to_dgst_list(
+		__attribute__((unused)) struct jaln_session *sess,
+		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) uint8_t *dgst_buf,
+		__attribute__((unused)) size_t dgst_len)
+{
+	return JAL_OK;
+}
+
+enum jal_status my_on_journal_resume(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) struct jaln_record_info *record_info,
+		__attribute__((unused)) struct jaln_mime_header *headers,
+		__attribute__((unused)) void *user_data)
+{
+	return JAL_OK;
+}
+
+enum jal_status my_on_subscribe(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) struct jaln_mime_header *headers,
+		__attribute__((unused)) void *user_data)
+{
+	return JAL_OK;
+}
+
+enum jal_status my_get_next_record_info_and_metadata(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *last_serial_id,
+		__attribute__((unused)) struct jaln_record_info *record_info,
+		__attribute__((unused)) uint8_t **system_metadata_buffer,
+		__attribute__((unused)) uint8_t **application_metadata_buffer,
+		__attribute__((unused)) void *user_data)
+{
+	*system_metadata_buffer = (uint8_t*) strdup(SYS_META);
+	*application_metadata_buffer = (uint8_t*) strdup(APP_META);
+	record_info->sys_meta_len = strlen(SYS_META);
+	record_info->app_meta_len = strlen(APP_META);
+	record_info->payload_len = strlen(PAYLOAD);
+	record_info->serial_id = strdup(SID);
+	return JAL_OK;
+}
+
+enum jal_status my_release_metadata_buffers(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) uint8_t *system_metadata_buffer,
+		__attribute__((unused)) uint8_t *application_metadata_buffer,
+		__attribute__((unused)) void *user_data)
+{
+	free(system_metadata_buffer);
+	free(application_metadata_buffer);
+	return JAL_OK;
+}
+
+enum jal_status my_acquire_log_data(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) uint8_t **buffer,
+		__attribute__((unused)) void *user_data)
+{
+	*buffer = (uint8_t*) strdup(PAYLOAD);
+	return JAL_OK;
+}
+
+enum jal_status my_release_log_data(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) uint8_t *buffer,
+		__attribute__((unused)) void *user_data)
+{
+	free(buffer);
+	return JAL_OK;
+}
+
+enum jal_status my_acquire_audit_data(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) uint8_t **buffer,
+		__attribute__((unused)) void *user_data)
+{
+	*buffer = (uint8_t*) strdup(PAYLOAD);
+	return JAL_OK;
+}
+
+enum jal_status my_release_audit_data(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) uint8_t *buffer,
+		__attribute__((unused)) void *user_data)
+{
+	free(buffer);
+	return JAL_OK;
+}
+
+enum jal_status journal_get_bytes(const uint64_t offset,
+			uint8_t * const buffer,
+			uint32_t *size,
+			__attribute__((unused)) void *feeder_data)
+{
+	if (offset > strlen(PAYLOAD)) {
+		// shouldn't happen
+		return JAL_E_INVAL;
+	}
+	if ((offset + *size) > strlen(PAYLOAD)) {
+		*size = strlen(PAYLOAD) - offset;
+	}
+	memcpy(buffer, PAYLOAD + offset, *size);
+	return JAL_OK;
+}
+
+
+enum jal_status my_acquire_journal_feeder(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) struct jaln_payload_feeder *feeder,
+		__attribute__((unused)) void *user_data)
+{
+	feeder->get_bytes = journal_get_bytes;
+	return JAL_OK;
+}
+
+enum jal_status my_release_journal_feeder(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) struct jaln_payload_feeder *feeder,
+		__attribute__((unused)) void *user_data)
+{
+	return JAL_OK;
+}
+
+enum jal_status my_on_record_complete(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) void *user_data)
+{
+	return JAL_OK;
+}
+
+void my_sync(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) struct jaln_mime_header *headers,
+		__attribute__((unused)) void *user_data)
+{
+	return;
+}
+
+void my_notify_digest(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const uint8_t *digest,
+		__attribute__((unused)) const uint32_t size,
+		__attribute__((unused)) void *user_data)
+{
+	return;
+}
+
+void my_peer_digest(
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const uint8_t *local_digest,
+		__attribute__((unused)) const uint32_t local_size,
+		__attribute__((unused)) const uint8_t *peer_digest,
+		__attribute__((unused)) const uint32_t peer_size,
+		__attribute__((unused)) void *user_data)
+{
+	return;
+}
+
+static struct jaln_session *sess;
+
+void setup()
+{
+	replace_function(jaln_session_add_to_dgst_list, fake_add_to_dgst_list);
+	replace_function(vortex_channel_send_ans_rpy_from_feeder, fake_send_ans_rpy_from_feeder);
+	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
+	replace_function(jaln_create_record_ans_rpy_headers, fake_create_record_ans_rpy_headers);
+	replace_function(vortex_payload_feeder_new, fake_vortex_payload_feeder_new);
+	replace_function(vortex_payload_feeder_set_on_finished, fake_vortex_payload_feeder_set_on_finished);
+	sess = jaln_session_create();
+	sess->jaln_ctx = jaln_context_create();
+	sess->ch_info->type = JALN_RTYPE_LOG;
+	sess->dgst = sess->jaln_ctx->sha256_digest;
+	sess->pub_data = jaln_pub_data_create();
+	sess->role = JALN_ROLE_PUBLISHER;
+	sess->pub_data->headers_sz = strlen(HEADERS);
+	sess->pub_data->sys_meta_sz = strlen(SYS_META);
+	sess->pub_data->app_meta_sz = strlen(APP_META);
+	sess->pub_data->payload_sz = strlen(PAYLOAD);
+	struct jaln_publisher_callbacks *pub_cbs = jaln_publisher_callbacks_create();
+
+	pub_cbs->on_journal_resume = my_on_journal_resume;
+	pub_cbs->on_subscribe = my_on_subscribe;
+	pub_cbs->get_next_record_info_and_metadata = my_get_next_record_info_and_metadata;
+	pub_cbs->release_metadata_buffers = my_release_metadata_buffers;
+	pub_cbs->acquire_log_data = my_acquire_log_data;
+	pub_cbs->release_log_data = my_release_log_data;
+	pub_cbs->acquire_audit_data = my_acquire_audit_data;
+	pub_cbs->release_audit_data = my_release_audit_data;
+	pub_cbs->acquire_journal_feeder = my_acquire_journal_feeder;
+	pub_cbs->release_journal_feeder = my_release_journal_feeder;
+	pub_cbs->on_record_complete = my_on_record_complete;
+	pub_cbs->sync = my_sync;
+	pub_cbs->notify_digest = my_notify_digest;
+	pub_cbs->peer_digest = my_peer_digest;
+
+	sess->jaln_ctx->pub_callbacks = pub_cbs;
+
+	finalized_called = axl_false;
+}
+
+void teardown()
+{
+	jaln_session_unref(sess);
+}
+
+void test_pub_feeder_is_finished_returns_true_if_errored()
+{
+	int fin = 0;
+	sess->errored = axl_true;
+	assert_true(jaln_pub_feeder_is_finished(sess, &fin));
+	assert_true(fin);
+}
+
+void test_pub_feeder_is_finished_returns_true_after_payload_break_is_written()
+{
+	int fin = 0;
+	sess->pub_data->finished_payload_break = axl_true;
+	assert_true(jaln_pub_feeder_is_finished(sess, &fin));
+	assert_true(fin);
+}
+
+void test_pub_feeder_is_finished_returns_false_before_payload_break_is_written()
+{
+	int fin = 1;
+	sess->pub_data->finished_payload_break = axl_false;
+	assert_false(jaln_pub_feeder_is_finished(sess, &fin));
+	assert_false(fin);
+}
+
+void test_pub_feeder_get_size_returns_cached_size()
+{
+	int sz = 0;
+	sess->pub_data->vortex_feeder_sz = 24;
+	sess->pub_data->finished_payload_break = axl_false;
+	assert_true(jaln_pub_feeder_get_size(sess, &sz));
+	assert_equals(24, sz);
+}
+
+void test_pub_feeder_calculate_size_works_correctly()
+{
+	struct jaln_pub_data *pd = sess->pub_data;
+	pd->sys_meta_sz = 10;
+	pd->app_meta_sz = 20;
+	pd->payload_sz = 30;
+	pd->headers_sz = 40;
+	pd->vortex_feeder_sz = -1;
+	jaln_pub_feeder_calculate_size_for_vortex(sess);
+	// The size is the length of all the data sections, headers, and the
+	// intervening "BREAK" strings
+	assert_equals(10 + 20 + 30 + 40 + (strlen("BREAK") * 3), pd->vortex_feeder_sz);
+}
+
+void test_pub_feeder_calculate_size_returns_int_max_on_overflow()
+{
+	struct jaln_pub_data *pd = sess->pub_data;
+	pd->sys_meta_sz = INT_MAX;
+	pd->app_meta_sz = 1;
+	pd->payload_sz = 1;
+	pd->headers_sz = 1;
+	pd->vortex_feeder_sz = -1;
+	jaln_pub_feeder_calculate_size_for_vortex(sess);
+	// The size is the length of all the data sections, headers, and the
+	// intervening "BREAK" strings
+	assert_equals(INT_MAX, pd->vortex_feeder_sz);
+}
+
+void test_safe_add_works()
+{
+	int cnt = 0;
+	assert_true(jaln_pub_feeder_safe_add_size(&cnt, 1));
+	assert_equals(1, cnt);
+
+	assert_true(jaln_pub_feeder_safe_add_size(&cnt, 200));
+	assert_equals(201, cnt);
+}
+
+void test_safe_add_returns_false_on_overflow()
+{
+	int cnt = 1;
+	assert_false(jaln_pub_feeder_safe_add_size(&cnt, INT_MAX));
+	assert_equals(INT_MAX, cnt);
+
+}
+
+void test_reset_state_clears_all_variables()
+{
+	sess->pub_data->vortex_feeder_sz = -1;
+	jaln_pub_feeder_reset_state(sess);
+	assert_equals(VORTEX_SZ, sess->pub_data->vortex_feeder_sz);
+	assert_equals(0, sess->pub_data->headers_off);
+	assert_equals(0, sess->pub_data->sys_meta_off);
+	assert_equals(0, sess->pub_data->payload_off);
+	assert_equals(0, sess->pub_data->break_off);
+	assert_false(sess->pub_data->finished_headers);
+	assert_false(sess->pub_data->finished_sys_meta);
+	assert_false(sess->pub_data->finished_sys_meta_break);
+	assert_false(sess->pub_data->finished_app_meta);
+	assert_false(sess->pub_data->finished_app_meta_break);
+	assert_false(sess->pub_data->finished_payload);
+	assert_false(sess->pub_data->finished_payload_break);
+	assert_not_equals((void*)NULL, sess->pub_data->dgst_inst);
+	assert_not_equals((void*)NULL, sess->pub_data->dgst);
+}
+
+void test_reset_state_does_not_leak()
+{
+	// run under valgrind
+	jaln_pub_feeder_reset_state(sess);
+	jaln_pub_feeder_reset_state(sess);
+}
+
+void test_on_finished_gets_next_record()
+{
+	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
+	assert_false(finalized_called);
+	my_release_log_data(sess->ch_info,
+			sess->pub_data->serial_id,
+			sess->pub_data->payload,
+			sess->jaln_ctx->user_data);
+	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
+	free(sess->pub_data->serial_id);
+	free(sess->pub_data->headers);
+}
+
+void test_pub_feeder_fill_buffer_works_log_with_large_buffer()
+{
+	sess->ch_info->type = JALN_RTYPE_LOG;
+	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
+	assert_false(finalized_called);
+	int size = strlen(EXPECTED_MSG);
+	char *buffer = jal_calloc(size + 10, 1);
+	assert_true(jaln_pub_feeder_fill_buffer(sess, buffer, &size));
+	assert_true(sess->pub_data->finished_payload_break);
+	assert_equals(strlen(EXPECTED_MSG), size);
+	assert_equals(0, memcmp(buffer, EXPECTED_MSG, size));
+	free(buffer);
+	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
+	free(sess->pub_data->serial_id);
+}
+
+void test_pub_feeder_fill_buffer_works_for_log_with_small_chunks()
+{
+	sess->ch_info->type = JALN_RTYPE_LOG;
+	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
+	assert_false(finalized_called);
+	// round op to an even number of bytes, allow extra room at the end.
+	int buf_size = strlen(EXPECTED_MSG) + 1;
+	char *buffer = jal_calloc(buf_size, 1);
+	int offset = 0;
+	int wrote = 0;
+	int dummy;
+
+	while(!jaln_pub_feeder_is_finished(sess, &dummy) && (offset < buf_size)) {
+		int size = 2;
+		assert_true(jaln_pub_feeder_fill_buffer(sess, buffer + offset, &size));
+		offset += 2;
+		wrote += size;
+	}
+	assert_true(sess->pub_data->finished_payload_break);
+	assert_equals(strlen(EXPECTED_MSG), wrote);
+	assert_equals(0, memcmp(buffer, EXPECTED_MSG, wrote));
+	free(buffer);
+	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id, 
+			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
+	free(sess->pub_data->serial_id);
+}
+
+void test_pub_feeder_fill_buffer_works_with_audit_for_large_buffer()
+{
+	sess->ch_info->type = JALN_RTYPE_AUDIT;
+	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
+	assert_false(finalized_called);
+	int size = strlen(EXPECTED_MSG);
+	char *buffer = jal_calloc(size + 10, 1);
+	assert_true(jaln_pub_feeder_fill_buffer(sess, buffer, &size));
+	assert_true(sess->pub_data->finished_payload_break);
+	assert_equals(strlen(EXPECTED_MSG), size);
+	assert_equals(0, memcmp(buffer, EXPECTED_MSG, size));
+	free(buffer);
+	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
+	free(sess->pub_data->serial_id);
+}
+
+void test_pub_feeder_fill_buffer_works_with_audit_for_in_small_chunks()
+{
+	sess->ch_info->type = JALN_RTYPE_AUDIT;
+	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
+	assert_false(finalized_called);
+	// round op to an even number of bytes, allow extra room at the end.
+	int buf_size = strlen(EXPECTED_MSG) + 1;
+	char *buffer = jal_calloc(buf_size, 1);
+	int offset = 0;
+	int wrote = 0;
+	int dummy;
+
+	while(!jaln_pub_feeder_is_finished(sess, &dummy) && (offset < buf_size)) {
+		int size = 2;
+		assert_true(jaln_pub_feeder_fill_buffer(sess, buffer + offset, &size));
+		offset += 2;
+		wrote += size;
+	}
+	assert_true(sess->pub_data->finished_payload_break);
+	assert_equals(strlen(EXPECTED_MSG), wrote);
+	assert_equals(0, memcmp(buffer, EXPECTED_MSG, wrote));
+	free(buffer);
+	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
+	free(sess->pub_data->serial_id);
+}
+
+void test_pub_feeder_fill_buffer_works_with_journal_with_large_buffer()
+{
+	sess->ch_info->type = JALN_RTYPE_JOURNAL;
+	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
+	assert_false(finalized_called);
+	int size = strlen(EXPECTED_MSG);
+	char *buffer = jal_calloc(size + 10, 1);
+	assert_true(jaln_pub_feeder_fill_buffer(sess, buffer, &size));
+	assert_true(sess->pub_data->finished_payload_break);
+	assert_equals(strlen(EXPECTED_MSG), size);
+	assert_equals(0, memcmp(buffer, EXPECTED_MSG, size));
+	free(buffer);
+	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
+	free(sess->pub_data->serial_id);
+}
+
+void test_pub_feeder_fill_buffer_works_with_journal_for_in_small_chunks()
+{
+	sess->ch_info->type = JALN_RTYPE_JOURNAL;
+	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
+	assert_false(finalized_called);
+	// round op to an even number of bytes, allow extra room at the end.
+	int buf_size = strlen(EXPECTED_MSG) + 1;
+	char *buffer = jal_calloc(buf_size, 1);
+	int offset = 0;
+	int wrote = 0;
+	int dummy;
+
+	while(!jaln_pub_feeder_is_finished(sess, &dummy) && (offset < buf_size)) {
+		int size = 2;
+		assert_true(jaln_pub_feeder_fill_buffer(sess, buffer + offset, &size));
+		offset += 2;
+		wrote += size;
+	}
+	assert_true(sess->pub_data->finished_payload_break);
+	assert_equals(strlen(EXPECTED_MSG), wrote);
+	assert_equals(0, memcmp(buffer, EXPECTED_MSG, wrote));
+	free(buffer);
+
+	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
+	free(sess->pub_data->serial_id);
+}
+
+
