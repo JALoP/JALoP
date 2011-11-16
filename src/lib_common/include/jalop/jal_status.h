@@ -61,6 +61,7 @@ enum jal_status {
 	JAL_E_INVAL_APP_METADATA,
 	JAL_E_BAD_FD,
 	JAL_E_PARSE,
+	JAL_E_COMM,
 	JAL_OK = 0,
 };
 

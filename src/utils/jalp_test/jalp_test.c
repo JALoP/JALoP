@@ -457,6 +457,9 @@ static void print_error(enum jal_status error)
 		case JAL_E_PARSE:
 			printf("JAL_E_PARSE");
 			break;
+		case JAL_E_COMM:
+			printf("JAL_E_COMM");
+			break;
 		case JAL_OK:
 			break;
 	}
