@@ -66,8 +66,14 @@ static ssize_t recvmsg_always_fails_errno_EBADF(__attribute((unused)) int fd,
 
 void test_jalls_recvmsg_returns_valid_size_given_valid_input()
 {
+	struct msghdr msgh;
+	struct iovec iov[2];
+	iov[0].iov_len = 12;
+	iov[1].iov_len = FAKE_MSG_SIZE - 12;
+	msgh.msg_iovlen = 2;
+	msgh.msg_iov = iov;
 	replace_function(recvmsg, fake_recvmsg);
-	ssize_t rc = jalls_recvmsg_helper(0, NULL, 0);
+	ssize_t rc = jalls_recvmsg_helper(0, &msgh, 0);
 	assert_equals(FAKE_MSG_SIZE, rc);
 }
 
@@ -80,8 +86,13 @@ void test_jalls_recvmsg_returns_error_when_recvmsg_fails()
 
 void test_jalls_recvmsg_returns_error_when_recvmsg_fails_with_errno_EBADF()
 {
+	struct msghdr msgh;
+	struct iovec iov;
+	iov.iov_len = 12;
+	msgh.msg_iovlen = 1;
+	msgh.msg_iov = &iov;
 	replace_function(recvmsg, recvmsg_always_fails_errno_EBADF);
-	ssize_t rc = jalls_recvmsg_helper(0, NULL, 0);
+	ssize_t rc = jalls_recvmsg_helper(0, &msgh, 0);
 	assert_equals(EBADF, errno);
 	assert_equals(-1, rc);
 }
