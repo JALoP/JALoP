@@ -5,6 +5,9 @@
  *
  * @section LICENSE
  *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
@@ -161,19 +164,48 @@ enum jal_status jaln_register_digest_algorithm(jaln_context *jal_ctx,
  * be used to implement a server process that waits for remote systems to
  * connect.
  *
+ * Once called, the caller must ensure the program continues to run to keep the
+ * connections active. This may be accomplished via an external event loop, or
+ * by calling jlan_listener_wait().
+ *
+ * When the program is ready to shutdown, it should call
+ * jaln_listener_shutdown().
+ *
  * @param[in] jaln_ctx The jaln_context that will parse incoming and format
  *            outgoing JALoP messages.
  * @param[in] host the host interface IP to listen on
  * @param[in] port The port to listen on
  * @param[in] user_data An address that will be passed into all the callback
  * methods.
- * @return a Connection object
+ *
+ * @return JAL_OK on success, or an error.
  *
  */
-struct jaln_connection *jaln_listen(jaln_context *jaln_ctx,
+enum jal_status jaln_listen(jaln_context *jaln_ctx,
 				    const char *host,
-				    const int port,
+				    const char *port,
 				    void *user_data);
+
+/**
+ * Shutdown a listener. This will close all connections of a jaln_context used
+ * as a listener.
+ *
+ * @param[in] ctx The context to shutdown.
+ *
+ * @return JAL_OK on success, or an error code.
+ *
+ */
+enum jal_status jaln_listener_shutdown(jaln_context *ctx);
+
+/**
+ * Block the calling thread until the all connections are closed and the
+ * listener is finished.
+ *
+ * @param[in] ctx The context to wait on.
+ * 
+ * @return JAL_OK on success, or an error.
+ */
+enum jal_status jaln_listener_wait(jaln_context *ctx);
 
 /**
  * Connect to a remote peer and indicate a desire to receive JAL records from the

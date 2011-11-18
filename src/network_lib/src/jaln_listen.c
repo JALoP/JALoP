@@ -32,6 +32,7 @@
 #include <jalop/jaln_network_types.h>
 
 #include "jal_alloc.h"
+#include "jaln_connection_callbacks_internal.h"
 #include "jaln_connection_request.h"
 #include "jaln_context.h"
 #include "jaln_digest.h"
@@ -39,8 +40,10 @@
 #include "jaln_init_msg_handler.h"
 #include "jaln_message_helpers.h"
 #include "jaln_publisher.h"
+#include "jaln_publisher_callbacks_internal.h"
 #include "jaln_session.h"
 #include "jaln_subscriber.h"
+#include "jaln_subscriber_callbacks_internal.h"
 
 axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
@@ -274,5 +277,109 @@ out:
 	jaln_connect_request_destroy(&conn_req);
 	free(msg);
 	return;
+}
+
+enum jal_status jaln_listen(
+		jaln_context *ctx,
+		const char *host,
+		const char *port,
+		void *user_data)
+{
+	if (!ctx || !host || !port) {
+		return JAL_E_INVAL;
+	}
+	vortex_mutex_lock(&ctx->lock);
+
+	if (!ctx->vortex_ctx ||
+		ctx->is_connected) {
+		goto err_out;
+	}
+	ctx->is_connected = axl_true;
+
+	if (!jaln_subscriber_callbacks_is_valid(ctx->sub_callbacks) &&
+		!jaln_publisher_callbacks_is_valid(ctx->pub_callbacks)) {
+		goto err_out;
+	}
+	if (!jaln_connection_callbacks_is_valid(ctx->conn_callbacks)) {
+		goto err_out;
+	}
+
+	ctx->user_data = user_data;
+
+	VortexCtx *v_ctx = ctx->vortex_ctx;
+
+	vortex_mutex_unlock(&ctx->lock);
+
+	vortex_profiles_register_extended_start(v_ctx, JALN_JALOP_1_0_PROFILE,
+			jaln_listener_start_channel_extended,
+			ctx);
+
+	vortex_profiles_register(v_ctx, JALN_JALOP_1_0_PROFILE,
+			NULL, NULL,
+			NULL, NULL,
+			NULL, NULL);
+
+	VortexConnection * v_conn = vortex_listener_new(v_ctx, host, port, NULL, NULL);
+
+	if (!v_conn) {
+		return JAL_E_INVAL;
+	}
+
+	vortex_mutex_lock(&ctx->lock);
+	ctx->listener_conn = v_conn;
+	vortex_mutex_unlock(&ctx->lock);
+
+	return JAL_OK;
+
+err_out:
+	vortex_mutex_unlock(&ctx->lock);
+	return JAL_E_INVAL;
+}
+
+enum jal_status jaln_listener_wait(
+		jaln_context *ctx)
+{
+	if (!ctx) {
+		return JAL_E_INVAL;
+	}
+	vortex_mutex_lock(&ctx->lock);
+	if (!ctx->vortex_ctx ||
+		!ctx->is_connected ||
+		!ctx->listener_conn) {
+		goto err_out;
+	}
+
+	VortexCtx *v_ctx = ctx->vortex_ctx;
+	vortex_mutex_unlock(&ctx->lock);
+
+	vortex_listener_wait(v_ctx);
+	return JAL_OK;
+
+err_out:
+	vortex_mutex_unlock(&ctx->lock);
+	return JAL_E_INVAL;
+}
+
+enum jal_status jaln_listener_shutdown(jaln_context *ctx)
+{
+	if (!ctx) {
+		return JAL_E_INVAL;
+	}
+	vortex_mutex_lock(&ctx->lock);
+	if (!ctx->vortex_ctx ||
+		!ctx->is_connected ||
+		!ctx->listener_conn) {
+		goto err_out;
+	}
+
+	VortexConnection *v_conn = ctx->listener_conn;
+	vortex_mutex_unlock(&ctx->lock);
+
+	vortex_listener_shutdown(v_conn, axl_true);
+	return JAL_OK;
+
+err_out:
+	vortex_mutex_unlock(&ctx->lock);
+	return JAL_E_INVAL;
 }
 

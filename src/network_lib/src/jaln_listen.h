@@ -136,6 +136,7 @@ axl_bool jaln_listener_start_channel_extended(
 		VortexEncoding encoding,
 		axlPointer user_data);
 
+
 #ifdef __cplusplus
 }
 #endif

@@ -54,6 +54,7 @@ struct jaln_context_t {
 	axlList *xml_encodings;
 	axlHash *sessions_by_conn;
 	VortexCtx *vortex_ctx;
+	VortexConnection *listener_conn;
 	void *user_data;
 };
 
