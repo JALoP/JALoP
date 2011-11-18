@@ -64,3 +64,42 @@ axl_bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointe
 	}
 	return axl_true;
 }
+
+enum jal_status jaln_axl_string_list_to_array(axlList *list,
+		char ***arr_out,
+		int *size_out)
+{
+	if (!list || !arr_out || *arr_out || !size_out) {
+		return JAL_E_INVAL;
+	}
+	int sz = axl_list_length(list);
+	char **arr = jal_calloc(sz, sizeof(char*));
+	axlListCursor *cursor = axl_list_cursor_new(list);
+	axl_list_cursor_first(cursor);
+	int idx = 0;
+	while (axl_list_cursor_has_item(cursor)) {
+		char *str = (char*) axl_list_cursor_get(cursor);
+		if (str) {
+			arr[idx] = jal_strdup(str);
+		}
+		axl_list_cursor_next(cursor);
+		idx++;
+	}
+	axl_list_cursor_free(cursor);
+	*arr_out = arr;
+	*size_out = sz;
+	return JAL_OK;
+}
+
+void jaln_string_array_destroy(char ***parr, int arr_size)
+{
+	if (!parr || !*parr || 0 > arr_size) {
+		return;
+	}
+	char **arr = *parr;
+	for (int i = 0; i < arr_size; i++) {
+		free(arr[i]);
+	}
+	free(arr);
+	(*parr) = NULL;
+}
