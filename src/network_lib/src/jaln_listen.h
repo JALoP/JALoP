@@ -56,6 +56,19 @@ axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 		int new_chan_num,
 		int paired_chan_num);
 
+/**
+ * Vortex Frame handler to deal with an 'initialize' message.
+ *
+ * @param[in] chan The channel that received the message
+ * @param[in] conn The connection for the channel
+ * @param[in] frame The complete frame for the 'initialize' message
+ * @param[in] user_data Expected to be a pointer to a jaln_session
+ */
+void jaln_listener_init_msg_handler(VortexChannel *chan,
+		VortexConnection *conn,
+		VortexFrame *frame,
+		axlPointer user_data);
+
 #ifdef __cplusplus
 }
 #endif

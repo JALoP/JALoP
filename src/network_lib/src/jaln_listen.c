@@ -28,9 +28,19 @@
  */
 #include "jaln_listen.h"
 
+#include <jalop/jaln_network.h>
+#include <jalop/jaln_network_types.h>
+
 #include "jal_alloc.h"
+#include "jaln_connection_request.h"
 #include "jaln_context.h"
+#include "jaln_digest.h"
+#include "jaln_encoding.h"
+#include "jaln_init_msg_handler.h"
+#include "jaln_message_helpers.h"
+#include "jaln_publisher.h"
 #include "jaln_session.h"
+#include "jaln_subscriber.h"
 
 axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
@@ -54,5 +64,135 @@ axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 	axl_bool ret = jaln_session_associate_digest_channel_no_lock(sess, chan, new_chan_num);
 	vortex_mutex_unlock(&sess->lock);
 	return ret;
+}
+
+void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
+		VortexFrame *frame, axlPointer user_data)
+{
+	char *msg = NULL;
+	struct jaln_init_info *info = NULL;
+	struct jaln_session *sess = (struct jaln_session *)user_data;
+	struct jaln_connect_request *conn_req = NULL;
+	if (!chan || !conn || !frame || !sess || !sess->jaln_ctx || !sess->jaln_ctx->conn_callbacks) {
+		goto err_out;
+	}
+	const char *recv_msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
+	if (!recv_msg) {
+		goto err_out;
+	}
+	if (JAL_OK != jaln_process_init(frame, &info)) {
+		goto err_out;
+	}
+
+	conn_req = jaln_connect_request_create();
+	conn_req->hostname = jal_strdup(vortex_connection_get_host(conn));
+	conn_req->addr = jal_strdup(vortex_connection_get_host_ip(conn));
+	conn_req->type = info->type;
+	conn_req->jaln_version = JALN_JALOP_VERSION_ONE;
+
+	// Implementation are required to support 'xml' encoding (i.e. no
+	// encoding) and sha256 digests.
+	if (!axl_list_lookup(info->encodings, jaln_string_list_case_insensitive_lookup_func, JALN_ENC_XML)) {
+		axl_list_append(info->encodings, jal_strdup(JALN_ENC_XML));
+	}
+	if (!axl_list_lookup(info->digest_algs, jaln_string_list_case_insensitive_lookup_func, JALN_DGST_SHA256)) {
+		axl_list_append(info->digest_algs, jal_strdup(JALN_DGST_SHA256));
+	}
+
+	jaln_axl_string_list_to_array(info->encodings, &conn_req->encodings, &conn_req->enc_cnt);
+	jaln_axl_string_list_to_array(info->digest_algs, &conn_req->digests, &conn_req->dgst_cnt);
+	conn_req->role = info->role;
+	conn_req->jaln_agent = jal_strdup(info->peer_agent);
+
+	int sel_enc= -1;
+	int sel_dgst = -1;
+	int enc_cnt = conn_req->enc_cnt;
+	int dgst_cnt = conn_req->dgst_cnt;
+
+	int cnt = 0;
+	for (cnt = 0; cnt < enc_cnt; cnt++) {
+		axlPointer found = axl_list_lookup(sess->jaln_ctx->xml_encodings,
+				jaln_string_list_case_insensitive_lookup_func,
+				conn_req->encodings[cnt]);
+		if (found) {
+			break;
+		}
+	}
+	if (cnt < conn_req->enc_cnt) {
+		sel_enc = cnt;
+	}
+
+	for (cnt = 0; cnt < dgst_cnt; cnt++) {
+		axlPointer found = axl_list_lookup(sess->jaln_ctx->dgst_algs,
+				jaln_digest_lookup_func,
+				conn_req->digests[cnt]);
+		if (found) {
+			break;
+		}
+	}
+
+	if (cnt < conn_req->dgst_cnt) {
+		sel_dgst = cnt;
+	}
+	enum jaln_connect_error err =
+		sess->jaln_ctx->conn_callbacks->connect_request_handler(conn_req, &sel_enc, &sel_dgst, sess->jaln_ctx->user_data);
+	struct jal_digest_ctx *dgst_ctx = NULL;
+	if (JALN_CE_ACCEPT == err) {
+		if (0 > sel_enc || sel_enc >= enc_cnt) {
+			err |= JALN_CE_UNSUPPORTED_ENCODING;
+		}
+		if (0 > sel_dgst || sel_dgst >= dgst_cnt) {
+			err |= JALN_CE_UNSUPPORTED_DIGEST;
+		} else {
+			dgst_ctx = (struct jal_digest_ctx*)axl_list_lookup(sess->jaln_ctx->dgst_algs,
+					jaln_digest_lookup_func,
+					conn_req->digests[sel_dgst]);
+			if (!dgst_ctx) {
+				// special case for sha256
+				if (0 == strcasecmp(conn_req->digests[sel_dgst], JALN_DGST_SHA256)) {
+					dgst_ctx = sess->jaln_ctx->sha256_digest;
+				} else {
+					err |= JALN_CE_UNSUPPORTED_DIGEST;
+				}
+			}
+		}
+	}
+	size_t msg_len;
+	int msg_no = vortex_frame_get_msgno(frame);
+	if (JALN_CE_ACCEPT != err) {
+		jaln_create_init_nack_msg(err, &msg, &msg_len);
+		vortex_channel_send_err(chan, msg, msg_len, msg_no);
+		goto err_out;
+	}
+	vortex_mutex_lock(&sess->lock);
+
+	sess->dgst = dgst_ctx;
+	sess->ch_info->type = info->type;
+	sess->role = info->role;
+	switch (sess->role) {
+	case(JALN_ROLE_SUBSCRIBER):
+		jaln_configure_sub_session_no_lock(chan, sess);
+		break;
+	case(JALN_ROLE_PUBLISHER):
+		jaln_configure_pub_session_no_lock(chan, sess);
+		break;
+	default:
+		goto err_out;
+	}
+	vortex_mutex_unlock(&sess->lock);
+	jaln_create_init_ack_msg(conn_req->encodings[sel_enc], conn_req->digests[sel_dgst], &msg, &msg_len);
+	vortex_channel_send_rpy(chan, msg, msg_len, msg_no);
+	if (JALN_ROLE_SUBSCRIBER == info->role) {
+		jaln_subscriber_send_subscribe_request(sess);
+	}
+
+	goto out;
+err_out:
+	vortex_channel_close(chan, NULL);
+out:
+	jaln_init_info_destroy(&info);
+	jaln_connect_request_destroy(&conn_req);
+	free(msg);
+	return;
 }
 

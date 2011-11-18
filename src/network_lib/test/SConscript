@@ -13,6 +13,7 @@ env.Append(CCFLAGS=ccflags.split())
 
 conn_cb_obj = lib_env.SharedObject("../src/jaln_connection_callbacks.c")
 conn_obj = lib_env.SharedObject("../src/jaln_connection.c")
+conn_req_obj = lib_env.SharedObject("../src/jaln_connection_request.c")
 ctx_obj = lib_env.SharedObject("../src/jaln_context.c")
 ch_info_obj = lib_env.SharedObject("../src/jaln_channel_info.c")
 dgst_obj = lib_env.SharedObject("../src/jaln_digest.c")
@@ -24,6 +25,7 @@ enc_obj = lib_env.SharedObject("../src/jaln_encoding.c")
 hlpr_obj = lib_env.SharedObject("../src/jaln_message_helpers.c")
 hndl_obj = lib_env.SharedObject("../src/jaln_handle_init_replies.c")
 init_info_obj = lib_env.SharedObject("../src/jaln_init_info.c")
+init_msg_handler_obj = lib_env.SharedObject("../src/jaln_init_msg_handler.c")
 journal_resume_handler_obj = lib_env.SharedObject("../src/jaln_journal_resume_msg_handler.c")
 pub_cb_obj = lib_env.SharedObject("../src/jaln_publisher_callbacks.c")
 publisher_obj = lib_env.SharedObject("../src/jaln_publisher.c")
@@ -31,13 +33,12 @@ pub_feeder_obj = lib_env.SharedObject("../src/jaln_pub_feeder.c")
 rec_info_obj = lib_env.SharedObject("../src/jaln_record_info.c")
 sess_obj = lib_env.SharedObject("../src/jaln_session.c")
 str_utils_obj = lib_env.SharedObject("../src/jaln_string_utils.c")
-sub_obj = lib_env.SharedObject("../src/jaln_subscriber.c")
 sub_cb_obj = lib_env.SharedObject("../src/jaln_subscriber_callbacks.c")
 sub_dgst_chan_obj = lib_env.SharedObject("../src/jaln_sub_dgst_channel.c")
 sub_msg_handler_obj = lib_env.SharedObject("../src/jaln_subscribe_msg_handler.c")
+sub_obj = lib_env.SharedObject("../src/jaln_subscriber.c")
 sub_state_mach_obj = lib_env.SharedObject("../src/jaln_subscriber_state_machine.c")
 sync_msg_handler_obj = lib_env.SharedObject("../src/jaln_sync_msg_handler.c")
-subscriber_obj = lib_env.SharedObject("../src/jaln_subscriber.c")
 
 
 tests.append(env.TestDeptTest('test_jaln_sub_dgst_channel.c',
@@ -215,12 +216,14 @@ tests.append(env.TestDeptTest('test_jaln_publisher.c',
 
 tests.append(env.TestDeptTest('test_jaln_listen.c',
 	other_sources=[lib_common,
-		ch_info_obj, conn_obj, conn_cb_obj, ctx_obj,
+		ch_info_obj, conn_obj, conn_cb_obj, conn_req_obj, ctx_obj,
 		dgst_info_obj, dgst_msg_handler_obj, dgst_resp_info_obj,
-		dgst_resp_msg_hndlr_obj, dgst_obj,
-		enc_obj, hlpr_obj, hndl_obj, journal_resume_handler_obj,
+		dgst_resp_msg_hndlr_obj, dgst_obj, enc_obj, hlpr_obj,
+		hndl_obj, init_info_obj, init_msg_handler_obj,
+		journal_resume_handler_obj,
 		publisher_obj, pub_cb_obj, pub_feeder_obj, rec_info_obj,
-		sub_msg_handler_obj, sub_state_mach_obj, sess_obj, str_utils_obj,
+		sub_obj, sub_msg_handler_obj, sub_state_mach_obj, sess_obj,
+		str_utils_obj,
 		sub_dgst_chan_obj, sub_cb_obj, sync_msg_handler_obj],
 	useProxies=True)[0].abspath)
 
