@@ -85,6 +85,57 @@ axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 		const char *server_name,
 		int chan_num);
 
+/**
+ * Helper function for the listener to respond to a request to create a new
+ * channel.
+ *
+ * @param[in] ctx The jaln_context
+ * @param[in] chan_num The channel number
+ * @param[in] conn The connection
+ * @param[in] server_name The name/IP of the peer
+ * @param[in] profile_content Addition snippet of data sent in the message to
+ * create the channel. For a new record channel, this must be blank, for a new
+ * digest channel, this will indicate the existing record channel to associate
+ * the new digest channel with.
+ *
+ * @return axl_true if everything appears in order, this indicates that channel
+ * creation should be allowed.
+ */
+axl_bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
+		int chan_num,
+		VortexConnection *conn,
+		const char *server_name,
+		const char *profile_content);
+
+/**
+ * Function that is registered with Vortex to decide whether or not the
+ * creation of a new channel should be allowed.
+ *
+ * @param[in] profile The profile
+ * @param[in] chan_num The channel number for the new channel
+ * @param[in] conn The connection where this channel will be created
+ * @param[in] server_name the name/IP of the peer
+ * @param[in] profile_content additional data sent with the message to create
+ * the channel.
+ * @param[out] profile_content_reply additional data to be sent with the
+ * response to creating the channel.
+ * @param[out] encoding The encoding for \p profile_content_reply
+ * @param[in] user_data This is expected to be a jaln_context.
+ *
+ * @see jaln_listener_start_channel_no_lock
+ *
+ * @return axl_true if the channel should be created, axl_false otherwise.
+ */
+axl_bool jaln_listener_start_channel_extended(
+		const char *profile,
+		int chan_num,
+		VortexConnection *v_conn,
+		const char *server_name,
+		const char *profile_content,
+		char **profile_content_reply,
+		VortexEncoding encoding,
+		axlPointer user_data);
+
 #ifdef __cplusplus
 }
 #endif

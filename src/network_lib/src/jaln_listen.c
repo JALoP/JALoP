@@ -99,6 +99,53 @@ axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 	return axl_true;
 }
 
+axl_bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
+		int chan_num,
+		VortexConnection *conn,
+		const char *server_name,
+		const char *profile_content)
+{
+	int paired_channel = -1;
+
+	if (profile_content &&
+			(0 != strlen(profile_content))) {
+		// have profile content, so this must be a 'digest' channel
+		int matched = sscanf(profile_content, JALN_DGST_CHAN_FORMAT_STR, &paired_channel);
+		if (!matched) {
+			return axl_false;
+		} else {
+			axl_bool ret = jaln_listener_handle_new_digest_channel_no_lock(ctx, conn, server_name, chan_num, paired_channel);
+			return ret;
+		}
+	} else {
+		// no profile content, must be a 'record' channel
+		axl_bool ret = jaln_listener_handle_new_record_channel_no_lock(ctx, conn, server_name, chan_num);
+		return ret;
+	}
+	return axl_false;
+}
+
+axl_bool jaln_listener_start_channel_extended(
+		__attribute__((unused)) const char *profile,
+		int chan_num,
+		VortexConnection *conn,
+		__attribute__((unused)) const char *server_name,
+		const char *profile_content,
+		__attribute__((unused)) char **profile_content_reply,
+		__attribute__((unused)) VortexEncoding encoding,
+		axlPointer user_data)
+{
+	jaln_context *ctx = (jaln_context *) user_data;
+	if (!ctx) {
+		return axl_false;
+	}
+	const char *remote_host = vortex_connection_get_host(conn);
+	vortex_mutex_lock(&ctx->lock);
+	axl_bool ret = jaln_listener_start_channel_no_lock(ctx, chan_num, conn, remote_host, profile_content);
+	vortex_mutex_unlock(&ctx->lock);
+	return ret;
+}
+
 void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 		VortexFrame *frame, axlPointer user_data)
 {

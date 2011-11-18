@@ -75,6 +75,8 @@
 
 #define JALN_DGST_SHA256 "sha256"
 
+#define JALN_DGST_CHAN_FORMAT_STR "digest:%d"
+
 #define JALN_ENC_XML "xml"
 
 #define JALN_STR_AUDIT "audit"
@@ -89,6 +91,7 @@
 #define JALN_STR_LOG "log"
 #define JALN_STR_UNKNOWN "unknown"
 #define JALN_STR_UNKNOWN_EQUALS JALN_STR_UNKNOWN "="
+
 
 #define JALN_JALOP_1_0_PROFILE "http://www.dod.mil/logging/jalop-1.0"
 
