@@ -375,3 +375,25 @@ struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char
 
 	return sess;
 }
+
+enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, struct jaln_session *session)
+{
+	if (!chan || !session || session->pub_data || session->rec_chan) {
+		return JAL_E_INVAL;
+	}
+	session->rec_chan = chan;
+	session->rec_chan_num = vortex_channel_get_number(chan);
+	session->role = JALN_ROLE_PUBLISHER;
+	session->pub_data = jaln_pub_data_create();
+	vortex_channel_set_received_handler(chan, jaln_pub_channel_frame_handler, session);
+	return JAL_OK;
+}
+
+enum jal_status jaln_configure_pub_session(VortexChannel *chan, struct jaln_session *session)
+{
+	vortex_mutex_lock(&session->lock);
+	enum jal_status ret = jaln_configure_pub_session_no_lock(chan, session);
+	vortex_mutex_unlock(&session->lock);
+	return ret;
+}
+

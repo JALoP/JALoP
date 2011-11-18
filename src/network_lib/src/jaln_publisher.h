@@ -158,6 +158,28 @@ enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *session,
 		VortexFrame *frame,
 		int msg_no);
 
+/**
+ * Configure a jaln_session for use as a publisher. Before modifying the
+ * jaln_session, this function will obtain the jaln_session::lock.
+ *
+ * @param[in] chan The vortex channel
+ * @param[in] session The jaln_session
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_configure_pub_session(VortexChannel *chan, struct jaln_session *session);
+
+/**
+ * Configure a jaln_session for use as a publisher. This function expects the
+ * jaln_session::lock to be held by the calling thread.
+ *
+ * @param[in] chan The vortex channel
+ * @param[in] session The jaln_session
+ *
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, struct jaln_session *session);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
