@@ -52,6 +52,7 @@ axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 		return axl_false;
 	}
 	VortexChannel *chan = vortex_connection_get_channel(conn, new_chan_num);
+	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(chan, 2);
 	vortex_channel_set_serialize(chan, axl_true);
 	char * server_name_cpy = jal_strdup(server_name);
@@ -64,6 +65,38 @@ axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 	axl_bool ret = jaln_session_associate_digest_channel_no_lock(sess, chan, new_chan_num);
 	vortex_mutex_unlock(&sess->lock);
 	return ret;
+}
+
+axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
+		VortexConnection *conn,
+		const char *server_name,
+		int chan_num)
+{
+	// expect to have the ctx lock held
+	if (!ctx || !conn || !server_name || (0 > chan_num)) {
+		return axl_false;
+	}
+	struct jaln_session *session = jaln_session_create();
+	session->rec_chan_num = chan_num;
+	session->rec_chan = vortex_connection_get_channel(conn, chan_num);
+
+	// The lock on ctx should already be held, so just increment the
+	// count.
+	ctx->ref_cnt++;
+	session->jaln_ctx = ctx;
+	session->ch_info->hostname = jal_strdup(server_name);
+	if (JAL_OK != jaln_ctx_add_session_no_lock(ctx, session)) {
+		jaln_session_unref(session);
+		return axl_false;
+	}
+
+	// setting '2' disables MIME generation completely.
+	vortex_channel_set_automatic_mime(session->rec_chan, 2);
+	vortex_channel_set_serialize(session->rec_chan, axl_true);
+	vortex_channel_set_received_handler(session->rec_chan, jaln_listener_init_msg_handler, session);
+	vortex_channel_set_closed_handler(session->rec_chan, jaln_session_notify_unclean_channel_close, session);
+	vortex_channel_set_close_handler(session->rec_chan, jaln_session_on_close_channel, session);
+	return axl_true;
 }
 
 void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,

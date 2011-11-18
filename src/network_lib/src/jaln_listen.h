@@ -69,6 +69,22 @@ void jaln_listener_init_msg_handler(VortexChannel *chan,
 		VortexFrame *frame,
 		axlPointer user_data);
 
+/**
+ * Helper function called when a new channel is created by the peer and has
+ * indicated it's use as a 'digest' channel.
+ *
+ * @param[in] ctx The jaln_context to associate with the new channel.
+ * @param[in] conn The Vortex connection where the channel was created.
+ * @param[in] server_name The name/IP of the remote server
+ * @param[in] chan_num The channel number assigned to the new channel.
+ *
+ * @return axl_true on success, axl_false if there is an error.
+ */
+axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
+		VortexConnection *conn,
+		const char *server_name,
+		int chan_num);
+
 #ifdef __cplusplus
 }
 #endif

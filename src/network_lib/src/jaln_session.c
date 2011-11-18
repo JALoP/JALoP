@@ -297,6 +297,7 @@ axl_bool jaln_session_associate_digest_channel_no_lock(struct jaln_session *sess
 	if (!session || session->dgst_chan != NULL || !chan) {
 		return axl_false;
 	}
+	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(chan, 2);
 	vortex_channel_set_serialize(chan, axl_true);
 	session->dgst_chan = chan;
