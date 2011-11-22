@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_encodings.c functions.
+ * @file test_jaln_encoding.c This file contains tests for jaln_encoding.c functions.
  *
  * @section LICENSE
  *
@@ -26,23 +26,41 @@
  * limitations under the License.
  */
 
-#include "jaln_context.h"
-#include "jaln_encoding.h"
+
+#include <axl.h>
+#include <test-dept.h>
+
 #include "jal_asprintf_internal.h"
 
-#include <test-dept.h>
+#include "jaln_context.h"
+#include "jaln_encoding.h"
 
 #define NUM_ENCS 3
 static jaln_context *ctx = NULL;
+static axlList *str_list = NULL;
+static axlList *empty_str_list = NULL;
+static char **arr_out;
+static int arr_sz;
 
 void setup()
 {
 	ctx = jaln_context_create();
+	str_list = axl_list_new(jaln_string_list_case_insensitive_func, free);
+	axl_list_append(str_list, strdup("foobar"));
+	axl_list_append(str_list, strdup("barfoo"));
+	axl_list_append(str_list, NULL);
+
+	empty_str_list = axl_list_new(jaln_string_list_case_insensitive_func, free);
+	arr_sz = 0;
 }
 
 void teardown()
 {
 	jaln_context_destroy(&ctx);
+	axl_list_free(str_list);
+	axl_list_free(empty_str_list);
+
+	jaln_string_array_destroy(&arr_out, arr_sz);
 }
 
 void test_register_encoding_does_not_permit_null()
@@ -124,6 +142,11 @@ void test_compare_encoding_case_insensitive_lookup_where_text_exists_same_case()
 			enc1);
 
 	assert_not_equals(ptr, NULL);
+
+	free(enc1);
+	free(enc2);
+	free(enc3);
+	free(enc4);
 }
 
 void test_compare_encoding_case_insensitive_lookup_where_text_exists_diff_case()
@@ -148,6 +171,12 @@ void test_compare_encoding_case_insensitive_lookup_where_text_exists_diff_case()
 			enc5);
 
 	assert_not_equals(ptr, NULL);
+
+	free(enc1);
+	free(enc2);
+	free(enc3);
+	free(enc4);
+	free(enc5);
 }
 
 void test_compare_encoding_case_insensitive_lookup_where_text_not_exists()
@@ -172,6 +201,12 @@ void test_compare_encoding_case_insensitive_lookup_where_text_not_exists()
 			enc5);
 
 	assert_equals(ptr, NULL);
+
+	free(enc1);
+	free(enc2);
+	free(enc3);
+	free(enc4);
+	free(enc5);
 }
 
 void test_compare_encoding_case_insensitive_lookup_where_partial_text_exists()
@@ -196,6 +231,12 @@ void test_compare_encoding_case_insensitive_lookup_where_partial_text_exists()
 			enc5);
 
 	assert_equals(ptr, NULL);
+
+	free(enc1);
+	free(enc2);
+	free(enc3);
+	free(enc4);
+	free(enc5);
 }
 
 void test_compare_encoding_case_insensitive_lookup_where_list_null()
@@ -219,6 +260,11 @@ void test_compare_encoding_case_insensitive_lookup_where_list_null()
 			enc4);
 
 	assert_equals(ptr, NULL);
+
+	free(enc1);
+	free(enc2);
+	free(enc3);
+	free(enc4);
 }
 
 void test_compare_encoding_case_insensitive_lookup_where_text_null()
@@ -243,6 +289,12 @@ void test_compare_encoding_case_insensitive_lookup_where_text_null()
 			enc5);
 
 	assert_equals(ptr ,NULL);
+
+	free(enc1);
+	free(enc2);
+	free(enc3);
+	free(enc4);
+	free(enc5);
 }
 
 void test_compare_encoding_case_insensitive_lookup_where_null_vs_null()
@@ -263,7 +315,54 @@ void test_compare_encoding_case_insensitive_lookup_where_text_vs_null()
 	assert_equals(axl_false, jaln_string_list_case_insensitive_lookup_func(valB,valA));
 }
 
+void test_string_list_to_array_fails_on_bad_input()
+{
+	assert_equals(JAL_E_INVAL, jaln_axl_string_list_to_array(NULL, &arr_out, &arr_sz));
+	assert_equals(JAL_E_INVAL, jaln_axl_string_list_to_array(str_list, NULL, &arr_sz));
+	assert_equals(JAL_E_INVAL, jaln_axl_string_list_to_array(str_list, &arr_out, NULL));
 
+	arr_out = (char**) 0xbadf00d;
+	assert_equals(JAL_E_INVAL, jaln_axl_string_list_to_array(str_list, &arr_out, &arr_sz));
+	arr_out = NULL;
 
+}
 
+void test_string_list_to_array_works_with_non_empty_list()
+{
+	assert_equals(JAL_OK, jaln_axl_string_list_to_array(str_list, &arr_out, &arr_sz));
+	assert_equals(axl_list_length(str_list), arr_sz);
+	for(int i = 0; i < axl_list_length(str_list); i++) {
+		char *in_list = (char*) axl_list_get_nth(str_list, i);
+		if (in_list) {
+			assert_not_equals(in_list, arr_out[i]);
+			assert_not_equals((void*) NULL, arr_out[i]);
+			assert_equals(strlen(in_list), strlen(arr_out[i]));
+			assert_equals(0, memcmp(in_list, arr_out[i], strlen(in_list)));
+		} else {
+			assert_equals((void *) NULL, arr_out[i]);
+		}
+	}
+}
+
+void test_string_list_to_array_works_with_empty()
+{
+	assert_equals(JAL_OK, jaln_axl_string_list_to_array(empty_str_list, &arr_out, &arr_sz));
+	assert_equals(0, arr_sz);
+}
+
+void test_string_array_destroy_works()
+{
+	assert_equals(JAL_OK, jaln_axl_string_list_to_array(str_list, &arr_out, &arr_sz));
+	assert_not_equals((void*) NULL, arr_out);
+	assert_not_equals(0, arr_sz);
+	jaln_string_array_destroy(&arr_out, arr_sz);
+	assert_equals((void*) NULL, arr_out);
+}
+
+void test_string_array_destroy_does_not_crash_with_bad_input()
+{
+	arr_sz = 1;
+	jaln_string_array_destroy(&arr_out, arr_sz);
+	jaln_string_array_destroy(NULL, arr_sz);
+}
 
