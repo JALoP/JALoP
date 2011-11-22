@@ -199,6 +199,18 @@ tests.append(env.TestDeptTest('test_jaln_publisher.c',
 		sub_cb_obj, sync_msg_handler_obj],
 		useProxies=True)[0].abspath)
 
+tests.append(env.TestDeptTest('test_jaln_listen.c',
+	other_sources=[lib_common,
+		ch_info_obj, conn_obj, conn_cb_obj, ctx_obj,
+		dgst_info_obj, dgst_msg_handler_obj, dgst_resp_info_obj,
+		dgst_resp_msg_hndlr_obj, dgst_obj, enc_obj,
+		hlpr_obj, hndl_obj, journal_resume_handler_obj,
+		publisher_obj, pub_cb_obj, pub_feeder_obj, rec_info_obj,
+		sub_msg_handler_obj, sub_state_mach_obj, sess_obj, str_utils_obj,
+		sub_dgst_chan_obj, sub_cb_obj, sync_msg_handler_obj],
+	useProxies=True)[0].abspath)
+
+
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
 env.Depends(all_tests, net_lib_tests)
