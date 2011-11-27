@@ -18,6 +18,7 @@ dgst_obj = lib_env.SharedObject("../src/jaln_digest.c")
 dgst_info_obj = lib_env.SharedObject("../src/jaln_digest_info.c")
 dgst_msg_handler_obj = lib_env.SharedObject("../src/jaln_digest_msg_handler.c")
 dgst_resp_info_obj = lib_env.SharedObject("../src/jaln_digest_resp_info.c")
+dgst_resp_msg_hndlr_obj = lib_env.SharedObject("../src/jaln_digest_resp_msg_handler.c")
 enc_obj = lib_env.SharedObject("../src/jaln_encoding.c")
 hlpr_obj = lib_env.SharedObject("../src/jaln_message_helpers.c")
 hndl_obj = lib_env.SharedObject("../src/jaln_handle_init_replies.c")
@@ -28,6 +29,13 @@ sess_obj = lib_env.SharedObject("../src/jaln_session.c")
 str_utils_obj = lib_env.SharedObject("../src/jaln_string_utils.c")
 sub_cb_obj = lib_env.SharedObject("../src/jaln_subscriber_callbacks.c")
 sync_msg_handler_obj = lib_env.SharedObject("../src/jaln_sync_msg_handler.c")
+
+tests.append(env.TestDeptTest('test_jaln_sub_dgst_channel.c',
+	other_sources=[lib_common, conn_cb_obj, ch_info_obj,
+			ctx_obj, sub_cb_obj, dgst_obj, dgst_info_obj,
+			dgst_resp_info_obj, dgst_resp_msg_hndlr_obj,
+			enc_obj, hlpr_obj, pub_cb_obj, rec_info_obj,
+			sess_obj, str_utils_obj], useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common, ch_info_obj, conn_cb_obj, ctx_obj, dgst_info_obj, dgst_obj, enc_obj, sess_obj, sub_cb_obj])[0].abspath)
