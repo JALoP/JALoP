@@ -312,10 +312,10 @@ axl_bool jaln_session_associate_digest_channel_no_lock(struct jaln_session *sess
 }
 
 void jaln_session_on_dgst_channel_create(
-		__attribute__((unused)) int channel_num,
-		__attribute__((unused)) VortexChannel *chan,
+		int channel_num,
+		VortexChannel *chan,
 		__attribute__((unused)) VortexConnection *conn,
-		__attribute__((unused)) axlPointer user_data)
+		axlPointer user_data)
 {
 	struct jaln_session *sess = (struct jaln_session*) user_data;
 	if ((channel_num == -1) || !chan) {

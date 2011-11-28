@@ -35,6 +35,7 @@
 #include "jaln_context.h"
 #include "jaln_session.h"
 #include "jaln_digest_info.h"
+#include "jaln_sub_dgst_channel.h"
 
 #define SID "sid_1234"
 
@@ -52,6 +53,52 @@ void fake_cond_signal(__attribute__((unused)) VortexCond *cond)
 	cond_signal_called = axl_true;
 }
 
+void fake_create_sub_digest_channel_thread_no_lock(__attribute__((unused)) struct jaln_session *session)
+{
+	return;
+}
+
+axl_bool fake_vortex_thread_create(__attribute__((unused))  VortexThread *thread_def,
+				__attribute__((unused)) VortexThreadFunc func,
+				__attribute__((unused)) axlPointer user_data,
+				...)
+{
+	return axl_true;
+}
+
+void fake_vortex_channel_set_automatic_mime(__attribute__((unused)) VortexChannel *channel,
+					__attribute__((unused)) int value)
+{
+	return;
+}
+
+void fake_vortex_channel_set_serialize(__attribute__((unused)) VortexChannel *channel,
+					__attribute__((unused)) axl_bool serialize)
+{
+	return;
+}
+
+void fake_vortex_channel_set_closed_handler(__attribute__((unused)) VortexChannel *channel,
+					__attribute__((unused)) VortexOnClosedChannel closed,
+					__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
+void fake_vortex_channel_set_close_handler(__attribute__((unused)) VortexChannel *channel,
+					__attribute__((unused)) VortexOnCloseChannel close,
+					__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
+void fake_vortex_channel_set_received_handler(__attribute__((unused)) VortexChannel *channel,
+					__attribute__((unused)) VortexOnFrameReceived received,
+					__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
 void setup()
 {
 	sess = jaln_session_create();
@@ -66,6 +113,9 @@ void setup()
 	dgst_buf[2] = 0xb;
 	dgst_buf[3] = 0x0;
 	cond_signal_called = axl_false;
+
+	replace_function(vortex_thread_create, fake_vortex_thread_create);
+	replace_function(jaln_create_sub_digest_channel_thread_no_lock, fake_create_sub_digest_channel_thread_no_lock);
 }
 
 void teardown()
@@ -75,6 +125,7 @@ void teardown()
 	jaln_sub_data_destroy(&sub_data);
 	free(sid);
 	free(dgst_buf);
+	restore_function(vortex_thread_create);
 }
 
 void test_session_destroy_unrefs_jaln_ctx()
@@ -492,4 +543,62 @@ void test_add_to_dgst_fails_with_bad_input()
 	assert_equals(0, axl_list_length(sess->dgst_list));
 	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, 0));
 	assert_equals(0, axl_list_length(sess->dgst_list));
+}
+
+void test_jaln_session_associate_digest_channel_no_lock_does_not_crash_with_bad_input()
+{
+	assert_equals(axl_false, jaln_session_associate_digest_channel_no_lock(NULL,
+									(VortexChannel *)0xbadf00d, 1));
+	assert_equals(axl_false, jaln_session_associate_digest_channel_no_lock(sess, NULL, 1));
+
+}
+
+void test_jaln_session_associate_digest_channel_no_lock_fails_when_role_unset()
+{
+	replace_function(vortex_channel_set_automatic_mime, fake_vortex_channel_set_automatic_mime);
+	replace_function(vortex_channel_set_serialize, fake_vortex_channel_set_serialize);
+	replace_function(vortex_channel_set_closed_handler, fake_vortex_channel_set_closed_handler);
+	replace_function(vortex_channel_set_close_handler, fake_vortex_channel_set_close_handler);
+
+	VortexChannel *chan = (VortexChannel *)0xdeadbeef;
+	int ch_num = 1;
+	
+	sess->role = JALN_ROLE_UNSET;
+	sess->dgst_chan = NULL;
+	sess->dgst_chan_num = 0;
+	assert_equals(axl_false, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
+
+	restore_function(vortex_channel_set_automatic_mime);
+	restore_function(vortex_channel_set_serialize);
+	restore_function(vortex_channel_set_closed_handler);
+	restore_function(vortex_channel_set_close_handler);
+}
+
+void test_jaln_session_associate_digest_channel_no_lock_succeeds()
+{
+	replace_function(vortex_channel_set_automatic_mime, fake_vortex_channel_set_automatic_mime);
+	replace_function(vortex_channel_set_serialize, fake_vortex_channel_set_serialize);
+	replace_function(vortex_channel_set_closed_handler, fake_vortex_channel_set_closed_handler);
+	replace_function(vortex_channel_set_close_handler, fake_vortex_channel_set_close_handler);
+
+	VortexChannel *chan = (VortexChannel *)0xdeadbeef;
+	int ch_num = 1;
+
+	sess->role = JALN_ROLE_SUBSCRIBER;
+	sess->dgst_chan = NULL;
+	sess->dgst_chan_num = 0;
+	assert_equals(axl_true, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
+
+	replace_function(vortex_channel_set_received_handler, fake_vortex_channel_set_received_handler);
+
+	sess->role = JALN_ROLE_PUBLISHER;
+	sess->dgst_chan = NULL;
+	sess->dgst_chan_num = 0;
+	assert_equals(axl_true, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
+
+	restore_function(vortex_channel_set_automatic_mime);
+	restore_function(vortex_channel_set_serialize);
+	restore_function(vortex_channel_set_closed_handler);
+	restore_function(vortex_channel_set_close_handler);
+	restore_function(vortex_channel_set_received_handler);
 }
