@@ -38,6 +38,8 @@
 #include "jaln_digest_resp_info.h"
 #include "jaln_sync_msg_handler.h"
 
+#define FAKE_CHAN_NUM 5
+
 static axlList *calc_dgsts;
 static axlList *peer_dgsts;
 static axlList *dgst_resp_infos;
@@ -83,10 +85,26 @@ axl_bool fake_finalize_ans_rpy(__attribute__((unused)) VortexChannel* chan, __at
 	return axl_true;
 }
 
+int fake_vortex_channel_get_number(__attribute__((unused))VortexChannel * channel)
+{
+	return FAKE_CHAN_NUM;
+}
+
+void fake_vortex_channel_set_received_handler(
+		__attribute__((unused)) VortexChannel *channel,
+		__attribute__((unused)) VortexOnFrameReceived received,
+		__attribute__((unused)) axlPointer user_data)
+{
+	// do nothing
+	return;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
 	replace_function(jaln_process_sync, process_sync_success);
+	replace_function(vortex_channel_set_received_handler, fake_vortex_channel_set_received_handler);
+	replace_function(vortex_channel_get_number, fake_vortex_channel_get_number);
 	calc_dgsts = jaln_digest_info_list_create();
 	peer_dgsts = jaln_digest_info_list_create();
 	dgst_resp_infos = NULL;
@@ -248,5 +266,39 @@ void test_pub_create_session_works()
 	assert_string_equals(host, my_sess->ch_info->hostname);
 
 	jaln_session_unref(my_sess);
+}
+
+void test_configure_pub_session_fails_on_bad_input()
+{
+	enum jal_status ret;
+
+	ret = jaln_configure_pub_session(NULL, sess);
+	assert_equals(JAL_E_INVAL, ret);
+
+	ret = jaln_configure_pub_session((VortexChannel *)0xbadf00d, NULL);
+	assert_equals(JAL_E_INVAL, ret);
+
+	sess->pub_data = (struct jaln_pub_data*) 0xdeadbeef;
+	ret = jaln_configure_pub_session((VortexChannel *)0xbadf00d, sess);
+	assert_equals(JAL_E_INVAL, ret);
+	sess->pub_data = NULL;
+
+	sess->rec_chan = (VortexChannel*) 0xdeadbeef;
+	ret = jaln_configure_pub_session((VortexChannel *)0xbadf00d, sess);
+	assert_equals(JAL_E_INVAL, ret);
+	sess->rec_chan = NULL;
+
+}
+
+void test_configure_pub_session_works()
+{
+	enum jal_status ret;
+
+	ret = jaln_configure_pub_session((VortexChannel *)0xbadf00d, sess);
+	assert_equals(JAL_OK, ret);
+	assert_pointer_equals((void*) 0xbadf00d, sess->rec_chan);
+	assert_equals(FAKE_CHAN_NUM, sess->rec_chan_num);
+	assert_equals(JALN_ROLE_PUBLISHER, sess->role);
+	assert_not_equals((void*) NULL, sess->pub_data);
 }
 
