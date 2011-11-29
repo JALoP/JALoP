@@ -31,7 +31,10 @@
 
 #include "jal_alloc.h"
 
+#include "jaln_connection.h"
+#include "jaln_connection_callbacks_internal.h"
 #include "jaln_publisher.h"
+#include "jaln_publisher_callbacks_internal.h"
 #include "jaln_context.h"
 #include "jaln_channel_info.h"
 #include "jaln_digest_info.h"
@@ -197,18 +200,65 @@ VortexChannel * mock_vortex_channel_new_fullv(__attribute__((unused)) VortexConn
 	return NULL;
 }
 
+int fake_publisher_callbacks_is_valid(struct jaln_publisher_callbacks *publisher_callbacks) {
+	return (NULL != publisher_callbacks);
+}
+
+int fake_connection_callbacks_is_valid(struct jaln_connection_callbacks *conn_callbacks) {
+	return (NULL != conn_callbacks);
+}
+
+VortexConnection  *fake_vortex_connection_new(
+		__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) const char *host,
+		__attribute__((unused)) const char *port,
+		__attribute__((unused)) VortexConnectionNew on_connected,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return (VortexConnection*) 0xbadf00d;
+}
+
+axl_bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *connection,
+		__attribute__((unused)) axl_bool free_on_fail)
+{
+	return axl_true;
+}
+
+VortexChannel *fake_vortex_channel_new(
+		__attribute__((unused)) VortexConnection *connection,
+		__attribute__((unused)) int channel_num,
+		__attribute__((unused)) const char *profile,
+		__attribute__((unused)) VortexOnCloseChannel close,
+		__attribute__((unused)) axlPointer close_user_data,
+		__attribute__((unused)) VortexOnFrameReceived received,
+		__attribute__((unused)) axlPointer received_user_data,
+		__attribute__((unused)) VortexOnChannelCreated on_channel_created,
+		__attribute__((unused)) axlPointer user_data)
+{
+	jaln_session_unref((struct jaln_session*) user_data);
+	return (VortexChannel*) 0xbadf00d;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
 	replace_function(jaln_process_sync, process_sync_success);
 	replace_function(vortex_channel_set_received_handler, fake_vortex_channel_set_received_handler);
 	replace_function(vortex_channel_get_number, fake_vortex_channel_get_number);
+	replace_function(jaln_process_sync, process_sync_success);
+	replace_function(vortex_channel_new, fake_vortex_channel_new);
+	replace_function(vortex_connection_new, fake_vortex_connection_new);
+	replace_function(vortex_connection_is_ok, fake_vortex_connection_is_ok);
+	replace_function(jaln_publisher_callbacks_is_valid, fake_publisher_callbacks_is_valid);
+	replace_function(jaln_connection_callbacks_is_valid, fake_connection_callbacks_is_valid);
 	calc_dgsts = jaln_digest_info_list_create();
 	peer_dgsts = jaln_digest_info_list_create();
 	dgst_resp_infos = NULL;
 	ctx = jaln_context_create();
 	sess = jaln_session_create();
 	sess->jaln_ctx = ctx;
+	ctx->conn_callbacks = jaln_connection_callbacks_create();
+
 	ctx->pub_callbacks = jaln_publisher_callbacks_create();
 	ctx->pub_callbacks->peer_digest = peer_digest;
 	ctx->pub_callbacks->sync = on_sync;
@@ -244,6 +294,7 @@ void teardown()
 	axl_list_free(peer_dgsts);
 	restore_function(vortex_frame_get_mime_header);
 }
+
 
 void test_pub_does_not_crash_with_bad_input()
 {
@@ -515,4 +566,61 @@ void test_jaln_publisher_init_reply_frame_handler_fails_with_negative_channel_nu
 	restore_function(vortex_channel_set_received_handler);
 	restore_function(vortex_channel_get_number);
 	restore_function(vortex_channel_new_fullv);
+}
+
+void test_publish_fails_with_bad_input()
+{
+	struct jaln_connection *conn = NULL;
+
+	conn = jaln_publish(NULL, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+
+	conn = jaln_publish(ctx, NULL, "1234", JALN_RTYPE_JOURNAL, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+
+	conn = jaln_publish(ctx, "some_host", NULL, JALN_RTYPE_JOURNAL, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+
+	conn = jaln_publish(ctx, "some_host", "1234", 0, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL | (1 << 4), NULL);
+	assert_pointer_equals((void*) NULL, conn);
+
+}
+
+void test_publish_fails_when_missing_conn_callbacks()
+{
+	struct jaln_connection *conn = NULL;
+
+	jaln_connection_callbacks_destroy(&ctx->conn_callbacks);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+}
+
+void test_publish_fails_when_missing_pub_callbacks()
+{
+	struct jaln_connection *conn = NULL;
+
+	jaln_publisher_callbacks_destroy(&ctx->pub_callbacks);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+}
+
+void test_publish_fails_when_already_connected()
+{
+	struct jaln_connection *conn = NULL;
+	ctx->is_connected = axl_true;
+
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+}
+
+void test_publish_success_for_all_types()
+{
+	struct jaln_connection *conn = NULL;
+
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL, NULL);
+	assert_not_equals((void*) NULL, conn);
+	jaln_connection_destroy(&conn);
 }
