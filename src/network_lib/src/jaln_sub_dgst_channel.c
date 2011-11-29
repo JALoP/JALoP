@@ -124,9 +124,6 @@ out:
 	if (cursor) {
 		axl_list_cursor_free(cursor);
 	}
-	if (dgst_list) {
-		axl_list_free(dgst_list);
-	}
 	if (dgst_resp) {
 		axl_list_free(dgst_resp);
 	}
