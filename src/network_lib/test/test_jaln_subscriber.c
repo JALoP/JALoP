@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_subscriber.c functions.
+ * @file test_jaln_subscriber.c This file contains tests for jaln_subscriber.c functions.
  *
  * @section LICENSE
  *
@@ -34,12 +34,37 @@
 #include "jaln_subscriber_state_machine.h"
 
 #include <test-dept.h>
+#include <vortex.h>
 #include <string.h>
+
+#define chan_num 3
 
 struct jaln_session *session;
 VortexChannel *chan;
 VortexFrame *frame;
 static bool fail;
+
+int fake_vortex_channel_get_number(
+	__attribute__((unused)) VortexChannel *chan)
+{
+	return chan_num;
+}
+
+void fake_vortex_channel_set_received_handler(
+	__attribute__((unused)) VortexChannel *chan,
+	__attribute__((unused)) VortexOnFrameReceived received,
+	__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
+void fake_jaln_sub_state_reset(
+	__attribute__((unused)) struct jaln_session *session)
+{
+	return;
+}
+
+
 
 VortexFrameType mock_vortex_frame_get_type_success(__attribute__((unused)) VortexFrame *frame)
 {
@@ -73,7 +98,6 @@ axl_bool mock_vortex_channel_close_full(__attribute__((unused)) VortexChannel *c
 	return true;
 }
 
-
 void setup()
 {
 	fail = false;
@@ -85,16 +109,25 @@ void setup()
 	chan = (VortexChannel *) "dummy";
 	frame = (VortexFrame *) "dummy";
 	replace_function(vortex_channel_close_full, mock_vortex_channel_close_full);
-	
+	replace_function(vortex_channel_get_number, 
+			fake_vortex_channel_get_number);
+	replace_function(vortex_channel_set_received_handler,
+			fake_vortex_channel_set_received_handler);
+	replace_function(jaln_sub_state_reset, fake_jaln_sub_state_reset);
 }
 
 void teardown()
 {
-	jaln_sub_state_machine_destroy(&(session->sub_data->sm));
+	if (session && session->sub_data && session->sub_data->sm) {
+		jaln_sub_state_machine_destroy(&(session->sub_data->sm));
+	}
 	jaln_session_destroy(&session);
 	session = NULL;
 	restore_function(vortex_channel_close_full);
 	restore_function(vortex_frame_get_type);
+	restore_function(vortex_channel_get_number);
+	restore_function(vortex_channel_set_received_handler);
+	restore_function(jaln_sub_state_reset);
 }
 
 
@@ -134,3 +167,78 @@ void test_jaln_subscriber_record_frame_handler_success()
 
 }
 
+void test_jaln_configure_sub_session_no_lock_succeeds()
+{	// Pre-conditions
+	assert_not_equals(session->rec_chan, chan);
+	assert_not_equals(session->rec_chan_num, chan_num);
+	jaln_sub_data_destroy(&session->sub_data);
+
+	// Test JALN_RTYPE_JOURNAL
+	//	JALN_RTYPE_AUDIT
+	//	JALN_RTYPE_LOG
+	session->ch_info->type = JALN_RTYPE_JOURNAL;
+	assert_equals(JAL_OK,
+		jaln_configure_sub_session_no_lock(chan, session));
+	assert_equals(session->rec_chan, chan);
+	assert_equals(session->rec_chan_num, chan_num);
+	assert_not_equals(NULL, session->sub_data);
+	assert_not_equals(NULL, session->sub_data->sm);
+	assert_not_equals(NULL, session->sub_data->curr_frame_handler);
+
+	jaln_session_destroy(&session);
+	session = jaln_session_create();
+	session->ch_info->type = JALN_RTYPE_AUDIT;
+
+	assert_equals(JAL_OK,
+		jaln_configure_sub_session_no_lock(chan, session));
+	assert_equals(session->rec_chan, chan);
+	assert_equals(session->rec_chan_num, chan_num);
+	assert_not_equals(NULL, session->sub_data);
+	assert_not_equals(NULL, session->sub_data->sm);
+	assert_not_equals(NULL, session->sub_data->curr_frame_handler);
+
+	jaln_session_destroy(&session);
+	session = jaln_session_create();
+	session->ch_info->type = JALN_RTYPE_LOG;
+	assert_equals(JAL_OK,
+		jaln_configure_sub_session_no_lock(chan, session));
+
+	// Post-conditions
+	assert_equals(session->rec_chan, chan);
+	assert_equals(session->rec_chan_num, chan_num);
+	assert_not_equals(NULL, session->sub_data);
+	assert_not_equals(NULL, session->sub_data->sm);
+	assert_not_equals(NULL, session->sub_data->curr_frame_handler);
+
+	jaln_session_destroy(&session);
+}
+
+void test_jaln_configure_sub_session_no_lock_fails_bad_input()
+{	// Pre-conditions
+	assert_not_equals(session->rec_chan, chan);
+	assert_not_equals(session->rec_chan_num, chan_num);
+	jaln_sub_data_destroy(&session->sub_data);
+	assert_equals(NULL, session->sub_data);
+
+	assert_not_equals(JAL_OK,
+		jaln_configure_sub_session_no_lock(NULL, session));
+
+	assert_not_equals(JAL_OK,
+		jaln_configure_sub_session_no_lock(chan, NULL));
+
+	session->rec_chan = chan;
+
+	assert_not_equals(JAL_OK,
+		jaln_configure_sub_session_no_lock(chan, session));
+
+	session->rec_chan = NULL;
+	session->sub_data = (struct jaln_sub_data*) 0xdeadbeef;
+
+	assert_not_equals(JAL_OK,
+		jaln_configure_sub_session_no_lock(chan, session));
+	session->sub_data = NULL;
+
+	// Post-conditions
+	assert_not_equals(session->rec_chan, chan);
+	assert_not_equals(session->rec_chan_num, chan_num);
+}

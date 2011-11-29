@@ -37,6 +37,7 @@ sub_dgst_chan_obj = lib_env.SharedObject("../src/jaln_sub_dgst_channel.c")
 sub_msg_handler_obj = lib_env.SharedObject("../src/jaln_subscribe_msg_handler.c")
 sub_state_mach_obj = lib_env.SharedObject("../src/jaln_subscriber_state_machine.c")
 sync_msg_handler_obj = lib_env.SharedObject("../src/jaln_sync_msg_handler.c")
+subscriber_obj = lib_env.SharedObject("../src/jaln_subscriber.c")
 
 tests.append(env.TestDeptTest('test_jaln_sub_dgst_channel.c',
 	other_sources=[lib_common,
