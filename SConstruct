@@ -246,6 +246,8 @@ coverage = debug_env.Alias(target=lcov_output_dir, source=None,
 			"lcov -q --directory ${TARGET}/.. -b ${TARGET}/.. --capture --output-file %s" % lcov_output_path,
 			"lcov -q --remove %s /usr/\* --output-file %s" % (lcov_output_path, lcov_output_path),
 			"lcov -q --remove %s 3rd-party/\* --output-file %s" % (lcov_output_path, lcov_output_path),
+			"lcov -q --remove %s src/\*/test/\* --output-file %s" % (lcov_output_path, lcov_output_path),
+			"lcov -q --remove %s src/test_utils/\* --output-file %s" % (lcov_output_path, lcov_output_path),
 			"cd ${TARGET} && genhtml --show-details -k %s" % (lcov_output_file),
 			])
 debug_env.AlwaysBuild(coverage)
