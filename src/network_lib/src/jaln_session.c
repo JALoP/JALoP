@@ -112,18 +112,20 @@ void jaln_session_destroy(struct jaln_session **psession) {
 		return;
 	}
 	struct jaln_session *sess = *psession;
-	jaln_ctx_remove_session(sess->jaln_ctx, sess);
-	jaln_ctx_unref(sess->jaln_ctx);
 	if (JALN_ROLE_SUBSCRIBER == sess->role ) {
 		jaln_sub_data_destroy(&sess->sub_data);
 	} else {
+		if (sess->pub_data && sess->pub_data->dgst_inst) {
+			sess->dgst->destroy(sess->pub_data->dgst_inst);
+		}
 		jaln_pub_data_destroy(&sess->pub_data);
 	}
 	if (sess->dgst_list) {
 		axl_list_free(sess->dgst_list);
 	}
-
 	jaln_channel_info_destroy(&sess->ch_info);
+	jaln_ctx_remove_session(sess->jaln_ctx, sess);
+	jaln_ctx_unref(sess->jaln_ctx);
 	free(sess);
 	*psession = NULL;
 }
@@ -159,6 +161,7 @@ void jaln_pub_data_destroy(struct jaln_pub_data **ppub_data) {
 		return;
 	}
 	struct jaln_pub_data *pub_data = *ppub_data;
+	free(pub_data->dgst);
 	free(pub_data);
 	*ppub_data = NULL;
 }
