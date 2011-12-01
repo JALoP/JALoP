@@ -118,7 +118,9 @@ void jaln_session_destroy(struct jaln_session **psession) {
 		jaln_sub_data_destroy(&sess->sub_data);
 	} else {
 		if (sess->pub_data && sess->pub_data->dgst_inst) {
-			sess->dgst->destroy(sess->pub_data->dgst_inst);
+			if (sess->dgst) {
+				sess->dgst->destroy(sess->pub_data->dgst_inst);
+			}
 		}
 		jaln_pub_data_destroy(&sess->pub_data);
 	}
