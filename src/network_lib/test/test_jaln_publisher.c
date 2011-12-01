@@ -37,6 +37,8 @@
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
 #include "jaln_sync_msg_handler.h"
+#include "jaln_handle_init_replies.h"
+#include "jaln_message_helpers.h"
 
 #define FAKE_CHAN_NUM 5
 
@@ -47,6 +49,7 @@ static struct jaln_session *sess;
 static jaln_context *ctx;
 static int peer_digest_call_cnt;
 static int sync_cnt;
+static bool fail;
 
 void peer_digest(__attribute__((unused)) const struct jaln_channel_info *ch_info,
 			__attribute__((unused)) enum jaln_record_type type,
@@ -99,6 +102,101 @@ void fake_vortex_channel_set_received_handler(
 	return;
 }
 
+axl_bool mock_jaln_check_content_type_and_txfr_encoding_are_valid_failure(__attribute__((unused)) VortexFrame *frame)
+{
+	return axl_false;
+}
+
+axl_bool mock_jaln_check_content_type_and_txfr_encoding_are_valid_success(__attribute__((unused)) VortexFrame *frame)
+{
+	return axl_true;
+}
+
+void mock_vortex_connection_shutdown(__attribute__((unused)) VortexConnection *connection)
+{
+	fail = true;
+}
+
+static VortexMimeHeader * mock_vortex_frame_get_mime_header_success(__attribute__((unused)) VortexFrame *frame, __attribute__((unused)) const char * mime_header)
+{
+	return (VortexMimeHeader *) "dummy";
+}
+
+static const char * mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_ACK(__attribute__((unused)) VortexMimeHeader *header)
+{
+	return JALN_MSG_INIT_ACK;
+}
+
+static const char * mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_NACK(__attribute__((unused)) VortexMimeHeader *header)
+{
+	return JALN_MSG_INIT_NACK;
+}
+
+static const char * mock_vortex_frame_mime_header_content_success_bad_message(__attribute__((unused)) VortexMimeHeader *header)
+{
+	return JALN_MSG_INIT;
+}
+
+static const char * mock_vortex_frame_mime_header_content_failure(__attribute__((unused)) VortexMimeHeader *header)
+{
+	return NULL;
+}
+
+int mock_jaln_handle_initialize_ack_success(__attribute__((unused)) struct jaln_session *session,
+		__attribute__((unused)) enum jaln_role role,
+		__attribute__((unused)) VortexFrame *frame)
+{
+	return 1;
+}
+
+int mock_jaln_handle_initialize_nack(__attribute__((unused)) struct jaln_session *sess,
+		__attribute__((unused)) VortexFrame *frame)
+{
+	return 0;
+}
+
+int mock_jaln_handle_initialize_ack_failure(__attribute__((unused)) struct jaln_session *session,
+		__attribute__((unused)) enum jaln_role role,
+		__attribute__((unused)) VortexFrame *frame)
+{
+	return 0;
+}
+
+void mock_vortex_channel_set_received_handler(__attribute__((unused)) VortexChannel *channel,
+		__attribute__((unused)) VortexOnFrameReceived received,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
+int mock_vortex_channel_get_number_success(__attribute__((unused)) VortexChannel *channel)
+{
+	return 0;
+}
+
+int mock_vortex_channel_get_number_failure(__attribute__((unused)) VortexChannel *channel)
+{
+	return -1;
+}
+
+VortexChannel * mock_vortex_channel_new_fullv(__attribute__((unused)) VortexConnection *connection,
+		__attribute__((unused)) int channel_num,
+		__attribute__((unused)) const char *serverName,
+		__attribute__((unused)) const char *profile,
+		__attribute__((unused)) VortexEncoding encoding,
+		__attribute__((unused)) VortexOnCloseChannel close,
+		__attribute__((unused)) axlPointer close_user_data,
+		__attribute__((unused)) VortexOnFrameReceived received,
+		__attribute__((unused)) axlPointer received_user_data,
+		__attribute__((unused)) VortexOnChannelCreated on_channel_created,
+		__attribute__((unused)) axlPointer user_data,
+		__attribute__((unused)) const char *profile_content_format,
+		...)
+
+{
+	return NULL;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
@@ -134,6 +232,8 @@ void setup()
 
 	peer_digest_call_cnt = 0;
 	sync_cnt = 0;
+	fail = false;
+	replace_function(vortex_frame_get_mime_header, mock_vortex_frame_get_mime_header_success);
 }
 
 void teardown()
@@ -142,6 +242,7 @@ void teardown()
 
 	axl_list_free(calc_dgsts);
 	axl_list_free(peer_dgsts);
+	restore_function(vortex_frame_get_mime_header);
 }
 
 void test_pub_does_not_crash_with_bad_input()
@@ -302,3 +403,116 @@ void test_configure_pub_session_works()
 	assert_not_equals((void*) NULL, sess->pub_data);
 }
 
+void test_jaln_publisher_init_reply_frame_handler_fails_with_invalid_frame()
+{
+	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_failure);
+	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
+
+	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
+	assert(fail);
+
+	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
+	restore_function(vortex_connection_shutdown);
+}
+
+void test_jaln_publisher_init_reply_frame_handler_fails_with_VORTEX_FRAME_GET_MIME_HEADER_fail()
+{
+	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
+	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
+	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_failure);
+
+	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
+	assert(fail);
+
+	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
+	restore_function(vortex_connection_shutdown);
+	restore_function(vortex_frame_mime_header_content);
+}
+
+void test_jaln_publisher_init_reply_frame_handler_fails_with_bad_msg()
+{
+	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
+	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
+	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_bad_message);
+	replace_function(jaln_handle_initialize_ack, mock_jaln_handle_initialize_ack_success);
+	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
+	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_success);
+	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
+
+	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
+	assert(fail);
+
+	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
+	restore_function(vortex_connection_shutdown);
+	restore_function(vortex_frame_mime_header_content);
+	restore_function(jaln_handle_initialize_ack);
+	restore_function(vortex_channel_set_received_handler);
+	restore_function(vortex_channel_get_number);
+	restore_function(vortex_channel_new_fullv);
+}
+
+void test_jaln_publisher_init_reply_frame_handler_success_with_JALN_MSG_INIT_ACK()
+{
+	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
+	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
+	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_ACK);
+	replace_function(jaln_handle_initialize_ack, mock_jaln_handle_initialize_ack_success);
+	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
+	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_success);
+	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
+
+	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
+	assert(!fail);
+
+	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
+	restore_function(vortex_connection_shutdown);
+	restore_function(vortex_frame_mime_header_content);
+	restore_function(jaln_handle_initialize_ack);
+	restore_function(vortex_channel_set_received_handler);
+	restore_function(vortex_channel_get_number);
+	restore_function(vortex_channel_new_fullv);
+}
+
+void test_jaln_publisher_init_reply_frame_handler_success_with_JALN_MSG_INIT_NACK()
+{
+	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
+	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
+	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_NACK);
+	replace_function(jaln_handle_initialize_nack, mock_jaln_handle_initialize_nack);
+	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
+	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_success);
+	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
+
+	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
+	assert(!fail);
+
+	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
+	restore_function(vortex_connection_shutdown);
+	restore_function(vortex_frame_mime_header_content);
+	restore_function(jaln_handle_initialize_nack);
+	restore_function(vortex_channel_set_received_handler);
+	restore_function(vortex_channel_get_number);
+	restore_function(vortex_channel_new_fullv);
+}
+
+void test_jaln_publisher_init_reply_frame_handler_fails_with_negative_channel_number()
+{
+	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
+	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
+	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_ACK);
+	replace_function(jaln_handle_initialize_ack, mock_jaln_handle_initialize_ack_success);
+	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
+	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_failure);
+	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
+
+	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
+	assert(fail);
+
+	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
+	restore_function(vortex_connection_shutdown);
+	restore_function(vortex_frame_mime_header_content);
+	restore_function(jaln_handle_initialize_ack);
+	restore_function(vortex_channel_set_received_handler);
+	restore_function(vortex_channel_get_number);
+	restore_function(vortex_channel_new_fullv);
+}
