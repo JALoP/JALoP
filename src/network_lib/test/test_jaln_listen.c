@@ -1,5 +1,5 @@
 /**
- * @file This file contains tests for jaln_listen.c functions.
+ * @file test_jaln_listen.c This file contains tests for jaln_listen.c functions.
  *
  * @section LICENSE
  *
@@ -175,6 +175,29 @@ static void fake_channel_set_serialize(__attribute__((unused)) VortexChannel *ch
 	return;
 }
 
+void fake_channel_set_received_handler(
+		__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) VortexOnFrameReceived received,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
+void fake_channel_set_closed_handler(
+		__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) VortexOnClosedChannel received,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
+
+void fake_channel_set_close_handler(
+		__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) VortexOnCloseChannel received,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return;
+}
 static struct jaln_session * fake_find_session_by_rec_channel_fails(
 		__attribute__((unused)) jaln_context* ctx,
 		__attribute__((unused)) char *server_name_cpy,
@@ -347,6 +370,13 @@ void mock_vortex_listener_shutdown(__attribute__((unused)) VortexConnection * li
 	return;
 }
 
+enum jal_status fake_jaln_ctx_add_session_no_lock_fails(
+		__attribute__((unused)) jaln_context *ctx,
+		__attribute__((unused)) struct jaln_session *sess)
+{
+	return JAL_E_INVAL;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_close, fake_channel_close);
@@ -394,8 +424,12 @@ void teardown()
 	restore_function(vortex_connection_get_channel);
 	restore_function(vortex_channel_set_automatic_mime);
 	restore_function(vortex_channel_set_serialize);
+	restore_function(vortex_channel_set_received_handler);
+	restore_function(vortex_channel_set_closed_handler);
+	restore_function(vortex_channel_set_close_handler);
 	restore_function(jaln_ctx_find_session_by_rec_channel_no_lock);
 	restore_function(jaln_session_associate_digest_channel_no_lock);
+	restore_function(jaln_ctx_add_session_no_lock);
 
 	if (ctx->ref_cnt > 1) {
 		jaln_ctx_unref(ctx);
@@ -673,4 +707,68 @@ void test_jaln_listener_shutdown_fails_with_bad_input()
 	ctx->vortex_ctx = temp;
 
 	restore_function(vortex_listener_shutdown);
+}
+
+void test_handle_new_record_channel_no_lock()
+{
+	replace_function(vortex_channel_set_received_handler, fake_channel_set_received_handler);
+	replace_function(vortex_channel_set_closed_handler, fake_channel_set_closed_handler);
+	replace_function(vortex_channel_set_close_handler, fake_channel_set_close_handler);
+	restore_function(jaln_ctx_find_session_by_rec_channel_no_lock);
+
+	int chan_num = 2;
+	int curr_ref_cnt = ctx->ref_cnt;
+	assert_true(jaln_listener_handle_new_record_channel_no_lock(
+		ctx, (VortexConnection *) 0xbadf00d,
+		server_name, chan_num));
+	struct jaln_session *sess_local =
+		jaln_ctx_find_session_by_rec_channel_no_lock(
+			ctx, (char *) server_name, chan_num);
+	assert_not_equals(NULL, sess_local);
+	assert_equals(ctx, sess_local->jaln_ctx);
+	assert_equals(strlen(server_name), strlen(sess_local->ch_info->hostname));
+	assert_equals(0, strcmp(server_name, sess_local->ch_info->hostname));
+	assert_equals(curr_ref_cnt + 1, ctx->ref_cnt);
+
+	// Note: Context doesn't own session, must be released.
+	jaln_session_destroy(&sess_local);
+}
+
+void test_handle_new_record_channel_no_lock_fails_bad_input()
+{
+	int chan_num = 2;
+	int curr_ref_cnt = ctx->ref_cnt;
+	assert_false(jaln_listener_handle_new_record_channel_no_lock(
+		NULL, (VortexConnection *) 0xbadf00d,
+		server_name, chan_num));
+	assert_false(jaln_listener_handle_new_record_channel_no_lock(
+		ctx, NULL,
+		server_name, chan_num));
+	assert_false(jaln_listener_handle_new_record_channel_no_lock(
+		ctx, (VortexConnection *) 0xbadf00d,
+		NULL, chan_num));
+	assert_false(jaln_listener_handle_new_record_channel_no_lock(
+		ctx, (VortexConnection *) 0xbadf00d,
+		server_name, -1));
+	struct jaln_session *sess_local =
+		jaln_ctx_find_session_by_rec_channel_no_lock(
+			ctx, (char *) server_name, chan_num);
+	assert_equals((void*)NULL, sess_local);
+	assert_equals(curr_ref_cnt, ctx->ref_cnt);
+}
+
+void test_handle_new_record_channel_no_lock_fails_internal()
+{
+	replace_function(jaln_ctx_add_session_no_lock,
+			 fake_jaln_ctx_add_session_no_lock_fails);
+	int chan_num = 2;
+	int curr_ref_cnt = ctx->ref_cnt;
+	assert_false(jaln_listener_handle_new_record_channel_no_lock(
+		ctx, (VortexConnection *) 0xbadf00d,
+		server_name, chan_num));
+	struct jaln_session *sess_local =
+		jaln_ctx_find_session_by_rec_channel_no_lock(
+			ctx, (char *) server_name, chan_num);
+	assert_equals((void*) NULL, sess_local);
+	assert_equals(curr_ref_cnt, ctx->ref_cnt);
 }
