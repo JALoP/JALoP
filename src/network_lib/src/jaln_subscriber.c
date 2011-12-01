@@ -83,7 +83,7 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct j
 	}
 	session->rec_chan = chan;
 	session->rec_chan_num = vortex_channel_get_number(chan);
-	session->role = JALN_ROLE_PUBLISHER;
+	session->role = JALN_ROLE_SUBSCRIBER;
 	session->sub_data = jaln_sub_data_create();
 	switch (session->ch_info->type) {
 	case (JALN_RTYPE_JOURNAL):
