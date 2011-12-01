@@ -31,12 +31,19 @@
 #include <jalop/jal_digest.h>
 #include <jalop/jaln_connection_callbacks.h>
 #include <vortex.h>
+#include <vortex_listener.h>
+#include <vortex_types.h>
+#include <vortex_handlers.h>
 
 #include "jaln_listen.h"
 #include "jaln_publisher.h"
 #include "jaln_session.h"
 #include "jaln_subscriber.h"
 #include "jaln_init_msg_handler.h"
+
+#include "jaln_connection_callbacks_internal.h"
+#include "jaln_publisher_callbacks_internal.h"
+#include "jaln_subscriber_callbacks_internal.h"
 
 #define DGST_ONE "dgst_1"
 #define ENC_ONE "enc_1"
@@ -253,6 +260,93 @@ static VortexMimeHeader * func_name__ (VortexFrame *frame, const char *header_na
 
 //DECL_MIME_HANDLER(get_mime_header_returns_unexpected_msg, "jal-message", "jal-sync");
 
+int mock_jaln_subscriber_callbacks_is_valid_fails(__attribute__((unused)) struct jaln_subscriber_callbacks *subscriber_callbacks)
+{
+	return 0;
+}
+
+int mock_jaln_subscriber_callbacks_is_valid_succeeds(__attribute__((unused)) struct jaln_subscriber_callbacks *subscriber_callbacks)
+{
+	return 1;
+}
+
+int mock_jaln_publisher_callbacks_is_valid_fails(__attribute__((unused)) struct jaln_publisher_callbacks *publisher_callbacks)
+{
+	return 0;
+}
+
+int mock_jaln_publisher_callbacks_is_valid_succeeds(__attribute__((unused)) struct jaln_publisher_callbacks *publisher_callbacks)
+{
+	return 1;
+}
+
+int mock_jaln_connection_callbacks_is_valid_fails(__attribute__((unused)) struct jaln_connection_callbacks *callbacks)
+{
+	return 0;
+}
+
+int mock_jaln_connection_callbacks_is_valid_succeeds(__attribute__((unused)) struct jaln_connection_callbacks *callbacks)
+{
+	return 1;
+}
+
+axl_bool mock_vortex_profiles_register_extended_start_success(__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) const char *uri,
+		__attribute__((unused)) VortexOnStartChannelExtended extended_start,
+		__attribute__((unused)) axlPointer extended_start_user_data)
+{
+	return axl_true;
+}
+
+axl_bool mock_vortex_profiles_register_extended_start(__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) const char *uri,
+		__attribute__((unused)) VortexOnStartChannelExtended extended_start,
+		__attribute__((unused)) axlPointer extended_start_user_data)
+{
+	return axl_false;
+}
+
+axl_bool mock_vortex_profiles_register(__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) const char *uri,
+		__attribute__((unused)) VortexOnStartChannel start,
+		__attribute__((unused)) axlPointer start_user_data,
+		__attribute__((unused)) VortexOnCloseChannel close,
+		__attribute__((unused)) axlPointer close_user_data,
+		__attribute__((unused)) VortexOnFrameReceived received,
+		__attribute__((unused)) axlPointer received_user_data)
+{
+	return axl_true;
+}
+
+VortexConnection * mock_vortex_listener_new_success(__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) const char *host,
+		__attribute__((unused)) const char *port,
+		__attribute__((unused)) VortexListenerReady on_ready,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return (VortexConnection *) "dummy";
+}
+
+VortexConnection * mock_vortex_listener_new_failure(__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) const char *host,
+		__attribute__((unused)) const char *port,
+		__attribute__((unused)) VortexListenerReady on_ready,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return NULL;
+}
+
+void mock_vortex_listener_wait(__attribute__((unused)) VortexCtx *v_ctx)
+{
+	return;
+}
+
+void mock_vortex_listener_shutdown(__attribute__((unused)) VortexConnection * listener,
+                 __attribute__((unused)) axl_bool also_created_conns)
+{
+	return;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_close, fake_channel_close);
@@ -417,3 +511,166 @@ void test_init_msg_handler_fails_when_user_cb_fails()
 	assert_true(channel_closed);
 }
 
+void test_jaln_listen_fails_with_bad_input()
+{
+	assert_equals(JAL_E_INVAL, jaln_listen(NULL, NULL, NULL, (void *)"user_data"));
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", NULL, (void *)"user_data"));
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, NULL, "port", (void *)"user_data"));
+	assert_equals(JAL_E_INVAL, jaln_listen(NULL, "host", "port", (void *)"user_data"));
+}
+
+void test_jaln_listen_fails_with_bad_context()
+{
+	ctx->is_connected = axl_true;
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
+
+	ctx->is_connected = axl_false;
+	VortexCtx *temp = ctx->vortex_ctx;
+	ctx->vortex_ctx = NULL;
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
+
+	ctx->vortex_ctx = temp;
+	ctx->is_connected = axl_true;
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
+}
+
+void test_jaln_listen_fails_with_bad_sub_pub_callbacks()
+{
+	replace_function(jaln_subscriber_callbacks_is_valid, mock_jaln_subscriber_callbacks_is_valid_fails);
+	replace_function(jaln_publisher_callbacks_is_valid, mock_jaln_publisher_callbacks_is_valid_fails);
+	replace_function(jaln_connection_callbacks_is_valid, mock_jaln_connection_callbacks_is_valid_succeeds);
+
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
+
+	restore_function(jaln_subscriber_callbacks_is_valid);
+	restore_function(jaln_publisher_callbacks_is_valid);
+	restore_function(jaln_connection_callbacks_is_valid);
+}
+
+void test_jaln_listen_fails_with_bad_conn_callbacks()
+{
+	replace_function(jaln_subscriber_callbacks_is_valid, mock_jaln_subscriber_callbacks_is_valid_succeeds);
+	replace_function(jaln_publisher_callbacks_is_valid, mock_jaln_publisher_callbacks_is_valid_succeeds);
+	replace_function(jaln_connection_callbacks_is_valid, mock_jaln_connection_callbacks_is_valid_fails);
+
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
+
+	restore_function(jaln_subscriber_callbacks_is_valid);
+	restore_function(jaln_publisher_callbacks_is_valid);
+	restore_function(jaln_connection_callbacks_is_valid);
+
+}
+
+void test_jaln_listen_fails_to_create_new_vortex_listener()
+{
+	replace_function(jaln_subscriber_callbacks_is_valid, mock_jaln_subscriber_callbacks_is_valid_succeeds);
+        replace_function(jaln_publisher_callbacks_is_valid, mock_jaln_publisher_callbacks_is_valid_succeeds);
+        replace_function(jaln_connection_callbacks_is_valid, mock_jaln_connection_callbacks_is_valid_succeeds);
+	replace_function(vortex_profiles_register_extended_start, mock_vortex_profiles_register_extended_start);
+	replace_function(vortex_profiles_register, mock_vortex_profiles_register);
+	replace_function(vortex_listener_new, mock_vortex_listener_new_failure);
+
+	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
+
+	restore_function(jaln_subscriber_callbacks_is_valid);
+	restore_function(jaln_publisher_callbacks_is_valid);
+	restore_function(jaln_connection_callbacks_is_valid);
+	restore_function(vortex_profiles_register_extended_start);
+	restore_function(vortex_profiles_register);
+	restore_function(vortex_listener_new);
+}
+
+void test_jaln_listen_success()
+{
+	replace_function(jaln_subscriber_callbacks_is_valid, mock_jaln_subscriber_callbacks_is_valid_succeeds);
+        replace_function(jaln_publisher_callbacks_is_valid, mock_jaln_publisher_callbacks_is_valid_succeeds);
+        replace_function(jaln_connection_callbacks_is_valid, mock_jaln_connection_callbacks_is_valid_succeeds);
+	replace_function(vortex_profiles_register_extended_start, mock_vortex_profiles_register_extended_start);
+	replace_function(vortex_profiles_register, mock_vortex_profiles_register);
+	replace_function(vortex_listener_new, mock_vortex_listener_new_success);
+
+	assert_equals(JAL_OK, jaln_listen(ctx, "host", "port", (void *)"user_data"));
+
+	restore_function(jaln_subscriber_callbacks_is_valid);
+	restore_function(jaln_publisher_callbacks_is_valid);
+	restore_function(jaln_connection_callbacks_is_valid);
+	restore_function(vortex_profiles_register_extended_start);
+	restore_function(vortex_profiles_register);
+	restore_function(vortex_listener_new);
+}
+
+void test_jaln_listener_wait_success()
+{
+	replace_function(vortex_listener_wait, mock_vortex_listener_wait);
+
+	ctx->is_connected = axl_true;
+	ctx->listener_conn = (VortexConnection *) "dummy";
+	assert_equals(JAL_OK, jaln_listener_wait(ctx));
+
+	restore_function(vortex_listener_wait);
+}
+
+void test_jaln_listener_wait_fails_bad_input()
+{
+	replace_function(vortex_listener_wait, mock_vortex_listener_wait);
+	ctx->listener_conn = (VortexConnection *) "dummy";
+
+	//ctx is NULL
+	assert_equals(JAL_E_INVAL, jaln_listener_wait(NULL));
+
+	//is_connected is false
+	ctx->is_connected = axl_false;
+	assert_equals(JAL_E_INVAL, jaln_listener_wait(ctx));
+
+	//listener_conn is NULL
+	ctx->is_connected = axl_true;
+	ctx->listener_conn = NULL;
+	assert_equals(JAL_E_INVAL, jaln_listener_wait(ctx));
+
+	//vortex_ctx is NULL
+	ctx->listener_conn = (VortexConnection *) "dummy";
+	VortexCtx *temp = ctx->vortex_ctx;
+	ctx->vortex_ctx = NULL;
+	assert_equals(JAL_E_INVAL, jaln_listener_wait(ctx));
+	ctx->vortex_ctx = temp;
+
+	restore_function(vortex_listener_wait);
+}
+
+void test_jaln_listener_shutdown_success()
+{
+	ctx->is_connected = axl_true;
+        ctx->listener_conn = (VortexConnection *) "dummy";
+	replace_function(vortex_listener_shutdown, mock_vortex_listener_shutdown);
+
+	assert_equals(JAL_OK, jaln_listener_shutdown(ctx));
+
+	restore_function(vortex_listener_shutdown);
+}
+
+void test_jaln_listener_shutdown_fails_with_bad_input()
+{
+	replace_function(vortex_listener_shutdown, mock_vortex_listener_shutdown);
+	ctx->listener_conn = (VortexConnection *) "dummy";
+
+	//ctx is NULL
+	assert_equals(JAL_E_INVAL, jaln_listener_shutdown(NULL));
+
+	//is_connected is false
+	ctx->is_connected = axl_false;
+	assert_equals(JAL_E_INVAL, jaln_listener_shutdown(ctx));
+
+	//listener_conn is NULL
+	ctx->is_connected = axl_true;
+	ctx->listener_conn = NULL;
+	assert_equals(JAL_E_INVAL, jaln_listener_shutdown(ctx));
+
+	//vortex_ctx is NULL
+	ctx->listener_conn = (VortexConnection *) "dummy";
+	VortexCtx *temp = ctx->vortex_ctx;
+	ctx->vortex_ctx = NULL;
+	assert_equals(JAL_E_INVAL, jaln_listener_shutdown(ctx));
+	ctx->vortex_ctx = temp;
+
+	restore_function(vortex_listener_shutdown);
+}
