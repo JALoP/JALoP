@@ -310,17 +310,15 @@ axl_bool jaln_sub_state_append_frame(struct jaln_session *session, VortexFrame *
 		return axl_false;
 	}
 	if (!session->sub_data->sm->cached_frame) {
-		session->sub_data->sm->cached_frame = vortex_frame_copy(frame);
-		if (!session->sub_data->sm->cached_frame) {
-			return axl_false;
-		}
+		session->sub_data->sm->cached_frame = frame;
+		vortex_frame_ref(frame);
 		return axl_true;
 	}
 	VortexFrame *new_frame = vortex_frame_join(session->sub_data->sm->cached_frame, frame);
 	if (!new_frame) {
 		return axl_false;
 	}
-	vortex_frame_free(session->sub_data->sm->cached_frame);
+	vortex_frame_unref(session->sub_data->sm->cached_frame);
 	session->sub_data->sm->cached_frame = new_frame;
 	return axl_true;
 }
