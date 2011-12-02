@@ -224,6 +224,9 @@ tests.append(env.TestDeptTest('test_jaln_listen.c',
 		sub_dgst_chan_obj, sub_cb_obj, sync_msg_handler_obj],
 	useProxies=True)[0].abspath)
 
+tests.append(env.TestDeptTest('test_jaln_connection_request.c',
+	other_sources=[lib_common, ch_info_obj, enc_obj])[0].abspath)
+
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)
 env.Depends(all_tests, net_lib_tests)
