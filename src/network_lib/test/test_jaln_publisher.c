@@ -434,12 +434,6 @@ void test_configure_pub_session_fails_on_bad_input()
 	ret = jaln_configure_pub_session((VortexChannel *)0xbadf00d, sess);
 	assert_equals(JAL_E_INVAL, ret);
 	sess->pub_data = NULL;
-
-	sess->rec_chan = (VortexChannel*) 0xdeadbeef;
-	ret = jaln_configure_pub_session((VortexChannel *)0xbadf00d, sess);
-	assert_equals(JAL_E_INVAL, ret);
-	sess->rec_chan = NULL;
-
 }
 
 void test_configure_pub_session_works()

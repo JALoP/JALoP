@@ -530,7 +530,7 @@ struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char
 
 enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, struct jaln_session *session)
 {
-	if (!chan || !session || session->pub_data || session->rec_chan) {
+	if (!chan || !session || session->pub_data) {
 		return JAL_E_INVAL;
 	}
 	session->rec_chan = chan;
