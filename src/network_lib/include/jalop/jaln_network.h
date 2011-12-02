@@ -166,7 +166,7 @@ enum jal_status jaln_register_digest_algorithm(jaln_context *jal_ctx,
  *
  * Once called, the caller must ensure the program continues to run to keep the
  * connections active. This may be accomplished via an external event loop, or
- * by calling jlan_listener_wait().
+ * by calling jaln_listener_wait().
  *
  * When the program is ready to shutdown, it should call
  * jaln_listener_shutdown().
