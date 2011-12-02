@@ -251,7 +251,15 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 
 	sess->dgst = dgst_ctx;
 	sess->ch_info->type = info->type;
-	sess->role = info->role;
+
+	// The init message indicates the role the remote side wants to play,
+	// i.e. if the remote indicates it wishes to be a publisher, then the
+	// we need to be a subscriber here.
+	if (JALN_ROLE_SUBSCRIBER == info->role) {
+		sess->role = JALN_ROLE_PUBLISHER;
+	} else {
+		sess->role = JALN_ROLE_SUBSCRIBER;
+	}
 	switch (sess->role) {
 	case(JALN_ROLE_SUBSCRIBER):
 		jaln_configure_sub_session_no_lock(chan, sess);
@@ -265,7 +273,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 	vortex_mutex_unlock(&sess->lock);
 	jaln_create_init_ack_msg(conn_req->encodings[sel_enc], conn_req->digests[sel_dgst], &msg, &msg_len);
 	vortex_channel_send_rpy(chan, msg, msg_len, msg_no);
-	if (JALN_ROLE_SUBSCRIBER == info->role) {
+	if (JALN_ROLE_SUBSCRIBER == sess->role) {
 		jaln_subscriber_send_subscribe_request(sess);
 	}
 

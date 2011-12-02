@@ -497,24 +497,24 @@ void test_init_msg_handler_works_for_sha256()
 	conn_cbs->connect_request_handler = connect_request_handler_sha256;
 	jaln_listener_init_msg_handler((VortexChannel *) 0xbadf00d, (VortexConnection *) 0xbadf00d, (VortexFrame *) 0xbadf00d, sess);
 	assert_true(init_ack_sent);
-	assert_false(subscribe_sent);
+	assert_true(subscribe_sent);
 	assert_false(channel_closed);
 }
 
-void test_init_msg_handler_works_for_publisher()
+void test_init_msg_handler_works_for_remote_publisher()
 {
 	jaln_listener_init_msg_handler((VortexChannel *) 0xbadf00d, (VortexConnection *) 0xbadf00d, (VortexFrame *) 0xbadf00d, sess);
 	assert_true(init_ack_sent);
-	assert_false(subscribe_sent);
+	assert_true(subscribe_sent);
 	assert_false(channel_closed);
 }
 
-void test_init_msg_handler_works_with_for_subscriber()
+void test_init_msg_handler_works_with_for_remote_subscriber()
 {
 	replace_function(jaln_process_init, fake_process_init_sub);
 	jaln_listener_init_msg_handler((VortexChannel *) 0xbadf00d, (VortexConnection *) 0xbadf00d, (VortexFrame *) 0xbadf00d, sess);
 	assert_true(init_ack_sent);
-	assert_true(subscribe_sent);
+	assert_false(subscribe_sent);
 	assert_false(channel_closed);
 }
 
