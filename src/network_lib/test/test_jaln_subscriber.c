@@ -41,9 +41,10 @@
 #define CHAN_NUM 3
 #define SERIAL_ID "some_id"
 #define OFFSET 5
-
+#define HOST "some_host"
 
 struct jaln_session *session;
+static jaln_context *ctx;
 VortexChannel *chan;
 VortexFrame *frame;
 static bool fail;
@@ -147,6 +148,7 @@ void setup()
 	session->sub_data = jaln_sub_data_create();
 	session->sub_data->sm = jaln_sub_state_create_log_machine();
 	session->sub_data->sm->curr_state->frame_handler = &mock_frame_handler_success;
+	ctx = jaln_context_create();
 	chan = (VortexChannel *) "dummy";
 	frame = (VortexFrame *) "dummy";
 	replace_function(vortex_channel_close_full, mock_vortex_channel_close_full);
@@ -419,4 +421,32 @@ void test_jaln_subscriber_send_subscribe_request_fails_internal()
 		fake_get_subscribe_request_bad_serial_id;
 	jaln_subscriber_send_subscribe_request(session);
 	assert_equals(0, isMsgSent);
+}
+
+void test_jaln_subscriber_create_session_fails_with_bad_input()
+{
+	struct jaln_session *sess = jaln_subscriber_create_session(NULL, HOST, JALN_RTYPE_LOG);
+	assert_equals(1, ctx->ref_cnt);
+	assert_pointer_equals((void *) NULL, sess);
+	assert_equals(1, ctx->ref_cnt);
+
+	sess = jaln_subscriber_create_session(ctx, NULL, JALN_RTYPE_LOG);
+	assert_pointer_equals((void *) NULL, sess);
+	assert_equals(1, ctx->ref_cnt);
+
+	sess = jaln_subscriber_create_session(ctx, HOST, 0);
+	assert_pointer_equals((void *) NULL, sess);
+	assert_equals(1, ctx->ref_cnt);
+}
+
+void test_jaln_subscriber_create_session_works()
+{
+	assert_equals(1, ctx->ref_cnt);
+	struct jaln_session *sess = jaln_subscriber_create_session(ctx, HOST, JALN_RTYPE_LOG);
+	assert_not_equals((void *) NULL, sess);
+	assert_equals(2, ctx->ref_cnt);
+	assert_equals(JALN_ROLE_SUBSCRIBER, sess->role);
+	assert_equals(JALN_RTYPE_LOG, sess->ch_info->type);
+	assert_string_equals(HOST, sess->ch_info->hostname);
+	jaln_session_unref(sess);
 }
