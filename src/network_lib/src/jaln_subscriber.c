@@ -233,13 +233,15 @@ enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_sess
 
 enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct jaln_session *session)
 {
-	if (!chan || !session || session->sub_data || session->rec_chan) {
+	if (!chan || !session) {
 		return JAL_E_INVAL;
 	}
 	session->rec_chan = chan;
 	session->rec_chan_num = vortex_channel_get_number(chan);
 	session->role = JALN_ROLE_SUBSCRIBER;
-	session->sub_data = jaln_sub_data_create();
+	if (!session->sub_data) {
+		session->sub_data = jaln_sub_data_create();
+	}
 	switch (session->ch_info->type) {
 	case (JALN_RTYPE_JOURNAL):
 		session->sub_data->sm = jaln_sub_state_create_journal_machine();
@@ -318,14 +320,17 @@ void jaln_subscriber_on_channel_create(int channel_num,
 		jaln_session_unref(sess);
 		return;
 	}
+
 	if (!sess || !sess->ch_info || !sess->jaln_ctx || !sess->sub_data) {
 		goto err_out;
 	}
 
+	sess->rec_chan = chan;
+	sess->rec_chan_num = channel_num;
+
 	vortex_channel_set_serialize(chan, axl_true);
 
 	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, sess);
-	sess->rec_chan = chan;
 	sess->ch_info->addr = strdup(vortex_connection_get_host(conn));
 	char *init_msg = NULL;
 	size_t init_msg_len = 0;

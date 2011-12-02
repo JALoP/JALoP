@@ -380,19 +380,6 @@ void test_jaln_configure_sub_session_no_lock_fails_bad_input()
 	assert_not_equals(JAL_OK,
 		jaln_configure_sub_session_no_lock(chan, NULL));
 
-	session->rec_chan = chan;
-
-	assert_not_equals(JAL_OK,
-		jaln_configure_sub_session_no_lock(chan, session));
-	assert_equals((void*) NULL, session->sub_data);
-
-	session->rec_chan = NULL;
-	session->sub_data = (struct jaln_sub_data*) 0xdeadbeef;
-
-	assert_not_equals(JAL_OK,
-		jaln_configure_sub_session_no_lock(chan, session));
-	session->sub_data = NULL;
-
 	// Post-conditions
 	assert_not_equals(session->rec_chan, chan);
 	assert_not_equals(session->rec_chan_num, CHAN_NUM);
