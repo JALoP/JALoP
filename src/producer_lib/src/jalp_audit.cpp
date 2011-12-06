@@ -91,7 +91,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 			goto out;
 		}
 		doc->appendChild(app_meta_elem);
-		DOMElement *last_element = app_meta_elem->getLastElementChild();
+		DOMElement *last_element = NULL;
 
 		if (ctx->digest_ctx) {
 			status = jalp_digest_audit_record(ctx->digest_ctx, ctx->schema_root,
