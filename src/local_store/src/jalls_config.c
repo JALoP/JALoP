@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <uuid/uuid.h>
 
+#include "jal_alloc.h"
 #include "jalu_config.h"
 #include "jalls_config.h"
 #include "jalls_context.h"
@@ -131,6 +132,15 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 
 	if (*db_root == NULL) {
 		*db_root = strdup(JALLS_CFG_DB_DEFAULT);
+	}
+	if ((*db_root)[strlen(*db_root) - 1] != '/') {
+		int len = strlen(*db_root);
+		char *tmp = jal_malloc(len + 2);
+		strncpy(tmp, *db_root, len);
+		tmp[len] = '/';
+		tmp[len + 1] = 0;
+		free(*db_root);
+		(*jalls_ctx)->db_root = tmp;
 	}
 
 	if (*socket == NULL) {

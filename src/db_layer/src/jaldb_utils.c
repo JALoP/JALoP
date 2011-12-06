@@ -29,9 +29,11 @@
 #include "jaldb_utils.h"
 #include "jaldb_status.h"
 #include "jal_alloc.h"
+#include "jal_fs_utils.h"
 
 #include <errno.h>
 #include <fcntl.h>
+#include <jalop/jal_status.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -105,31 +107,6 @@ int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_l
 	return strcmp(sid1, sid2);
 }
 
-enum jaldb_status jaldb_create_dirs(const char *path)
-{
-	if (!path) {
-		return JALDB_E_INVAL;
-	}
-	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
-	char *curr = NULL;
-	char *lpath = NULL;
-	lpath = jal_strdup(path);
-	curr = lpath;
-	while(*curr) {
-		if (*curr == '/') {
-			*curr = '\0';
-			if (-1 == mkdir(lpath, 0700) && errno != EEXIST) {
-				goto out;
-			}
-			*curr = '/';
-		}
-		curr += 1;
-	}
-	ret = JALDB_OK;
-out:
-	free(lpath);
-	return ret;
-}
 enum jaldb_status jaldb_create_file(
 	const char *db_root,
 	char **relative_path_out,
@@ -141,6 +118,7 @@ enum jaldb_status jaldb_create_file(
 	// This is for the string 'yyyy/mm/dd/journal.XXXXXX'
 	#define TEMPLATE_LEN 26
 	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
+	enum jal_status jal_ret = JAL_E_INVAL;
 
 	time_t current_time;
 	struct tm gmt;
@@ -175,10 +153,11 @@ enum jaldb_status jaldb_create_file(
 		// based on db_root & template
 		goto error_out;
 	}
-	ret = jaldb_create_dirs(full_path);
-	if (ret != JALDB_OK) {
+	jal_ret = jal_create_dirs(full_path);
+	if (JAL_OK != jal_ret) {
 		goto error_out;
 	}
+	ret = JALDB_OK;
 	lfd = mkstemp(full_path);
 	if (lfd == -1) {
 		ret = JALDB_E_INTERNAL_ERROR;

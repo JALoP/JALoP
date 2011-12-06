@@ -39,6 +39,7 @@
 
 #include <jalop/jal_status.h>
 
+#include "jal_fs_utils.h"
 #include "jalls_config.h"
 #include "jalu_daemonize.h"
 #include "jalls_handler.h"
@@ -60,6 +61,7 @@ int main(int argc, char **argv) {
 	X509 *cert = NULL;
 	jaldb_context *db_ctx = NULL;
 	struct jalls_context *jalls_ctx = NULL;
+	enum jal_status jal_err = JAL_E_INVAL;
 
 	if (0 != jalls_init()) {
 		goto err_out;
@@ -75,6 +77,12 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 	jalls_ctx->debug = debug;
+
+	jal_err = jal_create_dirs(jalls_ctx->db_root);
+	if (JAL_OK != jal_err) {
+		fprintf(stderr, "failed to create database directory\n");
+		goto err_out;
+	}
 
 	//load the private key
 
@@ -106,8 +114,8 @@ int main(int argc, char **argv) {
 
 	//create a jaldb_context to pass to work threads
 	db_ctx = jaldb_context_create();
-	enum jal_status jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root,
-			jalls_ctx->schemas_root, 1, 0);
+	jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root,
+					jalls_ctx->schemas_root, 1, 0);
 	if (jal_err != JAL_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
 		goto err_out;
@@ -119,6 +127,13 @@ int main(int argc, char **argv) {
 	struct sockaddr_un sock_addr;
 	memset(&sock_addr, 0, sizeof(sock_addr));
 	size_t socket_path_len = strlen(jalls_ctx->socket);
+
+	jal_err = jal_create_dirs(jalls_ctx->socket);
+	if (JAL_OK != jal_err) {
+		fprintf(stderr, "failed to create socket directory\n");
+		goto err_out;
+	}
+
 	err = stat(jalls_ctx->socket, &sock_stat);
 	if (err != -1) {
 		fprintf(stderr, "failed to create socket: already exists\n");
