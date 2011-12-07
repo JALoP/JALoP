@@ -6,7 +6,9 @@ The implementation is divided into a number of sections.
   JALoP Network Stores
 
 Building
-This project uses the scons (www.scons.org) build tool and will compile under python 2.4 or 2.6. Later version of Python should work as well, but were not tested. You do not need to install scons to build, a version of scons is included as part of the distribution. To build, simply run the scons script in the top directory:
+This project uses the scons (www.scons.org) build tool, version 2.0.1, and will compile under python 2.4 or 2.6.
+Later versions of Python should work as well, but were not tested.
+To build, simply run 'scons' within the top level directory:
 
 $ scons
 This generates debug, and release directories.
