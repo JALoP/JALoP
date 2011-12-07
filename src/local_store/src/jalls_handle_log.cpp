@@ -178,7 +178,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	}
 
 	//create system metadata
-	err = jalls_create_system_metadata(JALLS_JOURNAL, thread_ctx->ctx->hostname, thread_ctx->ctx->system_uuid,
+	err = jalls_create_system_metadata(JALLS_LOG, thread_ctx->ctx->hostname, thread_ctx->ctx->system_uuid,
 		thread_ctx->fd, thread_ctx->peer_pid, thread_ctx->peer_uid, &sys_meta_doc);
 	if (err < 0) {
 		if (debug) {
