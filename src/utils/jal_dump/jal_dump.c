@@ -265,13 +265,13 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 		// Now sys_meta_data goes to sysstr ; app_meta_data to appstr ; record to datstr
 
 		if ((0 != sys_meta_len) && (NULL != sys_meta_buf)) {
-			fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 766);	// Delete existing file(O_TRUNC)?
+			fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 0600);	// Delete existing file(O_TRUNC)?
 		}
 		if ((0 != app_meta_len) && (NULL != app_meta_buf)) {
-			fd_app = open(appstr, O_RDWR|O_CREAT|O_TRUNC, 766); 	// Delete existing file(O_TRUNC)?
+			fd_app = open(appstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
 		}
 		if ((0 != record_len) && (NULL != record_buf)) {
-			fd_dat = open(datstr, O_RDWR|O_CREAT|O_TRUNC, 766); 	// Delete existing file(O_TRUNC)?
+			fd_dat = open(datstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
 		}
 
 		printf("Path for system data is %s.\n", sysstr);
