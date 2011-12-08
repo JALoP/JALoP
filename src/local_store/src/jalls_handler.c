@@ -116,17 +116,15 @@ void *jalls_handler(void *thread_ctx_p) {
 		struct ucred cred;
 		memset(&cred, 0, sizeof(cred));
 		pid = &cred.pid;
-		*pid = -1;
 		uid = &cred.uid;
-		*uid = -1;
 #endif
 #ifdef SCM_UCRED
 		ucred_t *cred = NULL;
 		pid = malloc(sizeof(*pid));
-		*pid = -1;
 		uid = malloc(sizeof(*uid));
-		*uid = -1;
 #endif
+		*pid = -1;
+		*uid = 0;
 		
 		ssize_t bytes_recv = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 		if (bytes_recv < 0) {
