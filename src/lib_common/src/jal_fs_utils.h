@@ -46,7 +46,7 @@ extern "C" {
  * create both /foo and /foo/bar as needed.
  *
  * @param[in] path The path containing directories to create.
- * @return 
+ * @return
  *  - JAL_OK on success
  *  - JAL_E_INVAL on error
  */
