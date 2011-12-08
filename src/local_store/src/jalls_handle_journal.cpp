@@ -85,6 +85,9 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	DOMDocument *app_meta_doc = NULL;
 	DOMDocument *sys_meta_doc = NULL;
 
+	struct jal_digest_ctx *digest_ctx = NULL;
+	uint8_t *digest = NULL;
+
 	void *sha256_instance = NULL;
 	//get a file from the db layer to write the journal data to.
 	db_err = jaldb_create_journal_file(thread_ctx->db_ctx, &db_payload_path, &db_payload_fd);
@@ -120,10 +123,8 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	bytes_remaining = data_len;
 	int bytes_written;
 
-	struct jal_digest_ctx *digest_ctx;
 	digest_ctx = jal_sha256_ctx_create();
 	sha256_instance = digest_ctx->create();
-	uint8_t *digest;
 	digest = (uint8_t *)jal_malloc(digest_ctx->len);
 	jal_err = digest_ctx->init(sha256_instance);
 	if(jal_err != JAL_OK) {
@@ -264,10 +265,12 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	ret = 0;
 
 err_out:
-	digest_ctx->destroy(sha256_instance);
+	if (digest_ctx) {
+		digest_ctx->destroy(sha256_instance);
+		jal_digest_ctx_destroy(&digest_ctx);
+	}
 	XMLString::release(&namespace_uri);
 	XMLString::release(&manifest_namespace_uri);
-	jal_digest_ctx_destroy(&digest_ctx);
 	free(app_meta_buf);
 	return ret;
 }
