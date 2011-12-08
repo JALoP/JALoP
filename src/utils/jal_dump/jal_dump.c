@@ -219,18 +219,22 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 	//Print to stdout if not to a file
 	if (!path) {
 		if (('a' == data || 'z' == data) && (0 != app_meta_len) && app_meta_buf) {
+			printf("\napplication metadata\n");
 			print_payload(app_meta_buf, app_meta_len);
 		}
 		if (('s' == data || 'z' == data) && (0 != sys_meta_len) && sys_meta_buf) {
+			printf("\nsystem metadata\n");
 			//(the default)
 			print_payload(sys_meta_buf, sys_meta_len);
 		}
 		if (('j' == type) && (('p' == data) || ('z' == data))
 			 && ((size_t)(100) < record_len) && (!record_buf)) {
+			printf("\njournal metadata\n");
 			//used to ensure that journal records don't cause unwanted actions by being too big
 			print_payload(record_buf, ((size_t)100));
 		} 
 		if ((('p' == data) || ('z' == data)) && (0 != record_len) && (record_buf)) {
+			printf("\npayload\n");
 			print_payload(record_buf, record_len);
 		}
 	}
@@ -454,14 +458,14 @@ void print_payload(uint8_t *payload_buf, size_t payload_size)
 		printf("No data.");
 		return;
 	}
-	printf("payload(hex): 0x");
+	printf("(hex): 0x");
 	for (size_t i = 0; i < payload_size; i++) {
 		printf("%x", payload_buf[i]);
 	}
 	char *str_payload = malloc(payload_size + 1);
 	memcpy(str_payload, payload_buf, payload_size);
 	str_payload[payload_size] = 0;
-	printf("\n\npayload(char): %s\n", str_payload);
+	printf("\n\n(char): %s\n", str_payload);
 	free(str_payload);
 }
 
