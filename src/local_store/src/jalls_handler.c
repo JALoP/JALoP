@@ -65,7 +65,6 @@ void *jalls_handler(void *thread_ctx_p) {
 	thread_ctx = thread_ctx_p;
 	pid_t *pid = NULL;
 	uid_t *uid = NULL;
-	int cred_type = 0;
 	int debug = thread_ctx->ctx->debug;
 	int err = pthread_detach(pthread_self());
 	if (err < 0) {
@@ -74,12 +73,6 @@ void *jalls_handler(void *thread_ctx_p) {
 		}
 		goto out;
 	}
-
-#if defined (SCM_CREDENTIALS)
-	cred_type = SCM_CREDENTIALS;
-#elif defined (SCM_UCRED)
-	cred_type = SCM_UCRED;
-#endif
 
 	while (1) {
 
@@ -117,14 +110,25 @@ void *jalls_handler(void *thread_ctx_p) {
 		memset(&cred, 0, sizeof(cred));
 		pid = &cred.pid;
 		uid = &cred.uid;
+		*pid = -1;
+		*uid = 0;
 #endif
 #ifdef SCM_UCRED
 		ucred_t *cred = NULL;
-		pid = malloc(sizeof(*pid));
-		uid = malloc(sizeof(*uid));
+		pid_t tmp_pid = -1;
+		uid_t tmp_uid = 0;
+		pid = &tmp_pid;
+		uid = &tmp_uid;
+		if (-1 == getpeerucred(thread_ctx->fd, &cred)) {
+			if (debug) {
+				fprintf(stderr, "failed receiving peer credentials\n");
+			}
+		} else {
+			tmp_pid = ucred_getpid(cred);
+			tmp_uid = ucred_geteuid(cred);
+			ucred_free(cred);
+		}
 #endif
-		*pid = -1;
-		*uid = 0;
 		
 		ssize_t bytes_recv = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 		if (bytes_recv < 0) {
@@ -144,42 +148,39 @@ void *jalls_handler(void *thread_ctx_p) {
 		struct cmsghdr *cmsg;
 		cmsg = CMSG_FIRSTHDR(&msgh);
 		while (cmsg != NULL) {
-			if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type  == cred_type) {
-				if (debug && (*uid != 0 || *pid != -1)) {
-					fprintf(stderr, "received duplicate ancillary data: multiple credentials.\nFirst credentials will be overwritten\n");
-				}
+			if (cmsg->cmsg_level == SOL_SOCKET) {
 #ifdef SCM_CREDENTIALS
-				memcpy(&cred, CMSG_DATA(cmsg), sizeof(cred));
+				if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS) {
+					if (debug && (*uid != 0 || *pid != -1)) {
+						fprintf(stderr, "received duplicate ancillary data: multiple credentials.\nFirst credentials will be overwritten\n");
+					}
+					memcpy(&cred, CMSG_DATA(cmsg), sizeof(cred));
+				} else
 #endif
-#ifdef SCM_UCRED
-				memcpy(cred, CMSG_DATA(cmsg), sizeof(cred));
-				*pid = ucred_getpid(cred);
-				*uid = ucred_geteuid(cred);
-#endif
-			} else if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type  == SCM_RIGHTS
-				&& cmsg->cmsg_len == CMSG_LEN(sizeof(msg_fd))) {
-				if (message_type != JALLS_JOURNAL_FD_MSG) {
+				if (cmsg->cmsg_type == SCM_RIGHTS && cmsg->cmsg_len == CMSG_LEN(sizeof(msg_fd))) {
+					if (message_type != JALLS_JOURNAL_FD_MSG) {
+						if (debug) {
+							fprintf(stderr, "received an fd for a message type that was not journal_fd\n");
+						}
+						goto out;
+					}
+					void *tmp_fd = CMSG_DATA(cmsg);
+					if (debug && msg_fd != -1) {
+						fprintf(stderr, "received duplicate ancillary data: overwrote the fd\n");
+					}
+					msg_fd = *((int *)tmp_fd);
+					if (msg_fd < 0) {
+						if (debug) {
+							fprintf(stderr, "received an fd < 0\n");
+						}
+						goto out;
+					}
+				} else {
 					if (debug) {
-						fprintf(stderr, "received an fd for a message type that was not journal_fd\n");
+						fprintf(stderr, "received unrecognized ancillary data\n");
 					}
 					goto out;
 				}
-				void *tmp_fd = CMSG_DATA(cmsg);
-				if (debug && msg_fd != -1) {
-					fprintf(stderr, "received duplicate ancillary data: overwrote the fd\n");
-				}
-				msg_fd = *((int *)tmp_fd);
-				if (msg_fd < 0) {
-					if (debug) {
-						fprintf(stderr, "received an fd < 0\n");
-					}
-					goto out;
-				}
-			} else {
-				if (debug) {
-					fprintf(stderr, "received unrecognized ancillary data\n");
-				}
-				goto out;
 			}
 			cmsg = CMSG_NXTHDR(&msgh, cmsg);
 		}
@@ -232,10 +233,6 @@ void *jalls_handler(void *thread_ctx_p) {
 	}
 
 out:
-#ifdef SCM_UCRED
-	free(pid);
-	free(uid);
-#endif
 	free(thread_ctx);
 	return NULL;
 }
