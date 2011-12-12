@@ -39,6 +39,7 @@ sub_msg_handler_obj = lib_env.SharedObject("../src/jaln_subscribe_msg_handler.c"
 sub_obj = lib_env.SharedObject("../src/jaln_subscriber.c")
 sub_state_mach_obj = lib_env.SharedObject("../src/jaln_subscriber_state_machine.c")
 sync_msg_handler_obj = lib_env.SharedObject("../src/jaln_sync_msg_handler.c")
+tls_obj = lib_env.SharedObject("../src/jaln_tls.c")
 
 
 tests.append(env.TestDeptTest('test_jaln_sub_dgst_channel.c',
@@ -224,7 +225,7 @@ tests.append(env.TestDeptTest('test_jaln_listen.c',
 		publisher_obj, pub_cb_obj, pub_feeder_obj, rec_info_obj,
 		sub_obj, sub_msg_handler_obj, sub_state_mach_obj, sess_obj,
 		str_utils_obj,
-		sub_dgst_chan_obj, sub_cb_obj, sync_msg_handler_obj],
+		sub_dgst_chan_obj, sub_cb_obj, sync_msg_handler_obj, tls_obj],
 	useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_connection_request.c',

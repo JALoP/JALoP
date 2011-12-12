@@ -23,6 +23,8 @@
  * limitations under the License.
  */
 
+#include <vortex.h>
+#include <vortex_tls.h>
 #include <jalop/jaln_network.h>
 
 #include "jal_alloc.h"
@@ -101,6 +103,12 @@ struct jaln_connection *jaln_subscribe(
 
 	ctx->is_connected = axl_true;
 	ctx->user_data = user_data;
+
+	if (ctx->private_key && ctx->public_cert && ctx->peer_certs) {
+		// Enable TLS for every connection and do not allow failures.
+		vortex_tls_set_auto_tls(ctx->vortex_ctx, axl_true, axl_false, NULL);
+	}
+
 	vortex_mutex_unlock(&ctx->lock);
 
 	if (!(data_classes & JALN_RTYPE_ALL)) {

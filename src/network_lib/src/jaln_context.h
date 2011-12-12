@@ -55,6 +55,9 @@ struct jaln_context_t {
 	axlHash *sessions_by_conn;
 	VortexCtx *vortex_ctx;
 	VortexConnection *listener_conn;
+	char *peer_certs;
+	char *public_cert;
+	char *private_key;
 	void *user_data;
 };
 

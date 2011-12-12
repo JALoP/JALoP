@@ -44,6 +44,7 @@
 #include "jaln_session.h"
 #include "jaln_subscriber.h"
 #include "jaln_subscriber_callbacks_internal.h"
+#include "jaln_tls.h"
 
 axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
@@ -334,6 +335,14 @@ enum jal_status jaln_listen(
 	}
 
 	vortex_mutex_lock(&ctx->lock);
+
+	if (ctx->private_key && ctx->public_cert && ctx->peer_certs) {
+		// Filters out any non-TLS connections
+		vortex_listener_set_on_connection_accepted(ctx->vortex_ctx,
+						jaln_tls_on_connection_accepted,
+						NULL);
+	}
+
 	ctx->listener_conn = v_conn;
 	vortex_mutex_unlock(&ctx->lock);
 
