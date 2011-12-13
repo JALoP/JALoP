@@ -52,5 +52,19 @@
 #define JALDB_LOCALHOST "localhost"
 #define JALDB_HAS_APP_META "hasAppMeta"
 #define JALDB_HAS_LOG "hasLog"
+#define JALDB_NEXT_SID_QUERY_CONT_VAR "cont"
+#define JALDB_NEXT_SID_QUERY \
+"declare function local:sid-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
+"    if (fn:string-length($a) lt fn:string-length($b)) then -1\n" \
+"    else if (fn:string-length($b) lt fn:string-length($a)) then 1\n" \
+"    else (fn:compare ($a, $b))\n" \
+"}; \n" \
+"let $docs := for $i in collection()\n" \
+"    where local:sid-cmp($last_sid, $i/dbxml:metadata('dbxml:name')) lt 0 \n" \
+"    return $i\n" \
+"let $no_hidden_docs := for $d in $docs \n" \
+"    where local:sid-cmp('__next_sid', $d/dbxml:metadata('dbxml:name')) ne 0 \n" \
+"    return $d\n" \
+"return subsequence($no_hidden_docs, 1, 1)\n" \
 
 #endif // _JALDB_STRINGS_H_
