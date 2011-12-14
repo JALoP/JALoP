@@ -415,6 +415,9 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
 		if (JAL_OK != ret) {
 			goto err_out;
 		}
+		if (sess->closing) {
+			goto err_out;
+		}
 		ret = jaln_pub_begin_next_record_ans(sess, 0, &rec_info, chan);
 		if (ret != JAL_OK) {
 			goto err_out;
