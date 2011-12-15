@@ -3586,3 +3586,93 @@ extern "C" void test_jaldb_update_sync_returns_error_on_bad_input()
 	ret = jaldb_mark_synced_common(context, cont, "12", NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 }
+
+extern "C" void test_jaldb_mark_sent_ok_common_overwrites_existing_data()
+{
+	XmlManager mgr = *(context->manager);
+	XmlContainer cont = mgr.createContainer("update_sync_test");
+	XmlDocument doc;
+	XmlUpdateContext uc = mgr.createUpdateContext();
+
+	string sent_id(JALDB_REMOTE_META_PREFIX REMOTE_HOST JALDB_SENT_META_SUFFIX);
+
+	cont.putDocument("1", "<doc>1</doc>", uc);
+	doc = cont.getDocument("1");
+	doc.setMetaData(JALDB_NS, sent_id, false);
+	cont.updateDocument(doc, uc);
+
+	enum jaldb_status ret = jaldb_mark_sent_ok_common(context, &cont, "1", REMOTE_HOST);
+	assert_equals(JALDB_OK, ret);
+
+	XmlValue v;
+	doc = cont.getDocument("1");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(v.isBoolean());
+}
+
+extern "C" void test_jaldb_mark_sent_ok_common_creates_key_as_needed()
+{
+	XmlManager mgr = *(context->manager);
+	XmlContainer cont = mgr.createContainer("update_sync_test");
+	XmlDocument doc;
+	XmlUpdateContext uc = mgr.createUpdateContext();
+
+	string sent_id(JALDB_REMOTE_META_PREFIX REMOTE_HOST JALDB_SENT_META_SUFFIX);
+
+	cont.putDocument("1", "<doc>1</doc>", uc);
+	doc = cont.getDocument("1");
+	cont.updateDocument(doc, uc);
+
+	enum jaldb_status ret = jaldb_mark_sent_ok_common(context, &cont, "1", REMOTE_HOST);
+	assert_equals(JALDB_OK, ret);
+
+	XmlValue v;
+	doc = cont.getDocument("1");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(v.isBoolean());
+}
+
+extern "C" void test_jaldb_mark_sent_ok_returns_not_found_when_document_lookup_fails()
+{
+	XmlManager mgr = *(context->manager);
+	XmlContainer cont = mgr.createContainer("update_sync_test");
+	XmlDocument doc;
+	XmlUpdateContext uc = mgr.createUpdateContext();
+
+	string sent_id(JALDB_REMOTE_META_PREFIX REMOTE_HOST JALDB_SENT_META_SUFFIX);
+
+	cont.putDocument("1", "<doc>1</doc>", uc);
+	doc = cont.getDocument("1");
+	cont.updateDocument(doc, uc);
+
+	enum jaldb_status ret = jaldb_mark_sent_ok_common(context, &cont, "2", REMOTE_HOST);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+
+	XmlValue v;
+	doc = cont.getDocument("1");
+	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
+}
+
+extern "C" void test_jaldb_mark_sent_ok_common_returns_error_on_bad_input()
+{
+	enum jaldb_status ret;
+	XmlContainer *cont = (XmlContainer*) 0xbadf00d;
+
+	ret = jaldb_mark_sent_ok_common(NULL, cont, "12", REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	XmlManager *mgr = context->manager;
+	context->manager = NULL;
+	ret = jaldb_mark_sent_ok_common(context, cont, "12", REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+	context->manager = mgr;
+
+	ret = jaldb_mark_sent_ok_common(context, NULL, "12", REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_mark_sent_ok_common(context, cont, NULL, REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_mark_sent_ok_common(context, cont, "12", NULL);
+	assert_equals(JALDB_E_INVAL, ret);
+}
