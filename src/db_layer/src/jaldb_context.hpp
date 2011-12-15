@@ -525,4 +525,61 @@ enum jaldb_status jaldb_mark_log_synced(
 	const char *sid,
 	const char *remote_host);
 
+
+/**
+ * Helper function to mark records in the database as being sent successfully to a
+ * particular remote peer. This indicates that the remote successfully received
+ * the record, however, it is still possible that the remote has not yet been
+ * notified that it received the record correctly, i.e. a digest response
+ * message may not have been sent, or was lost.
+ *
+ * @param[in] ctx The context.
+ * @param[in] cont The container to look in.
+ * @param[in] sid The serial ID of the record to mark as sent_ok.
+ * @param[in] remote_name The name of the remote that received the record.
+ */
+enum jaldb_status jaldb_mark_sent_ok_common(
+	jaldb_context *ctx,
+	DbXml::XmlContainer *cont,
+	const char *sid,
+	const char *remote_host);
+
+/**
+ * Helper function to mark a journal record in the database as being sent successfully to a
+ * particular remote peer. This indicates that the remote successfully received
+ * the record, however, it is still possible that the remote has not yet been
+ * notified that it received the record correctly, i.e. a digest response
+ * message may not have been sent, or was lost.
+ *
+ * @param[in] ctx The context.
+ * @param[in] sid The serial ID of the record to mark as sent_ok.
+ * @param[in] remote_name The name of the remote that received the record.
+ */
+enum jaldb_status jaldb_mark_journal_sent_ok(jaldb_context *ctx, const char* sid, const char *remote_name);
+/**
+ * Helper function to mark an audit record in the database as being sent successfully to a
+ * particular remote peer. This indicates that the remote successfully received
+ * the record, however, it is still possible that the remote has not yet been
+ * notified that it received the record correctly, i.e. a digest response
+ * message may not have been sent, or was lost.
+ *
+ * @param[in] ctx The context.
+ * @param[in] sid The serial ID of the record to mark as sent_ok.
+ * @param[in] remote_name The name of the remote that received the record.
+ */
+enum jaldb_status jaldb_mark_audit_sent_ok(jaldb_context *ctx, const char* sid, const char *remote_name);
+
+/**
+ * Helper function to mark a log record in the database as being sent successfully to a
+ * particular remote peer. This indicates that the remote successfully received
+ * the record, however, it is still possible that the remote has not yet been
+ * notified that it received the record correctly, i.e. a digest response
+ * message may not have been sent, or was lost.
+ *
+ * @param[in] ctx The context.
+ * @param[in] sid The serial ID of the record to mark as sent_ok.
+ * @param[in] remote_name The name of the remote that received the record.
+ */
+enum jaldb_status jaldb_mark_log_sent_ok(jaldb_context *ctx, const char* sid, const char *remote_name);
+
 #endif // _JALDB_CONTEXT_HPP_

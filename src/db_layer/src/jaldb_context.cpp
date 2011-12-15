@@ -1020,6 +1020,86 @@ enum jaldb_status jaldb_lookup_audit_record(
 	return JALDB_OK;
 }
 
+enum jaldb_status jaldb_mark_audit_sent_ok(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+
+	return jaldb_mark_sent_ok_common(ctx, ctx->audit_sys_cont, sid, remote_host);
+}
+
+enum jaldb_status jaldb_mark_journal_sent_ok(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+
+	return jaldb_mark_sent_ok_common(ctx, ctx->journal_sys_cont, sid, remote_host);
+}
+
+enum jaldb_status jaldb_mark_log_sent_ok(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+
+	return jaldb_mark_sent_ok_common(ctx, ctx->log_sys_cont, sid, remote_host);
+}
+
+enum jaldb_status jaldb_mark_sent_ok_common(
+	jaldb_context *ctx,
+	XmlContainer *cont,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx || !ctx->manager || !cont || !sid || !remote_host) {
+		return JALDB_E_INVAL;
+	}
+	string sent_key(JALDB_REMOTE_META_PREFIX);
+	sent_key += remote_host;
+	sent_key += JALDB_SENT_META_SUFFIX;
+	XmlUpdateContext uc = ctx->manager->createUpdateContext();
+	while (true) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			XmlDocument sys_doc;
+			try {
+				sys_doc = cont->getDocument(txn, sid, DB_RMW | DB_READ_COMMITTED);
+			} catch (XmlException &e) {
+				if (e.getExceptionCode() == XmlException::DOCUMENT_NOT_FOUND) {
+					txn.abort();
+					return JALDB_E_NOT_FOUND;
+				}
+				// re-throw e, it will get caught by the outer
+				// try/catch block.
+				throw(e);
+			}
+			sys_doc.setMetaData(JALDB_NS, sent_key, true);
+			cont->updateDocument(txn, sys_doc, uc);
+			txn.commit();
+			return JALDB_OK;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+	return JALDB_OK;
+}
+
 enum jaldb_status jaldb_mark_journal_synced(
 	jaldb_context *ctx,
 	const char *sid,
