@@ -40,6 +40,7 @@ extern "C" {
 }
 
 #include <db.h>
+#include <dbxml/DbXml.hpp>
 #include <dirent.h>
 #include <fcntl.h>
 #include <string.h>
@@ -3440,4 +3441,148 @@ extern "C" void test_jaldb_next_journal_record_returns_corrupted_when_no_journal
 	assert_true(fd == -1);
 	assert_true(fd_sz == 0);
 	free(path);
+}
+
+extern "C" void test_jaldb_update_sync_works()
+{
+	XmlManager mgr = *(context->manager);
+	XmlContainer cont = mgr.createContainer("update_sync_test");
+	XmlDocument doc;
+	XmlUpdateContext uc = mgr.createUpdateContext();
+
+	string sync_id(JALDB_REMOTE_META_PREFIX REMOTE_HOST JALDB_SYNC_META_SUFFIX);
+	string sent_id(JALDB_REMOTE_META_PREFIX REMOTE_HOST JALDB_SENT_META_SUFFIX);
+
+	cont.putDocument(JALDB_SERIAL_ID_DOC_NAME, "<doc>serial_id</doc>", uc);
+
+	cont.putDocument("1", "<doc>1</doc>", uc);
+	doc = cont.getDocument("1");
+	doc.setMetaData(JALDB_NS, sent_id, false);
+	doc.setMetaData(JALDB_NS, sync_id, false);
+	cont.updateDocument(doc, uc);
+
+	cont.putDocument("2", "<doc>2</doc>", uc);
+	doc = cont.getDocument("2");
+	doc.setMetaData(JALDB_NS, sent_id, false);
+	doc.setMetaData(JALDB_NS, sync_id, true);
+	cont.updateDocument(doc, uc);
+
+	cont.putDocument("A", "<doc>A</doc>", uc);
+	doc = cont.getDocument("A");
+	doc.setMetaData(JALDB_NS, sent_id, true);
+	doc.setMetaData(JALDB_NS, sync_id, false);
+	cont.updateDocument(doc, uc);
+
+	cont.putDocument("Z", "<doc>Z</doc>", uc);
+	doc = cont.getDocument("Z");
+	doc.setMetaData(JALDB_NS, sent_id, true);
+	doc.setMetaData(JALDB_NS, sync_id, true);
+	cont.updateDocument(doc, uc);
+
+	cont.putDocument("a", "<doc>a</doc>", uc);
+	doc = cont.getDocument("a");
+	doc.setMetaData(JALDB_NS, sent_id, true);
+	cont.updateDocument(doc, uc);
+
+	cont.putDocument("z", "<doc>z</doc>", uc);
+	doc = cont.getDocument("z");
+	doc.setMetaData(JALDB_NS, sync_id, false);
+	cont.updateDocument(doc, uc);
+
+	cont.putDocument("10", "<doc>10</doc>", uc);
+
+	cont.putDocument("12", "<doc>12</doc>", uc);
+
+	cont.putDocument("13", "<doc>13</doc>", uc);
+	doc = cont.getDocument("13");
+	doc.setMetaData(JALDB_NS, sent_id, true);
+	cont.updateDocument(doc, uc);
+
+	XmlValue v;
+	enum jaldb_status ret = jaldb_mark_synced_common(context, &cont, "12", REMOTE_HOST);
+	assert_equals(JALDB_OK, ret);
+
+	// never sent correctly, so don't mark synced
+	doc = cont.getDocument("1");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(v.isBoolean());
+	assert_false(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(v.isBoolean());
+	assert_false(v.asBoolean());
+
+	// not sent correctly, but already synced (shouldn't happen, but shouldn't modify either).
+	doc = cont.getDocument("2");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_false(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(v.asBoolean());
+
+	// sent correctly, never synced, should now be marked as 'synced'
+	doc = cont.getDocument("A");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(v.asBoolean());
+	assert_true(v = doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(v.asBoolean());
+
+	// sent & synced, shouldn't be changed
+	doc = cont.getDocument("Z");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(v.asBoolean());
+
+	// sent correctly, missing sync, should now be marked as 'synced'
+	doc = cont.getDocument("a");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(v.asBoolean());
+
+	// missing sent, marked as not synced, should remain not 'synced'
+	doc = cont.getDocument("z");
+	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_false(v.asBoolean());
+
+	// missing sent, missing sync, no change.
+	doc = cont.getDocument("10");
+	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_false(doc.getMetaData(JALDB_NS, sync_id, v));
+
+	// missing sent, missing sync, no change.
+	doc = cont.getDocument("12");
+	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_false(doc.getMetaData(JALDB_NS, sync_id, v));
+
+	// serial ID is after the one we were looking for, so shouldn't 
+	// be modified
+	doc = cont.getDocument("13");
+	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_true(v.asBoolean());
+	assert_false(doc.getMetaData(JALDB_NS, sync_id, v));
+}
+
+extern "C" void test_jaldb_update_sync_returns_error_on_bad_input()
+{
+	enum jaldb_status ret;
+	XmlContainer *cont = (XmlContainer*) 0xbadf00d;
+
+	ret = jaldb_mark_synced_common(NULL, cont, "12", REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	XmlManager *mgr = context->manager;
+	context->manager = NULL;
+	ret = jaldb_mark_synced_common(context, cont, "12", REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+	context->manager = mgr;
+
+	ret = jaldb_mark_synced_common(context, NULL, "12", REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_mark_synced_common(context, cont, NULL, REMOTE_HOST);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_mark_synced_common(context, cont, "12", NULL);
+	assert_equals(JALDB_E_INVAL, ret);
 }
