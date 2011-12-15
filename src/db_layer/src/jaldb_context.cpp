@@ -1020,6 +1020,99 @@ enum jaldb_status jaldb_lookup_audit_record(
 	return JALDB_OK;
 }
 
+enum jaldb_status jaldb_mark_journal_synced(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+	return jaldb_mark_synced_common(ctx, ctx->journal_sys_cont, sid, remote_host);
+}
+
+enum jaldb_status jaldb_mark_audit_synced(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+	return jaldb_mark_synced_common(ctx, ctx->audit_sys_cont, sid, remote_host);
+}
+
+enum jaldb_status jaldb_mark_log_synced(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+	return jaldb_mark_synced_common(ctx, ctx->log_sys_cont, sid, remote_host);
+}
+
+enum jaldb_status jaldb_mark_synced_common(
+	jaldb_context *ctx,
+	XmlContainer *cont,
+	const char *sid,
+	const char *remote_host)
+{
+	if (!ctx || !ctx->manager || !cont || !sid || !remote_host) {
+		return JALDB_E_INVAL;
+	}
+	string synced_key(JALDB_QUERY_NS JALDB_REMOTE_META_PREFIX);
+	synced_key += remote_host;
+	synced_key += JALDB_SYNC_META_SUFFIX;
+
+	string synced_key_no_ns(JALDB_REMOTE_META_PREFIX);
+	synced_key_no_ns += remote_host;
+	synced_key_no_ns += JALDB_SYNC_META_SUFFIX;
+
+	string sent_key(JALDB_QUERY_NS JALDB_REMOTE_META_PREFIX);
+	sent_key += remote_host;
+	sent_key += JALDB_SENT_META_SUFFIX;
+
+	XmlQueryContext qctx = ctx->manager->createQueryContext();
+	qctx.setDefaultCollection(cont->getName());
+	qctx.setVariableValue(JALDB_SYNC_META_VAR, synced_key);
+	qctx.setVariableValue(JALDB_SENT_META_VAR, sent_key);
+	qctx.setVariableValue(JALDB_SYNC_POINT_VAR, sid);
+
+	XmlUpdateContext uc = ctx->manager->createUpdateContext();
+
+	while (true) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		XmlTransaction qtxn = txn.createChild(DB_READ_COMMITTED);
+		try {
+			XmlQueryExpression qe = ctx->manager->prepare(txn, JALDB_FIND_UNCONFED_BY_HOST_QUERY, qctx);
+			XmlResults res = qe.execute(qtxn, qctx, DB_RMW | DBXML_DOCUMENT_PROJECTION | DBXML_NO_AUTO_COMMIT |
+					DB_READ_COMMITTED | DBXML_LAZY_DOCS);
+			XmlDocument doc;
+			while(res.next(doc)) {
+				doc = cont->getDocument(txn, doc.getName(),
+						DBXML_LAZY_DOCS | DB_READ_COMMITTED | DB_RMW);
+				doc.setMetaData(JALDB_NS, synced_key_no_ns, true);
+				cont->updateDocument(txn, doc, uc);
+			}
+			res = XmlResults();
+			qtxn.commit();
+			txn.commit();
+			break;
+		} catch (XmlException &e) {
+			qtxn.abort();
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+	return JALDB_OK;
+}
+
 enum jaldb_status jaldb_lookup_log_record(
 	jaldb_context *ctx,
 	const char *sid,

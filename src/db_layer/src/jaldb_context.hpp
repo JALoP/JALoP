@@ -456,4 +456,73 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	const std::string &path,
 	const std::string &sid);
 
+/**
+ * Helper function to mark records as 'synced'
+ * All records up to and including \p sid
+ * that were successfully delivered to \p remote_host are marked as 'synced'.
+ *
+ * @param[in] ctx The context
+ * @param[in] cont The container to process
+ * @param[in] sid The sid to look for
+ * @param[in] remote_host The machine that is marking the file as synced
+ *
+ * @return JALDB_OK, or JALDB_E_INVAL
+ */
+enum jaldb_status jaldb_mark_synced_common(
+	jaldb_context *ctx,
+	DbXml::XmlContainer *cont,
+	const char *sid,
+	const char *remote_host);
+
+/**
+ * Function that marks journal records as 'synced'.
+ * All records up to and including \p sid
+ * that were successfully delivered to \p remote_host are marked as 'synced'.
+ *
+ * @param[in] ctx The context
+ * @param[in] cont The container to process
+ * @param[in] sid The sid to look for
+ * @param[in] remote_host The machine that is marking the file as synced
+ *
+ * @return JALDB_OK, or JALDB_E_INVAL
+ */
+enum jaldb_status jaldb_mark_journal_synced(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host);
+
+
+/**
+ * Function that marks audit records as 'synced'.
+ * All records up to and including \p sid
+ * that were successfully delivered to \p remote_host are marked as 'synced'.
+ *
+ * @param[in] ctx The context
+ * @param[in] sid The sid to look for
+ * @param[in] remote_host The machine that is marking the file as synced
+ *
+ * @return JALDB_OK, or JALDB_E_INVAL
+ */
+enum jaldb_status jaldb_mark_audit_synced(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host);
+
+
+/**
+ * Function that marks log records as 'synced'.
+ * All records up to and including \p sid
+ * that were successfully delivered to \p remote_host are marked as 'synced'.
+ *
+ * @param[in] ctx The context
+ * @param[in] sid The sid to look for
+ * @param[in] remote_host The machine that is marking the file as synced
+ *
+ * @return JALDB_OK, or JALDB_E_INVAL
+ */
+enum jaldb_status jaldb_mark_log_synced(
+	jaldb_context *ctx,
+	const char *sid,
+	const char *remote_host);
+
 #endif // _JALDB_CONTEXT_HPP_

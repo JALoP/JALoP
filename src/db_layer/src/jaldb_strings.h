@@ -67,4 +67,39 @@
 "    return $d\n" \
 "return subsequence($no_hidden_docs, 1, 1)\n" \
 
+#define JALDB_REMOTE_META_PREFIX "_.."
+#define JALDB_QUERY_NS "jal:"
+#define JALDB_SYNC_META_SUFFIX "..sync"
+#define JALDB_SENT_META_SUFFIX "..sent"
+
+#define JALDB_SYNC_POINT_VAR "sync_point"
+#define JALDB_SYNC_META_VAR "sync_meta_name"
+#define JALDB_SENT_META_VAR "sent_meta_name"
+
+// This query is for a 'sync' message. the idea is to find all records that
+// where successfully sent to a given remote (i.e. the local side received a
+// digest message and the digests matched), but have not yet received a 'sync'
+// message for.
+// There are ?? variables that must be set:
+// sent_meta : This is the string used to mark a record as sent to a particular
+//             remote.
+// sync_meta : This is the string used to mark a record as 'synced' by a
+//             particular remote (i.e. we received a 'sync' message for the
+//             remote for this record.
+// sync_point : This is the serial ID from a 'sync' message. All records up to
+//              and including the one with serial ID 'sync_point' are marked
+//              as synced.
+#define JALDB_FIND_UNCONFED_BY_HOST_QUERY \
+"declare namespace jal='" JALDB_NS "';\n" \
+"declare function local:sid-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
+"    if (fn:string-length($a) lt fn:string-length($b)) then -1\n" \
+"    else if (fn:string-length($b) lt fn:string-length($a)) then 1\n" \
+"    else (fn:compare ($a, $b))\n" \
+"}; \n" \
+"for $d in collection()\n" \
+"where local:sid-cmp($" JALDB_SYNC_POINT_VAR ", $d/dbxml:metadata('dbxml:name')) ge 0 and \n"\
+"    $d/dbxml:metadata($" JALDB_SENT_META_VAR ") and \n" \
+"    fn:not($d/dbxml:metadata($" JALDB_SYNC_META_VAR "))\n" \
+"return $d\n"
+
 #endif // _JALDB_STRINGS_H_
