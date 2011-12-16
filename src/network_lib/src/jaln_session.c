@@ -115,6 +115,26 @@ void jaln_session_set_errored(jaln_session *sess)
 	vortex_mutex_unlock(&sess->lock);
 }
 
+void jaln_session_set_dgst_timeout(jaln_session *sess, long timeout)
+{
+	if (!sess) {
+		return;
+	}
+	vortex_mutex_lock(&sess->lock);
+	sess->dgst_timeout = timeout;
+	vortex_mutex_unlock(&sess->lock);
+}
+
+void jaln_session_set_dgst_max(jaln_session *sess, int max)
+{
+	if (!sess) {
+		return;
+	}
+	vortex_mutex_lock(&sess->lock);
+	sess->dgst_list_max = max;
+	vortex_mutex_unlock(&sess->lock);
+}
+
 void jaln_session_destroy(jaln_session **psession) {
 	if (!psession || !*psession) {
 		return;

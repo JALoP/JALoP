@@ -223,6 +223,20 @@ void jaln_session_set_errored_no_lock(jaln_session *sess);
 void jaln_session_set_errored(jaln_session *sess);
 
 /**
+ * Set the digest timout
+ * @param[in] sess The jaln_session to set the timeout of
+ * @param[in] timeout The value to set the digest timeout to
+ */
+void jaln_session_set_dgst_timeout(jaln_session *sess, long timeout);
+
+/**
+ * Set the digest max
+ * @param[in] sess The jaln_session to set the max digest entries of
+ * @param[in] max The value to set the max digest entries to
+ */
+void jaln_session_set_dgst_max(jaln_session *sess, int max);
+
+/**
  * Callback that must get notified with vortex for when a channel related to a
  * particular jaln_session gets closed. If the channel closed was the 'record'
  * (main) channel, then this will try to shutdown the other channel.
