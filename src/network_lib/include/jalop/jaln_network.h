@@ -8,6 +8,8 @@
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
  *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
