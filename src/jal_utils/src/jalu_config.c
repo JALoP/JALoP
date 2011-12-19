@@ -31,7 +31,7 @@
 #include <string.h>
 #include "jalu_config.h"
 
-int jal_config_lookup_string(const config_setting_t *setting,
+int jalu_config_lookup_string(const config_setting_t *setting,
 	const char *name, char **field, int required) {
 	if (!setting || !name || !field || *field) {
 		//library error, should never happen

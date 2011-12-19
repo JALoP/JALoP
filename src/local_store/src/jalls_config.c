@@ -73,17 +73,17 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 
 	config_setting_t *root = config_root_setting(&jalls_config);
 
-	ret = jal_config_lookup_string(root, JALLS_CFG_PRIVATE_KEY_FILE, private_key_file, JALU_CFG_REQUIRED);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_PRIVATE_KEY_FILE, private_key_file, JALU_CFG_REQUIRED);
 	if (-1 == ret) {
 		goto err_out;
 	}
 
-	ret = jal_config_lookup_string(root, JALLS_CFG_PUBLIC_CERT_FILE, public_cert_file, JALU_CFG_OPTIONAL);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_PUBLIC_CERT_FILE, public_cert_file, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
 	}
 
-	ret = jal_config_lookup_string(root, JALLS_CFG_SYSTEM_UUID, system_uuid, JALU_CFG_REQUIRED);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_SYSTEM_UUID, system_uuid, JALU_CFG_REQUIRED);
 	if (-1 == ret) {
 		goto err_out;
 	}
@@ -95,12 +95,12 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		goto err_out;
 	}
 
-	ret = jal_config_lookup_string(root, JALLS_CFG_HOSTNAME, hostname, JALU_CFG_OPTIONAL);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_HOSTNAME, hostname, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
 	}
 
-	ret = jal_config_lookup_string(root, JALLS_CFG_SCHEMAS_ROOT, schemas_root, JALU_CFG_OPTIONAL);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_SCHEMAS_ROOT, schemas_root, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
 	}
@@ -108,12 +108,12 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		*schemas_root = strdup(SCHEMAS_ROOT);
 	}
 
-	ret = jal_config_lookup_string(root, JALLS_CFG_DB_ROOT, db_root, JALU_CFG_OPTIONAL);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_DB_ROOT, db_root, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
 	}
 
-	ret = jal_config_lookup_string(root, JALLS_CFG_SOCKET, socket, JALU_CFG_OPTIONAL);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_SOCKET, socket, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
 	}

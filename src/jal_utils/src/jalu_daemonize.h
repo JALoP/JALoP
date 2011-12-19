@@ -29,15 +29,19 @@
 #ifndef _JALU_DAEMONIZE_H_
 #define _JALU_DAEMONIZE_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * daemonizes the process.
  *
  * @return 0 on success, -1 on failure.
  */
-int daemonize();
+int jalu_daemonize();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _JALU_DAEMONIZE_H_

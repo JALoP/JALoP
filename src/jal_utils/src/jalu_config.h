@@ -27,8 +27,8 @@
  * limitations under the License.
  */
 
-#ifndef _LUTILS_UTILS_H_
-#define _LUTILS_UTILS_H_
+#ifndef _JALU_CONFIG_H_
+#define _JALU_CONFIG_H_
 
 #include <libconfig.h>
 #include <string.h>
@@ -36,6 +36,9 @@
 #define JALU_CFG_REQUIRED 1
 #define JALU_CFG_OPTIONAL 0
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Wraps config_lookup_string() from libconfig for better error checking,
@@ -52,7 +55,11 @@
  * remain unchanged.
  * @return 0 on success, -1 on failure
  */
-int jal_config_lookup_string(const config_setting_t *setting,
+int jalu_config_lookup_string(const config_setting_t *setting,
 	const char *name, char **field, int required);
 
-#endif // _LUTILS_UTILS_H_
+#ifdef __cplusplus
+}
+#endif
+
+#endif // _JALU_CONFIG_H_

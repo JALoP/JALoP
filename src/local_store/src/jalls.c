@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (!debug) {
-		err = daemonize();
+		err = jalu_daemonize();
 		if (err < 0) {
 			fprintf(stderr, "failed to create daemon");
 			goto err_out;
