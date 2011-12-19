@@ -193,6 +193,14 @@ axl_bool jaln_session_on_close_channel(int channel_num,
 		vortex_mutex_unlock(&sess->lock);
 		return axl_true;
 	}
+	if (!sess->rec_chan && !sess->dgst_chan) {
+		jaln_context *ctx = sess->jaln_ctx;
+		if (ctx && ctx->conn_callbacks) {
+			vortex_mutex_lock(&ctx->lock);
+			ctx->conn_callbacks->on_channel_close(sess->ch_info, ctx->user_data);
+			vortex_mutex_unlock(&ctx->lock);
+		}
+	}
 	vortex_mutex_unlock(&sess->lock);
 	jaln_session_unref(sess);
 	return axl_true;
@@ -227,6 +235,14 @@ void jaln_session_notify_close(
 		vortex_mutex_unlock(&sess->lock);
 		return;
 	}
+	if (!sess->rec_chan && !sess->dgst_chan) {
+		jaln_context *ctx = sess->jaln_ctx;
+		if (ctx && ctx->conn_callbacks) {
+			vortex_mutex_lock(&ctx->lock);
+			ctx->conn_callbacks->on_channel_close(sess->ch_info, ctx->user_data);
+			vortex_mutex_unlock(&ctx->lock);
+		}
+	}
 	vortex_mutex_unlock(&sess->lock);
 	jaln_session_unref(sess);
 }
@@ -251,6 +267,14 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 	} else {
 		vortex_mutex_unlock(&sess->lock);
 		return;
+	}
+	if (!sess->rec_chan && !sess->dgst_chan) {
+		jaln_context *ctx = sess->jaln_ctx;
+		if (ctx && ctx->conn_callbacks) {
+			vortex_mutex_lock(&ctx->lock);
+			ctx->conn_callbacks->on_channel_close(sess->ch_info, ctx->user_data);
+			vortex_mutex_unlock(&ctx->lock);
+		}
 	}
 	vortex_mutex_unlock(&sess->lock);
 	jaln_session_unref(sess);

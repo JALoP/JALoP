@@ -172,6 +172,16 @@ void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
 		void *user_data);
 
 /**
+ * Vortex handler for when publisher's connection closes
+ * This calls the user on_connection_close callback
+ *
+ * @param[in] conn The vortex connection
+ * @param[in] data This is expected to be the jaln_connection
+ */
+void jaln_publisher_on_connection_close(VortexConnection *conn,
+					axlPointer data);
+
+/**
  * Callback registered with vortex to finish configuring a jaln_session for use
  * as a publisher. The Vortex library will call this once the new channel is
  * created, or if the remote peer rejects the creation of the channel.

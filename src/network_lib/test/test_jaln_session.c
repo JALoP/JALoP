@@ -99,6 +99,12 @@ void fake_vortex_channel_set_received_handler(__attribute__((unused)) VortexChan
 	return;
 }
 
+void fake_on_channel_close(__attribute__((unused)) const struct jaln_channel_info *ch_info,
+			__attribute__((unused)) void *user_data)
+{
+	return;
+}
+
 void setup()
 {
 	sess = jaln_session_create();
@@ -446,6 +452,14 @@ void test_notify_close_does_nothing_with_bad_channel()
 
 void test_on_close_channel_for_rec_channel_unrefs_session_and_clears_rec_info()
 {
+	jaln_context *ctx = jaln_context_create();
+	struct jaln_connection_callbacks *conn_cbs = jaln_connection_callbacks_create();
+
+	conn_cbs->on_channel_close = fake_on_channel_close;
+
+	ctx->conn_callbacks = conn_cbs;
+	sess->jaln_ctx = ctx;
+
 	jaln_session_ref(sess);
 
 	sess->rec_chan = (VortexChannel*) 0xbadf00d;
@@ -465,6 +479,14 @@ void test_on_close_channel_for_rec_channel_unrefs_session_and_clears_rec_info()
 
 void test_on_close_channel_for_dgst_channel_unrefs_session_and_clears_rec_info()
 {
+	jaln_context *ctx = jaln_context_create();
+	struct jaln_connection_callbacks *conn_cbs = jaln_connection_callbacks_create();
+
+	conn_cbs->on_channel_close = fake_on_channel_close;
+
+	ctx->conn_callbacks = conn_cbs;
+	sess->jaln_ctx = ctx;
+
 	jaln_session_ref(sess);
 
 	sess->rec_chan = (VortexChannel*) 0xbadf00d;

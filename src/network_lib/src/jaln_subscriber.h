@@ -47,6 +47,16 @@ void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *co
 		VortexFrame *frame, axlPointer user_data);
 
 /**
+ * Vortex handler for when subsciber's connection closes
+ * This calls the user on_connection_close callback
+ *
+ * @param[in] conn The vortex connection
+ * @param[in] data This is expected to be the jaln_connection
+ */
+void jaln_subscriber_on_connection_close(VortexConnection *conn,
+					axlPointer data);
+
+/**
  * Frame handler for a subscriber to deal with the response to an 'init'
  * message.
  *

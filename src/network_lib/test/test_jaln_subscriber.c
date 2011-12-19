@@ -73,6 +73,13 @@ void fake_vortex_channel_set_received_handler(
 	return;
 }
 
+void fake_vortex_connection_set_on_close_full(__attribute__((unused)) VortexConnection *conn,
+					__attribute__((unused)) VortexConnectionOnCloseFull on_close,
+					__attribute__((unused)) axlPointer data)
+{
+	return;
+}
+
 void fake_jaln_sub_state_reset(
 	__attribute__((unused)) struct jaln_session *session)
 {
@@ -519,9 +526,11 @@ void test_jaln_subscribe_fails_when_already_connected()
 
 void test_jaln_subscribe_success_for_all_types()
 {
+	replace_function(vortex_connection_set_on_close_full, fake_vortex_connection_set_on_close_full);
 	struct jaln_connection *conn = NULL;
 	
 	conn = jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, NULL);
 	assert_not_equals((void *) NULL, conn);
 	jaln_connection_destroy(&conn);
+	restore_function(vortex_connection_set_on_close_full);
 }

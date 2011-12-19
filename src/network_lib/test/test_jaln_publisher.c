@@ -105,6 +105,13 @@ void fake_vortex_channel_set_received_handler(
 	return;
 }
 
+void fake_vortex_connection_set_on_close_full(__attribute__((unused)) VortexConnection *conn,
+					__attribute__((unused)) VortexConnectionOnCloseFull on_close,
+					__attribute__((unused)) axlPointer data)
+{
+	return;
+}
+
 axl_bool mock_jaln_check_content_type_and_txfr_encoding_are_valid_failure(__attribute__((unused)) VortexFrame *frame)
 {
 	return axl_false;
@@ -612,9 +619,11 @@ void test_publish_fails_when_already_connected()
 
 void test_publish_success_for_all_types()
 {
+	replace_function(vortex_connection_set_on_close_full, fake_vortex_connection_set_on_close_full);
 	struct jaln_connection *conn = NULL;
 
 	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL, NULL);
 	assert_not_equals((void*) NULL, conn);
 	jaln_connection_destroy(&conn);
+	restore_function(vortex_connection_set_on_close_full);
 }

@@ -81,6 +81,22 @@ struct jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const cha
 	return session;
 }
 
+void jaln_subscriber_on_connection_close(__attribute__((unused)) VortexConnection *conn,
+					axlPointer data)
+{
+	struct jaln_connection *jal_conn = (struct jaln_connection *) data;
+
+	if (!jal_conn || !jal_conn->jaln_ctx || !jal_conn->jaln_ctx->conn_callbacks) {
+		return;
+	}
+
+	jaln_context *ctx = jal_conn->jaln_ctx;
+
+	vortex_mutex_lock(&ctx->lock);
+	ctx->conn_callbacks->on_connection_close(jal_conn, ctx->user_data);
+	vortex_mutex_unlock(&ctx->lock);
+}
+
 struct jaln_connection *jaln_subscribe(
 		jaln_context *ctx,
 		const char *host,
@@ -123,6 +139,8 @@ struct jaln_connection *jaln_subscribe(
 	struct jaln_connection *jconn = jaln_connection_create();
 	jconn->jaln_ctx = ctx;
 	jconn->v_conn = v_conn;
+
+	vortex_connection_set_on_close_full(v_conn, jaln_subscriber_on_connection_close, jconn);
 
 	if (data_classes & JALN_RTYPE_JOURNAL) {
 		struct jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_JOURNAL);
