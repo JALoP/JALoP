@@ -60,6 +60,344 @@ struct jaldb_context_t {
 };
 
 /**
+* Store a confirmed serial_id in the journal temp container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_store_confed_journal_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out);
+
+/**
+* Store a confirmed serial_id in the audit temp container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_store_confed_audit_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out);
+
+/**
+* Store a confirmed serial_id in the log temp container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_store_confed_log_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out);
+
+/**
+* Store a confirmed serial_id in the temp container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] cont The container to store the confirmed \p sid in.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_store_confed_sid_tmp_helper(
+		jaldb_context *ctx,
+		DbXml::XmlContainer *cont,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out);
+
+/**
+* Retrieve a confirmed serial_id from the journal temp container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_get_last_confed_journal_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		std::string &sid,
+		int *db_err_out);
+
+/**
+* Retrieve a confirmed serial_id from the audit temp container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		std::string &sid,
+		int *db_err_out);
+
+/**
+* Retrieve a confirmed serial_id from the log temp container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		std::string &sid,
+		int *db_err_out);
+
+/**
+* Retrieve a confirmed serial_id from the container.
+* @param[in] ctx The jaldb_context to use.
+* @param[in] cont The database container to retrieve the \p sid from.
+* @param[in] remote_host The host that we received the record from.
+* @param[in] sid The serial ID of the confirmed record
+* @param[out] db_err_out A flag indicating a specific DB error.
+* @return
+*  - JALDB_OK on success
+*  - JALDB_E_INVAL if one of the parameters was invalid.
+*  - JALDB_E_READONLY if the database is read-only.
+*  - JALDB_E_NOT_FOUND if the record was not found.
+*  - JALDB_E_SID if their already exists a record with this \p sid.
+* @throw XmlException
+*/
+enum jaldb_status jaldb_get_last_confed_sid_tmp_helper(
+		jaldb_context *ctx,
+		DbXml::XmlContainer *cont,
+		const std::string &remote_host,
+		std::string &sid,
+		int *db_err_out);
+
+/**
+ * Transfer audit records from the temporary db container to the
+ * permanent container.
+ * @param[in] ctx The jaldb_context to use
+ * @param[in] source The host that we received the record from
+ * @param[in] sid The serial ID of the record to be transferred
+ * @param[out] next_sid The new serial ID of the record transferred to
+ * the permanent container.
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters was invalid.
+ *  - JALDB_E_READONLY if the database is read-only.
+ *  - JALDB_E_NOT_FOUND if the record was not found.
+ *  - JALDB_E_SID if their already exists a record with this \p sid.
+ * @throw XmlException
+ */
+enum jaldb_status jaldb_xfer_audit(
+	jaldb_context *ctx,
+	std::string &source,
+	const std::string &sid,
+	std::string &next_sid);
+
+/**
+ * Transfer log records from the temporary db container to the
+ * permanent container.
+ * @param[in] ctx The jaldb_context to use
+ * @param[in] source The host that we received the record from
+ * @param[in] sid The serial ID of the record to be transferred
+ * @param[out] next_sid The new serial ID of the record transferred to
+ * the permanent container.
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters was invalid.
+ *  - JALDB_E_READONLY if the database is read-only.
+ *  - JALDB_E_NOT_FOUND if the record was not found.
+ *  - JALDB_E_SID if their already exists a record with this \p sid.
+ *  - JALDB_E_CORRUPTED if the record did not contain 
+ *    application or log data.
+ *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
+ *  for more info.
+ * @throw XmlException
+ */
+enum jaldb_status jaldb_xfer_log(
+	jaldb_context *ctx,
+	std::string &source,
+	const std::string &sid,
+	std::string &next_sid);
+
+/**
+ * Transfer journal records from the temporary db container to the 
+ * permanent container.
+ * @param[in] ctx The jaldb_context to use
+ * @param[in] source The host that we received the record from
+ * @param[in] sid The serial ID of the record to be transferred
+ * @param[out] next_sid The new serial ID of the record transferred to
+ * the permanent container.
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters was invalid.
+ *  - JALDB_E_READONLY if the database is read-only.
+ *  - JALDB_E_NOT_FOUND if the record was not found.
+ *  - JALDB_E_SID if their already exists a record with this \p sid.
+ * @throw XmlException
+ */
+enum jaldb_status jaldb_xfer_journal(
+	jaldb_context *ctx,
+	const std::string &source,
+	const std::string &sid,
+	std::string &next_sid);
+
+/**
+ * Delete log records from the application and system containers.
+ * @param[in] txn The transaction to use.
+ * @param[in] uc The update context to use.
+ * @param[in] sys_cont The system metadata container.
+ * @param[in] app_cont The application metadata container.
+ * @param[in] log_db The database holding the log payload.
+ * @param[in] sid The serial ID of the record to be deleted.
+ * @param[in] sys_doc The system metadata document to be deleted.
+ * @param[in] app_doc The application metadata document to be deleted.
+ * @param[out] db_err_out The error code (if any) returned by Berkeley DB
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters was invalid.
+ *  - JALDB_E_NOT_FOUND if the document with \p sid was not found.
+ *  - JALDB_E_CORRUPTED if the record did not contain 
+ *    application or log data.
+ *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
+ *  for more info.
+ * @throw XmlException
+ */
+enum jaldb_status jaldb_delete_log(
+	DbXml::XmlTransaction &txn, 
+	DbXml::XmlUpdateContext &uc,
+	DbXml::XmlContainer &sys_cont,
+	DbXml::XmlContainer &app_cont,
+	DB *log_db,
+	const std::string &sid,
+	DbXml::XmlDocument *sys_doc,
+	DbXml::XmlDocument *app_doc,
+	int *db_err_out);
+
+/**
+ * Save log records to the application and system containers.
+ * @param[in] txn The transaction to use.
+ * @param[in] uc The update context to use.
+ * @param[in] sys_cont The system metadata container.
+ * @param[in] app_cont The application metadata container.
+ * @param[in] log_db The database holding the log payload.
+ * @param[in] sid The serial ID of the record to be saved.
+ * @param[in] sys_doc The system metadata document to be saved.
+ * @param[in] app_doc The application metadata document to be saved.
+ * @param[in] log_buf The log payload.
+ * @param[in] log_len The length of the data referenced by \p log_buf.
+ * @param[out] db_err_out The error code (if any) returned by Berkeley DB
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters was invalid.
+ *  - JALDB_E_SID if a record with this \p sid already exists.
+ *  - JALDB_E_CORRUPTED if the record did not contain 
+ *    application or log data.
+ *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
+ *  for more info.
+ * @throw XmlException
+ */
+enum jaldb_status jaldb_save_log(
+	DbXml::XmlTransaction &txn, 
+	DbXml::XmlUpdateContext &uc,
+	DbXml::XmlContainer &sys_cont,
+	DbXml::XmlContainer &app_cont,
+	DB *log_db,
+	const std::string &sid,
+	DbXml::XmlDocument *sys_doc,
+	DbXml::XmlDocument *app_doc,
+	uint8_t *log_buf,
+	size_t  log_len,
+	int *db_err_out);
+
+/**
+ * Retrieve log records to the application and system containers.
+ * @param[in] txn The transaction to use.
+ * @param[in] uc The update context to use.
+ * @param[in] sys_cont The system metadata container.
+ * @param[in] app_cont The application metadata container.
+ * @param[in] log_db The database holding the log payload.
+ * @param[in] sid The serial ID of the record to be retrieved.
+ * @param[out] sys_doc The system metadata document to be retrieved.
+ * @param[out] app_doc The application metadata document to be retrieved.
+ * @param[out] log_buf The log payload \p log_buf.
+ * @param[out] log_len The length of the data referenced by \p log_buf.
+ * @param[out] db_err_out The error code (if any) returned by Berkeley DB
+ * @return
+ *  - JALDB_OK on success
+ *  - JALDB_E_INVAL if one of the parameters was invalid.
+ *  - JALDB_E_NOT_FOUND if a document was not found with \p sid.
+ *  - JALDB_E_CORRUPTED if the record did not contain 
+ *    application or log data.
+ *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
+ *  for more info.
+ * @throw XmlException
+ */
+enum jaldb_status jaldb_retrieve_log(
+	DbXml::XmlTransaction &txn, 
+	DbXml::XmlUpdateContext &uc,
+	DbXml::XmlContainer &sys_cont,
+	DbXml::XmlContainer &app_cont,
+	DB *log_db,
+	const std::string &sid,
+	DbXml::XmlDocument *sys_doc,
+	DbXml::XmlDocument *app_doc,
+	uint8_t **log_buf,
+	size_t *log_len,
+	int *db_err_out);
+
+/**
  * Store the most recently confirmed journal record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for

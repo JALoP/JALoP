@@ -60,4 +60,60 @@ enum jaldb_status jaldb_put_document_as_dom(
 	const std::string &doc_name,
 	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *dom_doc);
 
+/**
+ * Retrieves an XmlDocument from the \p container matching \p doc_name.
+ *
+ * @param[in] txn An object used for transaction protection.
+ * @param[in] container The container to which to store the data.
+ * @param[in] doc_name The name to use for the document
+ * @param[out] doc The DbXml Document to associate with.
+ *
+ * @return
+ *  - JALDB_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jaldb_status jaldb_get_document(
+	DbXml::XmlTransaction &txn,
+	DbXml::XmlContainer *container,
+	const std::string &doc_name,
+	DbXml::XmlDocument *doc);
+
+/**
+ * Deletes an XmlDocument from the \p container matching \p doc_name.
+ *
+ * @param[in] txn An object used for transaction protection.
+ * @param[in] uc The update context to use
+ * @param[in] container The container to which to store the data.
+ * @param[in] doc_name The DbXml Document to associate with.
+ *
+ * @return
+ *  - JALDB_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jaldb_status jaldb_remove_document(
+	DbXml::XmlTransaction &txn,
+	DbXml::XmlUpdateContext &uc,
+	DbXml::XmlContainer &container,
+	const std::string &doc_name);
+
+/**
+ * Saves an XmlDocument to the \p container using \p doc_name as its ID.
+ *
+ * @param[in] txn An object used for transaction protection.
+ * @param[in] uc The update context to use
+ * @param[in] container The container to which to store the data.
+ * @param[in] doc The DbXml Document to associate with.
+ * @param[in] doc_name The name to use for the document
+ *
+ * @return
+ *  - JALDB_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jaldb_status jaldb_save_document(
+	DbXml::XmlTransaction &txn,
+	DbXml::XmlUpdateContext &uc,
+	DbXml::XmlContainer &container,
+	DbXml::XmlDocument &doc,
+	const std::string &doc_name);
+
 #endif // _JALDB_XML_DOC_STORAGE_HPP_

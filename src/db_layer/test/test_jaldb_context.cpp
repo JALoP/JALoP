@@ -51,6 +51,8 @@ extern "C" {
 #include <xercesc/framework/MemBufInputSource.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
+#include <dbxml/DbXml.hpp>
+#include <dbxml/XmlContainer.hpp>
 #include "jal_alloc.h"
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
@@ -74,6 +76,7 @@ using namespace std;
 #define TEST_XML_DOC "./test-input/domwriter.xml"
 #define LOG_DATA_X "Log Buffer\nLog Entry 1\n"
 #define LOG_DATA_Y "Log Buffer\nLog Entry 1\nLog Entry 2\n"
+#define PAYLOAD "SoMe_data   is here\nMoreData is Here!\n"
 
 static DOMLSParser *parser = NULL;
 static DOMDocument *audit_sys_meta_doc = NULL;
@@ -138,6 +141,69 @@ extern "C" void teardown()
 	log_app_meta_doc = NULL;
 	jaldb_context_destroy(&context);
 	XMLPlatformUtils::Terminate();
+}
+
+// Use for debugging exceptions
+extern "C" void print_xml_exception(XmlException e)
+{
+	switch (e.getExceptionCode()) {
+		case XmlException::DATABASE_ERROR:
+			printf("DATABASE_ERROR\n");
+			break;
+		case XmlException::INDEXER_PARSER_ERROR:
+			printf("INDEXER_PARSER_ERROR\n");
+			break;
+		case XmlException::UNIQUE_ERROR:
+			printf("UNIQUE_ERROR\n");
+			break;
+		case XmlException::CONTAINER_CLOSED:
+			printf("CONTAINER_CLOSED\n");
+			break;
+		case XmlException::CONTAINER_EXISTS:
+			printf("CONTAINER_EXISTS\n");
+			break;
+		case XmlException::CONTAINER_NOT_FOUND:
+			printf("CONTAINER_NOT_FOUND\n");
+			break;
+		case XmlException::CONTAINER_OPEN:
+			printf("CONTAINER_OPEN\n");
+			break;
+		case XmlException::DOCUMENT_NOT_FOUND:
+			printf("DOCUMENT_NOT_FOUND\n");
+			break;
+		case XmlException::EVENT_ERROR:
+			printf("EVENT_ERROR\n");
+			break;
+		case XmlException::INTERNAL_ERROR:
+			printf("INTERNAL_ERROR\n");
+			break;
+		case XmlException::INVALID_VALUE:
+			printf("INVALID_VALUE\n");
+			break;
+		case XmlException::LAZY_EVALUATION:
+			printf("LAZY_EVALUATION\n");
+			break;
+		case XmlException::NO_MEMORY_ERROR:
+			printf("NO_MEMORY_ERROR\n");
+			break;
+		case XmlException::NULL_POINTER:
+			printf("NULL_POINTER\n");
+			break;
+		case XmlException::OPERATION_INTERRUPTED:
+			printf("OPERATION_INTERRUPTED\n");
+			break;
+		case XmlException::OPERATION_TIMEOUT:
+			printf("OPERATION_TIMEOUT\n");
+			break;
+		case XmlException::TRANSACTION_ERROR:
+			printf("TRANSACTION_ERROR\n");
+			break;
+		case XmlException::UNKNOWN_INDEX:
+			printf("UNKNOWN_INDEX\n");
+			break;
+		default:
+			printf("UNKNOWN!\n");
+	}
 }
 
 extern "C" void test_db_destroy_does_not_crash()
@@ -3675,4 +3741,1750 @@ extern "C" void test_jaldb_mark_sent_ok_common_returns_error_on_bad_input()
 
 	ret = jaldb_mark_sent_ok_common(context, cont, "12", NULL);
 	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_delete_log_works()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	DB *log_db = context->log_dbp;
+	uint8_t *log_buf = (uint8_t *) strdup(LOG_DATA_X);
+	std::string sid_out = "test_delete_log_works";
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue true_val(true);
+
+	// Insert a dummy log record
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+	sys_doc.setName(sid_out);
+	app_doc.setName(sid_out);
+	DBT key;
+	DBT data;
+	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
+	key.data = jal_strdup(sid_out.c_str());
+	key.size = sid_out.length();
+	//key.flags = 0;
+	data.data = log_buf;
+	data.size = strlen((char *)log_buf);
+
+	try {
+		sys_cont->putDocument(txn, sys_doc, uc);
+		app_cont->putDocument(txn, app_doc, uc);
+		int db_ret = log_db->put(log_db,
+			txn.getDB_TXN(), &key, &data,
+			0);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn.abort();
+		} else {
+			ret = JALDB_OK;
+			txn.commit();
+		}
+	} catch (XmlException &e){
+		txn.abort();
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			ret = JALDB_E_NOT_FOUND;
+		}
+		else {
+			ret = JALDB_E_INVAL;
+		}
+	}
+	free(key.data);
+	assert_equals(JALDB_OK, ret);
+
+	// Retrieve sys_doc, app_doc and log
+	XmlTransaction txn2 = context->manager->createTransaction();
+	XmlDocument sys_doc1;
+	XmlDocument app_doc1;
+	DBT key1;
+	DBT data1;
+	key1.data = jal_strdup(sid_out.c_str());
+	key1.size = sid_out.length();
+	key1.flags = 0;
+	data1.flags = DB_DBT_MALLOC;
+	try {
+		sys_doc1 = sys_cont->getDocument(txn2, sid_out, 0);
+		app_doc1 = app_cont->getDocument(txn2, sid_out, 0);
+		int db_ret = log_db->get(log_db,
+			txn2.getDB_TXN(), &key1, &data1,
+			DB_READ_COMMITTED);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn2.abort();
+		} else {
+			ret = JALDB_OK;
+			txn2.commit();
+		}
+	} catch (XmlException &e){
+		txn2.abort();
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			ret = JALDB_E_NOT_FOUND;
+		}
+		else {
+			ret = JALDB_E_INVAL;
+		}
+	}
+	free(key1.data);
+	assert_equals(JALDB_OK, ret);
+
+	// Call delete using sid_out
+	XmlTransaction txn3 = context->manager->createTransaction();
+	ret = jaldb_delete_log(txn3, uc, *sys_cont, *app_cont,
+		log_db, sid_out, &sys_doc, &app_doc, &db_err_out);
+	assert_equals(JALDB_OK, ret);
+	txn3.commit();
+
+	// Verify sys_doc was deleted
+	XmlTransaction txn4 = context->manager->createTransaction();
+	XmlDocument sys_doc2;
+	XmlDocument app_doc2;
+	try {
+		sys_doc2 = sys_cont->getDocument(txn4, sid_out, 0);
+		txn4.commit();
+		ret = JALDB_E_INVAL;
+	} catch (XmlException &e){
+		txn4.abort();
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			ret = JALDB_OK;
+		}
+		else {
+			ret = JALDB_E_INVAL;
+		}
+	}
+	assert_equals(JALDB_OK, ret);
+
+	// Verify app_doc was deleted
+	XmlTransaction txn5 = context->manager->createTransaction();
+	try {
+		app_doc2 = app_cont->getDocument(txn5, sid_out, 0);
+		txn5.commit();
+		ret = JALDB_E_INVAL;
+	} catch (XmlException &e){
+		txn5.abort();
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			ret = JALDB_OK;
+		}
+		else {
+			ret = JALDB_E_INVAL;
+		}
+	}
+	assert_equals(JALDB_OK, ret);
+
+	// Verify LOG was deleted
+	XmlTransaction txn6 = context->manager->createTransaction();
+	DBT key2;
+	DBT data2;
+	memset(&key2, 0, sizeof(DBT));
+	memset(&data2, 0, sizeof(DBT));
+	key2.data = jal_strdup(sid_out.c_str());
+	key2.size = sid_out.length();
+	data2.flags = DB_DBT_MALLOC;
+	int db_ret = log_db->get(log_db,
+		txn6.getDB_TXN(), &key2, &data2,
+		DB_READ_COMMITTED);
+	if (0 != db_ret ) {
+		ret = JALDB_E_DB;
+		txn6.abort();
+	} else {
+		ret = JALDB_OK;
+		txn6.commit();
+	}
+	free(key2.data);
+	assert_equals(JALDB_E_DB, ret);
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_delete_log_fails_bad_input()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	uint8_t *log_buf = (uint8_t *) strdup(LOG_DATA_X);
+	std::string sid_out = "some_sid";
+	std::string empty_sid = "";
+	int db_err_out;
+	jaldb_status ret;
+
+	XmlTransaction txn = context->manager->createTransaction();
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		NULL, sid_out, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, sid_out, NULL, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	// No need to test if app_doc is NULL as jaldb_delete_log
+	//	checks if the sys_doc's HAS_APP_META flag is true.
+
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, sid_out, &sys_doc, &app_doc,
+		NULL);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, empty_sid, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_delete_log_fails_corrupted()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	std::string sid_out = "some_sid";
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	XmlValue val;
+
+	assert_false(sys_doc.getMetaData(JALDB_NS,
+		JALDB_HAS_APP_META, val));
+	assert_false(sys_doc.getMetaData(JALDB_NS,
+		JALDB_HAS_LOG, val));
+
+	// No HAS_APP_META and HAS_LOG
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, sid_out, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// HAS_APP_META exists but true, No HAS_LOG
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, sid_out, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// HAS_APP_META exists but false, No HAS_LOG
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false_val);
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, sid_out, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// Set HAS_APP_META and HAS_LOG to FALSE
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false_val);
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, false_val);
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, sid_out, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+}
+
+extern "C" void test_jaldb_delete_log_fails_doc_not_found()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	std::string sid = "some_sid_not_there";
+	std::string doc_name ="added_doc";
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue true_val(true);
+
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+
+	// Call delete using sid
+	ret = jaldb_delete_log(txn, uc, *sys_cont, *app_cont,
+		context->log_dbp, sid, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+
+	// Insert sys_doc
+	sys_doc.setName(doc_name);
+	sys_cont->putDocument(txn, sys_doc, uc);
+	txn.commit();
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	// Call delete, passes for sys_doc should fail for app_doc
+	ret = jaldb_delete_log(txn2, uc, *sys_cont, *app_cont,
+		context->log_dbp, doc_name, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+}
+
+extern "C" void test_jaldb_delete_log_fails_log_not_found()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	std::string doc_name ="added_doc";
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue true_val(true);
+
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+
+	// Insert sys_doc and app_doc
+	sys_doc.setName(doc_name);
+	app_doc.setName(doc_name);
+	sys_cont->putDocument(txn, sys_doc, uc);
+	app_cont->putDocument(txn, app_doc, uc);
+	txn.commit();
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	// Call delete, passes for sys_doc and app_doc
+	//	should fail for log
+	ret = jaldb_delete_log(txn2, uc, *sys_cont, *app_cont,
+		context->log_dbp, doc_name, &sys_doc, &app_doc,
+		&db_err_out);
+	assert_equals(JALDB_E_DB, ret);
+}
+
+extern "C" void test_jaldb_save_log_works()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	DB *log_db = context->log_dbp;
+	uint8_t *log_buf = (uint8_t *) strdup(LOG_DATA_X);
+	size_t log_len = strlen((char *)log_buf);
+	std::string doc_name ="test_save_log_works";
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue true_val(true);
+
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+	sys_doc.setName(doc_name);
+	app_doc.setName(doc_name);
+
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+		log_db, doc_name, &sys_doc, &app_doc,
+		log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_OK, ret);
+	txn.commit();
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	XmlDocument sys_doc2;
+	XmlDocument app_doc2;
+	DBT key2;
+	DBT data2;
+	memset(&key2, 0, sizeof(DBT));
+	memset(&data2, 0, sizeof(DBT));
+	key2.data = jal_strdup(doc_name.c_str());
+	key2.size = doc_name.length();
+	data2.flags = DB_DBT_MALLOC;
+	try {
+		sys_doc2 = sys_cont->getDocument(txn2, doc_name, 0);
+		app_doc2 = app_cont->getDocument(txn2, doc_name, 0);
+
+		int db_ret = log_db->get(log_db,
+			txn2.getDB_TXN(), &key2, &data2,
+			DB_READ_COMMITTED);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn2.abort();
+		} else {
+			ret = JALDB_OK;
+			txn2.commit();
+		}
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		txn2.abort();
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			ret = JALDB_E_INVAL;
+		}
+		else {
+			ret = JALDB_E_INVAL;
+		}
+	}
+	free(key2.data);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(sys_doc, sys_doc2);
+	assert_equals(app_doc, app_doc2);
+	assert_equals(0, strcmp((char *)log_buf, (char *)data2.data));
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_save_log_fails_bad_input()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	DB *log_db = context->log_dbp;
+	uint8_t *log_buf = (uint8_t *) strdup(LOG_DATA_X);
+	size_t log_len = strlen((char *)log_buf);
+	std::string doc_name ="";
+	int db_err_out;
+	jaldb_status ret;
+
+	// sid length = 0
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     log_db, doc_name, &sys_doc, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	doc_name = "some_sid";
+
+	// log_db is NULL
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     NULL, doc_name, &sys_doc, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	// db_err_out is NULL
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     log_db, doc_name, &sys_doc, &app_doc,
+			     log_buf, log_len, NULL);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	// sys_doc is NULL
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     log_db, doc_name, NULL, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	// No need to test app_doc is NULL as save_log looks at
+	//	the application meta of sys_doc to determine if
+	//	the app_doc should even be used.
+
+	// No need to test log_buf is NULL as save_log looks at
+	//	the application meta of sys_doc to determine if
+	//	the log data should even be used.
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_save_log_fails_corrupted()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	std::string doc_name = "some_sid";;
+	DB *log_db = context->log_dbp;
+	uint8_t *log_buf = (uint8_t *) strdup(LOG_DATA_X);
+	size_t log_len = strlen((char *)log_buf);
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	XmlValue val;
+
+	assert_false(sys_doc.getMetaData(JALDB_NS,
+		JALDB_HAS_APP_META, val));
+	assert_false(sys_doc.getMetaData(JALDB_NS,
+		JALDB_HAS_LOG, val));
+
+	// No HAS_APP_META and HAS_LOG
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     log_db, doc_name, &sys_doc, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// HAS_APP_META exists but true, No HAS_LOG
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     log_db, doc_name, &sys_doc, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// HAS_APP_META exists but false, No HAS_LOG
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false_val);
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     log_db, doc_name, &sys_doc, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// Set HAS_APP_META and HAS_LOG to FALSE
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false_val);
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, false_val);
+	ret = jaldb_save_log(txn, uc, *sys_cont, *app_cont,
+			     log_db, doc_name, &sys_doc, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_save_log_fails_internal()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc = context->manager->createDocument();
+	XmlDocument app_doc = context->manager->createDocument();
+	std::string doc_name1 = "test_duplicate_sys_doc";
+	std::string doc_name2 = "test_duplicate_app_doc";
+	std::string doc_name3 = "test_duplicate_log";
+	DB *log_db = context->log_dbp;
+	DBT key;
+	DBT data;
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	uint8_t *log_buf = (uint8_t *) strdup(LOG_DATA_X);
+	size_t log_len = strlen((char *)log_buf);
+
+	sys_doc.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+	sys_doc.setMetaData(JALDB_NS,JALDB_HAS_APP_META, false_val);
+	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
+	key.data = jal_strdup(doc_name3.c_str());
+	key.size = doc_name3.length();
+	key.flags = 0;
+	data.data = log_buf;
+	data.size = strlen((char *)log_buf);
+
+	// Force internal failure by inserting records initially
+	try {
+		sys_doc.setName(doc_name1);
+		app_doc.setName(doc_name2);
+		sys_cont->putDocument(txn, sys_doc, uc);
+		app_cont->putDocument(txn, app_doc, uc);
+		int db_ret = log_db->put(log_db,
+			txn.getDB_TXN(), &key, &data,
+			0);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn.abort();
+		} else {
+			ret = JALDB_OK;
+			txn.commit();
+		}
+	} catch (XmlException &e) {
+		txn.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	free(key.data);
+	assert_equals(JALDB_OK, ret);
+
+	// Fails on sys_doc already exists
+	XmlTransaction txn2 = context->manager->createTransaction();
+	XmlDocument sys_doc2 = context->manager->createDocument();
+	sys_doc2.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+	sys_doc2.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false_val);
+	ret = jaldb_save_log(txn2, uc, *sys_cont, *app_cont,
+			     log_db, doc_name1, &sys_doc2, &app_doc,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_SID, ret);
+
+	// Fails on app_doc already exists
+	XmlDocument app_doc2 = context->manager->createDocument();
+	sys_doc2.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	ret = jaldb_save_log(txn2, uc, *sys_cont, *app_cont,
+			     log_db, doc_name2, &sys_doc2, &app_doc2,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_SID, ret);
+
+	// Fails on log already exists
+	ret = jaldb_save_log(txn2, uc, *sys_cont, *app_cont,
+			     log_db, doc_name3, &sys_doc2, &app_doc2,
+			     log_buf, log_len, &db_err_out);
+	assert_equals(JALDB_E_DB, ret);
+	free(log_buf);
+}
+
+extern "C" void test_jaldb_retrieve_log_works()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc1 = context->manager->createDocument();
+	XmlDocument app_doc1 = context->manager->createDocument();
+	std::string doc_name = "test_duplicate_sys_doc";
+	const char *log_buffer_x = LOG_DATA_X;
+	uint8_t *log_buf = (uint8_t *)log_buffer_x;
+	size_t loglen = strlen(log_buffer_x);
+	DB *log_db = context->log_dbp;
+	DBT key1;
+	DBT data1;
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+
+	sys_doc1.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+	sys_doc1.setMetaData(JALDB_NS,JALDB_HAS_APP_META, true_val);
+	memset(&key1, 0, sizeof(DBT));
+	memset(&data1, 0, sizeof(DBT));
+	key1.data = jal_strdup(doc_name.c_str());
+	key1.size = doc_name.length();
+	data1.data = log_buf;
+	data1.size = loglen;
+
+	// Insert sys_doc, app_doc and log
+	try {
+		sys_doc1.setName(doc_name);
+		app_doc1.setName(doc_name);
+		sys_cont->putDocument(txn, sys_doc1, uc);
+		app_cont->putDocument(txn, app_doc1, uc);
+		int db_ret = log_db->put(log_db,
+			txn.getDB_TXN(), &key1, &data1,
+			DB_NOOVERWRITE);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn.abort();
+		} else {
+			ret = JALDB_OK;
+			txn.commit();
+		}
+	} catch (XmlException &e) {
+		txn.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	free(key1.data);
+	assert_equals(JALDB_OK, ret);
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	XmlDocument sys_doc2;
+	XmlDocument app_doc2;
+	uint8_t *log_buf2 = NULL;
+	size_t log_len2;
+	ret = jaldb_retrieve_log(txn2, uc, *sys_cont, *app_cont,
+				 log_db, doc_name, &sys_doc2,
+				 &app_doc2, &log_buf2, &log_len2,
+				 &db_err_out);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(sys_doc1, sys_doc2);
+	assert_equals(app_doc1, app_doc2);
+	assert_equals(strlen((char *)data1.data),
+		      strlen((char *)log_buf2));
+	assert_equals(0, strcmp((char *)data1.data,
+				(char *)log_buf2));
+	free(log_buf2);
+}
+
+extern "C" void test_jaldb_retrieve_log_fails_bad_input()
+{
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc1 = context->manager->createDocument();
+	XmlDocument app_doc1 = context->manager->createDocument();
+	std::string doc_name = "some_sid";
+	std::string empty_sid = "";
+	DB *log_db = context->log_dbp;
+	int db_err_out;
+	jaldb_status ret;
+	uint8_t *log_buf = NULL;
+	size_t log_len;
+
+	ret = jaldb_retrieve_log(txn, uc, *sys_cont, *app_cont,
+				 NULL, doc_name, &sys_doc1,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_retrieve_log(txn, uc, *sys_cont, *app_cont,
+				 log_db, doc_name, NULL,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	// Don't need to check app_doc as its existence
+	//	is checked w/in the function using sys_doc's
+	//	metadata
+
+	ret = jaldb_retrieve_log(txn, uc, *sys_cont, *app_cont,
+				 log_db, doc_name, &sys_doc1,
+				 &app_doc1, NULL, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_retrieve_log(txn, uc, *sys_cont, *app_cont,
+				 log_db, doc_name, &sys_doc1,
+				 &app_doc1, &log_buf, NULL,
+				 &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_retrieve_log(txn, uc, *sys_cont, *app_cont,
+				 log_db, doc_name, &sys_doc1,
+				 &app_doc1, &log_buf, &log_len,
+				 NULL);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_retrieve_log(txn, uc, *sys_cont, *app_cont,
+				 log_db, empty_sid, &sys_doc1,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_retrieve_log_fails_internal()
+{
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument app_doc1;
+	std::string doc_name = "test_retrieve_log_fails_internal";
+	DB *log_db = context->log_dbp;
+	int db_err_out;
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	uint8_t *log_buf = NULL;
+	size_t log_len;
+
+	// sys_doc does not exist in DB
+	XmlDocument sys_doc_out1;
+	ret = jaldb_retrieve_log(txn, uc, *sys_cont, *app_cont,
+				 log_db, doc_name, &sys_doc_out1,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+
+	// sys_doc exists, missing HAS_APP_META
+	XmlDocument sys_doc_in1 = context->manager->createDocument();
+	sys_doc_in1.setName(doc_name);
+	sys_cont->putDocument(txn, sys_doc_in1, uc);
+	txn.commit();
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	ret = jaldb_retrieve_log(txn2, uc, *sys_cont, *app_cont,
+				 log_db, doc_name, &sys_doc_out1,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// sys_doc exists, has HAS_APP_META, missing HAS_LOG
+	std::string doc_name2 = "test_retrieve_log_fails_internal2";
+	XmlDocument sys_doc_out2;
+	XmlDocument sys_doc_in2 = context->manager->createDocument();
+	sys_doc_in2.setName(doc_name2);
+	sys_doc_in2.setMetaData(JALDB_NS,
+			     JALDB_HAS_APP_META, true_val);
+	sys_cont->putDocument(txn2, sys_doc_in2, uc);
+	txn2.commit();
+
+	XmlTransaction txn3 = context->manager->createTransaction();
+	ret = jaldb_retrieve_log(txn3, uc, *sys_cont, *app_cont,
+				 log_db, doc_name2, &sys_doc_out2,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// sys_doc exists, has HAS_APP_META =false, has HAS_LOG = false
+	std::string doc_name3 = "test_retrieve_log_fails_internal3";
+	XmlDocument sys_doc_out3;
+	XmlDocument sys_doc_in3 = context->manager->createDocument();
+	sys_doc_in3.setName(doc_name3);
+	sys_doc_in3.setMetaData(JALDB_NS,
+			     JALDB_HAS_APP_META, false_val);
+	sys_doc_in3.setMetaData(JALDB_NS,
+			     JALDB_HAS_LOG, false_val);
+	sys_cont->putDocument(txn3, sys_doc_in3, uc);
+	txn3.commit();
+
+	XmlTransaction txn4 = context->manager->createTransaction();
+	ret = jaldb_retrieve_log(txn4, uc, *sys_cont, *app_cont,
+				 log_db, doc_name3, &sys_doc_out3,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_CORRUPTED, ret);
+
+	// HAS_APP_META=TRUE, but app_doc does not exist
+	std::string doc_name4 = "test_retrieve_log_fails_internal4";
+	XmlDocument sys_doc_out4;
+	XmlDocument sys_doc_in4 = context->manager->createDocument();
+	sys_doc_in4.setName(doc_name4);
+	sys_doc_in4.setMetaData(JALDB_NS,
+			     JALDB_HAS_APP_META, true_val);
+	sys_doc_in4.setMetaData(JALDB_NS,
+			     JALDB_HAS_LOG, false_val);
+	sys_cont->putDocument(txn4, sys_doc_in4, uc);
+	txn4.commit();
+
+	XmlTransaction txn5 = context->manager->createTransaction();
+	ret = jaldb_retrieve_log(txn5, uc, *sys_cont, *app_cont,
+				 log_db, doc_name4, &sys_doc_out4,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+
+	// HAS_APP_META=FALSE, HAS_LOG=TRUE but log does not exist
+	std::string doc_name5 = "test_retrieve_log_fails_internal5";
+	XmlDocument sys_doc_out5;
+	XmlDocument sys_doc_in5 = context->manager->createDocument();
+	sys_doc_in5.setName(doc_name5);
+	sys_doc_in5.setMetaData(JALDB_NS,
+			     JALDB_HAS_APP_META, false_val);
+	sys_doc_in5.setMetaData(JALDB_NS,
+			     JALDB_HAS_LOG, true_val);
+	sys_cont->putDocument(txn5, sys_doc_in5, uc);
+	txn5.commit();
+
+	XmlTransaction txn6 = context->manager->createTransaction();
+	ret = jaldb_retrieve_log(txn6, uc, *sys_cont, *app_cont,
+				 log_db, doc_name5, &sys_doc_out5,
+				 &app_doc1, &log_buf, &log_len,
+				 &db_err_out);
+	assert_equals(JALDB_E_DB, ret);
+}
+
+extern "C" void test_jaldb_xfer_log_works()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->log_sys_cont;
+	XmlContainer *app_cont = context->log_app_cont;
+	XmlDocument sys_doc1 = context->manager->createDocument();
+	XmlDocument app_doc1 = context->manager->createDocument();
+	std::string doc_name = "test_xfer_log_works";
+	const char *log_buffer_x = LOG_DATA_X;
+	uint8_t *log_buf = (uint8_t *)log_buffer_x;
+	size_t loglen = strlen(log_buffer_x);
+	DB *log_db = context->log_dbp;
+	DBT key1;
+	DBT data1;
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	string sys_db_name = jaldb_make_temp_db_name(src,
+		JALDB_LOG_SYS_META_CONT_NAME);
+	string app_db_name = jaldb_make_temp_db_name(src,
+		JALDB_LOG_APP_META_CONT_NAME);
+	string log_db_name = jaldb_make_temp_db_name(src,
+		JALDB_LOG_DB_NAME);
+
+	XmlContainer tmp_sys_cont;
+	XmlContainer tmp_app_cont;
+	DB *tmp_log_db = NULL;
+	int db_err = 0;
+
+	ret = jaldb_open_temp_container(context, sys_db_name, tmp_sys_cont);
+	assert_equals(JALDB_OK, ret);
+	ret = jaldb_open_temp_container(context, app_db_name, tmp_app_cont);
+	assert_equals(JALDB_OK, ret);
+	ret = jaldb_open_temp_db(context, log_db_name, &tmp_log_db, &db_err);
+	assert_equals(JALDB_OK, ret);
+
+	sys_doc1.setName(doc_name);
+	app_doc1.setName(doc_name);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_HAS_LOG, true_val);
+	sys_doc1.setMetaData(JALDB_NS,JALDB_HAS_APP_META, true_val);
+	memset(&key1, 0, sizeof(DBT));
+	memset(&data1, 0, sizeof(DBT));
+	key1.data = jal_strdup(doc_name.c_str());
+	key1.size = doc_name.length();
+	data1.data = log_buf;
+	data1.size = loglen;
+
+	std::string sys_doc_cont;
+	std::string app_doc_cont;
+
+	// Insert sys_doc, app_doc and log into tmp
+	try {
+		sys_doc1.getContent(sys_doc_cont);
+		app_doc1.getContent(app_doc_cont);
+		tmp_sys_cont.putDocument(txn, sys_doc1, uc);
+		tmp_app_cont.putDocument(txn, app_doc1, uc);
+		int db_ret = tmp_log_db->put(tmp_log_db,
+			txn.getDB_TXN(), &key1, &data1,
+			DB_NOOVERWRITE);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn.abort();
+		} else {
+			ret = JALDB_OK;
+			txn.commit();
+		}
+	} catch (XmlException &e) {
+		txn.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	free(key1.data);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sid_out;
+	ret = jaldb_xfer_log(context, src, doc_name, sid_out);
+	assert_equals(JALDB_OK, ret);
+	assert_true(0 < sid_out.length());
+
+	std::string sys_doc_cont2;
+	std::string app_doc_cont2;
+
+	// Retrieve sys_doc, app_doc and log from perm
+	XmlTransaction txn2 = context->manager->createTransaction();
+	XmlDocument sys_doc2;
+	XmlDocument app_doc2;
+	DBT key2;
+	DBT data2;
+	memset(&key2, 0, sizeof(DBT));
+	memset(&data2, 0, sizeof(DBT));
+	key2.data = jal_strdup(sid_out.c_str());
+	key2.size = sid_out.length();
+	data2.flags = DB_DBT_MALLOC;
+	try {
+		sys_doc2 = sys_cont->getDocument(txn2, sid_out, 0);
+		app_doc2 = app_cont->getDocument(txn2, sid_out, 0);
+		sys_doc2.getContent(sys_doc_cont2);
+		app_doc2.getContent(app_doc_cont2);
+
+		int db_ret = log_db->get(log_db,
+			txn2.getDB_TXN(), &key2, &data2,
+			DB_READ_COMMITTED);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn2.abort();
+		} else {
+			ret = JALDB_OK;
+			txn2.commit();
+		}
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		txn2.abort();
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			ret = JALDB_E_INVAL;
+		}
+		else {
+			ret = JALDB_E_INVAL;
+		}
+	}
+	free(key2.data);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(sys_doc_cont, sys_doc_cont2);
+	assert_equals(app_doc_cont, app_doc_cont2);
+	assert_equals(0, strcmp((char *)data1.data,
+				(char *)data2.data));
+
+	// Retrieve sys_doc, app_doc and log from temp
+	//	Verification that the files were deleted.
+	XmlTransaction txn3 = context->manager->createTransaction();
+	XmlDocument sys_doc3;
+	XmlDocument app_doc3;
+	DBT key3;
+	DBT data3;
+	memset(&key3, 0, sizeof(DBT));
+	memset(&data3, 0, sizeof(DBT));
+	key3.data = jal_strdup(doc_name.c_str());
+	key3.size = doc_name.length();
+	data3.flags = DB_DBT_MALLOC;
+	try {
+		sys_doc3 = tmp_sys_cont.getDocument(txn3, doc_name, 0);
+		app_doc3 = tmp_app_cont.getDocument(txn3, doc_name, 0);
+
+		int db_ret = tmp_log_db->get(tmp_log_db,
+			txn3.getDB_TXN(), &key3, &data3,
+			DB_READ_COMMITTED);
+		if (0 != db_ret ) {
+			ret = JALDB_E_DB;
+			txn3.abort();
+		} else {
+			ret = JALDB_OK;
+			txn3.commit();
+		}
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		txn3.abort();
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			ret = JALDB_E_INVAL;
+		}
+		else {
+			ret = JALDB_E_INVAL;
+		}
+	}
+	free(key3.data);
+	assert_not_equals(JALDB_OK, ret);
+}
+
+extern "C" void test_jaldb_xfer_log_fails_bad_input()
+{
+	std::string src = REMOTE_HOST;
+	std::string empty_src = "";
+	std::string doc_name = "test_xfer_log_fails_bad_input";
+	std::string sid_out;
+	jaldb_status ret;
+
+	XmlManager *mgr = context->manager;
+	int db_read_only = context->db_read_only;
+
+	ret = jaldb_xfer_log(NULL, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	context->manager = NULL;
+	ret = jaldb_xfer_log(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	context->manager = mgr;
+	mgr = NULL;
+	ret = jaldb_xfer_log(context, empty_src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	context->db_read_only = 1;
+	ret = jaldb_xfer_log(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+	context->db_read_only = db_read_only;
+}
+
+extern "C" void test_jaldb_xfer_audit_works()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn1 = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->audit_sys_cont;
+	XmlContainer *app_cont = context->audit_app_cont;
+	XmlContainer *audit_cont = context->audit_cont;
+	std::string doc_name1 = "test_xfer_audit_works1";
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	string sys_db_name = jaldb_make_temp_db_name(src,
+		JALDB_AUDIT_SYS_META_CONT_NAME);
+	string app_db_name = jaldb_make_temp_db_name(src,
+		JALDB_AUDIT_APP_META_CONT_NAME);
+	string audit_db_name = jaldb_make_temp_db_name(src,
+		JALDB_AUDIT_CONT_NAME);
+
+	XmlContainer tmp_sys_cont;
+	XmlContainer tmp_app_cont;
+	XmlContainer tmp_audit_cont;
+
+	ret = jaldb_open_temp_container(context, sys_db_name,
+			tmp_sys_cont);
+	assert_equals(JALDB_OK, ret);
+	ret = jaldb_open_temp_container(context, app_db_name,
+			tmp_app_cont);
+	assert_equals(JALDB_OK, ret);
+	ret = jaldb_open_temp_container(context, audit_db_name,
+			tmp_audit_cont);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sys_doc_cont1;
+	std::string app_doc_cont1;
+	std::string audit_doc_cont1;
+	XmlDocument sys_doc1 = context->manager->createDocument();
+	XmlDocument app_doc1 = context->manager->createDocument();
+	XmlDocument audit_doc1 = context->manager->createDocument();
+	sys_doc1.setName(doc_name1);
+	app_doc1.setName(doc_name1);
+	audit_doc1.setName(doc_name1);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+
+	// Insert sys_doc, app_doc and audit_doc into tmp
+	try {
+		sys_doc1.getContent(sys_doc_cont1);
+		app_doc1.getContent(app_doc_cont1);
+		audit_doc1.getContent(audit_doc_cont1);
+		tmp_sys_cont.putDocument(txn1, sys_doc1, uc);
+		tmp_app_cont.putDocument(txn1, app_doc1, uc);
+		tmp_audit_cont.putDocument(txn1, audit_doc1, uc);
+		txn1.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn1.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+
+	std::string sid_out1;
+	ret = jaldb_xfer_audit(context, src, doc_name1, sid_out1);
+	assert_equals(JALDB_OK, ret);
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	std::string sys_doc_cont_out1;
+	std::string app_doc_cont_out1;
+	std::string audit_doc_cont_out1;
+	XmlDocument sys_doc_out1;
+	XmlDocument app_doc_out1;
+	XmlDocument audit_doc_out1;
+
+	// Verify sys_doc, app_doc and audit_doc exist in perm
+	try {
+		sys_doc_out1 = sys_cont->getDocument(txn2, sid_out1, 0);
+		app_doc_out1 = app_cont->getDocument(txn2, sid_out1, 0);
+		audit_doc_out1 = audit_cont->getDocument(txn2,
+					sid_out1, 0);
+		sys_doc_out1.getContent(sys_doc_cont_out1);
+		app_doc_out1.getContent(app_doc_cont_out1);
+		audit_doc_out1.getContent(audit_doc_cont_out1);
+		txn2.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn2.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+	assert_equals(sys_doc_cont1, sys_doc_cont_out1);
+	assert_equals(app_doc_cont1, app_doc_cont_out1);
+	assert_equals(audit_doc_cont1, audit_doc_cont_out1);
+
+	XmlTransaction txn3 = context->manager->createTransaction();
+	XmlDocument sys_doc_out2;
+	XmlDocument app_doc_out2;
+	XmlDocument audit_doc_out2;
+
+	// Verify sys_doc, app_doc and audit_doc deleted from tmp
+	jaldb_status ret1 = JALDB_OK;
+	jaldb_status ret2 = JALDB_OK;
+	jaldb_status ret3 = JALDB_OK;
+	try {
+		sys_doc_out2 = tmp_sys_cont.getDocument(txn3,
+				doc_name1, 0);
+	} catch (XmlException &e){
+		ret1 = JALDB_E_INVAL;
+	}
+	try {
+		app_doc_out2 = tmp_app_cont.getDocument(txn3,
+				doc_name1, 0);
+	} catch (XmlException &e){
+		ret2 = JALDB_E_INVAL;
+	}
+	try {
+		audit_doc_out2 = tmp_audit_cont.getDocument(txn3,
+				doc_name1, 0);
+	} catch (XmlException &e){
+		ret3 = JALDB_E_INVAL;
+	}
+	if (JALDB_OK == (ret1 | ret2 | ret3)){
+		txn3.commit();
+		ret = JALDB_OK;
+	} else {
+		txn3.abort();
+		ret = JALDB_E_INVAL;
+	}
+
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_xfer_audit_works_no_app()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn1 = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->audit_sys_cont;
+	XmlContainer *audit_cont = context->audit_cont;
+	std::string doc_name1 = "test_xfer_audit_works1";
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	string sys_db_name = jaldb_make_temp_db_name(src,
+		JALDB_AUDIT_SYS_META_CONT_NAME);
+	string audit_db_name = jaldb_make_temp_db_name(src,
+		JALDB_AUDIT_CONT_NAME);
+
+	XmlContainer tmp_sys_cont;
+	XmlContainer tmp_audit_cont;
+
+	ret = jaldb_open_temp_container(context, sys_db_name,
+			tmp_sys_cont);
+	assert_equals(JALDB_OK, ret);
+	ret = jaldb_open_temp_container(context, audit_db_name,
+			tmp_audit_cont);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sys_doc_cont1;
+	std::string audit_doc_cont1;
+	XmlDocument sys_doc1 = context->manager->createDocument();
+	XmlDocument audit_doc1 = context->manager->createDocument();
+	sys_doc1.setName(doc_name1);
+	audit_doc1.setName(doc_name1);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false_val);
+
+	// Insert sys_doc and audit_doc into tmp
+	try {
+		sys_doc1.getContent(sys_doc_cont1);
+		audit_doc1.getContent(audit_doc_cont1);
+		tmp_sys_cont.putDocument(txn1, sys_doc1, uc);
+		tmp_audit_cont.putDocument(txn1, audit_doc1, uc);
+		txn1.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn1.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+
+	std::string sid_out1;
+	ret = jaldb_xfer_audit(context, src, doc_name1, sid_out1);
+	assert_equals(JALDB_OK, ret);
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	std::string sys_doc_cont_out1;
+	std::string audit_doc_cont_out1;
+	XmlDocument sys_doc_out1;
+	XmlDocument audit_doc_out1;
+
+	// Verify sys_doc and audit_doc exist in perm
+	try {
+		sys_doc_out1 = sys_cont->getDocument(txn2, sid_out1, 0);
+		audit_doc_out1 = audit_cont->getDocument(txn2,
+					sid_out1, 0);
+		sys_doc_out1.getContent(sys_doc_cont_out1);
+		audit_doc_out1.getContent(audit_doc_cont_out1);
+		txn2.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn2.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+	assert_equals(sys_doc_cont1, sys_doc_cont_out1);
+	assert_equals(audit_doc_cont1, audit_doc_cont_out1);
+
+	XmlTransaction txn3 = context->manager->createTransaction();
+	XmlDocument sys_doc_out2;
+	XmlDocument audit_doc_out2;
+
+	// Verify sys_doc and audit_doc deleted from tmp
+	try {
+		jaldb_status ret1 = JALDB_OK;
+		jaldb_status ret2 = JALDB_OK;
+		try {
+			sys_doc_out2 = tmp_sys_cont.getDocument(txn3,
+					doc_name1, 0);
+		} catch (XmlException &e){
+			ret1 = JALDB_E_INVAL;
+		}
+		try {
+			audit_doc_out2 = tmp_audit_cont.getDocument(txn3,
+					doc_name1, 0);
+		} catch (XmlException &e){
+			ret2 = JALDB_E_INVAL;
+		}
+		if (JALDB_OK == (ret1 | ret2)){
+			txn3.commit();
+			ret = JALDB_OK;
+		} else {
+			txn3.abort();
+			ret = JALDB_E_INVAL;
+		}
+	} catch (XmlException &e) {
+		txn3.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_xfer_audit_fails_bad_input()
+{
+	std::string src = REMOTE_HOST;
+	std::string empty_src = "";
+	std::string doc_name = "test_xfer_audit_fails_bad_input";
+	std::string empty_sid = "";
+	std::string sid_out;
+	jaldb_status ret;
+
+	XmlManager *mgr = context->manager;
+	XmlContainer *cont;
+	int db_read_only = context->db_read_only;
+
+	ret = jaldb_xfer_audit(context, src, empty_sid, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_xfer_audit(NULL, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	context->manager = NULL;
+	ret = jaldb_xfer_audit(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	context->manager = mgr;
+	mgr = NULL;
+	ret = jaldb_xfer_audit(context, empty_src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	cont = context->audit_sys_cont;
+	context->audit_sys_cont = NULL;
+	ret = jaldb_xfer_audit(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+	context->audit_sys_cont = cont;
+	cont = NULL;
+
+	cont = context->audit_app_cont;
+	context->audit_app_cont = NULL;
+	ret = jaldb_xfer_audit(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+	context->audit_app_cont = cont;
+	cont = NULL;
+
+	cont = context->audit_cont;
+	context->audit_cont = NULL;
+	ret = jaldb_xfer_audit(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+	context->audit_cont = cont;
+	cont = NULL;
+
+	context->db_read_only = 1;
+	ret = jaldb_xfer_audit(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+	context->db_read_only = db_read_only;
+}
+
+extern "C" void test_jaldb_xfer_audit_fails_docs_dont_exist_in_tmp()
+{
+	std::string src = REMOTE_HOST;
+	std::string empty_src = "";
+	std::string doc_name = "test_xfer_audit_fails_docs_dont_exist";
+	std::string empty_sid = "";
+	std::string sid_out;
+	jaldb_status ret;
+
+	ret = jaldb_xfer_audit(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+}
+
+extern "C" void test_jaldb_xfer_journal_works()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn1 = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->journal_sys_cont;
+	XmlContainer *app_cont = context->journal_app_cont;
+	std::string doc_name1 = "test_xfer_journal_works1";
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	string sys_db_name = jaldb_make_temp_db_name(src,
+		JALDB_JOURNAL_SYS_META_CONT_NAME);
+	string app_db_name = jaldb_make_temp_db_name(src,
+		JALDB_JOURNAL_APP_META_CONT_NAME);
+
+	XmlContainer tmp_sys_cont;
+	XmlContainer tmp_app_cont;
+
+	ret = jaldb_open_temp_container(context, sys_db_name,
+			tmp_sys_cont);
+	assert_equals(JALDB_OK, ret);
+	ret = jaldb_open_temp_container(context, app_db_name,
+			tmp_app_cont);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sys_doc_cont1;
+	std::string app_doc_cont1;
+	std::string path1 = "RandomPath";
+
+	XmlDocument sys_doc1 = context->manager->createDocument();
+	XmlDocument app_doc1 = context->manager->createDocument();
+	sys_doc1.setName(doc_name1);
+	app_doc1.setName(doc_name1);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_HAS_APP_META, true_val);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_SOURCE, src);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_JOURNAL_PATH, path1);
+
+	// Insert sys_doc, app_doc into tmp
+	//	Unimportant to test transfer of journal file
+	//	as it remains in the same location and isn't
+	//	operated upon by the transfer function.
+	try {
+		sys_doc1.getContent(sys_doc_cont1);
+		app_doc1.getContent(app_doc_cont1);
+		tmp_sys_cont.putDocument(txn1, sys_doc1, uc);
+		tmp_app_cont.putDocument(txn1, app_doc1, uc);
+		txn1.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn1.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+
+	std::string sid_out1;
+	ret = jaldb_xfer_journal(context, src, doc_name1, sid_out1);
+	assert_equals(JALDB_OK, ret);
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	std::string sys_doc_cont_out1;
+	std::string app_doc_cont_out1;
+	std::string path_out1;
+	XmlValue val_out1;
+	XmlDocument sys_doc_out1;
+	XmlDocument app_doc_out1;
+
+	// Verify sys_doc, app_doc exist in perm
+	try {
+		sys_doc_out1 = sys_cont->getDocument(txn2, sid_out1, 0);
+		app_doc_out1 = app_cont->getDocument(txn2, sid_out1, 0);
+		sys_doc_out1.getContent(sys_doc_cont_out1);
+		app_doc_out1.getContent(app_doc_cont_out1);
+		txn2.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn2.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+	assert_equals(sys_doc_cont1, sys_doc_cont_out1);
+	assert_equals(app_doc_cont1, app_doc_cont_out1);
+	assert_true(sys_doc_out1.getMetaData(JALDB_NS,
+			JALDB_JOURNAL_PATH, val_out1));
+	assert_equals(path1, val_out1.asString());
+
+	XmlTransaction txn3 = context->manager->createTransaction();
+	XmlDocument sys_doc_out2;
+	XmlDocument app_doc_out2;
+
+	// Verify sys_doc, app_doc deleted from tmp
+	jaldb_status ret1 = JALDB_OK;
+	jaldb_status ret2 = JALDB_OK;
+	try {
+		sys_doc_out2 = tmp_sys_cont.getDocument(txn3,
+				doc_name1, 0);
+	} catch (XmlException &e){
+		ret1 = JALDB_E_INVAL;
+	}
+	try {
+		app_doc_out2 = tmp_app_cont.getDocument(txn3,
+				doc_name1, 0);
+	} catch (XmlException &e){
+		ret2 = JALDB_E_INVAL;
+	}
+	if (JALDB_OK == (ret1 | ret2)){
+		txn3.commit();
+		ret = JALDB_OK;
+	} else {
+		txn3.abort();
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_xfer_journal_works_no_app()
+{
+	std::string src = REMOTE_HOST;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn1 = context->manager->createTransaction();
+	XmlContainer *sys_cont = context->journal_sys_cont;
+	std::string doc_name1 = "test_xfer_journal_works_no_app1";
+	jaldb_status ret;
+	XmlValue false_val(false);
+	XmlValue true_val(true);
+	string sys_db_name = jaldb_make_temp_db_name(src,
+		JALDB_JOURNAL_SYS_META_CONT_NAME);
+	XmlContainer tmp_sys_cont;
+
+	ret = jaldb_open_temp_container(context, sys_db_name,
+			tmp_sys_cont);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sys_doc_cont1;
+	std::string path1 = "RandomPath";
+
+	XmlDocument sys_doc1 = context->manager->createDocument();
+	sys_doc1.setName(doc_name1);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_HAS_APP_META, false_val);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_SOURCE, src);
+	sys_doc1.setMetaData(JALDB_NS, JALDB_JOURNAL_PATH, path1);
+
+	// Insert sys_doc, app_doc into tmp
+	//	Unimportant to test transfer of journal file
+	//	as it remains in the same location and isn't
+	//	operated upon by the transfer function.
+	try {
+		sys_doc1.getContent(sys_doc_cont1);
+		tmp_sys_cont.putDocument(txn1, sys_doc1, uc);
+		txn1.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn1.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+
+	std::string sid_out1;
+	ret = jaldb_xfer_journal(context, src, doc_name1, sid_out1);
+	assert_equals(JALDB_OK, ret);
+
+	XmlTransaction txn2 = context->manager->createTransaction();
+	std::string sys_doc_cont_out1;
+	std::string path_out1;
+	XmlValue val_out1;
+	XmlDocument sys_doc_out1;
+
+	// Verify sys_doc exist in perm
+	try {
+		sys_doc_out1 = sys_cont->getDocument(txn2, sid_out1, 0);
+		sys_doc_out1.getContent(sys_doc_cont_out1);
+		txn2.commit();
+		ret = JALDB_OK;
+	} catch (XmlException &e) {
+		txn2.abort();
+		print_xml_exception(e);
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_OK, ret);
+	assert_equals(sys_doc_cont1, sys_doc_cont_out1);
+	assert_true(sys_doc_out1.getMetaData(JALDB_NS,
+			JALDB_JOURNAL_PATH, val_out1));
+	assert_equals(path1, val_out1.asString());
+
+	XmlTransaction txn3 = context->manager->createTransaction();
+	XmlDocument sys_doc_out2;
+
+	// Verify sys_doc deleted from tmp
+	jaldb_status ret1 = JALDB_OK;
+	try {
+		sys_doc_out2 = tmp_sys_cont.getDocument(txn3,
+				doc_name1, 0);
+	} catch (XmlException &e){
+		ret1 = JALDB_E_INVAL;
+	}
+	if (JALDB_OK == ret1 ){
+		txn3.commit();
+		ret = JALDB_OK;
+	} else {
+		txn3.abort();
+		ret = JALDB_E_INVAL;
+	}
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_xfer_journal_fails_bad_input()
+{
+	std::string src = REMOTE_HOST;
+	std::string empty_src = "";
+	std::string doc_name = "test_xfer_journal_fails_bad_input";
+	std::string empty_sid = "";
+	std::string sid_out;
+	jaldb_status ret;
+
+	XmlManager *mgr = context->manager;
+	XmlContainer *cont;
+	int db_read_only = context->db_read_only;
+
+	ret = jaldb_xfer_journal(context, src, empty_sid, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_xfer_journal(NULL, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	context->manager = NULL;
+	ret = jaldb_xfer_journal(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	context->manager = mgr;
+	mgr = NULL;
+	ret = jaldb_xfer_journal(context, empty_src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	cont = context->journal_sys_cont;
+	context->journal_sys_cont = NULL;
+	ret = jaldb_xfer_journal(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+	context->journal_sys_cont = cont;
+	cont = NULL;
+
+	cont = context->journal_app_cont;
+	context->journal_app_cont = NULL;
+	ret = jaldb_xfer_journal(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_INVAL, ret);
+	context->journal_app_cont = cont;
+	cont = NULL;
+
+	context->db_read_only = 1;
+	ret = jaldb_xfer_journal(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_READ_ONLY, ret);
+	context->db_read_only = db_read_only;
+}
+
+extern "C" void test_jaldb_xfer_journal_fails_docs_dont_exist_in_tmp()
+{
+	std::string src = REMOTE_HOST;
+	std::string doc_name = "test_xfer_journal_fails_docs_dont_exist";
+	std::string sid_out;
+	jaldb_status ret;
+
+	ret = jaldb_xfer_journal(context, src, doc_name, sid_out);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+}
+
+extern "C" void test_jaldb_store_confed_sid_tmp_helper_works()
+{
+	int db_err_out;
+	jaldb_status ret = JALDB_OK;
+	string sys_db = jaldb_make_temp_db_name(REMOTE_HOST,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(context, sys_db, sys_cont);
+	assert_equals(JALDB_OK, ret);
+
+	XmlDocument doc;
+	XmlTransaction txn = context->manager->createTransaction();
+	try {
+		doc = sys_cont.getDocument(txn,
+					JALDB_SERIAL_ID_DOC_NAME,
+					DB_READ_COMMITTED);
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		ret = JALDB_E_INVAL;
+	}
+	txn.abort();
+	assert_equals(JALDB_E_INVAL, ret);
+
+	// 1 SID Doc does not exist
+	std::string sid = "ABC";
+	ret = jaldb_store_confed_sid_tmp_helper(context, &sys_cont,
+				REMOTE_HOST, sid.c_str(), &db_err_out);
+	assert_equals(JALDB_OK, ret);
+	XmlDocument doc2;
+	XmlTransaction txn2 = context->manager->createTransaction();
+	try {
+		doc2 = sys_cont.getDocument(txn2,
+					JALDB_SERIAL_ID_DOC_NAME,
+					DB_READ_COMMITTED);
+		XmlValue val;
+		if (!doc2.getMetaData(JALDB_NS, JALDB_LAST_CONFED_SID_NAME, val)) {
+			ret = JALDB_E_CORRUPTED;
+		}
+		if (!val.isString()) {
+			ret = JALDB_E_CORRUPTED;
+		}
+		std::string sid_out = val.asString();
+		if (0 != strcmp((const char *) sid_out.c_str(), sid.c_str())){
+			ret = JALDB_E_INVAL;
+		}
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		ret = JALDB_E_INVAL;
+	}
+	txn2.abort();
+	assert_equals(JALDB_OK, ret);
+
+	// 2 SID Doc exists, modify it
+	std::string sid2 = "EZas123";
+	ret = jaldb_store_confed_sid_tmp_helper(context, &sys_cont,
+				REMOTE_HOST, sid2.c_str(), &db_err_out);
+	assert_equals(JALDB_OK, ret);
+	XmlDocument doc3;
+	XmlTransaction txn3 = context->manager->createTransaction();
+	try {
+		doc3 = sys_cont.getDocument(txn3,
+					JALDB_SERIAL_ID_DOC_NAME,
+					DB_READ_COMMITTED);
+		XmlValue val;
+		if (!doc3.getMetaData(JALDB_NS, JALDB_LAST_CONFED_SID_NAME, val)) {
+			ret = JALDB_E_CORRUPTED;
+		}
+		if (!val.isString()) {
+			ret = JALDB_E_CORRUPTED;
+		}
+		std::string sid_out2 = val.asString();
+		if (0 != strcmp((const char *) sid_out2.c_str(), sid2.c_str())){
+			ret = JALDB_E_INVAL;
+		}
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		ret = JALDB_E_INVAL;
+	}
+	txn3.abort();
+	assert_equals(JALDB_OK, ret);
+}
+
+extern "C" void test_jaldb_get_last_confed_sid_tmp_helper_works()
+{
+	int db_err_out;
+	jaldb_status ret = JALDB_OK;
+	string sys_db = jaldb_make_temp_db_name(REMOTE_HOST,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(context, sys_db, sys_cont);
+	assert_equals(JALDB_OK, ret);
+
+	std::string sid_in = "ABCezAs123";
+	XmlDocument doc;
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlValue sid_val(sid_in);
+	doc = context->manager->createDocument();
+	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+	doc.setMetaData(JALDB_NS,
+			JALDB_LAST_CONFED_SID_NAME,
+			sid_val);
+	try {
+		sys_cont.putDocument(txn, doc, uc);
+		ret = JALDB_OK;
+		txn.commit();
+	} catch (XmlException &e){
+		txn.abort();
+		if (e.getExceptionCode()
+			== XmlException::UNIQUE_ERROR) {
+			ret = JALDB_E_SID;
+		}
+		else {
+			throw e;
+		}
+	}
+	assert_equals(JALDB_OK, ret);
+
+	// 1 SID Doc does not exist
+	std::string sid_out = "";
+	ret = jaldb_get_last_confed_sid_tmp_helper(context, &sys_cont,
+				REMOTE_HOST, sid_out, &db_err_out);
+	assert_equals(JALDB_OK, ret);
+	assert(0 == strcmp(sid_in.c_str(), sid_out.c_str()));
+}
+
+extern "C" void test_jaldb_get_last_confed_sid_tmp_helper_works_doc_dne()
+{
+	int db_err_out;
+	jaldb_status ret = JALDB_OK;
+	string sys_db = jaldb_make_temp_db_name(REMOTE_HOST,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(context, sys_db, sys_cont);
+	assert_equals(JALDB_OK, ret);
+
+	// 1 SID Doc does not exist
+	std::string sid_out = "";
+	ret = jaldb_get_last_confed_sid_tmp_helper(context, &sys_cont,
+				REMOTE_HOST, sid_out, &db_err_out);
+	assert_equals(JALDB_OK, ret);
+	assert(0 == strcmp(JALDB_INITIAL_SID, sid_out.c_str()));
 }

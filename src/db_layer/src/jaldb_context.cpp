@@ -357,6 +357,141 @@ out:
 	return ret;
 }
 
+enum jaldb_status jaldb_xfer_audit(
+	jaldb_context *ctx,
+	std::string &source,
+	const std::string &sid,
+	std::string &next_sid)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+	if (!ctx || !ctx->manager || !ctx->audit_sys_cont ||
+		!ctx->audit_app_cont || !ctx->audit_cont ||
+		(0 == sid.length()) || (0 == source.length())) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+
+	string sys_db = jaldb_make_temp_db_name(source,
+			JALDB_AUDIT_SYS_META_CONT_NAME);
+	string app_db = jaldb_make_temp_db_name(source,
+			JALDB_AUDIT_APP_META_CONT_NAME);
+	string audit_db = jaldb_make_temp_db_name(source,
+			JALDB_AUDIT_CONT_NAME);
+
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+	XmlContainer audit_cont;
+	XmlUpdateContext uc;
+
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_container(ctx, app_db, app_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_container(ctx, audit_db, audit_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	uc = ctx->manager->createUpdateContext();
+
+	while (1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_get_next_serial_id(txn,
+					uc,
+					*ctx->audit_sys_cont,
+					next_sid);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+
+			XmlDocument sys_doc;
+			XmlDocument app_doc;
+			XmlDocument audit_doc;
+			XmlValue val;
+			bool has_app_meta = false;
+			jaldb_status ret1, ret2, ret3;
+
+			// Retrieve from tmp db
+			ret1 = jaldb_get_document(txn, &sys_cont,
+				sid, &sys_doc);
+			ret2 = JALDB_OK;
+			if (JALDB_OK == ret1 &&
+				sys_doc.getMetaData(JALDB_NS,
+					JALDB_HAS_APP_META, val)){
+				has_app_meta = val.equals(true);
+				if (has_app_meta){
+					ret2 = jaldb_get_document(txn,
+						&app_cont, sid,
+						&app_doc);
+				}
+			}
+			ret3 = jaldb_get_document(txn, &audit_cont,
+				sid, &audit_doc);
+			if ((ret1 | ret2 | ret3) != JALDB_OK) {
+				ret = JALDB_E_NOT_FOUND;
+				txn.abort();
+				break;
+			}
+
+			// Save to perm db
+			ret1 = jaldb_save_document(
+				txn, uc, *ctx->audit_sys_cont,
+				sys_doc, next_sid);
+			ret2 = JALDB_OK;
+			if (has_app_meta){
+				ret2 = jaldb_save_document(
+						txn, uc,
+						*ctx->audit_app_cont,
+						app_doc, next_sid);
+			}
+			ret3 = jaldb_save_document(
+					txn, uc, *ctx->audit_cont,
+					audit_doc, next_sid);
+			if ((ret1 | ret2 | ret3) != JALDB_OK) {
+				ret = JALDB_E_SID;
+				txn.abort();
+				break;
+			}
+
+			// Delete from tmp db
+			ret1 = jaldb_remove_document(
+				txn, uc, sys_cont, sid);
+			ret2 = JALDB_OK;
+			if (has_app_meta){
+				ret2 = jaldb_remove_document(
+						txn, uc, app_cont,
+						sid);
+			}
+			ret3 = jaldb_remove_document(
+				txn, uc, audit_cont, sid);
+			if ((ret1 | ret2 | ret3) != JALDB_OK) {
+				ret = JALDB_E_NOT_FOUND;
+				txn.abort();
+				break;
+			}
+			txn.commit();
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() ==
+				XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+out:
+	return ret;
+}
+
 enum jaldb_status jaldb_insert_audit_record_into_temp(
 	jaldb_context *ctx,
 	std::string &source,
@@ -662,6 +797,351 @@ enum jaldb_status jaldb_insert_log_record(
 	}
 	return ret;
 }
+
+enum jaldb_status jaldb_delete_log(
+	XmlTransaction &txn,
+	XmlUpdateContext &uc,
+	XmlContainer &sys_cont,
+	XmlContainer &app_cont,
+	DB *log_db,
+	const std::string &sid,
+	XmlDocument *sys_doc,
+	XmlDocument *app_doc,
+	int *db_err_out)
+{
+	if (!log_db || !sys_doc || !db_err_out ||
+		(0 == sid.length())){
+		return JALDB_E_INVAL;
+	}
+
+	XmlValue val;
+	if (!sys_doc->getMetaData(JALDB_NS,
+		JALDB_HAS_APP_META, val)) {
+		return JALDB_E_CORRUPTED;
+	}
+	bool has_app_meta = val.equals(true);
+	if (!sys_doc->getMetaData(JALDB_NS,
+		JALDB_HAS_LOG, val)) {
+		return JALDB_E_CORRUPTED;
+	}
+	bool has_log = val.equals(true);
+	if (!has_log && !has_app_meta) {
+		return JALDB_E_CORRUPTED;
+	}
+	enum jaldb_status ret = JALDB_OK;
+
+	ret = jaldb_remove_document(txn, uc, sys_cont, sid);
+
+	if (JALDB_OK != ret){
+		return ret;
+	}
+
+	if (has_app_meta){
+		ret = jaldb_remove_document(txn, uc, app_cont, sid);
+
+		if (JALDB_OK != ret){
+			return ret;
+		}
+	}
+
+	if (has_log){
+		DBT key;
+		memset(&key, 0, sizeof(DBT));
+		key.data = jal_strdup(sid.c_str());
+		key.size = sid.length();
+		int db_ret = log_db->del(log_db, txn.getDB_TXN(),
+				&key, 0);
+		free(key.data);
+		if (db_ret != 0) {
+			*db_err_out = db_ret;
+			ret = JALDB_E_DB;
+		}
+	}
+
+	return ret;
+}
+
+enum jaldb_status jaldb_save_log(
+	XmlTransaction &txn,
+	XmlUpdateContext &uc,
+	XmlContainer &sys_cont,
+	XmlContainer &app_cont,
+	DB *log_db,
+	const std::string &sid,
+	XmlDocument *sys_doc,
+	XmlDocument *app_doc,
+	uint8_t *log_buf,
+	size_t  log_len,
+	int *db_err_out)
+{
+	if (!log_db || !sys_doc || !db_err_out ||
+		(0 == sid.length())){
+		return JALDB_E_INVAL;
+	}
+
+	XmlValue val;
+	if (!sys_doc->getMetaData(JALDB_NS,
+		JALDB_HAS_APP_META, val)) {
+		return JALDB_E_CORRUPTED;
+	}
+	bool has_app_meta = val.equals(true);
+	if (!sys_doc->getMetaData(JALDB_NS,
+		JALDB_HAS_LOG, val)) {
+		return JALDB_E_CORRUPTED;
+	}
+	bool has_log = val.equals(true);
+	if (!has_log && !has_app_meta) {
+		return JALDB_E_CORRUPTED;
+	}
+	enum jaldb_status ret = JALDB_OK;
+
+	// Save to perm db
+	ret = jaldb_save_document(
+			txn, uc, sys_cont,
+			*sys_doc, sid);
+
+	if (JALDB_OK != ret){
+		return ret;
+	}
+
+	if (has_app_meta){
+		ret = jaldb_save_document(
+			txn, uc, app_cont,
+			*app_doc, sid);
+
+		if (JALDB_OK != ret){
+			return ret;
+		}
+	}
+
+	if (has_log){
+		DBT key;
+		DBT data;
+		memset(&key, 0, sizeof(DBT));
+		memset(&data, 0, sizeof(DBT));
+		key.data = jal_strdup(sid.c_str());
+		key.size = sid.length();
+		data.data = log_buf;
+		data.size = log_len;
+		int db_ret = log_db->put(log_db, txn.getDB_TXN(),
+				&key, &data, DB_NOOVERWRITE);
+		free(key.data);
+		if (db_ret != 0) {
+			*db_err_out = db_ret;
+			ret = JALDB_E_DB;
+		}
+	}
+
+	return ret;
+}
+
+enum jaldb_status jaldb_retrieve_log(
+	XmlTransaction &txn,
+	XmlUpdateContext &uc,
+	XmlContainer &sys_cont,
+	XmlContainer &app_cont,
+	DB *log_db,
+	const std::string &sid,
+	XmlDocument *sys_doc,
+	XmlDocument *app_doc,
+	uint8_t **log_buf,
+	size_t *log_len,
+	int *db_err_out)
+{
+	jaldb_status ret = JALDB_E_INVAL;
+	if (!log_db || !db_err_out || !sys_doc ||
+		(0 == sid.length()) || !log_buf ||
+		*log_buf || !log_len){
+		return ret;
+	}
+
+	try {
+		ret = jaldb_get_document(txn, &sys_cont,
+			sid, sys_doc);
+	} catch (XmlException &e) {
+		if (e.getExceptionCode() ==
+			XmlException::DOCUMENT_NOT_FOUND) {
+			return JALDB_E_NOT_FOUND;
+		}
+		// re-throw e, it will get caught by the outer
+		// try/catch block.
+		throw(e);
+	}
+	if (JALDB_OK != ret){
+		return ret;
+	}
+	XmlValue val;
+	if (!sys_doc->getMetaData(JALDB_NS,
+		JALDB_HAS_APP_META, val)) {
+		return JALDB_E_CORRUPTED;
+	}
+	bool has_app_meta = val.equals(true);
+	if (!sys_doc->getMetaData(JALDB_NS,
+		JALDB_HAS_LOG, val)) {
+		return JALDB_E_CORRUPTED;
+	}
+	bool has_log = val.equals(true);
+	if (!has_log && !has_app_meta) {
+		return JALDB_E_CORRUPTED;
+	}
+
+	if (has_app_meta){
+		try {
+			ret = jaldb_get_document(txn, &app_cont,
+				sid, app_doc);
+		} catch (XmlException &e){
+			return JALDB_E_DB;
+		}
+		if (JALDB_OK != ret){
+			return ret;
+		}
+	}
+
+	if (has_log) {
+		DBT key;
+		DBT data;
+		memset(&key, 0, sizeof(DBT));
+		memset(&data, 0, sizeof(DBT));
+		key.data = jal_strdup(sid.c_str());
+		key.size = strlen(sid.c_str());
+		data.flags = DB_DBT_MALLOC;
+		int db_ret = log_db->get(log_db, txn.getDB_TXN(),
+				&key, &data, DB_READ_COMMITTED);
+		free(key.data);
+		if (0 != db_ret ) {
+			*db_err_out = db_ret;
+			return JALDB_E_DB;
+		}
+		*log_buf = (uint8_t*) data.data;
+		*log_len = data.size;
+	}
+
+	return JALDB_OK;
+}
+
+enum jaldb_status jaldb_xfer_log(
+	jaldb_context *ctx,
+	std::string &source,
+	const std::string &sid,
+	std::string &next_sid)
+{
+	if (!ctx || !ctx->manager || (0 == source.length())) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only){
+		return JALDB_E_READ_ONLY;
+	}
+
+	enum jaldb_status ret = JALDB_OK;
+	string sys_db_name = jaldb_make_temp_db_name(source,
+		JALDB_LOG_SYS_META_CONT_NAME);
+	string app_db_name = jaldb_make_temp_db_name(source,
+		JALDB_LOG_APP_META_CONT_NAME);
+	string log_db_name = jaldb_make_temp_db_name(source,
+		JALDB_LOG_DB_NAME);
+
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+	XmlUpdateContext uc;
+	DB *log_db = NULL;
+	int db_err = 0;
+
+	ret = jaldb_open_temp_container(ctx, sys_db_name, sys_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_container(ctx, app_db_name, app_cont);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	ret = jaldb_open_temp_db(ctx, log_db_name, &log_db, &db_err);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	uc = ctx->manager->createUpdateContext();
+	while(1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_get_next_serial_id(txn,
+					uc,
+					*ctx->log_sys_cont,
+					next_sid);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+
+			uint8_t *log_buf = NULL;
+			size_t log_len;
+			XmlDocument sys_doc;
+			XmlDocument app_doc;
+			XmlDocument log_doc;
+			int db_err;
+
+			ret = jaldb_retrieve_log(txn, uc, sys_cont,
+				app_cont, log_db, sid, &sys_doc,
+				&app_doc, &log_buf, &log_len,
+				&db_err);
+
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+
+			ret = jaldb_save_log(txn, uc,
+				*ctx->log_sys_cont,
+				*ctx->log_app_cont,
+				ctx->log_dbp, next_sid,
+				&sys_doc, &app_doc,
+				log_buf, log_len, &db_err);
+			free(log_buf);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+
+			uint8_t *copy_log_buf = NULL;
+			size_t copy_log_len;
+			XmlDocument copy_sys_doc;
+			XmlDocument copy_app_doc;
+			int copy_db_err;
+
+			ret = jaldb_retrieve_log(txn, uc, sys_cont,
+				app_cont, log_db, sid, &copy_sys_doc,
+				&copy_app_doc, &copy_log_buf,
+				&copy_log_len, &copy_db_err);
+			free(copy_log_buf);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+
+			ret = jaldb_delete_log(txn, uc,
+				sys_cont,
+				app_cont,
+				log_db, sid,
+				&copy_sys_doc, &copy_app_doc,
+				&db_err);
+
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+			txn.commit();
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+out:
+	return ret;
+}
+
 enum jaldb_status jaldb_insert_log_record_into_temp(
 	jaldb_context *ctx,
 	string &source,
@@ -746,6 +1226,120 @@ enum jaldb_status jaldb_create_journal_file(
 		return JALDB_E_READ_ONLY;
 	}
 	return jaldb_create_file(ctx->journal_root, path, fd);
+}
+
+enum jaldb_status jaldb_xfer_journal(
+	jaldb_context *ctx,
+	const std::string &source,
+	const std::string &sid,
+	std::string &next_sid)
+{
+	if (!ctx || !ctx->manager || !ctx->journal_sys_cont ||
+		!ctx->journal_app_cont || (0 == sid.length()) ||
+		(0 == source.length())) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	string sys_meta_name = jaldb_make_temp_db_name(source,
+		JALDB_JOURNAL_SYS_META_CONT_NAME);
+	string app_meta_name = jaldb_make_temp_db_name(source,
+		JALDB_JOURNAL_APP_META_CONT_NAME);
+
+	enum jaldb_status ret = JALDB_E_UNKNOWN;
+	XmlContainer sys_cont;
+	XmlContainer app_cont;
+	ret = jaldb_open_temp_container(ctx, sys_meta_name, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	ret = jaldb_open_temp_container(ctx, app_meta_name, app_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+
+	XmlUpdateContext uc = ctx->manager->createUpdateContext();
+	while(1) {
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			ret = jaldb_get_next_serial_id(
+					txn,
+					uc,
+					*ctx->journal_sys_cont,
+					next_sid);
+			if (ret != JALDB_OK) {
+				txn.abort();
+				break;
+			}
+
+			XmlDocument sys_doc;
+			XmlDocument app_doc;
+			XmlValue val;
+			bool has_app_meta = false;
+			jaldb_status ret1, ret2;
+
+			// Retrieve from tmp db
+			ret1 = jaldb_get_document(txn, &sys_cont,
+				sid, &sys_doc);
+			if ((JALDB_OK == ret1) &&
+				sys_doc.getMetaData(JALDB_NS,
+					JALDB_HAS_APP_META, val)){
+				has_app_meta = val.equals(true);
+			}
+			ret2 = JALDB_OK;
+			if (has_app_meta){
+				ret2 = jaldb_get_document(txn, &app_cont,
+						sid, &app_doc);
+			}
+			if ((ret1 | ret2) != JALDB_OK) {
+				ret = JALDB_E_NOT_FOUND;
+				txn.abort();
+				break;
+			}
+
+			// Save to perm db
+			ret1 = jaldb_save_document(
+				txn, uc, *ctx->journal_sys_cont,
+				sys_doc, next_sid);
+			ret2 = JALDB_OK;
+			if (has_app_meta){
+				ret2 = jaldb_save_document(
+						txn, uc,
+						*ctx->journal_app_cont,
+						app_doc, next_sid);
+			}
+			if ((ret1 | ret2) != JALDB_OK) {
+				ret = JALDB_E_SID;
+				txn.abort();
+				break;
+			}
+
+			// Delete from tmp db
+			ret1 = jaldb_remove_document(
+				txn, uc, sys_cont, sid);
+			ret2 = JALDB_OK;
+			if (has_app_meta){
+				ret2 = jaldb_remove_document(
+					txn, uc, app_cont, sid);
+			}
+			if ((ret1 | ret2) != JALDB_OK) {
+				ret = JALDB_E_NOT_FOUND;
+				txn.abort();
+				break;
+			}
+			txn.commit();
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				continue;
+			}
+			throw e;
+		}
+	}
+	return ret;
 }
 
 enum jaldb_status jaldb_insert_journal_metadata_helper(
@@ -872,7 +1466,7 @@ enum jaldb_status jaldb_insert_journal_metadata(
 	std::string &sid)
 {
 	if (!ctx || !ctx->manager || !ctx->journal_sys_cont ||
-			!ctx->journal_app_cont || 
+			!ctx->journal_app_cont ||
 			!sys_meta_doc || path.length() == 0) {
 		return JALDB_E_INVAL;
 	}
@@ -1966,3 +2560,335 @@ enum jaldb_status jaldb_next_log_record(
 	return JALDB_OK;
 }
 
+enum jaldb_status jaldb_store_confed_journal_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out)
+{
+	jaldb_status ret;
+	if (!ctx || !ctx->manager) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_JOURNAL_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	return jaldb_store_confed_sid_tmp_helper(ctx, &sys_cont,
+				remote_host, sid, db_err_out);
+}
+
+enum jaldb_status jaldb_store_confed_audit_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out)
+{
+	jaldb_status ret;
+	if (!ctx || !ctx->manager) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_AUDIT_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	return jaldb_store_confed_sid_tmp_helper(ctx, &sys_cont,
+				remote_host, sid, db_err_out);
+}
+
+enum jaldb_status jaldb_store_confed_log_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out)
+{
+	jaldb_status ret;
+	if (!ctx || !ctx->manager) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	return jaldb_store_confed_sid_tmp_helper(ctx, &sys_cont,
+				remote_host, sid, db_err_out);
+}
+
+enum jaldb_status jaldb_store_confed_sid_tmp_helper(
+		jaldb_context *ctx,
+		XmlContainer *cont,
+		const char *remote_host,
+		const char *sid,
+		int *db_err_out)
+{
+	if (!cont || !sid || !db_err_out) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_E_INVAL;
+	while (1) {
+		XmlUpdateContext uc = ctx->manager->createUpdateContext();
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			// Retrieve the SERIAL_ID doc if it exists.
+			XmlDocument doc;
+			bool wasFound = true;
+			try {
+				doc = cont->getDocument(txn,
+							JALDB_SERIAL_ID_DOC_NAME,
+							DB_READ_COMMITTED);
+			} catch (XmlException &e){
+				if (e.getExceptionCode()
+					== XmlException::DOCUMENT_NOT_FOUND) {
+					wasFound = false;
+				}
+				else {
+					throw e;
+				}
+			}
+			if (wasFound) {
+				XmlValue val;
+				if (!doc.getMetaData(JALDB_NS,
+					JALDB_LAST_CONFED_SID_NAME,
+					val)) {
+					// something is horribly wrong, there is no serial
+					// ID in the database
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				if (!val.isString()) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				XmlValue next_sid_val(sid);
+				doc.setMetaData(JALDB_NS,
+						JALDB_LAST_CONFED_SID_NAME,
+						next_sid_val);
+				cont->updateDocument(txn, doc, uc);
+				txn.commit();
+				ret = JALDB_OK;
+				break;
+			}
+			else {
+				// Document does not exist, create it.
+				XmlValue sid_val(sid);
+				doc = ctx->manager->createDocument();
+				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setMetaData(JALDB_NS,
+						JALDB_LAST_CONFED_SID_NAME,
+						sid_val);
+				try {
+					cont->putDocument(txn, doc, uc);
+					ret = JALDB_OK;
+					txn.commit();
+				} catch (XmlException &e){
+					txn.abort();
+					if (e.getExceptionCode() == XmlException::UNIQUE_ERROR) {
+						ret = JALDB_E_SID;
+					}
+					else {
+						throw e;
+					}
+				}
+				break;
+			}
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR) {
+				if (e.getDbErrno()
+					== DB_LOCK_DEADLOCK) {
+					continue;
+				}
+			}
+			throw e;
+		}
+	}
+	return ret;
+}
+
+enum jaldb_status jaldb_get_last_confed_journal_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		std::string &sid,
+		int *db_err_out)
+{
+	jaldb_status ret;
+	if (!ctx || !ctx->manager) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_JOURNAL_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	return jaldb_get_last_confed_sid_tmp_helper(ctx, &sys_cont,
+				remote_host, sid, db_err_out);
+}
+
+enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		std::string &sid,
+		int *db_err_out)
+{
+	jaldb_status ret;
+	if (!ctx || !ctx->manager) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_AUDIT_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	return jaldb_get_last_confed_sid_tmp_helper(ctx, &sys_cont,
+				remote_host, sid, db_err_out);
+}
+
+enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
+		jaldb_context *ctx,
+		const char *remote_host,
+		std::string &sid,
+		int *db_err_out)
+{
+	jaldb_status ret;
+	if (!ctx || !ctx->manager) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, sys_cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	return jaldb_get_last_confed_sid_tmp_helper(ctx, &sys_cont,
+				remote_host, sid, db_err_out);
+}
+
+enum jaldb_status jaldb_get_last_confed_sid_tmp_helper(
+		jaldb_context *ctx,
+		XmlContainer *cont,
+		const std::string &remote_host,
+		std::string &sid,
+		int *db_err_out)
+{
+	if (!cont || (0 < sid.length()) ||
+		(0 == remote_host.length()) || !db_err_out) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_E_INVAL;
+	while (1) {
+		XmlUpdateContext uc = ctx->manager->createUpdateContext();
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			// Retrieve the SERIAL_ID doc if it exists.
+			XmlDocument doc;
+			bool wasFound = true;
+			try {
+				doc = cont->getDocument(txn,
+							JALDB_SERIAL_ID_DOC_NAME,
+							DB_READ_COMMITTED);
+			} catch (XmlException &e){
+				if (e.getExceptionCode() ==
+					XmlException::DOCUMENT_NOT_FOUND) {
+					wasFound = false;
+				}
+				else {
+					throw e;
+				}
+			}
+			if (wasFound) {
+				XmlValue val;
+				if (!doc.getMetaData(JALDB_NS,
+					JALDB_LAST_CONFED_SID_NAME,
+					val)) {
+					// something is horribly wrong, there is no serial
+					// ID in the database
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				if (!val.isString()) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				sid = val.asString();
+				txn.abort();
+				ret = JALDB_OK;
+				break;
+			}
+			else {
+				// Document does not exist, create it.
+				XmlValue sid_val(JALDB_INITIAL_SID);
+				doc = ctx->manager->createDocument();
+				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setMetaData(JALDB_NS,
+						JALDB_LAST_CONFED_SID_NAME,
+						sid_val);
+				try {
+					cont->putDocument(txn, doc, uc);
+					ret = JALDB_OK;
+				} catch (XmlException &e){
+					if (e.getExceptionCode() ==
+						XmlException::UNIQUE_ERROR) {
+						ret = JALDB_E_SID;
+					}
+					else {
+						throw e;
+					}
+				}
+				if (ret != JALDB_OK) {
+					txn.abort();
+					break;
+				}
+				sid = JALDB_INITIAL_SID;
+				txn.commit();
+				break;
+			}
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() ==
+				XmlException::DATABASE_ERROR) {
+				if (e.getDbErrno()
+					== DB_LOCK_DEADLOCK) {
+					continue;
+				}
+			}
+			throw e;
+		}
+	}
+	return ret;
+}

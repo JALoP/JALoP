@@ -44,8 +44,10 @@
 #define JALDB_AUDIT_CONF_NAME "conf_audit"
 #define JALDB_LOG_CONF_NAME "conf_log"
 
+#define JALDB_INITIAL_SID "0"
 #define JALDB_NS "jalop:localstore/metadata"
 #define JALDB_SERIAL_ID_NAME "serialId"
+#define JALDB_LAST_CONFED_SID_NAME "last_confed_serialId"
 #define JALDB_SERIAL_ID_DOC_NAME "__next_sid"
 #define JALDB_JOURNAL_PATH "journalPath"
 #define JALDB_SOURCE "source"

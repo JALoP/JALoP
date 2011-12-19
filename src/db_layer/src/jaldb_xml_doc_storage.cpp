@@ -31,6 +31,7 @@
 #include "jaldb_dom_to_event_writer.hpp"
 #include "jaldb_xml_doc_storage.hpp"
 #include <dbxml/XmlDocument.hpp>
+#include <dbxml/DbXml.hpp>
 
 using namespace std;
 using namespace DbXml;
@@ -57,3 +58,88 @@ enum jaldb_status jaldb_put_document_as_dom(
 
 	return JALDB_OK;
 }
+
+enum jaldb_status jaldb_get_document(
+	XmlTransaction &txn,
+	XmlContainer *container,
+	const std::string &doc_name,
+	XmlDocument *doc
+	)
+{
+	jaldb_status ret = JALDB_OK;
+
+	if (!container || 0 == doc_name.length() || !doc || *doc) {
+		return JALDB_E_INVAL;
+	}
+
+	try {
+		*doc = container->getDocument(txn,
+			doc_name, DB_READ_COMMITTED);
+	} catch (XmlException &e) {
+		if (e.getExceptionCode()
+		== XmlException::DOCUMENT_NOT_FOUND) {
+			return JALDB_E_NOT_FOUND;
+		}
+		// re-throw e, it will get caught by the outer
+		// try/catch block.
+		throw(e);
+	}
+	return ret;
+}
+
+enum jaldb_status jaldb_remove_document(
+	XmlTransaction &txn,
+	XmlUpdateContext &uc,
+	XmlContainer &container,
+	const std::string &doc_name)
+{
+	jaldb_status ret = JALDB_OK;
+
+	if ( 0 == doc_name.length()){
+		return JALDB_E_INVAL;
+	}
+
+	try {
+		// Should now delete independent of doc object.
+		container.deleteDocument(txn, doc_name, uc);
+	} catch (XmlException &e) {
+		if (e.getExceptionCode()
+			== XmlException::DOCUMENT_NOT_FOUND) {
+			return JALDB_E_NOT_FOUND;
+		}
+		// re-throw e, it will get caught by the outer
+		// try/catch block.
+		throw(e);
+	}
+	return ret;
+}
+
+enum jaldb_status jaldb_save_document(
+	XmlTransaction &txn,
+	XmlUpdateContext &uc,
+	XmlContainer &container,
+	XmlDocument &doc,
+	const std::string &doc_name)
+{
+	jaldb_status ret = JALDB_OK;
+
+	if (0 == doc_name.length()){
+		return JALDB_E_INVAL;
+	}
+
+	doc.setName(doc_name);
+
+	try {
+		container.putDocument(txn, doc, uc);
+	} catch (XmlException &e) {
+		if (e.getExceptionCode()
+			== XmlException::UNIQUE_ERROR) {
+			return JALDB_E_SID;
+		}
+		// re-throw e, it will get caught by the outer
+		// try/catch block.
+		throw(e);
+	}
+	return ret;
+}
+
