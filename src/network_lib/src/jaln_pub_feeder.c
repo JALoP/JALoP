@@ -378,7 +378,7 @@ enum jal_status jaln_pub_begin_next_record_ans(struct jaln_session *sess, uint64
 			}
 			left_to_process -= tmp;
 		}
-		pd->payload_sz = journal_offset;
+		pd->payload_off = journal_offset;
 		break;
 	default:
 		return axl_false;
