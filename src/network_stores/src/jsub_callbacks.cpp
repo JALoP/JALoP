@@ -78,6 +78,22 @@ void jsub_on_channel_close(
 		DEBUG_LOG("ON_CHANNEL_CLOSED");
 		DEBUG_LOG("channel_info: %p", channel_info);
 	}
+	if (-1 != db_payload_fd) {
+		// Valid file descriptor
+		uint64_t offset = jsub_get_offset(db_payload_fd);
+		int rc = jsub_store_journal_resume(
+					jsub_db_ctx,
+					channel_info->hostname,
+					db_payload_path, offset);
+		if ((0 != rc)  && jsub_debug) {
+			DEBUG_LOG("store journal resume failed for host: %s",
+				  channel_info->hostname);
+		}
+		if ((0 == rc)  && jsub_debug) {
+			DEBUG_LOG("store journal resume succeeded for host: %s",
+				  channel_info->hostname);
+		}
+	}
 }
 
 void jsub_on_connection_close(
@@ -121,7 +137,7 @@ int jsub_get_subscribe_request(
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		char **serial_id,
-		__attribute__((unused)) uint64_t *offset)
+		uint64_t *offset)
 {
 	int ret = 0;
 	if (jsub_debug) {
@@ -138,6 +154,27 @@ int jsub_get_subscribe_request(
 			  type, sid_out.c_str());
 	}
 	*serial_id = (char *)sid_out.c_str();
+
+	if (type == JALN_RTYPE_JOURNAL) {
+		// Retrieve offset if it exists
+		ret = jsub_get_journal_resume(jsub_db_ctx,
+					ch_info->hostname,
+					&db_payload_path, *offset);
+		if (0 != ret) {
+			// Default
+			*offset = 0;
+			db_payload_path = NULL;
+		}
+		if ((0 != ret) && jsub_debug) {
+			DEBUG_LOG("failed to retrieve a journal resume for host: %s",
+				  ch_info->hostname);
+		}
+		if ((0 == ret) && jsub_debug) {
+			DEBUG_LOG("retrieved a journal resume for host: %s",
+				  ch_info->hostname);
+		}
+		ret = 0;
+	}
 	return ret;
 }
 
@@ -381,7 +418,7 @@ int jsub_on_digest_response(
 }
 
 void jsub_message_complete(
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) void *user_data)
 {
@@ -396,11 +433,13 @@ void jsub_message_complete(
 	if (-1 != db_payload_fd) {
 		rc = fsync(db_payload_fd);
 		if ((-1 == rc) && jsub_debug) {
-			DEBUG_LOG("payload file sync failed!\n");
+			DEBUG_LOG("payload file sync failed for %s\n",
+				  ch_info->hostname);
 		}
 		rc = close(db_payload_fd);
 		if ((-1 == rc) && jsub_debug) {
-			DEBUG_LOG("payload file close failed!\n");
+			DEBUG_LOG("payload file close failed for %s\n",
+				  ch_info->hostname);
 		}
 	}
 	free(sys_meta_buf);
@@ -412,12 +451,32 @@ void jsub_message_complete(
 }
 
 enum jal_status jsub_get_bytes(
-		__attribute__((unused))const uint64_t offset,
-		__attribute__((unused))uint8_t *const buffer,
-		__attribute__((unused))uint32_t *size,
+		const uint64_t offset,
+		uint8_t *const buffer,
+		uint32_t *size,
 		__attribute__((unused))void *feeder_data)
 {
-	// TODO: Add code here to read data from file?
+	if (-1 == db_payload_fd){
+		if (jsub_debug) {
+			DEBUG_LOG("get_bytes: bad file descriptor!\n");
+		}
+		return JAL_E_BAD_FD;
+	}
+	int rc = lseek(db_payload_fd, offset, SEEK_SET);
+	if (-1 == rc ) {
+		if (jsub_debug) {
+			DEBUG_LOG("get_bytes: seek failed!\n");
+		}
+		return JAL_E_FILE_IO;
+	}
+	ssize_t bytes_read = read(db_payload_fd, buffer, *size);
+	*size = bytes_read;
+	if (-1 == bytes_read) {
+		if (jsub_debug) {
+			DEBUG_LOG("get_bytes: read failed!\n");
+		}
+		return JAL_E_FILE_IO;
+	}
 	return JAL_OK;
 }
 
