@@ -79,7 +79,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	enum jal_status jal_err;
 	enum jaldb_status db_err;
 	int bdb_err;
-	uint8_t *digest;
+	uint8_t *digest = NULL;
 	std::string source;
 	std::string sid;
 
@@ -230,10 +230,20 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	ret = 0;
 
 out:
+	if (digest_ctx) {
+		digest_ctx->destroy(instance);
+		jal_digest_ctx_destroy(&digest_ctx);
+	}
 	XMLString::release(&namespace_uri);
 	XMLString::release(&manifest_namespace_uri);
-	jal_digest_ctx_destroy(&digest_ctx);
+	free(digest);
 	free(data_buf);
 	free(app_meta_buf);
+	if (sys_meta_doc) {
+		delete sys_meta_doc;
+	}
+	if (app_meta_doc) {
+		delete app_meta_doc;
+	}
 	return ret;
 }

@@ -271,6 +271,13 @@ err_out:
 	}
 	XMLString::release(&namespace_uri);
 	XMLString::release(&manifest_namespace_uri);
+	free(digest);
 	free(app_meta_buf);
+	if (sys_meta_doc) {
+		delete sys_meta_doc;
+	}
+	if (app_meta_doc) {
+		delete app_meta_doc;
+	}
 	return ret;
 }

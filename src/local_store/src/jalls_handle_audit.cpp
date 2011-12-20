@@ -223,6 +223,7 @@ err_out:
 	XMLString::release(&namespace_uri);
 	XMLString::release(&manifest_namespace_uri);
 	jal_digest_ctx_destroy(&digest_ctx);
+	free(digest);
 	free(data_buf);
 	free(app_meta_buf);
 	if (sys_meta_doc) {
