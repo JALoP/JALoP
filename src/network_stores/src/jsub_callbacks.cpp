@@ -73,7 +73,6 @@ void jsub_on_channel_close(
 		__attribute__((unused)) const struct jaln_channel_info *channel_info,
 		__attribute__((unused)) void *user_data)
 {
-	// Nothing to do here
 	if (jsub_debug) {
 		DEBUG_LOG("ON_CHANNEL_CLOSED");
 		DEBUG_LOG("channel_info: %p", channel_info);
@@ -462,7 +461,7 @@ enum jal_status jsub_get_bytes(
 		}
 		return JAL_E_BAD_FD;
 	}
-	int rc = lseek(db_payload_fd, offset, SEEK_SET);
+	int rc = lseek64(db_payload_fd, offset, SEEK_SET);
 	if (-1 == rc ) {
 		if (jsub_debug) {
 			DEBUG_LOG("get_bytes: seek failed!\n");
@@ -490,7 +489,7 @@ int jsub_acquire_journal_feeder(
 		DEBUG_LOG("ACQUIRE_JOURNAL_FEEDER");
 		DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n",
 			  ch_info, serial_id, feeder);
-	}// jsub_get_bytes?
+	}
 	feeder->feeder_data = user_data;
 	feeder->get_bytes = jsub_get_bytes;
 	return JAL_OK;
