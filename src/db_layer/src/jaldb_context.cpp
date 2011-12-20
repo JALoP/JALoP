@@ -27,10 +27,12 @@
  * limitations under the License.
 */
 
+#define __STDC_FORMAT_MACROS
 #include <fcntl.h>
 #include <string.h>
 #include <sstream>
 #include <sys/stat.h>
+#include <inttypes.h> // For PRIu64
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
@@ -2696,6 +2698,15 @@ enum jaldb_status jaldb_store_confed_sid_tmp_helper(
 				doc.setMetaData(JALDB_NS,
 						JALDB_LAST_CONFED_SID_NAME,
 						sid_val);
+				XmlValue offset_val(JALDB_DEFAULT_OFFSET);
+				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setMetaData(JALDB_NS,
+						JALDB_OFFSET_NAME,
+						offset_val);
+				XmlValue path_val("");
+				doc.setMetaData(JALDB_NS,
+						JALDB_JOURNAL_PATH,
+						path_val);
 				try {
 					cont->putDocument(txn, doc, uc);
 					ret = JALDB_OK;
@@ -2858,6 +2869,15 @@ enum jaldb_status jaldb_get_last_confed_sid_tmp_helper(
 				doc.setMetaData(JALDB_NS,
 						JALDB_LAST_CONFED_SID_NAME,
 						sid_val);
+				XmlValue offset_val(JALDB_DEFAULT_OFFSET);
+				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setMetaData(JALDB_NS,
+						JALDB_OFFSET_NAME,
+						offset_val);
+				XmlValue path_val("");
+				doc.setMetaData(JALDB_NS,
+						JALDB_JOURNAL_PATH,
+						path_val);
 				try {
 					cont->putDocument(txn, doc, uc);
 					ret = JALDB_OK;
@@ -2875,6 +2895,261 @@ enum jaldb_status jaldb_get_last_confed_sid_tmp_helper(
 					break;
 				}
 				sid = JALDB_INITIAL_SID;
+				txn.commit();
+				break;
+			}
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() ==
+				XmlException::DATABASE_ERROR) {
+				if (e.getDbErrno()
+					== DB_LOCK_DEADLOCK) {
+					continue;
+				}
+			}
+			throw e;
+		}
+	}
+	return ret;
+}
+
+enum jaldb_status jaldb_store_journal_resume(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *path,
+		uint64_t offset)
+{
+	if (!ctx || !ctx->manager || !remote_host ||
+		!path  || !ctx->journal_sys_cont) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	enum jaldb_status ret = JALDB_E_INVAL;
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	//char offset_buf[21];
+	char *offset_buf = (char *) jal_malloc(21);
+	snprintf(offset_buf, 21, "%" PRIu64, offset);
+	while (1) {
+		XmlUpdateContext uc = ctx->manager->createUpdateContext();
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			// Retrieve the doc if it exists.
+			XmlDocument doc;
+			bool wasFound = true;
+			try {
+				doc = cont.getDocument(txn,
+							JALDB_SERIAL_ID_DOC_NAME,
+							DB_READ_COMMITTED);
+			} catch (XmlException &e){
+				if (e.getExceptionCode()
+					== XmlException::DOCUMENT_NOT_FOUND) {
+					wasFound = false;
+				}
+				else {
+					throw e;
+				}
+			}
+			if (wasFound) {
+				XmlValue val;
+				if (!doc.getMetaData(JALDB_NS,
+					JALDB_OFFSET_NAME,
+					val)) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				if (!val.isString()) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				XmlValue new_offset_val(offset_buf);
+				doc.setMetaData(JALDB_NS,
+						JALDB_OFFSET_NAME,
+						new_offset_val);
+				if (!doc.getMetaData(JALDB_NS,
+					JALDB_JOURNAL_PATH,
+					val)) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				if (!val.isString()) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				XmlValue new_path_val(path);
+				doc.setMetaData(JALDB_NS,
+						JALDB_JOURNAL_PATH,
+						new_path_val);
+				cont.updateDocument(txn, doc, uc);
+				txn.commit();
+				ret = JALDB_OK;
+				break;
+			}
+			else {
+				// Document does not exist, create it.
+				XmlValue offset_val(offset_buf);
+				doc = ctx->manager->createDocument();
+				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setMetaData(JALDB_NS,
+						JALDB_OFFSET_NAME,
+						offset_val);
+				XmlValue path_val(path);
+				doc.setMetaData(JALDB_NS,
+						JALDB_JOURNAL_PATH,
+						path_val);
+				XmlValue sid_val(JALDB_INITIAL_SID);
+				doc.setMetaData(JALDB_NS,
+						JALDB_LAST_CONFED_SID_NAME,
+						sid_val);
+				try {
+					cont.putDocument(txn, doc, uc);
+					ret = JALDB_OK;
+					txn.commit();
+				} catch (XmlException &e){
+					txn.abort();
+					if (e.getExceptionCode() ==
+						XmlException::UNIQUE_ERROR) {
+						ret = JALDB_E_SID;
+					}
+					else {
+						throw e;
+					}
+				}
+				break;
+			}
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() ==
+				XmlException::DATABASE_ERROR) {
+				if (e.getDbErrno()
+					== DB_LOCK_DEADLOCK) {
+					continue;
+				}
+			}
+			throw e;
+		}
+	}
+	return ret;
+}
+
+enum jaldb_status jaldb_get_journal_resume(
+		jaldb_context *ctx,
+		const char *remote_host,
+		char **path,
+		uint64_t &offset)
+{
+	if (!ctx || !remote_host || *path ) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret = JALDB_E_INVAL;
+	string sys_db = jaldb_make_temp_db_name(remote_host,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer cont;
+	ret = jaldb_open_temp_container(ctx, sys_db, cont);
+	if (ret != JALDB_OK) {
+		return ret;
+	}
+	while (1) {
+		XmlUpdateContext uc = ctx->manager->createUpdateContext();
+		XmlTransaction txn = ctx->manager->createTransaction();
+		try {
+			// Retrieve the SERIAL_ID doc if it exists.
+			XmlDocument doc;
+			bool wasFound = true;
+			try {
+				doc = cont.getDocument(txn,
+							JALDB_SERIAL_ID_DOC_NAME,
+							DB_READ_COMMITTED);
+			} catch (XmlException &e){
+				if (e.getExceptionCode() ==
+					XmlException::DOCUMENT_NOT_FOUND) {
+					wasFound = false;
+				}
+				else {
+					throw e;
+				}
+			}
+			if (wasFound) {
+				XmlValue offset_val;
+				if (!doc.getMetaData(JALDB_NS,
+					JALDB_OFFSET_NAME,
+					offset_val)) {
+					// something is horribly wrong, there is no serial
+					// ID in the database
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				if (!offset_val.isString()) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				char *offset_str = (char *) offset_val.asString().c_str();
+				if (0 > sscanf(offset_str, "%" PRIu64, &offset)) {
+					// Failed to parse offset?
+					offset = 0;
+				}
+				XmlValue path_val;
+				if (!doc.getMetaData(JALDB_NS,
+					JALDB_JOURNAL_PATH, path_val)) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				if (!path_val.isString()) {
+					txn.abort();
+					ret = JALDB_E_CORRUPTED;
+					break;
+				}
+				*path = jal_strdup((char *) path_val.asString().c_str());
+				txn.abort();
+				ret = JALDB_OK;
+				break;
+			}
+			else {
+				// Document does not exist, create it.
+				XmlValue offset_val(JALDB_DEFAULT_OFFSET);
+				doc = ctx->manager->createDocument();
+				doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+				doc.setMetaData(JALDB_NS,
+						JALDB_OFFSET_NAME,
+						offset_val);
+				XmlValue path_val("");
+				doc.setMetaData(JALDB_NS,
+						JALDB_JOURNAL_PATH,
+						path_val);
+				XmlValue sid_val(JALDB_INITIAL_SID);
+				doc.setMetaData(JALDB_NS,
+						JALDB_LAST_CONFED_SID_NAME,
+						sid_val);
+				try {
+					cont.putDocument(txn, doc, uc);
+					ret = JALDB_OK;
+				} catch (XmlException &e){
+					if (e.getExceptionCode() ==
+						XmlException::UNIQUE_ERROR) {
+						ret = JALDB_E_SID;
+					}
+					else {
+						throw e;
+					}
+				}
+				if (ret != JALDB_OK) {
+					txn.abort();
+					break;
+				}
 				txn.commit();
 				break;
 			}

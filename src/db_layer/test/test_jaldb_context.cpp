@@ -39,6 +39,7 @@ extern "C" {
 #include <test-dept.h>
 }
 
+#define __STDC_FORMAT_MACROS
 #include <db.h>
 #include <dbxml/DbXml.hpp>
 #include <dirent.h>
@@ -53,6 +54,7 @@ extern "C" {
 #include <xercesc/util/PlatformUtils.hpp>
 #include <dbxml/DbXml.hpp>
 #include <dbxml/XmlContainer.hpp>
+#include <inttypes.h>
 #include "jal_alloc.h"
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
@@ -5487,4 +5489,169 @@ extern "C" void test_jaldb_get_last_confed_sid_tmp_helper_works_doc_dne()
 				REMOTE_HOST, sid_out, &db_err_out);
 	assert_equals(JALDB_OK, ret);
 	assert(0 == strcmp(JALDB_INITIAL_SID, sid_out.c_str()));
+}
+
+extern "C" void test_jaldb_store_journal_resume_works()
+{
+	std::string path = "my_path";
+	std::string host = REMOTE_HOST;
+	uint64_t offset = 123;
+	jaldb_status ret = JALDB_OK;
+
+	ret = jaldb_store_journal_resume(context, host.c_str(),
+					 path.c_str(), offset);
+	assert_equals(JALDB_OK, ret);
+
+	string sys_db = jaldb_make_temp_db_name(REMOTE_HOST,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(context, sys_db, sys_cont);
+	assert_equals(JALDB_OK, ret);
+
+	// Retrieve the stored document
+	XmlDocument doc;
+	XmlTransaction txn = context->manager->createTransaction();
+	try {
+		doc = sys_cont.getDocument(txn,
+					JALDB_SERIAL_ID_DOC_NAME,
+					DB_READ_COMMITTED);
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		ret = JALDB_E_INVAL;
+		txn.abort();
+	}
+	assert_equals(JALDB_OK, ret);
+
+	// Compare values
+	XmlValue offset_val;
+	XmlValue path_val;
+	XmlValue sid_val;
+	if (!doc.getMetaData(JALDB_NS,
+		JALDB_OFFSET_NAME, offset_val)) {
+		assert_false(true);
+	}
+	if (!doc.getMetaData(JALDB_NS,
+		JALDB_JOURNAL_PATH, path_val)) {
+		assert_false(true);
+	}
+	if (!doc.getMetaData(JALDB_NS,
+		JALDB_LAST_CONFED_SID_NAME, sid_val)) {
+		assert_false(true);
+	}
+	assert_equals(0, path.compare(path_val.asString()));
+	assert_equals("0", sid_val.asString());
+	char *offset_str =  (char *) offset_val.asString().c_str();
+	uint64_t *offset_out = (uint64_t *) jal_malloc(21);
+	sscanf(offset_str, "%" PRIu64, offset_out);
+	assert_equals(offset, *offset_out);
+	txn.abort();
+
+	// Modify the offset and path, doc should get updated.
+	// last_confed_sid should remain the same
+	offset = 300;
+	path = "another_path";
+	ret = jaldb_store_journal_resume(context, host.c_str(),
+					 path.c_str(), offset);
+	assert_equals(JALDB_OK, ret);
+
+	// Retrieve the stored document
+	XmlDocument doc2;
+	XmlTransaction txn2 = context->manager->createTransaction();
+	try {
+		doc2 = sys_cont.getDocument(txn2,
+					JALDB_SERIAL_ID_DOC_NAME,
+					DB_READ_COMMITTED);
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		ret = JALDB_E_INVAL;
+		txn2.abort();
+	}
+	assert_equals(JALDB_OK, ret);
+
+	// Verify it was updated
+	XmlValue offset_val2;
+	XmlValue path_val2;
+	XmlValue sid_val2;
+	if (!doc2.getMetaData(JALDB_NS,
+		JALDB_OFFSET_NAME, offset_val2)) {
+		assert_false(true);
+	}
+	if (!doc2.getMetaData(JALDB_NS,
+		JALDB_JOURNAL_PATH, path_val2)) {
+		assert_false(true);
+	}
+	if (!doc2.getMetaData(JALDB_NS,
+		JALDB_LAST_CONFED_SID_NAME, sid_val2)) {
+		assert_false(true);
+	}
+	assert_equals(0, path.compare(path_val2.asString()));
+	assert_equals("0", sid_val2.asString());
+	char *offset_str2 =  (char *) offset_val2.asString().c_str();
+	uint64_t *offset_out2 = (uint64_t *) jal_malloc(21);
+	sscanf(offset_str2, "%" PRIu64, offset_out2);
+	assert_equals(offset, *offset_out2);
+	txn2.abort();
+}
+
+extern "C" void test_jaldb_get_journal_resume_works()
+{
+	char *path = NULL;
+	std::string host = REMOTE_HOST;
+	uint64_t offset;
+	jaldb_status ret = JALDB_OK;
+	std::string path_in = "my_path";
+	std::string offset_in = "123";
+	std::string sid_in = "0";
+
+	ret = jaldb_get_journal_resume(context, host.c_str(),
+					 &path, offset);
+	assert_equals(JALDB_OK, ret);
+	string sys_db = jaldb_make_temp_db_name(REMOTE_HOST,
+			JALDB_LOG_SYS_META_CONT_NAME);
+	XmlContainer sys_cont;
+	ret = jaldb_open_temp_container(context, sys_db, sys_cont);
+	assert_equals(JALDB_OK, ret);
+
+	// Insert a dummy journal resume document
+	XmlDocument doc;
+	XmlTransaction txn = context->manager->createTransaction();
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlValue offset_val(offset_in);
+	XmlValue path_val(path_in);
+	XmlValue sid_val(sid_in);
+	try {
+		doc = sys_cont.getDocument(txn,
+					JALDB_SERIAL_ID_DOC_NAME,
+					DB_READ_COMMITTED);
+		ret = JALDB_OK;
+	} catch (XmlException &e){
+		ret = JALDB_E_INVAL;
+		txn.abort();
+	}
+	assert_equals(JALDB_OK, ret);
+	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
+	doc.setMetaData(JALDB_NS,
+		JALDB_OFFSET_NAME, offset_val);
+	doc.setMetaData(JALDB_NS,
+		JALDB_JOURNAL_PATH, path_val);
+	doc.setMetaData(JALDB_NS,
+		JALDB_LAST_CONFED_SID_NAME, sid_val);
+	try {
+		sys_cont.updateDocument(txn, doc, uc);
+		ret = JALDB_OK;
+		txn.commit();
+	} catch (XmlException &e){
+		ret = JALDB_E_INVAL;
+		txn.abort();
+	}
+	assert_equals(JALDB_OK, ret);
+
+	// Retrieve and compare values
+	ret = jaldb_get_journal_resume(context, host.c_str(),
+					 &path, offset);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(0, strcmp(path, path_in.c_str()));
+	assert_equals("0", sid_in);
+	assert_equals(123, offset);
+	free(path);
 }

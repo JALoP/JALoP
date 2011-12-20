@@ -920,4 +920,41 @@ enum jaldb_status jaldb_mark_audit_sent_ok(jaldb_context *ctx, const char* sid, 
  */
 enum jaldb_status jaldb_mark_log_sent_ok(jaldb_context *ctx, const char* sid, const char *remote_name);
 
+/**
+ * Store journal_resume data in the journal temporary system container.
+ * Data stored consists of the path to the journal file and the offset.
+ *
+ * @param[in] ctx the context to use
+ * @param[in] remote_host a string to identify where the record came from.
+ * @param[in] path the path to the journal file (should be obtained using to
+ *                 jaldb_create_journal_file).
+ * @param[in] offset the file offset.
+ *
+ *@return JALDB_OK - Success, an error on failure.
+ */
+enum jaldb_status jaldb_store_journal_resume(
+		jaldb_context *ctx,
+		const char *remote_host,
+		const char *path,
+		uint64_t offset);
+
+/**
+ * Retrieve journal_resume data from the journal temporary system container.
+ * Data retrieved consists of the path to the journal file and the offset.
+ * If the journal_resume data is not found, path and offset are not altered.
+ *
+ * @param[in] ctx the context to use
+ * @param[in] remote_host a string to identify where the record came from.
+ * @param[out] path the path to the journal file (should be obtained using to
+ *                 jaldb_create_journal_file).
+ * @param[out] offset the file offset.
+ *
+ *@return JALDB_OK - Success, an error on failure.
+ */
+enum jaldb_status jaldb_get_journal_resume(
+		jaldb_context *ctx,
+		const char *remote_host,
+		char **path,
+		uint64_t &offset);
+
 #endif // _JALDB_CONTEXT_HPP_
