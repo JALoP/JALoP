@@ -411,6 +411,35 @@ int jsub_get_last_confed_sid(
 	return ret;
 }
 
+int jsub_store_journal_resume(
+		jaldb_context *db_ctx,
+		const char *remote_host,
+		const char *path,
+		uint64_t offset)
+{
+	return jaldb_store_journal_resume(db_ctx, remote_host,
+					  path, offset);
+}
+
+int jsub_get_journal_resume(
+		jaldb_context *db_ctx,
+		const char *remote_host,
+		char **path,
+		uint64_t &offset)
+{
+	return jaldb_get_journal_resume(db_ctx, remote_host,
+					path, offset);
+}
+
+off_t jsub_get_offset(int file_descriptor)
+{
+	if (-1 == file_descriptor) {
+		// Not Valid
+		return file_descriptor;
+	}
+	return lseek(file_descriptor, 0, SEEK_CUR);
+}
+
 char* jsub_db_status_to_string(jaldb_status db_status)
 {
 	std::string err_str;

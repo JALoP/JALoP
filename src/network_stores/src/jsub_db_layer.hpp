@@ -266,6 +266,52 @@ int jsub_get_last_confed_sid(
 		const std::string &source);
 
 /**
+ * Store journal_resume data in the journal temporary system container.
+ * Data stored consists of the path to the journal file and the offset.
+ *
+ * @param[in] db_ctx the context to use
+ * @param[in] remote_host a string to identify where the record came from.
+ * @param[in] path the path to the journal file (should be obtained using to
+ *                 jaldb_create_journal_file).
+ * @param[in] offset the file offset.
+ *
+ *@return JALDB_OK - Success, an error on failure.
+ */
+int jsub_store_journal_resume(
+		jaldb_context *db_ctx,
+		const char *remote_host,
+		const char *path,
+		uint64_t offset);
+
+/**
+ * Retrieve journal_resume data from the journal temporary system container.
+ * Data retrieved consists of the path to the journal file and the offset.
+ * If the journal_resume data is not found, path and offset are not altered.
+ *
+ * @param[in] db_ctx the context to use
+ * @param[in] remote_host a string to identify where the record came from.
+ * @param[out] path the path to the journal file (should be obtained using to
+ *                 jaldb_create_journal_file).
+ * @param[out] offset the file offset.
+ *
+ *@return JALDB_OK - Success, an error on failure.
+ */
+int jsub_get_journal_resume(
+		jaldb_context *db_ctx,
+		const char *remote_host,
+		char **path,
+		uint64_t &offset);
+
+/**
+ * Returns the offset of the file referenced by \p file_descriptor.
+ * @param[in] file_descriptor The file descriptor.
+ *
+ * @return
+ *  - The offset value or -1 if \p file_descriptor was invalid.
+ */
+off_t jsub_get_offset(int file_descriptor);
+
+/**
  * Prints jaldb_status to a char*.
  * @param[in] db_status The status of the database after an operation.
  *
