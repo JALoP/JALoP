@@ -506,15 +506,23 @@ void *subscriber_do_work(void *ptr)
 			if (global_args.debug_flag) {
 				DEBUG_LOG("Subscribe thread ending!");
 			}
-		// TODO: Uncomment when jaln_disconnect functionality is implemented.
-		//	err = jaln_disconnect(conn);
+			err = jaln_disconnect(conn);
+			if (JAL_OK != err) {
+				if (global_args.debug_flag) {
+					DEBUG_LOG("Subscriber failed to disconnect!");
+				}
+			}
 			break;
 		}
 	}
 err:
 	timer_keep_going = false;
-	// TODO: Uncomment when jaln_shutdown functionality is implemented.
-	//err = jaln_shutdown(conn);
+	err = jaln_shutdown(conn);
+	if (JAL_OK != err) {
+		if (global_args.debug_flag) {
+			DEBUG_LOG("Subscriber failed to shutdown network connection!");
+		}
+	}
 	jaln_context_destroy(&net_ctx);
 	if (global_args.debug_flag) {
 		printf("Subscribe thread exited!");
