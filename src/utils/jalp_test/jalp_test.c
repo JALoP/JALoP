@@ -211,8 +211,8 @@ err_out:
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
 	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char ** schema_path)
 {
-	static const char *optstring = "a:p:st:hj:k:c:dx:";
-	static const struct option long_options[] = { {"type", 1, 0, 't'} };
+	char *optstring = "a:p:st:hj:k:c:dx:";
+	struct option long_options[] = { {"type", 1, 0, 't'} };
 
 	int ret_opt;
 
