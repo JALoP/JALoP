@@ -77,10 +77,10 @@ struct global_config_t {
 	const char *remote_cert;
 	const char *session_timeout;
 	config_setting_t *data_class;	/* Array */
-	long int port;
+	long long int port;
 	const char *host;
-	long int pending_digest_max;
-	long int pending_digest_timeout;
+	long long int pending_digest_max;
+	long long int pending_digest_timeout;
 	int len_data_class;
 	const char *db_root;
 	int data_classes;
@@ -273,10 +273,10 @@ void print_config(void)
 		DEBUG_LOG("SESSION TIMEOUT:\t%s", global_config.session_timeout);
 		//DEBUG_LOG("DATA CLASS:\t\t%s\n", global_config.data_class);
 		DEBUG_LOG("DATA CLASS LENGTH:\t%d", global_config.len_data_class);
-		DEBUG_LOG("PORT:\t\t\t%ld", global_config.port);
+		DEBUG_LOG("PORT:\t\t\t%lld", global_config.port);
 		DEBUG_LOG("HOST:\t\t\t%s", global_config.host);
-		DEBUG_LOG("PENDING DIGEST MAX:\t%ld", global_config.pending_digest_max);
-		DEBUG_LOG("PENDING DIGEST TIMEOUT:\t%ld", global_config.pending_digest_timeout);
+		DEBUG_LOG("PENDING DIGEST MAX:\t%lld", global_config.pending_digest_max);
+		DEBUG_LOG("PENDING DIGEST TIMEOUT:\t%lld", global_config.pending_digest_timeout);
 		DEBUG_LOG("DB ROOT:\t\t%s\n", global_config.db_root);
 		DEBUG_LOG("\n===\nEND CONFIG VALUES:\n===");
 	}
@@ -296,10 +296,10 @@ int set_global_config(config_t *config)
 	rc = config_lookup_string(config, PRIVATE_KEY, &global_config.private_key);
 	rc &= config_lookup_string(config, PUBLIC_CERT, &global_config.public_cert);
 	rc &= config_lookup_string(config, REMOTE_CERT, &global_config.remote_cert);
-	rc &= config_lookup_int(config, PORT, &global_config.port);
+	rc &= config_lookup_int64(config, PORT, &global_config.port);
 	rc &= config_lookup_string(config, HOST, &global_config.host);
-	rc &= config_lookup_int(config, PENDING_DIGEST_MAX, &global_config.pending_digest_max);
-	rc &= config_lookup_int(config, PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout);
+	rc &= config_lookup_int64(config, PENDING_DIGEST_MAX, &global_config.pending_digest_max);
+	rc &= config_lookup_int64(config, PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout);
 	if (rc == CONFIG_FALSE){
 		if (global_args.debug_flag) {
 			DEBUG_LOG("One or more required configuration parameters was not found!");
@@ -456,7 +456,7 @@ void catch_alarm(int sig)
 void *subscriber_do_work(void *ptr)
 {
 	char port[MAX_PORT_LENGTH];
-	int ret = sprintf(port, "%ld", global_config.port);
+	int ret = sprintf(port, "%lld", global_config.port);
 	struct jaln_connection *conn = NULL;
 	struct global_config_t *cfg = (struct global_config_t *) ptr;
 	cfg = cfg;

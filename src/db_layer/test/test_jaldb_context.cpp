@@ -2285,7 +2285,9 @@ extern "C" void test_jaldb_lookup_journal_record_succeeds()
 	buf = (char *)malloc(fd_sz);
 	rc = read(fd, buf, fd_sz);
 	assert_not_equals(-1, rc);
-	assert_true(!strcmp(buf, msg.c_str()));
+	size_t len1 = strlen(buf);
+	assert_equals(len1, msg.length());
+	assert_true(!memcmp(buf, msg.c_str(), len1));
 	close(fd);
 	free(path);
 	free(buf);
@@ -2350,7 +2352,10 @@ extern "C" void test_jaldb_lookup_journal_record_succeeds_with_no_app_meta()
 	buf = (char *)malloc(fd_sz);
 	rc = read(fd, buf, fd_sz);
 	assert_not_equals(-1, rc);
-	assert_true(!strcmp(buf, msg.c_str()));
+	size_t len1 = strlen(buf);
+	size_t len2 = strlen(msg.c_str());
+	assert_equals(len1, len2);
+	assert_true(!memcmp(buf, msg.c_str(), len1));
 	close(fd);
 	free(path);
 	free(buf);
@@ -4135,7 +4140,11 @@ extern "C" void test_jaldb_save_log_works()
 	assert_equals(JALDB_OK, ret);
 	assert_equals(sys_doc, sys_doc2);
 	assert_equals(app_doc, app_doc2);
-	assert_equals(0, strcmp((char *)log_buf, (char *)data2.data));
+	size_t len1 = strlen((char *)log_buf);
+	size_t len2 = data2.size;
+	assert_equals(len1, len2);
+	assert_equals(0, memcmp((char *)log_buf,
+				(char *)data2.data, len1));
 	free(log_buf);
 }
 
@@ -4393,10 +4402,11 @@ extern "C" void test_jaldb_retrieve_log_works()
 	assert_equals(JALDB_OK, ret);
 	assert_equals(sys_doc1, sys_doc2);
 	assert_equals(app_doc1, app_doc2);
-	assert_equals(strlen((char *)data1.data),
-		      strlen((char *)log_buf2));
-	assert_equals(0, strcmp((char *)data1.data,
-				(char *)log_buf2));
+	assert_equals(data1.size,
+		      log_len2);
+	assert_equals(0, memcmp((char *)data1.data,
+				(char *)log_buf2,
+				data1.size));
 	free(log_buf2);
 }
 
@@ -4695,8 +4705,9 @@ extern "C" void test_jaldb_xfer_log_works()
 	assert_equals(JALDB_OK, ret);
 	assert_equals(sys_doc_cont, sys_doc_cont2);
 	assert_equals(app_doc_cont, app_doc_cont2);
-	assert_equals(0, strcmp((char *)data1.data,
-				(char *)data2.data));
+	assert_equals(data1.size, data2.size);
+	assert_equals(0, memcmp((char *) data1.data,
+				(char *) data2.data, data1.size));
 
 	// Retrieve sys_doc, app_doc and log from temp
 	//	Verification that the files were deleted.
@@ -5382,14 +5393,17 @@ extern "C" void test_jaldb_store_confed_sid_tmp_helper_works()
 					JALDB_SERIAL_ID_DOC_NAME,
 					DB_READ_COMMITTED);
 		XmlValue val;
-		if (!doc2.getMetaData(JALDB_NS, JALDB_LAST_CONFED_SID_NAME, val)) {
+		if (!doc2.getMetaData(JALDB_NS,
+			JALDB_LAST_CONFED_SID_NAME, val)) {
 			ret = JALDB_E_CORRUPTED;
 		}
 		if (!val.isString()) {
 			ret = JALDB_E_CORRUPTED;
 		}
 		std::string sid_out = val.asString();
-		if (0 != strcmp((const char *) sid_out.c_str(), sid.c_str())){
+		int len = sid_out.length();
+		if (0 != memcmp((const char *) sid_out.c_str(),
+			sid.c_str(), len)){
 			ret = JALDB_E_INVAL;
 		}
 		ret = JALDB_OK;
@@ -5411,14 +5425,17 @@ extern "C" void test_jaldb_store_confed_sid_tmp_helper_works()
 					JALDB_SERIAL_ID_DOC_NAME,
 					DB_READ_COMMITTED);
 		XmlValue val;
-		if (!doc3.getMetaData(JALDB_NS, JALDB_LAST_CONFED_SID_NAME, val)) {
+		if (!doc3.getMetaData(JALDB_NS,
+			JALDB_LAST_CONFED_SID_NAME, val)) {
 			ret = JALDB_E_CORRUPTED;
 		}
 		if (!val.isString()) {
 			ret = JALDB_E_CORRUPTED;
 		}
 		std::string sid_out2 = val.asString();
-		if (0 != strcmp((const char *) sid_out2.c_str(), sid2.c_str())){
+		int len = sid2.length();
+		if (0 != memcmp((const char *) sid_out2.c_str(),
+			sid2.c_str(), len)){
 			ret = JALDB_E_INVAL;
 		}
 		ret = JALDB_OK;
@@ -5470,7 +5487,9 @@ extern "C" void test_jaldb_get_last_confed_sid_tmp_helper_works()
 	ret = jaldb_get_last_confed_sid_tmp_helper(context, &sys_cont,
 				REMOTE_HOST, sid_out, &db_err_out);
 	assert_equals(JALDB_OK, ret);
-	assert(0 == strcmp(sid_in.c_str(), sid_out.c_str()));
+	assert_equals(sid_in.length(), sid_out.length());
+	assert(0 == memcmp(sid_in.c_str(), sid_out.c_str(),
+			    sid_in.length()));
 }
 
 extern "C" void test_jaldb_get_last_confed_sid_tmp_helper_works_doc_dne()
@@ -5487,8 +5506,7 @@ extern "C" void test_jaldb_get_last_confed_sid_tmp_helper_works_doc_dne()
 	std::string sid_out = "";
 	ret = jaldb_get_last_confed_sid_tmp_helper(context, &sys_cont,
 				REMOTE_HOST, sid_out, &db_err_out);
-	assert_equals(JALDB_OK, ret);
-	assert(0 == strcmp(JALDB_INITIAL_SID, sid_out.c_str()));
+	assert_not_equals(JALDB_OK, ret);
 }
 
 extern "C" void test_jaldb_store_journal_resume_works()
@@ -5525,7 +5543,6 @@ extern "C" void test_jaldb_store_journal_resume_works()
 	// Compare values
 	XmlValue offset_val;
 	XmlValue path_val;
-	XmlValue sid_val;
 	if (!doc.getMetaData(JALDB_NS,
 		JALDB_OFFSET_NAME, offset_val)) {
 		assert_false(true);
@@ -5534,12 +5551,7 @@ extern "C" void test_jaldb_store_journal_resume_works()
 		JALDB_JOURNAL_PATH, path_val)) {
 		assert_false(true);
 	}
-	if (!doc.getMetaData(JALDB_NS,
-		JALDB_LAST_CONFED_SID_NAME, sid_val)) {
-		assert_false(true);
-	}
 	assert_equals(0, path.compare(path_val.asString()));
-	assert_equals("0", sid_val.asString());
 	char *offset_str =  (char *) offset_val.asString().c_str();
 	uint64_t *offset_out = (uint64_t *) jal_malloc(21);
 	sscanf(offset_str, "%" PRIu64, offset_out);
@@ -5580,12 +5592,7 @@ extern "C" void test_jaldb_store_journal_resume_works()
 		JALDB_JOURNAL_PATH, path_val2)) {
 		assert_false(true);
 	}
-	if (!doc2.getMetaData(JALDB_NS,
-		JALDB_LAST_CONFED_SID_NAME, sid_val2)) {
-		assert_false(true);
-	}
 	assert_equals(0, path.compare(path_val2.asString()));
-	assert_equals("0", sid_val2.asString());
 	char *offset_str2 =  (char *) offset_val2.asString().c_str();
 	uint64_t *offset_out2 = (uint64_t *) jal_malloc(21);
 	sscanf(offset_str2, "%" PRIu64, offset_out2);
@@ -5601,11 +5608,10 @@ extern "C" void test_jaldb_get_journal_resume_works()
 	jaldb_status ret = JALDB_OK;
 	std::string path_in = "my_path";
 	std::string offset_in = "123";
-	std::string sid_in = "0";
 
 	ret = jaldb_get_journal_resume(context, host.c_str(),
 					 &path, offset);
-	assert_equals(JALDB_OK, ret);
+	assert_not_equals(JALDB_OK, ret);
 	string sys_db = jaldb_make_temp_db_name(REMOTE_HOST,
 			JALDB_LOG_SYS_META_CONT_NAME);
 	XmlContainer sys_cont;
@@ -5618,26 +5624,14 @@ extern "C" void test_jaldb_get_journal_resume_works()
 	XmlUpdateContext uc = context->manager->createUpdateContext();
 	XmlValue offset_val(offset_in);
 	XmlValue path_val(path_in);
-	XmlValue sid_val(sid_in);
-	try {
-		doc = sys_cont.getDocument(txn,
-					JALDB_SERIAL_ID_DOC_NAME,
-					DB_READ_COMMITTED);
-		ret = JALDB_OK;
-	} catch (XmlException &e){
-		ret = JALDB_E_INVAL;
-		txn.abort();
-	}
-	assert_equals(JALDB_OK, ret);
+	doc = context->manager->createDocument();
 	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
 	doc.setMetaData(JALDB_NS,
 		JALDB_OFFSET_NAME, offset_val);
 	doc.setMetaData(JALDB_NS,
 		JALDB_JOURNAL_PATH, path_val);
-	doc.setMetaData(JALDB_NS,
-		JALDB_LAST_CONFED_SID_NAME, sid_val);
 	try {
-		sys_cont.updateDocument(txn, doc, uc);
+		sys_cont.putDocument(txn, doc, uc);
 		ret = JALDB_OK;
 		txn.commit();
 	} catch (XmlException &e){
@@ -5646,12 +5640,14 @@ extern "C" void test_jaldb_get_journal_resume_works()
 	}
 	assert_equals(JALDB_OK, ret);
 
+	
 	// Retrieve and compare values
 	ret = jaldb_get_journal_resume(context, host.c_str(),
 					 &path, offset);
 	assert_equals(JALDB_OK, ret);
-	assert_equals(0, strcmp(path, path_in.c_str()));
-	assert_equals("0", sid_in);
+	size_t len = strlen(path);
+	assert_equals(len, path_in.length());
+	assert_equals(0, memcmp(path, path_in.c_str(), len));
 	assert_equals(123, offset);
 	free(path);
 }

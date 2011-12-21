@@ -70,14 +70,15 @@ enum jaln_connect_error jsub_connect_request_handler(
 }
 
 void jsub_on_channel_close(
-		__attribute__((unused)) const struct jaln_channel_info *channel_info,
+		const struct jaln_channel_info *channel_info,
 		__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ON_CHANNEL_CLOSED");
 		DEBUG_LOG("channel_info: %p", channel_info);
 	}
-	if (-1 != db_payload_fd) {
+	if ((-1 != db_payload_fd) &&
+		(JALN_RTYPE_JOURNAL == channel_info->type)) {
 		// Valid file descriptor
 		uint64_t offset = jsub_get_offset(db_payload_fd);
 		int rc = jsub_store_journal_resume(
