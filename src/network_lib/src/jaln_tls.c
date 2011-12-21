@@ -59,12 +59,7 @@ axl_bool jaln_profile_mask (VortexConnection *connection,
 
 axl_bool jaln_tls_on_connection_accepted(VortexConnection *connection, axlPointer user_data)
 {
-	int rc = 0;
-	rc = vortex_connection_set_profile_mask(connection, jaln_profile_mask, user_data);
-	if (rc < 0) {
-		return axl_false;
-	}
-
+	vortex_connection_set_profile_mask(connection, jaln_profile_mask, user_data);
 	return axl_true;
 }
 
