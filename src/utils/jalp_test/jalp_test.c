@@ -86,7 +86,10 @@ int main(int argc, char **argv)
 	char *hostname = NULL;
 	char *appname = NULL;
 
-	jalp_init();
+	jalp_ret = jalp_init();
+	if (jalp_ret != JAL_OK) {
+		goto err_out;
+	}
 
 	ret = generate_app_metadata(app_meta_path, &app_meta, &hostname, &appname);
 	if (ret != 0) {
@@ -127,7 +130,10 @@ int main(int argc, char **argv)
 
 	if(calculate_sha) {
 		digest_ctx = jal_sha256_ctx_create();
-		jalp_context_set_digest_callbacks(ctx, digest_ctx);
+		jalp_ret = jalp_context_set_digest_callbacks(ctx, digest_ctx);
+		if (jalp_ret != JAL_OK) {
+			goto err_out;
+		}
 	}
 
 	switch(record_type) {
