@@ -43,6 +43,8 @@
 		fprintf(stdout, "\n"); \
 	} while(0)
 
+#define JSUB_INITIAL_SID "0"
+
 volatile bool jsub_is_conn_closed = false;
 volatile int jsub_debug = 0;
 static struct jaln_subscriber_callbacks *sub_cbs =  NULL;
@@ -149,11 +151,18 @@ int jsub_get_subscribe_request(
 	std::string sid_out;
 	ret = jsub_get_last_confed_sid(jsub_db_ctx, sid_out, type,
 				       ch_info->hostname);
+	if (JAL_OK != ret) {
+		if (jsub_debug) {
+			DEBUG_LOG("last confed sid not found, defaulting to 0.");
+		}
+		sid_out = JSUB_INITIAL_SID;
+	}
 	if (jsub_debug) {
 		DEBUG_LOG("record_type: %d ser_id: %s",
 			  type, sid_out.c_str());
 	}
 	*serial_id = (char *)sid_out.c_str();
+	ret = JAL_OK;
 
 	if (type == JALN_RTYPE_JOURNAL) {
 		// Retrieve offset if it exists
