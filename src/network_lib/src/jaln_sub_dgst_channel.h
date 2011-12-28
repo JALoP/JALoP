@@ -41,7 +41,7 @@ extern "C" {
  * @param[in] dgst_list An axlList of jaln_digest_info objects, used
  * to compose the 'digest' message.
  */
-void jaln_send_digest_and_sync_no_lock(struct jaln_session *ctx, axlList *dgst_resp_list);
+void jaln_send_digest_and_sync_no_lock(jaln_session *ctx, axlList *dgst_resp_list);
 
 /**
  * A function that can be used as a 'VortexThread' that merely waits until a
@@ -57,7 +57,7 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data);
  *
  * @param[in] session The session to use for the new thread.
  */
-void jaln_create_sub_digest_channel_thread_no_lock(struct jaln_session *session);
+void jaln_create_sub_digest_channel_thread_no_lock(jaln_session *session);
 
 #ifdef __cplusplus
 }

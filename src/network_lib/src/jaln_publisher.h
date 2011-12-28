@@ -56,7 +56,7 @@ extern "C" {
  * peer_dgsts.
  */
 void jaln_pub_notify_digests_and_create_digest_response(
-		struct jaln_session *sess,
+		jaln_session *sess,
 		axlList *calc_dgsts,
 		axlList *peer_dgsts,
 		axlList **dgst_resp_infos);
@@ -71,7 +71,7 @@ void jaln_pub_notify_digests_and_create_digest_response(
  * @return JAL_OK on success, or an error code.
  */
 enum jal_status jaln_publisher_handle_sync(
-		struct jaln_session *sess,
+		jaln_session *sess,
 		VortexChannel *chan,
 		VortexFrame *frame,
 		int msg_no);
@@ -87,7 +87,7 @@ enum jal_status jaln_publisher_handle_sync(
  * @return JAL_OK if the message successfully parsed and dealt with, or an
  * error code.
  */
-enum jal_status jaln_publisher_handle_digest(struct jaln_session *sess,
+enum jal_status jaln_publisher_handle_digest(jaln_session *sess,
 		VortexChannel *chan,
 		VortexFrame *frame,
 		int msg_no);
@@ -114,7 +114,7 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan,
  *
  * @return a configured jaln_session.
  */
-struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
+jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
 
 /**
  * Top level vortex frame handler for the 'record' channel of a session.
@@ -139,7 +139,7 @@ void jaln_pub_channel_frame_handler(VortexChannel *chan,
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_pub_handle_subscribe(struct jaln_session *session,
+enum jal_status jaln_pub_handle_subscribe(jaln_session *session,
 		VortexChannel *chan,
 		VortexFrame *frame,
 		int msg_no);
@@ -153,7 +153,7 @@ enum jal_status jaln_pub_handle_subscribe(struct jaln_session *session,
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *session,
+enum jal_status jaln_pub_handle_journal_resume(jaln_session *session,
 		VortexChannel *chan,
 		VortexFrame *frame,
 		int msg_no);
@@ -204,7 +204,7 @@ void jaln_publisher_on_channel_create(int channel_num,
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_configure_pub_session(VortexChannel *chan, struct jaln_session *session);
+enum jal_status jaln_configure_pub_session(VortexChannel *chan, jaln_session *session);
 
 /**
  * Configure a jaln_session for use as a publisher. This function expects the
@@ -215,7 +215,7 @@ enum jal_status jaln_configure_pub_session(VortexChannel *chan, struct jaln_sess
  *
  * @return JAL_OK on success, or an error code.
  */
-enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, struct jaln_session *session);
+enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, jaln_session *session);
 
 #ifdef __cplusplus
 }

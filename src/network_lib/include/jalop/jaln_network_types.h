@@ -276,6 +276,14 @@ enum jaln_connect_error {
 
 struct jaln_connection;
 
+
+/**
+ * This handle maintains the data associated with a pair of BEEP channels used
+ * to transmit/receive JALoP messages. For each type of data (journal, audit
+ * or log) exchanged with a particular remote.
+ */
+typedef struct jaln_session_t jaln_session;
+
 /**
  * This holds global data such as base publisher
  * callbacks, and channel creation handlers.

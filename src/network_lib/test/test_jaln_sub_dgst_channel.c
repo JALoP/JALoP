@@ -37,14 +37,16 @@
 
 static jaln_context *ctx;
 static struct jaln_channel_info *ch_info;
-static struct jaln_session *sess;
+static jaln_session *sess;
 static axlList *dgst_list;
 
-int on_digest_response(__attribute__((unused)) const struct jaln_channel_info *ch_info,
-			__attribute__((unused)) enum jaln_record_type type,
-			__attribute__((unused)) const char *serial_id,
-			__attribute__((unused)) const enum jaln_digest_status status,
-			__attribute__((unused)) const void *user_data)
+int on_digest_response(
+		__attribute__((unused)) jaln_session *sess,
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const enum jaln_digest_status status,
+		__attribute__((unused)) const void *user_data)
 {
 	return JAL_OK;
 }

@@ -60,7 +60,7 @@ axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 	vortex_channel_set_automatic_mime(chan, 2);
 	vortex_channel_set_serialize(chan, axl_true);
 	char * server_name_cpy = jal_strdup(server_name);
-	struct jaln_session *sess = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, server_name_cpy, paired_chan_num);
+	jaln_session *sess = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, server_name_cpy, paired_chan_num);
 	free(server_name_cpy);
 	if (!sess) {
 		return axl_false;
@@ -80,7 +80,7 @@ axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 	if (!ctx || !conn || !server_name || (0 > chan_num)) {
 		return axl_false;
 	}
-	struct jaln_session *session = jaln_session_create();
+	jaln_session *session = jaln_session_create();
 	session->rec_chan_num = chan_num;
 	session->rec_chan = vortex_connection_get_channel(conn, chan_num);
 
@@ -155,7 +155,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 {
 	char *msg = NULL;
 	struct jaln_init_info *info = NULL;
-	struct jaln_session *sess = (struct jaln_session *)user_data;
+	jaln_session *sess = (jaln_session *)user_data;
 	struct jaln_connect_request *conn_req = NULL;
 	if (!chan || !conn || !frame || !sess || !sess->jaln_ctx || !sess->jaln_ctx->conn_callbacks) {
 		goto err_out;

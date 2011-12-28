@@ -38,6 +38,7 @@ static jaln_context *ctx;
 static struct jaln_publisher_callbacks *pub_cbs;
 
 int my_on_journal_resume(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) struct jaln_record_info *record_info,
 		__attribute__((unused)) uint64_t offset,
@@ -50,6 +51,7 @@ int my_on_journal_resume(
 }
 
 int my_on_subscribe(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -60,6 +62,7 @@ int my_on_subscribe(
 }
 
 int my_get_next_record_info_and_metadata(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *last_serial_id,
@@ -72,6 +75,7 @@ int my_get_next_record_info_and_metadata(
 }
 
 int my_release_metadata_buffers(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t *system_metadata_buffer,
@@ -82,6 +86,7 @@ int my_release_metadata_buffers(
 }
 
 int my_acquire_log_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t **buffer,
@@ -91,6 +96,7 @@ int my_acquire_log_data(
 }
 
 int my_release_log_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t *buffer,
@@ -100,6 +106,7 @@ int my_release_log_data(
 }
 
 int my_acquire_audit_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t **buffer,
@@ -109,6 +116,7 @@ int my_acquire_audit_data(
 }
 
 int my_release_audit_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t *buffer,
@@ -118,6 +126,7 @@ int my_release_audit_data(
 }
 
 enum jal_status my_acquire_journal_feeder(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
@@ -127,6 +136,7 @@ enum jal_status my_acquire_journal_feeder(
 }
 
 enum jal_status my_release_journal_feeder(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
@@ -136,6 +146,7 @@ enum jal_status my_release_journal_feeder(
 }
 
 enum jal_status my_on_record_complete(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) char *serial_id,
@@ -145,6 +156,7 @@ enum jal_status my_on_record_complete(
 }
 
 void my_sync(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -155,6 +167,7 @@ void my_sync(
 }
 
 void my_notify_digest(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -166,6 +179,7 @@ void my_notify_digest(
 }
 
 void my_peer_digest(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,

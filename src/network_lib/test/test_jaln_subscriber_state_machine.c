@@ -45,6 +45,7 @@
 #include "jaln_session.h"
 
 int dummy_get_subscribe_request(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) char **serial_id,
@@ -59,6 +60,7 @@ static size_t journal_sz;
 static size_t journal_off;
 
 int dummy_on_record_info(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const struct jaln_record_info *record_info,
@@ -79,6 +81,7 @@ int dummy_on_record_info(
 }
 
 int dummy_on_audit(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) const uint8_t *buffer,
@@ -89,6 +92,7 @@ int dummy_on_audit(
 }
 
 int dummy_on_log(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) const uint8_t *buffer,
@@ -99,6 +103,7 @@ int dummy_on_log(
 }
 
 int dummy_on_journal(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) const uint8_t *buffer,
@@ -116,6 +121,7 @@ int dummy_on_journal(
 }
 
 int dummy_notify_digest(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) char *serial_id,
@@ -127,6 +133,7 @@ int dummy_notify_digest(
 }
 
 int dummy_on_digest_response(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -137,6 +144,7 @@ int dummy_on_digest_response(
 }
 
 void dummy_message_complete(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) void *user_data)
@@ -144,6 +152,7 @@ void dummy_message_complete(
 }
 
 int dummy_acquire_journal_feeder(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
@@ -153,6 +162,7 @@ int dummy_acquire_journal_feeder(
 }
 
 void dummy_release_journal_feeder(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
@@ -173,7 +183,7 @@ void fake_frame_free(VortexFrame *frame)
 	free(frame);
 }
 enum jal_status fake_jaln_add_to_dgst_list(
-		__attribute__((unused)) struct jaln_session *sess,
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) char *serial_id,
 		__attribute__((unused)) uint8_t *dgst_buf,
 		__attribute__((unused)) size_t dgst_len)
@@ -183,7 +193,7 @@ enum jal_status fake_jaln_add_to_dgst_list(
 
 static struct jaln_subscriber_callbacks *sub_cbs = NULL;
 static jaln_context *ctx = NULL;
-static struct jaln_session *session = NULL;
+static jaln_session *session = NULL;
 static char *app_meta_sz_str = NULL;
 static char *sys_meta_sz_str = NULL;
 static char *payload_sz_str = NULL;
@@ -216,7 +226,7 @@ struct jaln_sub_state fake_state;
 #define AUDIT_LEN_HDR "jal-audit-length"
 #define JOURNAL_LEN_HDR "jal-journal-length"
 
-axl_bool fake_handler(__attribute__((unused)) struct jaln_session *my_session,
+axl_bool fake_handler(__attribute__((unused)) jaln_session *my_session,
 		__attribute__((unused)) VortexFrame *my_frame,
 		__attribute__((unused)) size_t my_frame_off,
 		__attribute__((unused)) axl_bool my_more)
@@ -407,7 +417,7 @@ static const char *stubbed_frame_mime_header_content(VortexMimeHeader * header)
 
 
 axl_bool fake_frame_handler_fails(
-		__attribute__((unused)) struct jaln_session *my_session,
+		__attribute__((unused)) jaln_session *my_session,
 		__attribute__((unused)) VortexFrame *my_frame,
 		__attribute__((unused)) size_t my_frame_off,
 		__attribute__((unused)) axl_bool my_more)

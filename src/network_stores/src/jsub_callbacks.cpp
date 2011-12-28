@@ -136,6 +136,7 @@ void jsub_connect_nack(
 }
 
 int jsub_get_subscribe_request(
+		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		char **serial_id,
@@ -188,6 +189,7 @@ int jsub_get_subscribe_request(
 }
 
 int jsub_on_record_info(
+		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const struct jaln_record_info *record_info,
@@ -238,6 +240,7 @@ int jsub_on_record_info(
 }
 
 int jsub_on_audit(
+		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		const uint8_t *buffer,
@@ -257,6 +260,7 @@ int jsub_on_audit(
 }
 
 int jsub_on_log(
+		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		const uint8_t *buffer,
@@ -276,6 +280,7 @@ int jsub_on_log(
 }
 
 int jsub_on_journal(
+		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		const uint8_t *buffer,
@@ -330,6 +335,7 @@ int jsub_on_journal(
 }
 
 int jsub_notify_digest(
+		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) char *serial_id,
@@ -349,6 +355,7 @@ int jsub_notify_digest(
 }
 
 int jsub_on_digest_response(
+		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		const char *serial_id,
@@ -427,6 +434,7 @@ int jsub_on_digest_response(
 }
 
 void jsub_message_complete(
+		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) void *user_data)
@@ -490,6 +498,7 @@ enum jal_status jsub_get_bytes(
 }
 
 int jsub_acquire_journal_feeder(
+		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
@@ -506,6 +515,7 @@ int jsub_acquire_journal_feeder(
 }
 
 void jsub_release_journal_feeder(
+		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,

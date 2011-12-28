@@ -97,7 +97,7 @@ axl_bool fake_send_ans_rpy_from_feeder(
 }
 
 enum jal_status fake_add_to_dgst_list(
-		__attribute__((unused)) struct jaln_session *sess,
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) char *serial_id,
 		__attribute__((unused)) uint8_t *dgst_buf,
 		__attribute__((unused)) size_t dgst_len)
@@ -106,6 +106,7 @@ enum jal_status fake_add_to_dgst_list(
 }
 
 enum jal_status my_on_journal_resume(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) struct jaln_record_info *record_info,
 		__attribute__((unused)) uint64_t offset,
@@ -118,6 +119,7 @@ enum jal_status my_on_journal_resume(
 }
 
 enum jal_status my_on_subscribe(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -128,6 +130,7 @@ enum jal_status my_on_subscribe(
 }
 
 enum jal_status my_get_next_record_info_and_metadata(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *last_serial_id,
@@ -146,6 +149,7 @@ enum jal_status my_get_next_record_info_and_metadata(
 }
 
 enum jal_status my_release_metadata_buffers(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t *system_metadata_buffer,
@@ -158,6 +162,7 @@ enum jal_status my_release_metadata_buffers(
 }
 
 enum jal_status my_acquire_log_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t **buffer,
@@ -168,6 +173,7 @@ enum jal_status my_acquire_log_data(
 }
 
 enum jal_status my_release_log_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t *buffer,
@@ -178,6 +184,7 @@ enum jal_status my_release_log_data(
 }
 
 enum jal_status my_acquire_audit_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t **buffer,
@@ -188,6 +195,7 @@ enum jal_status my_acquire_audit_data(
 }
 
 enum jal_status my_release_audit_data(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) uint8_t *buffer,
@@ -215,6 +223,7 @@ enum jal_status journal_get_bytes(const uint64_t offset,
 
 
 enum jal_status my_acquire_journal_feeder(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
@@ -225,6 +234,7 @@ enum jal_status my_acquire_journal_feeder(
 }
 
 enum jal_status my_release_journal_feeder(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
@@ -234,6 +244,7 @@ enum jal_status my_release_journal_feeder(
 }
 
 enum jal_status my_on_record_complete(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) char *serial_id,
@@ -243,6 +254,7 @@ enum jal_status my_on_record_complete(
 }
 
 void my_sync(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -253,6 +265,7 @@ void my_sync(
 }
 
 void my_notify_digest(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -264,6 +277,7 @@ void my_notify_digest(
 }
 
 void my_peer_digest(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
@@ -276,7 +290,7 @@ void my_peer_digest(
 	return;
 }
 
-static struct jaln_session *sess;
+static jaln_session *sess;
 
 void setup()
 {
@@ -433,11 +447,11 @@ void test_on_finished_gets_next_record()
 {
 	jaln_pub_feeder_on_finished((VortexChannel*)0xdeadbeef, (VortexPayloadFeeder*)0xbadf00d, sess);
 	assert_false(finalized_called);
-	my_release_log_data(sess->ch_info,
+	my_release_log_data(sess, sess->ch_info,
 			sess->pub_data->serial_id,
 			sess->pub_data->payload,
 			sess->jaln_ctx->user_data);
-	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+	my_release_metadata_buffers(sess, sess->ch_info, sess->pub_data->serial_id,
 			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
 	free(sess->pub_data->serial_id);
 	free(sess->pub_data->headers);
@@ -455,7 +469,7 @@ void test_pub_feeder_fill_buffer_works_log_with_large_buffer()
 	assert_equals(strlen(EXPECTED_MSG), size);
 	assert_equals(0, memcmp(buffer, EXPECTED_MSG, size));
 	free(buffer);
-	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+	my_release_metadata_buffers(sess, sess->ch_info, sess->pub_data->serial_id,
 			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
 	free(sess->pub_data->serial_id);
 }
@@ -482,7 +496,7 @@ void test_pub_feeder_fill_buffer_works_for_log_with_small_chunks()
 	assert_equals(strlen(EXPECTED_MSG), wrote);
 	assert_equals(0, memcmp(buffer, EXPECTED_MSG, wrote));
 	free(buffer);
-	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id, 
+	my_release_metadata_buffers(sess, sess->ch_info, sess->pub_data->serial_id, 
 			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
 	free(sess->pub_data->serial_id);
 }
@@ -499,7 +513,7 @@ void test_pub_feeder_fill_buffer_works_with_audit_for_large_buffer()
 	assert_equals(strlen(EXPECTED_MSG), size);
 	assert_equals(0, memcmp(buffer, EXPECTED_MSG, size));
 	free(buffer);
-	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+	my_release_metadata_buffers(sess, sess->ch_info, sess->pub_data->serial_id,
 			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
 	free(sess->pub_data->serial_id);
 }
@@ -526,7 +540,7 @@ void test_pub_feeder_fill_buffer_works_with_audit_for_in_small_chunks()
 	assert_equals(strlen(EXPECTED_MSG), wrote);
 	assert_equals(0, memcmp(buffer, EXPECTED_MSG, wrote));
 	free(buffer);
-	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+	my_release_metadata_buffers(sess, sess->ch_info, sess->pub_data->serial_id,
 			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
 	free(sess->pub_data->serial_id);
 }
@@ -543,7 +557,7 @@ void test_pub_feeder_fill_buffer_works_with_journal_with_large_buffer()
 	assert_equals(strlen(EXPECTED_MSG), size);
 	assert_equals(0, memcmp(buffer, EXPECTED_MSG, size));
 	free(buffer);
-	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+	my_release_metadata_buffers(sess, sess->ch_info, sess->pub_data->serial_id,
 			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
 	free(sess->pub_data->serial_id);
 }
@@ -571,7 +585,7 @@ void test_pub_feeder_fill_buffer_works_with_journal_for_in_small_chunks()
 	assert_equals(0, memcmp(buffer, EXPECTED_MSG, wrote));
 	free(buffer);
 
-	my_release_metadata_buffers(sess->ch_info, sess->pub_data->serial_id,
+	my_release_metadata_buffers(sess, sess->ch_info, sess->pub_data->serial_id,
 			sess->pub_data->sys_meta, sess->pub_data->app_meta, sess->jaln_ctx->user_data);
 	free(sess->pub_data->serial_id);
 }

@@ -48,13 +48,15 @@
 static axlList *calc_dgsts;
 static axlList *peer_dgsts;
 static axlList *dgst_resp_infos;
-static struct jaln_session *sess;
+static jaln_session *sess;
 static jaln_context *ctx;
 static int peer_digest_call_cnt;
 static int sync_cnt;
 static bool fail;
 
-void peer_digest(__attribute__((unused)) const struct jaln_channel_info *ch_info,
+void peer_digest(
+		__attribute__((unused)) jaln_session *sess,
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 			__attribute__((unused)) enum jaln_record_type type,
 			__attribute__((unused)) const char *serial_id,
 			__attribute__((unused)) const uint8_t *local_digest,
@@ -66,7 +68,9 @@ void peer_digest(__attribute__((unused)) const struct jaln_channel_info *ch_info
 	peer_digest_call_cnt++;
 }
 
-void on_sync(__attribute__((unused)) const struct jaln_channel_info *ch_info,
+void on_sync(
+		__attribute__((unused)) jaln_session *sess,
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_mime_header *headers,
@@ -152,20 +156,20 @@ static const char * mock_vortex_frame_mime_header_content_failure(__attribute__(
 	return NULL;
 }
 
-int mock_jaln_handle_initialize_ack_success(__attribute__((unused)) struct jaln_session *session,
+int mock_jaln_handle_initialize_ack_success(__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) enum jaln_role role,
 		__attribute__((unused)) VortexFrame *frame)
 {
 	return 1;
 }
 
-int mock_jaln_handle_initialize_nack(__attribute__((unused)) struct jaln_session *sess,
+int mock_jaln_handle_initialize_nack(__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) VortexFrame *frame)
 {
 	return 0;
 }
 
-int mock_jaln_handle_initialize_ack_failure(__attribute__((unused)) struct jaln_session *session,
+int mock_jaln_handle_initialize_ack_failure(__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) enum jaln_role role,
 		__attribute__((unused)) VortexFrame *frame)
 {
@@ -242,7 +246,7 @@ VortexChannel *fake_vortex_channel_new(
 		__attribute__((unused)) VortexOnChannelCreated on_channel_created,
 		__attribute__((unused)) axlPointer user_data)
 {
-	jaln_session_unref((struct jaln_session*) user_data);
+	jaln_session_unref((jaln_session*) user_data);
 	return (VortexChannel*) 0xbadf00d;
 }
 
@@ -396,7 +400,7 @@ void test_pub_handle_sync_fails_on_bad_input()
 
 void test_pub_create_session_fails_with_bad_input()
 {
-	struct jaln_session *my_sess = jaln_publisher_create_session(NULL, "some_host", JALN_RTYPE_JOURNAL);
+	jaln_session *my_sess = jaln_publisher_create_session(NULL, "some_host", JALN_RTYPE_JOURNAL);
 	assert_equals(1, ctx->ref_cnt);
 	assert_pointer_equals((void*) NULL, my_sess);
 	assert_equals(1, ctx->ref_cnt);
@@ -415,7 +419,7 @@ void test_pub_create_session_works()
 {
 	const char *host = "some_host";
 	assert_equals(1, ctx->ref_cnt);
-	struct jaln_session *my_sess = jaln_publisher_create_session(ctx, "some_host", JALN_RTYPE_JOURNAL);
+	jaln_session *my_sess = jaln_publisher_create_session(ctx, "some_host", JALN_RTYPE_JOURNAL);
 	assert_not_equals((void*) NULL, my_sess);
 	assert_equals(2, ctx->ref_cnt);
 	assert_equals(JALN_ROLE_PUBLISHER, my_sess->role);

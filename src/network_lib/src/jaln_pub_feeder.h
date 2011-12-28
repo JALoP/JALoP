@@ -39,7 +39,7 @@
  * @return axl_true on success, axl_false otherwise.
  */
 axl_bool jaln_pub_feeder_get_size(
-		struct jaln_session *sess,
+		jaln_session *sess,
 		int *size);
 
 /**
@@ -53,7 +53,7 @@ axl_bool jaln_pub_feeder_get_size(
  * @return axl_true on success, axl_false otherwise.
  */
 axl_bool jaln_pub_feeder_fill_buffer(
-		struct jaln_session *sess,
+		jaln_session *sess,
 		char *buffer,
 		int *size);
 
@@ -69,7 +69,7 @@ axl_bool jaln_pub_feeder_fill_buffer(
  * @return axl_true on success, or axl_false if there was an error.
  */
 axl_bool jaln_pub_feeder_is_finished(
-		struct jaln_session *sess,
+		jaln_session *sess,
 		int *finished);
 
 /**
@@ -100,7 +100,7 @@ axl_bool jaln_pub_feeder_handler(VortexCtx *ctx,
  *
  * @param[in] sess The session to reset.
  */
-void jaln_pub_feeder_reset_state(struct jaln_session *sess);
+void jaln_pub_feeder_reset_state(jaln_session *sess);
 
 /**
  * Helper function that determines a size for the message.
@@ -113,7 +113,7 @@ void jaln_pub_feeder_reset_state(struct jaln_session *sess);
  *
  * @param[in] sess The jaln_session to operate on
  */
-void jaln_pub_feeder_calculate_size_for_vortex(struct jaln_session *sess);
+void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess);
 
 /**
  * Helper utility for calculating the 'size' for vortex.
@@ -157,7 +157,7 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
  *
  * @return JAL_OK on success, or an error.
  */
-enum jal_status jaln_pub_begin_next_record_ans(struct jaln_session *sess,
+enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 		uint64_t journal_offset,
 		struct jaln_record_info *rec_info,
 		VortexChannel *chan);

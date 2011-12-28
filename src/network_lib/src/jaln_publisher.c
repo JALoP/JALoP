@@ -48,7 +48,7 @@
 #include "jaln_subscribe_msg_handler.h"
 
 void jaln_pub_notify_digests_and_create_digest_response(
-		struct jaln_session *sess,
+		jaln_session *sess,
 		axlList *calc_dgsts,
 		axlList *peer_dgsts,
 		axlList **dgst_resp_infos)
@@ -83,7 +83,8 @@ void jaln_pub_notify_digests_and_create_digest_response(
 
 		struct jaln_digest_resp_info *resp_info = NULL;
 		if (!calc_di) {
-			sess->jaln_ctx->pub_callbacks->peer_digest(sess->ch_info,
+			sess->jaln_ctx->pub_callbacks->peer_digest(sess,
+					sess->ch_info,
 					sess->ch_info->type,
 					peer_di->serial_id,
 					NULL, 0,
@@ -98,7 +99,8 @@ void jaln_pub_notify_digests_and_create_digest_response(
 				resp_info = jaln_digest_resp_info_create(peer_di->serial_id, JALN_DIGEST_STATUS_INVALID);
 			}
 
-			sess->jaln_ctx->pub_callbacks->peer_digest(sess->ch_info,
+			sess->jaln_ctx->pub_callbacks->peer_digest(sess,
+					sess->ch_info,
 					sess->ch_info->type,
 					peer_di->serial_id,
 					calc_di->digest, calc_di->digest_len,
@@ -116,7 +118,7 @@ void jaln_pub_notify_digests_and_create_digest_response(
 	*dgst_resp_infos = resps;
 }
 
-enum jal_status jaln_publisher_handle_sync(struct jaln_session *sess,
+enum jal_status jaln_publisher_handle_sync(jaln_session *sess,
 		VortexChannel *chan,
 		VortexFrame *frame,
 		int msg_no)
@@ -132,7 +134,7 @@ enum jal_status jaln_publisher_handle_sync(struct jaln_session *sess,
 	if (ret != JAL_OK) {
 		goto out;
 	}
-	sess->jaln_ctx->pub_callbacks->sync(sess->ch_info, sess->ch_info->type, serial_id, NULL, sess->jaln_ctx->user_data);
+	sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, serial_id, NULL, sess->jaln_ctx->user_data);
 	free(serial_id);
 out:
 	if (!ans_rpy_sent) {
@@ -141,7 +143,7 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_publisher_handle_digest(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
+enum jal_status jaln_publisher_handle_digest(jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
 {
 	axlList *calc_dgsts = NULL;
 	axlList *dgst_from_remote = NULL;
@@ -194,7 +196,7 @@ out:
 void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexConnection *conn,
 		VortexFrame *frame, axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	int msg_no = -1;
 	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
 		goto err_out;
@@ -229,7 +231,7 @@ void jaln_pub_channel_frame_handler(
 		VortexFrame *frame,
 		axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	if (!sess || !sess->ch_info) {
 		goto err_out;
 	}
@@ -255,7 +257,7 @@ err_out:
 	return;
 }
 
-enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
+enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
 {
 	enum jal_status ret = JAL_E_INVAL;
 	if (!sess || !sess->ch_info || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks || !chan || !frame) {
@@ -282,7 +284,7 @@ enum jal_status jaln_pub_handle_journal_resume(struct jaln_session *sess, Vortex
 	rec_info.type = type;
 	rec_info.serial_id = sid;
 
-	ret = cbs->on_journal_resume(ch_info, &rec_info, offset, &pd->sys_meta, &pd->app_meta, NULL, ud);
+	ret = cbs->on_journal_resume(sess, ch_info, &rec_info, offset, &pd->sys_meta, &pd->app_meta, NULL, ud);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
@@ -304,7 +306,7 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_pub_handle_subscribe(struct jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
+enum jal_status jaln_pub_handle_subscribe(jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
 {
 	enum jal_status ret = JAL_E_INVAL;
 	if (!sess || !chan || !frame || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks ||
@@ -321,7 +323,7 @@ enum jal_status jaln_pub_handle_subscribe(struct jaln_session *sess, VortexChann
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
-	ret = cbs->on_subscribe(ch_info, type, sid, NULL, user_data);
+	ret = cbs->on_subscribe(sess, ch_info, type, sid, NULL, user_data);
 
 	if (JAL_OK != ret) {
 		goto err_out;
@@ -335,7 +337,7 @@ enum jal_status jaln_pub_handle_subscribe(struct jaln_session *sess, VortexChann
 	memset(&rec_info, 0, sizeof(rec_info));
 	rec_info.type = type;
 
-	ret = cbs->get_next_record_info_and_metadata(ch_info, type,
+	ret = cbs->get_next_record_info_and_metadata(sess, ch_info, type,
 			pd->serial_id, &rec_info, &pd->sys_meta, &pd->app_meta, user_data);
 	if (JAL_OK != ret) {
 		goto err_out;
@@ -376,7 +378,7 @@ void jaln_publisher_on_channel_create(int channel_num,
 {
 	char *init_msg = NULL;
 	size_t init_msg_len = 0;
-	struct jaln_session *session = (struct jaln_session*)user_data;
+	jaln_session *session = (jaln_session*)user_data;
 	if (!chan) {
 		// channel creation failed, cleanup the session and bail.
 		jaln_session_unref(session);
@@ -461,21 +463,21 @@ struct jaln_connection *jaln_publish(
 	vortex_connection_set_on_close_full(v_conn, jaln_publisher_on_connection_close, jconn);
 
 	if (data_classes & JALN_RTYPE_JOURNAL) {
-		struct jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_JOURNAL);
+		jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_JOURNAL);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				NULL, NULL,
 				NULL, NULL,
 				jaln_publisher_on_channel_create, session);
 	}
 	if (data_classes & JALN_RTYPE_AUDIT) {
-		struct jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_AUDIT);
+		jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_AUDIT);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				NULL, NULL,
 				NULL, NULL,
 				jaln_publisher_on_channel_create, session);
 	}
 	if (data_classes & JALN_RTYPE_LOG) {
-		struct jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_LOG);
+		jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_LOG);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				NULL, NULL,
 				NULL, NULL,
@@ -489,7 +491,7 @@ void jaln_publisher_init_reply_frame_handler(__attribute__((unused)) VortexChann
 		VortexFrame *frame,
 		void *user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
 		vortex_connection_shutdown(conn);
 		goto out;
@@ -526,7 +528,7 @@ out:
 	return;
 }
 
-struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
+jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
 {
 	if (!ctx || !host) {
 		return NULL;
@@ -539,7 +541,7 @@ struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char
 	default:
 		return NULL;
 	}
-	struct jaln_session *sess = NULL;
+	jaln_session *sess = NULL;
 	sess = jaln_session_create();
 	jaln_ctx_ref(ctx);
 	sess->jaln_ctx = ctx;
@@ -553,7 +555,7 @@ struct jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char
 	return sess;
 }
 
-enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, struct jaln_session *session)
+enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, jaln_session *session)
 {
 	if (!chan || !session || session->pub_data) {
 		return JAL_E_INVAL;
@@ -566,7 +568,7 @@ enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, struct j
 	return JAL_OK;
 }
 
-enum jal_status jaln_configure_pub_session(VortexChannel *chan, struct jaln_session *session)
+enum jal_status jaln_configure_pub_session(VortexChannel *chan, jaln_session *session)
 {
 	vortex_mutex_lock(&session->lock);
 	enum jal_status ret = jaln_configure_pub_session_no_lock(chan, session);

@@ -42,7 +42,7 @@
 void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *conn,
 		VortexFrame *frame, axlPointer user_data)
 {
-	struct jaln_session *session = (struct jaln_session*) user_data;
+	jaln_session *session = (jaln_session*) user_data;
 	if (!session || !session->sub_data || !session->sub_data->curr_frame_handler) {
 		// something's not right
 		vortex_connection_close(conn);
@@ -51,7 +51,7 @@ void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *co
 	session->sub_data->curr_frame_handler(session, chan, conn, frame);
 }
 
-struct jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
+jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
 {
 	if (!ctx || !host) {
 		return NULL;
@@ -65,7 +65,7 @@ struct jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const cha
 	default:
 		return NULL;
 	}
-	struct jaln_session *session = NULL;
+	jaln_session *session = NULL;
 
 	session = jaln_session_create();
 	struct jaln_channel_info *ch_info = session->ch_info;
@@ -143,21 +143,21 @@ struct jaln_connection *jaln_subscribe(
 	vortex_connection_set_on_close_full(v_conn, jaln_subscriber_on_connection_close, jconn);
 
 	if (data_classes & JALN_RTYPE_JOURNAL) {
-		struct jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_JOURNAL);
+		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_JOURNAL);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
 				jaln_subscriber_on_channel_create, session);
 	}
 	if (data_classes & JALN_RTYPE_AUDIT) {
-		struct jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_AUDIT);
+		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_AUDIT);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
 				jaln_subscriber_on_channel_create, session);
 	}
 	if (data_classes & JALN_RTYPE_LOG) {
-		struct jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_LOG);
+		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_LOG);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
@@ -166,7 +166,7 @@ struct jaln_connection *jaln_subscribe(
 	return jconn;
 }
 
-void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,
+void jaln_subscriber_init_reply_frame_handler(jaln_session *session,
 		VortexChannel *chan,
 		VortexConnection *conn,
 		VortexFrame *frame)
@@ -214,7 +214,7 @@ out:
 }
 
 void jaln_subscriber_unexpected_frame_handler(
-		__attribute__((unused)) struct jaln_session *session,
+		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) VortexChannel *chan,
 		VortexConnection *conn,
 		__attribute__((unused)) VortexFrame *frame)
@@ -222,7 +222,7 @@ void jaln_subscriber_unexpected_frame_handler(
 	vortex_connection_shutdown(conn);
 }
 
-void jaln_subscriber_record_frame_handler(struct jaln_session *session,
+void jaln_subscriber_record_frame_handler(jaln_session *session,
 		VortexChannel *chan,
 		__attribute__((unused)) VortexConnection *conn,
 		VortexFrame *frame)
@@ -249,7 +249,7 @@ err_out:
 	return;
 }
 
-enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_session *session)
+enum jal_status jaln_configure_sub_session(VortexChannel *chan, jaln_session *session)
 {
 	vortex_mutex_lock(&session->lock);
 	enum jal_status ret = jaln_configure_sub_session_no_lock(chan, session);
@@ -257,7 +257,7 @@ enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_sess
 	return ret;
 }
 
-enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct jaln_session *session)
+enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, jaln_session *session)
 {
 	if (!chan || !session) {
 		return JAL_E_INVAL;
@@ -285,7 +285,7 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct j
 	return JAL_OK;
 }
 
-void jaln_subscriber_send_subscribe_request(struct jaln_session *session)
+void jaln_subscriber_send_subscribe_request(jaln_session *session)
 {
 	char *msg = NULL;
 
@@ -296,6 +296,7 @@ void jaln_subscriber_send_subscribe_request(struct jaln_session *session)
 	char *serial_id = NULL;
 	uint64_t offset = 0;
 	enum jal_status ret = session->jaln_ctx->sub_callbacks->get_subscribe_request(
+			session,
 			session->ch_info,
 			session->ch_info->type,
 			&serial_id,
@@ -339,7 +340,7 @@ void jaln_subscriber_on_channel_create(int channel_num,
 		VortexChannel *chan, VortexConnection *conn,
 		axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*)user_data;
+	jaln_session *sess = (jaln_session*)user_data;
 	if (-1 == channel_num || !chan) {
 		// channel wasn't created, so need to free up the session
 		// object.

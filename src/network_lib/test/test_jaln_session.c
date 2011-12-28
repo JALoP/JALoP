@@ -39,7 +39,7 @@
 
 #define SID "sid_1234"
 
-static struct jaln_session *sess = NULL;
+static jaln_session *sess = NULL;
 static struct jaln_pub_data *pub_data = NULL;
 static struct jaln_sub_data *sub_data = NULL;
 static struct jaln_payload_feeder zeroed_feeder;
@@ -53,7 +53,7 @@ void fake_cond_signal(__attribute__((unused)) VortexCond *cond)
 	cond_signal_called = axl_true;
 }
 
-void fake_create_sub_digest_channel_thread_no_lock(__attribute__((unused)) struct jaln_session *session)
+void fake_create_sub_digest_channel_thread_no_lock(__attribute__((unused)) jaln_session *session)
 {
 	return;
 }
@@ -169,7 +169,7 @@ void test_session_create()
 
 void test_session_destroy_does_not_crash()
 {
-	struct jaln_session *sess = NULL;
+	jaln_session *sess = NULL;
 	jaln_session_destroy(NULL);
 	jaln_session_destroy(&sess);
 }

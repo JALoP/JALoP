@@ -33,7 +33,7 @@
 #include "jaln_digest_resp_msg_handler.h"
 
 axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 
 	vortex_mutex_lock(&sess->lock);
 	while (!sess->errored || !sess->closing) {
@@ -64,7 +64,7 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 	return NULL;
 }
 
-void jaln_send_digest_and_sync_no_lock(struct jaln_session *sess, axlList *dgst_list)
+void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 {
 	if (!sess || !sess->ch_info || !sess->jaln_ctx || !sess->dgst_chan ||
 			!dgst_list) {
@@ -106,7 +106,7 @@ void jaln_send_digest_and_sync_no_lock(struct jaln_session *sess, axlList *dgst_
 	while (axl_list_cursor_has_item(cursor)) {
 		struct jaln_digest_resp_info *resp_info = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
 		sess->jaln_ctx->sub_callbacks->
-			on_digest_response(sess->ch_info, sess->ch_info->type, resp_info->serial_id, resp_info->status, sess->jaln_ctx->user_data);
+			on_digest_response(sess, sess->ch_info, sess->ch_info->type, resp_info->serial_id, resp_info->status, sess->jaln_ctx->user_data);
 		axl_list_cursor_next(cursor);
 	}
 
@@ -129,7 +129,7 @@ out:
 	}
 }
 
-void jaln_create_sub_digest_channel_thread_no_lock(struct jaln_session *sess)
+void jaln_create_sub_digest_channel_thread_no_lock(jaln_session *sess)
 {
 	VortexThread thread;
 	if (!vortex_thread_create(&thread, jaln_sub_dgst_wait_thread, sess,

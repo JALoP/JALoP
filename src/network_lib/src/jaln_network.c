@@ -42,8 +42,8 @@ axl_bool jaln_disconnect_helper(__attribute__((unused)) axlPointer key,
 	int i;
 
 	for (i = 0; i < axl_list_length(sessions); i++) {
-		struct jaln_session *sess = NULL;
-		sess = (struct jaln_session *) axl_list_get_nth(sessions, i);
+		jaln_session *sess = NULL;
+		sess = (jaln_session *) axl_list_get_nth(sessions, i);
 
 		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;

@@ -40,7 +40,6 @@ extern "C" {
 // 30 minute timeout
 #define JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS (30 * 60 * 100000)
 
-struct jaln_session;
 struct jaln_sub_state_machine;
 struct jaln_sub_data;
 struct jaln_pub_data;
@@ -49,7 +48,7 @@ struct jaln_pub_data;
  * The session context represents a connection to a peer for either sending or
  * receiving JAL records.
  */
-struct jaln_session {
+struct jaln_session_t {
 	VortexMutex lock;                    //!< Mutex to lock the structure
 	int ref_cnt;                         //!< Reference count
 
@@ -73,12 +72,13 @@ struct jaln_session {
 	};
 };
 
+
 /**
  * Data related to a subscriber
  */
 struct jaln_sub_data {
 	//! The frame handler to use for the next incoming frame.
-	void (*curr_frame_handler)(struct jaln_session *session, VortexChannel *v_chan, VortexConnection *v_conn, VortexFrame *frame);
+	void (*curr_frame_handler)(jaln_session *session, VortexChannel *v_chan, VortexConnection *v_conn, VortexFrame *frame);
 	struct jaln_sub_state_machine *sm; //!< A state machine for processing the ANS responses for a 'subscribe' message
 	VortexCond dgst_list_cond;       //!< a conditional for a thread to wait on to get notified when it is time to send digest messages.
 };
@@ -126,19 +126,19 @@ struct jaln_pub_data {
  *
  * @param[in] sess The jaln_session to obtain a reference for.
  */
-void jaln_session_ref(struct jaln_session *sess);
+void jaln_session_ref(jaln_session *sess);
 
 /**
  * Decrement the reference count on the jaln_session and possible destroy it.
  *
  * @param[in] sess The jaln_session to obtain release a reference from.
  */
-void jaln_session_unref(struct jaln_session *sess);
+void jaln_session_unref(jaln_session *sess);
 
 /**
  * Create a jaln_session object
  */
-struct jaln_session *jaln_session_create();
+jaln_session *jaln_session_create();
 
 /**
  * Destroy a jaln_session object. This should only be called by
@@ -146,7 +146,7 @@ struct jaln_session *jaln_session_create();
  *
  * @param[in] sess The session object to destroy.
  */
-void jaln_session_destroy(struct jaln_session **sess);
+void jaln_session_destroy(jaln_session **sess);
 
 /**
  * Create the subscriber data for a session
@@ -203,7 +203,7 @@ void jaln_pub_data_destroy(struct jaln_pub_data **pub_data);
  *
  * @return JAL_OK on success or an error.
  */
-enum jal_status jaln_session_add_to_dgst_list(struct jaln_session *sess,
+enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess,
 		char *serial_id,
 		uint8_t *dgst_buf,
 		size_t dgst_len);
@@ -213,9 +213,9 @@ enum jal_status jaln_session_add_to_dgst_list(struct jaln_session *sess,
  *
  * @param[in] ctx The jaln_session that encountered an error;
  */
-void jaln_session_set_errored_no_lock(struct jaln_session *sess);
+void jaln_session_set_errored_no_lock(jaln_session *sess);
 
-void jaln_session_set_errored(struct jaln_session *sess);
+void jaln_session_set_errored(jaln_session *sess);
 
 /**
  * Callback that must get notified with vortex for when a channel related to a
@@ -282,7 +282,7 @@ axl_bool jaln_session_on_close_channel(int channel_num,
  * @return axl_true if \p chan was associated with \p session, axl_false
  * otherwise.
  */
-axl_bool jaln_session_associate_digest_channel_no_lock(struct jaln_session *session,
+axl_bool jaln_session_associate_digest_channel_no_lock(jaln_session *session,
 		VortexChannel *chan,
 		int chan_num);
 

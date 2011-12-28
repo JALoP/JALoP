@@ -48,7 +48,7 @@
 #define DGST_ONE "dgst_1"
 #define ENC_ONE "enc_1"
 static jaln_context *ctx;
-static struct jaln_session *sess;
+static jaln_session *sess;
 static const char *server_name = "some_server";
 static struct jaln_connection_callbacks *conn_cbs;
 static axl_bool init_ack_sent;
@@ -105,7 +105,7 @@ static enum jaln_connect_error my_connect_request_handler(
 	return JALN_CE_ACCEPT;
 }
 
-static void fake_subscriber_send_subscribe_request(__attribute__((unused)) struct jaln_session *session)
+static void fake_subscriber_send_subscribe_request(__attribute__((unused)) jaln_session *session)
 {
 	subscribe_sent = axl_true;
 	return;
@@ -113,7 +113,7 @@ static void fake_subscriber_send_subscribe_request(__attribute__((unused)) struc
 
 static enum jal_status fake_configure_sub_session_no_lock(
 		__attribute__((unused)) VortexChannel *chan,
-		__attribute__((unused)) struct jaln_session *sess)
+		__attribute__((unused)) jaln_session *sess)
 {
 	return JAL_OK;
 }
@@ -198,7 +198,7 @@ void fake_channel_set_close_handler(
 {
 	return;
 }
-static struct jaln_session * fake_find_session_by_rec_channel_fails(
+static jaln_session * fake_find_session_by_rec_channel_fails(
 		__attribute__((unused)) jaln_context* ctx,
 		__attribute__((unused)) char *server_name_cpy,
 		__attribute__((unused)) int paired_chan_num)
@@ -206,7 +206,7 @@ static struct jaln_session * fake_find_session_by_rec_channel_fails(
 	return NULL;
 }
 
-static struct jaln_session * fake_find_session_by_rec_channel_no_lock(
+static jaln_session * fake_find_session_by_rec_channel_no_lock(
 		__attribute__((unused)) jaln_context* ctx,
 		__attribute__((unused)) char *server_name_cpy,
 		__attribute__((unused)) int paired_chan_num)
@@ -215,7 +215,7 @@ static struct jaln_session * fake_find_session_by_rec_channel_no_lock(
 }
 
 static axl_bool fake_associate_digest_channel_no_lock(
-		__attribute__((unused)) struct jaln_session* sess,
+		__attribute__((unused)) jaln_session* sess,
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) int paired_chan_num)
 {
@@ -223,7 +223,7 @@ static axl_bool fake_associate_digest_channel_no_lock(
 }
 
 static axl_bool fake_associate_digest_channel_fails(
-		__attribute__((unused)) struct jaln_session* sess,
+		__attribute__((unused)) jaln_session* sess,
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) int paired_chan_num)
 {
@@ -372,7 +372,7 @@ void mock_vortex_listener_shutdown(__attribute__((unused)) VortexConnection * li
 
 enum jal_status fake_jaln_ctx_add_session_no_lock_fails(
 		__attribute__((unused)) jaln_context *ctx,
-		__attribute__((unused)) struct jaln_session *sess)
+		__attribute__((unused)) jaln_session *sess)
 {
 	return JAL_E_INVAL;
 }
@@ -721,7 +721,7 @@ void test_handle_new_record_channel_no_lock()
 	assert_true(jaln_listener_handle_new_record_channel_no_lock(
 		ctx, (VortexConnection *) 0xbadf00d,
 		server_name, chan_num));
-	struct jaln_session *sess_local =
+	jaln_session *sess_local =
 		jaln_ctx_find_session_by_rec_channel_no_lock(
 			ctx, (char *) server_name, chan_num);
 	assert_not_equals(NULL, sess_local);
@@ -750,7 +750,7 @@ void test_handle_new_record_channel_no_lock_fails_bad_input()
 	assert_false(jaln_listener_handle_new_record_channel_no_lock(
 		ctx, (VortexConnection *) 0xbadf00d,
 		server_name, -1));
-	struct jaln_session *sess_local =
+	jaln_session *sess_local =
 		jaln_ctx_find_session_by_rec_channel_no_lock(
 			ctx, (char *) server_name, chan_num);
 	assert_equals((void*)NULL, sess_local);
@@ -766,7 +766,7 @@ void test_handle_new_record_channel_no_lock_fails_internal()
 	assert_false(jaln_listener_handle_new_record_channel_no_lock(
 		ctx, (VortexConnection *) 0xbadf00d,
 		server_name, chan_num));
-	struct jaln_session *sess_local =
+	jaln_session *sess_local =
 		jaln_ctx_find_session_by_rec_channel_no_lock(
 			ctx, (char *) server_name, chan_num);
 	assert_equals((void*) NULL, sess_local);

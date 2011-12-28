@@ -34,14 +34,14 @@
 // to a different file.
 #include "jaln_subscriber_state_machine.h"
 
-axl_bool jaln_pub_feeder_get_size(struct jaln_session *sess, int *size)
+axl_bool jaln_pub_feeder_get_size(jaln_session *sess, int *size)
 {
 	// expect that the pub_data is already filled out...
 	*size = sess->pub_data->vortex_feeder_sz;
 	return axl_true;
 }
 
-axl_bool jaln_pub_feeder_fill_buffer(struct jaln_session *sess, char *b, int *size)
+axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 {
 	size_t dst_sz = *size;
 	size_t dst_off = 0;
@@ -83,7 +83,7 @@ axl_bool jaln_pub_feeder_fill_buffer(struct jaln_session *sess, char *b, int *si
 		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->app_meta, pd->app_meta_sz, &pd->app_meta_off, axl_true);
 		if (pd->app_meta_off == pd->app_meta_sz) {
 			pd->finished_app_meta = axl_true;
-			ret = cbs->release_metadata_buffers(ch_info, pd->serial_id, pd->sys_meta, pd->app_meta, ud);
+			ret = cbs->release_metadata_buffers(sess, ch_info, pd->serial_id, pd->sys_meta, pd->app_meta, ud);
 			pd->sys_meta = NULL;
 			pd->sys_meta_off = 0;
 			pd->sys_meta_sz = 0;
@@ -132,13 +132,13 @@ axl_bool jaln_pub_feeder_fill_buffer(struct jaln_session *sess, char *b, int *si
 			pd->finished_payload = axl_true;
 			switch(ch_info->type) {
 			case JALN_RTYPE_AUDIT:
-				ret = cbs->release_audit_data(ch_info, pd->serial_id, pd->payload, ud);
+				ret = cbs->release_audit_data(sess, ch_info, pd->serial_id, pd->payload, ud);
 				break;
 			case JALN_RTYPE_LOG:
-				ret = cbs->release_log_data(ch_info, pd->serial_id, pd->payload, ud);
+				ret = cbs->release_log_data(sess, ch_info, pd->serial_id, pd->payload, ud);
 				break;
 			case JALN_RTYPE_JOURNAL:
-				ret = cbs->release_journal_feeder(ch_info, pd->serial_id, &pd->journal_feeder, ud);
+				ret = cbs->release_journal_feeder(sess, ch_info, pd->serial_id, &pd->journal_feeder, ud);
 				memset(&pd->journal_feeder, 0, sizeof(pd->journal_feeder));
 				break;
 			default:
@@ -149,7 +149,7 @@ axl_bool jaln_pub_feeder_fill_buffer(struct jaln_session *sess, char *b, int *si
 				return axl_false;
 			}
 			jaln_session_add_to_dgst_list(sess, pd->serial_id, pd->dgst, dgst_len);
-			cbs->notify_digest(ch_info, ch_info->type, pd->serial_id, pd->dgst, dgst_len, ud);
+			cbs->notify_digest(sess, ch_info, ch_info->type, pd->serial_id, pd->dgst, dgst_len, ud);
 			pd->payload = NULL;
 			if (JAL_OK != ret) {
 				return axl_false;
@@ -167,7 +167,7 @@ axl_bool jaln_pub_feeder_fill_buffer(struct jaln_session *sess, char *b, int *si
 	return axl_true;
 }
 
-axl_bool jaln_pub_feeder_is_finished(struct jaln_session *sess, int *finished)
+axl_bool jaln_pub_feeder_is_finished(jaln_session *sess, int *finished)
 {
 	*finished = sess->errored || sess->pub_data->finished_payload_break;
 	return *finished;
@@ -181,7 +181,7 @@ axl_bool jaln_pub_feeder_handler(
 		axlPointer param2,
 		axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 
 	int *size = param1;
 	char *buffer = param2;
@@ -207,7 +207,7 @@ axl_bool jaln_pub_feeder_handler(
 	return axl_false;
 }
 
-void jaln_pub_feeder_reset_state(struct jaln_session *sess)
+void jaln_pub_feeder_reset_state(jaln_session *sess)
 {
 	if (!sess || !sess->pub_data) {
 		return;
@@ -253,7 +253,7 @@ err_out:
 	jaln_session_set_errored(sess);
 }
 
-void jaln_pub_feeder_calculate_size_for_vortex(struct jaln_session *sess)
+void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess)
 {
 	if (!sess || !sess->pub_data) {
 		return;
@@ -289,7 +289,7 @@ axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const size_t to_add)
 	return axl_true;
 }
 
-enum jal_status jaln_pub_begin_next_record_ans(struct jaln_session *sess, uint64_t journal_offset,
+enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t journal_offset,
 		struct jaln_record_info *rec_info, VortexChannel *chan)
 {
 	if (!sess || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks ||
@@ -333,7 +333,7 @@ enum jal_status jaln_pub_begin_next_record_ans(struct jaln_session *sess, uint64
 	}
 	switch(ch_info->type) {
 	case JALN_RTYPE_AUDIT:
-		ret = cbs->acquire_audit_data(ch_info, pd->serial_id, &pd->payload, ud);
+		ret = cbs->acquire_audit_data(sess, ch_info, pd->serial_id, &pd->payload, ud);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}
@@ -343,7 +343,7 @@ enum jal_status jaln_pub_begin_next_record_ans(struct jaln_session *sess, uint64
 		}
 		break;
 	case JALN_RTYPE_LOG:
-		ret = cbs->acquire_log_data(ch_info, pd->serial_id, &pd->payload, ud);
+		ret = cbs->acquire_log_data(sess, ch_info, pd->serial_id, &pd->payload, ud);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}
@@ -354,7 +354,7 @@ enum jal_status jaln_pub_begin_next_record_ans(struct jaln_session *sess, uint64
 		break;
 	case JALN_RTYPE_JOURNAL:
 		memset(&pd->journal_feeder, 0, sizeof(pd->journal_feeder));
-		ret = cbs->acquire_journal_feeder(ch_info, pd->serial_id, &pd->journal_feeder, ud);
+		ret = cbs->acquire_journal_feeder(sess, ch_info, pd->serial_id, &pd->journal_feeder, ud);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}
@@ -400,7 +400,7 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
 		__attribute__((unused)) VortexPayloadFeeder *feeder,
 		axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	struct jaln_channel_info *ch_info = sess->ch_info;
 	enum jaln_record_type type = ch_info->type;
 	struct jaln_pub_data *pd = sess->pub_data;
@@ -410,7 +410,7 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
 		memset(&rec_info, 0, sizeof(rec_info));
 		rec_info.type = type;
 		enum jal_status ret =
-			pub_cbs->get_next_record_info_and_metadata(ch_info, type,
+			pub_cbs->get_next_record_info_and_metadata(sess, ch_info, type,
 				pd->serial_id, &rec_info, &pd->sys_meta, &pd->app_meta, user_data);
 		if (JAL_OK != ret) {
 			goto err_out;

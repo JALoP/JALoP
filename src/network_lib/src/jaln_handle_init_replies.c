@@ -29,7 +29,7 @@
 #include "jaln_handle_init_replies.h"
 #include "jaln_strings.h"
 
-int jaln_handle_initialize_nack(struct jaln_session *sess,
+int jaln_handle_initialize_nack(jaln_session *sess,
 		VortexFrame *frame)
 {
 	int err_cnt = 0;
@@ -59,7 +59,7 @@ int jaln_handle_initialize_nack(struct jaln_session *sess,
 	return axl_true;
 }
 
-axl_bool jaln_handle_initialize_ack(struct jaln_session *session,
+axl_bool jaln_handle_initialize_ack(jaln_session *session,
 		enum jaln_role role,
 		VortexFrame *frame)
 {

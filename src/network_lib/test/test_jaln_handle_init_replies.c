@@ -54,7 +54,7 @@
 
 
 struct jaln_channel_info *info = NULL;
-struct jaln_session *sess = NULL;
+jaln_session *sess = NULL;
 static jaln_context *ctx = NULL;
 static struct jaln_connection_callbacks *cb = NULL;
 static enum jaln_role role = JALN_ROLE_SUBSCRIBER;

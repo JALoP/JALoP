@@ -74,6 +74,7 @@ void on_connect_nack(const struct jaln_connect_nack *nack, void *user_data)
 	DEBUG_LOG("nack: %p", nack);
 }
 enum jal_status on_journal_resume(
+		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) struct jaln_record_info *record_info,
 		__attribute__((unused)) uint64_t offset,
@@ -91,7 +92,9 @@ enum jal_status on_journal_resume(
 	DEBUG_LOG("headers: %p", headers);
 	return JAL_E_INVAL;
 }
-int on_subscribe(const struct jaln_channel_info *ch_info,
+int on_subscribe(
+		__attribute__((unused)) jaln_session *sess,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		const char *serial_id,
 		struct jaln_mime_header *headers,
@@ -106,7 +109,9 @@ int on_subscribe(const struct jaln_channel_info *ch_info,
 	DEBUG_LOG("headers: %p", headers);
 	return JAL_OK;
 }
-int get_next_record_info_and_metadata(const struct jaln_channel_info *ch_info,
+int get_next_record_info_and_metadata(
+		__attribute__((unused)) jaln_session *sess,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		const char *last_serial_id,
 		struct jaln_record_info *record_info,
@@ -141,7 +146,9 @@ int get_next_record_info_and_metadata(const struct jaln_channel_info *ch_info,
 	*application_metadata_buffer = (uint8_t*) strdup("app_meta_buffer");
 	return JAL_OK;
 }
-int release_metadata_buffers(const struct jaln_channel_info *ch_info,
+int release_metadata_buffers(
+		__attribute__((unused)) jaln_session *sess,
+		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		uint8_t *system_metadata_buffer,
 		uint8_t *application_metadata_buffer,
@@ -157,7 +164,10 @@ int release_metadata_buffers(const struct jaln_channel_info *ch_info,
 	free(application_metadata_buffer);
 	return JAL_OK;
 }
-int acquire_log_data(const struct jaln_channel_info *ch_info,
+
+int acquire_log_data(
+		__attribute__((unused)) jaln_session *sess,
+		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		uint8_t **buffer,
 		void *user_data)
@@ -171,7 +181,9 @@ int acquire_log_data(const struct jaln_channel_info *ch_info,
 	return JAL_OK;
 }
 
-int release_log_data(const struct jaln_channel_info *ch_info,
+int release_log_data(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		uint8_t *buffer,
 		void *user_data)
@@ -184,7 +196,10 @@ int release_log_data(const struct jaln_channel_info *ch_info,
 	free(buffer);
 	return JAL_OK;
 }
-int acquire_audit_data(const struct jaln_channel_info *ch_info,
+
+int acquire_audit_data(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		uint8_t **buffer,
 		void *user_data)
@@ -198,7 +213,9 @@ int acquire_audit_data(const struct jaln_channel_info *ch_info,
 	return JAL_OK;
 }
 
-int release_audit_data(const struct jaln_channel_info *ch_info,
+int release_audit_data(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		uint8_t *buffer,
 		void *user_data)
@@ -211,7 +228,9 @@ int release_audit_data(const struct jaln_channel_info *ch_info,
 	free(buffer);
 	return JAL_OK;
 }
-int acquire_journal_feeder(const struct jaln_channel_info *ch_info,
+int acquire_journal_feeder(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		struct jaln_payload_feeder *feeder,
 		void *user_data)
@@ -225,6 +244,7 @@ int acquire_journal_feeder(const struct jaln_channel_info *ch_info,
 }
 
 enum jal_status release_journal_feeder(
+		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
 		struct jaln_payload_feeder *feeder,
@@ -237,7 +257,9 @@ enum jal_status release_journal_feeder(
 	DEBUG_LOG("feeder: %p", feeder);
 	return JAL_OK;
 }
-enum jal_status on_record_complete(const struct jaln_channel_info *ch_info,
+enum jal_status on_record_complete(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		char *serial_id,
 		void *user_data)
@@ -249,7 +271,9 @@ enum jal_status on_record_complete(const struct jaln_channel_info *ch_info,
 	DEBUG_LOG("sid: %p", serial_id);
 	return JAL_OK;
 }
-void on_sync(const struct jaln_channel_info *ch_info,
+void on_sync(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		const char *serial_id,
 		struct jaln_mime_header *headers,
@@ -262,7 +286,9 @@ void on_sync(const struct jaln_channel_info *ch_info,
 	DEBUG_LOG("sid: %p", serial_id);
 	DEBUG_LOG("headers: %p", headers);
 }
-void notify_digest(const struct jaln_channel_info *ch_info,
+void notify_digest(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		const char *serial_id,
 		const uint8_t *digest,
@@ -276,7 +302,9 @@ void notify_digest(const struct jaln_channel_info *ch_info,
 	DEBUG_LOG("dgst: %s\n", b64);
 
 }
-void notify_peer_digest(const struct jaln_channel_info *ch_info,
+void notify_peer_digest(
+		__attribute__((unused)) jaln_session *session,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		const char *serial_id,
 		const uint8_t *local_digest,

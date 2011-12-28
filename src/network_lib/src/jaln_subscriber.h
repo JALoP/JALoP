@@ -65,7 +65,7 @@ void jaln_subscriber_on_connection_close(VortexConnection *conn,
  * @param[in] frame The frame
  * @param[in] user_data This is expected to be a jaln_session.
  */
-void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,
+void jaln_subscriber_init_reply_frame_handler(jaln_session *session,
 		VortexChannel *chan,
 		VortexConnection *conn,
 		VortexFrame *frame);
@@ -79,7 +79,7 @@ void jaln_subscriber_init_reply_frame_handler(struct jaln_session *session,
  * @param[in] frame The frame
  */
 void jaln_subscriber_unexpected_frame_handler(
-		struct jaln_session *session,
+		jaln_session *session,
 		VortexChannel *chan,
 		VortexConnection *conn,
 		VortexFrame *frame);
@@ -93,7 +93,7 @@ void jaln_subscriber_unexpected_frame_handler(
  * @param[in] conn The connection that holds the channel.
  * @param[in] frame Teh frame of the message.
  */
-void jaln_subscriber_record_frame_handler(struct jaln_session *session,
+void jaln_subscriber_record_frame_handler(jaln_session *session,
 		VortexChannel *chan,
 		__attribute__((unused)) VortexConnection *v_conn,
 		VortexFrame *frame);
@@ -109,7 +109,7 @@ void jaln_subscriber_record_frame_handler(struct jaln_session *session,
  *
  * @return JAL_OK on success, or an error.
  */
-enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_session *session);
+enum jal_status jaln_configure_sub_session(VortexChannel *chan, jaln_session *session);
 
 /**
  * Configure a session for use as a subscriber
@@ -121,14 +121,14 @@ enum jal_status jaln_configure_sub_session(VortexChannel *chan, struct jaln_sess
  *
  * @return JAL_OK on success, or an error.
  */
-enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, struct jaln_session *session);
+enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, jaln_session *session);
 
 /**
  * Send the 'subscribe' message.
  *
  * @param[in] session The jaln_session to send the message on.
  */
-void jaln_subscriber_send_subscribe_request(struct jaln_session *session);
+void jaln_subscriber_send_subscribe_request(jaln_session *session);
 
 /**
  * Callback that needs to get registered when a subscriber initiates a
@@ -157,7 +157,7 @@ void jaln_subscriber_on_channel_create(int channel_num,
  *
  * @return a new jaln_session
  */
-struct jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
+jaln_session *jaln_subscriber_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
 
 #ifdef __cplusplus
 }

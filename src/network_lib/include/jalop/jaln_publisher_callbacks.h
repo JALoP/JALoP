@@ -40,6 +40,7 @@ struct jaln_publisher_callbacks {
 	 * The JNL will execute this callback when it receives a
 	 * 'journal-resume' message.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] serial_id The serial ID of the record that is being resumed.
 	 * @param[in] offset The offset into the record the peer would like to
 	 * begin transferring from.
@@ -57,7 +58,9 @@ struct jaln_publisher_callbacks {
 	 *
 	 * @return JAL_OK to continue sending records, anything else to stop.
 	 */
-	enum jal_status (*on_journal_resume)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*on_journal_resume)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			struct jaln_record_info *record_info,
 			uint64_t offset,
 			uint8_t **system_metadata_buffer,
@@ -69,6 +72,7 @@ struct jaln_publisher_callbacks {
 	 * The JNL executes this callback to inform the application of a
 	 * 'subscribe' message. This callback is purely informational.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] type The type of records the remote is subscribing 
 	 * to (journal, audit, or log).
 	 * @param[in] serial_id The serial_id in the subscribe message
@@ -77,7 +81,9 @@ struct jaln_publisher_callbacks {
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 * @return JAL_OK to continue sending records, anything else to stop.
 	 */
-	enum jal_status (*on_subscribe)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*on_subscribe)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			const char *serial_id,
 			struct jaln_mime_header *headers,
@@ -87,6 +93,7 @@ struct jaln_publisher_callbacks {
 	 * The JNL will execute this callback to obtain the record info for the
 	 * next record that should be sent on this channel.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param type The type of record (journal, audit, or log) to obtain
 	 * data for.
@@ -112,7 +119,9 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream
 	 */
-	enum jal_status (*get_next_record_info_and_metadata)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*get_next_record_info_and_metadata)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			const char *last_serial_id,
 			struct jaln_record_info *record_info,
@@ -127,6 +136,7 @@ struct jaln_publisher_callbacks {
 	 * release any resources allocated when the JNL executed
 	 * \p get_next_record_info_and_metadata
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial_id of the record.
 	 * @param[in] system_metadata_buffer The buffer obtained by the call
@@ -139,7 +149,9 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
 	 */
-	enum jal_status (*release_metadata_buffers)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*release_metadata_buffers)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			const char *serial_id,
 			uint8_t *system_metadata_buffer,
 			uint8_t *application_metadata_buffer,
@@ -151,6 +163,7 @@ struct jaln_publisher_callbacks {
 	 * #jaln_record_info obtained in #get_next_record_info_and_metadata(). When the JNL
 	 * is finished with this buffer, it will call release_log_data()
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial_id of the record to get.
 	 * @param[out] buffer a user allocated buffer that contains the bytes
@@ -161,7 +174,9 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
 	 */
-	enum jal_status (*acquire_log_data)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*acquire_log_data)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			const char *serial_id,
 			uint8_t **buffer,
 			void *user_data);
@@ -169,6 +184,7 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Release the log buffer.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id relating to this buffer
 	 * @param[in] buffer a pointer that was obtained by the call to
@@ -179,7 +195,9 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
 	 */
-	enum jal_status (*release_log_data)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*release_log_data)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			const char *serial_id,
 			uint8_t *buffer,
 			void *user_data);
@@ -190,6 +208,7 @@ struct jaln_publisher_callbacks {
 	 * obtained by calling get_next_record_info_and_metadata(). When the JNL is finished
 	 * with this buffer, it will call release_audit_data();
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial_id of the record to get.
 	 * @param[out] buffer a user allocated buffer that contains the bytes
@@ -200,7 +219,9 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
 	 */
-	enum jal_status (*acquire_audit_data)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*acquire_audit_data)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			const char *serial_id,
 			uint8_t **buffer,
 			void *user_data);
@@ -208,6 +229,7 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Release the audit buffer.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id relating to this buffer
 	 * @param[in] a pointer that was obtained by a call to
@@ -218,7 +240,9 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
 	 */
-	enum jal_status (*release_audit_data)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*release_audit_data)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			const char *serial_id,
 			uint8_t *buffer,
 			void *user_data);
@@ -227,6 +251,7 @@ struct jaln_publisher_callbacks {
 	 * Acquire a payload feeder for the journal record identified by serial_id.
 	 * When the JNL is finished with the feeder, it will call #release_journal_feeder()
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id of the record to get.
 	 * @param[out] feeder The callbacks necessary to retrieve bytes of data
@@ -237,7 +262,9 @@ struct jaln_publisher_callbacks {
 	 * @return JAL_OK to continue sending records, anything else will
 	 * complete the ANS stream.
 	 */
-	enum jal_status (*acquire_journal_feeder)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*acquire_journal_feeder)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			const char *serial_id,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
@@ -245,6 +272,7 @@ struct jaln_publisher_callbacks {
 	/**
 	 * Release a payload feeder for journal record identified by \p serial_id.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] serial_id The serial id of the record to get.
 	 * @param[in] feeder The feeder object
@@ -252,7 +280,9 @@ struct jaln_publisher_callbacks {
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 */
-	enum jal_status (*release_journal_feeder)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*release_journal_feeder)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			const char *serial_id,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
@@ -263,13 +293,16 @@ struct jaln_publisher_callbacks {
 	 * application to clean up any resources (including those in
 	 * record_info);
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id The serial_id of this record_info
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
-	enum jal_status (*on_record_complete)(const struct jaln_channel_info *ch_info,
+	enum jal_status (*on_record_complete)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			char *serial_id,
 			void *user_data);
@@ -277,6 +310,8 @@ struct jaln_publisher_callbacks {
 	/**
 	 * The JNL executes this callback when it receives a 'sync' message
 	 * from the peer.
+	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id the serial_id sent by the remote peer.
@@ -285,7 +320,9 @@ struct jaln_publisher_callbacks {
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
 	 */
-	void (*sync)(const struct jaln_channel_info *ch_info,
+	void (*sync)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			const char *serial_id,
 			struct jaln_mime_header *headers,
@@ -298,6 +335,7 @@ struct jaln_publisher_callbacks {
 	 * purely informational as the JNL maintains the sent of sent, but not
 	 * yet confirmed digests.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id The serial_id of the record.
@@ -311,7 +349,9 @@ struct jaln_publisher_callbacks {
 	 * callbacks so the applications can start flushing memory, or should
 	 * cache to disk unconfirmed digests...
 	 */
-	void (*notify_digest)(const struct jaln_channel_info *ch_info,
+	void (*notify_digest)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			const char *serial_id,
 			const uint8_t *digest,
@@ -329,6 +369,7 @@ struct jaln_publisher_callbacks {
 	 *
 	 * This is called for each record in the 'digest' message.
 	 *
+	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] serial_id The serial_id of a particular record
@@ -343,7 +384,9 @@ struct jaln_publisher_callbacks {
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
-	void (*peer_digest)(const struct jaln_channel_info *ch_info,
+	void (*peer_digest)(
+			jaln_session *session,
+			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
 			const char *serial_id,
 			const uint8_t *local_digest,

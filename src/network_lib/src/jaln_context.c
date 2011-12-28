@@ -107,7 +107,7 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	return JAL_OK;
 }
 
-void jaln_ctx_remove_session(jaln_context *ctx, struct jaln_session *sess)
+void jaln_ctx_remove_session(jaln_context *ctx, jaln_session *sess)
 {
 	if (!ctx) {
 		return;
@@ -117,7 +117,7 @@ void jaln_ctx_remove_session(jaln_context *ctx, struct jaln_session *sess)
 	vortex_mutex_unlock(&ctx->lock);
 }
 
-void jaln_ctx_remove_session_no_lock(jaln_context *ctx, struct jaln_session *sess)
+void jaln_ctx_remove_session_no_lock(jaln_context *ctx, jaln_session *sess)
 {
 	if (!ctx || !ctx->sessions_by_conn || !sess || !sess->ch_info || !sess->ch_info->hostname) {
 		return;
@@ -132,12 +132,12 @@ void jaln_ctx_remove_session_no_lock(jaln_context *ctx, struct jaln_session *ses
 	}
 }
 
-enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, struct jaln_session *sess)
+enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, jaln_session *sess)
 {
 	if (!ctx || !ctx->sessions_by_conn || !sess || !sess->ch_info || !sess->ch_info->hostname) {
 		return JAL_E_INVAL;
 	}
-	struct jaln_session *exists =
+	jaln_session *exists =
 		jaln_ctx_find_session_by_rec_channel_no_lock(ctx, sess->ch_info->hostname, sess->rec_chan_num);
 	if (exists) {
 		return JAL_E_EXISTS;
@@ -161,17 +161,17 @@ axl_bool jaln_ctx_cmp_session_rec_channel_to_channel(axlPointer ptr, axlPointer 
 	if (0 >= chan_num) {
 		return axl_false;
 	}
-	struct jaln_session *sess = (struct jaln_session*) ptr;
+	jaln_session *sess = (jaln_session*) ptr;
 	return (sess->rec_chan_num == chan_num);
 }
 
-struct jaln_session *jaln_ctx_find_session_by_rec_channel_no_lock(jaln_context *ctx, char *server_name, int rec_channel_num)
+jaln_session *jaln_ctx_find_session_by_rec_channel_no_lock(jaln_context *ctx, char *server_name, int rec_channel_num)
 {
 	axlList *sessions = axl_hash_get(ctx->sessions_by_conn, server_name);
 	if (!sessions) {
 		return NULL;
 	}
-	return (struct jaln_session*)
+	return (jaln_session*)
 		axl_list_lookup(sessions, jaln_ctx_cmp_session_rec_channel_to_channel, &rec_channel_num);
 }
 

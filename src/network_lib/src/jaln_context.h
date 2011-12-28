@@ -40,8 +40,6 @@ extern "C" {
 
 #include "jaln_strings.h"
 
-struct jaln_session;
-
 struct jaln_context_t {
 	VortexMutex lock;
 	int ref_cnt;
@@ -83,7 +81,7 @@ void jaln_ctx_unref(jaln_context *ctx);
  * @param [in] ctx The ctx to operate on.
  * @param [in] sess The session to remove.
  */
-void jaln_ctx_remove_session(jaln_context *ctx, struct jaln_session *sess);
+void jaln_ctx_remove_session(jaln_context *ctx, jaln_session *sess);
 
 /**
  * Removes a session from the context. The calling thread must already hold jaln_context::lock.
@@ -93,7 +91,7 @@ void jaln_ctx_remove_session(jaln_context *ctx, struct jaln_session *sess);
  *
  * @see jaln_ctx_remove_session_no_lock
  */
-void jaln_ctx_remove_session_no_lock(jaln_context *ctx, struct jaln_session *sess);
+void jaln_ctx_remove_session_no_lock(jaln_context *ctx, jaln_session *sess);
 
 /**
  * Add a session to the context. The jaln_context::lock must already be held by
@@ -104,7 +102,7 @@ void jaln_ctx_remove_session_no_lock(jaln_context *ctx, struct jaln_session *ses
  *
  * @return JAL_OK on success, or an error.
  */
-enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, struct jaln_session *sess);
+enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, jaln_session *sess);
 
 /**
  * Lookup a session by by hostname and record channel number. The calling
@@ -117,7 +115,7 @@ enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, struct jaln_sess
  *
  * @return the jaln_session for the provided hostname and rec_channel_num
  */
-struct jaln_session *jaln_ctx_find_session_by_rec_channel_no_lock(jaln_context *ctx, char * hostname, int rec_channel_num);
+jaln_session *jaln_ctx_find_session_by_rec_channel_no_lock(jaln_context *ctx, char * hostname, int rec_channel_num);
 
 /**
  * Utility function for use with axl_list_lookup() to find a session by

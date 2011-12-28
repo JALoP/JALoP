@@ -35,7 +35,7 @@
 #include <test-dept.h>
 
 static jaln_context *jaln_ctx;
-static struct jaln_session *sess;
+static jaln_session *sess;
 static struct jaln_connection *conn;
 
 void setup()
@@ -57,7 +57,7 @@ void test_jaln_disconnect_works()
 {
 	char *key = strdup("hostname");
 	axlList *sessions = NULL;
-	struct jaln_session *sess2 = NULL;
+	jaln_session *sess2 = NULL;
 
 	sess2 = jaln_session_create();
 

@@ -37,9 +37,9 @@
 #include "jaln_sub_dgst_channel.h"
 #include "jaln_subscriber_state_machine.h"
 
-struct jaln_session *jaln_session_create()
+jaln_session *jaln_session_create()
 {
-	struct jaln_session *sess = jal_calloc(1, sizeof(*sess));
+	jaln_session *sess = jal_calloc(1, sizeof(*sess));
 	if (!vortex_mutex_create(&sess->lock)) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
@@ -57,7 +57,7 @@ struct jaln_session *jaln_session_create()
 	return sess;
 }
 
-void jaln_session_ref(struct jaln_session *sess)
+void jaln_session_ref(jaln_session *sess)
 {
 	if (!sess) {
 		return;
@@ -72,7 +72,7 @@ void jaln_session_ref(struct jaln_session *sess)
 	vortex_mutex_unlock(&sess->lock);
 }
 
-void jaln_session_unref(struct jaln_session *sess)
+void jaln_session_unref(jaln_session *sess)
 {
 	if (!sess) {
 		return;
@@ -92,7 +92,7 @@ void jaln_session_unref(struct jaln_session *sess)
 	vortex_mutex_unlock(&sess->lock);
 }
 
-void jaln_session_set_errored_no_lock(struct jaln_session *sess)
+void jaln_session_set_errored_no_lock(jaln_session *sess)
 {
 	if (!sess) {
 		return;
@@ -100,7 +100,7 @@ void jaln_session_set_errored_no_lock(struct jaln_session *sess)
 	sess->errored = axl_true;
 }
 
-void jaln_session_set_errored(struct jaln_session *sess)
+void jaln_session_set_errored(jaln_session *sess)
 {
 	if (!sess) {
 		return;
@@ -110,11 +110,11 @@ void jaln_session_set_errored(struct jaln_session *sess)
 	vortex_mutex_unlock(&sess->lock);
 }
 
-void jaln_session_destroy(struct jaln_session **psession) {
+void jaln_session_destroy(jaln_session **psession) {
 	if (!psession || !*psession) {
 		return;
 	}
-	struct jaln_session *sess = *psession;
+	jaln_session *sess = *psession;
 	if (JALN_ROLE_SUBSCRIBER == sess->role ) {
 		jaln_sub_data_destroy(&sess->sub_data);
 	} else {
@@ -174,7 +174,7 @@ axl_bool jaln_session_on_close_channel(int channel_num,
 		__attribute__((unused)) VortexConnection *connection,
 		axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	if (!sess) {
 		// shouldn't happen, but if it does, there is no session
 		// associated with the channel, so should be safe to close it.
@@ -217,7 +217,7 @@ void jaln_session_notify_close(
 	if (!was_closed) {
 		return;
 	}
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	if (!sess) {
 		// shouldn't happen
 		return;
@@ -250,7 +250,7 @@ void jaln_session_notify_close(
 void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 		axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	if (!sess) {
 		// shouldn't happen
 		return;
@@ -280,7 +280,7 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 	jaln_session_unref(sess);
 }
 
-enum jal_status jaln_session_add_to_dgst_list(struct jaln_session *sess, char *serial_id, uint8_t *dgst_buf, size_t dgst_len)
+enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess, char *serial_id, uint8_t *dgst_buf, size_t dgst_len)
 {
 	if (!sess || !serial_id || !dgst_buf || (0 == dgst_len)) {
 		return JAL_E_INVAL;
@@ -306,7 +306,7 @@ enum jal_status jaln_session_add_to_dgst_list(struct jaln_session *sess, char *s
 
 int jaln_ptrs_equal(axlPointer a, axlPointer b)
 {
-	// this function is used only for storing struct jaln_session objects
+	// this function is used only for storing jaln_session objects
 	// in an axlHash. A comparison against the pointer value is sufficient.
 	return a - b;
 }
@@ -316,7 +316,7 @@ axlList *jaln_session_list_create()
 	return axl_list_new(jaln_ptrs_equal, NULL);
 }
 
-axl_bool jaln_session_associate_digest_channel_no_lock(struct jaln_session *session, VortexChannel *chan, int chan_num)
+axl_bool jaln_session_associate_digest_channel_no_lock(jaln_session *session, VortexChannel *chan, int chan_num)
 {
 	if (!session || session->dgst_chan != NULL || !chan) {
 		return axl_false;
@@ -344,7 +344,7 @@ void jaln_session_on_dgst_channel_create(
 		__attribute__((unused)) VortexConnection *conn,
 		axlPointer user_data)
 {
-	struct jaln_session *sess = (struct jaln_session*) user_data;
+	jaln_session *sess = (jaln_session*) user_data;
 	if ((channel_num == -1) || !chan) {
 		jaln_session_set_errored(sess);
 		return;

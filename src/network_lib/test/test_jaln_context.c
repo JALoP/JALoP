@@ -38,7 +38,7 @@
 #define HOSTNAME_2 "192.168.1.2"
 
 static jaln_context *ctx = NULL;
-static struct jaln_session *sess = NULL;
+static jaln_session *sess = NULL;
 static char *hostname_1 = NULL;
 static char *hostname_2 = NULL;
 void setup()
@@ -98,7 +98,7 @@ void test_ref_and_unref_work()
 
 void test_add_and_find_session_work() {
 	assert_equals(JAL_OK, jaln_ctx_add_session_no_lock(ctx, sess));
-	struct jaln_session *found = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, hostname_1, CH_NUM);
+	jaln_session *found = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, hostname_1, CH_NUM);
 	assert_pointer_equals(sess, found);
 
 	found = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, hostname_1, CH_NUM + 1);
@@ -110,7 +110,7 @@ void test_add_and_find_session_work() {
 
 void test_remove_session_works() {
 	assert_equals(JAL_OK, jaln_ctx_add_session_no_lock(ctx, sess));
-	struct jaln_session *found = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, hostname_1, CH_NUM);
+	jaln_session *found = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, hostname_1, CH_NUM);
 	assert_pointer_equals(sess, found);
 
 	jaln_ctx_remove_session_no_lock(ctx, sess);

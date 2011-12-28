@@ -52,7 +52,7 @@
 #define OFFSET 5
 #define HOST "some_host"
 
-struct jaln_session *session;
+jaln_session *session;
 static jaln_context *ctx;
 VortexChannel *chan;
 VortexFrame *frame;
@@ -81,7 +81,7 @@ void fake_vortex_connection_set_on_close_full(__attribute__((unused)) VortexConn
 }
 
 void fake_jaln_sub_state_reset(
-	__attribute__((unused)) struct jaln_session *session)
+	__attribute__((unused)) jaln_session *session)
 {
 	return;
 }
@@ -96,7 +96,7 @@ VortexFrameType mock_vortex_frame_get_type_failure(__attribute__((unused)) Vorte
 	return VORTEX_FRAME_TYPE_ERR;
 }
 
-axl_bool mock_frame_handler_failure(__attribute__((unused)) struct jaln_session *session, 
+axl_bool mock_frame_handler_failure(__attribute__((unused)) jaln_session *session, 
 				__attribute__((unused)) VortexFrame *frame, 
 				__attribute__((unused)) size_t payload_offset, 
 				__attribute__((unused)) axl_bool flag_more)
@@ -164,7 +164,7 @@ axl_bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *
 	return axl_true;
 }
 
-axl_bool mock_frame_handler_success(__attribute__((unused)) struct jaln_session *session,
+axl_bool mock_frame_handler_success(__attribute__((unused)) jaln_session *session,
 				__attribute__((unused)) VortexFrame *frame,
 				__attribute__((unused)) size_t payload_offset,
 				__attribute__((unused)) axl_bool flag_more)
@@ -276,6 +276,7 @@ void test_jaln_subscriber_record_frame_handler_success()
 }
 
 int fake_get_subscribe_request_success(
+	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
 	__attribute__((unused)) enum jaln_record_type type,
 	__attribute__((unused)) char **serial_id,
@@ -287,6 +288,7 @@ int fake_get_subscribe_request_success(
 }
 
 int fake_get_subscribe_request_success_zero_offset(
+	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info,
 	__attribute__((unused)) enum jaln_record_type type,
 	__attribute__((unused)) char **serial_id,
@@ -298,6 +300,7 @@ int fake_get_subscribe_request_success_zero_offset(
 }
 
 int fake_get_subscribe_request_null_serial_id(
+	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info,
 	__attribute__((unused)) enum jaln_record_type type,
 	__attribute__((unused)) char **serial_id,
@@ -309,6 +312,7 @@ int fake_get_subscribe_request_null_serial_id(
 }
 
 int fake_get_subscribe_request_fail(
+	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
 	__attribute__((unused)) enum jaln_record_type type,
 	__attribute__((unused)) char **serial_id,
@@ -318,6 +322,7 @@ int fake_get_subscribe_request_fail(
 }
 
 int fake_get_subscribe_request_bad_serial_id(
+	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
 	__attribute__((unused)) enum jaln_record_type type,
 	__attribute__((unused)) char **serial_id,
@@ -472,7 +477,7 @@ void test_jaln_subscriber_send_subscribe_request_fails_internal()
 
 void test_jaln_subscriber_create_session_fails_with_bad_input()
 {
-	struct jaln_session *sess = jaln_subscriber_create_session(NULL, HOST, JALN_RTYPE_LOG);
+	jaln_session *sess = jaln_subscriber_create_session(NULL, HOST, JALN_RTYPE_LOG);
 	assert_equals(1, ctx->ref_cnt);
 	assert_pointer_equals((void *) NULL, sess);
 	assert_equals(1, ctx->ref_cnt);
@@ -489,7 +494,7 @@ void test_jaln_subscriber_create_session_fails_with_bad_input()
 void test_jaln_subscriber_create_session_works()
 {
 	assert_equals(1, ctx->ref_cnt);
-	struct jaln_session *sess = jaln_subscriber_create_session(ctx, HOST, JALN_RTYPE_LOG);
+	jaln_session *sess = jaln_subscriber_create_session(ctx, HOST, JALN_RTYPE_LOG);
 	assert_not_equals((void *) NULL, sess);
 	assert_equals(2, ctx->ref_cnt);
 	assert_equals(JALN_ROLE_SUBSCRIBER, sess->role);
