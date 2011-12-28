@@ -105,6 +105,25 @@ void fake_on_channel_close(__attribute__((unused)) const struct jaln_channel_inf
 	return;
 }
 
+VortexConnection *fake_channel_get_connection(__attribute__((unused)) VortexChannel *vchan)
+{
+	return (VortexConnection *)0xbadf00d;
+}
+
+axl_bool fake_connection_is_ok_fails(
+		__attribute__((unused)) VortexConnection *vcon,
+		__attribute__((unused)) axl_bool free_on_fail)
+{
+	return axl_false;
+}
+
+axl_bool fake_connection_is_ok_success(
+		__attribute__((unused)) VortexConnection *vcon,
+		__attribute__((unused)) axl_bool free_on_fail)
+{
+	return axl_true;
+}
+
 void setup()
 {
 	sess = jaln_session_create();
@@ -122,6 +141,8 @@ void setup()
 
 	replace_function(vortex_thread_create, fake_vortex_thread_create);
 	replace_function(jaln_create_sub_digest_channel_thread_no_lock, fake_create_sub_digest_channel_thread_no_lock);
+	replace_function(vortex_channel_get_connection, fake_channel_get_connection);
+	replace_function(vortex_connection_is_ok, fake_connection_is_ok_success);
 }
 
 void teardown()
@@ -132,6 +153,8 @@ void teardown()
 	free(sid);
 	free(dgst_buf);
 	restore_function(vortex_thread_create);
+	restore_function(vortex_channel_get_connection);
+	restore_function(vortex_connection_is_ok);
 }
 
 void test_session_destroy_unrefs_jaln_ctx()
@@ -623,4 +646,24 @@ void test_jaln_session_associate_digest_channel_no_lock_succeeds()
 	restore_function(vortex_channel_set_closed_handler);
 	restore_function(vortex_channel_set_close_handler);
 	restore_function(vortex_channel_set_received_handler);
+}
+
+void test_session_is_ok_fails_for_bad_input()
+{
+	assert_not_equals(JAL_OK, jaln_session_is_ok(NULL));
+
+	assert_not_equals(JAL_OK, jaln_session_is_ok(sess));
+}
+
+void test_session_is_ok_fails_when_vortex_connection_ok_fails()
+{
+	replace_function(vortex_connection_is_ok, fake_connection_is_ok_fails);
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	assert_not_equals(JAL_OK, jaln_session_is_ok(sess));
+}
+
+void test_session_is_ok_returns_ok_when_vortex_connection_ok_works()
+{
+	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	assert_equals(JAL_OK, jaln_session_is_ok(sess));
 }
