@@ -280,6 +280,18 @@ enum jal_status jaln_disconnect(struct jaln_connection *jal_conn);
  */
 enum jal_status jaln_shutdown(struct jaln_connection *jal_conn);
 
+/**
+ * Determine if a session is OK.
+ *
+ * This function may be called to determine if a session is still active, for
+ * example, if a publisher is waiting for more records to send to the remote,
+ * it should periodically call this function to determine if the remote is
+ * still connected. Otherwise, the internal resources can never be reclaimed.
+ *
+ * @return JAL_OK if the session is active, or an error if the connection was
+ * disconnected.
+ */
+enum jal_status jaln_session_is_ok(jaln_session *sess);
 
 #ifdef __cplusplus
 }
