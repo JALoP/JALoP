@@ -52,7 +52,7 @@
 #define PENDING_DIGEST_MAX "pending_digest_max"
 #define PENDING_DIGEST_TIMEOUT "pending_digest_timeout"
 #define DB_ROOT "db_root"
-#define DEFAULT_DB_ROOT "/var/lib/jalop/db"
+#define SCHEMAS_ROOT "schemas_root"
 #define MAX_PORT_LENGTH 10
 
 #define DEBUG_LOG(args...) \
@@ -62,12 +62,7 @@
 		fprintf(stdout, "\n"); \
 	} while(0)
 
-// TESTING DEFINES
-#define OTHER_DB_ROOT "./testdb/"
-#define OTHER_SCHEMA_ROOT "./schemas/"
-
 volatile sig_atomic_t timer_keep_going = 1;
-static int long_val;
 volatile bool global_quit = false;
 jaldb_context *jsub_db_ctx = NULL;
 
@@ -83,6 +78,7 @@ struct global_config_t {
 	long long int pending_digest_timeout;
 	int len_data_class;
 	const char *db_root;
+	const char *schemas_root;
 	int data_classes;
 } global_config;
 
@@ -95,6 +91,7 @@ enum jal_subscribe_status {
 	JAL_E_CONFIG_LOAD = -1
 };
 
+void usage();
 void process_options(int argc, char **argv);
 int config_load(config_t *config, char *config_path);
 void init_global_config(void);
@@ -110,11 +107,12 @@ void catch_alarm(int sig);
 int main(int argc, char **argv)
 {
 	int rc = 0;
-	config_t config;
 	pthread_t thread_timer, thread_subscriber;
 	int rc_timer, rc_subscriber;
-
+	config_t config;
+	config_init(&config);
 	jsub_is_conn_closed = false; // Externed in jsub_callbacks
+
 	process_options(argc, argv);
 	DEBUG_LOG("Config Path: %s\tDebug: %d",
 		 global_args.config_path, global_args.debug_flag);
@@ -122,14 +120,13 @@ int main(int argc, char **argv)
 		rc = JAL_E_CONFIG_LOAD;
 		goto out;
 	}
-	config_init(&config);
 	rc = config_load(&config, global_args.config_path);
+	if (rc == JAL_E_CONFIG_LOAD){
+		goto out;
+	}
 	jsub_debug = global_args.debug_flag;
 	if (global_args.debug_flag) {
 		DEBUG_LOG("Config load result: %d", rc);
-	}
-	if (rc == JAL_E_CONFIG_LOAD){
-		goto out;
 	}
 	init_global_config();
 	rc = set_global_config(&config);
@@ -137,9 +134,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 	print_config();
-	// TODO: Change OTHER_SCHEMA_ROOT to NULL
-	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root,
-				OTHER_SCHEMA_ROOT);
+	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root, global_config.schemas_root);
 	if (!jsub_db_ctx) {
 		if (global_args.debug_flag) {
 			DEBUG_LOG("DBLayer Setup Failed!");
@@ -184,8 +179,8 @@ void process_options(int argc, char **argv)
 
 	static const char *opt_string = "c:d";
 	static const struct option long_options[] = {
-		{"config", required_argument, &long_val,'c'}, /* --config or -c */
-		{"debug", no_argument, &long_val, 'd'}, /* --debug or -d */
+		{"config", required_argument, NULL,'c'}, /* --config or -c */
+		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
@@ -203,22 +198,21 @@ void process_options(int argc, char **argv)
 				global_args.config_path = strdup(optarg);
 				break;
 			case 0:
-				switch(long_val){
-					case 'c':
-						/* --config */
-						global_args.config_path = strdup(optarg);
-						break;
-					case 'd':
-						/* --debug */
-						global_args.debug_flag = DEBUG_MODE_ON;
-						break;
-				}
 				break;
 			default:
-				printf("Usage: jal_subscribe [required: -c or --config] <config_directory> [optional: -d or --debug]\n");
+				usage();
 		}
 		opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
 	}
+	if (!global_args.config_path) {
+		usage();
+	}
+}
+
+__attribute__((noreturn)) void usage()
+{
+        fprintf(stderr, "Usage: jal_subscribe -c, --config <config_directory> [-d, --debug]\n");
+        exit(1);
 }
 
 int config_load(config_t *config, char *config_path)
@@ -255,6 +249,7 @@ void init_global_config(void)
 	global_config.data_class = NULL;
 	global_config.host = NULL;
 	global_config.db_root = NULL;
+	global_config.schemas_root = NULL;
 	global_config.data_classes = 0;
 }
 
@@ -278,6 +273,7 @@ void print_config(void)
 		DEBUG_LOG("PENDING DIGEST MAX:\t%lld", global_config.pending_digest_max);
 		DEBUG_LOG("PENDING DIGEST TIMEOUT:\t%lld", global_config.pending_digest_timeout);
 		DEBUG_LOG("DB ROOT:\t\t%s\n", global_config.db_root);
+		DEBUG_LOG("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
 		DEBUG_LOG("\n===\nEND CONFIG VALUES:\n===");
 	}
 }
@@ -355,7 +351,12 @@ int set_global_config(config_t *config)
 
 	rc = config_lookup_string(config, DB_ROOT, &global_config.db_root);
 	if (rc == CONFIG_FALSE){
-		global_config.db_root = DEFAULT_DB_ROOT;
+		global_config.db_root = NULL;
+	}
+
+	rc = config_lookup_string(config, SCHEMAS_ROOT, &global_config.schemas_root);
+	if (rc == CONFIG_FALSE) {
+		global_config.schemas_root = NULL;
 	}
 out:
 	return rc;

@@ -16,7 +16,6 @@ env.MergeFlags(env['xerces_cflags'])
 env.MergeFlags(env['xerces_ldflags'])
 env.MergeFlags(env['libuuid_ldflags'])
 env.MergeFlags({'LINKFLAGS':env['dbxml_ldflags']})
-env.MergeFlags('-DSCHEMAS_ROOT=\\\\\\"' + env['SOURCE_ROOT']  + '/schemas/\\\\\\"')
 
 add_project_lib(env, 'lib_common', 'jal-common')
 add_project_lib(env, 'db_layer', 'jal-db')
