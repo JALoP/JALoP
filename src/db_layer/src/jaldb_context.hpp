@@ -1064,4 +1064,41 @@ enum jaldb_status jaldb_get_document_list(
 		DbXml::XmlManager *mgr,
 		list<string> **doc_list);
 
+ /**
+ * Retrieve a list of the last \p k records for the container \p cont.
+ *
+ * @param[in] cont the container to retrieve the list from.
+ * @param[in] mgr the manager to use to create the transaction.
+ * @param[in] k the number of records to retrieve.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_last_k_records(
+		DbXml::XmlContainer *cont,
+		DbXml::XmlManager *mgr,
+		double k,
+		list<string> **doc_list);
+
+ /**
+ * Retrieve a list of the records received after the record denoted
+ * by \p last_sid.
+ *
+ * @param[in] cont the container to retrieve the list from.
+ * @param[in] mgr the manager to use to create the transaction.
+ * @param[in] last_sid the serial id of the last record retrieved.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_records_since_last_sid(
+		DbXml::XmlContainer *cont,
+		DbXml::XmlManager *mgr,
+		char *last_sid,
+		list<string> **doc_list);
+
 #endif // _JALDB_CONTEXT_HPP_

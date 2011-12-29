@@ -110,4 +110,26 @@
 "    fn:not($d/dbxml:metadata($" JALDB_SYNC_META_VAR "))\n" \
 "return $d\n"
 
+#define JALDB_QUERY_VAR_NUM_REC "num_rec"
+#define JALDB_FETCH_LAST_K_RECORDS_QUERY \
+"let $docs := for $i in collection()\n" \
+"		where $i/dbxml:metadata('dbxml:name') != '" JALDB_SERIAL_ID_DOC_NAME "'" \
+"		return $i\n" \
+"let $num_docs := count($docs)\n" \
+"	return subsequence($docs,$num_docs - $num_rec + 1)"
+
+#define JALDB_QUERY_VAR_LAST_SID "last_sid"
+#define JALDB_FOLLOW_QUERY \
+"declare function local:sid-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
+"    if (fn:string-length($a) lt fn:string-length($b)) then -1\n" \
+"    else if (fn:string-length($b) lt fn:string-length($a)) then 1\n" \
+"    else (fn:compare ($a, $b))\n" \
+"}; \n" \
+"let $docs := for $i at $x in collection()\n" \
+"		where $i/dbxml:metadata('dbxml:name') != '" JALDB_SERIAL_ID_DOC_NAME "'" \
+"			and local:sid-cmp($last_sid, $i/dbxml:metadata('dbxml:name')) < 0 \n" \
+"		return\n" \
+"			$i\n"\
+"	return $docs\n"
+
 #endif // _JALDB_STRINGS_H_

@@ -3347,3 +3347,116 @@ enum jaldb_status jaldb_get_document_list(
 	}
 	return JALDB_OK;
 }
+
+enum jaldb_status jaldb_get_last_k_records(
+		XmlContainer *cont,
+		XmlManager *mgr,
+		double k,
+		list<string> **doc_list)
+{
+	if (!mgr || !cont || !doc_list || *doc_list || 0 >= k) {
+		return JALDB_E_INVAL;
+	}
+	XmlQueryContext qctx = mgr->createQueryContext();
+	qctx.setVariableValue(JALDB_QUERY_VAR_NUM_REC, k);
+	qctx.setDefaultCollection(cont->getName());
+	qctx.setEvaluationType(XmlQueryContext::Lazy);
+
+	while (true) {
+		*doc_list = new list<string>();
+		XmlTransaction txn = mgr->createTransaction();
+		XmlTransaction qtxn = txn.createChild(DB_READ_COMMITTED);
+		try {
+			XmlQueryExpression qe =
+				mgr->prepare(txn,
+						JALDB_FETCH_LAST_K_RECORDS_QUERY,
+						qctx);
+			XmlResults res =
+				qe.execute(qtxn, qctx,
+					DBXML_DOCUMENT_PROJECTION |
+					DBXML_NO_AUTO_COMMIT |
+					DB_READ_COMMITTED |
+					DBXML_LAZY_DOCS);
+			if (!res.hasNext()) {
+				qtxn.abort();
+				txn.abort();
+				return JALDB_E_NOT_FOUND;
+			}
+			XmlDocument doc;
+			while (res.next(doc)) {
+				(*doc_list)->push_back(doc.getName());
+			}
+			qtxn.abort();
+			txn.abort();
+			break;
+		} catch (XmlException &e) {
+			qtxn.abort();
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				delete *doc_list;
+				continue;
+			}
+			return JALDB_E_DB;
+		}
+	}
+	return JALDB_OK;
+}
+
+enum jaldb_status jaldb_get_records_since_last_sid(
+		XmlContainer *cont,
+		XmlManager *mgr,
+		char *last_sid,
+		list<string> **doc_list)
+{
+	if (!mgr || !cont || !doc_list || *doc_list) {
+		return JALDB_E_INVAL;
+	}
+	if (!last_sid || 0 == strlen(last_sid)) {
+		return JALDB_E_INVAL;
+	}
+	XmlQueryContext qctx = mgr->createQueryContext();
+	qctx.setVariableValue(JALDB_QUERY_VAR_LAST_SID, last_sid);
+	qctx.setDefaultCollection(cont->getName());
+	qctx.setEvaluationType(XmlQueryContext::Lazy);
+
+	while (true) {
+		*doc_list = new list<string>();
+		XmlTransaction txn = mgr->createTransaction();
+		XmlTransaction qtxn = txn.createChild(DB_READ_COMMITTED);
+		try {
+			XmlQueryExpression qe =
+				mgr->prepare(txn,
+						JALDB_FOLLOW_QUERY,
+						qctx);
+			XmlResults res =
+				qe.execute(qtxn, qctx,
+					DBXML_DOCUMENT_PROJECTION |
+					DBXML_NO_AUTO_COMMIT |
+					DB_READ_COMMITTED |
+					DBXML_LAZY_DOCS);
+			if (!res.hasNext()) {
+				qtxn.abort();
+				txn.abort();
+				return JALDB_E_NOT_FOUND;
+			}
+			XmlDocument doc;
+			while (res.next(doc)) {
+				(*doc_list)->push_back(doc.getName());
+			}
+			qtxn.abort();
+			txn.abort();
+			break;
+		} catch (XmlException &e) {
+			qtxn.abort();
+			txn.abort();
+			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
+					e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				delete *doc_list;
+				continue;
+			}
+			return JALDB_E_DB;
+		}
+	}
+	return JALDB_OK;
+}

@@ -56,6 +56,7 @@ extern "C" {
 #include <dbxml/DbXml.hpp>
 #include <dbxml/XmlContainer.hpp>
 #include <inttypes.h>
+#include <stdlib.h>
 #include "jal_alloc.h"
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
@@ -80,6 +81,11 @@ using namespace std;
 #define LOG_DATA_X "Log Buffer\nLog Entry 1\n"
 #define LOG_DATA_Y "Log Buffer\nLog Entry 1\nLog Entry 2\n"
 #define PAYLOAD "SoMe_data   is here\nMoreData is Here!\n"
+
+#define LIMIT 100
+#define LIMIT_NUM_DIGITS 3
+#define LAST_SID_VALUE "doc_50"
+#define K 20.0
 
 static DOMLSParser *parser = NULL;
 static DOMDocument *audit_sys_meta_doc = NULL;
@@ -6534,4 +6540,328 @@ extern "C" void test_jaldb_get_log_document_list_works()
 
 	// Num documents inserted + special document
 	assert_equals(3 + 1, doc_list->size());
+}
+
+extern "C" void test_jal_tail_fetch_query()
+{
+	// Insert LIMIT number of items into log_sys_cont
+	//	serial_id: doc_X where X is a number from 0 to LIMIT-1.
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	for (int i = 0; i < LIMIT; i++) {
+		XmlDocument doc = context->manager->createDocument();
+		char *doc_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+		sprintf(doc_name, "doc_%d", i);
+		doc.setName(doc_name);
+		try {
+			context->log_sys_cont->putDocument(txn, doc, uc);
+		} catch (XmlException &e) {
+			txn.abort();
+			if (doc_name) {
+				free(doc_name);
+			}
+			assert_true(false);
+		}
+		if (doc_name) {
+			free(doc_name);
+		}
+	}
+	txn.commit();
+
+	XmlManager *mgr = context->manager;
+	XmlQueryContext qctx = mgr->createQueryContext();
+	qctx.setDefaultCollection(JALDB_LOG_SYS_META_CONT_NAME);
+	qctx.setEvaluationType(XmlQueryContext::Lazy);
+	qctx.setVariableValue(JALDB_QUERY_VAR_NUM_REC, K);
+
+	XmlTransaction txn2 = mgr->createTransaction();
+	XmlTransaction qtxn = txn2.createChild(DB_READ_COMMITTED);
+
+	XmlQueryExpression qe =
+		mgr->prepare(txn2, JALDB_FETCH_LAST_K_RECORDS_QUERY , qctx);
+	XmlResults res = qe.execute(qtxn, qctx, DBXML_DOCUMENT_PROJECTION | DBXML_NO_AUTO_COMMIT | DB_READ_COMMITTED | DBXML_LAZY_DOCS);
+
+	try {
+		int i = LIMIT - K;
+		while (res.hasNext()) {
+			XmlDocument doc;
+			if (res.next(doc)){
+				std::string doc_name = doc.getName();
+				char *cmp_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+				sprintf(cmp_name, "doc_%d", i);
+				assert_equals(0, strcmp(doc_name.c_str(), cmp_name));
+				i++;
+				free(cmp_name);
+			}
+		}
+	} catch (XmlException &e) {
+		assert_true(false);
+	}
+	qtxn.abort();
+	txn2.abort();
+	assert_true(true);
+}
+
+extern "C" void test_jal_tail_follow_query()
+{
+	// Insert LIMIT number of items into log_sys_cont
+	//	serial_id: doc_X where X is a number from 0 to LIMIT-1.
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	for (int i = 0; i < LIMIT; i++) {
+		XmlDocument doc = context->manager->createDocument();
+		char *doc_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+		sprintf(doc_name, "doc_%d", i);
+		doc.setName(doc_name);
+		try {
+			context->log_sys_cont->putDocument(txn, doc, uc);
+		} catch (XmlException &e) {
+			txn.abort();
+			if (doc_name) {
+				free(doc_name);
+				doc_name = NULL;
+			}
+			assert_true(false);
+		}
+		if (doc_name) {
+			free(doc_name);
+		}
+	}
+	txn.commit();
+
+	XmlManager *mgr = context->manager;
+	XmlQueryContext qctx = mgr->createQueryContext();
+	qctx.setDefaultCollection(JALDB_LOG_SYS_META_CONT_NAME);
+	qctx.setEvaluationType(XmlQueryContext::Lazy);
+	qctx.setVariableValue(JALDB_QUERY_VAR_LAST_SID, LAST_SID_VALUE );
+
+	XmlTransaction txn2 = mgr->createTransaction();
+	XmlTransaction qtxn = txn2.createChild(DB_READ_COMMITTED);
+
+	XmlQueryExpression qe =
+	mgr->prepare(txn2, JALDB_FOLLOW_QUERY , qctx);
+	XmlResults res = qe.execute(qtxn, qctx, DBXML_DOCUMENT_PROJECTION | DBXML_NO_AUTO_COMMIT | DB_READ_COMMITTED | DBXML_LAZY_DOCS);
+
+	try {
+		int i = 51; // last_sid is "doc_50"
+		while (res.hasNext()) {
+			XmlDocument doc;
+			if (res.next(doc)){
+				std::string doc_name = doc.getName();
+				char *cmp_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+				sprintf(cmp_name, "doc_%d", i);
+				assert_equals(0, strcmp(doc_name.c_str(), cmp_name));
+				i++;
+				free(cmp_name);
+			}
+		}
+	} catch (XmlException &e) {
+		assert_true(false);
+	}
+	qtxn.abort();
+	txn2.abort();
+	assert_true(true);
+}
+
+extern "C" void test_jaldb_get_last_k_records_works()
+{
+	// Insert LIMIT number of items into log_sys_cont
+	//	serial_id: doc_X where X is a number from 0 to LIMIT-1.
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	for (int i = 0; i < LIMIT; i++) {
+		XmlDocument doc = context->manager->createDocument();
+		char *doc_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+		sprintf(doc_name, "doc_%d", i);
+		doc.setName(doc_name);
+		try {
+			context->log_sys_cont->putDocument(txn, doc, uc);
+		} catch (XmlException &e) {
+			txn.abort();
+			if (doc_name) {
+				free(doc_name);
+			}
+			assert_true(false);
+		}
+		if (doc_name) {
+			free(doc_name);
+		}
+	}
+	txn.commit();
+
+	list<string> *res = NULL;
+	enum jaldb_status ret =
+		jaldb_get_last_k_records(context->log_sys_cont,
+					context->manager, K,
+					&res);
+	assert_equals(JALDB_OK, ret);
+	if (!res) {
+		assert_true(false);
+	}
+	try {
+		int i = LIMIT - K;
+		list<string>::iterator it;
+		for (it=res->begin(); it != res->end(); it++) {
+			std::string doc_name = *it;
+			char *cmp_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+			sprintf(cmp_name, "doc_%d", i);
+			assert_equals(0, strcmp(doc_name.c_str(), cmp_name));
+			i++;
+			free(cmp_name);
+		}
+	} catch (XmlException &e) {
+		assert_true(false);
+	}
+	if (res) {
+		res->clear();
+		delete res;
+	}
+}
+
+extern "C" void test_jaldb_get_last_k_records_fails_bad_input()
+{
+	list<string> *res = NULL;
+	enum jaldb_status ret = JALDB_OK;
+
+	ret = jaldb_get_last_k_records(NULL,
+					context->manager, K,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_get_last_k_records(context->log_sys_cont,
+					NULL, K,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_get_last_k_records(context->log_sys_cont,
+					context->manager, -10.0,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	list<string> *res2 = (list<string> *) 0xbadf00d;
+
+	ret = jaldb_get_last_k_records(context->log_sys_cont,
+					context->manager, K,
+					&res2);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	res = new list<string>();
+
+	ret = jaldb_get_last_k_records(context->log_sys_cont,
+					context->manager, K,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+	if (res) {
+		res->clear();
+		delete res;
+	}
+}
+
+extern "C" void test_jaldb_get_records_since_last_sid_works()
+{
+	// Insert LIMIT number of items into log_sys_cont
+	//	serial_id: doc_X where X is a number from 0 to LIMIT-1.
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	for (int i = 0; i < LIMIT; i++) {
+		XmlDocument doc = context->manager->createDocument();
+		char *doc_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+		sprintf(doc_name, "doc_%d", i);
+		doc.setName(doc_name);
+		try {
+			context->log_sys_cont->putDocument(txn, doc, uc);
+		} catch (XmlException &e) {
+			txn.abort();
+			if (doc_name) {
+				free(doc_name);
+			}
+			assert_true(false);
+		}
+		if (doc_name) {
+			free(doc_name);
+		}
+	}
+	txn.commit();
+
+	list<string> *res = NULL;
+	enum jaldb_status ret =
+		jaldb_get_records_since_last_sid(
+				context->log_sys_cont,
+				context->manager, (char *) LAST_SID_VALUE,
+				&res);
+	assert_equals(JALDB_OK, ret);
+	if (!res) {
+		assert_true(false);
+	}
+	try {
+		int i = 51;	// last_sid = "doc_50"
+				// expect next_sid = "doc_51"
+		list<string>::iterator it;
+		for (it=res->begin(); it != res->end(); it++) {
+			std::string doc_name = *it;
+			char *cmp_name = (char *) jal_malloc(4 + LIMIT_NUM_DIGITS + 1);
+			sprintf(cmp_name, "doc_%d", i);
+			assert_equals(0, strcmp(doc_name.c_str(), cmp_name));
+			i++;
+			free(cmp_name);
+		}
+	} catch (XmlException &e) {
+		assert_true(false);
+	}
+	if (res) {
+		res->clear();
+		delete res;
+	}
+}
+
+extern "C" void test_jaldb_get_records_since_last_sid_fails_bad_input()
+{
+	list<string> *res = NULL;
+	enum jaldb_status ret = JALDB_OK;
+
+	ret = jaldb_get_records_since_last_sid(NULL,
+					context->manager,
+					(char *) LAST_SID_VALUE,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_get_records_since_last_sid(context->log_sys_cont,
+					NULL,
+					(char *) LAST_SID_VALUE,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_get_records_since_last_sid(context->log_sys_cont,
+					context->manager,
+					NULL,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	std::string empty_str = "";
+
+	ret = jaldb_get_records_since_last_sid(context->log_sys_cont,
+					context->manager,
+					(char *) empty_str.c_str(),
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	list<string> *res2 = (list<string> *) 0xbadf00d;
+
+	ret = jaldb_get_records_since_last_sid(context->log_sys_cont,
+					context->manager,
+					(char *) LAST_SID_VALUE,
+					&res2);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	res = new list<string>();
+
+	ret = jaldb_get_records_since_last_sid(context->log_sys_cont,
+					context->manager,
+					(char *) LAST_SID_VALUE,
+					&res);
+	assert_equals(JALDB_E_INVAL, ret);
+	if (res) {
+		res->clear();
+		delete res;
+	}
 }
