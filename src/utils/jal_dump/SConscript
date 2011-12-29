@@ -4,7 +4,7 @@ from Utils import add_project_lib
 
 env = utilsEnv.Clone()
 
-sources = env.Glob("*.c")
+sources = env.Glob("*.cpp")
 
 env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
 

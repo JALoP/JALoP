@@ -34,15 +34,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <list>
+#include <iostream>
+#include <fstream>
 
 #include <jal_alloc.h>
-#include <jaldb_context.h>
 #include <jal_asprintf_internal.h>
 
 #include <jaldb_status.h>
 #include "jal_dump.h"
+#include "jaldb_context.hpp"
+#include "jaldb_strings.h"
 
 #define ARRAY_MULTIPLIER 20
+
+#define JOURNAL_FILE_NAME "jal_dump_journal.txt"
+#define AUDIT_FILE_NAME "jal_dump_audit.txt"
+#define LOG_FILE_NAME "jal_dump_log.txt"
+
+using namespace std;
 
 static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid, char *type,
 	char *data, char **path, char **home);
@@ -58,7 +68,12 @@ static void print_error(enum jaldb_status error);
 
 char ** array_increase(char ***arr);
 
+static void print_sids(jaldb_context *ctx, char type);
+static void print_list_stdout(const list<string> &p_list);
+static void print_list_file(const list<string> &p_list, const char *p_file_name);
+
 static const size_t BUF_SIZE = 8192;
+static int write_sid_flag = 0;
 
 int main(int argc, char **argv) {
 	char **sid = NULL;
@@ -95,6 +110,10 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
+	if (write_sid_flag) {
+		print_sids(ctx, type);
+	}
+
 	for (counter = 0; counter < (num_sid + num_uuid); counter++) {
 		//grab each sid, and display
 		int fd = -1; //for the journal record
@@ -126,7 +145,7 @@ int main(int argc, char **argv) {
 				}
 				record_len = stat_buf.st_size;
 
-				record_buf = mmap64(NULL, record_len, PROT_READ, MAP_NORESERVE | MAP_PRIVATE, fd, 0);
+				record_buf = (uint8_t *) mmap64(NULL, record_len, PROT_READ, MAP_NORESERVE | MAP_PRIVATE, fd, 0);
 				ret = print_record(*(sid + counter), data, path, type, sys_meta_buf, sys_meta_len,
 						app_meta_buf, app_meta_len, record_buf, record_len);
 				if (0 > ret) {
@@ -258,7 +277,7 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 			printf("\njournal metadata\n");
 			//used to ensure that journal records don't cause unwanted actions by being too big
 			print_payload(record_buf, ((size_t)100));
-		} 
+		}
 		if ((('p' == data) || ('z' == data)) && (0 != record_len) && (record_buf)) {
 			printf("\npayload\n");
 			print_payload(record_buf, record_len);
@@ -346,10 +365,19 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 
 static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid,
 				char *type, char *data, char **path, char **home) {
+
+	int counter = 0;
+	static const char *defdir = "/var/lib/jalop/db";
+	static const char *optstring = "s:u:t:d:p:h:w";
+	static const struct option long_options[] = {
+			{"type", 1, 0, 't'}, {"sid",1,0,'s'},{"uuid",1,0,'u'},
+			{"data",1,0,'d'}, {"path",1,0,'p'},{"home",2,0,'h'},
+			{"write", 0, 0, 'w'}, {0,0,0,0}};
+
 	if (4 > argc) {
 		goto err_usage;
 	}
-	int counter = 0;
+
 	*sid = (char **) malloc(ARRAY_MULTIPLIER * sizeof(char *));
 	if (!sid) {
 		printf("Insufficient memory\n");
@@ -361,11 +389,6 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 		printf("Insufficient memory for uuid storage. Closing.\n");
 		exit(-1);
 	}
-
-
-	static const char *optstring = "s:u:t:d:p:h:";
-	static const struct option long_options[] = { {"type", 1, 0, 't'}, {"sid",1,0,'s'},{"uuid",1,0,'u'},
-					{"data",1,0,'d'}, {"path",1,0,'p'},{"home",2,0,'h'}, { 0,0,0,0}};
 
 	int ret_opt;
 	while (EOF != (ret_opt = getopt_long(argc, argv, optstring, long_options, NULL))) {
@@ -404,11 +427,13 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 			case 'h':
 				if (NULL == optarg) {
 					printf("Optarg was null. Home directory defaulting to /var/lib/jalop/db\n");
-					static const char *defdir = "/var/lib/jalop/db";
 					*home = strdup(defdir);
 				} else {
 					*home = strdup(optarg);
 				}
+				break;
+			case 'w':
+				write_sid_flag = 1;
 				break;
 			case ':':		//Missing argument
 			case '?':		//Unknown option
@@ -474,6 +499,8 @@ static void print_usage()
 			records), \"log.bin\" (for log records), or \"audit.xml\" for audit records.\n\
 	-h, --home=H	Specify the root of the JALoP database, defaults to /var/lib/jalop/db. The entered path\n\
 			must immediately follow the option.\n\
+	-w, --write	Signals for a list of serial IDs in the JALoP database to be written\n\
+			to a file for each record type.\n\
 \n\
 	Type and at least 1 sid or uuid must be specified.\n\n";
 
@@ -490,7 +517,7 @@ void print_payload(uint8_t *payload_buf, size_t payload_size)
 	for (size_t i = 0; i < payload_size; i++) {
 		printf("%x", payload_buf[i]);
 	}
-	char *str_payload = malloc(payload_size + 1);
+	char *str_payload = (char *) malloc(payload_size + 1);
 	memcpy(str_payload, payload_buf, payload_size);
 	str_payload[payload_size] = 0;
 	printf("\n\n(char): %s\n", str_payload);
@@ -551,4 +578,78 @@ char ** array_increase(char ***arr) {
 		return *arr;
 	}
 }
- 
+
+static void print_sids(jaldb_context *ctx, char type)
+{
+	enum jaldb_status db_ret = JALDB_E_UNKNOWN;
+
+	list<string> *doc_list = NULL;
+	string print_list_filename;
+
+	printf("SERIAL_IDs:\n");
+	switch (type){
+		case 'j':
+			db_ret = jaldb_get_journal_document_list(ctx, &doc_list);
+			print_list_filename  = JOURNAL_FILE_NAME;
+			break;
+		case 'a':
+			db_ret = jaldb_get_audit_document_list(ctx, &doc_list);
+			print_list_filename = AUDIT_FILE_NAME;
+			break;
+		case 'l':
+			db_ret = jaldb_get_log_document_list(ctx, &doc_list);
+			print_list_filename  = LOG_FILE_NAME;
+			break;
+		default:
+			printf("Unrecognized record-type: %c\n", type);
+			break;
+	}
+	if (db_ret != JALDB_OK) {
+		goto err_out;
+	}
+	doc_list->remove(JALDB_SERIAL_ID_DOC_NAME);
+	print_list_stdout(*doc_list);
+	print_list_file(*doc_list, print_list_filename.c_str());
+	return;
+err_out:
+	printf("Failed to retrieve SIDs from the database");
+}
+
+static void print_list_stdout(const list<string> &p_list)
+{
+	if (0 == p_list.size()) {
+		printf("\t--none--\n");
+	}
+	list<string>::const_iterator i;
+	for(i=p_list.begin(); i != p_list.end(); ++i) {
+		std::string name = (string) *i;
+		printf("\t%s\n", name.c_str());
+	}
+}
+
+static void print_list_file(const list<string> &p_list, const char *p_file_name)
+{
+	if (0 == p_list.size()) {
+		printf("Write serial IDs failed! No documents were found!\n");
+	}
+	else {
+		ofstream fout;
+		fout.open(p_file_name, ios::out | ios::trunc);
+
+		if (fout.is_open()) {
+			list<string>::const_iterator i;
+			for(i=p_list.begin(); i != p_list.end(); ++i) {
+				std::string name = (string) *i;
+				fout << name << "\n";
+			}
+			fout.close();
+			printf("\nWrite serial IDs success! Check your directory for %s\n\n",
+			p_file_name);
+		}
+		else {
+			printf("\nWrite serial IDs failed! Unable to open file: %s\n\n",
+			p_file_name);
+		}
+	}
+}
+
