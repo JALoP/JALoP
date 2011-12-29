@@ -463,7 +463,6 @@ void *subscriber_do_work(void *ptr)
 	cfg = cfg;
 	jaln_context *net_ctx = jaln_context_create();
 	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
-	struct jal_digest_ctx *dc2 = jal_sha256_ctx_create();
 	enum jal_status err;
 
 	if (0 > ret){
@@ -472,17 +471,13 @@ void *subscriber_do_work(void *ptr)
 		}
 		goto err;
 	}
-	dc1->algorithm_uri = strdup("sha512");
-	dc2->algorithm_uri = strdup("sha384");
 	jaln_register_digest_algorithm(net_ctx, dc1);
-	jaln_register_digest_algorithm(net_ctx, dc2);
 	// TODO: Uncomment when jaln_register_tls functionality is implemented.
 	//err = jaln_register_tls(net_ctx,
 	//			global_config.private_key,
 	//			global_config.public_cert,
 	//			global_config.remote_cert);
-	err = jaln_register_encoding(net_ctx, "exi");
-	err = jaln_register_encoding(net_ctx, "deflate");
+	err = jaln_register_encoding(net_ctx, "xml");
 	err = jsub_callbacks_init(net_ctx);
 	if (JAL_OK != err) {
 		if (global_args.debug_flag) {
