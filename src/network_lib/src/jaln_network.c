@@ -74,9 +74,13 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn)
 		return JAL_E_INVAL;
 	}
 
+	axl_bool ret = axl_false;
+
 	vortex_connection_shutdown(jal_conn->v_conn);
-	vortex_connection_close(jal_conn->v_conn);
-	vortex_connection_free(jal_conn->v_conn);
+	ret = vortex_connection_close(jal_conn->v_conn);
+	if (axl_true != ret) {
+		return JAL_E_INVAL;
+	}
 
 	return JAL_OK;
 }
