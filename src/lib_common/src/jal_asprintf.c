@@ -1,21 +1,13 @@
-/*
+/**
  * @file jal_asprintf.c
  * Defines the jal_asprintf function and jal_vasprintf functions
+ *
+ * @section LICENSE
  *
  * Copyright (c) 2004 Darren Tucker.
  *
  * Based originally on asprintf.c from OpenBSD:
  * Copyright (c) 1997 Todd C. Miller <Todd.Miller@courtesan.com>
- *
- * Source code in 3rd-party is licensed and owned by their respective
- * copyright holders.
- *
- * All other source code is copyright Tresys Technology and licensed as below.
- *
- * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
- *
- * This software was developed by Tresys Technology LLC
- * with U.S. Government sponsorship.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above

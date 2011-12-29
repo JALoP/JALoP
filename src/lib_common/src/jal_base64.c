@@ -1,18 +1,8 @@
-/*
+/**
  * @file jal_base64.c
  * Defines base64 encoding function.
  *
  * @section LICENSE
- *
- * Source code in 3rd-party is licensed and owned by their respective
- * copyright holders.
- *
- * All other source code is copyright Tresys Technology and licensed as below.
- *
- * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
- *
- * This software was developed by Tresys Technology LLC
- * with U.S. Government sponsorship.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

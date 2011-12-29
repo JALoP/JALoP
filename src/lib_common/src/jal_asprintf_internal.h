@@ -2,6 +2,8 @@
  * @file jal_asprintf_internal.h
  * Declares the jal_asprintf function
  *
+ * @section LICENSE
+ *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
  *
