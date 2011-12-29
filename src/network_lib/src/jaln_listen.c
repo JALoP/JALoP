@@ -270,6 +270,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 		jaln_configure_pub_session_no_lock(chan, sess);
 		break;
 	default:
+		vortex_mutex_unlock(&sess->lock);
 		goto err_out;
 	}
 	vortex_mutex_unlock(&sess->lock);
