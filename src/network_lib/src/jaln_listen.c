@@ -65,6 +65,7 @@ axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 	if (!sess) {
 		return axl_false;
 	}
+	jaln_session_ref(sess);
 	vortex_mutex_lock(&sess->lock);
 	axl_bool ret = jaln_session_associate_digest_channel_no_lock(sess, chan, new_chan_num);
 	vortex_mutex_unlock(&sess->lock);
