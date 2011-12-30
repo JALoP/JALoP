@@ -37,6 +37,7 @@
 #include <xercesc/framework/LocalFileFormatTarget.hpp>
 #include <jalop/jal_status.h>
 #include "jsub_parse.hpp"
+#include "jal_alloc.h"
 
 XERCES_CPP_NAMESPACE_USE
 
@@ -84,12 +85,22 @@ public:
 
 void jsub_get_schema_path(char **dest, const char *schemas_root, const char *schema)
 {
-	int len = strlen(schemas_root) + strlen(schema);
-	char *path = (char *)malloc(sizeof(char) * (len + 1));
+	size_t len_schemas_root = strlen(schemas_root);
+	size_t len_schema = strlen(schema);
+	size_t len = len_schemas_root + len_schema;
+	char *path = NULL;
 
-	strncpy(path, schemas_root, (size_t)len);
-	strcat(path, schema);
-
+	if ((1 <= len_schemas_root) &&
+		('/' != schemas_root[len_schemas_root - 1])) {
+		path = (char *)jal_malloc(sizeof(char) * (len + 2));
+		strncpy(path, schemas_root, len);
+		strcat(path, "/");
+		strcat(path, schema);
+	} else {
+		path = (char *)jal_malloc(sizeof(char) * (len + 1));
+		strncpy(path, schemas_root, len);
+		strcat(path, schema);
+	}
 	*dest = path;
 }
 

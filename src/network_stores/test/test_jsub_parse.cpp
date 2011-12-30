@@ -1,5 +1,5 @@
 /**
-* @file test_jsub_db_layer.cpp This file contains functions to test
+* @file test_jsub_parse.cpp This file contains functions to test
 * jsub_parse.cpp.
 *
 * @section LICENSE
@@ -39,42 +39,42 @@ extern "C" {
 #include <test-dept.h>
 }
 
-#include "jsub_db_layer.hpp"
-#include "jaldb_context.hpp"
-
-#define OTHER_DB_ROOT "./testdb/"
-#define OTHER_SCHEMA_ROOT "./schemas/"
-#define PAYLOAD "This Is Some Text!\n"
-
-jaldb_context *db_ctx = NULL;
+#include <string.h>
+#include "jsub_parse.hpp"
+#include "jal_alloc.h"
 
 extern "C" void setup()
 {
-	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT, OTHER_SCHEMA_ROOT);
 }
 
 extern "C" void teardown()
 {
-	jsub_teardown_db_layer(&db_ctx);
 }
 
-extern "C" void test_write_journal_works()
+extern "C" void test_jsub_parse_get_schema_path_works()
 {
-	char *db_payload_path = NULL;
-	int db_payload_fd = -1;
-	size_t payload_len = strlen(PAYLOAD);
+	char *dest1 = NULL;
+	char *dest2 = NULL;
+	char *dest3 = NULL;
+	char *root1 = jal_strdup("my/root/dir");
+	char *root2 = jal_strdup("my/root/dir/");
+	char *root3 = jal_strdup("a");
+	char *schema = jal_strdup("schema");
 
-	int rc = 0;
-	rc = jsub_write_journal(db_ctx, &db_payload_path,
-				&db_payload_fd, (uint8_t *)PAYLOAD,
-				payload_len, 0);
-	assert_equals(0, rc);
-	rc = jsub_write_journal(db_ctx, &db_payload_path,
-				&db_payload_fd, (uint8_t *)PAYLOAD,
-				payload_len, 0);
-	assert_equals(0, rc);
-	rc = jsub_write_journal(db_ctx, &db_payload_path,
-				&db_payload_fd, (uint8_t *)PAYLOAD,
-				payload_len, 0);
-	assert_equals(0, rc);
+	jsub_get_schema_path(&dest1, root1, schema);
+	assert(0 == strcmp(dest1, "my/root/dir/schema"));
+
+	jsub_get_schema_path(&dest2, root2, schema);
+	assert(0 == strcmp(dest2, "my/root/dir/schema"));
+
+	jsub_get_schema_path(&dest3, root3, schema);
+	assert(0 == strcmp(dest3, "a/schema"));
+
+	free(dest1);
+	free(dest2);
+	free(dest3);
+	free(root1);
+	free(root2);
+	free(root3);
+	free(schema);
 }

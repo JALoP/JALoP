@@ -75,9 +75,25 @@ int jsub_parse_audit(void *buf, size_t size, char *schemas_root, DOMDocument **d
  */
 int jsub_parse_sys_metadata(void *buf, size_t size, char *schemas_root, DOMDocument **doc, int debug);
 
-//char *jsub_doc_to_string(DOMDocument *doc);
-
+/**
+* Prints a DOMDocument \p doc to a file as indicated by \p file_path.
+*
+* @param[in] doc The document to write to file \p file_path.
+* @param[in] file_path The path to the file to create.
+*/
 void jsub_doc_to_file(DOMDocument *doc, char *file_path);
+
+/**
+* Constructs the full path using the schema root and schema file name.
+*
+* @param[out] dest The full path to the schema file
+* @param[in] schemas_root The root path where the schemas are located
+* @param[in] schema The name of the schema file
+*/
+void jsub_get_schema_path(
+		char **dest,
+		const char *schemas_root,
+		const char *schema);
 
 #endif //_JSUB_PARSE_HPP_
 

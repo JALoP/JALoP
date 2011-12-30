@@ -19,6 +19,9 @@ db_layer_obj = lib_env.SharedObject("../src/jsub_db_layer.cpp")
 tests.append(env.TestDeptTest('test_jsub_db_layer.cpp',
 	other_sources=[lib_common, parse_obj])[0].abspath)
 
+tests.append(env.TestDeptTest('test_jsub_parse.cpp',
+	other_sources=[lib_common])[0].abspath)
+
 net_store_tests = env.Alias('net_store_tests', tests, 'test_dept ' + " ".join(tests))
 
 AlwaysBuild(net_store_tests)
