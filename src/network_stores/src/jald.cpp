@@ -717,7 +717,8 @@ int main(int argc, char **argv)
 		rc = -1;
 		goto out;
 	}
-	jal_digest_ctx_destroy(&dctx);
+	// The jaln_context owns the digest algorithm, so don't keep a
+	// reference to it.
 	dctx = NULL;
 	/* TODO: enable the TLS stuff once the implementation is committed.
 	jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
