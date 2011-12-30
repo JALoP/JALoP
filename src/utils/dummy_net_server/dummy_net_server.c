@@ -40,6 +40,24 @@
 		fprintf(stderr, "\n"); \
 	} while(0)
 
+#define TEST_INPUT_PATH "test-input/"
+#define AUDIT_PAYLOAD_XML "good_audit_input.xml"
+#define JOURNAL_PAYLOAD_TXT "big_payload.txt"
+#define SYS_META_XML "system-metadata.xml"
+#define APP_META_XML "good_app_meta_input.xml"
+
+uint8_t *m_sys_meta_buf = NULL;
+uint8_t *m_app_meta_buf = NULL;
+uint8_t *m_audit_buf = NULL;
+uint8_t *m_journal_buf = NULL;
+size_t m_sys_meta_buf_len = 0;
+size_t m_app_meta_buf_len = 0;
+size_t m_audit_buf_len = 0;
+size_t m_journal_buf_len = 0;
+
+int read_file(const char *file_name, uint8_t **buffer, uint64_t *buff_len);
+void load_test_data();
+
 enum jaln_connect_error on_connect_request(const struct jaln_connect_request *req,
 		int *selected_encoding,
 		int *selected_digest,
@@ -127,12 +145,27 @@ enum jal_status pub_get_next_record_info_and_metadata(
 	DEBUG_LOG("next: %s", record_info->serial_id);
 
 	sid++;
-	record_info->sys_meta_len = strlen("sys_meta_buffer");
-	record_info->app_meta_len = strlen("app_meta_buffer");
-	record_info->payload_len = strlen("payload_buffer");
 
-	*system_metadata_buffer = (uint8_t*) strdup("sys_meta_buffer");
-	*application_metadata_buffer = (uint8_t*) strdup("app_meta_buffer");
+	*system_metadata_buffer = m_sys_meta_buf;
+	*application_metadata_buffer = m_app_meta_buf;
+	record_info->sys_meta_len = m_sys_meta_buf_len;
+	record_info->app_meta_len = m_app_meta_buf_len;
+
+	switch (type)
+	{
+		case JALN_RTYPE_JOURNAL:
+			record_info->payload_len = m_journal_buf_len;
+			break;
+		case JALN_RTYPE_AUDIT:
+			record_info->payload_len = m_audit_buf_len;
+			break;
+		case JALN_RTYPE_LOG:
+			record_info->payload_len = m_journal_buf_len;
+			break;
+		default:
+			// Nothing
+			break;
+	}
 	return JAL_OK;
 }
 
@@ -145,8 +178,8 @@ enum jal_status pub_release_metadata_buffers(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG("sid: %s", serial_id);
-	free(system_metadata_buffer);
-	free(application_metadata_buffer);
+	system_metadata_buffer = NULL;
+	application_metadata_buffer = NULL;
 	return JAL_OK;
 }
 
@@ -158,7 +191,7 @@ enum jal_status pub_acquire_log_data(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG("sid: %s", serial_id);
-	*buffer = (uint8_t*) strdup("payload_buffer");
+	*buffer = m_journal_buf;
 	return JAL_OK;
 }
 
@@ -170,7 +203,7 @@ enum jal_status pub_release_log_data(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG("sid: %s", serial_id);
-	free(buffer);
+	buffer = NULL;
 	return JAL_OK;
 }
 
@@ -182,7 +215,7 @@ enum jal_status pub_acquire_audit_data(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG("sid: %s", serial_id);
-	*buffer = (uint8_t*) strdup("payload_buffer");
+	*buffer = m_audit_buf;
 	return JAL_OK;
 }
 
@@ -194,7 +227,7 @@ enum jal_status pub_release_audit_data(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG("sid: %s", serial_id);
-	free(buffer);
+	buffer = NULL;
 	return JAL_OK;
 }
 
@@ -315,7 +348,7 @@ int sub_on_record_info(
 			record_info->app_meta_len,
 			strlen((char*) application_metadata_buffer),
 			(char*) application_metadata_buffer);
-	DEBUG_LOG("(%s)payload_sz[%"PRIu64"]", record_info->serial_id, 
+	DEBUG_LOG("(%s)payload_sz[%"PRIu64"]", record_info->serial_id,
 			record_info->payload_len);
 
 
@@ -449,6 +482,8 @@ void sub_release_journal_feeder(
 
 int main()
 {
+	load_test_data();
+
 	jaln_context *net_ctx = jaln_context_create();
 	//struct jaln_connection_handlers *conn_cbs = jaln_connection_handlers_create();
 	struct jaln_connection_callbacks ch;
@@ -490,14 +525,9 @@ int main()
 
 	enum jal_status err;
 	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
-	struct jal_digest_ctx *dc2 = jal_sha256_ctx_create();
-	dc1->algorithm_uri = strdup("sha512");
-	dc2->algorithm_uri = strdup("sha384");
-	jaln_register_digest_algorithm(net_ctx, dc1);
-	jaln_register_digest_algorithm(net_ctx, dc2);
 
-	err = jaln_register_encoding(net_ctx, "exi");
-	err = jaln_register_encoding(net_ctx, "deflate");
+	jaln_register_digest_algorithm(net_ctx, dc1);
+	err = jaln_register_encoding(net_ctx, "xml");
 
 	//err = jan_register_tls(net_ctx, "priv_key", "pub_cert", "path/to/peer/certs");
 	err = jaln_register_subscriber_callbacks(net_ctx, sub_cbs);
@@ -511,3 +541,38 @@ int main()
 	return 0;
 }
 
+int read_file(const char *file_name, uint8_t **buffer, uint64_t *buff_len)
+{
+	int ret = 0;
+	FILE *f = NULL;
+	f = fopen(file_name, "rb");
+
+	ret = fseek(f, 0, SEEK_END);
+	*buff_len = ftell(f);
+	ret = fseek(f, 0, SEEK_SET);
+
+	// Allocate enough for buffer + null terminator
+	*buffer = (uint8_t *)malloc(*buff_len + 1);
+	ret = fread(*buffer, *buff_len, 1, f);
+	*buff_len += 1; // For Null Terminator
+	(*buffer)[*buff_len-1] = (uint8_t)'\0';
+
+	fclose(f);
+	return ret;
+}
+
+void load_test_data()
+{
+	read_file(TEST_INPUT_PATH APP_META_XML,
+			&m_app_meta_buf,
+			&m_app_meta_buf_len);
+	read_file(TEST_INPUT_PATH SYS_META_XML,
+			&m_sys_meta_buf,
+			&m_sys_meta_buf_len);
+	read_file(TEST_INPUT_PATH AUDIT_PAYLOAD_XML,
+			&m_audit_buf,
+			&m_audit_buf_len);
+	read_file(TEST_INPUT_PATH JOURNAL_PAYLOAD_TXT,
+			&m_journal_buf,
+			&m_journal_buf_len);
+}
