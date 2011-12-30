@@ -330,11 +330,6 @@ enum jal_status jaln_listen(
 			NULL, NULL,
 			NULL, NULL);
 
-	VortexConnection * v_conn = vortex_listener_new(v_ctx, host, port, NULL, NULL);
-
-	if (!v_conn) {
-		return JAL_E_INVAL;
-	}
 
 	vortex_mutex_lock(&ctx->lock);
 
@@ -343,6 +338,13 @@ enum jal_status jaln_listen(
 		vortex_listener_set_on_connection_accepted(ctx->vortex_ctx,
 						jaln_tls_on_connection_accepted,
 						NULL);
+	}
+
+	VortexConnection * v_conn = vortex_listener_new(v_ctx, host, port, NULL, NULL);
+
+	if (!v_conn) {
+		vortex_mutex_unlock(&ctx->lock);
+		return JAL_E_INVAL;
 	}
 
 	ctx->listener_conn = v_conn;
