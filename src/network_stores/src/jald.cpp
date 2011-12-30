@@ -720,7 +720,6 @@ int main(int argc, char **argv)
 	// The jaln_context owns the digest algorithm, so don't keep a
 	// reference to it.
 	dctx = NULL;
-	/* TODO: enable the TLS stuff once the implementation is committed.
 	jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
 			global_config.remote_cert_dir);
 	if (JAL_OK != jaln_ret) {
@@ -728,7 +727,6 @@ int main(int argc, char **argv)
 		rc = -1;
 		goto out;
 	}
-	*/
 
 	jaln_ret = jaln_register_connection_callbacks(jctx, conn_cbs);
 	if (JAL_OK != jaln_ret) {

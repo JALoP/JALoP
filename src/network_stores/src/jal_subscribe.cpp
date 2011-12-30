@@ -472,11 +472,16 @@ void *subscriber_do_work(void *ptr)
 		goto err;
 	}
 	jaln_register_digest_algorithm(net_ctx, dc1);
-	// TODO: Uncomment when jaln_register_tls functionality is implemented.
-	//err = jaln_register_tls(net_ctx,
-	//			global_config.private_key,
-	//			global_config.public_cert,
-	//			global_config.remote_cert);
+	err = jaln_register_tls(net_ctx,
+				global_config.private_key,
+				global_config.public_cert,
+				global_config.remote_cert);
+	if (JAL_OK != err) {
+		if (global_args.debug_flag) {
+			DEBUG_LOG("Error w/ registration of TLS! Quitting.");
+		}
+		goto err;
+	}
 	err = jaln_register_encoding(net_ctx, "xml");
 	err = jsub_callbacks_init(net_ctx);
 	if (JAL_OK != err) {

@@ -116,6 +116,7 @@ enum jal_status jaln_register_tls(jaln_context *ctx,
 	}
 
 	vortex_tls_set_default_ctx_creation(ctx->vortex_ctx, jaln_ssl_ctx_creation, ctx);
+	vortex_tls_accept_negotiation(ctx->vortex_ctx, NULL, NULL, NULL);
 
 	vortex_mutex_unlock(&ctx->lock);
 
