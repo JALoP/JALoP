@@ -36,6 +36,7 @@
 #include <pthread.h>
 #include <openssl/pem.h>
 #include <strings.h>
+#include <limits.h>
 
 #include <jalop/jal_status.h>
 
@@ -52,6 +53,8 @@
 static const char *DEBUG_FLAG = "--debug";
 
 static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug);
+
+static int make_absolute_path(char ** path);
 
 int main(int argc, char **argv) {
 
@@ -82,6 +85,11 @@ int main(int argc, char **argv) {
 	if (JAL_OK != jal_err) {
 		fprintf(stderr, "failed to create database directory\n");
 		goto err_out;
+	}
+
+	if (!debug) {
+		//if the db_root path is relative, it must be made absolute before daemonizing
+		make_absolute_path(&(jalls_ctx->db_root));
 	}
 
 	//load the private key
@@ -251,4 +259,25 @@ static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug)
 
 	return 0;
 
+}
+
+static int make_absolute_path(char ** path) {
+	if (*path[0] == '/') {
+		//path is already absolute
+		return 0;
+	}else {
+		char * tmp = malloc(PATH_MAX);
+		char * cwd = getcwd(tmp, PATH_MAX);
+		char * abspath = malloc(PATH_MAX);
+		int ret = snprintf(abspath, PATH_MAX, "%s/%s", cwd, *path);
+		if (ret >= PATH_MAX || ret < 0) {
+			//snprintf truncated because the path was too long,
+			//or we had some other error
+			return -1;
+		}
+		free(*path);
+		free(tmp);
+		*path = abspath;
+		return 0;
+	}
 }
