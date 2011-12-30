@@ -271,14 +271,9 @@ int main() {
 
 	enum jal_status err;
 	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
-	struct jal_digest_ctx *dc2 = jal_sha256_ctx_create();
-	dc1->algorithm_uri = strdup("sha512");
-	dc2->algorithm_uri = strdup("sha384");
 	jaln_register_digest_algorithm(net_ctx, dc1);
-	jaln_register_digest_algorithm(net_ctx, dc2);
 	//err = jan_register_tls(net_ctx, "priv_key", "pub_cert", "path/to/peer/certs");
-	err = jaln_register_encoding(net_ctx, "exi");
-	err = jaln_register_encoding(net_ctx, "deflate");
+	err = jaln_register_encoding(net_ctx, "xml");
 	err = jaln_register_connection_callbacks(net_ctx, conn_cbs);
 	err = jaln_register_subscriber_callbacks(net_ctx, sub_cbs);
 	//struct jaln_connection *conn = jaln_subscribe(net_ctx, "192.168.246.156", "55555", JALN_RTYPE_LOG, NULL);
