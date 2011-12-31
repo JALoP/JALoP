@@ -198,23 +198,26 @@ extern "C" int jalls_create_system_metadata(enum jalls_data_type data_type, cons
 	if (tmp_ret < 0) {
 		goto cleanup;
 	}
-	char *uid_str;
-	tmp_ret = jal_asprintf(&uid_str, "%u", app_uid);
-	if (tmp_ret < 0) {
-		goto cleanup;
+	if (user_pwd_ptr) {
+		// only adds the user element if getpwuid_r was successful
+		char *uid_str;
+		tmp_ret = jal_asprintf(&uid_str, "%u", app_uid);
+		if (tmp_ret < 0) {
+			goto cleanup;
+		}
+		XMLCh* uid_xml;
+		uid_xml = XMLString::transcode(uid_str);
+		XMLCh* uname_xml;
+		uname_xml = XMLString::transcode(user_pwd_ptr->pw_name);
+		DOMElement *user_elt;
+		user_elt = new_doc->createElementNS(namespace_uri, JALLS_XML_USER);
+		free(uid_str);
+		user_elt->setTextContent(uid_xml);
+		user_elt->setAttribute(JALLS_XML_USER_NAME, uname_xml);
+		XMLString::release(&uid_xml);
+		XMLString::release(&uname_xml);
+		jalrecord_elt->appendChild(user_elt);
 	}
-	XMLCh* uid_xml;
-	uid_xml = XMLString::transcode(uid_str);
-	XMLCh* uname_xml;
-	uname_xml = XMLString::transcode(user_pwd_ptr->pw_name);
-	DOMElement *user_elt;
-	user_elt = new_doc->createElementNS(namespace_uri, JALLS_XML_USER);
-	free(uid_str);
-	user_elt->setTextContent(uid_xml);
-	user_elt->setAttribute(JALLS_XML_USER_NAME, uname_xml);
-	XMLString::release(&uid_xml);
-	XMLString::release(&uname_xml);
-	jalrecord_elt->appendChild(user_elt);
 
 	//add the SecurityLabel element
 	XMLCh* con_xml;
