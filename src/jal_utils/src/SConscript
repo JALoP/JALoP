@@ -2,6 +2,10 @@ Import('*')
 from Utils import install_for_build
 
 jal_utils = env.SharedLibrary(target='jal-utils', source=env.Glob("*.c"))
+
+env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
+
+
 env.Default(jal_utils)
 
 install_for_build(env, 'lib', jal_utils)

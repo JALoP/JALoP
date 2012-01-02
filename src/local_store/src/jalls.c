@@ -82,8 +82,6 @@ static int setup_signals();
 static void sig_handler(int sig);
 static void delete_socket(const char *socket_path, int debug);
 
-static int make_absolute_path(char ** path);
-
 int main(int argc, char **argv) {
 
 	char *config_path;
@@ -115,9 +113,11 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
-	if (!debug) {
-		//if the db_root path is relative, it must be made absolute before daemonizing
-		make_absolute_path(&(jalls_ctx->db_root));
+	//the db_root path must be made absolute before daemonizing
+	err = jalu_make_absolute_path(&(jalls_ctx->db_root));
+	if (err != 0) {
+		fprintf(stderr, "failed to create an absolute path from db_root\n");
+		goto err_out;
 	}
 
 	//load the private key
@@ -289,27 +289,6 @@ static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug)
 
 	return 0;
 
-}
-
-static int make_absolute_path(char ** path) {
-	if (*path[0] == '/') {
-		//path is already absolute
-		return 0;
-	}else {
-		char * tmp = malloc(PATH_MAX);
-		char * cwd = getcwd(tmp, PATH_MAX);
-		char * abspath = malloc(PATH_MAX);
-		int ret = snprintf(abspath, PATH_MAX, "%s/%s", cwd, *path);
-		if (ret >= PATH_MAX || ret < 0) {
-			//snprintf truncated because the path was too long,
-			//or we had some other error
-			return -1;
-		}
-		free(*path);
-		free(tmp);
-		*path = abspath;
-		return 0;
-	}
 }
 
 static int setup_signals()

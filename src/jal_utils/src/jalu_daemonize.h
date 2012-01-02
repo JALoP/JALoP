@@ -1,5 +1,5 @@
 /**
- * @file jalu_daemonize.h This file contains a utility function to daemonize a process.
+ * @file jalu_daemonize.h This file contains utility functions to daemonize a process.
  *
  * @section LICENSE
  *
@@ -39,6 +39,24 @@ extern "C" {
  * @return 0 on success, -1 on failure.
  */
 int jalu_daemonize();
+
+/**
+ * utility function to convert a local path to an absolute path.
+ * @param[in, out] path A pointer to the path to modify.
+ * 	If necessary, the path will be freed and reallocated.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int jalu_make_absolute_path(char **path);
+
+/**
+ * gets the current working directory
+ * @param[out] dir A pointer to hold the allocated path.
+ *
+ * @return 0 on success. -1 on failure.
+ */
+int jalu_getcwd(char **dir);
+
 
 #ifdef __cplusplus
 }
