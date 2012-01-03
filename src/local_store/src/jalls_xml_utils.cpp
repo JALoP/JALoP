@@ -77,10 +77,11 @@ public:
 
 void jalls_get_schema_path(char **dest, const char *schemas_root, const char *schema)
 {
-	int len = strlen(schemas_root) + strlen(schema);
-	char *path = (char *)malloc(sizeof(char) * (len + 1));
+	size_t len = strlen(schemas_root) + strlen(schema) + 2;
+	char *path = (char *)malloc(sizeof(char) * len);
 
-	strncpy(path, schemas_root, (size_t)len);
+	strncpy(path, schemas_root, len);
+	strcat(path, "/");
 	strcat(path, schema);
 
 	*dest = path;
