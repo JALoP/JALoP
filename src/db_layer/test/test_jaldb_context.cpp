@@ -3533,34 +3533,44 @@ extern "C" void test_jaldb_update_sync_works()
 	doc = cont.getDocument("1");
 	doc.setMetaData(JALDB_NS, sent_id, false);
 	doc.setMetaData(JALDB_NS, sync_id, false);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, false);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, false);
 	cont.updateDocument(doc, uc);
 
 	cont.putDocument("2", "<doc>2</doc>", uc);
 	doc = cont.getDocument("2");
 	doc.setMetaData(JALDB_NS, sent_id, false);
 	doc.setMetaData(JALDB_NS, sync_id, true);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, false);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, true);
 	cont.updateDocument(doc, uc);
 
 	cont.putDocument("A", "<doc>A</doc>", uc);
 	doc = cont.getDocument("A");
 	doc.setMetaData(JALDB_NS, sent_id, true);
 	doc.setMetaData(JALDB_NS, sync_id, false);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, true);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, true);
 	cont.updateDocument(doc, uc);
 
 	cont.putDocument("Z", "<doc>Z</doc>", uc);
 	doc = cont.getDocument("Z");
 	doc.setMetaData(JALDB_NS, sent_id, true);
 	doc.setMetaData(JALDB_NS, sync_id, true);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, true);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, true);
 	cont.updateDocument(doc, uc);
 
 	cont.putDocument("a", "<doc>a</doc>", uc);
 	doc = cont.getDocument("a");
 	doc.setMetaData(JALDB_NS, sent_id, true);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, true);
 	cont.updateDocument(doc, uc);
 
 	cont.putDocument("z", "<doc>z</doc>", uc);
 	doc = cont.getDocument("z");
 	doc.setMetaData(JALDB_NS, sync_id, false);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, false);
 	cont.updateDocument(doc, uc);
 
 	cont.putDocument("10", "<doc>10</doc>", uc);
@@ -3570,6 +3580,7 @@ extern "C" void test_jaldb_update_sync_works()
 	cont.putDocument("13", "<doc>13</doc>", uc);
 	doc = cont.getDocument("13");
 	doc.setMetaData(JALDB_NS, sent_id, true);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, true);
 	cont.updateDocument(doc, uc);
 
 	XmlValue v;
@@ -3584,12 +3595,22 @@ extern "C" void test_jaldb_update_sync_works()
 	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
 	assert_true(v.isBoolean());
 	assert_false(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(v.isBoolean());
+	assert_false(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
+	assert_true(v.isBoolean());
+	assert_false(v.asBoolean());
 
 	// not sent correctly, but already synced (shouldn't happen, but shouldn't modify either).
 	doc = cont.getDocument("2");
 	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
 	assert_false(v.asBoolean());
 	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_false(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
 	assert_true(v.asBoolean());
 
 	// sent correctly, never synced, should now be marked as 'synced'
@@ -3598,12 +3619,20 @@ extern "C" void test_jaldb_update_sync_works()
 	assert_true(v.asBoolean());
 	assert_true(v = doc.getMetaData(JALDB_NS, sync_id, v));
 	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
+	assert_true(v.asBoolean());
 
 	// sent & synced, shouldn't be changed
 	doc = cont.getDocument("Z");
 	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
 	assert_true(v.asBoolean());
 	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
 	assert_true(v.asBoolean());
 
 	// sent correctly, missing sync, should now be marked as 'synced'
@@ -3612,22 +3641,33 @@ extern "C" void test_jaldb_update_sync_works()
 	assert_true(v.asBoolean());
 	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
 	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
+	assert_true(v.asBoolean());
 
 	// missing sent, marked as not synced, should remain not 'synced'
 	doc = cont.getDocument("z");
 	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
 	assert_true(doc.getMetaData(JALDB_NS, sync_id, v));
 	assert_false(v.asBoolean());
+	assert_false(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
+	assert_false(v.asBoolean());
 
 	// missing sent, missing sync, no change.
 	doc = cont.getDocument("10");
 	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
 	assert_false(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_false(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_false(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
 
 	// missing sent, missing sync, no change.
 	doc = cont.getDocument("12");
 	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
 	assert_false(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_false(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_false(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
 
 	// serial ID is after the one we were looking for, so shouldn't 
 	// be modified
@@ -3635,6 +3675,9 @@ extern "C" void test_jaldb_update_sync_works()
 	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
 	assert_true(v.asBoolean());
 	assert_false(doc.getMetaData(JALDB_NS, sync_id, v));
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(v.asBoolean());
+	assert_false(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, v));
 }
 
 extern "C" void test_jaldb_update_sync_returns_error_on_bad_input()
@@ -3673,6 +3716,7 @@ extern "C" void test_jaldb_mark_sent_ok_common_overwrites_existing_data()
 	cont.putDocument("1", "<doc>1</doc>", uc);
 	doc = cont.getDocument("1");
 	doc.setMetaData(JALDB_NS, sent_id, false);
+	doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, false);
 	cont.updateDocument(doc, uc);
 
 	enum jaldb_status ret = jaldb_mark_sent_ok_common(context, &cont, "1", REMOTE_HOST);
@@ -3681,7 +3725,9 @@ extern "C" void test_jaldb_mark_sent_ok_common_overwrites_existing_data()
 	XmlValue v;
 	doc = cont.getDocument("1");
 	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
-	assert_true(v.isBoolean());
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(v.asBoolean());
 }
 
 extern "C" void test_jaldb_mark_sent_ok_common_creates_key_as_needed()
@@ -3704,6 +3750,10 @@ extern "C" void test_jaldb_mark_sent_ok_common_creates_key_as_needed()
 	doc = cont.getDocument("1");
 	assert_true(doc.getMetaData(JALDB_NS, sent_id, v));
 	assert_true(v.isBoolean());
+	assert_true(v.asBoolean());
+	assert_true(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
+	assert_true(v.isBoolean());
+	assert_true(v.asBoolean());
 }
 
 extern "C" void test_jaldb_mark_sent_ok_returns_not_found_when_document_lookup_fails()
@@ -3725,6 +3775,7 @@ extern "C" void test_jaldb_mark_sent_ok_returns_not_found_when_document_lookup_f
 	XmlValue v;
 	doc = cont.getDocument("1");
 	assert_false(doc.getMetaData(JALDB_NS, sent_id, v));
+	assert_false(doc.getMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, v));
 }
 
 extern "C" void test_jaldb_mark_sent_ok_common_returns_error_on_bad_input()
