@@ -50,10 +50,10 @@ uint8_t *m_sys_meta_buf = NULL;
 uint8_t *m_app_meta_buf = NULL;
 uint8_t *m_audit_buf = NULL;
 uint8_t *m_journal_buf = NULL;
-size_t m_sys_meta_buf_len = 0;
-size_t m_app_meta_buf_len = 0;
-size_t m_audit_buf_len = 0;
-size_t m_journal_buf_len = 0;
+uint64_t m_sys_meta_buf_len = 0;
+uint64_t m_app_meta_buf_len = 0;
+uint64_t m_audit_buf_len = 0;
+uint64_t m_journal_buf_len = 0;
 
 int read_file(const char *file_name, uint8_t **buffer, uint64_t *buff_len);
 void load_test_data();
