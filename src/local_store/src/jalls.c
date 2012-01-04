@@ -27,6 +27,26 @@
  * limitations under the License.
  */
 
+/** 	The following defines check if GNU_SOURCE has
+	previously been defined.  If it has, we undefine it
+	and define _POSIX_C_SOURCE as 20112L so that we could
+	use the XSI-compliant version of strerror_r which is
+	more portable.  The defines must come before "string.h".
+	The defines also appear not to work with "strings.h".
+
+	From http://linux.die.net/man/3/strerror_r
+	"The XSI-compliant version of strerror_r() is provided if:
+		(_POSIX_C_SOURCE >= 20112L || _XOPEN_SOURCE >= 600)
+		&& !_GNU_SOURCE
+	Otherwise, the GNU-specific version is provided."
+**/
+#ifdef _GNU_SOURCE
+#undef _GNU_SOURCE
+#endif
+#define _POSIX_C_SOURCE 200112L
+#include <string.h>
+
+#include <stdio.h>	/** For remove **/
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -35,8 +55,8 @@
 #include <errno.h>
 #include <pthread.h>
 #include <openssl/pem.h>
-#include <strings.h>
 #include <limits.h>
+#include <signal.h>	/** For SIGABRT, SIGTERM, SIGINT **/
 
 #include <jalop/jal_status.h>
 
@@ -46,13 +66,21 @@
 #include "jalls_handler.h"
 #include "jalls_msg.h"
 #include "jalls_init.h"
+#include "jal_alloc.h"
 
 #define JALLS_LISTEN_BACKLOG 20
 #define JALLS_USAGE "usage: [--debug] FILE\n"
+#define JALLS_ERRNO_MSG_SIZE 1024
 
 static const char *DEBUG_FLAG = "--debug";
 
+// Members for deleting socket file
+extern volatile int should_exit;
+
 static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug);
+static int setup_signals();
+static void sig_handler(int sig);
+static void delete_socket(const char *socket_path, int debug);
 
 static int make_absolute_path(char ** path);
 
@@ -93,7 +121,6 @@ int main(int argc, char **argv) {
 	}
 
 	//load the private key
-
 	fp = fopen(jalls_ctx->private_key_file, "r");
 	if (!fp) {
 		fprintf(stderr, "failed to open private key file\n");
@@ -174,6 +201,11 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
+	// Perform signal hookups
+	if ( 0 != setup_signals()) {
+		goto err_out;
+	}
+
 	err = listen(sock, JALLS_LISTEN_BACKLOG);
 	if (-1 == err) {
 		fprintf(stderr, "failed to listen, %s\n", strerror(errno));
@@ -183,18 +215,18 @@ int main(int argc, char **argv) {
 	if (!debug) {
 		err = jalu_daemonize();
 		if (err < 0) {
-			fprintf(stderr, "failed to create daemon");
+			fprintf(stderr, "failed to create daemon\n");
 			goto err_out;
 		}
 	}
 
 	struct sockaddr_un peer_addr;
 	unsigned int peer_addr_size = sizeof(peer_addr);
-	while (1) {
+	while (!should_exit) {
 		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(*thread_ctx));
 		if (thread_ctx == NULL) {
 			if (debug) {
-				fprintf(stderr, "Failed to allocate memory");
+				fprintf(stderr, "Failed to allocate memory\n");
 			}
 		}
 		thread_ctx->fd = accept(sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
@@ -212,16 +244,18 @@ int main(int argc, char **argv) {
 			err = pthread_create(&new_thread, NULL, jalls_handler, thread_ctx);
 			my_errno = errno;
 			if (err < -1 && debug) {
-				fprintf(stderr, "Failed to create pthread: %s", strerror(my_errno));
+				fprintf(stderr, "Failed to create pthread: %s\n", strerror(my_errno));
 			}
 		} else {
 			if (debug) {
-				fprintf(stderr, "Failed to accept: %s", strerror(my_errno));
+				fprintf(stderr, "Failed to accept: %s\n", strerror(my_errno));
 			}
 		}
 	}
 
 err_out:
+	delete_socket(jalls_ctx->socket, jalls_ctx->debug);
+
 	RSA_free(key);
 	X509_free(cert);
 	jalls_shutdown();
@@ -279,5 +313,54 @@ static int make_absolute_path(char ** path) {
 		free(tmp);
 		*path = abspath;
 		return 0;
+	}
+}
+
+static int setup_signals()
+{
+	// Signal action to delete the socket file
+	struct sigaction action_on_sig;
+	action_on_sig.sa_handler = &sig_handler;
+	sigemptyset(&action_on_sig.sa_mask);
+	action_on_sig.sa_flags = 0;
+
+	if (0 != sigaction(SIGABRT, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGABRT.\n");
+		goto err_out;
+	}
+	if (0 != sigaction(SIGTERM, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGTERM.\n");
+		goto err_out;
+	}
+	if (0 != sigaction(SIGINT, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGINT.\n");
+		goto err_out;
+	}
+	return 0;
+
+err_out:
+	return -1;
+}
+
+static void sig_handler(__attribute__((unused)) int sig)
+{
+	should_exit = 1;	// Global Flag will cause main
+				// to exit.
+}
+
+static void delete_socket(const char *p_socket_path, int p_debug)
+{
+	if (0 != remove(p_socket_path)) {
+		int local_errno = errno;
+		if (p_debug) {
+			char *buf = jal_malloc(JALLS_ERRNO_MSG_SIZE);
+			int result = strerror_r(local_errno, buf, JALLS_ERRNO_MSG_SIZE);
+			if (0 != result) {
+				printf("Failed to parse errno.\n");
+			}
+			fprintf(stderr,
+				"Error deleting socket file: %s\n",
+				buf);
+		}
 	}
 }

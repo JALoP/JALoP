@@ -56,6 +56,8 @@
 #define JALLS_BREAK_STRING "BREAK"
 #define JALLS_BREAK_LEN 5
 
+volatile int should_exit;
+
 void *jalls_handler(void *thread_ctx_p) {
 	if (!thread_ctx_p) {
 		return NULL; //should never happen.
@@ -74,7 +76,7 @@ void *jalls_handler(void *thread_ctx_p) {
 		goto out;
 	}
 
-	while (1) {
+	while (!should_exit) {
 
 		// read protocol version, message type, data length,
 		// metadata length and possible fd.
