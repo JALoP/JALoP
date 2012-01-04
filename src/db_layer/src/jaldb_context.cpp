@@ -1682,6 +1682,7 @@ enum jaldb_status jaldb_mark_sent_ok_common(
 				throw(e);
 			}
 			sys_doc.setMetaData(JALDB_NS, sent_key, true);
+			sys_doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SENT_KEY, true);
 			cont->updateDocument(txn, sys_doc, uc);
 			txn.commit();
 			return JALDB_OK;
@@ -1771,6 +1772,7 @@ enum jaldb_status jaldb_mark_synced_common(
 				doc = cont->getDocument(txn, doc.getName(),
 						DBXML_LAZY_DOCS | DB_READ_COMMITTED | DB_RMW);
 				doc.setMetaData(JALDB_NS, synced_key_no_ns, true);
+				doc.setMetaData(JALDB_NS, JALDB_GLOBAL_SYNCED_KEY, true);
 				cont->updateDocument(txn, doc, uc);
 			}
 			res = XmlResults();

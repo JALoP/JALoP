@@ -76,6 +76,9 @@
 #define JALDB_SYNC_META_SUFFIX "..sync"
 #define JALDB_SENT_META_SUFFIX "..sent"
 
+#define JALDB_GLOBAL_SYNCED_KEY "global_synced"
+#define JALDB_GLOBAL_SENT_KEY "global_sent"
+
 #define JALDB_SYNC_POINT_VAR "sync_point"
 #define JALDB_SYNC_META_VAR "sync_meta_name"
 #define JALDB_SENT_META_VAR "sent_meta_name"
