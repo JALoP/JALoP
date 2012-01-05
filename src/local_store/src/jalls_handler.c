@@ -107,13 +107,19 @@ void *jalls_handler(void *thread_ctx_p) {
 		msgh.msg_control = msg_control_buffer;
 		msgh.msg_controllen = sizeof(msg_control_buffer);
 
-#ifdef SCM_CREDENTIALS
+#ifdef SO_PEERCRED
 		struct ucred cred;
 		memset(&cred, 0, sizeof(cred));
 		pid = &cred.pid;
 		uid = &cred.uid;
 		*pid = -1;
 		*uid = 0;
+		socklen_t cred_len = sizeof(cred);
+		if (-1 == getsockopt(thread_ctx->fd, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len)) {
+			if (debug) {
+				fprintf(stderr, "failed receiving peer crendentials\n");
+			}
+		}
 #endif
 #ifdef SCM_UCRED
 		ucred_t *cred = NULL;
@@ -151,14 +157,6 @@ void *jalls_handler(void *thread_ctx_p) {
 		cmsg = CMSG_FIRSTHDR(&msgh);
 		while (cmsg != NULL) {
 			if (cmsg->cmsg_level == SOL_SOCKET) {
-#ifdef SCM_CREDENTIALS
-				if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS) {
-					if (debug && (*uid != 0 || *pid != -1)) {
-						fprintf(stderr, "received duplicate ancillary data: multiple credentials.\nFirst credentials will be overwritten\n");
-					}
-					memcpy(&cred, CMSG_DATA(cmsg), sizeof(cred));
-				} else
-#endif
 				if (cmsg->cmsg_type == SCM_RIGHTS && cmsg->cmsg_len == CMSG_LEN(sizeof(msg_fd))) {
 					if (message_type != JALLS_JOURNAL_FD_MSG) {
 						if (debug) {

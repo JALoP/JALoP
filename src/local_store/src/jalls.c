@@ -230,10 +230,6 @@ int main(int argc, char **argv) {
 			}
 		}
 		thread_ctx->fd = accept(sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
-#ifdef SO_PASSCRED
-		int on = 1;
-		setsockopt(thread_ctx->fd, SOL_SOCKET, SO_PASSCRED, &on, sizeof(on));
-#endif
 		thread_ctx->signing_key = key;
 		thread_ctx->signing_cert = cert;
 		thread_ctx->db_ctx = db_ctx;
