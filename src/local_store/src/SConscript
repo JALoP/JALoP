@@ -3,6 +3,8 @@ from Utils import add_project_lib
 from Utils import install_for_build
 
 sources = []
+env.MergeFlags('-D_BSD_SOURCE')
+
 for source in (env.Glob("*.c") + env.Glob("*.cpp")):
 	sources.append(source)
 

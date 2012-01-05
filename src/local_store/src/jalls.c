@@ -114,10 +114,13 @@ int main(int argc, char **argv) {
 	}
 
 	//the db_root path must be made absolute before daemonizing
-	err = jalu_make_absolute_path(&(jalls_ctx->db_root));
-	if (err != 0) {
+	char *absolute_db_root = realpath(jalls_ctx->db_root, NULL);
+	if (absolute_db_root == NULL) {
 		fprintf(stderr, "failed to create an absolute path from db_root\n");
 		goto err_out;
+	} else {
+		free(jalls_ctx->db_root);
+		jalls_ctx->db_root = absolute_db_root;
 	}
 
 	//load the private key

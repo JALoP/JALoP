@@ -40,24 +40,6 @@ extern "C" {
  */
 int jalu_daemonize();
 
-/**
- * utility function to convert a local path to an absolute path.
- * @param[in, out] path A pointer to the path to modify.
- * 	If necessary, the path will be freed and reallocated.
- *
- * @return 0 on success, -1 on failure.
- */
-int jalu_make_absolute_path(char **path);
-
-/**
- * gets the current working directory
- * @param[out] dir A pointer to hold the allocated path.
- *
- * @return 0 on success. -1 on failure.
- */
-int jalu_getcwd(char **dir);
-
-
 #ifdef __cplusplus
 }
 #endif
