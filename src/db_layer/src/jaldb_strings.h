@@ -173,4 +173,24 @@ JALDB_QUERY_SID_CMP_FUNCTION \
 "declare namespace jal='" JAL_SYS_META_NAMESPACE_URI "';\n" \
 "/jal:JALRecord/jal:RecordID/text()\n"
 
+#define JALDB_SID_QUERY_FORMAT \
+"declare namespace jal='" JAL_SYS_META_NAMESPACE_URI "';\n"\
+"let $d := doc(\"dbxml:/%s/%s\")\n"\
+"let $recordId := $d/jal:JALRecord/jal:RecordID/text()\n"\
+"let $timestamp := $d/jal:JALRecord/jal:Timestamp/text()\n"\
+"let $sid := $d/dbxml:metadata(\"dbxml:name\")\n"\
+"let $n := <n>Serial ID: {$sid}\n"\
+"RecordID : {$recordId}\n"\
+"Timestamp: {$timestamp}\n"\
+"</n>\n"\
+"return $n/text()\n"
+
+#define JALDB_UUID_QUERY_FORMAT \
+"declare namespace jal='" JAL_SYS_META_NAMESPACE_URI "';\n"\
+"for $d in collection(\"dbxml:/%s\")\n"\
+"where $d/jal:JALRecord/jal:RecordID/text() = \"%s\"\n"\
+"return concat(\"RecordID: \", $d/jal:JALRecord/jal:RecordID, \"\n\","\
+" \"Serial ID: \", $d/dbxml:metadata(\"dbxml:name\"), \"\n\", "\
+" \"Timestamp: \", $d/jal:JALRecord/jal:Timestamp)\n"
+
 #endif // _JALDB_STRINGS_H_

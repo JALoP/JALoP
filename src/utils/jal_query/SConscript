@@ -1,0 +1,23 @@
+Import('*')
+from Utils import install_for_build
+from Utils import add_project_lib
+
+env = utilsEnv.Clone()
+
+sources = env.Glob("*.c") + env.Glob("*.cpp")
+
+env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
+env.MergeFlags({'LINKFLAGS':env['dbxml_ldflags']})
+
+add_project_lib(env, 'db_layer', 'jal-db')
+add_project_lib(env, 'lib_common', 'jal-common')
+
+jal_query = env.Program(target='jal_query', source=[sources, lib_common, db_layer])
+env.Default(jal_query)
+if (env['release']):
+	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
+	env.Alias('install', env.Install(sbindir, jal_query))
+
+install_for_build(env, 'bin', jal_query)
+
+Return("jal_query")
