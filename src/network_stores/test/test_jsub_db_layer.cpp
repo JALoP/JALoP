@@ -39,10 +39,13 @@ extern "C" {
 #include <test-dept.h>
 }
 
+#include <dirent.h>
+#include <sys/stat.h>
+
 #include "jsub_db_layer.hpp"
 #include "jaldb_context.hpp"
 
-#define OTHER_DB_ROOT "./testdb/"
+#define OTHER_DB_ROOT "./jsbu_testdb/"
 #define OTHER_SCHEMA_ROOT "./schemas/"
 #define PAYLOAD "This Is Some Text!\n"
 
@@ -50,6 +53,23 @@ jaldb_context *db_ctx = NULL;
 
 extern "C" void setup()
 {
+	struct stat st;
+	if (stat(OTHER_DB_ROOT, &st) != 0) {
+		int status;
+		status = mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	}
+	else {
+		struct dirent *d;
+		DIR *dir;
+		char buf[256];
+		dir = opendir(OTHER_DB_ROOT);
+		while ((d = readdir(dir)) != NULL) {
+			sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
+			remove(buf);
+		}
+		int ret_val;
+		ret_val = closedir(dir);
+	}
 	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT, OTHER_SCHEMA_ROOT);
 }
 
