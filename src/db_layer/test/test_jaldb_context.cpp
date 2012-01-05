@@ -6351,3 +6351,187 @@ extern "C" void test_purge_journal_returns_error_on_bad_input()
 	ret = jaldb_purge_unconfirmed_journal(context, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 }
+
+extern "C" void test_jaldb_get_document_list_works()
+{
+	std::string sid_1 = "abc";
+	std::string sid_2 = "def";
+	std::string sid_3 = "ghi";
+	XmlDocument doc_1 = context->manager->createDocument();
+	doc_1.setName(sid_1);
+	XmlDocument doc_2 = context->manager->createDocument();
+	doc_2.setName(sid_2);
+	XmlDocument doc_3 = context->manager->createDocument();
+	doc_3.setName(sid_3);
+
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	try {
+		context->audit_sys_cont->putDocument(txn, doc_1, uc);
+		context->audit_sys_cont->putDocument(txn, doc_2, uc);
+		context->audit_sys_cont->putDocument(txn, doc_3, uc);
+		txn.commit();
+	} catch (XmlException &e) {
+		txn.abort();
+		assert_true(false);
+	}
+
+	list<string> *doc_list = NULL;
+	enum jaldb_status ret = jaldb_get_document_list(
+					context->audit_sys_cont,
+					context->manager,
+					&doc_list);
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, doc_list);
+	assert_false(doc_list->empty());
+
+	// Num documents inserted + special document
+	assert_equals(3 + 1, doc_list->size());
+}
+
+extern "C" void test_jaldb_get_document_list_works_empty_db()
+{
+	list<string> *doc_list = NULL;
+	enum jaldb_status ret = jaldb_get_document_list(
+					context->audit_sys_cont,
+					context->manager,
+					&doc_list);
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, doc_list);
+	assert_false(doc_list->empty());
+
+	// Should only contain the special document
+	assert_equals(1, doc_list->size());
+}
+
+extern "C" void test_jaldb_get_document_list_fails_bad_input()
+{
+	list<string> *doc_list = NULL;
+	list<string> *doc_list2 = new list<string>();
+	enum jaldb_status ret = jaldb_get_document_list(
+					NULL,
+					context->manager,
+					&doc_list);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_get_document_list(
+				context->audit_sys_cont,
+				NULL,
+				&doc_list);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_get_document_list(
+				context->audit_sys_cont,
+				context->manager,
+				NULL);
+	assert_equals(JALDB_E_INVAL, ret);
+
+	ret = jaldb_get_document_list(
+				context->audit_sys_cont,
+				context->manager,
+				&doc_list2);
+	assert_equals(JALDB_E_INVAL, ret);
+	delete doc_list2;
+}
+
+extern "C" void test_jaldb_get_journal_document_list_works()
+{
+	std::string sid_1 = "abc";
+	std::string sid_2 = "def";
+	std::string sid_3 = "ghi";
+	XmlDocument doc_1 = context->manager->createDocument();
+	doc_1.setName(sid_1);
+	XmlDocument doc_2 = context->manager->createDocument();
+	doc_2.setName(sid_2);
+	XmlDocument doc_3 = context->manager->createDocument();
+	doc_3.setName(sid_3);
+
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	try {
+		context->journal_sys_cont->putDocument(txn, doc_1, uc);
+		context->journal_sys_cont->putDocument(txn, doc_2, uc);
+		context->journal_sys_cont->putDocument(txn, doc_3, uc);
+		txn.commit();
+	} catch (XmlException &e) {
+		txn.abort();
+		assert_true(false);
+	}
+
+	list<string> *doc_list = NULL;
+	enum jaldb_status ret = jaldb_get_journal_document_list(context, &doc_list);
+	assert_equals(ret, JALDB_OK);
+	assert_not_equals(NULL, doc_list);
+	assert_false(doc_list->empty());
+
+	// Num documents inserted + special document
+	assert_equals(3 + 1, doc_list->size());
+}
+
+extern "C" void test_jaldb_get_audit_document_list_works()
+{
+	std::string sid_1 = "abc";
+	std::string sid_2 = "def";
+	std::string sid_3 = "ghi";
+	XmlDocument doc_1 = context->manager->createDocument();
+	doc_1.setName(sid_1);
+	XmlDocument doc_2 = context->manager->createDocument();
+	doc_2.setName(sid_2);
+	XmlDocument doc_3 = context->manager->createDocument();
+	doc_3.setName(sid_3);
+
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	try {
+		context->audit_sys_cont->putDocument(txn, doc_1, uc);
+		context->audit_sys_cont->putDocument(txn, doc_2, uc);
+		context->audit_sys_cont->putDocument(txn, doc_3, uc);
+		txn.commit();
+	} catch (XmlException &e) {
+		txn.abort();
+		assert_true(false);
+	}
+
+	list<string> *doc_list = NULL;
+	enum jaldb_status ret = jaldb_get_audit_document_list(context, &doc_list);
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, doc_list);
+	assert_false(doc_list->empty());
+
+	// Num documents inserted + special document
+	assert_equals(3 + 1, doc_list->size());
+}
+
+extern "C" void test_jaldb_get_log_document_list_works()
+{
+	std::string sid_1 = "abc";
+	std::string sid_2 = "def";
+	std::string sid_3 = "ghi";
+	XmlDocument doc_1 = context->manager->createDocument();
+	doc_1.setName(sid_1);
+	XmlDocument doc_2 = context->manager->createDocument();
+	doc_2.setName(sid_2);
+	XmlDocument doc_3 = context->manager->createDocument();
+	doc_3.setName(sid_3);
+
+	XmlUpdateContext uc = context->manager->createUpdateContext();
+	XmlTransaction txn = context->manager->createTransaction();
+	try {
+		context->log_sys_cont->putDocument(txn, doc_1, uc);
+		context->log_sys_cont->putDocument(txn, doc_2, uc);
+		context->log_sys_cont->putDocument(txn, doc_3, uc);
+		txn.commit();
+	} catch (XmlException &e) {
+		txn.abort();
+		assert_true(false);
+	}
+
+	list<string> *doc_list = NULL;
+	enum jaldb_status ret = jaldb_get_log_document_list(context, &doc_list);
+	assert_equals(JALDB_OK, ret);
+	assert_not_equals(NULL, doc_list);
+	assert_false(doc_list->empty());
+
+	// Num documents inserted + special document
+	assert_equals(3 + 1, doc_list->size());
+}

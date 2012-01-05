@@ -30,6 +30,8 @@
 #ifndef _JALDB_CONTEXT_HPP_
 #define _JALDB_CONTEXT_HPP_
 
+#include <list>
+#include <string>
 #include <map>
 #include <dbxml/DbXml.hpp>
 #include <dbxml/XmlContainer.hpp>
@@ -38,6 +40,8 @@
 
 typedef std::map<std::string, DbXml::XmlContainer> string_to_container_map;
 typedef std::map<std::string, DB*> string_to_db_map;
+
+using namespace std;
 
 struct jaldb_context_t {
 	DbXml::XmlManager *manager; //<! The manager associated with the context.
@@ -1001,5 +1005,63 @@ enum jaldb_status jaldb_purge_unconfirmed_log(
 enum jaldb_status jaldb_purge_unconfirmed_journal(
 		jaldb_context *ctx,
 		const char *remote_host);
+
+/**
+ * Retrieve a list of document names present in the journal system container.
+ *
+ * @param[in] ctx the context to use
+ * @param[out] doc_list A pointer to a list returned by the function.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_journal_document_list(
+	jaldb_context *ctx,
+	list<string> **doc_list);
+
+ /**
+ * Retrieve a list of document names present in the audit system container.
+ *
+ * @param[in] ctx the context to use
+ * @param[out] doc_list A pointer to a list returned by the function.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_audit_document_list(
+		jaldb_context *ctx,
+		list<string> **doc_list);
+
+ /**
+ * Retrieve a list of document names present in the log system container.
+ *
+ * @param[in] ctx the context to use
+ * @param[out] doc_list A pointer to a list returned by the function.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_log_document_list(
+		jaldb_context *ctx,
+		list<string> **doc_list);
+
+ /**
+ * Retrieve a list of document names present in the container \p cont.
+ *
+ * @param[in] cont the container to retrieve the list from.
+ * @param[in] mgr the manager to use to create the transaction.
+ * @param[out] doc_list A pointer to a list returned by the function.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_document_list(
+		DbXml::XmlContainer *cont,
+		DbXml::XmlManager *mgr,
+		list<string> **doc_list);
 
 #endif // _JALDB_CONTEXT_HPP_

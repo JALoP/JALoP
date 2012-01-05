@@ -34,6 +34,7 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <inttypes.h> // For PRIu64
+#include <list>
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
@@ -3260,4 +3261,76 @@ enum jaldb_status jaldb_purge_unconfirmed_journal(
 		}
 	}
 	return ret;
+}
+
+enum jaldb_status jaldb_get_journal_document_list(
+	jaldb_context *ctx,
+	list<string> **doc_list)
+{
+	if (!ctx || !doc_list || *doc_list) {
+		return JALDB_E_INVAL;
+	}
+	return jaldb_get_document_list(
+					ctx->journal_sys_cont,
+					ctx->manager,
+					doc_list);
+}
+
+enum jaldb_status jaldb_get_audit_document_list(
+		jaldb_context *ctx,
+		list<string> **doc_list)
+{
+	if (!ctx || !doc_list || *doc_list) {
+		return JALDB_E_INVAL;
+	}
+	return jaldb_get_document_list(
+					ctx->audit_sys_cont,
+					ctx->manager,
+					doc_list);
+}
+
+enum jaldb_status jaldb_get_log_document_list(
+		jaldb_context *ctx,
+		list<string> **doc_list)
+{
+	if (!ctx || !doc_list || *doc_list) {
+		return JALDB_E_INVAL;
+	}
+	return jaldb_get_document_list(
+					ctx->log_sys_cont,
+					ctx->manager,
+					doc_list);
+}
+
+enum jaldb_status jaldb_get_document_list(
+		XmlContainer *cont,
+		XmlManager *mgr,
+		list<string> **doc_list)
+{
+	if (!cont || !mgr || !doc_list || *doc_list) {
+		return JALDB_E_INVAL;
+	}
+	while (1) {
+		*doc_list = new list<string>();
+		XmlTransaction txn = mgr->createTransaction();
+		try {
+			XmlResults res = cont->getAllDocuments(txn, DB_RMW |
+				DBXML_LAZY_DOCS | DB_READ_COMMITTED);
+			XmlDocument doc;
+			while (res.next(doc)) {
+				(*doc_list)->push_back(doc.getName());
+			}
+			break;
+		} catch (XmlException &e) {
+			txn.abort();
+			if (e.getExceptionCode() ==
+				XmlException::DATABASE_ERROR &&
+				e.getDbErrno() == DB_LOCK_DEADLOCK) {
+				delete *doc_list;
+				continue;
+			}
+			return JALDB_E_DB;
+		}
+	}
+	return JALDB_OK;
 }
