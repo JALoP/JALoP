@@ -23,7 +23,7 @@ add_project_lib(env, 'db_layer', 'jal-db')
 add_project_lib(env, 'jal_utils', 'jal-utils')
 add_project_lib(env, 'network_lib', 'jal-network')
 
-SConscript('test/SConscript', exports='env all_tests lib_common test_utils')
+SConscript('test/SConscript', exports='env all_tests lib_common db_layer jal_utils network_lib test_utils')
 network_stores = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer network_lib')
 
 Return("network_stores")
