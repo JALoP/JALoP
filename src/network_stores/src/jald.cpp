@@ -40,6 +40,8 @@
 #include <string>
 #include <unistd.h>
 
+#include <jalop/jal_version.h>
+
 #include "jal_base64_internal.h"
 #include "jaldb_context.hpp"
 #include "jalns_strings.h"
@@ -47,7 +49,6 @@
 #include "jalu_config.h"
 
 #define ONE_MINUTE 60
-#define JALD_VERSION "1.0\n"
 #define VERSION_CALLED 1
 
 #define DEBUG_LOG_SUB_SESSION(ch_info, args...) \
@@ -679,8 +680,9 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	if (process_options(argc, argv) == VERSION_CALLED)
+	if (process_options(argc, argv) == VERSION_CALLED) {
 		goto version_out;
+	}
 
 	DEBUG_LOG("Config Path: %s\tDebug: %d\n", global_args.config_path, global_args.debug_flag);
 
@@ -836,7 +838,7 @@ int process_options(int argc, char **argv)
 		{"config", required_argument, NULL, 'c'}, /* --config or -c */
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
 		{"no-daemon", no_argument, &global_args.daemon, 0}, /* --no-daemon */
-		{"version", no_argument, NULL, 'v'}, /* --no-daemon */
+		{"version", no_argument, NULL, 'v'}, /* --version or -v */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
@@ -858,7 +860,7 @@ int process_options(int argc, char **argv)
 				global_args.config_path = strdup(optarg);
 				break;
 			case 'v':
-				printf(JALD_VERSION);
+				printf("%s\n", jal_version_as_string());
 				return VERSION_CALLED;
 				break;
 			case 0:
@@ -880,7 +882,7 @@ int process_options(int argc, char **argv)
 
 __attribute__((noreturn)) void usage()
 {
-	fprintf(stderr, "Usage: jald -c, --config <config_file> [-d, --debug] [--no-daemon]\n");
+	fprintf(stderr, "Usage: jald -c, --config <config_file> [-d, --debug] [-v, --version] [--no-daemon]\n");
 	exit(1);
 }
 

@@ -6,6 +6,8 @@ testserver = utilsEnv.Alias('testserver')
 
 testserver_env = utilsEnv.Clone()
 
+testserver_env.MergeFlags({'CPPPATH':'#src/lib_common/include:.'.split(':')})
+
 server = testserver_env.Program(target='dummy_local_store', source=["server.c"])
 add_project_lib(testserver_env, 'lib_common', 'jal-common')
 testserver_env.Depends(server, lib_common)

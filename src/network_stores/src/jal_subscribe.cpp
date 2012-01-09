@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <jalop/jaln_network.h>
+#include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 #include "jalu_daemonize.h"
 #include "jsub_db_layer.hpp"
@@ -54,7 +55,6 @@
 #define DB_ROOT "db_root"
 #define SCHEMAS_ROOT "schemas_root"
 #define MAX_PORT_LENGTH 10
-#define VERSION "1.0\n"
 #define VERSION_CALLED 1
 
 #define DEBUG_LOG(args...) \
@@ -151,8 +151,10 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	if (VERSION_CALLED == process_options(argc, argv))
+	if (VERSION_CALLED == process_options(argc, argv)) {
 		goto version_out;
+	}
+
 	DEBUG_LOG("Config Path: %s\tDebug: %d",
 		 global_args.config_path, global_args.debug_flag);
 	if (!global_args.config_path){
@@ -243,7 +245,7 @@ int process_options(int argc, char **argv)
 				global_args.config_path = strdup(optarg);
 				break;
 			case 'v':
-				printf(VERSION);
+				printf("%s\n", jal_version_as_string());
 				return VERSION_CALLED;
 				break;
 			case 0:
@@ -262,7 +264,7 @@ int process_options(int argc, char **argv)
 
 __attribute__((noreturn)) void usage()
 {
-        fprintf(stderr, "Usage: jal_subscribe -c, --config <config_directory> [-d, --debug]\n");
+        fprintf(stderr, "Usage: jal_subscribe -c, --config <config_directory> [-d, --debug] [-v, --version]\n");
         exit(1);
 }
 

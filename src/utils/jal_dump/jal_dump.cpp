@@ -40,6 +40,7 @@
 
 #include <jal_alloc.h>
 #include <jal_asprintf_internal.h>
+#include <jalop/jal_version.h>
 
 #include <jaldb_status.h>
 #include "jal_dump.h"
@@ -53,7 +54,6 @@
 #define LOG_FILE_NAME "jal_dump_log.txt"
 
 using namespace std;
-#define JAL_DUMP_VERSION "1.0\n"
 
 static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid, char *type,
 	char *data, char **path, char **home);
@@ -378,7 +378,7 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 
 	if (2 == argc) {
 		if ('v' == getopt_long(argc, argv, optstring, long_options, NULL)) {
-			printf(JAL_DUMP_VERSION);
+			printf("%s\n", jal_version_as_string());
 			exit(0);
 		}
 	}
@@ -445,7 +445,7 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 				write_sid_flag = 1;
 				break;
 			case 'v':
-				printf(JAL_DUMP_VERSION);
+				printf("%s\n", jal_version_as_string());
 				goto version_out;
 				break;
 			case ':':		//Missing argument

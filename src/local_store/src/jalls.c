@@ -59,6 +59,7 @@
 #include <signal.h>	/** For SIGABRT, SIGTERM, SIGINT **/
 
 #include <jalop/jal_status.h>
+#include <jalop/jal_version.h>
 
 #include "jal_fs_utils.h"
 #include "jalls_config.h"
@@ -69,9 +70,8 @@
 #include "jal_alloc.h"
 
 #define JALLS_LISTEN_BACKLOG 20
-#define JALLS_USAGE "usage: [--debug] FILE\n"
+#define JALLS_USAGE "usage: [--debug] [--version] FILE\n"
 #define JALLS_ERRNO_MSG_SIZE 1024
-#define JALLS_VERSION "1.0\n"
 #define VERSION_CALLED 1
 
 static const char *DEBUG_FLAG = "--debug";
@@ -297,7 +297,7 @@ static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug)
 			fprintf(stderr, JALLS_USAGE);
 			return -1;
 		} else if (0 == strcmp(argv[1], VERSION_FLAG)) {
-			printf(JALLS_VERSION);
+			printf("%s\n", jal_version_as_string());
 			return VERSION_CALLED;
 		}
 		*config_path = argv[1];

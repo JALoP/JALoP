@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 #include <sys/stat.h>
+#include <jalop/jal_version.h>
 
 #define LISTEN_BACKLOG 20
 
@@ -48,7 +49,6 @@
 // from recvmsg().
 #define BUF_SIZE 4096
 
-#define DUMMY_LOCAL_STORE_VERSION "1.0\n"
 #define VERSION_FLAG "--version"
 
 static const char *BREAK_STRING = "BREAK";
@@ -375,10 +375,10 @@ int main(int argc, char **argv)
 		printf("usage: [path]\n");
 		goto err_out;
 	}
-	
+
 	if (argc == 2) {
 		if (0 == strcmp(argv[1], VERSION_FLAG)) {
-			printf(DUMMY_LOCAL_STORE_VERSION);
+			printf("%s\n",jal_version_as_string());
 			exit(0);
 		}
 	}

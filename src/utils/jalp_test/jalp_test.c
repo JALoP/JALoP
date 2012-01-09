@@ -43,10 +43,9 @@
 #include <jalop/jalp_journal.h>
 #include <jalop/jalp_audit.h>
 #include <jalop/jalp_logger.h>
+#include <jalop/jal_version.h>
 
 #include "jalp_test_app_meta.h"
-
-#define JALP_TEST_VERSION "1.0\n"
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
 	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path);
@@ -269,7 +268,7 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 				*schema_path = strdup(optarg);
 				break;
 			case 'v':
-				printf(JALP_TEST_VERSION);
+				printf("%s\n", jal_version_as_string());
 				goto version_out;
 				break;
 			case ':':
