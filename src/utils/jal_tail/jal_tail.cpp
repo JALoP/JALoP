@@ -49,12 +49,12 @@
 #include <jaldb_status.h>
 #include "jaldb_context.hpp"
 
-#define THREAD_SLEEP_SECONDS 10
-#define DEFAULT_HOME "/var/lib/jalop/db"
-#define DEFAULT_NUM_RECORDS 20
-#define DEFAULT_TYPE "l"
-#define DEFAULT_LAST_SID "0"
-#define VERSION "1.0"
+#define JAL_TAIL_THREAD_SLEEP_SECONDS 10
+#define JAL_TAIL_DEFAULT_HOME "/var/lib/jalop/db"
+#define JAL_TAIL_DEFAULT_NUM_RECORDS 20
+#define JAL_TAIL_DEFAULT_TYPE "l"
+#define JAL_TAIL_DEFAULT_LAST_SID "0"
+#define JAL_TAIL_VERSION "1.0"
 
 #define DEBUG_LOG(args...) \
 do { \
@@ -110,13 +110,13 @@ int main(int argc, char **argv) {
 
 	// Setup defaults if necessary.
 	if (!gbl.type) {
-		gbl.type = jal_strdup(DEFAULT_TYPE);
+		gbl.type = jal_strdup(JAL_TAIL_DEFAULT_TYPE);
 	}
 	if (!gbl.home) {
-		gbl.home = jal_strdup(DEFAULT_HOME);
+		gbl.home = jal_strdup(JAL_TAIL_DEFAULT_HOME);
 	}
 	if (!gbl.num_rec) {
-		gbl.num_rec = (double) DEFAULT_NUM_RECORDS;
+		gbl.num_rec = (double) JAL_TAIL_DEFAULT_NUM_RECORDS;
 	}
 
 	print_settings(gbl.follow_flag, gbl.num_rec, gbl.type, gbl.home);
@@ -256,7 +256,7 @@ static void sig_handler(__attribute__((unused)) int sig)
 {
 	printf("\nALERT!!! Quit signal received.  Please wait while we shutdown.\n");
 	printf("Shutting down in approx. %d seconds.\n",
-	       THREAD_SLEEP_SECONDS);
+	       JAL_TAIL_THREAD_SLEEP_SECONDS);
 	exit_flag = 1;	// Global Flag will cause main
 			// to exit.
 }
@@ -282,7 +282,7 @@ static void print_usage()
 
 static void print_version()
 {
-	printf("jal_tail v%s\n\n", VERSION);
+	printf("jal_tail v%s\n\n", JAL_TAIL_VERSION);
 }
 
 static void print_error(enum jaldb_status error)
@@ -349,7 +349,7 @@ void *do_work(void *ptr)
 	enum jaldb_status ret = JALDB_OK;
 	list<string> *doc_list = NULL;
 	DbXml::XmlContainer *cont = NULL;
-	std::string last_sid = DEFAULT_LAST_SID;
+	std::string last_sid = JAL_TAIL_DEFAULT_LAST_SID;
 
 	if (0 == strcmp(mbrs->type, "a")) {
 		printf("\nTAILING AUDIT\n====\n");
@@ -392,7 +392,7 @@ void *do_work(void *ptr)
 			delete doc_list;
 			doc_list = NULL;
 		}
-		sleep(THREAD_SLEEP_SECONDS);
+		sleep(JAL_TAIL_THREAD_SLEEP_SECONDS);
 	}
 	return NULL;
 }
