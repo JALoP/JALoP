@@ -974,51 +974,6 @@ enum jaldb_status jaldb_get_journal_resume(
 		uint64_t &offset);
 
 /**
- * Purge all cached audit records for the given remote.
- * This removes all records that were stored in a temporary database, for which
- * a digest and digest-conf message have not been sent or received.
- *
- * @param[in] ctx The context to use.
- * @param[in] remote_host The name of the remote host to purge records for.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_unconfirmed_audit(
-		jaldb_context *ctx,
-		const char *remote_host);
-
-/**
- * Purge all unconfirmed log records for the given remote.
- * This removes all records that were stored in a temporary database, for which
- * a digest and digest-conf message have not been sent or received.
- *
- * @param[in] ctx The context to use.
- * @param[in] remote_host The name of the remote host to purge records for.
- * @param[out] db_err A DB error, this is only set if the function returns
- * JALDB_E_DB.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_unconfirmed_log(
-		jaldb_context *ctx,
-		const char *remote_host,
-		int *db_err);
-
-/**
- * Purge all unconfirmed journal records for the given remote.
- * This removes all records that were stored in a temporary database, for which
- * a digest and digest-conf message have not been sent or received.
- *
- * @param[in] ctx The context to use.
- * @param[in] remote_host The name of the remote host to purge records for.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_unconfirmed_journal(
-		jaldb_context *ctx,
-		const char *remote_host);
-
-/**
  * Retrieve a list of document names present in the journal system container.
  *
  * @param[in] ctx the context to use
@@ -1213,4 +1168,5 @@ enum jaldb_status jaldb_get_records_since_last_sid(
 		char *last_sid,
 		list<string> &doc_list);
 
+ 
 #endif // _JALDB_CONTEXT_HPP_

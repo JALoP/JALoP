@@ -37,6 +37,7 @@
 #include "jaldb_status.h"
 #include "jaldb_context.h"
 #include "jaldb_context.hpp"
+#include "jaldb_purge.hpp"
 
 /**
  * Initializes the interface to the database.

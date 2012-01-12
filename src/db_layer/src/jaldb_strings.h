@@ -30,6 +30,8 @@
 #ifndef _JALDB_STRINGS_H_
 #define _JALDB_STRINGS_H_
 
+#include <jalop/jal_namespaces.h>
+
 #define JALDB_AUDIT_SYS_META_CONT_NAME "audit_sys_meta.dbxml"
 #define JALDB_AUDIT_APP_META_CONT_NAME "audit_app_meta.dbxml"
 #define JALDB_AUDIT_CONT_NAME "audit.dbxml"
@@ -88,6 +90,9 @@ JALDB_QUERY_SID_CMP_FUNCTION \
 #define JALDB_SYNC_META_VAR "sync_meta_name"
 #define JALDB_SENT_META_VAR "sent_meta_name"
 
+#define JALDB_SID_VAR "sid"
+#define JALDB_UUID_VAR "uuid"
+
 // This query is for a 'sync' message. the idea is to find all records that
 // where successfully sent to a given remote (i.e. the local side received a
 // digest message and the digests matched), but have not yet received a 'sync'
@@ -125,5 +130,47 @@ JALDB_QUERY_SID_CMP_FUNCTION \
 "	where $i/dbxml:metadata('dbxml:name') != '" JALDB_SERIAL_ID_DOC_NAME "'" \
 "		and local:sid-cmp($" JALDB_QUERY_VAR_LAST_SID ", $i/dbxml:metadata('dbxml:name')) < 0 \n" \
 "	return $i\n"
+
+#define JALDB_FIND_SYNCED_AND_SENT_QUERY \
+"declare namespace jal='" JALDB_NS "';\n" \
+"for $d in collection()\n" \
+"where $d/dbxml:metadata('jal:" JALDB_GLOBAL_SYNCED_KEY "') and $d/dbxml:metadata('jal:" JALDB_GLOBAL_SENT_KEY "')\n" \
+"return $d\n"
+
+#define JALDB_FIND_SYNCED_AND_SENT_BY_SID_QUERY \
+"declare namespace jal='" JALDB_NS "';\n" \
+"for $d in collection()\n" \
+"where fn:compare($d/dbxml:metadata('dbxml:name'), $" JALDB_SID_VAR ") lt 1 and \n" \
+"    $d/dbxml:metadata('jal:" JALDB_GLOBAL_SYNCED_KEY "') and $d/dbxml:metadata('jal:" JALDB_GLOBAL_SENT_KEY "')\n" \
+"return $d\n"
+
+#define JALDB_FIND_ALL_BY_SID_QUERY \
+"for $d in collection()\n" \
+"where fn:compare($d/dbxml:metadata('dbxml:name'), $" JALDB_SID_VAR ") lt 1 and \n" \
+"    fn:not(fn:compare($d/dbxml:metadata('dbxml:name'), '" JALDB_SERIAL_ID_DOC_NAME "') eq 0) \n" \
+"return $d\n"
+
+#define JALDB_FIND_SYNCED_AND_SENT_BY_UUID_QUERY \
+"declare namespace jsm='" JAL_SYS_META_NAMESPACE_URI "';\n" \
+"declare namespace lsm='" JALDB_NS "';\n" \
+"let $uuid_docs := for $d in collection()\n" \
+"where $d/jsm:JALRecord[jsm:RecordID=$" JALDB_UUID_VAR "] and \n" \
+"    $d/dbxml:metadata('lsm:" JALDB_GLOBAL_SYNCED_KEY "') and $d/dbxml:metadata('lsm:" JALDB_GLOBAL_SENT_KEY "')\n" \
+"return $d\n" \
+"for $d in $uuid_docs\n" \
+"    for $d2 in collection()\n" \
+"    where fn:compare($d/dbxml:metadata('dbxml:name'), $d2/dbxml:metadata('dbxml:name')) lt 1 and \n" \
+"    $d2/dbxml:metadata('lsm:" JALDB_GLOBAL_SYNCED_KEY "') and $d2/dbxml:metadata('lsm:" JALDB_GLOBAL_SENT_KEY "')\n" \
+"    return $d2\n"
+
+#define JALDB_FIND_ALL_BY_UUID_QUERY \
+"declare namespace jal='" JAL_SYS_META_NAMESPACE_URI "';\n" \
+"for $d in collection()\n" \
+"where $d/jal:JALRecord[jal:RecordID=$" JALDB_UUID_VAR "]\n" \
+"return $d\n" \
+
+#define JALDB_GET_UUID_QUERY \
+"declare namespace jal='" JAL_SYS_META_NAMESPACE_URI "';\n" \
+"/jal:JALRecord/jal:RecordID/text()\n"
 
 #endif // _JALDB_STRINGS_H_
