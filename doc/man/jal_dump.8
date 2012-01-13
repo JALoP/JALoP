@@ -1,0 +1,86 @@
+.TH JAL_DUMP 8
+.SH NAME
+.BR jal_dump
+- JALoP database dump utility
+.SH SYNOPSIS
+.B jal_dump
+[\fIOPTION\fR...]
+.B \-\-sid
+.I serial_id
+.B \-\-type
+.I type
+.SH "DESCRIPTION"
+.B jal_dump
+is a tool used to retrieve specific sections of one or more JAL records. If the section of the record is not specified, the tool writes the contents of the record's system metadata to stdout.
+
+The user may specify any number of
+.B \-s
+or
+.B \-u
+options and
+.B jal_dump
+will output each record in the order that it was specified on the command line.
+.SH OPTIONS
+.TP
+\fB\-s\fR, \fB\-\-sid=S\fR
+Search using the sequence ID "S".
+.TP
+\fB\-u\fR, \fB\-\-uuid=U\fR
+Search using the UUID "U".
+.TP
+\fB\-t\fR, \fB\-\-type=T\fR
+Search within the specified type.
+.B T
+may be the letter
+.I j
+(for journal records),
+.I a
+(for audit records), or
+.I l
+(for log records).
+.TP
+\fB\-d\fR, \fB\-\-data=D\fR
+Specifies which section of data should be dumped, options are
+.I a
+for application metadata,
+.I s
+for system metadata, or
+.I p
+for the payload (raw journal, audit, or log data).
+The default is to dump the system metadata.
+If this option is specified multiple times,
+the last occurrence is used.
+To retrieve all portions of a record,
+type may be specified as
+.I z
+, or by using the
+.B -p
+option.
+.TP
+\fB\-p\fR, \fB\-\-path=P\fR
+Copy the record to the specified path
+.B P
+\.
+This will create a sub-directory with the name \fR\fB<record_type>\fR-\fB<sid>/\fR\R where \fB<record_type>\fR is replaced with \fIjournal\fR,
+\fIaudit\fR,
+or \fIlog\fR,
+and \fB<sid>\fR is replaced with the sequence ID for the record.
+This directory will always contain a file named \fIsystem-metadata.xml\fR,
+which is the system metadata for the record.
+If the record contains application metadata,
+the directory will also contain a file named \fIapplication-metadata.xml\fR.
+Depending on the type of record,
+this directory may contain a file named \fIjournal.bin\fR (for journal records),
+\fIlog.bin\fR (for log records),
+or \fIaudit.xml\fR for audit records.
+.TP
+\fB\-h\fR, \fB\-\-home=H\fR
+Specify the root of the JALoP database,
+defaults to
+.I /var/lib/jalop/db
+
+.SH "SEE ALSO"
+.BR jald (8),
+.BR jal-local-store(8),
+.BR jal_dump (8),
+.BR jal_subscribe (8)

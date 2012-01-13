@@ -1,0 +1,16 @@
+Import('*')
+doxygen = env.Doxygen('doxy.cfg')
+env.Alias("docs", doxygen)
+env.Clean(doxygen, "doxygen.out")
+AlwaysBuild(doxygen)
+
+if env.GetOption('clean'):
+	env.Default(doxygen)
+
+htmldir = env['DESTDIR'] + env.subst(env['HTMLDIR'])
+env.Alias('install', env.Install(htmldir, 'doxygen.out/html'))
+
+mandir = env['DESTDIR'] + env.subst(env['MANDIR'])
+env.Alias('install', env.Install(mandir, 'doxygen.out/man'))
+
+env.Depends('install', doxygen)

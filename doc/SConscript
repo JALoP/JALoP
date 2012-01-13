@@ -4,13 +4,23 @@ env.Alias("docs", doxygen)
 env.Clean(doxygen, "doxygen.out")
 AlwaysBuild(doxygen)
 
-if env.GetOption('clean'):
-	env.Default(doxygen)
-
 htmldir = env['DESTDIR'] + env.subst(env['HTMLDIR'])
 env.Alias('install', env.Install(htmldir, 'doxygen.out/html'))
 
-mandir = env['DESTDIR'] + env.subst(env['MANDIR'])
-env.Alias('install', env.Install(mandir, 'doxygen.out/man'))
+env.SConscript('man/SConscript', exports='env')
 
 env.Depends('install', doxygen)
+
+dev_docs = env.Doxygen('dev_docs.cfg')
+env.Alias("dev_docs", dev_docs)
+env.Clean(dev_docs, "devel-doxygen.out")
+AlwaysBuild(dev_docs)
+
+def dev_doc_msg(target, source, env):
+	print "-- Internal documentation is available at doc/devel-doxygen.out/html/index.html"
+	return None
+env.AddPostAction(dev_docs, dev_doc_msg)
+
+if env.GetOption('clean'):
+	env.Default(doxygen)
+	env.Default(dev_docs)

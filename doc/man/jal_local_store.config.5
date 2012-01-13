@@ -1,0 +1,88 @@
+.TH JAL-LOCAL-STORE.CONFIG 5
+.SH NAME
+.BR jal-local-store.config
+- configuration file for
+.BR jal-local-store (8)
+.SH "DESCRIPTION"
+This file is read by
+.BR jal-local-store (8)
+and specifies the configuration parameters
+such as where to create the socket to listen on, keys for signing documents,
+where to obtain the
+.SM JALoP
+schemas, and where to keep the database of
+.SM JALoP
+records.
+This file follows the format of the libconfig library, where each
+configuration setting is in the form "key = value;".
+Blank lines and lines starting with "#" are ignored.
+Strings values must be enclosed in double quotes.
+.BR jal-local-store (8)
+understands the following configuration options:
+.TP
+.B private_key
+The path to a PEM formatted private key that
+.BR jal-local-store (8)
+will use to sign system metadata documents. This is required.
+.TP
+.B public_cert_file
+The path to a PEM formatted certificate file that
+.BR jal-local-store (8)
+will append to the system metadata document. This is optional.
+.TP
+.B system_uuid
+A UUID in the form "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" where each 'x' is a
+hexadecimal character (0-9a-fA-F).
+.BR jal-local-store (8)
+will include this in the system metadata document as the HostUUID element.
+This is required.
+.TP
+.B hostname
+A friendly name to identify the host. This is added to the system metadata as
+the Hostname element. This is optional,
+.BR jal-local-store (8)
+will generate a hostname if it is not included in the configuration file.
+.TP
+.B db_root
+This identifies where
+.BR jal-local-store (8)
+should store all the records. This is optional and defaults to
+.I /var/lib/jalop/db/
+.
+.TP
+.B socket
+The full path to use when creating the domain socket.
+.BR jal-local-store (8)
+will create the socket and wait for producer applications to connect. This is
+optional, and defaults to
+.I /var/run/jalop/jalop.sock
+.
+.TP
+.B schemas_root
+The full path to the
+.SM JALoP
+schemas.
+.SH EXAMPLES
+.nf
+# Set the PEM key to the file at /etc/jalop/local_store/key.pem
+private_key_file = "/etc/jalop/local_store/key.pem";
+
+# Set the PEM key to the file at /etc/jalop/local_store/cert.pem
+public_cert_file = "/etc/jalop/local_store/cert.pem";
+
+# Set the UUID
+system_uuid = "34c90268-57ba-4d4c-a602-bdb30251ec77";
+
+# Set the hostname
+hostname = "test.jalop.com";
+
+# Set the location of the database of records.
+db_root = "/var/lib/jalop/db";
+
+# Set the location of the JALoP Schemas
+schemas_root = "/usr/share/jalop-v1.0/schemas";
+
+# Set the path for the socket to use.
+socket = "/var/run/jalop/jalop.sock";
+.SH "SEE ALSO"
+.BR jal-local-store (8)

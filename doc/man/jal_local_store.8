@@ -1,0 +1,29 @@
+.TH JAL-LOCAL-STORE 8
+.SH NAME
+.BR jal-local-store
+- JAL Local Store
+.SH SYNOPSIS
+.B jal-local-store
+[\fI\-\-debug\fR]
+.I config_file
+.SH "DESCRIPTION"
+.B jal-local-store
+is an implementation of a JALoP local store. It will listen on a socket for producer applications and accept journal, audit,
+and log data using the JALoP Producer Protocol.
+.B jal-local-store
+will validate application metadata and audit records against the appropriate schemas,
+which are found, by default, in /usr/share/jalop-v1.0/schemas.
+.B jal-local-store
+will generate system metadata for each record, and insert the record into its database.
+.SH OPTIONS
+.TP
+\fB\-\-debug\fR
+Enable debug output and prevent
+.B jal-local-store
+from forking to the background.
+
+.SH "SEE ALSO"
+.BR jald (8),
+.BR jal-local-store.config (5),
+.BR jal_dump (8),
+.BR jal_subscribe (8),

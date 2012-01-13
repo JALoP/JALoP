@@ -1,0 +1,155 @@
+.TH JALD.CONFIG 5
+.SH NAME
+.BR jald.config
+- configuration file for
+.BR jald (8)
+.SH "DESCRIPTION"
+This file is read by
+.BR jald (8)
+and specifies the configuration parameters
+such as which network interface and port to listen on,
+where to obtain the
+.SM JALoP
+schemas, and the location of the
+.SM JALoP
+database of records.
+This file follows the format of the libconfig library, where each
+configuration setting is in the form "key = value;".
+Blank lines and lines starting with "#" are ignored.
+String values must be enclosed in double quotes.
+All numeric values must have the suffix 'L',
+as in: "port = 1234L;".
+.SH "CONFIGURATION KEYS"
+.BR jald (8)
+recognizes the following configuration options:
+.TP
+.B private_key
+The path to a PEM formatted private key that
+.BR jald (8)
+will use for TLS negotiations
+.TP
+.B public_cert
+The path to a PEM formatted public certificate file that
+.BR jald (8)
+will use for TLS negotiations
+.TP
+.B remote_cert_dir
+The path to a directory that contains PEM formated certificates. These will be used to authenticate remote
+.SM JALoP
+peers. See the documentation for
+.BR c_rehash,
+and
+.BR x509 (1).
+Specifically the sections regarding the
+.B \-hash
+and/or
+.B \-subject_hash
+options for details on how to create the files in this directory.
+.TP
+.B db_root
+This identifies where
+.BR jald (8)
+should obtain/store all the records. This is optional and defaults to
+.I /var/lib/jalop/db/
+.
+.TP
+.B schemas_root
+The full path to the
+.SM JALoP
+schemas. This is optional.
+.TP
+.B host
+The interface to listen on for incoming connections.
+This is a string value and should be an IPv4 address,
+or the string "0.0.0.0" to listen on all interfaces.
+.TP
+.B port
+A numeric value that indicates the port to listen on for incoming connections.
+.TP
+.B pending_digest_max
+A numeric value that indicates the maximum number of records to receive before sending a "digest" message.
+.TP
+.B pending_digest_timeout
+A numeric value that indicates the maximum number of seconds to wait before sending a "digest" message.
+.TP
+.B peers
+A list of peer configurations indicating which operations and JAL record types specific remotes are allowed to perform.
+.SH "PEER CONFIGURATIONS"
+Each peer configuration is used to identify the roles (publisher or subscriber) and JALoP data types that one or more remote peers are allowed to perform and exchange.
+Without any peer configurations,
+.B jald
+will reject connections from every
+.SM JALoP
+peer that tries to connect to it. The recognized keys are:
+.TP
+.B hosts
+This is a list of strings. Each element in the array is the IPv4 address of a remote peer that this peer configuration applies to.
+Each configuration may identify one or more peers.
+.TP
+.B subscribe_allow
+This indicates the types of JAL records each of the hosts identified by the
+.B hosts
+key are allowed to subscribe to. Each string in this list must be either "\fIjournal\fR",
+"\fIaudit\fR",
+or "\fIlog\fR".
+.TP
+.B publish_allow
+This indicates the types of JAL records each of the hosts identified by the
+.B hosts
+key are allowed to publish to \fBjald\fR.
+Each string in this list must be either "\fIjournal\fR",
+"\fIaudit\fR",
+or "\fIlog\fR".
+.PP
+Peer configurations are additive.
+That is to say,
+if there are more than one peer configurations that reference a particular host,
+the set of permissions is the union of all permissions granted by all configurations.
+.SH EXAMPLES
+.nf
+# the path to the private key, used for TLS negotiation
+private_key = "/etc/jald/cert_and_key";
+
+# the path to the public cert, used for TLS negotiation
+public_cert = "/etc/jald/cert";
+
+# directory containing the certificates for the remote peers, used for TLS negotiation
+remote_cert_dir = "/etc/jald/remote_certs/";
+
+# path to the root of the database (optional)
+db_root = "/var/lib/jalop/db/";
+
+# path to a directory containing the JALoP schemas (optional)
+schemas_root = "/usr/share/jalop-v1.0/schemas/";
+
+# the port to listen on
+port = 1234L;
+
+# the IPv4 interface to listen on, or 0.0.0.0 to listen on all interfaces
+host = "0.0.0.0";
+
+# For subscribe, the maximum number of records to send before sending a "digest" message
+pending_digest_max = 10L;
+
+# For subscribe, the maximum number of seconds to wait, before sending a "digest" message
+pending_digest_timeout = 100L;
+
+# List of peer configurations. This configuration indicates that the hosts with
+# the IP addresses 127.0.0.1 and 192.168.1.5 are allowed to subscribe to
+# journal and log records, but not audit records. The 2 remotes will not be
+# allowed to publish records to jald
+peers = ( {
+		hosts = ("127.0.0.1", 192.168.1.5);
+		subscribe_allow = ("journal", "log");
+	},
+	# The additional peer configuration here adds audit records to the set
+	# of records the host with IP address 192.168.1.5 is allowed to
+	# subscribe to.
+	{
+		hosts = ("192.168.1.5");
+		subscriber_allow = ("audit");
+	} );
+
+.SH "SEE ALSO"
+.BR jald (8),
+.BR openssl (1)

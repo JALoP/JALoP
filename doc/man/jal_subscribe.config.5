@@ -1,0 +1,115 @@
+.TH JAL_SUBSCRIBE.CONFIG 5
+.SH NAME
+.BR jal_subscribe.config
+- configuration file for
+.BR jal_subscribe (8)
+.SH "DESCRIPTION"
+This file is read by
+.BR jal_subscribe (8)
+and specifies the configuration parameters
+such as the host and port to connect to,
+where to obtain the
+.SM JALoP
+schemas, and the location of the
+.SM JALoP
+database of records.
+This file follows the format of the libconfig library, where each
+configuration setting is in the form "key = value;".
+Blank lines and lines starting with "#" are ignored.
+String values must be enclosed in double quotes.
+All numeric values must have the suffix 'L',
+as in: "port = 1234L;".
+.SH "CONFIGURATION KEYS"
+.BR jal_subscribe (8)
+recognizes the following configuration options:
+.TP
+.B private_key
+The path to a PEM formatted private key that
+.BR jal_subscribe (8)
+will use for TLS negotiations
+.TP
+.B public_cert
+The path to a PEM formatted public certificate file that
+.BR jal_subscribe (8)
+will use for TLS negotiations
+.TP
+.B remote_cert
+The path to a directory that contains PEM formated certificates. These will be used to authenticate remote
+.SM JALoP
+peers. See the documentation for
+.BR c_rehash,
+and
+.BR x509 (1),
+specifically the sections regarding the
+.B \-hash
+and/or
+.B \-subject_hash
+options for details on how to create the files in this directory.
+.TP
+.B db_root
+This identifies where
+.BR jal_subscribe (8)
+should obtain/store all the records. This is optional and defaults to
+.I /var/lib/jalop/db/
+.
+.TP
+.B schemas_root
+The full path to the
+.SM JALoP
+schemas. This is optional.
+.TP
+.B host
+The IP or hostname of the remote
+.SM JALoP
+peer to connect to.
+.TP
+.B port
+A numeric value that indicates the port to connect to.
+.TP
+.B pending_digest_max
+A numeric value that indicates the maximum number of records to receive before sending a 'digest' message.
+.TP
+.B pending_digest_timeout
+A numeric value that indicates the maximum number of seconds to wait before sending a 'digest' message.
+.TP
+.B data_class
+A list of strings that indicates the type(s) of
+.SM JALoP
+records to subscribe to.
+The strings may be any combination of "\fIjournal\fR", "\fIaudit\fR", or
+\fIlog\fR".
+.SH EXAMPLES
+.nf
+# the path to the private key, used for TLS negotiation
+private_key = "/etc/jal_subscribe/cert_and_key";
+
+# the path to the public cert, used for TLS negotiation
+public_cert = "/etc/jal_subscribe/cert";
+
+# directory containing the certificates for the remote peers, used for TLS negotiation
+remote_cert = "/etc/jal_subscribe/remote_certs/";
+
+# path to the root of the database (optional)
+db_root = "/var/lib/jalop/db/";
+
+# path to a directory containing the JALoP schemas (optional)
+schemas_root = "/usr/share/jalop-v1.0/schemas/";
+
+# Connect on the port 1234
+port = 1234L;
+
+# Connect to the host at 192.168.1.12
+host = "192.168.1.12";
+
+# For subscribe, the maximum number of records to send before sending a 'digset' message
+pending_digest_max = 10L;
+
+# For subscribe, the maximum number of seconds to wait, before sending a 'digest' message
+pending_digest_timeout = 100L;
+
+# subscribe to journal and log records
+data_class = ("journal", "log");
+
+.SH "SEE ALSO"
+.BR jal_subscribe (8),
+.BR openssl (1)
