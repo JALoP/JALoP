@@ -90,7 +90,12 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	if (!wait_reply) {
 		goto out;
 	}
+
 	if (!vortex_channel_send_msg_and_wait(sess->dgst_chan, msg, len, &msg_no, wait_reply)) {
+		// According the to Vortex docs, you only need to free the wait_reply if 
+		// vortex_channel_send_msg_and_wait fails. Apparently, 
+		// vortex_channel_wait_reply frees  the wait_reply for you....
+		vortex_channel_free_wait_reply(wait_reply);
 		goto out;
 	}
 	free(msg);
@@ -122,9 +127,6 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	}
 out:
 	free(msg);
-	if (wait_reply) {
-		vortex_channel_free_wait_reply(wait_reply);
-	}
 	if (cursor) {
 		axl_list_cursor_free(cursor);
 	}
