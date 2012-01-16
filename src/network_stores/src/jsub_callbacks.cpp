@@ -119,7 +119,9 @@ void jsub_connect_ack(
 		DEBUG_LOG("hostname: %s", ack->hostname);
 		DEBUG_LOG("addr: %s", ack->addr);
 		DEBUG_LOG("version: %d", ack->jaln_version);
-		DEBUG_LOG("agent: %s", ack->jaln_agent);
+		if (ack->jaln_agent) {
+			DEBUG_LOG("agent: %s", ack->jaln_agent);
+		}
 		DEBUG_LOG("role: %s", ack->mode == JALN_ROLE_SUBSCRIBER ? "subscriber" : "publisher");
 	}
 }

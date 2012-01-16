@@ -41,6 +41,10 @@
 
 XERCES_CPP_NAMESPACE_USE
 
+#define SYS_META_ID "sys_meta.xml"
+#define APP_META_ID "app_meta.xml" 
+#define AUDIT_ID "audit.xml"
+
 #define DEBUG_LOG(args...) \
 do { \
 	fprintf(stdout, "(jal_subscribe) %s[%d] ", __FILE__, __LINE__); \
@@ -137,9 +141,9 @@ int jsub_parse_app_metadata(void *buf, size_t size, char *schemas_root, DOMDocum
 	// Set the error handler so we can print info about errors.
 	conf->setParameter(XMLUni::fgDOMErrorHandler, &eh);
 
-	// note that bufId is null because it is not needed and adoptBuffer is false because the caller owns the
-	// buffer.
-	MemBufInputSource *xmldata = new MemBufInputSource((XMLByte *)buf, (XMLSize_t)size, (char *)NULL, false);
+	// although not strictly needed, bufId is set to something non-null since printf() crashes on some platforms if passed NULL
+	// for a '%s' argument. adoptBuffer is false because the caller owns the buffer.
+	MemBufInputSource *xmldata = new MemBufInputSource((XMLByte *)buf, (XMLSize_t)size, APP_META_ID, false);
 
 	// again, adoptBuffer is false because the caller owns the buffer, and memorymanager is null because it is not needed.
 	Wrapper4InputSource *lsInput = new Wrapper4InputSource(xmldata, false, NULL);
@@ -248,9 +252,9 @@ int jsub_parse_sys_metadata(void *buf, size_t size, char *schemas_root, DOMDocum
 	// Set the error handler so we can print info about errors.
 	conf->setParameter(XMLUni::fgDOMErrorHandler, &eh);
 
-	// note that bufId is null because it is not needed and adoptBuffer is false because the caller owns the
-	// buffer.
-	MemBufInputSource *xmldata = new MemBufInputSource((XMLByte *)buf, (XMLSize_t)size, (char *)NULL, false);
+	// although not strictly needed, bufId is set to something non-null since printf() crashes on some platforms if passed NULL
+	// for a '%s' argument. adoptBuffer is false because the caller owns the buffer.
+	MemBufInputSource *xmldata = new MemBufInputSource((XMLByte *)buf, (XMLSize_t)size, SYS_META_ID, false);
 
 	// again, adoptBuffer is false because the caller owns the buffer, and memorymanager is null because it is not needed.
 	Wrapper4InputSource *lsInput = new Wrapper4InputSource(xmldata, false, NULL);
@@ -349,9 +353,9 @@ int jsub_parse_audit(void *buf, size_t size, char *schemas_root, DOMDocument **d
 	conf->setParameter(XMLUni::fgDOMErrorHandler, &eh);
 
 
-	// note that bufId is null because it is not needed and adoptBuffer is false because the caller owns the
-	// buffer.
-	MemBufInputSource *xmldata = new MemBufInputSource((XMLByte *)buf, (XMLSize_t)size, (char *)NULL, false);
+	// although not strictly needed, bufId is set to something non-null since printf() crashes on some platforms if passed NULL
+	// for a '%s' argument. adoptBuffer is false because the caller owns the buffer.
+	MemBufInputSource *xmldata = new MemBufInputSource((XMLByte *)buf, (XMLSize_t)size, AUDIT_ID, false);
 
 	// again, adoptBuffer is false because the caller owns the buffer, and memorymanager is null because it is not needed.
 	Wrapper4InputSource *lsInput = new Wrapper4InputSource(xmldata, false, NULL);

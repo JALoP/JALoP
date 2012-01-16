@@ -401,14 +401,13 @@ axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *fr
 		goto err_out;
 	}
 
-	uint8_t *dgst = NULL;
 	size_t dgst_len = session->dgst->len;
 	session->jaln_ctx->sub_callbacks->on_journal(session, session->ch_info, session->sub_data->sm->serial_id, NULL, 0, 0, 0, session->jaln_ctx->user_data);
 	if (JAL_OK != session->dgst->final(session->sub_data->sm->dgst_inst, session->sub_data->sm->dgst, &dgst_len)) {
 		goto err_out;
 	}
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type, session->sub_data->sm->serial_id,
-			dgst, dgst_len, session->jaln_ctx->user_data);
+			session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
