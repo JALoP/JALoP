@@ -330,11 +330,13 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t jour
 		goto err_out;
 	}
 
-	if (JAL_OK != sess->dgst->update(pd->dgst_inst, pd->sys_meta, pd->sys_meta_sz)) {
-		return axl_false;
+	ret = sess->dgst->update(pd->dgst_inst, pd->sys_meta, pd->sys_meta_sz);
+	if (JAL_OK != ret) {
+		goto err_out;
 	}
-	if (JAL_OK != sess->dgst->update(pd->dgst_inst, pd->app_meta, pd->app_meta_sz)) {
-		return axl_false;
+	ret = sess->dgst->update(pd->dgst_inst, pd->app_meta, pd->app_meta_sz);
+	if (JAL_OK != ret) {
+		goto err_out;
 	}
 	switch(ch_info->type) {
 	case JALN_RTYPE_AUDIT:
@@ -386,13 +388,15 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t jour
 		pd->payload_off = journal_offset;
 		break;
 	default:
-		return axl_false;
+		ret = JAL_E_INVAL;
+		goto err_out;
 	}
 	if (JAL_OK != ret) {
-		return axl_false;
+		goto err_out;
 	}
 
 
+	jaln_session_ref(sess);
 	VortexPayloadFeeder *feeder = vortex_payload_feeder_new(jaln_pub_feeder_handler, sess);
 	vortex_payload_feeder_set_on_finished(feeder, jaln_pub_feeder_on_finished, sess);
 	vortex_channel_send_ans_rpy_from_feeder(chan, feeder, pd->msg_no);
@@ -428,8 +432,11 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
 			goto err_out;
 		}
 	}
-	return;
+goto out;
 err_out:
 	jaln_session_set_errored(sess);
 	vortex_channel_finalize_ans_rpy(chan, sess->pub_data->msg_no);
+out:
+	jaln_session_unref(sess);
+	return;
 }
