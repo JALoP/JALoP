@@ -107,6 +107,12 @@ int main(int argc, char **argv) {
 	}
 	jalls_ctx->debug = debug;
 
+	jal_err = jal_create_dirs(jalls_ctx->db_root);
+	if (JAL_OK != jal_err) {
+		fprintf(stderr, "failed to create database directory\n");
+		goto err_out;
+	}
+
 	//the db_root path must be made absolute before daemonizing
 	char absolute_db_root[PATH_MAX];
 	char *res = realpath(jalls_ctx->db_root, absolute_db_root);
@@ -116,12 +122,6 @@ int main(int argc, char **argv) {
 	} else {
 		free(jalls_ctx->db_root);
 		jalls_ctx->db_root = absolute_db_root;
-	}
-
-	jal_err = jal_create_dirs(jalls_ctx->db_root);
-	if (JAL_OK != jal_err) {
-		fprintf(stderr, "failed to create database directory\n");
-		goto err_out;
 	}
 
 	//load the private key
