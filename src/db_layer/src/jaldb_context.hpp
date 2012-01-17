@@ -64,6 +64,18 @@ struct jaldb_context_t {
 };
 
 /**
+* Enum used to distinguish between record types
+*/
+enum jaldb_record_type {
+	/** Indicates a Journal Record */
+	JALDB_RTYPE_JOURNAL = 1 << 0,
+	/** Indicates an Audit Record */
+	JALDB_RTYPE_AUDIT = 1 << 1,
+	/** Indicates a Log Record */
+	JALDB_RTYPE_LOG = 1 << 2,
+};
+
+/**
 * Store a confirmed serial_id in the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
@@ -1065,7 +1077,56 @@ enum jaldb_status jaldb_get_document_list(
 		list<string> **doc_list);
 
  /**
- * Retrieve a list of the last \p k records for the container \p cont.
+ * Retrieve a list of the last \p k records for journal container.
+ *
+ * @param[in] ctx the context to use.
+ * @param[in] k the number of records to retrieve.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_last_k_records_journal(
+		jaldb_context *ctx,
+		int k,
+		list<string> &doc_list);
+
+ /**
+ * Retrieve a list of the last \p k records for audit container.
+ *
+ * @param[in] ctx the context to use.
+ * @param[in] k the number of records to retrieve.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_last_k_records_audit(
+		jaldb_context *ctx,
+		int k,
+		list<string> &doc_list);
+
+ /**
+ * Retrieve a list of the last \p k records for log container.
+ *
+ * @param[in] ctx the context to use.
+ * @param[in] k the number of records to retrieve.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_last_k_records_log(
+		jaldb_context *ctx,
+		int k,
+		list<string> &doc_list);
+
+ /**
+ * Function to retrieve a list of the last \p k records
+ * for the container \p cont.
  *
  * @param[in] cont the container to retrieve the list from.
  * @param[in] mgr the manager to use to create the transaction.
@@ -1079,9 +1140,60 @@ enum jaldb_status jaldb_get_document_list(
 enum jaldb_status jaldb_get_last_k_records(
 		DbXml::XmlContainer *cont,
 		DbXml::XmlManager *mgr,
-		double k,
-		list<string> **doc_list);
+		int k,
+		list<string> &doc_list);
 
+ /**
+ * Retrieve a list of the journal records received after the record denoted
+ * by \p last_sid.
+ *
+ * @param[in] ctx the context to use.
+ * @param[in] last_sid the serial id of the last record retrieved.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_records_since_last_sid_journal(
+		jaldb_context *ctx,
+		char *last_sid,
+		list<string> &doc_list);
+
+ /**
+ * Retrieve a list of the audit records received after the record denoted
+ * by \p last_sid.
+ *
+ * @param[in] ctx the context to use.
+ * @param[in] last_sid the serial id of the last record retrieved.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_records_since_last_sid_audit(
+		jaldb_context *ctx,
+		char *last_sid,
+		list<string> &doc_list);
+
+ /**
+ * Retrieve a list of the log records received after the record denoted
+ * by \p last_sid.
+ *
+ * @param[in] ctx the context to use.
+ * @param[in] last_sid the serial id of the last record retrieved.
+ * @param[out] doc_list the list of document names.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status jaldb_get_records_since_last_sid_log(
+		jaldb_context *ctx,
+		char *last_sid,
+		list<string> &doc_list);
+		
  /**
  * Retrieve a list of the records received after the record denoted
  * by \p last_sid.
@@ -1099,6 +1211,6 @@ enum jaldb_status jaldb_get_records_since_last_sid(
 		DbXml::XmlContainer *cont,
 		DbXml::XmlManager *mgr,
 		char *last_sid,
-		list<string> **doc_list);
+		list<string> &doc_list);
 
 #endif // _JALDB_CONTEXT_HPP_

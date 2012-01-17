@@ -57,13 +57,17 @@
 #define JALDB_LOCALHOST "localhost"
 #define JALDB_HAS_APP_META "hasAppMeta"
 #define JALDB_HAS_LOG "hasLog"
-#define JALDB_NEXT_SID_QUERY_CONT_VAR "cont"
-#define JALDB_NEXT_SID_QUERY \
+
+#define JALDB_QUERY_SID_CMP_FUNCTION \
 "declare function local:sid-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
 "    if (fn:string-length($a) lt fn:string-length($b)) then -1\n" \
 "    else if (fn:string-length($b) lt fn:string-length($a)) then 1\n" \
 "    else (fn:compare ($a, $b))\n" \
-"}; \n" \
+"}; \n"
+
+#define JALDB_NEXT_SID_QUERY_CONT_VAR "cont"
+#define JALDB_NEXT_SID_QUERY \
+JALDB_QUERY_SID_CMP_FUNCTION \
 "let $docs := for $i in collection()\n" \
 "    where local:sid-cmp($last_sid, $i/dbxml:metadata('dbxml:name')) lt 0 \n" \
 "    return $i\n" \
@@ -99,11 +103,7 @@
 //              as synced.
 #define JALDB_FIND_UNCONFED_BY_HOST_QUERY \
 "declare namespace jal='" JALDB_NS "';\n" \
-"declare function local:sid-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
-"    if (fn:string-length($a) lt fn:string-length($b)) then -1\n" \
-"    else if (fn:string-length($b) lt fn:string-length($a)) then 1\n" \
-"    else (fn:compare ($a, $b))\n" \
-"}; \n" \
+JALDB_QUERY_SID_CMP_FUNCTION \
 "for $d in collection()\n" \
 "where local:sid-cmp($" JALDB_SYNC_POINT_VAR ", $d/dbxml:metadata('dbxml:name')) ge 0 and \n"\
 "    $d/dbxml:metadata($" JALDB_SENT_META_VAR ") and \n" \
@@ -116,20 +116,14 @@
 "		where $i/dbxml:metadata('dbxml:name') != '" JALDB_SERIAL_ID_DOC_NAME "'" \
 "		return $i\n" \
 "let $num_docs := count($docs)\n" \
-"	return subsequence($docs,$num_docs - $num_rec + 1)"
+"	return subsequence($docs,$num_docs - $" JALDB_QUERY_VAR_NUM_REC " + 1)"
 
 #define JALDB_QUERY_VAR_LAST_SID "last_sid"
 #define JALDB_FOLLOW_QUERY \
-"declare function local:sid-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
-"    if (fn:string-length($a) lt fn:string-length($b)) then -1\n" \
-"    else if (fn:string-length($b) lt fn:string-length($a)) then 1\n" \
-"    else (fn:compare ($a, $b))\n" \
-"}; \n" \
-"let $docs := for $i at $x in collection()\n" \
-"		where $i/dbxml:metadata('dbxml:name') != '" JALDB_SERIAL_ID_DOC_NAME "'" \
-"			and local:sid-cmp($last_sid, $i/dbxml:metadata('dbxml:name')) < 0 \n" \
-"		return\n" \
-"			$i\n"\
-"	return $docs\n"
+JALDB_QUERY_SID_CMP_FUNCTION \
+"for $i in collection()\n" \
+"	where $i/dbxml:metadata('dbxml:name') != '" JALDB_SERIAL_ID_DOC_NAME "'" \
+"		and local:sid-cmp($" JALDB_QUERY_VAR_LAST_SID ", $i/dbxml:metadata('dbxml:name')) < 0 \n" \
+"	return $i\n"
 
 #endif // _JALDB_STRINGS_H_
