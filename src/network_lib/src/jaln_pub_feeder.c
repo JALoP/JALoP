@@ -323,7 +323,7 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t jour
 	pd->app_meta_sz = rec_info->app_meta_len;
 	pd->payload_sz = rec_info->payload_len;
 
-	pd->serial_id = rec_info->serial_id;
+	pd->serial_id = jal_strdup(rec_info->serial_id);
 
 	ret = jaln_create_record_ans_rpy_headers(rec_info, &pd->headers, &pd->headers_sz);
 	if (JAL_OK != ret) {
