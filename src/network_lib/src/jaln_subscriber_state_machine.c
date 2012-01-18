@@ -404,9 +404,6 @@ axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *fr
 	uint8_t *dgst = NULL;
 	size_t dgst_len = session->dgst->len;
 	session->jaln_ctx->sub_callbacks->on_journal(session, session->ch_info, session->sub_data->sm->serial_id, NULL, 0, 0, 0, session->jaln_ctx->user_data);
-	if (JAL_OK != session->dgst->update(session->sub_data->sm->dgst_inst, session->sub_data->sm->sys_meta_buf, session->sub_data->sm->sys_meta_sz)) {
-		goto err_out;
-	}
 	if (JAL_OK != session->dgst->final(session->sub_data->sm->dgst_inst, session->sub_data->sm->dgst, &dgst_len)) {
 		goto err_out;
 	}
