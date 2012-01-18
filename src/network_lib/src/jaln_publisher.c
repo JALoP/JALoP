@@ -397,7 +397,7 @@ void jaln_publisher_on_channel_create(int channel_num,
 	vortex_channel_set_automatic_mime(chan, 2);
 	session->rec_chan = chan;
 	session->rec_chan_num = channel_num;
-	session->ch_info->addr = strdup(vortex_connection_get_host(conn));
+	session->ch_info->addr = jal_strdup(vortex_connection_get_host(conn));
 
 	vortex_channel_set_received_handler(chan, jaln_publisher_init_reply_frame_handler, session);
 
