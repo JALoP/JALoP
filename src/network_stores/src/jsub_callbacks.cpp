@@ -297,17 +297,19 @@ int jsub_on_journal(
 	}
 	// Write data to disk until there is no more data to write.
 	// Then write the system/application metadata to DB.
-	if (0 == more){
+	if (0 == more) {
 		// No more data
-		int ret = jsub_write_journal(
+		if (buffer) {
+			int ret = jsub_write_journal(
 					jsub_db_ctx,
 					&db_payload_path,
 					&db_payload_fd,
 					(uint8_t *)buffer,
 					cnt,
 					jsub_debug);
-		if (0 != ret) {
-			return ret;
+			if (0 != ret) {
+				return ret;
+			}
 		}
 		return jsub_insert_journal_metadata(
 					jsub_db_ctx,
@@ -319,8 +321,7 @@ int jsub_on_journal(
 					db_payload_path,
 					(char *)serial_id,
 					jsub_debug);
-	}
-	else {
+	} else {
 		// There will be more data, append what we've
 		//	received to file on disk.
 		return jsub_write_journal(

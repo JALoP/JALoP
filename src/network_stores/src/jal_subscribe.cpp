@@ -141,6 +141,7 @@ int main(int argc, char **argv)
 		}
 		goto out;
 	}
+	jsub_flush_stale_data(jsub_db_ctx, global_config.host, global_config.data_classes, global_args.debug_flag);
 	if (global_args.debug_flag) {
 		DEBUG_LOG("DBLayer Setup Success!");
 	}

@@ -507,3 +507,30 @@ void jsub_write_to_stderr_db_status(
 	fprintf(stderr, "%s\t%s\n", error_name, err_msg);
 	free(error_name);
 }
+
+void jsub_flush_stale_data(jaldb_context *db_ctx, const char *host, int data_classes, int debug)
+{
+	if (!host) {
+		return;
+	}
+	enum jaldb_status ret = JALDB_OK;
+	if (data_classes & JALN_RTYPE_JOURNAL) {
+		ret = jaldb_purge_unconfirmed_journal(db_ctx, host);
+		if ((JALDB_OK != ret) && debug) {
+			printf("DEBUG_LOG purging of journal records failed.\n");
+		}
+	}
+	if (data_classes & JALN_RTYPE_AUDIT) {
+		ret = jaldb_purge_unconfirmed_audit(db_ctx, host);
+		if ((JALDB_OK != ret) && debug) {
+			printf("DEBUG_LOG purging of audit records failed.\n");
+		}
+	}
+	if (data_classes & JALN_RTYPE_LOG) {
+		int db_err;
+		ret = jaldb_purge_unconfirmed_log(db_ctx, host, &db_err);
+		if ((JALDB_OK != ret) && debug) {
+			printf("DEBUG_LOG purging of log records failed.\n");
+		}
+	}
+}
