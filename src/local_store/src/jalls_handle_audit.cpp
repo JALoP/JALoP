@@ -173,6 +173,8 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	sys_meta_root->appendChild(manifest);
 	DOMElement *reference_elem;
 	reference_elem = NULL;
+	DOMElement *first_elem;
+	first_elem = NULL;
 	jal_err = jal_create_reference_elem(JAL_PAYLOAD_URI, digest_ctx->algorithm_uri,
 		digest, digest_len, sys_meta_doc, &reference_elem);
 	if (jal_err != JAL_OK) {
@@ -190,7 +192,13 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		}
 		goto err_out;
 	}
-	reference_elem->appendChild(transforms_elem);
+	first_elem = reference_elem->getFirstElementChild();
+	if (!first_elem) {
+		reference_elem->appendChild(transforms_elem);
+	}
+	else {
+		reference_elem->insertBefore(transforms_elem, first_elem);
+	}
 	manifest->appendChild(reference_elem);
 
 	//add signature to the system metadata
