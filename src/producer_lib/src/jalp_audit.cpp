@@ -110,7 +110,15 @@ enum jal_status jalp_audit(jalp_context *ctx,
 			if (status != JAL_OK) {
 				goto out;
 			}
-			reference_elem->appendChild(transforms_elem);
+			DOMElement *first_elem;
+			first_elem = NULL;
+			first_elem = reference_elem->getFirstElementChild();
+			if (!first_elem) {
+				reference_elem->appendChild(transforms_elem);
+			}
+			else {
+				reference_elem->insertBefore(transforms_elem, first_elem);
+			}
 			XMLCh *namespace_uri = XMLString::transcode(JAL_XMLDSIG_URI);
 			DOMElement *manifest = doc->createElementNS(namespace_uri, JALP_XML_MANIFEST);
 			XMLString::release(&namespace_uri);
