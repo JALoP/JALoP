@@ -115,23 +115,37 @@ enum jal_status jalp_connection_fill_out_msghdr(struct iovec *iov,
 enum jal_status jalp_sendmsg(jalp_context *ctx, struct msghdr *msgh)
 {
 	int flags = 0;
-	int err;
-	enum jal_status status;
+	ssize_t bytes_sent = 0;
 
 	if (!ctx || !msgh) {
 		return JAL_E_INVAL;
 	}
 
-	err = sendmsg(ctx->socket, msgh, flags);
-	// if there is an error, just try to connect and send again
-	if (err < 0) {
-		status = jalp_context_connect(ctx);
-		if (status != JAL_OK) {
-			return JAL_E_NOT_CONNECTED;
-		}
-		err = sendmsg(ctx->socket, msgh, flags);
-		if (err < 0) {
-			return JAL_E_NOT_CONNECTED;
+	size_t i = 0;
+	while (i < (size_t)msgh->msg_iovlen) {
+		if (bytes_sent >= (ssize_t)msgh->msg_iov[i].iov_len) {
+			bytes_sent -= msgh->msg_iov[i].iov_len;
+			msgh->msg_iov[i].iov_len = 0;
+			msgh->msg_iov[i].iov_base = NULL;
+			i++;
+		} else {
+			ssize_t offset = msgh->msg_iov[i].iov_len - bytes_sent;
+			msgh->msg_iov[i].iov_base += bytes_sent;
+			msgh->msg_iov[i].iov_len = offset;
+			bytes_sent = sendmsg(ctx->socket, msgh, flags);
+
+			while (-1 == bytes_sent) {
+				int myerrno;
+				myerrno = errno;
+				if (EINTR == myerrno) {
+					bytes_sent = sendmsg(ctx->socket, msgh, flags);
+				} else {
+					return JAL_E_NOT_CONNECTED;
+				}
+			}
+
+			msgh->msg_control = NULL;
+			msgh->msg_controllen = 0;
 		}
 	}
 
