@@ -934,6 +934,13 @@ void print_config(void)
 enum jald_status set_global_config(config_t *config)
 {
 	int rc;
+	char *ret = NULL;
+	char absolute_private_key[PATH_MAX];
+	char absolute_public_cert[PATH_MAX];
+	char absolute_remote_cert_dir[PATH_MAX];
+	char absolute_db_root[PATH_MAX];
+	char absolute_schemas_root[PATH_MAX];
+
 	if (!config) {
 		return JALD_E_CONFIG_LOAD;
 	}
@@ -942,14 +949,35 @@ enum jald_status set_global_config(config_t *config)
 	if (0 != rc) {
 		return JALD_E_CONFIG_LOAD;
 	}
+	ret = realpath(global_config.private_key, absolute_private_key);
+	if (!ret) {
+		printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.private_key, JALNS_PRIVATE_KEY);
+		return JALD_E_CONFIG_LOAD;
+	}
+	free(global_config.private_key);
+	global_config.private_key = strdup(absolute_private_key);
 	rc = jalu_config_lookup_string(root, JALNS_PUBLIC_CERT, &global_config.public_cert, true);
 	if (0 != rc) {
 		return JALD_E_CONFIG_LOAD;
 	}
+	ret = realpath(global_config.public_cert, absolute_public_cert);
+	if (!ret) {
+		printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.public_cert, JALNS_PUBLIC_CERT);
+		return JALD_E_CONFIG_LOAD;
+	}
+	free(global_config.public_cert);
+	global_config.public_cert = strdup(absolute_public_cert);
 	rc = jalu_config_lookup_string(root, JALNS_REMOTE_CERT_DIR, &global_config.remote_cert_dir, true);
 	if (0 != rc) {
 		return JALD_E_CONFIG_LOAD;
 	}
+	ret = realpath(global_config.remote_cert_dir, absolute_remote_cert_dir);
+	if (!ret) {
+		printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.remote_cert_dir, JALNS_REMOTE_CERT_DIR);
+		return JALD_E_CONFIG_LOAD;
+	}
+	free(global_config.remote_cert_dir);
+	global_config.remote_cert_dir = strdup(absolute_remote_cert_dir);
 	rc = config_setting_lookup_int64(root, JALNS_PORT, &global_config.port);
 	if (CONFIG_FALSE == rc) {
 		CONFIG_ERROR(root, JALNS_PORT, "expected int64 value");
@@ -972,10 +1000,28 @@ enum jald_status set_global_config(config_t *config)
 	}
 
 	// db_root is optional
-	jalu_config_lookup_string(root, JALNS_DB_ROOT, &global_config.db_root, false);
+	rc = jalu_config_lookup_string(root, JALNS_DB_ROOT, &global_config.db_root, false);
+	if (0 == rc) {
+		ret = realpath(global_config.db_root, absolute_db_root);
+		if (!ret) {
+			printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.db_root, JALNS_DB_ROOT);
+			return JALD_E_CONFIG_LOAD;
+		}
+		free(global_config.db_root);
+		global_config.db_root = strdup(absolute_db_root);
+	}
 
 	// schemas_root is optional
-	jalu_config_lookup_string(root, JALNS_SCHEMAS_ROOT, &global_config.schemas_root, false);
+	rc = jalu_config_lookup_string(root, JALNS_SCHEMAS_ROOT, &global_config.schemas_root, false);
+	if (0 == rc) {
+		ret = realpath(global_config.schemas_root, absolute_schemas_root);
+		if (!ret) {
+			printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.schemas_root, JALNS_SCHEMAS_ROOT);
+			return JALD_E_CONFIG_LOAD;
+		}
+		free(global_config.schemas_root);
+		global_config.schemas_root = strdup(absolute_schemas_root);
+	}
 
 	config_setting_t *peers =  config_setting_get_member(root, JALNS_PEERS);
 	if (NULL == peers) {
