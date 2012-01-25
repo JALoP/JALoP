@@ -265,7 +265,9 @@ int main(int argc, char **argv) {
 	}
 
 err_out:
-	delete_socket(jalls_ctx->socket, jalls_ctx->debug);
+	if (jalls_ctx) {
+		delete_socket(jalls_ctx->socket, jalls_ctx->debug);
+	}
 
 	RSA_free(key);
 	X509_free(cert);
