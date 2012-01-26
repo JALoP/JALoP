@@ -35,6 +35,7 @@
 #include <limits.h>
 #include <libconfig.h>
 #include <pthread.h>
+#include <signal.h>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -123,6 +124,7 @@ enum jald_status {
 	JALD_OK = 0,
 };
 
+static jaln_context *jctx = NULL;
 static jaldb_context_t *db_ctx = NULL;
 static pthread_mutex_t gs_journal_sub_lock;
 static pthread_mutex_t gs_audit_sub_lock;
@@ -130,7 +132,7 @@ static pthread_mutex_t gs_log_sub_lock;
 static axlHash *gs_journal_subs = NULL;
 static axlHash *gs_audit_subs = NULL;
 static axlHash *gs_log_subs = NULL;
-
+static int exiting = 0;
 
 static void usage();
 static void process_options(int argc, char **argv);
@@ -625,6 +627,37 @@ void pub_peer_digest(
 	}
 }
 
+static void sig_handler(__attribute__((unused)) int sig)
+{
+	exiting = 1;
+}
+
+static int setup_signals(void)
+{
+	// Signal action to delete the socket file
+	struct sigaction action_on_sig;
+	action_on_sig.sa_handler = &sig_handler;
+	sigemptyset(&action_on_sig.sa_mask);
+	action_on_sig.sa_flags = 0;
+
+	if (0 != sigaction(SIGABRT, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGABRT.\n");
+		goto err_out;
+	}
+	if (0 != sigaction(SIGTERM, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGTERM.\n");
+		goto err_out;
+	}
+	if (0 != sigaction(SIGINT, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGINT.\n");
+		goto err_out;
+	}
+
+	return 0;
+err_out:
+	return -1;
+}
+
 static enum jald_status setup_db_layer(void);
 static void teardown_db_layer(void);
 
@@ -633,12 +666,16 @@ int main(int argc, char **argv)
 	struct jaln_connection_callbacks *conn_cbs = NULL;
 	struct jaln_publisher_callbacks *pub_cbs = NULL;
 	struct jal_digest_ctx *dctx = NULL;
-	jaln_context *jctx = NULL;
 	enum jal_status jaln_ret;
 	int rc = 0;
 	config_t config;
 	config_init(&config);
 	std::stringstream ss(std::ios_base::out);
+
+	rc = setup_signals();
+	if (0 != rc) {
+		goto out;
+	}
 
 	process_options(argc, argv);
 
@@ -650,7 +687,6 @@ int main(int argc, char **argv)
 	}
 
 	rc = config_load(&config, global_args.config_path);
-
 	if (rc != JALD_OK) {
 		goto out;
 	}
@@ -658,18 +694,17 @@ int main(int argc, char **argv)
 	init_global_config();
 
 	rc = set_global_config(&config);
-
 	if (rc != JALD_OK) {
 		goto out;
 	}
 
 	print_config();
+
 	if (global_args.daemon) {
 		jalu_daemonize();
 	}
 
 	rc = setup_db_layer();
-
 	if (rc != JALD_OK) {
 		goto out;
 	}
@@ -766,12 +801,11 @@ int main(int argc, char **argv)
 		rc = -1;
 		goto out;
 	}
-	jaln_ret = jaln_listener_wait(jctx);
-	if (JAL_OK != jaln_ret) {
-		DEBUG_LOG("Failed to call wait");
-		rc = -1;
-		goto out;
+
+	while (!exiting) {
+		sleep(60);
 	}
+
 out:
 	free_global_config();
 	free_global_args();

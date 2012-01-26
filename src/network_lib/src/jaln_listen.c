@@ -397,6 +397,7 @@ enum jal_status jaln_listener_shutdown(jaln_context *ctx)
 	vortex_mutex_unlock(&ctx->lock);
 
 	vortex_listener_shutdown(v_conn, axl_true);
+	vortex_exit_ctx(ctx->vortex_ctx, axl_false);
 	return JAL_OK;
 
 err_out:
