@@ -124,6 +124,17 @@ int main(int argc, char **argv) {
 		jalls_ctx->db_root = absolute_db_root;
 	}
 
+	//the schemas_root path must be made absolute before daemonizing
+	char absolute_schemas_root[PATH_MAX];
+	char *res2 = realpath(jalls_ctx->schemas_root, absolute_schemas_root);
+	if (res2 == NULL) {
+		fprintf(stderr, "failed to create an absolute path from schemas_root\n");
+		goto err_out;
+	} else {
+		free(jalls_ctx->schemas_root);
+		jalls_ctx->schemas_root = absolute_schemas_root;
+	}
+
 	//load the private key
 	fp = fopen(jalls_ctx->private_key_file, "r");
 	if (!fp) {
