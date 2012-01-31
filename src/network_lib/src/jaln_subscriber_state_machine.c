@@ -252,7 +252,7 @@ axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *f
 			payload + frame_off,
 			bytes_to_send,
 			session->sub_data->sm->payload_off,
-			more_expected,
+			1,
 			session->jaln_ctx->user_data);
 	if (JAL_OK != session->dgst->update(session->sub_data->sm->dgst_inst, payload + frame_off, bytes_to_send)) {
 		goto err_out;
