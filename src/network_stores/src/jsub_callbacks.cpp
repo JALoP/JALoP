@@ -49,11 +49,26 @@ volatile bool jsub_is_conn_closed = false;
 volatile int jsub_debug = 0;
 static struct jaln_subscriber_callbacks *sub_cbs =  NULL;
 static struct jaln_connection_callbacks *cb = NULL;
-static uint8_t *sys_meta_buf = NULL;
-static uint32_t sys_meta_size = 0;
-static uint8_t *app_meta_buf = NULL;
-static uint32_t app_meta_size = 0;
-static std::string cur_serial_id = "0";
+
+// Journal buffers
+static uint8_t *journal_sys_meta_buf = NULL;
+static uint32_t journal_sys_meta_size = 0;
+static uint8_t *journal_app_meta_buf = NULL;
+static uint32_t journal_app_meta_size = 0;
+
+// Audit buffers
+static uint8_t *audit_sys_meta_buf = NULL;
+static uint32_t audit_sys_meta_size = 0;
+static uint8_t *audit_app_meta_buf = NULL;
+static uint32_t audit_app_meta_size = 0;
+
+// Log buffers
+static uint8_t *log_sys_meta_buf = NULL;
+static uint32_t log_sys_meta_size = 0;
+static uint8_t *log_app_meta_buf = NULL;
+static uint32_t log_app_meta_size = 0;
+
+// Journal path and fd
 static char *db_payload_path = NULL;
 static int db_payload_fd = -1;
 
@@ -193,7 +208,7 @@ int jsub_get_subscribe_request(
 int jsub_on_record_info(
 		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
+		enum jaln_record_type type,
 		__attribute__((unused)) const struct jaln_record_info *record_info,
 		__attribute__((unused)) const struct jaln_mime_header *headers,
 		const uint8_t *system_metadata_buffer,
@@ -212,31 +227,65 @@ int jsub_on_record_info(
 			application_metadata_buffer,
 			application_metadata_size, user_data);
 	}
-	// Cleanup/Reset
-	if (-1 != db_payload_fd) {
-		rc = fsync(db_payload_fd);
-		if ((-1 == rc) && jsub_debug) {
-			DEBUG_LOG("payload file sync failed!\n");
+	
+	switch (type) {
+	case JALN_RTYPE_JOURNAL:
+		// Cleanup/Reset
+		if (-1 != db_payload_fd) {
+			rc = fsync(db_payload_fd);
+			if ((-1 == rc) && jsub_debug) {
+				DEBUG_LOG("payload file sync failed!\n");
+			}
+			rc = close(db_payload_fd);
+			if ((-1 == rc) && jsub_debug) {
+				DEBUG_LOG("payload file close failed!\n");
+			}
+			db_payload_fd = -1;
 		}
-		rc = close(db_payload_fd);
-		if ((-1 == rc) && jsub_debug) {
-			DEBUG_LOG("payload file close failed!\n");
-		}
-	}
-	free(sys_meta_buf);
-	free(app_meta_buf);
-	free(db_payload_path);
-	sys_meta_buf = NULL;
-	app_meta_buf = NULL;
-	db_payload_path = NULL;
-	sys_meta_size = 0;
-	app_meta_size = 0;
-	db_payload_fd = -1;
 
-	sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
-	sys_meta_size = system_metadata_size;
-	app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
-	app_meta_size = application_metadata_size;
+		free(journal_sys_meta_buf);
+		free(journal_app_meta_buf);
+		free(db_payload_path);
+		journal_sys_meta_buf = NULL;
+		journal_app_meta_buf = NULL;
+		journal_sys_meta_size = 0;
+		journal_app_meta_size = 0;
+		db_payload_path = NULL;
+
+		journal_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
+		journal_sys_meta_size = system_metadata_size;
+		journal_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
+		journal_app_meta_size = application_metadata_size;
+		break;
+	case JALN_RTYPE_AUDIT:
+		free(audit_sys_meta_buf);
+		free(audit_app_meta_buf);
+		audit_sys_meta_buf = NULL;
+		audit_app_meta_buf = NULL;
+		audit_sys_meta_size = 0;
+		audit_app_meta_size = 0;
+
+		audit_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
+		audit_sys_meta_size = system_metadata_size;
+		audit_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
+		audit_app_meta_size = application_metadata_size;
+		break;
+	case JALN_RTYPE_LOG:
+		free(log_sys_meta_buf);
+		free(log_app_meta_buf);
+		log_sys_meta_buf = NULL;
+		log_app_meta_buf = NULL;
+		log_sys_meta_size = 0;
+		log_app_meta_size = 0;
+
+		log_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
+		log_sys_meta_size = system_metadata_size;
+		log_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
+		log_app_meta_size = application_metadata_size;
+		break;
+	default:
+		break;
+	}
 
 	return JAL_OK;
 }
@@ -255,9 +304,9 @@ int jsub_on_audit(
 			ch_info, serial_id, buffer, cnt, user_data);
 	}
 	// Insert audit into temp container
-	return jsub_insert_audit(jsub_db_ctx, ch_info->hostname, sys_meta_buf,
-				 sys_meta_size, app_meta_buf,
-				 app_meta_size, (uint8_t *)buffer, cnt,
+	return jsub_insert_audit(jsub_db_ctx, ch_info->hostname, audit_sys_meta_buf,
+				 audit_sys_meta_size, audit_app_meta_buf,
+				 audit_app_meta_size, (uint8_t *)buffer, cnt,
 				 (char *)serial_id, jsub_debug);
 }
 
@@ -275,9 +324,9 @@ int jsub_on_log(
 			ch_info, serial_id, buffer, cnt, user_data);
 	}
 	// Insert log into temp container
-	return jsub_insert_log(jsub_db_ctx, ch_info->hostname, sys_meta_buf,
-				sys_meta_size, app_meta_buf,
-				app_meta_size, (uint8_t *)buffer, cnt,
+	return jsub_insert_log(jsub_db_ctx, ch_info->hostname, log_sys_meta_buf,
+				log_sys_meta_size, log_app_meta_buf,
+				log_app_meta_size, (uint8_t *)buffer, cnt,
 				(char *)serial_id, jsub_debug);
 }
 
@@ -316,10 +365,10 @@ int jsub_on_journal(
 		return jsub_insert_journal_metadata(
 					jsub_db_ctx,
 					ch_info->hostname,
-					sys_meta_buf,
-					sys_meta_size,
-					app_meta_buf,
-					app_meta_size,
+					journal_sys_meta_buf,
+					journal_sys_meta_size,
+					journal_app_meta_buf,
+					journal_app_meta_size,
 					db_payload_path,
 					(char *)serial_id,
 					jsub_debug);
@@ -439,7 +488,7 @@ int jsub_on_digest_response(
 void jsub_message_complete(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
+		enum jaln_record_type type,
 		__attribute__((unused)) void *user_data)
 {
 	int rc = 0;
@@ -448,26 +497,52 @@ void jsub_message_complete(
 		DEBUG_LOG("ch info:%p type:%d ud:%p\n",
 			ch_info, type, user_data);
 	}
-	// No more messages to be received from remote peer.
-	// Perform some cleanup?
-	if (-1 != db_payload_fd) {
-		rc = fsync(db_payload_fd);
-		if ((-1 == rc) && jsub_debug) {
-			DEBUG_LOG("payload file sync failed for %s\n",
-				  ch_info->hostname);
+	
+	switch (type) {
+	case JALN_RTYPE_JOURNAL:
+		// Perform some cleanup?
+		if (-1 != db_payload_fd) {
+			rc = fsync(db_payload_fd);
+			if ((-1 == rc) && jsub_debug) {
+				DEBUG_LOG("payload file sync failed for %s\n",
+					  ch_info->hostname);
+			}
+			rc = close(db_payload_fd);
+			if ((-1 == rc) && jsub_debug) {
+				DEBUG_LOG("payload file close failed for %s\n",
+					  ch_info->hostname);
+			}
+			db_payload_fd = -1;
 		}
-		rc = close(db_payload_fd);
-		if ((-1 == rc) && jsub_debug) {
-			DEBUG_LOG("payload file close failed for %s\n",
-				  ch_info->hostname);
-		}
+
+		free(journal_sys_meta_buf);
+		free(journal_app_meta_buf);
+		free(db_payload_path);
+		journal_sys_meta_buf = NULL;
+		journal_app_meta_buf = NULL;
+		journal_sys_meta_size = 0;
+		journal_app_meta_size = 0;
+		db_payload_path = NULL;
+		break;
+	case JALN_RTYPE_AUDIT:
+		free(audit_sys_meta_buf);
+		free(audit_app_meta_buf);
+		audit_sys_meta_buf = NULL;
+		audit_app_meta_buf = NULL;
+		audit_sys_meta_size = 0;
+		audit_app_meta_size = 0;
+		break;
+	case JALN_RTYPE_LOG:
+		free(log_sys_meta_buf);
+		free(log_app_meta_buf);
+		log_sys_meta_buf = NULL;
+		log_app_meta_buf = NULL;
+		log_sys_meta_size = 0;
+		log_app_meta_size = 0;
+		break;
+	default:
+		break;
 	}
-	free(sys_meta_buf);
-	free(app_meta_buf);
-	free(db_payload_path);
-	sys_meta_size = 0;
-	app_meta_size = 0;
-	db_payload_fd = -1;
 }
 
 enum jal_status jsub_get_bytes(
