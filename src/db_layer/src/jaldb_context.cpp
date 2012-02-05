@@ -3047,7 +3047,7 @@ enum jaldb_status jaldb_purge_unconfirmed_log(
 			XmlDocument sid_doc;
 			try {
 				sid_doc = sys_cont.getDocument(txn, JALDB_CONNECTION_METADATA_DOC_NAME,
-						DB_RMW | DBXML_LAZY_DOCS | DB_READ_COMMITTED);
+						DB_RMW | DB_READ_COMMITTED);
 				found_sid_doc = true;
 			} catch (XmlException &e) {
 				if (e.getExceptionCode() != XmlException::DOCUMENT_NOT_FOUND) {
@@ -3143,7 +3143,7 @@ enum jaldb_status jaldb_purge_unconfirmed_audit(
 			XmlDocument sid_doc;
 			try {
 				sid_doc = sys_cont.getDocument(txn, JALDB_CONNECTION_METADATA_DOC_NAME,
-						DB_RMW | DBXML_LAZY_DOCS | DB_READ_COMMITTED);
+						DB_RMW | DB_READ_COMMITTED);
 				found_sid_doc = true;
 			} catch (XmlException &e) {
 				if (e.getExceptionCode() != XmlException::DOCUMENT_NOT_FOUND) {
@@ -3218,7 +3218,7 @@ enum jaldb_status jaldb_purge_unconfirmed_journal(
 			XmlDocument sid_doc;
 			try {
 				sid_doc = sys_cont.getDocument(txn, JALDB_CONNECTION_METADATA_DOC_NAME,
-						DB_RMW | DBXML_LAZY_DOCS | DB_READ_COMMITTED);
+						DB_RMW | DB_READ_COMMITTED);
 				found_sid_doc = true;
 			} catch (XmlException &e) {
 				if (e.getExceptionCode() != XmlException::DOCUMENT_NOT_FOUND) {
