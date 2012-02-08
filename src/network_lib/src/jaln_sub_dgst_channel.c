@@ -60,9 +60,7 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 			axlList *dgst_list = sess->dgst_list;
 			sess->dgst_list =
 				axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
-			vortex_mutex_unlock(&sess->lock);
 			jaln_send_digest_and_sync_no_lock(sess, dgst_list);
-			vortex_mutex_lock(&sess->lock);
 		}
 	}
 	return NULL;
