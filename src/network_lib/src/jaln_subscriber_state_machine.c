@@ -352,8 +352,8 @@ axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *fram
 
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type,
 			session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
-
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len);
+	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
 	return axl_true;
@@ -385,6 +385,7 @@ axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame,
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type,
 			session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len);
+	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
 	return axl_true;
@@ -409,6 +410,7 @@ axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *fr
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type, session->sub_data->sm->serial_id,
 			session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len);
+	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
 	return axl_true;

@@ -217,7 +217,6 @@ int jsub_on_record_info(
 		const uint32_t application_metadata_size,
 		__attribute__((unused)) void *user_data)
 {
-	int rc = 0;
 	if (jsub_debug) {
 		DEBUG_LOG("ON_RECORD INFO");
 		DEBUG_LOG("ch info:%p type:%d rec_info: %p headers: %p smb: %p sms:%d amb:%p ams:%d ud:%p\n",
@@ -230,54 +229,18 @@ int jsub_on_record_info(
 	
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
-		// Cleanup/Reset
-		if (-1 != db_payload_fd) {
-			rc = fsync(db_payload_fd);
-			if ((-1 == rc) && jsub_debug) {
-				DEBUG_LOG("payload file sync failed!\n");
-			}
-			rc = close(db_payload_fd);
-			if ((-1 == rc) && jsub_debug) {
-				DEBUG_LOG("payload file close failed!\n");
-			}
-			db_payload_fd = -1;
-		}
-
-		free(journal_sys_meta_buf);
-		free(journal_app_meta_buf);
-		free(db_payload_path);
-		journal_sys_meta_buf = NULL;
-		journal_app_meta_buf = NULL;
-		journal_sys_meta_size = 0;
-		journal_app_meta_size = 0;
-		db_payload_path = NULL;
-
 		journal_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
 		journal_sys_meta_size = system_metadata_size;
 		journal_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
 		journal_app_meta_size = application_metadata_size;
 		break;
 	case JALN_RTYPE_AUDIT:
-		free(audit_sys_meta_buf);
-		free(audit_app_meta_buf);
-		audit_sys_meta_buf = NULL;
-		audit_app_meta_buf = NULL;
-		audit_sys_meta_size = 0;
-		audit_app_meta_size = 0;
-
 		audit_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
 		audit_sys_meta_size = system_metadata_size;
 		audit_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
 		audit_app_meta_size = application_metadata_size;
 		break;
 	case JALN_RTYPE_LOG:
-		free(log_sys_meta_buf);
-		free(log_app_meta_buf);
-		log_sys_meta_buf = NULL;
-		log_app_meta_buf = NULL;
-		log_sys_meta_size = 0;
-		log_app_meta_size = 0;
-
 		log_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
 		log_sys_meta_size = system_metadata_size;
 		log_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
@@ -497,7 +460,7 @@ void jsub_message_complete(
 		DEBUG_LOG("ch info:%p type:%d ud:%p\n",
 			ch_info, type, user_data);
 	}
-	
+
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
 		// Perform some cleanup?
