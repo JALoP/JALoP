@@ -1,11 +1,40 @@
-This a reference implementation of Journal, Audit, and Logging Protocol (JALoP).
-The implementation is divided into a number of sections.
+This is a reference implementation of the Journal, Audit, and Logging Protocol (JALoP).
+The implementation is divided into a number of components:
   The JALoP Network Library (JNL)
   The JALoP Producer Library (JPL)
   JALoP Local Store
   JALoP Network Stores
 
-Building
+This project makes use of the following libraries:
+  dbxml - http://www.dbxml.com
+  lcov - http://ltp.sourceforge.net/coverage/lcov.php
+  libaxl - http://www.aspl.es/xml
+  libconfig - http://freshmeat.net/projects/libconfigduo
+  libuuid - http://e2fsprogs.sourceforge.net/
+  libvortex - http://www.aspl.es/fact/files/af-arch/vortex/html/
+  libxml2 - http://xmlsoft.org/
+  libxmlsec1 - http://www.aleksey.com/xmlsec/
+  openssl - http://www.openssl.org/
+  santaurio - http://santuario.apache.org
+  site_scons - http://scons.org/
+  test-dept - http://code.google.com/p/test-dept/
+  vortex - http://www.aspl.es/vortex
+  xerces - http://xerces.apache.org
+  xqilla - http://xqilla.sourceforge.net
+
+The following libraries are included in the 3rd-party directory:
+  axl
+  dbxml
+  lcov
+  libconfig
+  santaurio
+  site_scons
+  vortex
+  xerces
+  xqilla 
+
+
+Building and Installing
 This project uses the scons (www.scons.org) build tool, version 2.0.1, and will compile under python 2.4 or 2.6.
 Later versions of Python should work as well, but were not tested.
 To build, simply run 'scons' within the top level directory:
@@ -13,7 +42,12 @@ To build, simply run 'scons' within the top level directory:
 $ scons
 This generates debug, and release directories.
 
-To build the and execute the unit tests, run
+To install the library, simply run the appropriate installation script for your platform (i.e., rhel_x86, rhel_x86_64, or solaris):
+$ install_<platform>.sh
+
+
+Other Options (these steps do not need to be executed in order to use the JALoP libraries)
+To build the library and execute the unit tests, run
 $ scons tests
 
 To generate code coverage reports, run
@@ -48,26 +82,16 @@ CPP The C preprocessor to use
 
 All of the source code for the implementation is under the 'src' directory. The src directory is divided into different sections based on functionality, subdirs such as network_lib, local_store, etc.
 
-A number of patches for external project are included. These patches are modify existing projects (e.g. log4cxx) to utilize JALoP as an output method. These may be found under the 'patches' directory.
+A number of patches for external project are included. These patches modify existing projects (e.g. log4cxx) to utilize JALoP as an output method. These may be found under the 'patches' directory.
 
 This project is built and tested in the following environments:
   RedHat Enterprise Linux (RHEL) 5 on x86_64, using gcc version 4.1.2
-  RHEL 6 on x86_64, using gcc version 4.4.4
-  RHEL 6 on i386, using gcc version 4.4.4
+  RHEL 6 on x86_64, using gcc version 4.4.5
+  RHEL 6 on i386, using gcc version 4.4.5
   Solaris 10 TX 09/10 on i386, using gcc version 3.4.3
 
-Additional Notes for Solaris
+Additional Notes for Solaris (See README-Solaris for more information)
 This project requires GNU awk to build and expects the 'awk' found on the path to be GNU awk. If this is not the case, you will need to install GNU awk either from source (http://www.gnu.org/s/gawk/), Sunfree (http://www.sunfreeware.com). You may also need to modify the 'PATH' enivronment variable to get scons to see the right version, i.e.:
 
 $> PATH=/path/to/awk:$PATH scons tests
-
-This project makes use of the following libraries.
-
-  libxml2 - http://xmlsoft.org/
-  libxmlsec1 - http://www.aleksey.com/xmlsec/
-  openssl - http://www.openssl.org/
-  libconfig - http://freshmeat.net/projects/libconfigduo
-  libvortex - http://www.aspl.es/fact/files/af-arch/vortex/html/
-  libuuid - 
-  test-dept - http://code.google.com/p/test-dept/
 
