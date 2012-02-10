@@ -63,7 +63,7 @@ enum jal_status jalpx_structured_data_to_elem(const struct jalp_structured_data 
 	if (sd->param_list) {
 		struct jalp_param *curr = sd->param_list;
 		while (curr) {
-			xmlNodePtr tmp;
+			xmlNodePtr tmp = NULL;
 			ret = jalpx_param_to_elem(curr,
 				(xmlChar *)JALP_XML_FIELD,
 				(xmlChar *)JALP_XML_KEY,

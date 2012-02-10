@@ -32,12 +32,14 @@
 
 #include "jalpx_structured_data_xml.h"
 #include "jal_alloc.h"
+#include "xml2_test_utils.h"
 
 struct jalp_structured_data *sd = NULL;
 xmlDocPtr new_doc = NULL;
 
 #define SD_ID "test-sd-id"
 #define SD_ID_ATTR_NAME "SD_ID"
+#define KEY_ATTR_NAME "Key"
 #define P1_NAME "p1_name"
 #define P1_VALUE "p1_value"
 #define P2_NAME "p2_name"
@@ -64,29 +66,157 @@ void teardown()
 
 void test_jalpx_structured_data_to_elem()
 {
-	printf("\ntest_jalpx_structured_data_to_elem\n");
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret = jalpx_structured_data_to_elem(sd, new_doc, &new_elem);
 
 	assert_equals(JAL_OK, ret);
+	assert_equals(1, new_elem != NULL);
 
 	xmlDocSetRootElement(new_doc, new_elem);
 
-	xmlChar *xmlbuff;
-	int buffersize;
+	xmlNodePtr cur_node = new_doc->xmlChildrenNode;
+	xmlChar *ret_val = NULL;
+	assert_equals(1, cur_node != NULL);
 
-	/*
-	* Dump the document to a buffer and print it
-	* for demonstration purposes.
-	*/
-	xmlDocDumpFormatMemory(new_doc, &xmlbuff, &buffersize, 1);
-	printf("%s", (char *) xmlbuff);
+	assert_equals(0, xmlStrcmp(cur_node->name, BAD_CAST "StructuredData"));
+	ret_val = xmlGetProp(cur_node, BAD_CAST SD_ID_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST SD_ID));
+	xmlFree(ret_val);
 
-	/*
-	* Free associated memory.
-	*/
-	xmlFree(xmlbuff);
+	cur_node = cur_node->xmlChildrenNode;
+	assert_equals(1, cur_node != NULL);
+	assert_equals(0, xmlStrcmp(cur_node->name, BAD_CAST "Field"));
+	ret_val = xmlGetProp(cur_node, BAD_CAST KEY_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P1_NAME));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(cur_node);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P1_VALUE));
+	xmlFree(ret_val);
+
+	cur_node = cur_node->next;
+	assert_equals(1, cur_node != NULL);
+	assert_equals(0, xmlStrcmp(cur_node->name, BAD_CAST "Field"));
+	ret_val = xmlGetProp(cur_node, BAD_CAST KEY_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P2_NAME));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(cur_node);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P2_VALUE));
+	xmlFree(ret_val);
+
+	cur_node = cur_node->next;
+	assert_equals(1, cur_node != NULL);
+	assert_equals(0, xmlStrcmp(cur_node->name, BAD_CAST "Field"));
+	ret_val = xmlGetProp(cur_node, BAD_CAST KEY_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_NAME));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(cur_node);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_VALUE));
+	xmlFree(ret_val);
+
+	xmlDocSetRootElement(new_doc, new_elem);
+	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
 
+void test_jalpx_structured_data_to_elem_fails_with_bad_params()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
 
+	ret = jalpx_structured_data_to_elem(sd, new_doc, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(1, new_doc != NULL);
+
+	ret = jalpx_structured_data_to_elem(sd, NULL, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(1, new_elem == NULL);
+	assert_equals(1, new_doc != NULL);
+
+	ret = jalpx_structured_data_to_elem(NULL, new_doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(1, new_elem == NULL);
+	assert_equals(1, new_doc != NULL);
+
+	free(sd->sd_id);
+	sd->sd_id = NULL;
+	ret = jalpx_structured_data_to_elem(sd, new_doc, &new_elem);
+	assert_equals(JAL_E_INVAL_STRUCTURED_DATA, ret);
+	assert_equals(1, new_elem == NULL);
+	assert_equals(1, new_doc != NULL);
+}
+
+void test_jalpx_structured_data_to_elem_fails_with_no_param_list()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
+
+	struct jalp_structured_data *bad_sd = jalp_structured_data_append(NULL, SD_ID);
+	ret = jalpx_structured_data_to_elem(bad_sd, new_doc, &new_elem);
+	assert_equals(JAL_E_INVAL_STRUCTURED_DATA, ret);
+	assert_equals(1, new_doc != NULL);
+	assert_equals(1, new_elem == NULL);
+
+	jalp_structured_data_destroy(&bad_sd);
+
+}
+
+void test_jalpx_structured_data_to_elem_fails_with_bad_param_list()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
+
+	free(sd->param_list->next->key);
+	sd->param_list->next->key = NULL;
+	ret = jalpx_structured_data_to_elem(sd, new_doc, &new_elem);
+	assert_not_equals(JAL_OK, ret);
+	assert_equals(1, new_doc != NULL);
+	assert_equals(1, new_elem == NULL);
+
+}
+
+void test_jalpx_structured_data_fails_when_new_elem_already_points_somewhere()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
+
+	ret = jalpx_structured_data_to_elem(sd, new_doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_equals(1, new_elem != NULL);
+	xmlDocSetRootElement(new_doc, new_elem);
+
+	xmlNodePtr orig = new_elem;
+	ret = jalpx_structured_data_to_elem(sd, new_doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+
+}
+
+void test_jalpx_structured_data_fails_doesnt_overwrite_elem_ptr()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
+
+	ret = jalpx_structured_data_to_elem(sd, new_doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_equals(1, new_elem != NULL);
+	xmlDocSetRootElement(new_doc, new_elem);
+
+	xmlNodePtr orig = new_elem;
+
+	ret = jalpx_structured_data_to_elem(sd, NULL, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+	assert_equals(1, new_doc != NULL);
+
+	ret = jalpx_structured_data_to_elem(NULL, new_doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+	assert_equals(1, new_doc != NULL);
+
+	free(sd->sd_id);
+	sd->sd_id = NULL;
+	ret = jalpx_structured_data_to_elem(sd, new_doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+	assert_equals(1, new_doc != NULL);
+}
