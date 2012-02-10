@@ -27,16 +27,19 @@
  */
 
 #include <test-dept.h>
+#include <limits.h>
 #include <jalop/jalp_context.h>
 
 #include "jalpx_log_severity_xml.h"
 #include "jal_alloc.h"
+#include "xml2_test_utils.h"
 
 struct jalp_log_severity *severity = NULL;
 xmlDocPtr new_doc;
 
 #define LEVEL_NUM 1
 #define LEVEL_NAME "test-level"
+#define NAME_ATTR_NAME "Name"
 
 void setup()
 {
@@ -55,9 +58,72 @@ void teardown()
 	jalp_shutdown();
 }
 
+void test_log_severity_to_elem_success()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
+	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
+	xmlDocSetRootElement(new_doc, new_elem);
+
+	xmlChar *ret_val = NULL;
+	assert_equals(1, new_doc != NULL);
+	assert_equals(0, xmlStrcmp(new_doc->xmlChildrenNode->name, BAD_CAST "Severity"));
+	ret_val = xmlGetProp(new_doc->xmlChildrenNode, BAD_CAST NAME_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST LEVEL_NAME));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST "1"));
+	xmlFree(ret_val);
+	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_log_severity_to_elem_works_with_no_level_name()
+{
+	xmlNodePtr new_elem = NULL;
+	free(severity->level_str);
+	severity->level_str = NULL;
+	enum jal_status ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
+	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
+	xmlDocSetRootElement(new_doc, new_elem);
+
+	xmlChar *ret_val = NULL;
+	assert_equals(1, new_doc != NULL);
+	assert_equals(0, xmlStrcmp(new_doc->xmlChildrenNode->name, BAD_CAST "Severity"));
+	ret_val = xmlGetProp(new_doc->xmlChildrenNode, BAD_CAST NAME_ATTR_NAME);
+	assert_equals(1, ret_val == NULL);
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST "1"));
+	xmlFree(ret_val);
+	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_log_severity_to_elem_works_with_empty_level_name()
+{
+	xmlNodePtr new_elem = NULL;
+	free(severity->level_str);
+	severity->level_str = jal_strdup("");;
+	enum jal_status ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
+	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
+	xmlDocSetRootElement(new_doc, new_elem);
+
+	xmlChar *ret_val = NULL;
+	assert_equals(1, new_doc != NULL);
+	assert_equals(0, xmlStrcmp(new_doc->xmlChildrenNode->name, BAD_CAST "Severity"));
+	ret_val = xmlGetProp(new_doc->xmlChildrenNode, BAD_CAST NAME_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST ""));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST "1"));
+	xmlFree(ret_val);
+	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
 void test_log_severity_to_elem_works_with_negative_levels()
 {
-	printf("\nnegative_levels\n");
 	severity->level_val = -10;
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
@@ -65,19 +131,87 @@ void test_log_severity_to_elem_works_with_negative_levels()
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(new_doc, new_elem);
 
-	xmlChar *xmlbuff;
-	int buffersize;
-
-	/*
-	* Dump the document to a buffer and print it
-	* for demonstration purposes.
-	*/
-	xmlDocDumpFormatMemory(new_doc, &xmlbuff, &buffersize, 1);
-	printf("%s", (char *) xmlbuff);
-
-	/*
-	* Free associated memory.
-	*/
-	xmlFree(xmlbuff);
+	xmlChar *ret_val = NULL;
+	assert_equals(1, new_doc != NULL);
+	assert_equals(0, xmlStrcmp(new_doc->xmlChildrenNode->name, BAD_CAST "Severity"));
+	ret_val = xmlGetProp(new_doc->xmlChildrenNode, BAD_CAST NAME_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST LEVEL_NAME));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST "-10"));
+	xmlFree(ret_val);
+	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
+void test_log_severity_to_elem_works_with_int_max()
+{
+	severity->level_val = INT_MAX;
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
+	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
+	xmlDocSetRootElement(new_doc, new_elem);
+
+	xmlChar *ret_val = NULL;
+	assert_equals(1, new_doc != NULL);
+	assert_equals(0, xmlStrcmp(new_doc->xmlChildrenNode->name, BAD_CAST "Severity"));
+	ret_val = xmlGetProp(new_doc->xmlChildrenNode, BAD_CAST NAME_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST LEVEL_NAME));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
+	char *max = NULL;
+	int check = asprintf(&max, "%d", INT_MAX);
+	assert_equals(1, check > 0);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST max));
+	xmlFree(ret_val);
+	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_log_severity_to_elem_works_with_int_min()
+{
+	severity->level_val = INT_MIN;
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
+	assert_not_equals(NULL, new_elem);
+	assert_equals(JAL_OK, ret);
+	xmlDocSetRootElement(new_doc, new_elem);
+
+	xmlChar *ret_val = NULL;
+	assert_equals(1, new_doc != NULL);
+	assert_equals(0, xmlStrcmp(new_doc->xmlChildrenNode->name, BAD_CAST "Severity"));
+	ret_val = xmlGetProp(new_doc->xmlChildrenNode, BAD_CAST NAME_ATTR_NAME);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST LEVEL_NAME));
+	xmlFree(ret_val);
+	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
+
+	char *min = NULL;
+	int check = asprintf(&min, "%d", INT_MIN);
+	assert_equals(1, check > 0);
+	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST min));
+	xmlFree(ret_val);
+	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_log_severity_to_elem_fails_with_bad_input()
+{
+
+	xmlNodePtr new_elem = NULL;
+
+	enum jal_status ret = jalpx_log_severity_to_elem(severity, NULL, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(1, new_elem == NULL);
+
+	ret = jalpx_log_severity_to_elem(severity, new_doc, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+
+	ret = jalpx_log_severity_to_elem(NULL, new_doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(1, new_elem == NULL);
+
+	ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	xmlNodePtr temp = new_elem;
+	ret = jalpx_log_severity_to_elem(severity, new_doc, &new_elem);
+	assert_equals(temp, new_elem);
+        assert_not_equals(JAL_OK, ret);
+}
