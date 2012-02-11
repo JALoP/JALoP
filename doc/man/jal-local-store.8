@@ -21,6 +21,8 @@ will generate system metadata for each record, and insert the record into its da
 Enable debug output and prevent
 .B jal-local-store
 from forking to the background.
+.SH BUGS
+Attempting to insert audit data greater than 100MB will cause undefined behavior.
 
 .SH "SEE ALSO"
 .BR jald (8),
