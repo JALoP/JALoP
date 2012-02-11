@@ -242,7 +242,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 			}
 		}
 	}
-	size_t msg_len;
+	uint64_t msg_len;
 	int msg_no = vortex_frame_get_msgno(frame);
 	if (JALN_CE_ACCEPT != err) {
 		jaln_create_init_nack_msg(err, &msg, &msg_len);

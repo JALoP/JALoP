@@ -103,16 +103,16 @@ struct jaln_pub_data {
 	uint8_t *app_meta;                          //!< A buffer to hold the application metadata for the current record.
 	uint8_t *payload;                           //!< A buffer to hold the data for the payload (if this is an audit or log record
 
-	size_t headers_sz;                          //!< The size of jaln_pub_data::headers
-	size_t sys_meta_sz;                         //!< The size of jaln_pub_data::sys_meta
-	size_t app_meta_sz;                         //!< The size of jaln_pub_data::app_meta
+	uint64_t headers_sz;                          //!< The size of jaln_pub_data::headers
+	uint64_t sys_meta_sz;                         //!< The size of jaln_pub_data::sys_meta
+	uint64_t app_meta_sz;                         //!< The size of jaln_pub_data::app_meta
 	uint64_t payload_sz;                        //!< The size of jaln_pub_data::payload, or the size of the journal record.
 
-	size_t headers_off;                         //!< The current offset into jaln_pub_data::headers
-	size_t sys_meta_off;                        //!< The current offset into jaln_pub_data::sys_meta
-	size_t app_meta_off;                        //!< The current offset into jaln_pub_data::app_meta
+	uint64_t headers_off;                         //!< The current offset into jaln_pub_data::headers
+	uint64_t sys_meta_off;                        //!< The current offset into jaln_pub_data::sys_meta
+	uint64_t app_meta_off;                        //!< The current offset into jaln_pub_data::app_meta
 	uint64_t payload_off;                       //!< The current offset into jaln_pub_data::payload, or the journal record.
-	size_t break_off;                           //!< The current offset used when writing the "BREAK" string between segments.
+	uint64_t break_off;                           //!< The current offset used when writing the "BREAK" string between segments.
 
 	axl_bool finished_headers;                  //!< Indicates the headers have been sent.
 	axl_bool finished_sys_meta;                 //!< Indicates the system metadata has been sent.
@@ -211,7 +211,7 @@ void jaln_pub_data_destroy(struct jaln_pub_data **pub_data);
 enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess,
 		char *serial_id,
 		uint8_t *dgst_buf,
-		size_t dgst_len);
+		uint64_t dgst_len);
 
 /**
  * Flag this session as 'errored'

@@ -48,8 +48,8 @@ axl_bool jaln_pub_feeder_get_size(jaln_session *sess, int *size)
 
 axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 {
-	size_t dst_sz = *size;
-	size_t dst_off = 0;
+	uint64_t dst_sz = *size;
+	uint64_t dst_off = 0;
 	struct jaln_pub_data *pd = sess->pub_data;
 	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
 	struct jaln_channel_info *ch_info = sess->ch_info;
@@ -112,14 +112,14 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 		switch (ch_info->type) {
 		case JALN_RTYPE_AUDIT:
 		case JALN_RTYPE_LOG: {
-			size_t tmp_offset = pd->payload_off;
+			uint64_t tmp_offset = pd->payload_off;
 			jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->payload, pd->payload_sz, &tmp_offset, axl_true);
 			pd->payload_off = tmp_offset;
 			break;
 		}
 		case JALN_RTYPE_JOURNAL: {
-			uint32_t left_in_buffer = dst_sz - dst_off;
-			uint32_t bytes_acquired = left_in_buffer;
+			uint64_t left_in_buffer = dst_sz - dst_off;
+			uint64_t bytes_acquired = left_in_buffer;
 			ret = pd->journal_feeder.get_bytes(pd->payload_off, buffer + dst_off, &bytes_acquired,
 					pd->journal_feeder.feeder_data);
 			if (ret != JAL_OK || (bytes_acquired > left_in_buffer)) {
@@ -280,13 +280,13 @@ void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess)
 	jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, 3 * strlen(JALN_STR_BREAK));
 }
 
-axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const size_t to_add)
+axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add)
 {
 	if (INT_MAX < to_add) {
 		*cnt = INT_MAX;
 		return axl_false;
 	}
-	if ((INT_MAX - to_add) < (size_t) *cnt) {
+	if ((INT_MAX - to_add) < (uint64_t) *cnt) {
 		*cnt = INT_MAX;
 		return axl_false;
 	}
@@ -370,9 +370,9 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t jour
 		uint64_t left_to_process = journal_offset;
 		uint64_t offset = 0;
 		while(left_to_process != 0) {
-			uint32_t to_copy = (uint32_t) (BUF_SIZE < left_to_process) ? 
+			uint64_t to_copy = (uint64_t) (BUF_SIZE < left_to_process) ? 
 				BUF_SIZE : left_to_process;
-			uint32_t tmp = to_copy;
+			uint64_t tmp = to_copy;
 			ret = pd->journal_feeder.get_bytes(offset, buf, &tmp,
 					pd->journal_feeder.feeder_data);
 			if ((JAL_OK != ret) || (0 == tmp) || (tmp > to_copy)) {

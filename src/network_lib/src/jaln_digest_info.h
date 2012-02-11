@@ -38,7 +38,7 @@
 struct jaln_digest_info {
 	char *serial_id;
 	uint8_t *digest;
-	size_t digest_len;
+	uint64_t digest_len;
 };
 
 /**
@@ -54,7 +54,7 @@ struct jaln_digest_info {
  */
 struct jaln_digest_info *jaln_digest_info_create(const char *serial_id,
 		const uint8_t *dgst_buf,
-		const size_t dgst_len);
+		const uint64_t dgst_len);
 
 /**
  * Destroy a jaln_digest_info structure.

@@ -74,7 +74,7 @@ static void fake_vortex_payload_feeder_set_on_finished(
 enum jal_status fake_create_record_ans_rpy_headers(
 		__attribute__((unused)) struct jaln_record_info *rec_info,
 		char **buffer,
-		size_t *sz)
+		uint64_t *sz)
 {
 	*buffer = jal_strdup(HEADERS);
 	*sz = strlen(HEADERS);
@@ -100,7 +100,7 @@ enum jal_status fake_add_to_dgst_list(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) char *serial_id,
 		__attribute__((unused)) uint8_t *dgst_buf,
-		__attribute__((unused)) size_t dgst_len)
+		__attribute__((unused)) uint64_t dgst_len)
 {
 	return JAL_OK;
 }
@@ -207,7 +207,7 @@ enum jal_status my_release_audit_data(
 
 enum jal_status journal_get_bytes(const uint64_t offset,
 			uint8_t * const buffer,
-			uint32_t *size,
+			uint64_t *size,
 			__attribute__((unused)) void *feeder_data)
 {
 	if (offset > strlen(PAYLOAD)) {
@@ -420,7 +420,7 @@ void test_reset_state_clears_all_variables()
 {
 	sess->pub_data->vortex_feeder_sz = -1;
 	jaln_pub_feeder_reset_state(sess);
-	assert_equals(VORTEX_SZ, sess->pub_data->vortex_feeder_sz);
+	assert_equals(0, sess->pub_data->vortex_feeder_sz);
 	assert_equals(0, sess->pub_data->headers_off);
 	assert_equals(0, sess->pub_data->sys_meta_off);
 	assert_equals(0, sess->pub_data->payload_off);

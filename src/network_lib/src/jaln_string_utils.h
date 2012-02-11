@@ -36,7 +36,7 @@ extern "C" {
 
 #include <axl.h>
 #include <jalop/jal_status.h>
-#include <stddef.h> // for size_t
+#include <stddef.h> // for uint64_t
 #include <stdint.h>
 
 /**
@@ -54,15 +54,15 @@ extern "C" {
 axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
 
 /**
- * Convert an ascii string to a size_t
+ * Convert an ascii string to a uint64_t
  * The same rules apply as for jaln_ascii_to_uint64, with the exception that the
- * output is limited to a size_t type.
+ * output is limited to a uint64_t type.
  *
  * @param[in] str The string to convert
  * @param[out] The converted value
  * @return axl_true on success, axl_false otherwise
  */
-axl_bool jaln_ascii_to_size_t(const char *str, size_t *out);
+axl_bool jaln_ascii_to_uint64_t(const char *str, uint64_t *out);
 
 /**
  * Helper function to convert a hex character to a uint8_t value.
@@ -89,8 +89,8 @@ enum jal_status jaln_hex_to_bin(char c, uint8_t *out);
  * @return JAL_OK on success, or JAL_E_INVAL if any of the characters in the
  * string are not valid hex characters.
  */
-enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, size_t hex_buf_len,
-		uint8_t **dgst_buf_out, size_t *dgst_buf_len_out);
+enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, uint64_t hex_buf_len,
+		uint8_t **dgst_buf_out, uint64_t *dgst_buf_len_out);
 
 
 #endif // _JALN_STRING_UTILS_H_

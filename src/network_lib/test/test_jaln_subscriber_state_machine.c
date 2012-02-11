@@ -56,8 +56,8 @@ int dummy_get_subscribe_request(
 
 static unsigned journal_cb_cnt;;
 static uint8_t* journal_buf;
-static size_t journal_sz;
-static size_t journal_off;
+static uint64_t journal_sz;
+static uint64_t journal_off;
 
 int dummy_on_record_info(
 		__attribute__((unused)) jaln_session *sess,
@@ -186,7 +186,7 @@ enum jal_status fake_jaln_add_to_dgst_list(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) char *serial_id,
 		__attribute__((unused)) uint8_t *dgst_buf,
-		__attribute__((unused)) size_t dgst_len)
+		__attribute__((unused)) uint64_t dgst_len)
 {
 	return JAL_OK;
 }
@@ -202,7 +202,7 @@ static char *expected_payload_len_hdr = NULL;
 static axl_bool more = axl_false;
 static VortexFrame* frame = NULL;
 static int should_have_cached_frame;
-static size_t frame_off;
+static uint64_t frame_off;
 struct jaln_sub_state fake_state;
 
 #define EXPECTED_SID "sid:1234blah"
@@ -228,7 +228,7 @@ struct jaln_sub_state fake_state;
 
 axl_bool fake_handler(__attribute__((unused)) jaln_session *my_session,
 		__attribute__((unused)) VortexFrame *my_frame,
-		__attribute__((unused)) size_t my_frame_off,
+		__attribute__((unused)) uint64_t my_frame_off,
 		__attribute__((unused)) axl_bool my_more)
 {
 	if (should_have_cached_frame) {
@@ -419,7 +419,7 @@ static const char *stubbed_frame_mime_header_content(VortexMimeHeader * header)
 axl_bool fake_frame_handler_fails(
 		__attribute__((unused)) jaln_session *my_session,
 		__attribute__((unused)) VortexFrame *my_frame,
-		__attribute__((unused)) size_t my_frame_off,
+		__attribute__((unused)) uint64_t my_frame_off,
 		__attribute__((unused)) axl_bool my_more)
 {
 	return axl_false;
@@ -677,7 +677,7 @@ void test_wait_break_success_when_spans_single_frame()
 
 	frame_off = EXPECTED_BREAK_SZ;
 	axl_bool break_valid = axl_false;
-	size_t my_frame_off = 0;
+	uint64_t my_frame_off = 0;
 	assert_equals(axl_true, jaln_sub_wait_for_break_common(session, frame, &my_frame_off, more, &break_valid));
 	assert_equals(0, session->sub_data->sm->break_off);
 	assert_equals(EXPECTED_BREAK_SZ, my_frame_off);
@@ -697,7 +697,7 @@ void test_wait_for_break_fails_with_bad_break_string()
 
 	frame_off = EXPECTED_BREAK_SZ;
 	axl_bool break_valid = axl_true;
-	size_t my_frame_off = 0;
+	uint64_t my_frame_off = 0;
 	assert_equals(axl_false, jaln_sub_wait_for_break_common(session, frame, &my_frame_off, more, &break_valid));
 	assert_equals(EXPECTED_BREAK_SZ, my_frame_off);
 	assert_equals(0, session->sub_data->sm->break_off);
@@ -787,12 +787,12 @@ void test_wait_for_journal_payload_fails_when_next_state_fails()
 void test_copy_buf_works_for_exact_copy()
 {
 	uint8_t *dst = jal_calloc(EXPECTED_PAYLOAD_SZ, sizeof(uint8_t));
-	size_t dst_sz = EXPECTED_PAYLOAD_SZ;
-	size_t dst_off = 0;
+	uint64_t dst_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t dst_off = 0;
 
 	uint8_t *src = jal_calloc(EXPECTED_PAYLOAD_SZ, sizeof(uint8_t));
-	size_t src_sz = EXPECTED_PAYLOAD_SZ;
-	size_t src_off = 0;
+	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t src_off = 0;
 	more = axl_true;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
@@ -808,11 +808,11 @@ void test_copy_buf_works_for_exact_copy()
 void test_copy_buf_works_for_exact_copy_with_no_more_frames()
 {
 	uint8_t *dst = jal_calloc(EXPECTED_PAYLOAD_SZ, sizeof(uint8_t));
-	size_t dst_sz = EXPECTED_PAYLOAD_SZ;
-	size_t dst_off = 0;
+	uint64_t dst_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t dst_off = 0;
 
-	size_t src_sz = EXPECTED_PAYLOAD_SZ;
-	size_t src_off = 0;
+	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t src_off = 0;
 	more = axl_false;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
@@ -828,11 +828,11 @@ void test_copy_buf_works_for_exact_copy_with_no_more_frames()
 void test_copy_buf_works_when_dst_smaller_than_src()
 {
 	uint8_t *dst = jal_calloc(EXPECTED_PAYLOAD_SZ / 2, sizeof(uint8_t));
-	size_t dst_sz = EXPECTED_PAYLOAD_SZ / 2;
-	size_t dst_off = 0;
+	uint64_t dst_sz = EXPECTED_PAYLOAD_SZ / 2;
+	uint64_t dst_off = 0;
 
-	size_t src_sz = EXPECTED_PAYLOAD_SZ;
-	size_t src_off = 0;
+	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t src_off = 0;
 	more = axl_true;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
@@ -848,11 +848,11 @@ void test_copy_buf_works_when_dst_smaller_than_src()
 void test_copy_buf_works_when_dst_smaller_than_src_with_no_more_expected_frames()
 {
 	uint8_t *dst = jal_calloc(EXPECTED_PAYLOAD_SZ / 2, sizeof(uint8_t));
-	size_t dst_sz = EXPECTED_PAYLOAD_SZ / 2;
-	size_t dst_off = 0;
+	uint64_t dst_sz = EXPECTED_PAYLOAD_SZ / 2;
+	uint64_t dst_off = 0;
 
-	size_t src_sz = EXPECTED_PAYLOAD_SZ;
-	size_t src_off = 0;
+	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t src_off = 0;
 	more = axl_false;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
@@ -868,11 +868,11 @@ void test_copy_buf_works_when_dst_smaller_than_src_with_no_more_expected_frames(
 void test_copy_buf_works_when_src_smaller_than_dst()
 {
 	uint8_t *dst = jal_calloc(EXPECTED_PAYLOAD_SZ, sizeof(uint8_t));
-	size_t dst_sz = EXPECTED_PAYLOAD_SZ;
-	size_t dst_off = 0;
+	uint64_t dst_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t dst_off = 0;
 
-	size_t src_sz = EXPECTED_PAYLOAD_SZ / 2;
-	size_t src_off = 0;
+	uint64_t src_sz = EXPECTED_PAYLOAD_SZ / 2;
+	uint64_t src_off = 0;
 	more = axl_true;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
@@ -888,11 +888,11 @@ void test_copy_buf_works_when_src_smaller_than_dst()
 void test_copy_buf_fails_when_src_smaller_than_dst_and_no_more_frames()
 {
 	uint8_t *dst = jal_calloc(EXPECTED_PAYLOAD_SZ, sizeof(uint8_t));
-	size_t dst_sz = EXPECTED_PAYLOAD_SZ;
-	size_t dst_off = 0;
+	uint64_t dst_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t dst_off = 0;
 
-	size_t src_sz = EXPECTED_PAYLOAD_SZ / 2;
-	size_t src_off = 0;
+	uint64_t src_sz = EXPECTED_PAYLOAD_SZ / 2;
+	uint64_t src_off = 0;
 	more = axl_false;
 
 	assert_false(jaln_copy_buffer(dst, dst_sz, &dst_off,
@@ -903,12 +903,12 @@ void test_copy_buf_fails_when_src_smaller_than_dst_and_no_more_frames()
 void test_copy_buf_works_with_offsets()
 {
 	uint8_t *dst = jal_calloc(EXPECTED_PAYLOAD_SZ, sizeof(uint8_t));
-	size_t dst_sz = EXPECTED_PAYLOAD_SZ / 2;
-	size_t dst_off = 3;
+	uint64_t dst_sz = EXPECTED_PAYLOAD_SZ / 2;
+	uint64_t dst_off = 3;
 	memcpy(dst, EXPECTED_PAYLOAD, dst_off);
 
-	size_t src_sz = EXPECTED_PAYLOAD_SZ;
-	size_t src_off = 7;
+	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
+	uint64_t src_off = 7;
 	uint8_t* src = (uint8_t*) EXPECTED_PAYLOAD;
 	// made of ugly. Don't want to use the same offsets for both source and
 	// destination, so force them to be different with some pointer ugly.
@@ -916,8 +916,8 @@ void test_copy_buf_works_with_offsets()
 	src = src - src_off + dst_off;
 	more = axl_false;
 
-	size_t should_copy = dst_sz - dst_off;
-	size_t expected_src_offset = src_off + should_copy;
+	uint64_t should_copy = dst_sz - dst_off;
+	uint64_t expected_src_offset = src_off + should_copy;
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
 		src, src_sz, &src_off, more));
 

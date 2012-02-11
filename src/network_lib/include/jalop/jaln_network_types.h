@@ -263,7 +263,7 @@ struct jaln_payload_feeder {
 	 */
 	enum jal_status (*get_bytes)(const uint64_t offset,
 			   uint8_t * const buffer,
-			   uint32_t *size,
+			   uint64_t *size,
 			   void *feeder_data);
 };
 

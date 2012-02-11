@@ -37,7 +37,7 @@
 
 struct jaln_digest_info *jaln_digest_info_create(const char *serial_id,
 		const uint8_t *dgst_buf,
-		const size_t dgst_len)
+		const uint64_t dgst_len)
 {
 	if (!serial_id || !dgst_buf || 0 == dgst_len) {
 		return NULL;

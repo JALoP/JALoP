@@ -85,7 +85,7 @@ enum jal_status jaln_process_digest_resp(VortexFrame *frame, axlList **dgst_resp
 		axl_bool looking_for_sid = axl_false;
 		enum jaln_digest_status status = JALN_DIGEST_STATUS_UNKNOWN;
 		if ('=' == payload[idx]) {
-			size_t len = idx - last_tok_idx + 1;
+			uint64_t len = idx - last_tok_idx + 1;
 			status_str = jal_malloc(len);
 			memcpy(status_str, payload + last_tok_idx, len - 1);
 			status_str[len-1] = '\0';

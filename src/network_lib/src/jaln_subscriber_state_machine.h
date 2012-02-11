@@ -60,7 +60,7 @@ struct jaln_sub_state {
 	 *  would be an error.
 	 *  - axl_false if there was an error.
 	 */
-	axl_bool (*frame_handler)(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+	axl_bool (*frame_handler)(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 };
 
 /**
@@ -73,16 +73,16 @@ struct jaln_sub_state_machine {
 	char *serial_id;                   //<! The serial ID of the record currently in process
 	uint8_t *sys_meta_buf;            //<! bufer containing the system metadata
 	uint64_t sys_meta_sz;              //<! the total size of the sys_meta_bufer
-	size_t sys_meta_off;               //<! offset into the bufer to begin writing the next hunk of data
+	uint64_t sys_meta_off;               //<! offset into the bufer to begin writing the next hunk of data
 	uint8_t *app_meta_buf;            //<! bufer containing the system metadata
-	size_t app_meta_sz;                //<! the total size of the sys_meta_bufer
-	size_t app_meta_off;               //<! offset into the bufer to begin writing the next hunk of data
+	uint64_t app_meta_sz;                //<! the total size of the sys_meta_bufer
+	uint64_t app_meta_off;               //<! offset into the bufer to begin writing the next hunk of data
 	uint8_t *payload_buf;             //<! bufer containing the system metadata
-	size_t payload_sz;                 //<! the total size of the sys_meta_bufer
-	size_t payload_off;                //<! offset into the bufer to begin writing the next hunk of data
+	uint64_t payload_sz;                 //<! the total size of the sys_meta_bufer
+	uint64_t payload_off;                //<! offset into the bufer to begin writing the next hunk of data
 	uint8_t *break_buf;               //<! bufer to hold the break string between data segments
-	size_t break_sz;                   //<! size of the break string
-	size_t break_off;                  //<! offset into the bufer to begin writing the next hunk of data
+	uint64_t break_sz;                   //<! size of the break string
+	uint64_t break_off;                  //<! offset into the bufer to begin writing the next hunk of data
 	VortexFrame *cached_frame;         //<! used to collect frames until the complete MIME headers are available.
 	void *dgst_inst;                   //<! An instance of a digest_ctx for a particular record.
 	uint8_t *dgst;                     //<! A buffer to hold the final contents of a digest
@@ -134,45 +134,45 @@ struct jaln_sub_state_machine {
  * Frame handler for processing MIME headers.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Frame handler for processing application metadata.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_app_meta(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_app_meta(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Frame handler for processing system metadata.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_sys_meta(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_sys_meta(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Frame handler for processing the audit or log record payload.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_payload(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_payload(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Frame handler for processing the 'BREAK' string following the payload.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_payload_break(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_payload_break(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Frame handler for processing the 'BREAK' string following the system
  * metadata
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_sys_meta_break(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_sys_meta_break(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Frame handler for processing the 'BREAK' string following the application
  * metadata.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Frame handler for processing a journal record payload.
@@ -180,7 +180,7 @@ axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *fr
  * execute user supplied callbacks for each hunk of data recieved.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Helper function for processing the 'BREAK' strings
@@ -202,39 +202,39 @@ axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *f
  *  data in the frame and no more frames are expected.
  */
 axl_bool jaln_sub_wait_for_break_common(jaln_session *session, VortexFrame *frame,
-		size_t *frame_off, axl_bool more, axl_bool *break_valid);
+		uint64_t *frame_off, axl_bool more, axl_bool *break_valid);
 
 /**
  * Simple sanity check for when all bytes have been received. This will fail if
  * there are unconsumed bytes in the frame, or there are more frames expected
  * for this message.
  */
-axl_bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * The frame handler for finalizing a journal record
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * The frame handler for finalizing an audit record.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more);
+axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more);
 
 /**
  * The frame handler for finalizing an log record.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more);
+axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more);
 
 /**
  * The frame handler for the error state. Once entered, you can never exit, all
  * new frames will fail processing.
  * @see jaln_sub_state::frame_handler
  */
-axl_bool jaln_sub_state_error_state(jaln_session *session, VortexFrame *frame, size_t payload_offset, axl_bool more);
+axl_bool jaln_sub_state_error_state(jaln_session *session, VortexFrame *frame, uint64_t payload_offset, axl_bool more);
 
 /**
  * Helper function to reset the state machine once processing for a record is
@@ -280,8 +280,8 @@ axl_bool jaln_sub_state_append_frame(jaln_session *session, VortexFrame *frame);
  *  - axl_false if an error occured.
  *  - axl_true otherwise.
  */
-axl_bool jaln_copy_buffer(uint8_t *dst, const size_t dst_size, size_t *pdst_off,
-		const uint8_t *src, const size_t src_sz, size_t *psrc_off, axl_bool more);
+axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_size, uint64_t *pdst_off,
+		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, axl_bool more);
 
 /**
  * Utility to create a state machine suitable for processing journal records

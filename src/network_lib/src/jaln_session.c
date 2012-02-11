@@ -305,7 +305,7 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 	jaln_session_unref(sess);
 }
 
-enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess, char *serial_id, uint8_t *dgst_buf, size_t dgst_len)
+enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess, char *serial_id, uint8_t *dgst_buf, uint64_t dgst_len)
 {
 	if (!sess || !serial_id || !dgst_buf || (0 == dgst_len)) {
 		return JAL_E_INVAL;

@@ -98,7 +98,7 @@ VortexFrameType mock_vortex_frame_get_type_failure(__attribute__((unused)) Vorte
 
 axl_bool mock_frame_handler_failure(__attribute__((unused)) jaln_session *session, 
 				__attribute__((unused)) VortexFrame *frame, 
-				__attribute__((unused)) size_t payload_offset, 
+				__attribute__((unused)) uint64_t payload_offset, 
 				__attribute__((unused)) axl_bool flag_more)
 {
 	return axl_false;
@@ -166,7 +166,7 @@ axl_bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *
 
 axl_bool mock_frame_handler_success(__attribute__((unused)) jaln_session *session,
 				__attribute__((unused)) VortexFrame *frame,
-				__attribute__((unused)) size_t payload_offset,
+				__attribute__((unused)) uint64_t payload_offset,
 				__attribute__((unused)) axl_bool flag_more)
 {
 	return axl_true;

@@ -51,7 +51,7 @@
  *
  */
 enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
-		uint64_t offset, char **msg_out, size_t *msg_out_len);
+		uint64_t offset, char **msg_out, uint64_t *msg_out_len);
 
 /**
  * Helper function to create a sync msg
@@ -61,7 +61,7 @@ enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
  * @param[out] msg_len The length of the resulting message (including the NULL
  * terminator
  */
-enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, size_t *msg_len);
+enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, uint64_t *msg_len);
 
 /**
  * Helper function to create a 'subscribe' message
@@ -74,7 +74,7 @@ enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, size_t *
  * JAL_OK on success
  *
  */
-enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, size_t *msg_out_len);
+enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, uint64_t *msg_out_len);
 
 /**
  * Sanity check to make sure the MIME headers for a particular frame contain
@@ -94,7 +94,7 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
  * @param[in] di the digest info object.
  * @param return the length of the resulting string, or 0 if an error occurred.
  */
-size_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
+uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
 
 /**
  * Helper function to append a jaln_digest_info as line for a digest message.
@@ -129,7 +129,7 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di);
  *  - JAL_OK on success
  *  - JAL_E_INVAL on error
  */
-enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_t *msg_len);
+enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, uint64_t *msg_len);
 
 /**
  * Helper function to calculate the number of bytes needed to to convert a
@@ -138,7 +138,7 @@ enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_
  * @param[in] di the digest_resp_info object.
  * @param return the length of the resulting string, or 0 if an error occurred.
  */
-size_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di);
+uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di);
 
 /**
  * Helper function to append a jaln_digest_resp_info as line for a digest message.
@@ -168,7 +168,7 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
  *  - JAL_OK on success
  *  - JAL_E_INVAL on error
  */
-enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, size_t *msg_len);
+enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, uint64_t *msg_len);
 
 /**
  * Helper function to increment a counter when determining the required number of
@@ -178,9 +178,9 @@ enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **
  * @param[in] inc The increment to add
  * @return axl_true if the addition was performed
  * axl_false if the addition was NOT performed. The only time the addition will
- * not happen is when \p base is NULL, or *base + inc would overflow size_t.
+ * not happen is when \p base is NULL, or *base + inc would overflow uint64_t.
  */
-axl_bool jaln_safe_add_size(size_t *base, size_t inc);
+axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
 
 /*
  * Helper function to create an 'initialize' message
@@ -197,7 +197,7 @@ axl_bool jaln_safe_add_size(size_t *base, size_t inc);
  *
  */
 enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type type,
-		axlList *dgst_algs, axlList *xml_encodings, char **msg_out, size_t *msg_len_out);
+		axlList *dgst_algs, axlList *xml_encodings, char **msg_out, uint64_t *msg_len_out);
 
 /**
  * Create the headers for a ANS reply to a 'subscribe' message.
@@ -209,7 +209,7 @@ enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type 
  * @param[out] headers_len_out This will be set to the length of the headers
  * (not including the trailing '\0' character.
  */
-enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, size_t *headers_len_out);
+enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, uint64_t *headers_len_out);
 
 /**
  * Create an 'initialize-nack' message.
@@ -224,7 +224,7 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
  * @return JAL_OK on success of JAL_E_INVAL if there is something wrong with
  * the parameters.
  */
-enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, char **msg_out, size_t *msg_len_out);
+enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, char **msg_out, uint64_t *msg_len_out);
 
 /**
  * Create an 'initialize-ack' message.
@@ -239,6 +239,6 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
  * @return JAL_OK on success of JAL_E_INVAL if there is something wrong with
  * the parameters.
  */
-enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, size_t *msg_len_out);
+enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, uint64_t *msg_len_out);
 
 #endif // _JALN_MESSAGE_HELPERS_H_

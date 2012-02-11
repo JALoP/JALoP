@@ -315,7 +315,7 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 		goto err_out;
 	}
 
-	size_t msg_len = 0;
+	uint64_t msg_len = 0;
 	if ((JALN_RTYPE_JOURNAL == session->ch_info->type) && (0 < offset)) {
 		if (JAL_OK != jaln_create_journal_resume_msg(serial_id, offset, &msg, &msg_len)) {
 			goto err_out;
@@ -365,7 +365,7 @@ void jaln_subscriber_on_channel_create(int channel_num,
 	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, sess);
 	sess->ch_info->addr = strdup(vortex_connection_get_host(conn));
 	char *init_msg = NULL;
-	size_t init_msg_len = 0;
+	uint64_t init_msg_len = 0;
 
 	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(chan, 2);

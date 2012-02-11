@@ -150,7 +150,7 @@ enum jal_status jaln_publisher_handle_digest(jaln_session *sess, VortexChannel *
 	axlList *dgst_from_remote = NULL;
 	axlList *resps = NULL;
 	char *msg = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 
 	enum jal_status ret;
 	ret = jaln_process_digest(frame, &dgst_from_remote);
@@ -379,7 +379,7 @@ void jaln_publisher_on_channel_create(int channel_num,
 		axlPointer user_data)
 {
 	char *init_msg = NULL;
-	size_t init_msg_len = 0;
+	uint64_t init_msg_len = 0;
 	jaln_session *session = (jaln_session*)user_data;
 	if (!chan) {
 		// channel creation failed, cleanup the session and bail.

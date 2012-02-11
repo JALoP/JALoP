@@ -357,8 +357,8 @@ void test_create_journal_resume_msg_with_valid_parameters()
 	char *serial_id = "serialID";
 	uint64_t offset = 1;
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -376,8 +376,8 @@ void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly
 	char *serial_id = "1234562";
 	uint64_t offset = 47996;
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -395,8 +395,8 @@ void test_create_journal_resume_msg_with_invalid_parameters_serial_id_is_null()
 	char *serial_id = NULL;
 	uint64_t offset = 1;
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -412,8 +412,8 @@ void test_create_journal_resume_msg_with_invalid_parameters_msg_out_not_null()
 	char *serial_id = "serialid";
 	uint64_t offset = 1;
 	char *msg_out = "some text!";
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -428,7 +428,7 @@ void test_create_journal_resume_msg_with_invalid_parameters_msg_out_len_is_null(
 	char *serial_id = "serialid";
 	uint64_t offset = 1;
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
+	uint64_t *msg_out_len = NULL;
 
 	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
 	free(msg_out);
@@ -442,8 +442,8 @@ void test_create_journal_resume_msg_with_invalid_parameters_offset_is_zero()
 	char *serial_id = "serialid";
 	uint64_t offset = 0;
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -459,8 +459,8 @@ void test_create_journal_resume_msg_with_valid_parameters_offset_is_very_large()
 	char *serial_id = "1234562";
 	uint64_t offset = UINT64_MAX;
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -499,7 +499,7 @@ void test_create_journal_resume_msg_with_valid_parameters_offset_is_very_large()
 void test_create_sync_msg_works()
 {
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_OK, jaln_create_sync_msg(sid_1_str, &msg_out, &len));
 	assert_equals(strlen(EXPECTED_SYNC_MSG), len);
 	assert_equals(0, memcmp(EXPECTED_SYNC_MSG, msg_out, len));
@@ -509,7 +509,7 @@ void test_create_sync_msg_works()
 void test_create_sync_msg_does_not_crash_on_bad_input()
 {
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(NULL, &msg_out, &len));
 	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, NULL, &len));
 	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, &msg_out, NULL));
@@ -523,8 +523,8 @@ void test_create_subscribe_msg_with_valid_parameters()
 
 	char *serial_id = "serialID";
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -541,8 +541,8 @@ void test_create_subscribe_msg_with_valid_parameters_is_formatted_correctly()
 
 	char *serial_id = "1234562";
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -559,8 +559,8 @@ void test_create_subscribe_msg_with_invalid_parameters_serial_id_is_null()
 
 	char *serial_id = NULL;
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -575,8 +575,8 @@ void test_create_subscribe_msg_with_invalid_parameters_msg_out_not_null()
 
 	char *serial_id = "serialid";
 	char *msg_out = "some text!";
-	size_t *msg_out_len = NULL;
-	size_t len = sizeof(msg_out);
+	uint64_t *msg_out_len = NULL;
+	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
@@ -590,7 +590,7 @@ void test_create_subscribe_msg_with_invalid_parameters_msg_out_len_is_null()
 
 	char *serial_id = "serialid";
 	char *msg_out = NULL;
-	size_t *msg_out_len = NULL;
+	uint64_t *msg_out_len = NULL;
 
 	ret = jaln_create_subscribe_msg(serial_id, &msg_out, msg_out_len);
 	free(msg_out);
@@ -635,7 +635,7 @@ void test_check_ct_and_txf_encoding_are_valid_returns_failure_on_null()
 
 void test_digest_info_strlen_works_for_valid_input()
 {
-	size_t len = jaln_digest_info_strlen(di_1);
+	uint64_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(strlen(di_1_str), len);
 }
 
@@ -643,7 +643,7 @@ void test_digest_info_strlen_returns_0_when_missing_sid()
 {
 	free(di_1->serial_id);
 	di_1->serial_id = NULL;
-	size_t len = jaln_digest_info_strlen(di_1);
+	uint64_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(0, len);
 }
 
@@ -651,7 +651,7 @@ void test_digest_info_strlen_fails_for_zero_length_sid()
 {
 	free(di_1->serial_id);
 	di_1->serial_id = jal_strdup("");;
-	size_t len = jaln_digest_info_strlen(di_1);
+	uint64_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(0, len);
 }
 
@@ -659,14 +659,14 @@ void test_digest_info_strlen_returns_0_when_missing_digest()
 {
 	free(di_1->digest);
 	di_1->digest = NULL;
-	size_t len = jaln_digest_info_strlen(di_1);
+	uint64_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(0, len);
 }
 
 void test_digest_info_strlen_returns_0_when_digest_len_is_0()
 {
 	di_1->digest_len = 0;
-	size_t len = jaln_digest_info_strlen(di_1);
+	uint64_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(0, len);
 }
 
@@ -701,7 +701,7 @@ void test_digest_info_strcat_returns_null_for_bad_digest_info()
 void test_create_digest_message_works()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 	assert_equals(JAL_OK, jaln_create_digest_msg(dgst_list, &msg_out, &msg_out_len));
 
 	assert_equals(0, strcmp(EXPECTED_DGST_MSG, msg_out));
@@ -712,7 +712,7 @@ void test_create_digest_message_works()
 void test_create_returns_error_with_bad_input()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(NULL, &msg_out, &msg_out_len));
 
 	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(dgst_list, NULL, &msg_out_len));
@@ -727,7 +727,7 @@ void test_create_returns_error_with_bad_input()
 void test_create_returns_error_with_bad_digest_list()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 
 	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
 	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(empty_list, &msg_out, &msg_out_len));
@@ -738,7 +738,7 @@ void test_create_returns_error_with_bad_digest_list()
 void test_create_returns_error_with_bad_digest_info()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 
 	axl_list_append(dgst_list, NULL);
 	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(dgst_list, &msg_out, &msg_out_len));
@@ -751,21 +751,21 @@ void test_safe_add_does_not_crash()
 }
 void test_safe_add_prevents_overflow()
 {
-	size_t cnt = SIZE_MAX - 100;
+	uint64_t cnt = SIZE_MAX - 100;
 	assert_false(jaln_safe_add_size(&cnt, 101));
 	assert_equals(SIZE_MAX - 100, cnt);
 }
 
 void test_safe_add_works_at_size_max()
 {
-	size_t cnt = SIZE_MAX - 100;
+	uint64_t cnt = SIZE_MAX - 100;
 	assert_true(jaln_safe_add_size(&cnt, 100));
 	assert_equals(SIZE_MAX, cnt);
 }
 
 void test_safe_add_works()
 {
-	size_t cnt = 12;
+	uint64_t cnt = 12;
 	assert_true(jaln_safe_add_size(&cnt, 43));
 	assert_equals(12 + 43, cnt);
 }
@@ -773,7 +773,7 @@ void test_safe_add_works()
 void test_create_init_msg_works_for_publish()
 {
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_PUBLISHER, JALN_RTYPE_LOG,
 				dgst_algs, xml_encs, &msg_out, &len));
 	assert_equals(strlen(INIT_PUB_LOG), len);
@@ -784,7 +784,7 @@ void test_create_init_msg_works_for_publish()
 void test_create_init_msg_works_for_log()
 {
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
 				dgst_algs, xml_encs, &msg_out, &len));
 	assert_equals(strlen(INIT_SUB_LOG), len);
@@ -795,7 +795,7 @@ void test_create_init_msg_works_for_log()
 void test_create_init_msg_works_for_audit()
 {
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_AUDIT,
 				dgst_algs, xml_encs, &msg_out, &len));
 	assert_equals(strlen(INIT_SUB_AUDIT), len);
@@ -806,7 +806,7 @@ void test_create_init_msg_works_for_audit()
 void test_create_init_msg_works_for_journal_data()
 {
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_JOURNAL,
 				dgst_algs, xml_encs, &msg_out, &len));
 	assert_equals(strlen(INIT_SUB_JOURNAL), len);
@@ -818,7 +818,7 @@ void test_create_init_msg_works_with_no_enc()
 {
 	axlList *empty_list = axl_list_new(jaln_string_list_case_insensitive_func, free);
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
 				dgst_algs, empty_list, &msg_out, &len));
 	assert_equals(strlen(INIT_SUB_LOG_NO_ENC), len);
@@ -831,7 +831,7 @@ void test_create_init_msg_works_with_no_digests()
 {
 	axlList *empty_list = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
 				empty_list, xml_encs, &msg_out, &len));
 	assert_equals(strlen(INIT_SUB_LOG_NO_DGST), len);
@@ -845,7 +845,7 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 	enum jaln_role role = JALN_ROLE_SUBSCRIBER;
 	enum jaln_record_type type = JALN_RTYPE_JOURNAL;
 	char *msg_out = NULL;
-	size_t len;
+	uint64_t len;
 
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER - 1, type, dgst_algs,
 							xml_encs, &msg_out, &len));
@@ -868,7 +868,7 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()
 {
 	char *headers_out = NULL;
-	size_t headers_out_len = 0;
+	uint64_t headers_out_len = 0;
 	rec_info->type = 0;
 	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
 }
@@ -876,7 +876,7 @@ void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()
 void test_create_record_ans_rpy_headers_fails_for_bad_input()
 {
 	char *headers_out = NULL;
-	size_t headers_out_len = 0;
+	uint64_t headers_out_len = 0;
 	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(NULL, &headers_out, &headers_out_len));
 	assert_not_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, NULL, &headers_out_len));
 	headers_out = (char*) 0xbadf00d;
@@ -888,7 +888,7 @@ void test_create_record_ans_rpy_headers_fails_for_bad_input()
 void test_create_record_ans_rpy_headers_works_for_journal()
 {
 	char *headers_out = NULL;
-	size_t headers_out_len = 0;
+	uint64_t headers_out_len = 0;
 	rec_info->type = JALN_RTYPE_JOURNAL;
 	assert_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
 	assert_not_equals((void*)NULL, headers_out);
@@ -900,7 +900,7 @@ void test_create_record_ans_rpy_headers_works_for_journal()
 void test_create_record_ans_rpy_headers_works_for_audit()
 {
 	char *headers_out = NULL;
-	size_t headers_out_len = 0;
+	uint64_t headers_out_len = 0;
 	rec_info->type = JALN_RTYPE_AUDIT;
 	assert_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
 	assert_not_equals((void*)NULL, headers_out);
@@ -912,7 +912,7 @@ void test_create_record_ans_rpy_headers_works_for_audit()
 void test_create_record_ans_rpy_headers_works_for_log()
 {
 	char *headers_out = NULL;
-	size_t headers_out_len = 0;
+	uint64_t headers_out_len = 0;
 	rec_info->type = JALN_RTYPE_LOG;
 	assert_equals(JAL_OK, jaln_create_record_ans_rpy_headers(rec_info, &headers_out, &headers_out_len));
 	assert_not_equals((void*)NULL, headers_out);
@@ -923,7 +923,7 @@ void test_create_record_ans_rpy_headers_works_for_log()
 
 void test_digest_resp_info_strlen_works_for_valid_input()
 {
-	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	uint64_t len = jaln_digest_resp_info_strlen(dr_1);
 	assert_equals(strlen(dr_1_str), len);
 
 	len = jaln_digest_resp_info_strlen(dr_2);
@@ -937,7 +937,7 @@ void test_digest_resp_info_strlen_returns_0_when_missing_sid()
 {
 	free(dr_1->serial_id);
 	dr_1->serial_id = NULL;
-	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	uint64_t len = jaln_digest_resp_info_strlen(dr_1);
 	assert_equals(0, len);
 }
 
@@ -945,14 +945,14 @@ void test_digest_resp_info_strlen_returns_0_when_sid_is_emtpy()
 {
 	free(dr_1->serial_id);
 	dr_1->serial_id = jal_strdup("");
-	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	uint64_t len = jaln_digest_resp_info_strlen(dr_1);
 	assert_equals(0, len);
 }
 
 void test_digest_resp_info_strlen_returns_0_with_bad_status()
 {
 	dr_1->status = JALN_DIGEST_STATUS_UNKNOWN + 1;;
-	size_t len = jaln_digest_resp_info_strlen(dr_1);
+	uint64_t len = jaln_digest_resp_info_strlen(dr_1);
 	assert_equals(0, len);
 }
 
@@ -1001,7 +1001,7 @@ void test_digest_resp_info_strcat_returns_null_for_bad_digest_resp_info()
 void test_create_digest_resp_message_works()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 	assert_equals(JAL_OK, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
 
 	assert_equals(0, strcmp(EXPECTED_DGST_RESP_MSG, msg_out));
@@ -1012,7 +1012,7 @@ void test_create_digest_resp_message_works()
 void test_create_digest_resp_returns_error_with_bad_input()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(NULL, &msg_out, &msg_out_len));
 
 	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, NULL, &msg_out_len));
@@ -1027,7 +1027,7 @@ void test_create_digest_resp_returns_error_with_bad_input()
 void test_create_digest_resp_returns_error_with_bad_digest_list()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 
 	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id, jaln_axl_destroy_digest_resp_info);
 	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(empty_list, &msg_out, &msg_out_len));
@@ -1038,7 +1038,7 @@ void test_create_digest_resp_returns_error_with_bad_digest_list()
 void test_create_digest_resp_returns_error_with_bad_digest_info()
 {
 	char *msg_out = NULL;
-	size_t msg_out_len = 0;
+	uint64_t msg_out_len = 0;
 
 	axl_list_append(dgst_resp_list, NULL);
 	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
@@ -1047,7 +1047,7 @@ void test_create_digest_resp_returns_error_with_bad_digest_info()
 void test_create_init_nack_msg_works_for_unsupported_version()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_VERSION, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_NACK_UNSUPP_VERSION), len);
@@ -1058,7 +1058,7 @@ void test_create_init_nack_msg_works_for_unsupported_version()
 void test_create_init_nack_msg_works_for_unsupported_encoding()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_ENCODING, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_NACK_UNSUPP_ENC), len);
@@ -1069,7 +1069,7 @@ void test_create_init_nack_msg_works_for_unsupported_encoding()
 void test_create_init_nack_msg_works_for_unsupported_digest()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_DIGEST, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_NACK_UNSUPP_DIGEST), len);
@@ -1080,7 +1080,7 @@ void test_create_init_nack_msg_works_for_unsupported_digest()
 void test_create_init_nack_msg_works_for_unsupported_mode()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_MODE, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_NACK_UNSUPP_MODE), len);
@@ -1091,7 +1091,7 @@ void test_create_init_nack_msg_works_for_unsupported_mode()
 void test_create_init_nack_msg_works_with_all_errors()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	enum jaln_connect_error errs =
 			JALN_CE_UNSUPPORTED_VERSION   |
 			JALN_CE_UNSUPPORTED_ENCODING  |
@@ -1108,7 +1108,7 @@ void test_create_init_nack_msg_works_with_all_errors()
 void test_create_init_nack_msg_works_for_unauth_mode()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNAUTHORIZED_MODE, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_NACK_UNAUTH_MODE), len);
@@ -1119,14 +1119,14 @@ void test_create_init_nack_msg_works_for_unauth_mode()
 void test_create_init_nack_msg_fails_if_no_err_specified()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(JALN_CE_ACCEPT, &msg_out, &len));
 }
 
 void test_create_init_nack_msg_does_not_crash_on_bad_input()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_E_INVAL, jaln_create_init_nack_msg(1 << 5, &msg_out, &len));
 
 	msg_out = NULL;
@@ -1142,7 +1142,7 @@ void test_create_init_nack_msg_does_not_crash_on_bad_input()
 void test_create_init_ack_msg_works_for_valid_input()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 	assert_equals(JAL_OK, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_ACK), len);
@@ -1153,7 +1153,7 @@ void test_create_init_ack_msg_works_for_valid_input()
 void test_create_init_ack_msg_returns_error_on_bad_input()
 {
 	char *msg_out = NULL;
-	size_t len = 0;
+	uint64_t len = 0;
 
 	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(NULL, SOME_DIGEST, &msg_out, &len));
 

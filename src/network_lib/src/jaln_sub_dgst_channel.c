@@ -73,7 +73,7 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 		return;
 	}
 
-	size_t len;
+	uint64_t len;
 	char *msg = NULL;
 	WaitReplyData *wait_reply = NULL;
 	VortexFrame *frame = NULL;

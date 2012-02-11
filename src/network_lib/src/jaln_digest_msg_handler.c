@@ -86,11 +86,11 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 	for (idx = 0; idx < payload_sz; idx++) {
 		axl_bool looking_for_sid = axl_false;
 		if ('=' == payload[idx]) {
-			size_t len = idx - last_tok_idx;
+			uint64_t len = idx - last_tok_idx;
 			dgst_str = jal_malloc(len);
 			memcpy(dgst_str, payload + last_tok_idx, len);
 
-			size_t dgst_len = 0;
+			uint64_t dgst_len = 0;
 			if (JAL_OK != jaln_hex_str_to_bin_buf(dgst_str, len, &dgst_val, &dgst_len)) {
 				goto err_out;
 			}

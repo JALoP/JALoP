@@ -511,7 +511,7 @@ void jsub_message_complete(
 enum jal_status jsub_get_bytes(
 		const uint64_t offset,
 		uint8_t *const buffer,
-		uint32_t *size,
+		uint64_t *size,
 		__attribute__((unused))void *feeder_data)
 {
 	if (-1 == db_payload_fd){

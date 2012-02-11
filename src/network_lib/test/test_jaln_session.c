@@ -45,7 +45,7 @@ static struct jaln_sub_data *sub_data = NULL;
 static struct jaln_payload_feeder zeroed_feeder;
 static char *sid = NULL;
 static uint8_t *dgst_buf = NULL;
-static size_t dgst_len;
+static uint64_t dgst_len;
 static axl_bool cond_signal_called;
 
 void fake_cond_signal(__attribute__((unused)) VortexCond *cond)

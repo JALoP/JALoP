@@ -45,7 +45,7 @@
 #include "jaln_strings.h"
 
 enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
-		uint64_t offset, char **msg_out, size_t *msg_out_len)
+		uint64_t offset, char **msg_out, uint64_t *msg_out_len)
 {
 	static const char * const preamble = JALN_MIME_PREAMBLE JALN_MSG_JOURNAL_RESUME JALN_CRLF \
 		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE;
@@ -59,8 +59,8 @@ enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
 		return JAL_E_INVAL;
 	}
 	jal_asprintf(&offset_str, "%"PRIu64, offset);
-	size_t cnt = strlen(preamble) + 1;
-	size_t tmp = strlen(serial_id) + strlen(JALN_CRLF);
+	uint64_t cnt = strlen(preamble) + 1;
+	uint64_t tmp = strlen(serial_id) + strlen(JALN_CRLF);
 	if (cnt > (SIZE_MAX - tmp)) {
 		goto out;
 	}
@@ -93,7 +93,7 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg_out, size_t *msg_len)
+enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg_out, uint64_t *msg_len)
 {
 #define SYNC_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_SYNC JALN_CRLF \
 		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF
@@ -108,7 +108,7 @@ enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg_out, size
 	if (len <= 0) {
 		goto err_out;
 	}
-	*msg_len = (size_t) len;
+	*msg_len = (uint64_t) len;
 	*msg_out = msg;
 	ret = JAL_OK;
 
@@ -121,7 +121,7 @@ out:
 
 }
 
-enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, size_t *msg_out_len)
+enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, uint64_t *msg_out_len)
 {
 	static const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_SUBSCRIBE JALN_CRLF \
 		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE;
@@ -132,8 +132,8 @@ enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out,
 	if (!serial_id) {
 		goto out;
 	}
-	size_t cnt = strlen(preamble) + 1;
-	size_t tmp = strlen(serial_id) + 2 * strlen(JALN_CRLF);
+	uint64_t cnt = strlen(preamble) + 1;
+	uint64_t tmp = strlen(serial_id) + 2 * strlen(JALN_CRLF);
 	if (cnt > (SIZE_MAX - tmp)) {
 		goto out;
 	}
@@ -173,7 +173,7 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 	return axl_true;
 }
 
-size_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
+uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
 {
 	// output for each line should be:
 	// <dgst_as_hex>=<serial_id>CRLF
@@ -184,8 +184,8 @@ size_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
 		return 0;
 	}
 	// start with cnt == 3 ('=' CR LF)
-	size_t cnt = 3;
-	size_t tmp = strlen(di->serial_id);
+	uint64_t cnt = 3;
+	uint64_t tmp = strlen(di->serial_id);
 	if (cnt > (SIZE_MAX - tmp)) {
 		cnt = 0;
 		goto out;
@@ -217,7 +217,7 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di)
 	}
 	char *orig = dst;
 	dst = dst + strlen(dst);
-	size_t i;
+	uint64_t i;
 	for (i = 0; i < di->digest_len; i++) {
 		sprintf(dst + (i * 2), "%02x", di->digest[i]);
 	}
@@ -225,7 +225,7 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di)
 	return orig;
 }
 
-enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_t *msg_len)
+enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, uint64_t *msg_len)
 {
 #define DGST_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_DIGEST JALN_CRLF \
 		JALN_HDRS_COUNT JALN_COLON_SPACE "%d" JALN_CRLF JALN_CRLF
@@ -234,8 +234,8 @@ enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, size_
 	}
 	enum jal_status ret = JAL_E_INVAL;
 	int dgst_cnt = axl_list_length(dgst_list);
-	size_t len = 1;
-	size_t tmp = 0;
+	uint64_t len = 1;
+	uint64_t tmp = 0;
 	char *msg = NULL;
 	axlListCursor *iter = NULL;
 
@@ -291,7 +291,7 @@ out:
 
 }
 
-axl_bool jaln_safe_add_size(size_t *base, size_t inc)
+axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 {
 	if (!base || (*base > (SIZE_MAX - inc))) {
 		return axl_false;
@@ -301,7 +301,7 @@ axl_bool jaln_safe_add_size(size_t *base, size_t inc)
 }
 
 enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type type,
-		axlList *dgst_list, axlList *enc_list, char **msg_out, size_t *msg_len_out)
+		axlList *dgst_list, axlList *enc_list, char **msg_out, uint64_t *msg_len_out)
 {
 	if (!dgst_list || !enc_list ||
 			!msg_out || *msg_out || !msg_len_out) {
@@ -313,7 +313,7 @@ enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type 
 	enum jal_status ret = JAL_E_INVAL;
 
 	// +1 for the NULL terminator
-	size_t char_cnt = strlen(preamble) + 1;
+	uint64_t char_cnt = strlen(preamble) + 1;
 	char *role_str;
 	switch (role) {
 		case JALN_ROLE_SUBSCRIBER:
@@ -461,7 +461,7 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, size_t *headers_len_out)
+enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, uint64_t *headers_len_out)
 {
 	if (!rec_info || !headers_out || *headers_out || !headers_len_out) {
 		return JAL_E_INVAL;;
@@ -501,7 +501,7 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
 	return JAL_OK;
 }
 
-size_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di)
+uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di)
 {
 	// output for each line should be:
 	// <dgst_as_hex>=<serial_id>CRLF
@@ -512,7 +512,7 @@ size_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di)
 		return 0;
 	}
 	// start with cnt == 2 (CR LF)
-	size_t cnt = 2;
+	uint64_t cnt = 2;
 	if (!jaln_safe_add_size(&cnt, strlen(di->serial_id))) {
 		cnt = 0;
 		goto out;
@@ -569,7 +569,7 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
 	return dst;
 }
 
-enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, size_t *msg_len)
+enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, uint64_t *msg_len)
 {
 #define DGST_RESP_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_DIGEST_RESP JALN_CRLF \
 		JALN_HDRS_COUNT JALN_COLON_SPACE "%d" JALN_CRLF JALN_CRLF
@@ -578,8 +578,8 @@ enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **
 	}
 	enum jal_status ret = JAL_E_INVAL;
 	int dgst_cnt = axl_list_length(dgst_resp_list);
-	size_t len = 1;
-	size_t tmp = 0;
+	uint64_t len = 1;
+	uint64_t tmp = 0;
 	char *msg = NULL;
 	axlListCursor *iter = NULL;
 
@@ -634,14 +634,14 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, char **msg_out, size_t *msg_len_out)
+enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, char **msg_out, uint64_t *msg_len_out)
 {
 	if (err_codes == JALN_CE_ACCEPT || !msg_out || *msg_out || !msg_len_out) {
 		return JAL_E_INVAL;
 	}
 	enum jal_status ret = JAL_E_INVAL;
 	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT_NACK JALN_CRLF;
-	size_t msg_size = strlen(preamble) + 1;
+	uint64_t msg_size = strlen(preamble) + 1;
 	char *msg = NULL;
 	axl_bool errors_listed = axl_false;
 	if (err_codes & JALN_CE_UNSUPPORTED_VERSION) {
@@ -712,7 +712,7 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, size_t *msg_len_out)
+enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, uint64_t *msg_len_out)
 {
 	if (!encoding || !digest || !msg_out || *msg_out || !msg_len_out) {
 		return JAL_E_INVAL;

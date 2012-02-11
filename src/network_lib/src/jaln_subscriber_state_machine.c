@@ -36,7 +36,7 @@
 #include "jaln_subscriber_state_machine.h"
 
 axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
-		__attribute__((unused)) size_t frame_off, axl_bool more)
+		__attribute__((unused)) uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->ch_info || !session->dgst || !session->sub_data->sm || !frame) {
 		goto err_out;
@@ -86,18 +86,18 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 
 	session->sub_data->sm->serial_id = jal_strdup(sid);
 
-	size_t sys_meta_size;
-	int err = jaln_ascii_to_size_t(sys_meta_sz_str, &sys_meta_size);
+	uint64_t sys_meta_size;
+	int err = jaln_ascii_to_uint64(sys_meta_sz_str, &sys_meta_size);
 	session->sub_data->sm->sys_meta_sz = sys_meta_size;
 
 	if (!err) {
 		goto err_out;
 	}
-	err = jaln_ascii_to_size_t(app_meta_sz_str, &session->sub_data->sm->app_meta_sz);
+	err = jaln_ascii_to_uint64(app_meta_sz_str, &session->sub_data->sm->app_meta_sz);
 	if (!err) {
 		goto err_out;
 	}
-	err = jaln_ascii_to_size_t(payload_sz_str, &session->sub_data->sm->payload_sz);
+	err = jaln_ascii_to_uint64(payload_sz_str, &session->sub_data->sm->payload_sz);
 	if (!err) {
 		goto err_out;
 	}
@@ -135,8 +135,8 @@ err_out:
 	return axl_false;
 }
 
-axl_bool jaln_sub_data_segment_common(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more,
-		uint8_t* dst_buffer, size_t dst_size, size_t *dst_off, struct jaln_sub_state *next_state)
+axl_bool jaln_sub_data_segment_common(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more,
+		uint8_t* dst_buffer, uint64_t dst_size, uint64_t *dst_off, struct jaln_sub_state *next_state)
 {
 	if (!session || !session->sub_data->sm || !frame || !dst_buffer || !dst_off || !next_state) {
 		goto err_out;
@@ -160,7 +160,7 @@ err_out:
 	return axl_false;
 }
 
-axl_bool jaln_sub_wait_for_payload(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_wait_for_payload(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->sub_data->sm) {
 		return axl_false;
@@ -170,7 +170,7 @@ axl_bool jaln_sub_wait_for_payload(jaln_session *session, VortexFrame *frame, si
 			session->sub_data->sm->wait_for_payload_break);
 }
 
-axl_bool jaln_sub_wait_for_sys_meta(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_wait_for_sys_meta(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->sub_data->sm) {
 		return axl_false;
@@ -179,7 +179,7 @@ axl_bool jaln_sub_wait_for_sys_meta(jaln_session *session, VortexFrame *frame, s
 			session->sub_data->sm->sys_meta_buf, session->sub_data->sm->sys_meta_sz, &session->sub_data->sm->sys_meta_off,
 			session->sub_data->sm->wait_for_sys_meta_break);
 }
-axl_bool jaln_sub_wait_for_app_meta(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_wait_for_app_meta(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->sub_data->sm) {
 		return axl_false;
@@ -189,14 +189,14 @@ axl_bool jaln_sub_wait_for_app_meta(jaln_session *session, VortexFrame *frame, s
 			session->sub_data->sm->wait_for_app_meta_break);
 }
 
-axl_bool jaln_copy_buffer(uint8_t *dst, const size_t dst_sz, size_t *pdst_off,
-		const uint8_t *src, const size_t src_sz, size_t *psrc_off, axl_bool more)
+axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_off,
+		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, axl_bool more)
 {
 	if (!dst || !pdst_off || !src || !psrc_off) {
 		return axl_false;
 	}
-	size_t dst_off = *pdst_off;
-	size_t src_off = *psrc_off;
+	uint64_t dst_off = *pdst_off;
+	uint64_t src_off = *psrc_off;
 	dst += dst_off;
 	src += src_off;
 
@@ -205,8 +205,8 @@ axl_bool jaln_copy_buffer(uint8_t *dst, const size_t dst_sz, size_t *pdst_off,
 		return axl_false;
 	}
 
-	size_t dst_bytes_left = dst_sz - dst_off;
-	size_t src_bytes_left = src_sz - src_off;
+	uint64_t dst_bytes_left = dst_sz - dst_off;
+	uint64_t src_bytes_left = src_sz - src_off;
 
 	int need_more_frames = src_bytes_left < dst_bytes_left;
 
@@ -214,14 +214,14 @@ axl_bool jaln_copy_buffer(uint8_t *dst, const size_t dst_sz, size_t *pdst_off,
 		return axl_false;
 	}
 
-	size_t bytes_to_copy = need_more_frames ? src_bytes_left : dst_bytes_left;
+	uint64_t bytes_to_copy = need_more_frames ? src_bytes_left : dst_bytes_left;
 	memcpy(dst, src, bytes_to_copy);
 	*psrc_off = src_off + bytes_to_copy;
 	*pdst_off = dst_off + bytes_to_copy;
 	return axl_true;
 }
 
-axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->dgst || !session->sub_data->sm || !session->sub_data->sm->dgst_inst || !session->jaln_ctx ||
 			!session->jaln_ctx->sub_callbacks || !frame) {
@@ -236,12 +236,12 @@ axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *f
 	if (payload_sz < 0) {
 		goto err_out;
 	}
-	if (frame_off > (size_t) payload_sz) {
+	if (frame_off > (uint64_t) payload_sz) {
 		goto err_out;
 	}
-	size_t bytes_avail = payload_sz - frame_off;
-	uint32_t bytes_needed = session->sub_data->sm->payload_sz  - session->sub_data->sm->payload_off;
-	uint32_t bytes_to_send = bytes_avail < bytes_needed ? bytes_avail : bytes_needed;
+	uint64_t bytes_avail = payload_sz - frame_off;
+	uint64_t bytes_needed = session->sub_data->sm->payload_sz  - session->sub_data->sm->payload_off;
+	uint64_t bytes_to_send = bytes_avail < bytes_needed ? bytes_avail : bytes_needed;
 
 	int more_expected = bytes_to_send < bytes_needed;
 	if (more_expected && !more) {
@@ -271,7 +271,7 @@ err_out:
 }
 
 axl_bool jaln_sub_wait_for_break_common(jaln_session *session, VortexFrame *frame,
-		size_t *frame_off, axl_bool more, axl_bool *break_valid)
+		uint64_t *frame_off, axl_bool more, axl_bool *break_valid)
 {
 	if (!session || !session->sub_data->sm || !frame || !frame_off || !break_valid) {
 		return axl_false;
@@ -303,7 +303,7 @@ axl_bool jaln_sub_wait_for_break_common(jaln_session *session, VortexFrame *fram
 
 axl_bool jaln_sub_state_error_state(__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) VortexFrame *frame,
-		__attribute__((unused)) size_t frame_off,
+		__attribute__((unused)) uint64_t frame_off,
 		__attribute__((unused)) axl_bool more)
 {
 	return axl_false;
@@ -327,7 +327,7 @@ axl_bool jaln_sub_state_append_frame(jaln_session *session, VortexFrame *frame)
 	session->sub_data->sm->cached_frame = new_frame;
 	return axl_true;
 }
-axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->dgst || !session->jaln_ctx ||
 			!session->jaln_ctx->sub_callbacks || !frame) {
@@ -362,7 +362,7 @@ err_out:
 	return axl_false;
 }
 
-axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->dgst || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks || !session->sub_data->sm) {
 		goto err_out;
@@ -393,7 +393,7 @@ err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
 	return axl_false;
 }
-axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->dgst || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks || !session->sub_data->sm) {
 		goto err_out;
@@ -418,7 +418,7 @@ err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
 	return axl_false;
 }
-axl_bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->sub_data->sm || !frame) {
 		return axl_false;
@@ -430,7 +430,7 @@ axl_bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *
 	if (payload_sz < 0) {
 		return axl_false;
 	}
-	if (frame_off != (size_t) payload_sz) {
+	if (frame_off != (uint64_t) payload_sz) {
 		// failed to consume the entire frame payload...
 		return axl_false;
 	}
@@ -439,7 +439,7 @@ axl_bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *
 	}
 	return axl_true;
 }
-axl_bool jaln_sub_wait_for_payload_break(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_wait_for_payload_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->sub_data->sm || !frame) {
 		goto err_out;
@@ -457,7 +457,7 @@ err_out:
 	return axl_false;
 }
 
-axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->dgst || !session->ch_info || !session->sub_data->sm || !session->sub_data->sm->dgst_inst) {
 		goto err_out;
@@ -497,7 +497,7 @@ err_out:
 	return axl_false;
 }
 
-axl_bool jaln_sub_wait_for_sys_meta_break(jaln_session *session, VortexFrame *frame, size_t frame_off, axl_bool more)
+axl_bool jaln_sub_wait_for_sys_meta_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->sub_data->sm || !frame) {
 		goto err_out;

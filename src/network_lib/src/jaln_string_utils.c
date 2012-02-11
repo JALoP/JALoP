@@ -75,7 +75,7 @@ out:
 	return ret;
 }
 
-axl_bool jaln_ascii_to_size_t(const char *str, size_t *out)
+axl_bool jaln_ascii_to_uint64_t(const char *str, uint64_t *out)
 {
 	uint64_t tmp_out;
 	if (!jaln_ascii_to_uint64(str, &tmp_out)) {
@@ -85,7 +85,7 @@ axl_bool jaln_ascii_to_size_t(const char *str, size_t *out)
 		// overflow...
 		return axl_false;
 	}
-	*out = (size_t) tmp_out;
+	*out = (uint64_t) tmp_out;
 	return axl_true;
 }
 
@@ -157,13 +157,13 @@ enum jal_status jaln_hex_to_bin(char c, uint8_t *out)
 	return JAL_OK;
 }
 
-enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, size_t hex_buf_len, uint8_t **dgst_buf_out, size_t *dgst_buf_len_out)
+enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, uint64_t hex_buf_len, uint8_t **dgst_buf_out, uint64_t *dgst_buf_len_out)
 {
 	if (!hex_buf || (0 == hex_buf_len) || !dgst_buf_out || *dgst_buf_out || !dgst_buf_len_out) {
 		return JAL_E_INVAL;
 	}
 	int res_off = 0;
-	size_t res_len = hex_buf_len / 2;
+	uint64_t res_len = hex_buf_len / 2;
 	unsigned src_mod_check = 0;
 	// Need to adjust the offset/length if the input isn't a multiple of 2
 	if (hex_buf_len % 2) {
@@ -172,7 +172,7 @@ enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, size_t hex_buf_len,
 	}
 	
 	uint8_t *result = jal_calloc(res_len, sizeof(*result));
-	for (size_t src_off = 0; src_off < hex_buf_len; src_off++) {
+	for (uint64_t src_off = 0; src_off < hex_buf_len; src_off++) {
 		uint8_t val;
 		if (JAL_OK != jaln_hex_to_bin(hex_buf[src_off], &val)) {
 			goto err_out;

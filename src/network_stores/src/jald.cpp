@@ -145,7 +145,7 @@ static void print_record_types(enum jaln_record_type rtype);
 static void print_config(void);
 static enum jald_status set_global_config(config_t *config);
 static enum jald_status handle_allow_mask(config_setting_t *parent, config_setting_t *list, const char *cfg_key, enum jaln_record_type *mask);
-static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint32_t *size, void *feeder_data);
+static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data);
 
 enum jaln_connect_error on_connect_request(
 		const struct jaln_connect_request *req,
@@ -1197,7 +1197,7 @@ void teardown_db_layer(void)
 	return;
 }
 
-static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint32_t *size, void *feeder_data)
+static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data)
 {
 #define ERRNO_STR_LEN 128
 	off64_t err;
