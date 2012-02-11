@@ -237,8 +237,6 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	pd->finished_payload = axl_false;
 	pd->finished_payload_break = axl_false;
 
-	jaln_pub_feeder_calculate_size_for_vortex(sess);
-
 	if (pd->dgst_inst) {
 		sess->dgst->destroy(pd->dgst_inst);
 	}
@@ -322,6 +320,8 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t jour
 	pd->sys_meta_sz = rec_info->sys_meta_len;
 	pd->app_meta_sz = rec_info->app_meta_len;
 	pd->payload_sz = rec_info->payload_len;
+
+	jaln_pub_feeder_calculate_size_for_vortex(sess);
 
 	pd->serial_id = jal_strdup(rec_info->serial_id);
 
