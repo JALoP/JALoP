@@ -197,6 +197,8 @@ this is want you want, this is OK, re-run scons with the \
 
 		debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
 		debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
+
+	debug_env.ParseConfig('getconf LFS_CFLAGS', function=addCFLAGS)
 else:
 	for key, _ in packages_at_least.items():
 		debug_env[key + "_cflags"] = ""
