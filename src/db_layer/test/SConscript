@@ -24,6 +24,8 @@ tests.append(env.TestDeptTest('test_jaldb_utils.c',
 	other_sources=[lib_common, test_utils], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
 	other_sources=[test_utils, lib_common, xmlDocStorageObj, eventWriterObj, serialIdObj, utilsObj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_purge.cpp',
+	other_sources=[test_utils, lib_common, xmlDocStorageObj, contextObj, eventWriterObj, serialIdObj, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_dom_to_event_writer.cpp',
 	other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj, serialIdObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
