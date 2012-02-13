@@ -52,6 +52,7 @@ packages_at_least = {
 	'vortex'   	: ['vortex-1.1', '1.1.9'],
 	'vortex_tls'	: ['vortex-tls-1.1', '1.1.9'],
 	'xerces'   	: ['xerces-c', '3.1.1'],
+	'libxml2'	: ['libxml-2.0', '2.6.26'],
 	}
 
 # flags are shared by both debug and release builds
