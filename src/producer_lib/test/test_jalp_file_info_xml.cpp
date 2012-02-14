@@ -47,6 +47,10 @@ extern "C" {
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 
+// Required for outputing a Xerces DOMDocument
+// to a standard output stream (Also see: XMLFormatTarget)
+#include <xercesc/framework/StdOutFormatTarget.hpp>
+
 XERCES_CPP_NAMESPACE_USE
 
 static DOMDocument *doc = NULL;
