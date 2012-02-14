@@ -50,6 +50,7 @@ digestObj = env.SharedObject(os.path.join('..', 'src', 'jalp_digest.c'))
 sendHelperObj = env.SharedObject(os.path.join('..', 'src', 'jalp_send_helper.cpp'))
 paramXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_param_xml.c'))
 structDataXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_structured_data_xml.c'))
+severityXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_log_severity_xml.c'))
 
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity.c',
 	other_sources=[lib_common])[0].abspath)
@@ -173,6 +174,8 @@ tests.append(testEnv.TestDeptTest('test_jalpx_param_xml.c',
 tests.append(testEnv.TestDeptTest('test_jalpx_structured_data_xml.c',
 	other_sources=[paramObj, jalopInitObj, test_utils, paramXmlObj2, structDataObj, lib_common])[0].abspath)
 
+tests.append(testEnv.TestDeptTest('test_jalpx_log_severity_xml.c',
+	other_sources=[paramObj, logSeverityObj, jalopInitObj, test_utils, lib_common])[0].abspath)
 
 tests.insert(0, testEnv.TestDeptTest('test_jalp_connection.c', [contextObj, lib_common], useProxies=True)[0].abspath)
 
