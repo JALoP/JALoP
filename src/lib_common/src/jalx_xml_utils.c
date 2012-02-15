@@ -148,7 +148,8 @@ enum jal_status jalx_create_base64_element(
 	//DOMElement *elm = doc->createElementNS(namespace_uri, elm_name);
 	//elm->setTextContent(xml_base64_val);
 	xmlNodePtr elm = xmlNewDocNode(doc, NULL, elm_name, NULL);
-	xmlNewNs(elm, namespace_uri, NULL);
+	xmlNsPtr ns = xmlNewNs(elm, namespace_uri, NULL);
+	xmlSetNs(elm, ns);
 	xmlNodeAddContent(elm, xml_base64_val);
 
 	free(base64_val);
