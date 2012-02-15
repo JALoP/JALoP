@@ -11,6 +11,9 @@ lib_common_env.MergeFlags(env['xerces_ldflags'])
 lib_common_env.MergeFlags(env['libuuid_ldflags'])
 lib_common_env.MergeFlags(env['santuario_ldflags'])
 
+lib_common_env.MergeFlags(env['libxml2_cflags'])
+lib_common_env.MergeFlags(env['libxml2_ldflags'])
+
 SConscript('include/SConscript', exports={'env':lib_common_env})
 lib_common = SConscript('src/SConscript', exports={'env':lib_common_env})
 SConscript('test/SConscript', exports={'env':lib_common_env, 'all_tests':all_tests, 'test_utils':test_utils})
