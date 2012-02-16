@@ -75,5 +75,12 @@ enum jal_status jalx_create_base64_element(
 		const xmlChar *elm_name,
 		xmlNodePtr *new_elem);
 
+/**
+ * Helper function to create a properly formatted XML DateTime timestamp.
+ *
+ * @return formatted timestamp string
+ */
+char *jalx_get_timestamp();
+
 #endif // _JALX_XML_UITILS_H_
 
