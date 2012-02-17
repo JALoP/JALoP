@@ -5,9 +5,9 @@ Import('*')
 
 utilsEnv = env.Clone()
 
+utilsEnv.MergeFlags(utilsEnv['lfs_cflags'])
 utilsEnv.MergeFlags(utilsEnv['libconfig_cflags'])
 utilsEnv.MergeFlags(utilsEnv['libconfig_ldflags'])
-
 
 subdirs = """
 	    jalp_test

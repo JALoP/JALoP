@@ -1,6 +1,7 @@
 Import('*')
 producer_lib_env = env.Clone()
 
+producer_lib_env.MergeFlags(producer_lib_env['lfs_cflags'])
 producer_lib_env.MergeFlags(producer_lib_env['openssl_cflags'])
 producer_lib_env.MergeFlags(producer_lib_env['xerces_cflags'])
 producer_lib_env.MergeFlags(producer_lib_env['openssl_ldflags'])

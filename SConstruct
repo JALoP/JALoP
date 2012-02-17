@@ -197,12 +197,15 @@ this is want you want, this is OK, re-run scons with the \
 
 		debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
 		debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
-
-	debug_env.ParseConfig('getconf LFS_CFLAGS', function=addCFLAGS)
 else:
 	for key, _ in packages_at_least.items():
 		debug_env[key + "_cflags"] = ""
 		debug_env[key + "_ldflags"] = ""
+
+def add_lfs_cflags(debug_env, cmd, unique=1):
+	debug_env["lfs_cflags"] = cmd.split()
+
+debug_env.ParseConfig('getconf LFS_CFLAGS', function=add_lfs_cflags)
 
 # add linker flags for santuario
 debug_env["santuario_ldflags"] = "-lxml-security-c"

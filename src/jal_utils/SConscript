@@ -2,6 +2,8 @@ Import('*')
 
 jal_utils_env = env.Clone()
 
+jal_utils_env.MergeFlags(jal_utils_env['lfs_cflags'])
+
 jal_utils = SConscript('src/SConscript', exports={'env':jal_utils_env})
 
 Return("jal_utils")

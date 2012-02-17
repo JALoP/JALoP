@@ -116,6 +116,7 @@ struct jaln_connection *jaln_subscribe(
 		return NULL;
 	}
 
+
 	vortex_mutex_lock(&ctx->lock);
 	if (ctx->is_connected) {
 		vortex_mutex_unlock(&ctx->lock);

@@ -6,6 +6,7 @@ env = env.Clone()
 env.MergeFlags({'CPPPATH':('#src/jal_utils/src:#src/db_layer/src:#src/lib_common/include:' +
 	'#src/lib_common/src:#src/network_lib/include').split(':')})
 
+env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags(env['libconfig_cflags'])
 env.MergeFlags(env['libconfig_ldflags'])
 env.MergeFlags(env['openssl_cflags'])
