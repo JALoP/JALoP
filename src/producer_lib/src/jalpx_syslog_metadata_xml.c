@@ -61,7 +61,7 @@ enum jal_status jalpx_syslog_metadata_to_elem(
 		xmlDocPtr doc,
 		xmlNodePtr *new_elem)
 {
-	if (!syslog || !ctx || !doc || *new_elem) {
+	if (!syslog || !ctx || !doc || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 	enum jal_status ret;
@@ -69,23 +69,21 @@ enum jal_status jalpx_syslog_metadata_to_elem(
 	xmlNodePtr syslog_element = xmlNewDocNode(doc, NULL,
 						(xmlChar *)JALP_XML_SYSLOG,
 						NULL);
-	xmlNewNs(syslog_element, namespace_uri, NULL);
+	xmlNsPtr ns = xmlNewNs(syslog_element, namespace_uri, NULL);
+	xmlSetNs(syslog_element, ns);
 	char *proc_id_str = NULL;
 	pid_t pid = getpid();
 	jal_asprintf(&proc_id_str, "%" PRIdMAX, (intmax_t)pid);
 	xmlChar *xml_procid = (xmlChar *)proc_id_str;
 	xmlSetProp(syslog_element, (xmlChar *)JALP_XML_PROCESS_ID, xml_procid);
 	free(proc_id_str);
-	//XMLString::release(&xml_procid);
 	if (ctx->hostname) {
 		xmlChar *xml_hostname = (xmlChar *)ctx->hostname;
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_HOSTNAME, xml_hostname);
-		//XMLString::release(&xml_hostname);
 	}
 	if (ctx->app_name) {
 		xmlChar *xml_appname = (xmlChar *)ctx->app_name;
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_APPLICATION_NAME, xml_appname);
-		//XMLString::release(&xml_appname);
 	}
 	if ((syslog->facility >= 0) && (syslog->facility <= 23)) {
 		char *facility = NULL;
@@ -93,7 +91,6 @@ enum jal_status jalpx_syslog_metadata_to_elem(
 		xmlChar *xml_facility = (xmlChar *)facility;
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_FACILITY, xml_facility);
 		free(facility);
-		//XMLString::release(&xml_facility);
 	} else if (syslog->facility < -1 || syslog->facility > 23) {
 		ret = JAL_E_INVAL_SYSLOG_METADATA;
 		goto cleanup;
@@ -104,49 +101,33 @@ enum jal_status jalpx_syslog_metadata_to_elem(
 		xmlChar *xml_severity = (xmlChar *)severity;
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_SEVERITY, xml_severity);
 		free(severity);
-		//XMLString::release(&xml_severity);
 	} else if ((syslog->severity < -1) || (syslog->severity > 7)) {
 		ret = JAL_E_INVAL_SYSLOG_METADATA;
 		goto cleanup;
 	}
 	if (syslog->timestamp) {
 		xmlChar *xml_timestamp = (xmlChar *)syslog->timestamp;
-		//try {
-		//	XMLDateTime dt(xml_timestamp);
-		//	dt.parseDateTime();
-		//} catch(...) {
-		//	XMLString::release(&xml_timestamp);
-		//	ret = JAL_E_INVAL_TIMESTAMP;
-		//	goto cleanup;
-		//}
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_TIMESTAMP, xml_timestamp);
-		//XMLString::release(&xml_timestamp);
 	} else {
 		char *ftime = jalx_get_timestamp();
-		xmlChar *xml_timestamp = (xmlChar *)time;
+		xmlChar *xml_timestamp = (xmlChar *)ftime;
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_TIMESTAMP, xml_timestamp);
 		free(ftime);
-		//XMLString::release(&xml_timestamp);
 	}
 	if (syslog->message_id) {
 		xmlChar *xml_message_id = (xmlChar *)syslog->message_id;
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_MESSAGE_ID, xml_message_id);
-		//XMLString::release(&xml_message_id);
 	}
 	if (syslog->entry) {
-		//DOMElement *tmp = doc->createElementNS(namespace_uri, JALP_XML_ENTRY);
 		xmlNodePtr tmp = xmlNewDocNode(doc, NULL,
 						(xmlChar *)JALP_XML_ENTRY,
 						NULL);
-		xmlNewNs(tmp, namespace_uri, NULL);
-		//syslog_element->appendChild(tmp);
+		xmlNsPtr tmp_ns = xmlNewNs(tmp, namespace_uri, NULL);
+		xmlSetNs(tmp, tmp_ns);
 		xmlAddChild(syslog_element, tmp);
 		xmlChar *xml_entry = (xmlChar *)syslog->entry;
-		//tmp->setTextContent(xml_entry);
 		xmlNodeAddContent(tmp, xml_entry);
-		//XMLString::release(&xml_entry);
 	}
-	//XMLString::release(&namespace_uri);
 	if (syslog->sd_head) {
 		struct jalp_structured_data *curr = syslog->sd_head;
 		while (curr) {
@@ -155,7 +136,6 @@ enum jal_status jalpx_syslog_metadata_to_elem(
 			if (ret != JAL_OK) {
 				goto cleanup;
 			}
-			//syslog_element->appendChild(tmp);
 			xmlAddChild(syslog_element, tmp);
 			curr = curr->next;
 		}
@@ -164,9 +144,7 @@ enum jal_status jalpx_syslog_metadata_to_elem(
 	return JAL_OK;
 
 cleanup:
-	//XMLString::release(&namespace_uri);
 	if (syslog_element) {
-		//syslog_element->release();
 		xmlFreeNode(syslog_element);
 	}
 	return ret;
