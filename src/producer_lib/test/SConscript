@@ -55,6 +55,7 @@ contentTypeXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_content_t
 fileInfoXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_file_info_xml.c'))
 transformXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_transform_xml.c'))
 syslogMetaXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_syslog_metadata_xml.c'))
+stackFrameXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_stack_frame_xml.c'))
 
 
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity.c',
@@ -193,6 +194,15 @@ tests.append(testEnv.TestDeptTest('test_jalpx_transform_xml.c',
 tests.append(testEnv.TestDeptTest('test_jalpx_syslog_metadata_xml.c',
 	other_sources=[paramObj, jalopInitObj, test_utils, paramXmlObj2,
 	structDataXmlObj2, structDataObj, contextObj, syslogMetaObj, lib_common])[0].abspath)
+
+tests.append(testEnv.TestDeptTest('test_jalpx_content_type_xml.c',
+	other_sources=[paramObj, jalopInitObj, test_utils, paramXmlObj2, contentTypeObj, lib_common])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalpx_file_info_xml.c',
+	other_sources=[jalopInitObj, test_utils, lib_common, contentTypeXmlObj2,
+	paramXmlObj2, fileInfoObj, contentTypeObj, paramObj])[0].abspath)
+
+tests.append(testEnv.TestDeptTest('test_jalpx_stack_frame_xml.c',
+	other_sources=[stackFrameObj, jalopInitObj, test_utils, lib_common])[0].abspath)
 
 tests.insert(0, testEnv.TestDeptTest('test_jalp_connection.c', [contextObj, lib_common], useProxies=True)[0].abspath)
 
