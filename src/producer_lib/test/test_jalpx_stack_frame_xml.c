@@ -29,9 +29,11 @@
 #include <test-dept.h>
 
 #include <stdint.h>
+#include <limits.h>
 #include <jalop/jal_status.h>
 #include <jalop/jalp_context.h>
 #include <jalop/jalp_logger_metadata.h>
+#include "xml2_test_utils.h"
 #include "jalpx_stack_frame_xml.h"
 #include "jalp_stack_frame_internal.h"
 #include "jal_alloc.h"
@@ -81,6 +83,48 @@ void teardown()
 	jalp_shutdown();
 }
 
+void test_stack_frame_to_elem_returns_error_on_invalid_input()
+{
+	xmlNodePtr new_elem2 = (xmlNodePtr) 0xbadf00d;
+
+	assert_equals(JAL_E_XML_CONVERSION,
+			jalpx_stack_frame_to_elem(NULL, doc, &new_elem));
+	assert_equals(JAL_E_XML_CONVERSION,
+			jalpx_stack_frame_to_elem(frame, NULL, &new_elem));
+	assert_equals(JAL_E_XML_CONVERSION,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem2));
+}
+
+void test_stack_frame_to_elem_returns_valid_element_with_single_node_list()
+{
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_equals(JALP_TEST_SF_LINE_NUMBER, atoi((const char *)temp->children->content));
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
 void test_stack_frame_to_elem_returns_valid_element_with_multiple_node_list()
 {
 	struct jalp_stack_frame *frame2 = jalp_stack_frame_append(frame);
@@ -92,25 +136,251 @@ void test_stack_frame_to_elem_returns_valid_element_with_multiple_node_list()
 	frame2->method_name = jal_strdup(JALP_TEST_SF2_METHOD_NAME);
 	frame2->depth = JALP_TEST_SF2_DEPTH;
 
-	enum jal_status ret = jalpx_stack_frame_to_elem(frame, doc, &new_elem);
-	assert_equals(JAL_OK, ret);
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	printf("\nNEW_STACK_FRAME\n");
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_equals(JALP_TEST_SF_LINE_NUMBER, atoi((const char *)temp->children->content));
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
 	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
 
-	xmlChar *xmlbuff;
-	int buffersize;
+void test_stack_frame_to_elem_correctly_supresses_line_number()
+{
+	frame->line_number = 0;
 
-	/*
-	* Dump the document to a buffer and print it
-	* for demonstration purposes.
-	*/
-	xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-	printf("%s", (char *) xmlbuff);
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
 
-	/*
-	* Free associated memory.
-	*/
-	xmlFree(xmlbuff);
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_stack_frame_to_elem_returns_valid_element_with_null_caller_name()
+{
+	free(frame->caller_name);
+	frame->caller_name = NULL;
+	
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_equals(JALP_TEST_SF_LINE_NUMBER, atoi((const char *)temp->children->content));
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_stack_frame_to_elem_returns_valid_element_with_null_file_name()
+{
+	free(frame->file_name);
+	frame->file_name = NULL;
+	
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_equals(JALP_TEST_SF_LINE_NUMBER, atoi((const char *)temp->children->content));
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_stack_frame_to_elem_returns_valid_element_with_null_class_name()
+{
+	free(frame->class_name);
+	frame->class_name = NULL;
+
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_equals(JALP_TEST_SF_LINE_NUMBER, atoi((const char *)temp->children->content));
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_stack_frame_to_elem_returns_valid_element_with_null_method_name()
+{
+	free(frame->method_name);
+	frame->method_name = NULL;
+
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_equals(JALP_TEST_SF_LINE_NUMBER, atoi((const char *)temp->children->content));
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_stack_frame_to_elem_depth_INT_MAX()
+{
+	frame->depth = INT_MAX;
+	char *str_int_max;
+	jal_asprintf(&str_int_max, "%d", INT_MAX);
+
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_equals(JALP_TEST_SF_LINE_NUMBER, atoi((const char *)temp->children->content));
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", str_int_max, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+	
+	free(str_int_max);
+}
+
+void test_stack_frame_to_elem_line_number_ULONG_MAX()
+{
+	frame->line_number = UINT64_MAX;
+	char *str_uint64_max;
+	jal_asprintf(&str_uint64_max, "%llu", UINT64_MAX);
+
+	assert_equals(JAL_OK,
+			jalpx_stack_frame_to_elem(frame, doc, &new_elem));
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CALLER_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_FILE_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(str_uint64_max, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_CLASS_NAME, temp);
+	temp = temp->next;
+	assert_not_equals(NULL, temp);
+	assert_content_equals(JALP_TEST_SF_METHOD_NAME, temp);
+	assert_attr_equals("Depth", JALP_TEST_SF_DEPTH_STR, new_elem);
+	temp = temp->next;
+	assert_equals(NULL, temp);
+
+	xmlDocSetRootElement(doc, new_elem);
+	
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+	
+	free(str_uint64_max);
 }
