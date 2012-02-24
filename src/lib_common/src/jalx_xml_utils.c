@@ -29,6 +29,7 @@
 
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+#include <libxml/uri.h>
 
 #include <jalop/jal_namespaces.h>
 #include <jalop/jal_status.h>
@@ -63,7 +64,19 @@
 //#include "jal_bn2b64.hpp"
 #include "jal_base64_internal.h"
 
+#define REFERENCE "Reference"
+#define DIGESTMETHOD "DigestMethod"
+#define ALGORITHM "Algorithm"
+#define DIGESTVALUE "DigestValue"
+#define URI "URI"
 #define JAL_XML_CORE "Core"
+#define JAL_XML_TRANSFORMS "Transforms"
+#define JAL_XML_TRANSFORM "Transform"
+#define JAL_XML_ALGORITHM "Algorithm"
+#define JAL_XML_WITH_COMMENTS "http://www.w3.org/2006/12/xml-c14n11#WithComments"
+#define JAL_XML_DS "ds"
+#define JAL_XML_XPOINTER_ID_BEG "#xpointer(id('"
+#define JAL_XML_XPOINTER_ID_END "'))"
 
 enum jal_status jalx_parse_xml_snippet(
 		xmlNodePtr *ctx_node,
@@ -139,3 +152,100 @@ char *jalx_get_timestamp()
 
 }
 
+enum jal_status jalx_create_reference_elem(
+		const char *reference_uri,
+		const char *digest_method,
+		uint8_t *digest_buf,
+		uint64_t len,
+		xmlDocPtr doc,
+		xmlNodePtr *elem)
+{
+	if(!doc || !elem || *elem || len <= 0 || !digest_method || !digest_buf) {
+		return JAL_E_XML_CONVERSION;
+	}
+
+	xmlChar *namespace_uri = (xmlChar *)JAL_XMLDSIG_URI;
+	xmlChar *xml_reference_uri = (xmlChar *)reference_uri;
+	xmlChar *xml_digest_method = (xmlChar *)digest_method;
+
+	xmlNodePtr reference_elem = xmlNewDocNode(doc, NULL, (xmlChar *) REFERENCE, NULL);
+	xmlNodePtr digestmethod_elem = NULL;
+	xmlNodePtr digestvalue_elem = NULL;
+
+	enum jal_status ret = JAL_OK;
+
+	if(reference_uri) {
+		xmlURIPtr uri = xmlParseURI(reference_uri);
+		if (!uri) {
+			xmlFreeNodeList(reference_elem);
+			ret = JAL_E_INVAL_URI;
+			goto err_out;
+		}
+		xmlFreeURI(uri);
+		xmlSetProp(reference_elem, (xmlChar *) URI, xml_reference_uri);
+	}
+
+	ret = jalx_create_base64_element(doc, digest_buf, len, namespace_uri,
+					(xmlChar *)DIGESTVALUE, &digestvalue_elem);
+	if (ret != JAL_OK) {
+		goto err_out;
+	}
+
+	digestmethod_elem = xmlNewChild(reference_elem, NULL, (xmlChar *) DIGESTMETHOD, NULL);
+	xmlSetProp(digestmethod_elem, (xmlChar *)ALGORITHM, xml_digest_method);
+
+	xmlAddChild(reference_elem, digestvalue_elem);
+
+	*elem = reference_elem;
+
+	return JAL_OK;
+
+err_out:
+
+	return ret;
+}
+
+enum jal_status jalx_create_audit_transforms_elem(
+		xmlDocPtr doc,
+		xmlNodePtr *new_elem)
+{
+	if (!new_elem || *new_elem || !doc) {
+		return JAL_E_XML_CONVERSION;
+	}
+
+	xmlChar *namespace_uri = (xmlChar *)JAL_XMLDSIG_URI;
+
+	xmlNodePtr out_elem = xmlNewDocNode(doc, NULL, (xmlChar *) JAL_XML_TRANSFORMS, NULL);
+	xmlNsPtr ns = xmlNewNs(out_elem, namespace_uri, NULL);
+	xmlSetNs(out_elem, ns);
+
+	xmlNodePtr transform_elem = xmlNewChild(
+						out_elem, NULL,
+						(xmlChar *) JAL_XML_TRANSFORM,
+						NULL);
+
+	xmlSetProp(transform_elem,
+			(xmlChar *) JAL_XML_ALGORITHM, (xmlChar *) JAL_XML_WITH_COMMENTS);
+
+	*new_elem = out_elem;
+
+	return JAL_OK;
+}
+
+enum jal_status jalx_xml_output(
+		xmlDocPtr doc,
+		xmlChar **buffer)
+{
+	if (!doc || !buffer || *buffer) {
+		return JAL_E_INVAL;
+	}
+
+	xmlChar *xmlbuff = NULL;
+	int buffersize;
+
+	xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
+
+	*buffer = xmlbuff;
+
+	return JAL_OK;
+}
