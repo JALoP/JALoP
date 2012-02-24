@@ -34,6 +34,7 @@
 
 #include "jal_alloc.h"
 #include "jalpx_journal_metadata_xml.h"
+#include "xml2_test_utils.h"
 
 static xmlDocPtr doc = NULL;
 static xmlNodePtr new_elem = NULL;
@@ -68,30 +69,101 @@ void teardown()
 	jalp_shutdown();
 }
 
+void test_jalp_journal_metadata_to_elem_returns_error_for_bad_input()
+{
+	xmlNodePtr bad_elem = (xmlNodePtr) 0xbadf00d;
+	enum jal_status ret;
+	ret = jalpx_journal_metadata_to_elem(NULL, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(jmeta, NULL, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(NULL, NULL, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(jmeta, doc, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(NULL, doc, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(jmeta, NULL, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(NULL, NULL, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(jmeta, doc, &bad_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(NULL, doc, &bad_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(jmeta, NULL, &bad_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	ret = jalpx_journal_metadata_to_elem(NULL, NULL, &bad_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+}
+
+void test_jalp_journal_metadata_to_elem_returns_error_when_missing_a_file_info_struct()
+{
+	enum jal_status ret;
+	jalp_file_info_destroy(&jmeta->file_info);
+	ret = jalpx_journal_metadata_to_elem(jmeta, doc, &new_elem);
+	assert_equals(JAL_E_INVAL_FILE_INFO, ret);
+}
+
+void test_jalp_journal_metadata_to_elem_fails_when_file_info_to_elem_fails()
+{
+	enum jal_status ret;
+	// can't use test-dept to mock functions when dealing with C++.
+	// setting file_name to NULL should cause the file_info_to_elem call
+	// to fail.
+	free(jmeta->file_info->filename);
+	jmeta->file_info->filename = NULL;
+	ret = jalpx_journal_metadata_to_elem(jmeta, doc, &new_elem);
+	assert_not_equals(JAL_OK, ret);
+}
 void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_valid_input()
 {
-	printf("\nNEW_JOURNAL_METADATA\n");
 	enum jal_status ret;
 	ret = jalpx_journal_metadata_to_elem(jmeta, doc, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
+	assert_tag_equals(JOURNAL_META_TAG, new_elem);
 	xmlDocSetRootElement(doc, new_elem);
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 
-	xmlChar *xmlbuff;
-	int buffersize;
+	// schema validation checks the tag for us, just make sure there is an
+	// element.
+	xmlNodePtr file_info = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, file_info);
 
-	/*
-	* Dump the document to a buffer and print it
-	* for demonstration purposes.
-	*/
-	xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-	printf("%s", (char *) xmlbuff);
+	// Again, schema validation ensures the structure is correct, just
+	// make sure the order of transforms is right.
+	xmlNodePtr transforms = file_info->next;
+	assert_not_equals(NULL, transforms);
 
-	/*
-	* Free associated memory.
-	*/
-	xmlFree(xmlbuff);
+	xmlNodePtr xform1 = xmlFirstElementChild(transforms); 
+	assert_not_equals(NULL, xform1);
+	assert_attr_equals(ALGORITHM_ATTR, XFORM_ONE_URI, xform1);
 
+	xmlNodePtr xform2 = xform1->next;
+	assert_not_equals(NULL, xform2);
+	assert_attr_equals(ALGORITHM_ATTR, XFORM_TWO_URI, xform2);
+}
+
+void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_no_transforms()
+{
+	jalp_transform_destroy(&jmeta->transforms);
+
+	enum jal_status ret;
+	ret = jalpx_journal_metadata_to_elem(jmeta, doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, new_elem);
+
+	assert_tag_equals(JOURNAL_META_TAG, new_elem);
+	xmlDocSetRootElement(doc, new_elem);
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+
+	// schema validation ensures the file_info element is there, just need
+	// to make sure there isn't Transforms element.
+	xmlNodePtr file_info = xmlFirstElementChild(new_elem);
+	assert_not_equals(NULL, file_info);
+	xmlNodePtr should_be_null = file_info->next;
+	assert_equals(NULL, should_be_null);
 }
 
