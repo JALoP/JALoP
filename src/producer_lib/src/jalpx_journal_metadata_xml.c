@@ -45,7 +45,7 @@ enum jal_status jalpx_journal_metadata_to_elem(
 		xmlDocPtr doc,
 		xmlNodePtr *new_elem)
 {
-	if (!journal || !doc || *new_elem) {
+	if (!journal || !doc || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 

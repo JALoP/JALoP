@@ -73,7 +73,12 @@ enum jal_status jalx_parse_xml_snippet(
 	if (!doc) {
 		return JAL_E_XML_PARSE;
 	}
-	*ctx_node = xmlDocGetRootElement(doc);
+	if (*ctx_node) {
+		xmlAddChild(*ctx_node, xmlDocGetRootElement(doc));
+	}
+	else {
+		*ctx_node = xmlDocGetRootElement(doc);
+	}
 	return JAL_OK;
 }
 
