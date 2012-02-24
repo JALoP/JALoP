@@ -57,7 +57,7 @@ enum jal_status jalpx_app_metadata_to_elem(
 		xmlDocPtr doc,
 		xmlNodePtr *elem)
 {
-	if(!app_meta || !ctx || !doc || *elem) {
+	if(!app_meta || !ctx || !doc || !elem || *elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 
