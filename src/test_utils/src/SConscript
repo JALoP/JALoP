@@ -5,6 +5,9 @@ Import('*')
 env = env.Clone()
 env.Append(CCFLAGS=('-DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" ').split())
 
+env.MergeFlags(env['libxml2_cflags'])
+env.MergeFlags(env['libxml2_ldflags'])
+
 sources = env.Glob("*.c") + env.Glob("*.cpp")
 test_utils = env.SharedLibrary(target='jal-test-utils', source=sources)
 env.Default(test_utils)

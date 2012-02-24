@@ -40,7 +40,7 @@ enum jal_status jalpx_param_to_elem(const struct jalp_param *param,
 				xmlDocPtr doc,
 				xmlNodePtr *elem)
 {
-	if (!param || !elem_name || !attr_name || !doc) {
+	if (!param || !elem_name || !attr_name || !doc || !elem || *elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 
