@@ -58,7 +58,7 @@ enum jal_status jalpx_transform_to_elem(
 {
 	enum jal_status ret = JAL_E_INVAL_TRANSFORM;
 	/* null checks on args */
-	if((!doc) || (!transform) || (*out)) {
+	if(!doc || !transform || !out || *out) {
 		return JAL_E_XML_CONVERSION;
 	}
 
@@ -162,10 +162,7 @@ enum jal_status jalpx_transform_to_elem_handle_custom(
 
 	xmlNodePtr child_elm = NULL;
 	if (other_info->xml) {
-		xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
 		ret = jalx_parse_xml_snippet(&child_elm, other_info->xml);
-		xmlNsPtr ns2 = xmlNewNs(child_elm, namespace_uri, NULL);
-		xmlSetNs(child_elm, ns2);
 		xmlAddChild(*transform_elm, child_elm);
 	}
 out:
