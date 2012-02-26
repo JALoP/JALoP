@@ -95,3 +95,6 @@ This project requires GNU awk to build and expects the 'awk' found on the path t
 
 $> PATH=/path/to/awk:$PATH scons tests
 
+KNOWN ISSUES
+  We are currently seeing an issue with the Vortex library where the subscriber will appear to leak memory when the producer is able to send data faster than the subscriber can process it.
+  This issue is mostly apparent when the producer is sending very large files that are able to be compressed into very small packets.
