@@ -68,7 +68,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	int err;
 	int ret = -1;
 
-	uint8_t *data_buf = (uint8_t *)malloc(data_len);
+	uint8_t *data_buf = (uint8_t *)jal_malloc(data_len);
 	uint8_t *app_meta_buf = NULL;
 
 	DOMDocument *app_meta_doc = NULL;

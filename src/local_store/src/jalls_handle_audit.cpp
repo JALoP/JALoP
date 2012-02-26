@@ -36,6 +36,7 @@
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
 
+#include "jal_alloc.h"
 #include "jal_xml_utils.hpp"
 #include "jalls_msg.h"
 #include "jalls_context.h"
@@ -66,7 +67,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 
 	int debug = thread_ctx->ctx->debug;
 
-	uint8_t *data_buf = (uint8_t *)malloc(data_len);
+	uint8_t *data_buf = (uint8_t *)jal_malloc(data_len);
 	uint8_t *app_meta_buf = NULL;
 
 	std::string sid = "";

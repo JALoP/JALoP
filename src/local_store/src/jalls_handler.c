@@ -42,6 +42,7 @@
 #include <ucred.h>
 #endif
 
+#include "jal_alloc.h"
 #include "jalls_msg.h"
 #include "jalls_handler.h"
 #include "jalls_handle_journal.hpp"
@@ -239,7 +240,7 @@ out:
 
 int jalls_handle_app_meta(uint8_t **app_meta_buf, size_t app_meta_len, int fd, int debug) {
 
-	*app_meta_buf = malloc(app_meta_len);
+	*app_meta_buf = jal_malloc(app_meta_len);
 
 	struct iovec iov[1];
 	iov[0].iov_base = *app_meta_buf;

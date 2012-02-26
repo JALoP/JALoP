@@ -34,6 +34,7 @@
 #include <xercesc/framework/MemBufInputSource.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 
+#include "jal_alloc.h"
 #include "jalls_xml_utils.hpp"
 #include "jalls_handler.h"
 
@@ -80,7 +81,7 @@ public:
 void jalls_get_schema_path(char **dest, const char *schemas_root, const char *schema)
 {
 	size_t len = strlen(schemas_root) + strlen(schema) + 2;
-	char *path = (char *)malloc(sizeof(char) * len);
+	char *path = (char *)jal_malloc(sizeof(char) * len);
 
 	strncpy(path, schemas_root, len);
 	strcat(path, "/");
