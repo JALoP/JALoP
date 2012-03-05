@@ -35,6 +35,7 @@
 
 #include "jalpx_param_xml.h"
 #include "jal_alloc.h"
+#include "xml2_test_utils.h"
 
 #define P1_TAG "Field"
 #define P1_ATTR "Key"
@@ -48,12 +49,12 @@
 
 struct jalp_param *param1 = NULL;
 struct jalp_param *param2 = NULL;
-xmlDocPtr new_doc;
+xmlDocPtr doc;
 
 void setup()
 {
 	jalp_init();
-	new_doc = xmlNewDoc((xmlChar *)"1.0");
+	doc = xmlNewDoc((xmlChar *)"1.0");
 	param1 = jalp_param_append(NULL, P1_ATTR_VAL, P1_CONTENT);
 	param2 = jalp_param_append(param1, P2_ATTR_VAL, P2_CONTENT);
 }
@@ -61,75 +62,128 @@ void setup()
 void teardown()
 {
 	jalp_param_destroy(&param1);
-	xmlFreeDoc(new_doc);
+	xmlFreeDoc(doc);
 	jalp_shutdown();
 }
 
-void test_jalp_param_to_elem_works()
+void test_param_to_elem_returns_null_with_null_inputs()
 {
-	// Should create
-	// <Parameter Name="key2">val2</Parameter>
 	xmlNodePtr new_elem = NULL;
-	const xmlChar *elem_name = (xmlChar *)P2_TAG;
-	const xmlChar *attr_name = (xmlChar *)P2_ATTR;
-	enum jal_status ret =
-		jalpx_param_to_elem(
-			param2,
-			elem_name,
-			attr_name,
-			new_doc, &new_elem);
-	assert_equals(JAL_OK, ret);
-	assert_not_equals(NULL, new_elem);
-	xmlDocSetRootElement(new_doc, new_elem);
+	enum jal_status ret = jalpx_param_to_elem(NULL, NULL, NULL, NULL, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
 
-	xmlChar *xmlbuff;
-	int buffersize;
+	ret = jalpx_param_to_elem(param2, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, NULL);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
 
-	/*
-	* Dump the document to a buffer and print it
-	* for demonstration purposes.
-	*/
-	xmlDocDumpFormatMemory(new_doc, &xmlbuff, &buffersize, 1);
-	printf("%s", (char *) xmlbuff);
+	ret = jalpx_param_to_elem(param2, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, NULL, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
 
-	/*
-	* Free associated memory.
-	*/
-	xmlFree(xmlbuff);
+	ret = jalpx_param_to_elem(param2, (xmlChar *)P1_TAG, NULL, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jalpx_param_to_elem(param2, NULL, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jalpx_param_to_elem(NULL, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(NULL, new_elem);
 }
 
-void test_jalp_param_to_elem_works_missing_val()
+void test_param_to_elem_fails_does_not_overwrite_existing_elm_pointer()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr orig = new_elem;
+	ret = jalpx_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+}
+void test_param_to_elem_with_bad_inputs_does_not_overwrite_existing_elm_pointer()
+{
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr orig = new_elem;
+	ret = jalpx_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+
+	ret = jalpx_param_to_elem(param2, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, NULL, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+
+	ret = jalpx_param_to_elem(param2, (xmlChar *)P1_TAG, NULL, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+
+	ret = jalpx_param_to_elem(param2, NULL, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+
+	ret = jalpx_param_to_elem(NULL, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_E_XML_CONVERSION, ret);
+	assert_equals(orig, new_elem);
+}
+void test_param_to_elem_fails_with_missing_key()
+{
+	free(param1->key);
+	param1->key = NULL;
+
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_E_INVAL_PARAM, ret);
+	assert_equals(NULL, new_elem);
+}
+void test_param_to_elem_works_with_normal_param()
+{
+	// <Field Key="key1"/>val1</Field>
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, new_elem);
+	assert_attr_equals(P1_ATTR, P1_ATTR_VAL, new_elem);
+	assert_tag_equals(P1_TAG, new_elem);
+	assert_content_equals(P1_CONTENT, new_elem);
+	xmlDocSetRootElement(doc, new_elem);
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+void test_param_to_elem_works_with_normal_param_different_values()
+{
+	// <Field Key="key1"/>val1</Field>
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret = jalpx_param_to_elem(param2, (xmlChar *)P2_TAG, (xmlChar *)P2_ATTR, doc, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, new_elem);
+	assert_attr_equals(P2_ATTR, P2_ATTR_VAL, new_elem);
+	assert_tag_equals(P2_TAG, new_elem);
+	assert_content_equals(P2_CONTENT, new_elem);
+	xmlDocSetRootElement(doc, new_elem);
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+}
+
+void test_param_to_elem_works_with_missing_value()
 {
 	free(param1->value);
 	param1->value = NULL;
-
 	// should create
 	// <Field Key="key1"/>
 	xmlNodePtr new_elem = NULL;
-	const xmlChar *elem_name = (xmlChar *)P1_TAG;
-	const xmlChar *attr_name = (xmlChar *)P1_ATTR;
-	enum jal_status ret =
-		jalpx_param_to_elem(
-			param1,
-			elem_name,
-			attr_name,
-			new_doc, &new_elem);
+	enum jal_status ret = jalpx_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
-	xmlDocSetRootElement(new_doc, new_elem);
-
-	xmlChar *xmlbuff;
-	int buffersize;
-
-	/*
-	* Dump the document to a buffer and print it
-	* for demonstration purposes.
-	*/
-	xmlDocDumpFormatMemory(new_doc, &xmlbuff, &buffersize, 1);
-	printf("%s", (char *) xmlbuff);
-
-	/*
-	* Free associated memory.
-	*/
-	xmlFree(xmlbuff);
+	assert_attr_equals(P1_ATTR, P1_ATTR_VAL, new_elem);
+	assert_content_equals(NULL, new_elem);
+	assert_tag_equals(P1_TAG, new_elem);
+	xmlDocSetRootElement(doc, new_elem);
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
+
