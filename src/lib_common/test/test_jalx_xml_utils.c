@@ -37,7 +37,11 @@
 #include <jalop/jalp_context.h>
 #include <jalop/jal_status.h>
 
+#include <xmlsec/xmlsec.h>
+#include <xmlsec/xmldsig.h>
+#include <xmlsec/crypto.h>
 
+#include <xmlsec/openssl/evp.h>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 
@@ -80,16 +84,62 @@
 
 xmlDocPtr doc = NULL;
 const char *base64_input_str = "asdf";
+//static const char *base64_string = "YXNkZg==";
+static struct jal_digest_ctx *dgst_ctx = NULL;
+
+static X509 *cert;
+static RSA *key;
+
+static void load_key_and_cert()
+{
+	FILE *fp;
+	fp = fopen(TEST_CERT, "r");
+	cert = PEM_read_X509(fp, NULL, NULL, NULL);
+	fclose(fp);
+
+	fp = fopen(TEST_RSA_KEY, "r");
+	key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+	fclose(fp);
+}
+
+static void build_dom_for_signing()
+{
+	xmlNodePtr elem = xmlNewDocNode(doc, NULL, (xmlChar *)"elem1", NULL);
+	xmlNsPtr ns = xmlNewNs(elem, (xmlChar *)ID_NS, NULL);
+	xmlSetNs(elem, ns);
+	xmlSetProp(elem, (xmlChar *)"xml:id", (xmlChar *)ID_STR);
+	
+	xmlNodePtr achild = xmlNewDocNode(doc, NULL, (xmlChar *)"achild", NULL);
+	xmlNodePtr bchild = xmlNewDocNode(doc, NULL, (xmlChar *)"bchild", NULL);
+
+	xmlAddChild(elem, achild);
+	xmlAddChild(elem, bchild);
+
+	xmlDocSetRootElement(doc, elem);
+}
 
 void setup()
 {
 	doc =  xmlNewDoc((xmlChar *)"1.0");
 
+	SSL_library_init();
+	xmlSecInit();
+
+	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
+
+	xmlSecCryptoAppInit(NULL);
+	xmlSecCryptoInit();
+	
+	dgst_ctx = jal_sha256_ctx_create();
 }
 
 void teardown()
 {
 	xmlFreeDoc(doc);
+
+	xmlSecCryptoShutdown();
+	xmlSecCryptoAppShutdown();
+	xmlSecShutdown();
 }
 
 void test_jalx_create_base64_element_returns_null_with_null_inputs()
@@ -387,7 +437,17 @@ void test_jalx_xml_output_good_inputs()
 
 void test_add_signature_block()
 {
-	assert_equals(1, 1);
+	enum jal_status ret = JAL_OK;
+	load_key_and_cert();
+	build_dom_for_signing();
+
+	assert_not_equals((void *) NULL, cert);
+	assert_not_equals((void *) NULL, key);
+
+	// sign document
+	ret = jalx_add_signature_block(key, cert, doc, (xmlChar *)ID_STR);
+	assert_equals(JAL_OK, ret);
+
 }
 
 void test_add_signature_block_works_with_prev()

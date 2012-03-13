@@ -141,11 +141,12 @@ enum jal_status jalpx_app_metadata_to_elem(
 	uuid_unparse(jid, str_jid);
 	jal_asprintf(&ncname_jid, "%s%s", UUIDDASH, str_jid);
 	xml_jid = (xmlChar *)ncname_jid;
-	//app_meta_elem->setAttribute(JID, xml_jid);
 	xmlSetProp(app_meta_elem, (xmlChar *)JID, xml_jid);
-	//TODO: What is setIdAttribute?
-	//app_meta_elem->setIdAttribute(JID, true);
-
+	xmlAttrPtr attr = xmlHasProp(app_meta_elem, (xmlChar *)JID);
+	if (!attr || !attr->children) {
+		return JAL_E_INVAL;
+	}
+	xmlAddID(NULL, doc, (xmlChar *)xml_jid, attr);
 	free(ncname_jid);
 
 	*elem = app_meta_elem;

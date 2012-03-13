@@ -31,10 +31,11 @@ tests.append(testEnv.TestDeptTest('test_jal_base64.c',
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_xml_utils.cpp',
 	other_sources=[test_utils, errorCallbackObj, allocObj, base64Obj, digestObj, bn2b64Obj])[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jalx_xml_utils.c',
-	other_sources=[test_utils, errorCallbackObj, allocObj, base64Obj, digestObj, bn2b64Obj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_fs_utils.c',
 	other_sources=[allocObj, errorCallbackObj, test_utils], useProxies=True)[0].abspath)
+
+tests.append(testEnv.TestDeptTest('test_jalx_xml_utils.c',
+	other_sources=[test_utils, errorCallbackObj, allocObj, base64Obj, digestObj])[0].abspath)
 
 common_tests = env.Alias('common_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(common_tests)

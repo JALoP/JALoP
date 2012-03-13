@@ -36,8 +36,13 @@
 // XML-Security-C (XSEC)
 //#include <xsec/framework/XSECProvider.hpp>
 
+// XmlSecurity Library
+#include <xmlsec/bn.h>
+
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+
+#include <jalop/jal_digest.h>
 
 
 /**
@@ -128,6 +133,85 @@ enum jal_status jalx_create_audit_transforms_elem(
 enum jal_status jalx_xml_output(
 		xmlDocPtr doc,
 		xmlChar **buffer);
+
+/**
+ * Use the digest context \p dgst_ctx to generate a digest for the document
+ * given by xml_buffer.
+ *
+ * @param dgst_ctx The digest method to use.
+ * @param doc The xmlDocPtr to generate a digest for.
+ * @param digest_out On success, this will be set to a newly allocated buffer
+ * that contains the binary version of the digest. It is up to the caller to
+ * release this memory with a call to free().
+ * @param digest_len On success, this will be set to the length, in bytes, of
+ * \pdigest_buffer.
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jalx_digest_xml_data(
+		const struct jal_digest_ctx *dgst_ctx,
+		xmlDocPtr doc,
+		uint8_t **digest_out,
+		int *digest_len);
+
+/**
+ * Convert an OpenSSL BIGNUM to a Libxml2 xmlChar pointer of the decimal representation
+ * of the BIGNUM.
+ *
+ * @param[in] bn The BIGNUM to convert.
+ *
+ * @return xmlChar pointer to the decimal representation of the BIGNUM.  This needs
+ * to be free'd with xmlFree.
+ */
+xmlChar *jalx_BN2decXMLCh(xmlSecBnPtr bn);
+
+/**
+ * Convert a certificate name to a xmlChar pointer.
+ *
+ * @param[in] nm Certificate subject.
+ *
+ * @return Certificate subject name as a xmlChar pointer.
+ */
+xmlChar *jalx_get_xml_x509_name(X509_NAME *nm);
+
+/**
+ * Convert a certificate serial number to a xmlChar pointer.
+ *
+ * @param[in] i ASN1_INTEGER certificate serial number.
+ *
+ * @return Certificate serial number as a xmlChar pointer.
+ */
+xmlChar *jalx_get_xml_x509_serial(ASN1_INTEGER *i);
+
+/**
+ * Convert a base64-encoded certificate to a xmlChar pointer.
+ *
+ * @param[in] x509 The certificate.
+ *
+ * @return Certificate as a xmlChar pointer in DER format.
+ */
+xmlChar *jalx_get_xml_x509_cert(X509 *x509);
+
+/**
+ * Add a signature block to a document.
+ *
+ * @param[in] rsa RSA key to use as a signing key.  This is required.
+ * @param[in] x509 Certificate to use when signing.  This is not required
+ * and could be passed in as NULL.
+ * @param[in] doc The document to sign.
+ * @param[in] last The element to add the signature before.  Pass in
+ * NULL to have the signature element added as the last element under
+ * parent_element.
+ * @param[in] id The id to use in the Reference elements URI attribute.
+ * This should be the id of the root node in the document.
+ *
+ * @return JAL_OK,  or JAL_E_INVAL on error
+ */
+enum jal_status jalx_add_signature_block(
+		RSA *rsa,
+		X509 *x509,
+		xmlDocPtr doc,
+		xmlNodePtr last,
+		const char *id);
 
 #endif // _JALX_XML_UITILS_H_
 

@@ -30,30 +30,27 @@
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/uri.h>
+#include <libxml/c14n.h>
 
 #include <jalop/jal_namespaces.h>
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
 
-// XML-Security-C (XSEC)
-//#include <xsec/canon/XSECC14n20010315.hpp>
-//#include <xsec/framework/XSECProvider.hpp>
-//#include <xsec/dsig/DSIGReference.hpp>
-//#include <xsec/dsig/DSIGKeyInfoX509.hpp>
-//#include <xsec/enc/OpenSSL/OpenSSLCryptoKeyRSA.hpp>
-//#include <xsec/enc/XSCrypt/XSCryptCryptoBase64.hpp>
-//#include <xsec/framework/XSECException.hpp>
-
-
-// Xalan
-//#ifndef XSEC_NO_XALAN
-//#include <xalanc/XalanTransformer/XalanTransformer.hpp>
-//XALAN_USING_XALAN(XalanTransformer)
-//#endif
+// XmlSecurity Library
+#include <xmlsec/xmlsec.h>
+#include <xmlsec/bn.h>
+#include <xmlsec/xmltree.h>
+#include <xmlsec/xmldsig.h>
+#include <xmlsec/templates.h>
+#include <xmlsec/crypto.h>
+#include <xmlsec/openssl/evp.h>
+#include <xmlsec/x509.h>
+#include <xmlsec/openssl/app.h>
 
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include <openssl/bio.h>
 
 #include <string.h>
 #include <time.h>
@@ -61,7 +58,6 @@
 #include "jalx_xml_utils.h"
 #include "jal_error_callback_internal.h"
 #include "jal_alloc.h"
-//#include "jal_bn2b64.hpp"
 #include "jal_base64_internal.h"
 
 #define REFERENCE "Reference"
@@ -82,7 +78,11 @@ enum jal_status jalx_parse_xml_snippet(
 		xmlNodePtr *ctx_node,
 		const char *snippet)
 {
-	xmlDocPtr doc = xmlParseDoc((xmlChar *) snippet);
+	if (!ctx_node || !snippet) {
+		return JAL_E_INVAL;
+	}
+
+	xmlDocPtr doc = xmlParseMemory(snippet, strlen(snippet));
 	if (!doc) {
 		return JAL_E_XML_PARSE;
 	}
@@ -104,7 +104,7 @@ enum jal_status jalx_create_base64_element(
 		xmlNodePtr *new_elem)
 {
 	if (!doc || !buffer || (buf_len == 0) || !namespace_uri ||
-		!elm_name || *new_elem) {
+		!elm_name || !new_elem || *new_elem) {
 		return JAL_E_INVAL;
 	}
 	char *base64_val = NULL;
@@ -175,13 +175,13 @@ enum jal_status jalx_create_reference_elem(
 	enum jal_status ret = JAL_OK;
 
 	if(reference_uri) {
-		xmlURIPtr uri = xmlParseURI(reference_uri);
-		if (!uri) {
-			xmlFreeNodeList(reference_elem);
+		xmlURIPtr ret_uri = NULL;
+		ret_uri = xmlParseURI(reference_uri);
+		if (!ret_uri) {
 			ret = JAL_E_INVAL_URI;
 			goto err_out;
 		}
-		xmlFreeURI(uri);
+		xmlFree(ret_uri);
 		xmlSetProp(reference_elem, (xmlChar *) URI, xml_reference_uri);
 	}
 
@@ -248,4 +248,286 @@ enum jal_status jalx_xml_output(
 	*buffer = xmlbuff;
 
 	return JAL_OK;
+}
+
+int jalx_is_visible_callback(
+		__attribute__((__unused__)) void *user_data,
+		__attribute__((__unused__)) xmlNodePtr node,
+		__attribute__((__unused__)) xmlNodePtr parent)
+{
+	return 1; // All nodes visible
+}
+
+enum jal_status jalx_digest_xml_data(
+		const struct jal_digest_ctx *dgst_ctx,
+		xmlDocPtr doc,
+		uint8_t **digest_out,
+		int *digest_len)
+{
+#define JAL_XML_C14N_1_1 2
+
+	if (!dgst_ctx || !doc || !digest_out || *digest_out || !digest_len) {
+		return JAL_E_INVAL;
+	}
+	if (!jal_digest_ctx_is_valid(dgst_ctx)) {
+		return JAL_E_INVAL;
+	}
+
+	size_t dlen = dgst_ctx->len;
+	uint8_t *dval = (uint8_t*)jal_malloc(dlen);
+	void *instance = dgst_ctx->create();
+	if (instance == NULL) {
+		free(dval);
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	enum jal_status ret = (enum jal_status) dgst_ctx->init(instance);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+
+	xmlChar *doc_txt = NULL;
+
+	int res = xmlC14NDocDumpMemory(
+					doc,
+					NULL,
+					JAL_XML_C14N_1_1,
+					NULL,
+					1,
+					&doc_txt);
+
+	if (res < 0 ) {
+		printf("ERROR!\n");
+		ret = JAL_E_XML_CONVERSION;
+		goto error_out;
+	}
+
+	ret = (enum jal_status) dgst_ctx->update(instance, (unsigned char *) doc_txt, strlen((char *) doc_txt));
+
+	ret = (enum jal_status) dgst_ctx->final(instance, dval, &dlen);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+	free(doc_txt);
+	goto out;
+
+error_out:
+	free(dval);
+	dval = NULL;
+out:
+	*digest_out = dval;
+	*digest_len = dlen;
+	dgst_ctx->destroy(instance);
+	return ret;
+}
+
+xmlChar *jalx_get_xml_x509_cert(X509 *x509)
+{
+	unsigned char *buff = NULL;
+	char *b64_buff = NULL;
+	int len;
+
+	// Returns cert in DER format!!!
+	len = i2d_X509(x509, &buff);
+	if (len <= 0) {
+		return NULL;
+	}
+
+	b64_buff = jal_base64_enc(buff, len);
+	xmlChar *xml_cert = xmlCharStrdup(b64_buff);
+
+	free(b64_buff);
+	OPENSSL_free(buff);
+
+	return xml_cert;
+}
+
+xmlChar *jalx_BN2dec_xmlChar(BIGNUM *bn)
+{
+	char *buff = NULL;
+	buff = BN_bn2dec(bn);
+	xmlChar *xml_serial = (xmlChar *)buff;
+
+	return xml_serial;
+}
+
+xmlChar *jalx_get_xml_x509_name(X509_NAME *nm)
+{
+	BIO *bmem  = BIO_new(BIO_s_mem());
+	BUF_MEM *bptr;
+	char *buff = NULL;
+
+	X509_NAME_print_ex(bmem, nm, 0, 0);
+	BIO_get_mem_ptr(bmem, &bptr);
+
+	size_t malloc_amount = bptr->length;
+	buff = (char *) jal_malloc(malloc_amount + 1);
+	memcpy(buff, bptr->data, bptr->length);
+	buff[bptr->length] = 0;
+
+	xmlChar *xml_subject = (xmlChar *)buff;
+
+	BIO_free(bmem);
+
+	return xml_subject;
+}
+
+xmlChar *jalx_get_xml_x509_serial(ASN1_INTEGER *i)
+{
+	BIGNUM *bn_buff = NULL;
+
+	bn_buff = ASN1_INTEGER_to_BN(i, NULL);
+	xmlChar *xml_serial = jalx_BN2dec_xmlChar(bn_buff);
+
+	BN_free(bn_buff);
+	return xml_serial;
+}
+
+enum jal_status jalx_add_signature_block(
+		RSA *rsa,
+		X509 *x509,
+		xmlDocPtr doc,
+		xmlNodePtr last,
+		const char *id)
+{
+	if (!doc || !rsa || !id) {
+		return JAL_E_INVAL;
+	}
+
+	xmlNodePtr signNode = NULL;
+	xmlNodePtr refNode = NULL;
+	xmlNodePtr keyInfoNode = NULL;
+	xmlNodePtr x509DataNode = NULL;
+	xmlNodePtr x509IssuerSerialNode = NULL;
+	xmlSecDSigCtxPtr dsigCtx = NULL;
+
+	RSA *new_rsa = RSAPrivateKey_dup(rsa);
+	if (!new_rsa) {
+		return JAL_E_INVAL;
+	}
+
+	enum jal_status ret = JAL_E_INVAL;
+
+	signNode = xmlSecTmplSignatureCreate(
+				doc,
+				xmlSecTransformInclC14NWithCommentsId,
+				xmlSecOpenSSLTransformRsaSha1Id,
+				NULL);
+
+	if (!signNode) {
+		goto done;
+	}
+
+	if (last) {
+		xmlAddPrevSibling(last, signNode);
+	} else {
+		xmlAddChild(xmlDocGetRootElement(doc), signNode);
+	}
+
+	int beg_len = xmlStrlen((xmlChar *)JAL_XML_XPOINTER_ID_BEG);
+	int end_len = xmlStrlen((xmlChar *)JAL_XML_XPOINTER_ID_END);
+	int id_len = xmlStrlen((xmlChar *)id);
+	int ref_len = beg_len + id_len + end_len + 1;
+
+	char *reference_uri = jal_calloc(ref_len, sizeof(xmlChar));
+	strncat(reference_uri, JAL_XML_XPOINTER_ID_BEG, beg_len);
+	strncat(reference_uri, id, id_len);
+	strncat(reference_uri, JAL_XML_XPOINTER_ID_END, end_len);
+	
+	refNode = xmlSecTmplSignatureAddReference(signNode,
+						xmlSecOpenSSLTransformSha256Id,
+						NULL, // id
+						(xmlChar *)reference_uri, // uri
+						NULL);// type
+	xmlFree(reference_uri);
+	if (!refNode) {
+		ret = JAL_E_INVAL;
+		goto done;
+	}
+
+	if (!xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
+		goto done;
+	}
+	
+	keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, NULL);
+	if (!keyInfoNode) {
+		goto done;
+	}
+
+	if (!xmlSecTmplKeyInfoAddKeyValue(keyInfoNode)) {
+		goto done;
+	}
+
+	xmlSecKeyDataPtr pKeyData = NULL;
+	pKeyData = xmlSecKeyDataCreate(xmlSecKeyDataRsaId);
+
+	if (0 != xmlSecOpenSSLKeyDataRsaAdoptRsa(pKeyData, new_rsa)) {
+		goto done;
+	}
+
+	xmlSecKeyPtr pSecKey = xmlSecKeyCreate();
+	if (!pSecKey) {
+		goto done;
+	}
+	
+	if (0 != xmlSecKeySetValue(pSecKey, pKeyData)) {
+		goto done;
+	}
+
+    	dsigCtx = xmlSecDSigCtxCreate(NULL);
+    	if (!dsigCtx) {
+		goto done;
+    	}
+	
+	dsigCtx->signKey = pSecKey;
+
+	// add certificate information, if available
+	if (x509) {
+		x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
+		if (!x509DataNode) {
+			goto done;
+		}
+
+		if (!xmlSecTmplX509DataAddSubjectName(x509DataNode)) {
+			goto done;
+		}
+
+		x509IssuerSerialNode = xmlSecTmplX509DataAddIssuerSerial(x509DataNode);
+		if (!x509IssuerSerialNode) {
+			goto done;
+		}
+
+		xmlChar *issuer = jalx_get_xml_x509_name(X509_get_issuer_name(x509));
+		if (!xmlSecTmplX509IssuerSerialAddIssuerName(x509IssuerSerialNode, issuer)) {
+			goto done;
+		}
+		xmlFree(issuer);
+
+		xmlChar *serial = jalx_get_xml_x509_serial(X509_get_serialNumber(x509));
+		if (!xmlSecTmplX509IssuerSerialAddSerialNumber(x509IssuerSerialNode, serial)) {
+			goto done;
+		}
+		xmlFree(serial);
+
+		BIO *bio = BIO_new(BIO_s_mem());
+		PEM_write_bio_X509(bio, x509);
+		if (0 > xmlSecOpenSSLAppKeyCertLoadBIO(dsigCtx->signKey,
+						bio,
+						xmlSecKeyDataFormatCertPem)) {
+			goto done;
+		}
+		BIO_free(bio);
+	}
+
+	if (0 > xmlSecDSigCtxSign(dsigCtx, signNode)) {
+		goto done;
+	}
+
+	ret = JAL_OK;
+done:
+	/* cleanup */
+	if (dsigCtx != NULL) {
+		xmlSecDSigCtxDestroy(dsigCtx);
+	}
+
+	return ret;
 }
