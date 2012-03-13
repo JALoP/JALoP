@@ -221,7 +221,6 @@ void test_jalx_create_reference_elem_succeeds_with_good_input()
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, elem);
 	xmlDocSetRootElement(doc, elem);
-	//xmlDocDump(stdout, doc);
 
 	xmlChar * ret_val;
 	xmlNodePtr temp = doc->xmlChildrenNode;
@@ -254,7 +253,6 @@ void test_jalx_create_reference_elem_succeeds_with_no_uri()
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, elem);
 	xmlDocSetRootElement(doc, elem);
-	//xmlDocDump(stdout, doc);
 
 	xmlChar * ret_val;
 	xmlNodePtr temp = doc->xmlChildrenNode;
