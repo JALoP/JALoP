@@ -26,12 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALP_DIGEST_AUDIT_XML_H_
-#define _JALP_DIGEST_AUDIT_XML_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef _JALPX_DIGEST_AUDIT_XML_H_
+#define _JALPX_DIGEST_AUDIT_XML_H_
 
 #include <jalop/jal_digest.h>
 #include <jalop/jal_status.h>
@@ -42,17 +38,13 @@ extern "C" {
  * schema.
  *
  */
-enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
+enum jal_status jalpx_digest_audit_record(const struct jal_digest_ctx *ctx,
 		const char *schema_root,
 		const uint8_t *buffer,
 		const size_t buf_len,
 		uint8_t**digest_value,
 		int *digest_len);
 
-/** @} */
-#ifdef __cplusplus
-}
-#endif
 
 #endif //_JALP_DIGEST_AUDIT_XML_H_
 

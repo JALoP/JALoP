@@ -37,6 +37,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <jalop/jal_status.h>
+
 /**
  * User supplied functions to implement additional digest algorithms.
  * jal_digest_ctx objects should be created and destroyed with the
