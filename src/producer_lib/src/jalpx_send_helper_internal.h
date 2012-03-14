@@ -26,8 +26,8 @@
  * limitations under the License.
  */
 
-#ifndef _JALP_SEND_HELPER_INTERNAL_HPP_
-#define _JALP_SEND_HELPER_INTERNAL_HPP_
+#ifndef _JALPX_SEND_HELPER_INTERNAL_HPP_
+#define _JALPX_SEND_HELPER_INTERNAL_HPP_
 
 #include <jalop/jal_status.h>
 #include <unistd.h> // for size_t
@@ -51,7 +51,7 @@
  *
  * @return JAL_OK if the message was sent correctly.  JAL_E_INVAL on error.
  */
-enum jal_status jalp_send_buffer_xml(jalp_context *ctx,
+enum jal_status jalpx_send_buffer_xml(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta, const uint8_t *buffer,
 		const size_t buffer_size, enum jalp_connection_msg_type message_type);
 
