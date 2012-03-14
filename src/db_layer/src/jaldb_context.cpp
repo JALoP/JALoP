@@ -466,6 +466,11 @@ enum jaldb_status jaldb_xfer_audit(
 				break;
 			}
 
+			// Commiting early due to lengthy txn using all table locks
+			// TODO: Resolve this issue more cleanly
+			txn.commit();
+			txn = ctx->manager->createTransaction();
+
 			// Delete from tmp db
 			ret1 = jaldb_remove_document(
 				txn, uc, sys_cont, sid);
