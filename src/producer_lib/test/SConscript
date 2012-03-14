@@ -60,6 +60,7 @@ loggerMetaXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_logger_met
 journalMetaXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_journal_metadata_xml.c'))
 appMetaXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_app_metadata_xml.c'));
 digestAuditXmlObj2 = env.SharedObject(os.path.join('..', 'src', 'jalpx_digest_audit_xml.c'))
+jalopInitObj2 = env.SharedObject(os.path.join('..','src', 'jalpx_init.c'))
 
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity.c',
 	other_sources=[lib_common])[0].abspath)
@@ -78,6 +79,8 @@ tests.append(testEnv.TestDeptTest('test_jalp_file_info.c',
 tests.append(env.TestDeptTest('test_jalp_journal_metadata.c',
 	other_sources=[transformObj, fileInfoObj, contentTypeObj, paramObj, lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_init.cpp',
+	other_sources=[lib_common])[0].abspath)
+tests.append(testEnv.TestDeptTest('test_jalpx_init.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jalp_log_severity_xml.cpp',
 	other_sources=[paramObj, logSeverityObj, jalopInitObj, test_utils, lib_common])[0].abspath)
