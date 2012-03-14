@@ -71,7 +71,7 @@ extern "C" {
  *
  * @note The ctx will be connected if it isn't already.
  */
-enum jal_status jalp_journal(jalp_context *ctx,
+enum jal_status jalpx_journal(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
 		const uint8_t *journal_buffer,
 		const size_t journal_buffer_size);
@@ -103,7 +103,7 @@ enum jal_status jalp_journal(jalp_context *ctx,
  *  a socket
  *
  */
-enum jal_status jalp_journal_fd(jalp_context *ctx,
+enum jal_status jalpx_journal_fd(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
 		int fd);
 
@@ -130,7 +130,7 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
  *  application may call jalp_errno to get the value.
  *
  */
-enum jal_status jalp_journal_path(jalp_context *ctx,
+enum jal_status jalpx_journal_path(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
 		const char *path);
 
