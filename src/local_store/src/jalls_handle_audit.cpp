@@ -37,7 +37,7 @@
 #include <jalop/jal_digest.h>
 
 #include "jal_alloc.h"
-#include "jal_xml_utils.hpp"
+#include "jalls_xml_utils.hpp"
 #include "jalls_msg.h"
 #include "jalls_context.h"
 #include "jalls_handler.h"
@@ -164,7 +164,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	enum jal_status jal_err;
 	digest_ctx = jal_sha256_ctx_create();
 	int digest_len;
-	jal_err = jal_digest_xml_data(digest_ctx, audit_doc, &digest, &digest_len);
+	jal_err = jalls_digest_xml_data(digest_ctx, audit_doc, &digest, &digest_len);
 
 	//add the manifest to the system metadata
 	DOMElement *manifest;
@@ -176,7 +176,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	reference_elem = NULL;
 	DOMElement *first_elem;
 	first_elem = NULL;
-	jal_err = jal_create_reference_elem(JAL_PAYLOAD_URI, digest_ctx->algorithm_uri,
+	jal_err = jalls_create_reference_elem(JAL_PAYLOAD_URI, digest_ctx->algorithm_uri,
 		digest, digest_len, sys_meta_doc, &reference_elem);
 	if (jal_err != JAL_OK) {
 		if (debug) {
@@ -186,7 +186,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	}
 	DOMElement *transforms_elem;
 	transforms_elem = NULL;
-	jal_err = jal_create_audit_transforms_elem(sys_meta_doc, &transforms_elem);
+	jal_err = jalls_create_audit_transforms_elem(sys_meta_doc, &transforms_elem);
 	if (jal_err != JAL_OK) {
 		if(debug) {
 			fprintf(stderr, "could not create system metadata manifest\n");
@@ -203,7 +203,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	manifest->appendChild(reference_elem);
 
 	//add signature to the system metadata
-	jal_err = jal_add_signature_block(thread_ctx->signing_key, thread_ctx->signing_cert,
+	jal_err = jalls_add_signature_block(thread_ctx->signing_key, thread_ctx->signing_cert,
 		sys_meta_doc, sys_meta_root, manifest, sys_meta_root->getAttribute(JALLS_XML_JID));
 	if (jal_err != JAL_OK) {
 		if (debug) {

@@ -49,7 +49,7 @@ extern "C" {
 #include <xsec/framework/XSECException.hpp>
 
 #include "jalls_system_metadata_xml.hpp"
-#include "jal_xml_utils.hpp"
+#include "jalls_xml_utils.hpp"
 #include "xml_test_utils.hpp"
 #include "jal_asprintf_internal.h"
 
@@ -172,14 +172,14 @@ extern "C" void test_create_system_metadata_generates_valid_document()
 	DOMElement *manifest = doc->createElementNS(dsig_uri, dsig_manifest);
 
 	DOMElement *ref_elm = NULL;
-	ret = jal_create_reference_elem("http://some/reference", "http://digest/method",
+	ret = jalls_create_reference_elem("http://some/reference", "http://digest/method",
 			fake_dgst, FAKE_DIGEST_LEN, doc, &ref_elm);
 	assert_equals(JAL_OK, ret);
 
 	manifest->appendChild(ref_elm);
 	root->appendChild(manifest);
 
-	ret = jal_add_signature_block(key, cert, doc,
+	ret = jalls_add_signature_block(key, cert, doc,
 		root, manifest, id);
 	assert_equals(JAL_OK, ret);
 
