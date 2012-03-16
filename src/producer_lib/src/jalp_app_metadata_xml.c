@@ -1,5 +1,5 @@
 /**
- * @file jalpx_app_metadata_xml.c This file defines functions to deal with
+ * @file jalp_app_metadata_xml.c This file defines functions to deal with
  * converting jalp_app_metadata to a DOMDocument.
  *
  * @section LICENSE
@@ -34,12 +34,12 @@
 #include <jalop/jalp_app_metadata.h>
 #include <jalop/jal_status.h>
 #include <jalop/jal_namespaces.h>
-#include "jalpx_app_metadata_xml.h"
-#include "jalx_xml_utils.h"
+#include "jalp_app_metadata_xml.h"
+#include "jal_xml_utils.h"
 #include "jal_asprintf_internal.h"
-#include "jalpx_syslog_metadata_xml.h"
-#include "jalpx_logger_metadata_xml.h"
-#include "jalpx_journal_metadata_xml.h"
+#include "jalp_syslog_metadata_xml.h"
+#include "jalp_logger_metadata_xml.h"
+#include "jalp_journal_metadata_xml.h"
 
 #define JAL_UUID_STR_LEN 36
 
@@ -51,7 +51,7 @@ static const char *UUIDDASH = "UUID-";
 #define CUSTOM "Custom"
 #define	JID "JID"
 
-enum jal_status jalpx_app_metadata_to_elem(
+enum jal_status jalp_app_metadata_to_elem(
 		struct jalp_app_metadata *app_meta,
 		const struct jalp_context_t *ctx,
 		xmlDocPtr doc,
@@ -89,31 +89,29 @@ enum jal_status jalpx_app_metadata_to_elem(
 	switch(app_meta->type) {
 
 		case(JALP_METADATA_SYSLOG):
-			ret = jalpx_syslog_metadata_to_elem(app_meta->sys, ctx, doc, &syslog_elem);
+			ret = jalp_syslog_metadata_to_elem(app_meta->sys, ctx, doc, &syslog_elem);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}
 			xmlAddChild(app_meta_elem, syslog_elem);
 			break;
 		case(JALP_METADATA_LOGGER):
-			ret = jalpx_logger_metadata_to_elem(app_meta->log, ctx, doc, &logger_elem);
+			ret = jalp_logger_metadata_to_elem(app_meta->log, ctx, doc, &logger_elem);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}
 			xmlAddChild(app_meta_elem, logger_elem);
 			break;
 		case(JALP_METADATA_CUSTOM):
-			//custom_elem = NULL; //xmlNewNode(NULL, (xmlChar *)CUSTOM);
 			custom_elem = xmlNewChild(
 						app_meta_elem,
 						NULL,
 						(xmlChar *)CUSTOM,
 						NULL);
-			ret = jalx_parse_xml_snippet(&custom_elem, app_meta->custom);
+			ret = jal_parse_xml_snippet(&custom_elem, app_meta->custom);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}
-			//xmlAddChild(app_meta_elem, custom_elem);
 			break;
 		case(JALP_METADATA_NONE):
 			//adds an empty custom element in this case
@@ -128,7 +126,7 @@ enum jal_status jalpx_app_metadata_to_elem(
 
 	if (app_meta->file_metadata) {
 		xmlNodePtr journal_metadata_elem = NULL;
-		ret = jalpx_journal_metadata_to_elem(app_meta->file_metadata, doc, &journal_metadata_elem);
+		ret = jalp_journal_metadata_to_elem(app_meta->file_metadata, doc, &journal_metadata_elem);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}

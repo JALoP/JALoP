@@ -37,7 +37,6 @@
 #include <jalop/jal_digest.h>
 
 #include "jal_alloc.h"
-#include "jal_xml_utils.hpp"
 
 #include "jaldb_context.hpp"
 
@@ -225,7 +224,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	sys_meta_root->appendChild(manifest);
 	DOMElement *reference_elem;
 	reference_elem = NULL;
-	jal_err = jal_create_reference_elem(JAL_PAYLOAD_URI, digest_ctx->algorithm_uri,
+	jal_err = jalls_create_reference_elem(JAL_PAYLOAD_URI, digest_ctx->algorithm_uri,
 		digest, digest_length, sys_meta_doc, &reference_elem);
 	if (jal_err != JAL_OK) {
 		if (debug) {
@@ -236,7 +235,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	manifest->appendChild(reference_elem);
 
 	//add signature to the system metadata
-	jal_err = jal_add_signature_block(thread_ctx->signing_key, thread_ctx->signing_cert,
+	jal_err = jalls_add_signature_block(thread_ctx->signing_key, thread_ctx->signing_cert,
 		sys_meta_doc, sys_meta_root, manifest, sys_meta_root->getAttribute(JALLS_XML_JID));
 	if (jal_err != JAL_OK) {
 		if (debug) {

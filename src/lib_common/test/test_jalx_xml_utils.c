@@ -47,6 +47,7 @@
 
 #include "jalx_xml_utils.h"
 #include "jal_alloc.h"
+#include "xml2_test_utils.h"
 
 #define EVENT_ID "event-123-xyz"
 
@@ -78,17 +79,40 @@
 #define ID_STR "foobar_123444"
 #define XPOINTER_ID_STR "#xpointer(id('" ID_STR "'))"
 
-#define EXPECTED_SIGNING_DGST_VALUE "Tv+xVpQnAxQYuhWNG8hG2zBXRG5Z5kThWM5UGEaA/jQ="
-#define EXPECTED_MODULUS "3PRI+qegjHCd70xtRMPzknUDqY6iH93XJwfuGqXguiEB8n3dxaZu1ZNzMe1BHpGje2RPaRr5EXBK\nAXMPnw6MXQ=="
-#define EXPECTED_EXPONENT "AQAB"
+//#define EXPECTED_SIGNING_DGST_VALUE "Tv+xVpQnAxQYuhWNG8hG2zBXRG5Z5kThWM5UGEaA/jQ="
+#define EXPECTED_SIGNING_DGST_VALUE "zqfv/c2dvejx20CIJ5Kg7j+HxlB95r1q8XqL74aeWCk="
+#define EXPECTED_MODULUS "\n3PRI+qegjHCd70xtRMPzknUDqY6iH93XJwfuGqXguiEB8n3dxaZu1ZNzMe1BHpGj\ne2RPaRr5EXBKAXMPnw6MXQ==\n"
+#define EXPECTED_EXPONENT "\nAQAB\n"
+
+static const uint8_t EXPECTED_DGST[] = { 0xca, 0x60, 0x88, 0xd0, 0xab,
+	0x26, 0x59, 0x66, 0xa7, 0x5b, 0xbf, 0xc2, 0x24, 0xc8, 0xb3,
+	0xaa, 0x29, 0x85, 0xcb, 0x67, 0xfb, 0x3d, 0xd8, 0xbf, 0x8d,
+	0x48, 0xf0, 0x16, 0xff, 0xfd, 0xf7, 0x76};
 
 xmlDocPtr doc = NULL;
 const char *base64_input_str = "asdf";
-//static const char *base64_string = "YXNkZg==";
+static const char *base64_string = "YXNkZg==";
 static struct jal_digest_ctx *dgst_ctx = NULL;
 
 static X509 *cert;
 static RSA *key;
+
+xmlChar *namespace_uri;
+xmlChar *tag;
+const char *id_val;
+
+static void generate_doc_for_canon() {
+	xmlChar *a_xml_namespace = (xmlChar *)NAMESPACE;
+	xmlChar *a_xml_tag = (xmlChar *)TAG;
+	xmlChar *a_xml_comment = (xmlChar *)COMMENT;
+
+	xmlNodePtr root = xmlNewDocNode(doc, NULL, a_xml_tag, NULL);
+	xmlNsPtr ns = xmlNewNs(root, a_xml_namespace, NULL);
+	xmlSetNs(root, ns);
+	xmlDocSetRootElement(doc, root);
+	xmlNodePtr comment_node = xmlNewDocComment(doc, a_xml_comment);
+	xmlAddChild(root, comment_node);
+}
 
 static void load_key_and_cert()
 {
@@ -121,6 +145,9 @@ static void build_dom_for_signing()
 void setup()
 {
 	doc =  xmlNewDoc((xmlChar *)"1.0");
+	namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
+	tag = (xmlChar *)TAG;
+	id_val = ID_STR;
 
 	SSL_library_init();
 	xmlSecInit();
@@ -142,19 +169,63 @@ void teardown()
 	xmlSecShutdown();
 }
 
-void test_jalx_create_base64_element_returns_null_with_null_inputs()
+void test_jal_create_base64_element_returns_null_with_null_inputs()
 {
-	assert_equals(1, 1);
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
+
+	ret = jalx_create_base64_element(NULL, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jalx_create_base64_element(doc, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jalx_create_base64_element(doc, (uint8_t *) base64_input_str, 0, namespace_uri, tag, &new_elem);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jalx_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jalx_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(NULL, new_elem);
+
+	ret = jalx_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(NULL, new_elem);
 }
 
-void test_jalx_create_base64_element_fails_does_not_overwrite_existing_elm_pointer()
+void test_jal_create_base64_element_fails_does_not_overwrite_existing_elm_pointer()
 {
-	assert_equals(1, 1);
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
+
+	ret = jalx_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, new_elem);
+
+	xmlNodePtr orig = new_elem;
+	ret = jalx_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(orig, new_elem);
 }
 
-void test_jalx_create_base64_element_works_with_normal_value()
+void test_jal_create_base64_element_works_with_normal_value()
 {
-	assert_equals(1, 1);
+	// <SomeTag>YXNkZg==</SomeTag>
+	xmlNodePtr new_elem = NULL;
+	enum jal_status ret;
+
+	ret = jalx_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, new_elem);
+	assert_tag_equals(TAG, new_elem);
+	assert_content_equals(base64_string, new_elem);
+	assert_namespace_equals(JAL_APP_META_TYPES_NAMESPACE_URI, new_elem);
 }
 
 void test_jalx_create_reference_elem_returns_null_with_null_inputs()
@@ -310,22 +381,82 @@ void test_jalx_create_reference_elem_fails_bad_url()
 
 void test_jalx_digest_xml_data_returns_inval_for_null()
 {
-	assert_equals(1, 1);
+	generate_doc_for_canon();
+	uint8_t *dgst = NULL;
+	int dgst_len = 0;
+	enum jal_status ret = jalx_digest_xml_data(NULL, NULL, NULL, NULL);
+
+	ret = jalx_digest_xml_data(NULL, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	ret = jalx_digest_xml_data(dgst_ctx, NULL, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	ret = jalx_digest_xml_data(dgst_ctx, doc, NULL, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	ret = jalx_digest_xml_data(dgst_ctx, doc, &dgst, NULL);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
 }
 
 void test_jalx_digest_xml_data_returns_inval_for_bad_digest_ctx()
 {
-	assert_equals(1, 1);
+	generate_doc_for_canon();
+	uint8_t *dgst = NULL;
+	int dgst_len = 0;
+
+	free(dgst_ctx->algorithm_uri);
+	dgst_ctx->algorithm_uri = NULL;
+	enum jal_status ret = jalx_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
+	jal_digest_ctx_destroy(&dgst_ctx);
+	dgst_ctx = jal_sha256_ctx_create();
+	dgst_ctx->init = NULL;
+	ret = jalx_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, NULL);
+	assert_equals(0, dgst_len);
+
 }
 
 void test_jalx_digest_xml_data_returns_inval_for_allocated_dgst_buffer()
 {
-	assert_equals(1, 1);
+	generate_doc_for_canon();
+	uint8_t *dgst = (uint8_t *)jal_malloc(4);
+	uint8_t *tmp = dgst;
+	int dgst_len = 0;
+	enum jal_status ret = jalx_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_not_equals(ret, JAL_OK);
+	assert_equals(dgst, tmp);
+	assert_equals(0, dgst_len);
+	free(tmp);
 }
 
 void test_jalx_digest_xml_data_canonicalizes_and_digests()
 {
-	assert_equals(1, 1);
+	generate_doc_for_canon();
+	uint8_t *dgst = NULL;
+	int dgst_len = 0;
+	enum jal_status ret = jalx_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
+	assert_equals(JAL_OK, ret);
+	assert_not_equals(NULL, dgst);
+	assert_not_equals(0, dgst_len);
+
+	assert_equals(32, dgst_len);
+	assert_true(0 == memcmp(EXPECTED_DGST, dgst, dgst_len));
+
+	free(dgst);
 }
 
 void test_jalx_create_audit_transforms_elem_null_inputs()
@@ -438,26 +569,450 @@ void test_add_signature_block()
 	enum jal_status ret = JAL_OK;
 	load_key_and_cert();
 	build_dom_for_signing();
+	xmlNodePtr text = NULL;
 
 	assert_not_equals((void *) NULL, cert);
 	assert_not_equals((void *) NULL, key);
 
 	// sign document
-	ret = jalx_add_signature_block(key, cert, doc, (xmlChar *)ID_STR);
+	ret = jalx_add_signature_block(key, cert, doc, NULL, id_val);
 	assert_equals(JAL_OK, ret);
 
+	//make sure the signature got added in the right place
+	xmlNodePtr sig_node = doc->children->last;
+	assert_not_equals((void*) NULL, sig_node);
+	assert_tag_equals("Signature", sig_node);
+
+	xmlNodePtr signed_info = xmlFirstElementChild(sig_node);
+	assert_not_equals((void*) NULL, signed_info);
+	assert_tag_equals("SignedInfo", signed_info);
+
+	text = signed_info->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr canon_method = xmlFirstElementChild(signed_info);
+	assert_not_equals((void*) NULL, canon_method);
+	assert_tag_equals("CanonicalizationMethod", canon_method);
+
+	text = canon_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr sig_method = text->next;
+	assert_not_equals((void*) NULL, sig_method);
+	assert_tag_equals("SignatureMethod", sig_method);
+
+	text = sig_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	// check the reference element...
+	xmlNodePtr ref_elem = text->next;
+	assert_not_equals((void*) NULL, ref_elem);
+	assert_tag_equals("Reference", ref_elem);
+	assert_attr_equals("URI", XPOINTER_ID_STR, ref_elem);
+
+	xmlNodePtr xforms = xmlFirstElementChild(ref_elem);
+	assert_not_equals((void*) NULL, xforms);
+	assert_tag_equals("Transforms", xforms);
+
+	text = xforms->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr dgst_method = text->next;
+	assert_not_equals((void*) NULL, dgst_method);
+	assert_tag_equals("DigestMethod", dgst_method);
+	assert_attr_equals("Algorithm", "http://www.w3.org/2001/04/xmlenc#sha256", dgst_method);
+
+	text = dgst_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr dgst_value = text->next;
+	assert_not_equals((void*) NULL, dgst_value);
+	assert_tag_equals("DigestValue", dgst_value);
+	assert_content_equals(EXPECTED_SIGNING_DGST_VALUE, dgst_value);
+
+	text = dgst_value->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr xform = xmlFirstElementChild(xforms);
+	assert_not_equals((void*) NULL, xform);
+	assert_tag_equals("Transform", xform);
+	assert_attr_equals("Algorithm", "http://www.w3.org/2000/09/xmldsig#enveloped-signature", xform);
+	xform = xform->next;
+	assert_not_equals((void*) NULL, xform);
+	assert_tag_equals("text", xform);
+	xform = xform->next;
+	assert_equals((void *)NULL, xform);
+
+	text = signed_info->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr sig_value = text->next;
+	assert_not_equals((void*) NULL, sig_value);
+	assert_tag_equals("SignatureValue", sig_value);
+
+	text = sig_value->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr key_info = text->next;
+	assert_not_equals((void*) NULL, key_info);
+	assert_tag_equals("KeyInfo", key_info);
+
+	xmlNodePtr key_val = xmlFirstElementChild(key_info);
+	assert_not_equals((void*) NULL, key_val);
+	assert_tag_equals("KeyValue", key_val);
+
+	text = key_val->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_data = text->next;
+	assert_not_equals((void*) NULL, x509_data);
+	assert_tag_equals("X509Data", x509_data);
+	
+	xmlNodePtr rsa_key_val = xmlFirstElementChild(key_val);
+	assert_not_equals((void*) NULL, rsa_key_val);
+	assert_tag_equals("RSAKeyValue", rsa_key_val);
+
+	xmlNodePtr modulus = xmlFirstElementChild(rsa_key_val);
+	assert_not_equals((void*) NULL, modulus);
+	assert_tag_equals("Modulus", modulus);
+	assert_content_equals(EXPECTED_MODULUS, modulus);
+	
+	text = modulus->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr exponent = text->next;
+	assert_not_equals((void*) NULL, exponent);
+	assert_tag_equals("Exponent", exponent);
+	assert_content_equals(EXPECTED_EXPONENT, exponent);
+
+	xmlNodePtr x509_serial = xmlFirstElementChild(x509_data);
+	assert_not_equals((void*) NULL, x509_serial);
+	assert_tag_equals("X509IssuerSerial", x509_serial);
+
+	xmlNodePtr x509_issuer = xmlFirstElementChild(x509_serial);
+	assert_not_equals((void*) NULL, x509_issuer);
+	assert_tag_equals("X509IssuerName", x509_issuer);
+	assert_content_equals("C=US, ST=MD, L=Columbia, CN=www.tresys.com", x509_issuer);
+
+	text = x509_issuer->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_number = text->next;
+	assert_not_equals((void*) NULL, x509_number);
+	assert_tag_equals("X509SerialNumber", x509_number);
+	assert_content_equals("17415892367561384562", x509_number);
+
+	text = x509_serial->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_subject = text->next;
+	assert_not_equals((void*) NULL, x509_subject);
+	assert_tag_equals("X509SubjectName", x509_subject);
+	assert_content_equals("CN=www.tresys.com,L=Columbia,ST=MD,C=US", x509_subject);
 }
 
 void test_add_signature_block_works_with_prev()
 {
-	assert_equals(1, 1);
+	enum jal_status ret;
+	load_key_and_cert();
+	build_dom_for_signing();
+	xmlNodePtr text = NULL;
+
+	assert_not_equals((void *) NULL, cert);
+	assert_not_equals((void *) NULL, key);
+
+	// sign document
+	ret = jalx_add_signature_block(key, cert, doc, doc->children->last, id_val);
+	assert_equals(JAL_OK, ret);
+
+	//make sure the signature got added in the right place, it should be
+	//right before the 'belemnt' child.
+	xmlNodePtr elm2 = doc->children->last;
+	assert_not_equals((void*) NULL, elm2);
+	assert_tag_equals("bchild", elm2);
+
+	xmlNodePtr sig_node = xmlPreviousElementSibling(elm2);
+	assert_not_equals((void*) NULL, sig_node);
+	assert_tag_equals("Signature", sig_node);
+
+	xmlNodePtr signed_info = xmlFirstElementChild(sig_node);
+	assert_not_equals((void*) NULL, signed_info);
+	assert_tag_equals("SignedInfo", signed_info);
+
+	text = signed_info->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr canon_method = xmlFirstElementChild(signed_info);
+	assert_not_equals((void*) NULL, canon_method);
+	assert_tag_equals("CanonicalizationMethod", canon_method);
+
+	text = canon_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr sig_method = text->next;
+	assert_not_equals((void*) NULL, sig_method);
+	assert_tag_equals("SignatureMethod", sig_method);
+
+	text = sig_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	// check the reference element...
+	xmlNodePtr ref_elem = text->next;
+	assert_not_equals((void*) NULL, ref_elem);
+	assert_tag_equals("Reference", ref_elem);
+	assert_attr_equals("URI", XPOINTER_ID_STR, ref_elem);
+
+	xmlNodePtr xforms = xmlFirstElementChild(ref_elem);
+	assert_not_equals((void*) NULL, xforms);
+	assert_tag_equals("Transforms", xforms);
+
+	text = xforms->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr dgst_method = text->next;
+	assert_not_equals((void*) NULL, dgst_method);
+	assert_tag_equals("DigestMethod", dgst_method);
+	assert_attr_equals("Algorithm", "http://www.w3.org/2001/04/xmlenc#sha256", dgst_method);
+
+	text = dgst_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr dgst_value = text->next;
+	assert_not_equals((void*) NULL, dgst_value);
+	assert_tag_equals("DigestValue", dgst_value);
+	assert_content_equals(EXPECTED_SIGNING_DGST_VALUE, dgst_value);
+
+	text = dgst_value->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr xform = xmlFirstElementChild(xforms);
+	assert_not_equals((void*) NULL, xform);
+	assert_tag_equals("Transform", xform);
+	assert_attr_equals("Algorithm", "http://www.w3.org/2000/09/xmldsig#enveloped-signature", xform);
+	xform = xform->next;
+	assert_not_equals((void*) NULL, xform);
+	assert_tag_equals("text", xform);
+	xform = xform->next;
+	assert_equals((void *)NULL, xform);
+
+	text = signed_info->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr sig_value = text->next;
+	assert_not_equals((void*) NULL, sig_value);
+	assert_tag_equals("SignatureValue", sig_value);
+
+	text = sig_value->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr key_info = text->next;
+	assert_not_equals((void*) NULL, key_info);
+	assert_tag_equals("KeyInfo", key_info);
+
+	xmlNodePtr key_val = xmlFirstElementChild(key_info);
+	assert_not_equals((void*) NULL, key_val);
+	assert_tag_equals("KeyValue", key_val);
+
+	text = key_val->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_data = text->next;
+	assert_not_equals((void*) NULL, x509_data);
+	assert_tag_equals("X509Data", x509_data);
+	
+	xmlNodePtr rsa_key_val = xmlFirstElementChild(key_val);
+	assert_not_equals((void*) NULL, rsa_key_val);
+	assert_tag_equals("RSAKeyValue", rsa_key_val);
+
+	xmlNodePtr modulus = xmlFirstElementChild(rsa_key_val);
+	assert_not_equals((void*) NULL, modulus);
+	assert_tag_equals("Modulus", modulus);
+	assert_content_equals(EXPECTED_MODULUS, modulus);
+	
+	text = modulus->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr exponent = text->next;
+	assert_not_equals((void*) NULL, exponent);
+	assert_tag_equals("Exponent", exponent);
+	assert_content_equals(EXPECTED_EXPONENT, exponent);
+
+	xmlNodePtr x509_serial = xmlFirstElementChild(x509_data);
+	assert_not_equals((void*) NULL, x509_serial);
+	assert_tag_equals("X509IssuerSerial", x509_serial);
+
+	xmlNodePtr x509_issuer = xmlFirstElementChild(x509_serial);
+	assert_not_equals((void*) NULL, x509_issuer);
+	assert_tag_equals("X509IssuerName", x509_issuer);
+	assert_content_equals("C=US, ST=MD, L=Columbia, CN=www.tresys.com", x509_issuer);
+
+	text = x509_issuer->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_number = text->next;
+	assert_not_equals((void*) NULL, x509_number);
+	assert_tag_equals("X509SerialNumber", x509_number);
+	assert_content_equals("17415892367561384562", x509_number);
+
+	text = x509_serial->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_subject = text->next;
+	assert_not_equals((void*) NULL, x509_subject);
+	assert_tag_equals("X509SubjectName", x509_subject);
+	assert_content_equals("CN=www.tresys.com,L=Columbia,ST=MD,C=US", x509_subject);
 }
 
 void test_add_signature_fails_with_bad_input()
 {
-	assert_equals(1, 1);
+	enum jal_status ret;
+	load_key_and_cert();
+	build_dom_for_signing();
+	assert_not_equals((void *) NULL, cert);
+	assert_not_equals((void *) NULL, key);
+
+	assert_not_equals((void *) NULL, key);
+	ret = jalx_add_signature_block(NULL, NULL, doc, NULL, id_val);
+	assert_equals(JAL_E_INVAL, ret);
+	ret = jalx_add_signature_block(key, NULL, NULL, NULL, id_val);
+	assert_equals(JAL_E_INVAL, ret);
+	ret = jalx_add_signature_block(key, NULL, doc, NULL, NULL);
+	assert_equals(JAL_E_INVAL, ret);
 }
+
 void test_add_signature_works_without_cert()
 {
-	assert_equals(1, 1);
+	enum jal_status ret;
+	load_key_and_cert();
+	build_dom_for_signing();
+	xmlNodePtr text = NULL;
+
+	assert_not_equals((void *) NULL, key);
+
+	// sign document
+	ret = jalx_add_signature_block(key, NULL, doc, NULL, id_val);
+	assert_equals(JAL_OK, ret);
+
+	//make sure the signature got added in the right place
+	xmlNodePtr sig_node = doc->children->last;
+	assert_not_equals((void*) NULL, sig_node);
+	assert_tag_equals("Signature", sig_node);
+
+	xmlNodePtr signed_info = xmlFirstElementChild(sig_node);
+	assert_not_equals((void*) NULL, signed_info);
+	assert_tag_equals("SignedInfo", signed_info);
+
+	text = signed_info->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr canon_method = xmlFirstElementChild(signed_info);
+	assert_not_equals((void*) NULL, canon_method);
+	assert_tag_equals("CanonicalizationMethod", canon_method);
+
+	text = canon_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr sig_method = text->next;
+	assert_not_equals((void*) NULL, sig_method);
+	assert_tag_equals("SignatureMethod", sig_method);
+
+	text = sig_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	// check the reference element...
+	xmlNodePtr ref_elem = text->next;
+	assert_not_equals((void*) NULL, ref_elem);
+	assert_tag_equals("Reference", ref_elem);
+	assert_attr_equals("URI", XPOINTER_ID_STR, ref_elem);
+
+	xmlNodePtr xforms = xmlFirstElementChild(ref_elem);
+	assert_not_equals((void*) NULL, xforms);
+	assert_tag_equals("Transforms", xforms);
+
+	text = xforms->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr dgst_method = text->next;
+	assert_not_equals((void*) NULL, dgst_method);
+	assert_tag_equals("DigestMethod", dgst_method);
+	assert_attr_equals("Algorithm", "http://www.w3.org/2001/04/xmlenc#sha256", dgst_method);
+
+	text = dgst_method->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr dgst_value = text->next;
+	assert_not_equals((void*) NULL, dgst_value);
+	assert_tag_equals("DigestValue", dgst_value);
+	assert_content_equals(EXPECTED_SIGNING_DGST_VALUE, dgst_value);
+
+	text = dgst_value->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr xform = xmlFirstElementChild(xforms);
+	assert_not_equals((void*) NULL, xform);
+	assert_tag_equals("Transform", xform);
+	assert_attr_equals("Algorithm", "http://www.w3.org/2000/09/xmldsig#enveloped-signature", xform);
+	xform = xform->next;
+	assert_not_equals((void*) NULL, xform);
+	assert_tag_equals("text", xform);
+	xform = xform->next;
+	assert_equals((void *)NULL, xform);
+
+	text = signed_info->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr sig_value = text->next;
+	assert_not_equals((void*) NULL, sig_value);
+	assert_tag_equals("SignatureValue", sig_value);
+
+	text = sig_value->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr key_info = text->next;
+	assert_not_equals((void*) NULL, key_info);
+	assert_tag_equals("KeyInfo", key_info);
+
+	xmlNodePtr key_val = xmlFirstElementChild(key_info);
+	assert_not_equals((void*) NULL, key_val);
+	assert_tag_equals("KeyValue", key_val);
+
+	text = key_val->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	// make sure there is no cert data...
+	xmlNodePtr x509_data = text->next;
+	assert_equals((void*) NULL, x509_data);
 }

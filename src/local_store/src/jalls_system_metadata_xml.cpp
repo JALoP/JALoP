@@ -43,8 +43,8 @@
 #include <jalop/jal_namespaces.h>
 
 #include "jal_alloc.h"
-#include "jal_xml_utils.hpp"
 #include "jal_asprintf_internal.h"
+#include "jalls_xml_utils.hpp"
 #include "jalls_system_metadata_xml.hpp"
 
 #define JALLS_UUID_LEN 36
@@ -161,7 +161,7 @@ extern "C" int jalls_create_system_metadata(enum jalls_data_type data_type, cons
 
 	///add the Timestamp element
 	char *timestamp_str;
-	timestamp_str = jal_get_timestamp();
+	timestamp_str = jalls_get_timestamp();
 	XMLCh *timestamp_xml;
 	timestamp_xml = XMLString::transcode(timestamp_str);
 	DOMElement *timestamp_elt;
