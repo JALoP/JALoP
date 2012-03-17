@@ -43,7 +43,7 @@
 #include <jalop/jal_namespaces.h>
 
 #include "jal_alloc.h"
-#include "jal_xml_utils.hpp"
+#include "jal_xml_utils.h"
 #include "jal_asprintf_internal.h"
 #include "jsub_system_metadata_xml.hpp"
 

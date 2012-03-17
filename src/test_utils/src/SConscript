@@ -7,6 +7,8 @@ env.Append(CCFLAGS=('-DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -D
 
 env.MergeFlags(env['libxml2_cflags'])
 env.MergeFlags(env['libxml2_ldflags'])
+env.MergeFlags(env['xerces_cflags'])
+env.MergeFlags(env['xerces_ldflags'])
 
 sources = env.Glob("*.c") + env.Glob("*.cpp")
 test_utils = env.SharedLibrary(target='jal-test-utils', source=sources)

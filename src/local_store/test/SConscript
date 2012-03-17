@@ -36,7 +36,7 @@ tests.append(testEnv.TestDeptTest('test_jalls_xml_utils.cpp',
 			lib_common, db_layer, test_utils], useProxies=False)[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalls_system_metadata_xml.cpp',
-	other_sources=[test_utils, lib_common])[0].abspath)
+	other_sources=[test_utils, lib_common, jallsXmlUtilsObj])[0].abspath)
 
 local_store_tests = env.Alias('local_store_tests', tests, 'test_dept ' + " ".join(tests))
 

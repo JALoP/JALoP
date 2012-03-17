@@ -1,6 +1,10 @@
-Import('*')
+import os
+
 from Utils import install_for_build
 from Utils import add_project_lib
+
+Import('*')
+
 utilsEnv = utilsEnv.Clone();
 sources = utilsEnv.Glob("*.c")
 

@@ -176,6 +176,7 @@ enum jal_status jalp_init();
  */
 void jalp_shutdown();
 
+/** @} */
 #ifdef __cplusplus
 }
 #endif

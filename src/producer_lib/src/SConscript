@@ -4,7 +4,7 @@ from Utils import install_for_build
 Import('*')
 
 sources = []
-for source in (env.Glob("*.c") + env.Glob("*.cpp")):
+for source in env.Glob("*.c"):
 	sources.append(source)
 
 # build config.h

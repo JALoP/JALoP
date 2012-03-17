@@ -34,6 +34,7 @@ extern "C" {
 #endif
 
 #include <jalop/jalp_context.h>
+#include <jalop/jalp_app_metadata.h>
 
 /**
  * @defgroup audit Sending Audit Data
@@ -82,5 +83,6 @@ enum jal_status jalp_audit(jalp_context *ctx,
 #ifdef __cplusplus
 }
 #endif
+
 #endif // _JALP_AUDIT_H_
 

@@ -5,11 +5,8 @@ lib_common_env.MergeFlags({'CPPPATH':['#src/lib_common/include', '#src/lib_commo
 lib_common_env.MergeFlags(env['lfs_cflags'])
 lib_common_env.MergeFlags(env['openssl_cflags'])
 lib_common_env.MergeFlags(env['openssl_ldflags'])
-lib_common_env.MergeFlags(env['xerces_cflags'])
 
-lib_common_env.MergeFlags(env['xerces_ldflags'])
 lib_common_env.MergeFlags(env['libuuid_ldflags'])
-lib_common_env.MergeFlags(env['santuario_ldflags'])
 
 lib_common_env.MergeFlags(env['libxml2_cflags'])
 lib_common_env.MergeFlags(env['libxml2_ldflags'])
