@@ -181,7 +181,7 @@ enum jal_status jal_create_reference_elem(
 			ret = JAL_E_INVAL_URI;
 			goto err_out;
 		}
-		xmlFree(ret_uri);
+		xmlFreeURI(ret_uri);
 		xmlSetProp(reference_elem, (xmlChar *) URI, xml_reference_uri);
 	}
 
@@ -201,7 +201,7 @@ enum jal_status jal_create_reference_elem(
 	return JAL_OK;
 
 err_out:
-
+	xmlFreeNodeList(reference_elem);
 	return ret;
 }
 

@@ -212,6 +212,7 @@ void test_jal_create_base64_element_fails_does_not_overwrite_existing_elm_pointe
 	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals(orig, new_elem);
+	xmlFreeNodeList(new_elem);
 }
 
 void test_jal_create_base64_element_works_with_normal_value()
@@ -226,6 +227,7 @@ void test_jal_create_base64_element_works_with_normal_value()
 	assert_tag_equals(TAG, new_elem);
 	assert_content_equals(base64_string, new_elem);
 	assert_namespace_equals(JAL_APP_META_TYPES_NAMESPACE_URI, new_elem);
+	xmlFreeNodeList(new_elem);
 }
 
 void test_jal_create_reference_elem_returns_null_with_null_inputs()
@@ -278,7 +280,7 @@ void test_jal_create_reference_elem_returns_null_with_null_inputs()
 				strlen(base64_input_str),
 				doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-
+	xmlFree(buf);
 }
 
 void test_jal_create_reference_elem_succeeds_with_good_input()
