@@ -508,6 +508,10 @@ enum jal_status jal_add_signature_block(
 		}
 		xmlFree(serial);
 
+		if (!xmlSecTmplX509DataAddCertificate(x509DataNode)) {
+			goto done;
+		}
+
 		BIO *bio = BIO_new(BIO_s_mem());
 		PEM_write_bio_X509(bio, x509);
 		if (0 > xmlSecOpenSSLAppKeyCertLoadBIO(dsigCtx->signKey,
