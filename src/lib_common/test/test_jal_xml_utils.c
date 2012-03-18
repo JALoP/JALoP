@@ -280,7 +280,6 @@ void test_jal_create_reference_elem_returns_null_with_null_inputs()
 				strlen(base64_input_str),
 				doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	xmlFree(buf);
 }
 
 void test_jal_create_reference_elem_succeeds_with_good_input()
@@ -554,7 +553,6 @@ void test_jal_xml_output_bad_inputs()
 	assert_equals(0, xmlStrcmp(buf, BAD_CAST "foo"));
 
 	xmlFree(buf);
-
 }
 
 void test_jal_xml_output_good_inputs()
@@ -563,7 +561,7 @@ void test_jal_xml_output_good_inputs()
 	enum jal_status ret = jal_xml_output(doc, &buf);
         assert_equals(ret, JAL_OK);
 	assert_not_equals(NULL, buf);
-
+	xmlFree(buf);
 }
 
 void test_add_signature_block()
@@ -716,6 +714,18 @@ void test_add_signature_block()
 	assert_content_equals("17415892367561384562", x509_number);
 
 	text = x509_serial->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	text = text->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_certificate = text->next;
+	assert_not_equals((void*) NULL, x509_certificate);
+	assert_tag_equals("X509Certificate", x509_certificate);
+
+	text = x509_certificate->next;
 	assert_not_equals((void *) NULL, text);
 	assert_tag_equals("text", text);
 
@@ -880,6 +890,18 @@ void test_add_signature_block_works_with_prev()
 	assert_content_equals("17415892367561384562", x509_number);
 
 	text = x509_serial->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	text = text->next;
+	assert_not_equals((void *) NULL, text);
+	assert_tag_equals("text", text);
+
+	xmlNodePtr x509_certificate = text->next;
+	assert_not_equals((void*) NULL, x509_certificate);
+	assert_tag_equals("X509Certificate", x509_certificate);
+
+	text = x509_certificate->next;
 	assert_not_equals((void *) NULL, text);
 	assert_tag_equals("text", text);
 
