@@ -33,6 +33,7 @@
 #include "jalp_log_severity_xml.h"
 #include "jal_alloc.h"
 #include "xml_test_utils2.h"
+#include "jal_asprintf_internal.h"
 
 struct jalp_log_severity *severity = NULL;
 xmlDocPtr new_doc;
@@ -160,7 +161,7 @@ void test_log_severity_to_elem_works_with_int_max()
 	xmlFree(ret_val);
 	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
 	char *max = NULL;
-	int check = asprintf(&max, "%d", INT_MAX);
+	int check = jal_asprintf(&max, "%d", INT_MAX);
 	assert_equals(1, check > 0);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST max));
 	xmlFree(ret_val);
@@ -185,7 +186,7 @@ void test_log_severity_to_elem_works_with_int_min()
 	ret_val = xmlNodeGetContent(new_doc->xmlChildrenNode);
 
 	char *min = NULL;
-	int check = asprintf(&min, "%d", INT_MIN);
+	int check = jal_asprintf(&min, "%d", INT_MIN);
 	assert_equals(1, check > 0);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST min));
 	xmlFree(ret_val);

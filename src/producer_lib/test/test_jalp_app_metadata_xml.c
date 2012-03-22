@@ -38,6 +38,7 @@
 #include "jalp_app_metadata_xml.h"
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
+#include "jal_xml_utils.h"
 #include "xml_test_utils2.h"
 
 #define EVENT_ID "event-123-xyz"
@@ -106,24 +107,24 @@ void test_app_metadata_to_elem_fails_with_invalid_input()
 
 	ret = jalp_app_metadata_to_elem(NULL, ctx, doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_app_metadata_to_elem(app_meta, NULL, doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_app_metadata_to_elem(app_meta, ctx, NULL, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	xmlNodePtr bad_elem = (xmlNodePtr) 0xbadf00d;
 	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &bad_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 void test_app_metadata_to_elem_works_for_custom()
 {
@@ -146,7 +147,7 @@ void test_app_metadata_to_elem_works_for_custom()
 	assert_true(0 == uuid_parse(uuidstr, uuid));
 	xmlFree(jid);
 
-	xmlNodePtr event_id = xmlFirstElementChild(new_elem);
+	xmlNodePtr event_id = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, event_id);
 	assert_tag_equals(EVENT_ID_TAG, event_id);
 	assert_content_equals(EVENT_ID, event_id);
@@ -155,7 +156,7 @@ void test_app_metadata_to_elem_works_for_custom()
 	assert_not_equals(NULL, custom);
 	assert_tag_equals(CUSTOM_TAG, custom);
 
-	xmlNodePtr foobar = xmlFirstElementChild(custom);
+	xmlNodePtr foobar = jal_get_first_element_child(custom);
 	assert_tag_equals(FOO_TAG, foobar);
 
 	xmlNodePtr should_be_null = custom->next;
@@ -172,7 +173,7 @@ void test_app_metadata_to_elem_fails_with_bad_xml_for_custom()
 	app_meta->custom = jal_strdup(BAD_CUSTOM_XML);
 	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	free(app_meta->custom);
 	app_meta->custom = NULL;
@@ -199,7 +200,7 @@ void test_app_metadata_to_elem_works_without_event_id()
 	assert_true(0 == uuid_parse(uuidstr, uuid));
 	xmlFree(jid);
 
-	xmlNodePtr custom = xmlFirstElementChild(new_elem);
+	xmlNodePtr custom = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, custom);
 	assert_tag_equals(CUSTOM_TAG, custom);
 
@@ -240,7 +241,7 @@ void test_app_metadata_to_elem_works_for_syslog()
 	assert_true(0 == uuid_parse(uuidstr, uuid));
 	xmlFree(jid);
 
-	xmlNodePtr event_id = xmlFirstElementChild(new_elem);
+	xmlNodePtr event_id = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, event_id);
 	assert_tag_equals(EVENT_ID_TAG, event_id);
 	assert_content_equals(EVENT_ID, event_id);
@@ -276,7 +277,7 @@ void test_app_metadata_to_elem_works_for_logger()
 	assert_true(0 == uuid_parse(uuidstr, uuid));
 	xmlFree(jid);
 
-	xmlNodePtr event_id = xmlFirstElementChild(new_elem);
+	xmlNodePtr event_id = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, event_id);
 	assert_tag_equals(EVENT_ID_TAG, event_id);
 	assert_content_equals(EVENT_ID, event_id);
@@ -312,7 +313,7 @@ void test_app_metadata_to_elem_works_with_journal_meta()
 	assert_true(0 == uuid_parse(uuidstr, uuid));
 	xmlFree(jid);
 
-	xmlNodePtr event_id = xmlFirstElementChild(new_elem);
+	xmlNodePtr event_id = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, event_id);
 	assert_tag_equals(EVENT_ID_TAG, event_id);
 	assert_content_equals(EVENT_ID, event_id);
@@ -340,5 +341,5 @@ void test_app_metadata_to_elem_fails_with_invalid_journal_meta()
 	ret = jalp_app_metadata_to_elem(app_meta, ctx, doc, &new_elem);
 	app_meta->file_metadata = NULL;
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }

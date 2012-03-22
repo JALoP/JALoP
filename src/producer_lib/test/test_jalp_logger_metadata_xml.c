@@ -43,6 +43,7 @@
 #include "jalp_stack_frame_xml.h"
 #include "jalp_logger_metadata_xml.h"
 #include "jal_alloc.h"
+#include "jal_xml_utils.h"
 #include "xml_test_utils2.h"
 
 jalp_context *ctx = NULL;
@@ -117,15 +118,15 @@ void test_logger_metadata_to_elem_returns_null_for_null()
 {
 	assert_equals(JAL_E_XML_CONVERSION,
 			jalp_logger_metadata_to_elem(NULL, ctx, doc, &new_elem));
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	assert_equals(JAL_E_XML_CONVERSION,
 			jalp_logger_metadata_to_elem(logger_metadata, NULL, doc, &new_elem));
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	assert_equals(JAL_E_XML_CONVERSION,
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, NULL, &new_elem));
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	assert_equals(JAL_E_XML_CONVERSION,
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, NULL));
@@ -150,7 +151,7 @@ void test_logger_metadata_to_elem_returns_valid_element()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -195,7 +196,7 @@ void test_logger_metadata_to_elem_returns_valid_element()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -216,7 +217,7 @@ void test_logger_metadata_to_elem_returns_valid_element()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -229,7 +230,7 @@ void test_logger_metadata_to_elem_returns_invalid_bad_sd()
 
 	assert_equals(JAL_E_INVAL_STRUCTURED_DATA,
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 void test_logger_metadata_to_elem_returns_valid_element_null_logger_name()
@@ -241,7 +242,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_logger_name()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_SEVERITY_TAG, temp);
 
@@ -274,7 +275,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_logger_name()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -295,7 +296,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_logger_name()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -310,7 +311,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_severity()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -344,7 +345,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_severity()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -365,7 +366,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_severity()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -379,7 +380,7 @@ void test_logger_metadata_to_elem_returns_invalid_element_bad_timestamp()
 
 	assert_equals(JAL_E_INVAL_TIMESTAMP,
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 */
 void test_logger_metadata_to_elem_returns_valid_element_null_timestamp()
@@ -391,7 +392,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_timestamp()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -429,7 +430,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_timestamp()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -450,7 +451,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_timestamp()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -465,7 +466,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_threadId()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -498,7 +499,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_threadId()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -519,7 +520,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_threadId()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -534,7 +535,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_message()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -567,7 +568,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_message()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -588,7 +589,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_message()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -603,7 +604,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_nested_diagnostic_c
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -641,7 +642,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_nested_diagnostic_c
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -657,7 +658,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_nested_diagnostic_c
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -672,7 +673,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_mapped_diagnostic_c
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -710,7 +711,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_mapped_diagnostic_c
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -726,7 +727,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_mapped_diagnostic_c
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -741,7 +742,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_stack_frame()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -792,7 +793,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_stack_frame()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -807,7 +808,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_sd()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -845,7 +846,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_sd()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -861,7 +862,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_sd()
 	assert_content_equals(JALP_TEST_LMXML_MAPPED_DIAGNOSTIC_CONTEXT, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -877,7 +878,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_hostname()
 	assert_not_equals(NULL, new_elem);
 
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -911,7 +912,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_hostname()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -932,7 +933,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_hostname()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -947,7 +948,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_app_name()
 			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOGGERNAME_TAG, temp);
 	assert_content_equals(JALP_TEST_LMXML_LOGGER_NAME, temp);
@@ -982,7 +983,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_app_name()
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
 	
-	xmlNodePtr temp2 = xmlFirstElementChild(temp);
+	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);
 	assert_attr_equals("Depth", JALP_TEST_LMXML_SF_DEPTH_GOOD_STR, temp2);
@@ -1003,7 +1004,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_app_name()
 	assert_attr_equals("SD_ID", JALP_TEST_LMXML_SD_ID, temp);
 
 	temp = temp->next;
-	assert_equals(NULL, temp);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));

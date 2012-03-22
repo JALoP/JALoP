@@ -86,7 +86,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 				goto out;
 			}
 			xmlNodePtr first_elem = NULL;
-			first_elem = xmlFirstElementChild(reference_elem);
+			first_elem = jal_get_first_element_child(reference_elem);
 			if (!first_elem) {
 				xmlAddChild(reference_elem, transforms_elem);
 			} else {

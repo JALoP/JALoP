@@ -33,6 +33,7 @@
 
 #include "jalp_transform_xml.h"
 #include "jal_alloc.h"
+#include "jal_xml_utils.h"
 #include "xml_test_utils2.h"
 
 #include <arpa/inet.h>
@@ -144,15 +145,15 @@ void test_transform_to_elem_returns_null_with_null_inputs()
 
 	ret = jalp_transform_to_elem(transform2, doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_transform_to_elem(transform2, NULL, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_transform_to_elem(NULL, doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 void test_transform_to_elem_fails_does_not_overwrite_existing_elm_pointer()
@@ -207,7 +208,7 @@ void test_transform_to_elem_fails_with_bad_transform_type()
 
 	ret = jalp_transform_to_elem(transform2, doc, &new_elem);
 	assert_equals(JAL_E_INVAL_TRANSFORM, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	transform2->type = transform_type;
 }
@@ -225,13 +226,13 @@ void test_transform_to_elem_handle_custom_succeeds_with_xml()
 	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Algorithm", transform1->other_info->uri, transform_elm);
 
-	child_element = xmlFirstElementChild(transform_elm);
+	child_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, child_element);
 	assert_tag_equals("some", child_element);
 	assert_content_equals("x", child_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(child_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(child_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -249,8 +250,8 @@ void test_transform_to_elem_handle_custom_succeeds_without_xml()
 	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Algorithm", other_info->uri, transform_elm);
 
-	xmlNodePtr temp = xmlFirstElementChild(transform_elm);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(transform_elm);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -318,8 +319,8 @@ void test_transform_to_elem_succeeds_with_custom()
 	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Algorithm", "http://uri.com/", new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -340,7 +341,7 @@ void test_transform_to_elem_fails_with_bad_custom()
 
 	ret = jalp_transform_to_elem(transform_other, doc2, &new_elem);
 	assert_equals(JAL_E_INVAL_URI, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	jalp_transform_destroy(&transform_other);
 	xmlFreeDoc(doc2);
@@ -365,17 +366,17 @@ void test_transform_to_elem_handle_xor_succeeds_with_key()
 	assert_attr_equals("Algorithm",
 			"http://www.dod.mil/algorithms/encryption#xor32-ecb", transform_elm);
 
-	xor_element = xmlFirstElementChild(transform_elm);
+	xor_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, xor_element);
 	assert_tag_equals("XOR", xor_element);
 
-	xor_key_element = xmlFirstElementChild(xor_element);
+	xor_key_element = jal_get_first_element_child(xor_element);
 	assert_not_equals(NULL, xor_key_element);
 	assert_tag_equals("Key", xor_key_element);
 	assert_content_equals(b64_net_order_xor_key, xor_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(xor_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(xor_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -434,17 +435,17 @@ void test_transform_to_elem_succeeds_with_xor()
 	assert_attr_equals("Algorithm",
 			"http://www.dod.mil/algorithms/encryption#xor32-ecb", new_elem);
 
-	xor_element = xmlFirstElementChild(new_elem);
+	xor_element = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, xor_element);
 	assert_tag_equals("XOR", xor_element);
 
-	xor_key_element = xmlFirstElementChild(xor_element);
+	xor_key_element = jal_get_first_element_child(xor_element);
 	assert_not_equals(NULL, xor_key_element);
 	assert_tag_equals("Key", xor_key_element);
 	assert_content_equals(b64_net_order_xor_key, xor_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(xor_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(xor_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -473,12 +474,12 @@ void test_transform_to_elem_handle_aes_succeeds_with_no_key_no_iv()
 			jalp_xml_aes128_uri_ch, transform_elm);
 	// there shouldn't be any child elements if there is no key or iv
 
-	aes_element = xmlFirstElementChild(transform_elm);
+	aes_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes128_ch, aes_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -504,17 +505,17 @@ void test_transform_to_elem_handle_aes_succeeds_with_128_key_no_iv()
 	assert_attr_equals("Algorithm",
 			jalp_xml_aes128_uri_ch, transform_elm);
 
-	aes_element = xmlFirstElementChild(transform_elm);
+	aes_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes128_ch, aes_element);
 
-	aes_key_element = xmlFirstElementChild(aes_element);
+	aes_key_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_key_element);
 	assert_tag_equals("Key", aes_key_element);
 	assert_content_equals(b64_aes_128_key, aes_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -540,17 +541,17 @@ void test_transform_to_elem_handle_aes_succeeds_with_192_key_no_iv()
 	assert_attr_equals("Algorithm",
 			jalp_xml_aes192_uri_ch, transform_elm);
 
-	aes_element = xmlFirstElementChild(transform_elm);
+	aes_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes192_ch, aes_element);
 
-	aes_key_element = xmlFirstElementChild(aes_element);
+	aes_key_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_key_element);
 	assert_tag_equals("Key", aes_key_element);
 	assert_content_equals(b64_aes_192_key, aes_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -576,17 +577,17 @@ void test_transform_to_elem_handle_aes_succeeds_with_256_key_no_iv()
 	assert_attr_equals("Algorithm",
 			jalp_xml_aes256_uri_ch, transform_elm);
 
-	aes_element = xmlFirstElementChild(transform_elm);
+	aes_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes256_ch, aes_element);
 
-	aes_key_element = xmlFirstElementChild(aes_element);
+	aes_key_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_key_element);
 	assert_tag_equals("Key", aes_key_element);
 	assert_content_equals(b64_aes_256_key, aes_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -612,17 +613,17 @@ void test_transform_to_elem_handle_aes_succeeds_with_iv_but_no_key()
 	assert_attr_equals("Algorithm",
 			jalp_xml_aes128_uri_ch, transform_elm);
 
-	aes_element = xmlFirstElementChild(transform_elm);
+	aes_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes128_ch, aes_element);
 
-	aes_iv_element = xmlFirstElementChild(aes_element);
+	aes_iv_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_iv_element);
 	assert_tag_equals("IV", aes_iv_element);
 	assert_content_equals(b64_aes_128_iv, aes_iv_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_iv_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_iv_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -650,11 +651,11 @@ void test_transform_to_elem_handle_aes_succeeds_with_key_and_iv()
 	assert_attr_equals("Algorithm",
 			jalp_xml_aes192_uri_ch, transform_elm);
 
-	aes_element = xmlFirstElementChild(transform_elm);
+	aes_element = jal_get_first_element_child(transform_elm);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes192_ch, aes_element);
 
-	aes_key_element = xmlFirstElementChild(aes_element);
+	aes_key_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_key_element);
 	assert_tag_equals("Key", aes_key_element);
 	assert_content_equals(b64_aes_192_key, aes_key_element);
@@ -664,8 +665,8 @@ void test_transform_to_elem_handle_aes_succeeds_with_key_and_iv()
 	assert_tag_equals("IV", aes_iv_element);
 	assert_content_equals(b64_aes_128_iv, aes_iv_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_iv_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_iv_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, transform_elm);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -689,17 +690,17 @@ void test_transform_to_elem_succeeds_with_128_aes()
 	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Algorithm", jalp_xml_aes128_uri_ch, new_elem);
 
-	aes_element = xmlFirstElementChild(new_elem);
+	aes_element = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes128_ch, aes_element);
 
-	aes_key_element = xmlFirstElementChild(aes_element);
+	aes_key_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_key_element);
 	assert_tag_equals("Key", aes_key_element);
 	assert_content_equals(b64_aes_128_key, aes_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -724,17 +725,17 @@ void test_transform_to_elem_succeeds_with_192_aes()
 	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Algorithm", jalp_xml_aes192_uri_ch, new_elem);
 
-	aes_element = xmlFirstElementChild(new_elem);
+	aes_element = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes192_ch, aes_element);
 
-	aes_key_element = xmlFirstElementChild(aes_element);
+	aes_key_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_key_element);
 	assert_tag_equals("Key", aes_key_element);
 	assert_content_equals(b64_aes_192_key, aes_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -759,17 +760,17 @@ void test_transform_to_elem_succeeds_with_256_aes()
 	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Algorithm", jalp_xml_aes256_uri_ch, new_elem);
 
-	aes_element = xmlFirstElementChild(new_elem);
+	aes_element = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, aes_element);
 	assert_tag_equals(jalp_xml_aes256_ch, aes_element);
 
-	aes_key_element = xmlFirstElementChild(aes_element);
+	aes_key_element = jal_get_first_element_child(aes_element);
 	assert_not_equals(NULL, aes_key_element);
 	assert_tag_equals("Key", aes_key_element);
 	assert_content_equals(b64_aes_256_key, aes_key_element);
 
-	xmlNodePtr temp = xmlFirstElementChild(aes_key_element);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(aes_key_element);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -797,8 +798,8 @@ void test_transform_to_elem_succeeds_with_deflate()
 	assert_attr_equals("Algorithm",
 			"http://www.dod.mil/algorithms/compression#deflate", new_elem);
 	
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));

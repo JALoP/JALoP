@@ -304,27 +304,27 @@ extern "C" void test_create_base64_element_returns_null_with_null_inputs()
 
 	ret = jalls_create_base64_element(NULL, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalls_create_base64_element(doc, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalls_create_base64_element(doc, (uint8_t *) base64_input_str, 0, namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalls_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalls_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalls_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL);
 	assert_equals(JAL_E_INVAL, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 extern "C" void test_create_base64_element_fails_does_not_overwrite_existing_elm_pointer()
@@ -363,17 +363,17 @@ extern "C" void test_create_reference_elem_returns_null_with_null_inputs()
 
 	ret = jalls_create_reference_elem(NULL, NULL, NULL, 0, doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalls_create_reference_elem((char *) EXAMPLE_URI, NULL,
 			(uint8_t *)base64_input_str, strlen(base64_input_str), doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalls_create_reference_elem((char *) EXAMPLE_URI, (char *) EXAMPLE_DIGEST_METHOD,
 			NULL, strlen(base64_input_str), doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 extern "C" void test_create_reference_elem_succeeds_with_good_input()
@@ -457,7 +457,7 @@ extern "C" void test_create_reference_elem_fails_bad_url()
 	ret = jalls_create_reference_elem((char *) EXAMPLE_BAD_URI, (char *) EXAMPLE_DIGEST_METHOD,
 			(uint8_t *)base64_input_str, strlen(base64_input_str), doc, &reference_elem);
 	assert_equals(JAL_E_INVAL_URI, ret);
-	assert_equals(NULL, reference_elem);
+	assert_equals((void*)NULL, reference_elem);
 }
 
 extern "C" void test_digest_xml_data_returns_inval_for_null()

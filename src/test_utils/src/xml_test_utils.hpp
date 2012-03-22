@@ -89,7 +89,7 @@ MemBufFormatTarget *xml_output(DOMDocument *doc);
 		DOMNode *actual_attr_node = elem->getAttributes()->getNamedItem(xml_attr_name); \
 		XMLString::release(&xml_attr_name); \
 		if (expected_value == NULL) { \
-			assert_equals(NULL, actual_attr_node); \
+			assert_equals((void*)NULL, actual_attr_node); \
 		} else { \
 			assert_not_equals(NULL, actual_attr_node); \
 			const XMLCh *actual_value = actual_attr_node->getNodeValue(); \
@@ -113,7 +113,7 @@ MemBufFormatTarget *xml_output(DOMDocument *doc);
 		DOMElement *elem = the_elem; \
 		const XMLCh *actual_text_content = elem->getTextContent(); \
 		if (expected_value == NULL) { \
-			assert_equals(NULL, actual_text_content); \
+			assert_equals((void*)NULL, actual_text_content); \
 		} else { \
 			assert_not_equals(NULL, actual_text_content); \
 			XMLCh * expected_text_content = XMLString::transcode(expected_value); \

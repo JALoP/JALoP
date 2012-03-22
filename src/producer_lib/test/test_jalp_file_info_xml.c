@@ -35,6 +35,7 @@
 #include "jalp_file_info_xml.h"
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
+#include "jal_xml_utils.h"
 #include "xml_test_utils2.h"
 
 static xmlDocPtr doc = NULL;
@@ -69,20 +70,20 @@ void test_file_info_to_elem_returns_null_with_null_inputs()
 
 	ret = jalp_file_info_to_elem(NULL, NULL, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_file_info_to_elem(NULL, doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 
 	ret = jalp_file_info_to_elem(file_info, NULL, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_file_info_to_elem(file_info, doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 void test_file_info_to_elem_returns_null_with_no_filename()
@@ -96,7 +97,7 @@ void test_file_info_to_elem_returns_null_with_no_filename()
 	// this should fail, because file_info->filename is NULL
 	ret = jalp_file_info_to_elem(bad_file_info, doc, &new_elem);
 	assert_equals(JAL_E_INVAL_FILE_INFO, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	jalp_file_info_destroy(&bad_file_info);
 }
@@ -111,7 +112,7 @@ void test_file_info_to_elem_returns_null_with_bad_content_type()
 	// this should fail, because file_info->content_type->subtype is NULL
 	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 void test_file_info_to_elem_returns_null_with_bad_threat_level()
@@ -123,7 +124,7 @@ void test_file_info_to_elem_returns_null_with_bad_threat_level()
 
 	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
 	assert_equals(JAL_E_INVAL_FILE_INFO, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 void test_file_info_to_elem_suceeds_with_no_content_type()
@@ -144,8 +145,8 @@ void test_file_info_to_elem_suceeds_with_no_content_type()
 	assert_attr_equals("Size", "1234", new_elem);
 	assert_attr_equals("ThreatLevel", "safe", new_elem);
 	
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
+	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -172,8 +173,8 @@ void test_file_info_to_elem_suceeds_with_max_size()
 	assert_attr_equals("Size", size_string, new_elem);
 	assert_attr_equals("ThreatLevel", "safe", new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
+	assert_equals((void*)NULL, temp);
 	
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -201,8 +202,8 @@ void test_file_info_to_elem_suceeds_with_max_original_size()
 	assert_attr_equals("Size", "9876", new_elem);
 	assert_attr_equals("ThreatLevel", "safe", new_elem);
 
-	xmlNodePtr temp = xmlFirstElementChild(new_elem);
-	assert_equals(NULL, temp);
+	xmlNodePtr temp = jal_get_first_element_child(new_elem);
+	assert_equals((void*)NULL, temp);
 	
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -264,14 +265,14 @@ void test_file_info_to_elem_suceeds_with_content_type()
 	assert_attr_equals("Size", "1234", new_elem);
 	assert_attr_equals("ThreatLevel", "safe", new_elem);
 
-	child_element = xmlFirstElementChild(new_elem);
+	child_element = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, child_element);
 	assert_tag_equals("Content-Type", child_element);
 	assert_attr_equals("MediaType", "application", child_element);
 	assert_attr_equals("SubType", "subtype", child_element);
 
-	child_element = xmlFirstElementChild(child_element);
-	assert_equals(NULL, child_element);
+	child_element = jal_get_first_element_child(child_element);
+	assert_equals((void*)NULL, child_element);
 
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));

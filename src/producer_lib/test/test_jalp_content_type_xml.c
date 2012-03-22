@@ -89,21 +89,21 @@ void test_jalp_content_type_to_elem_fails_with_bad_input()
 	ct->media_type = JALP_MT_VIDEO;
 	enum jal_status ret = jalp_content_type_to_elem(ct, NULL, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_content_type_to_elem(ct, new_doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_content_type_to_elem(NULL, new_doc, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	free(ct->subtype);
 	ct->subtype = NULL;
 	ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 void test_jalp_content_type_to_elem_fails_with_bad_media_type()
@@ -112,12 +112,12 @@ void test_jalp_content_type_to_elem_fails_with_bad_media_type()
 	ct->media_type = -1;
 	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ct->media_type = 8;
 	ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 void test_content_type_to_elem_works_with_no_param()
@@ -126,7 +126,7 @@ void test_content_type_to_elem_works_with_no_param()
 
 	jalp_param_destroy(&ct->params);
 
-	assert_equals(NULL, ct->params);
+	assert_equals((void*)NULL, ct->params);
 
         enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
 
@@ -151,7 +151,7 @@ void test_content_type_to_elem_works_with_no_param()
 	xmlFree(ret_val);
 
 	cur_node = cur_node->xmlChildrenNode;
-	assert_equals(NULL, cur_node);
+	assert_equals((void*)NULL, cur_node);
 
 	assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
@@ -164,7 +164,7 @@ void test_content_type_to_elem_fails_with_bad_param()
 	ct->params->key = NULL;
 	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
 	assert_equals(JAL_E_INVAL_PARAM, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 }
 
 

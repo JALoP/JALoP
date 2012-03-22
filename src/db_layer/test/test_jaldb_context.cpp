@@ -1771,7 +1771,7 @@ extern "C" void test_audit_record_lookup_returns_ok()
 		 &app_meta_buf, &app_meta_len, &audit_buf, &audit_len);
 
 	assert_equals(JALDB_OK, ret);
-	assert_equals(NULL, app_meta_buf);
+	assert_equals((void*)NULL, app_meta_buf);
 	assert_equals(0, app_meta_len);
 	assert_not_equals(NULL, sys_meta_buf);
 	assert_not_equals(0, sys_meta_len);
@@ -2069,7 +2069,7 @@ extern "C" void test_jaldb_lookup_log_record_succeeds_with_no_app_meta()
 	assert_equals(JALDB_OK, ret);
 	assert_not_equals(NULL, sys_buf);
 	assert_true(sys_sz > 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_not_equals(NULL, log_buf);
 	assert_true(log_sz > 0);
@@ -2094,11 +2094,11 @@ extern "C" void test_jaldb_lookup_log_record_returns_not_found()
 				&app_buf, &app_sz, &log_buf, &log_sz, &db_err);
 
 	assert_equals(JALDB_E_NOT_FOUND, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
-	assert_equals(NULL, log_buf);
+	assert_equals((void*)NULL, log_buf);
 	assert_true(log_sz == 0);
 }
 
@@ -2130,7 +2130,7 @@ extern "C" void test_jaldb_lookup_log_record_succeeds_when_no_log_meta()
 	assert_true(sys_sz > 0);
 	assert_not_equals(NULL, app_buf);
 	assert_true(app_sz > 0);
-	assert_equals(NULL, log_buf);
+	assert_equals((void*)NULL, log_buf);
 	assert_true(log_sz == 0);
 	assert_equals(0, db_err);
 	free(sys_buf);
@@ -2151,45 +2151,45 @@ extern "C" void test_jaldb_lookup_journal_record_fails_on_invalid_input()
 	ret = jaldb_lookup_journal_record(context, sid.c_str(), NULL,
 				&sys_sz, &app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_lookup_journal_record(context, NULL, &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_lookup_journal_record(NULL, sid.c_str(), &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_lookup_journal_record(context, sid.c_str(), &sys_buf, &sys_sz,
 				NULL, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_lookup_journal_record(context, sid.c_str(), NULL, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
@@ -2199,7 +2199,7 @@ extern "C" void test_jaldb_lookup_journal_record_fails_on_invalid_input()
 	assert_equals(JALDB_E_INVAL, ret);
 	assert_not_equals(NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 	free(sys_buf);
@@ -2209,7 +2209,7 @@ extern "C" void test_jaldb_lookup_journal_record_fails_on_invalid_input()
 	ret = jaldb_lookup_journal_record(context, sid.c_str(), &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
 	assert_not_equals(NULL, app_buf);
 	assert_true(app_sz == 0);
@@ -2222,9 +2222,9 @@ extern "C" void test_jaldb_lookup_journal_record_fails_on_invalid_input()
 	ret = jaldb_lookup_journal_record(context, sid.c_str(), &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == 0);
 }
@@ -2345,7 +2345,7 @@ extern "C" void test_jaldb_lookup_journal_record_succeeds_with_no_app_meta()
 	assert_equals(JALDB_OK, ret);
 	assert_not_equals(NULL, sys_buf);
 	assert_true(sys_sz > 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd > -1);
 	assert_true(fd_sz > 0);
@@ -2385,9 +2385,9 @@ extern "C" void test_jaldb_lookup_journal_record_returns_not_found()
 				&fd_sz);
 
 	assert_equals(JALDB_E_NOT_FOUND, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 	assert_true(fd_sz == 0);
@@ -2427,9 +2427,9 @@ extern "C" void test_jaldb_lookup_journal_record_returns_corrupted_when_no_journ
 				&fd_sz);
 
 	assert_equals(JALDB_E_CORRUPTED, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 	assert_true(fd_sz == 0);
@@ -2683,7 +2683,7 @@ extern "C" void test_next_audit_record_returns_ok()
 	assert_equals(JALDB_OK, ret);
 	assert_not_equals(NULL, next_sid);
 	assert_equals(0, strcmp(next_sid, sid.c_str()));
-	assert_equals(NULL, app_meta_buf);
+	assert_equals((void*)NULL, app_meta_buf);
 	assert_equals(0, app_meta_len);
 	assert_not_equals(NULL, sys_meta_buf);
 	assert_not_equals(0, sys_meta_len);
@@ -2988,7 +2988,7 @@ extern "C" void test_jaldb_next_log_record_succeeds_with_no_app_meta()
 	assert_equals(0, strcmp(sid.c_str(), next_sid));
 	assert_not_equals(NULL, sys_buf);
 	assert_true(sys_sz > 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_not_equals(NULL, log_buf);
 	assert_true(log_sz > 0);
@@ -3020,11 +3020,11 @@ extern "C" void test_jaldb_next_log_record_returns_not_found()
 				&app_buf, &app_sz, &log_buf, &log_sz, &db_err);
 
 	assert_equals(JALDB_E_NOT_FOUND, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
-	assert_equals(NULL, log_buf);
+	assert_equals((void*)NULL, log_buf);
 	assert_true(log_sz == 0);
 
 	ret = jaldb_insert_log_record(context, src, log_sys_meta_doc, NULL,
@@ -3035,11 +3035,11 @@ extern "C" void test_jaldb_next_log_record_returns_not_found()
 				&app_buf, &app_sz, &log_buf, &log_sz, &db_err);
 
 	assert_equals(JALDB_E_NOT_FOUND, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
-	assert_equals(NULL, log_buf);
+	assert_equals((void*)NULL, log_buf);
 	assert_true(log_sz == 0);
 }
 
@@ -3080,7 +3080,7 @@ extern "C" void test_jaldb_next_log_record_succeeds_when_no_log_meta()
 	assert_true(sys_sz > 0);
 	assert_not_equals(NULL, app_buf);
 	assert_true(app_sz > 0);
-	assert_equals(NULL, log_buf);
+	assert_equals((void*)NULL, log_buf);
 	assert_true(log_sz == 0);
 	assert_equals(0, db_err);
 	free(next_sid);
@@ -3103,45 +3103,45 @@ extern "C" void test_jaldb_next_journal_record_fails_on_invalid_input()
 	ret = jaldb_next_journal_record(context, sid.c_str(), &next_sid, NULL,
 				&sys_sz, &app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_next_journal_record(context, NULL, &next_sid, &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_next_journal_record(NULL, sid.c_str(), &next_sid, &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_next_journal_record(context, sid.c_str(), &next_sid, &sys_buf, &sys_sz,
 				NULL, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
 	ret = jaldb_next_journal_record(context, sid.c_str(), &next_sid, NULL, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
@@ -3151,7 +3151,7 @@ extern "C" void test_jaldb_next_journal_record_fails_on_invalid_input()
 	assert_equals(JALDB_E_INVAL, ret);
 	assert_not_equals(NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 	free(sys_buf);
@@ -3161,7 +3161,7 @@ extern "C" void test_jaldb_next_journal_record_fails_on_invalid_input()
 	ret = jaldb_next_journal_record(context, sid.c_str(), &next_sid, &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
 	assert_not_equals(NULL, app_buf);
 	assert_true(app_sz == 0);
@@ -3174,9 +3174,9 @@ extern "C" void test_jaldb_next_journal_record_fails_on_invalid_input()
 	ret = jaldb_next_journal_record(context, sid.c_str(), &next_sid, &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == 0);
 	fd = -1;
@@ -3184,9 +3184,9 @@ extern "C" void test_jaldb_next_journal_record_fails_on_invalid_input()
 	ret = jaldb_next_journal_record(context, sid.c_str(), NULL, &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 
@@ -3194,9 +3194,9 @@ extern "C" void test_jaldb_next_journal_record_fails_on_invalid_input()
 	ret = jaldb_next_journal_record(context, sid.c_str(), &next_sid, &sys_buf, &sys_sz,
 				&app_buf, &app_sz, &fd, &fd_sz);
 	assert_equals(JALDB_E_INVAL, ret);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 }
@@ -3276,7 +3276,7 @@ extern "C" void test_jaldb_next_journal_record_succeeds()
 	assert_not_equals(NULL, next_sid);
 	assert_equals(0, strcmp(sid.c_str(), next_sid));
 	assert_true(sys_sz > 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd > -1);
 	assert_true(fd_sz > 0);
@@ -3369,7 +3369,7 @@ extern "C" void test_jaldb_next_journal_record_succeeds_with_no_app_meta()
 	assert_not_equals(NULL, sys_buf);
 	assert_equals(0, strcmp(sid.c_str(), next_sid));
 	assert_true(sys_sz > 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd > -1);
 	assert_true(fd_sz > 0);
@@ -3413,10 +3413,10 @@ extern "C" void test_jaldb_next_journal_record_returns_not_found()
 				&fd_sz);
 
 	assert_equals(JALDB_E_NOT_FOUND, ret);
-	assert_equals(NULL, next_sid);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, next_sid);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 	assert_true(fd_sz == 0);
@@ -3452,10 +3452,10 @@ extern "C" void test_jaldb_next_journal_record_returns_not_found()
 				&fd_sz);
 
 	assert_equals(JALDB_E_NOT_FOUND, ret);
-	assert_equals(NULL, next_sid);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, next_sid);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 	assert_true(fd_sz == 0);
@@ -3507,10 +3507,10 @@ extern "C" void test_jaldb_next_journal_record_returns_corrupted_when_no_journal
 				&fd_sz);
 
 	assert_equals(JALDB_E_CORRUPTED, ret);
-	assert_equals(NULL, next_sid);
-	assert_equals(NULL, sys_buf);
+	assert_equals((void*)NULL, next_sid);
+	assert_equals((void*)NULL, sys_buf);
 	assert_true(sys_sz == 0);
-	assert_equals(NULL, app_buf);
+	assert_equals((void*)NULL, app_buf);
 	assert_true(app_sz == 0);
 	assert_true(fd == -1);
 	assert_true(fd_sz == 0);

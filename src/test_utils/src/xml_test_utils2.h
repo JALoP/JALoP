@@ -81,7 +81,7 @@ xmlChar *xml_output(xmlDocPtr doc);
 		xmlNodePtr elem = the_elem; \
 		xmlChar *attr_val = xmlGetProp(elem, (xmlChar *)attr_name); \
 		if (NULL == expected_value) { \
-			assert_equals(NULL, attr_val); \
+			assert_equals((void*)NULL, attr_val); \
 		} else { \
 			assert_not_equals(NULL, attr_val); \
 			if (0 != xmlStrcmp(expected_value, attr_val)) { \
@@ -101,7 +101,7 @@ xmlChar *xml_output(xmlDocPtr doc);
 		xmlNodePtr elem = the_elem; \
 		char *actual_text_content = NULL; \
 		if (NULL == expected_value) { \
-			assert_equals(NULL, elem->children); \
+			assert_equals((void*)NULL, elem->children); \
 		} else { \
 			assert_not_equals(NULL, elem->children); \
 			actual_text_content = (char *)elem->children->content; \

@@ -33,6 +33,7 @@
 #include <test-dept.h>
 
 #include "jal_alloc.h"
+#include "jal_xml_utils.h"
 #include "jalp_journal_metadata_xml.h"
 #include "xml_test_utils2.h"
 
@@ -129,7 +130,7 @@ void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_valid_input()
 
 	// schema validation checks the tag for us, just make sure there is an
 	// element.
-	xmlNodePtr file_info = xmlFirstElementChild(new_elem);
+	xmlNodePtr file_info = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, file_info);
 
 	// Again, schema validation ensures the structure is correct, just
@@ -137,7 +138,7 @@ void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_valid_input()
 	xmlNodePtr transforms = file_info->next;
 	assert_not_equals(NULL, transforms);
 
-	xmlNodePtr xform1 = xmlFirstElementChild(transforms); 
+	xmlNodePtr xform1 = jal_get_first_element_child(transforms); 
 	assert_not_equals(NULL, xform1);
 	assert_attr_equals(ALGORITHM_ATTR, XFORM_ONE_URI, xform1);
 
@@ -161,9 +162,9 @@ void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_no_transforms()
 
 	// schema validation ensures the file_info element is there, just need
 	// to make sure there isn't Transforms element.
-	xmlNodePtr file_info = xmlFirstElementChild(new_elem);
+	xmlNodePtr file_info = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, file_info);
 	xmlNodePtr should_be_null = file_info->next;
-	assert_equals(NULL, should_be_null);
+	assert_equals((void*)NULL, should_be_null);
 }
 

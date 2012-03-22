@@ -36,6 +36,7 @@
 #include "jalp_syslog_metadata_xml.h"
 #include "jal_asprintf_internal.h"
 #include "jal_alloc.h"
+#include "jal_xml_utils.h"
 #include "xml_test_utils2.h"
 
 struct jalp_syslog_metadata *syslog = NULL;
@@ -121,48 +122,48 @@ void test_syslog_metadata_to_elem_returns_error_on_bad_input()
 
 	ret = jalp_syslog_metadata_to_elem(NULL, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	ret = jalp_syslog_metadata_to_elem(syslog, NULL, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	// an empty entry is not an error, so not adding anything here.
 
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, NULL, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	xmlNodePtr bad_elem = (xmlNodePtr) 0xdeadbeef;
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, NULL, &bad_elem);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 	assert_not_equals(JAL_OK, ret);
 
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, NULL);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 	assert_not_equals(JAL_OK, ret);
 
 	// errors for invalid elements.
 	syslog->facility = -2;
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	syslog->facility = MAX_FACILITY_VAL + 1;
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	syslog->facility = FACILITY_VAL;
 	syslog->severity = -2;
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	syslog->severity = MAX_SEVERITY_VAL + 1;
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
 	assert_not_equals(JAL_OK, ret);
-	assert_equals(NULL, new_elem);
+	assert_equals((void*)NULL, new_elem);
 
 	syslog->severity = SEVERITY_VAL;
 	char *ts = syslog->timestamp;
@@ -195,7 +196,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_all_fields_filled()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -211,7 +212,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_all_fields_filled()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_missing_entry()
@@ -234,7 +235,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_missing_entry()
 	assert_attr_equals(MESSAGE_ID_ATTR, MESSAGE_ID_VAL_STR, new_elem);
 
 	// default context 2 StructuredData tags...
-	xmlNodePtr sd_one = xmlFirstElementChild(new_elem);
+	xmlNodePtr sd_one = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, sd_one);
 	assert_tag_equals(SD_TAG, sd_one);
 	assert_attr_equals(SD_ID_ATTR, SD_ONE_ID, sd_one);
@@ -245,7 +246,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_missing_entry()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_single_structured_data()
@@ -267,7 +268,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_single_structured_d
 	assert_attr_equals(MESSAGE_ID_ATTR, MESSAGE_ID_VAL_STR, new_elem);
 
 	// context should have an Entry followed by 1 StructuredData tag
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -278,7 +279,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_single_structured_d
 	assert_attr_equals(SD_ID_ATTR, SD_ONE_ID, sd_one);
 
 	xmlNodePtr expected_null = sd_one->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_no_strucutred_data()
@@ -300,13 +301,13 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_strucutred_data(
 	assert_attr_equals(MESSAGE_ID_ATTR, MESSAGE_ID_VAL_STR, new_elem);
 
 	// context should have an Entry followed by nothing
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
 
 	xmlNodePtr expected_null = entry_node->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_missing_timestamp()
@@ -331,7 +332,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_missing_timestamp()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -347,7 +348,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_missing_timestamp()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_no_facility()
@@ -370,7 +371,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_facility()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -386,7 +387,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_facility()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 void test_syslog_metadata_to_elem_returns_valid_element_with_max_facility()
 {
@@ -408,7 +409,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_max_facility()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -424,7 +425,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_max_facility()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_min_facility()
@@ -447,7 +448,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_min_facility()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -463,7 +464,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_min_facility()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_no_severity()
@@ -486,7 +487,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_severity()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -502,7 +503,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_severity()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_max_severity()
@@ -525,7 +526,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_max_severity()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -541,7 +542,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_max_severity()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_min_severity()
@@ -564,7 +565,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_min_severity()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -580,7 +581,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_min_severity()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_no_hostname()
@@ -607,7 +608,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_hostname()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -623,7 +624,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_hostname()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_no_app_name()
@@ -647,7 +648,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_app_name()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -663,7 +664,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_app_name()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
 
 void test_syslog_metadata_to_elem_returns_valid_element_with_no_message_id()
@@ -687,7 +688,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_message_id()
 
 	// default context should have an Entry followed by 2 StructuredData
 	// tags...
-	xmlNodePtr entry_node = xmlFirstElementChild(new_elem);
+	xmlNodePtr entry_node = jal_get_first_element_child(new_elem);
 	assert_not_equals(NULL, entry_node);
 	assert_tag_equals(ENTRY_TAG, entry_node);
 	assert_content_equals(ENTRY_VAL, entry_node);
@@ -703,5 +704,5 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_message_id()
 	assert_attr_equals(SD_ID_ATTR, SD_TWO_ID, sd_two);
 
 	xmlNodePtr expected_null = sd_two->next;
-	assert_equals(NULL, expected_null);
+	assert_equals((void*)NULL, expected_null);
 }
