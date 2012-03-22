@@ -425,7 +425,7 @@ enum jal_status jal_add_signature_block(
 	signNode = xmlSecTmplSignatureCreate(
 				doc,
 				xmlSecTransformInclC14NWithCommentsId,
-				xmlSecOpenSSLTransformRsaSha1Id,
+				xmlSecOpenSSLTransformRsaSha256Id,
 				NULL);
 
 	if (!signNode) {
