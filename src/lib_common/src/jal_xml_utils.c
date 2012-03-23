@@ -496,18 +496,6 @@ enum jal_status jal_add_signature_block(
 			goto done;
 		}
 
-		xmlChar *issuer = jal_get_xml_x509_name(X509_get_issuer_name(x509));
-		if (!xmlSecTmplX509IssuerSerialAddIssuerName(x509IssuerSerialNode, issuer)) {
-			goto done;
-		}
-		xmlFree(issuer);
-
-		xmlChar *serial = jal_get_xml_x509_serial(X509_get_serialNumber(x509));
-		if (!xmlSecTmplX509IssuerSerialAddSerialNumber(x509IssuerSerialNode, serial)) {
-			goto done;
-		}
-		xmlFree(serial);
-
 		if (!xmlSecTmplX509DataAddCertificate(x509DataNode)) {
 			goto done;
 		}
