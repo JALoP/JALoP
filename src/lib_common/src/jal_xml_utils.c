@@ -382,6 +382,21 @@ xmlChar *jal_get_xml_x509_serial(ASN1_INTEGER *i)
 	return xml_serial;
 }
 
+xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
+{
+	if (!elem) {
+		return NULL;
+	}
+	xmlNodePtr child = elem->children;
+
+	while (child != NULL && 
+		child->type != XML_ELEMENT_NODE) {
+		child = child->next;
+	}
+
+	return child;
+}
+
 enum jal_status jal_add_signature_block(
 		RSA *rsa,
 		X509 *x509,

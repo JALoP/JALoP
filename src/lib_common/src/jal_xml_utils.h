@@ -193,6 +193,15 @@ xmlChar *jal_get_xml_x509_serial(ASN1_INTEGER *i);
 xmlChar *jal_get_xml_x509_cert(X509 *x509);
 
 /**
+ * Get the first non-text element child.
+ *
+ * @param[in] elem The element to retrieve the child from.
+ *
+ * @return non-text element child or NULL
+ */
+xmlNodePtr jal_get_first_element_child(xmlNodePtr elem);
+
+/**
  * Add a signature block to a document.
  *
  * @param[in] rsa RSA key to use as a signing key.  This is required.
