@@ -19,6 +19,7 @@ utilsObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
 xmlDocStorageObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_xml_doc_storage.cpp'))
 eventWriterObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_dom_to_event_writer.cpp'))
 serialIdObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_serial_id.cpp'))
+queryObj = dbEnv.SharedObject(os.path.join('..', 'src', 'jaldb_query.cpp'))
 
 tests.append(env.TestDeptTest('test_jaldb_utils.c',
 	other_sources=[lib_common, test_utils], useProxies=True)[0].abspath)
@@ -30,6 +31,8 @@ tests.append(env.TestDeptTest('test_jaldb_dom_to_event_writer.cpp',
 	other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj, serialIdObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
 	other_sources=[lib_common])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_query.cpp',
+	other_sources=[test_utils, lib_common, xmlDocStorageObj, eventWriterObj, serialIdObj, utilsObj, contextObj])[0].abspath)
 
 test_progs.append(env.Program('stress_get_next_serial_id', ['stress_get_next_serial_id.cpp', db_lib, lib_common]))
 
