@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
@@ -92,6 +93,7 @@ static void parse_cmdline(int argc, char **argv, char **db_root, char **schemas)
 	static const char *optstring = "h:s:";
 	static const struct option long_options[] = {{"home", 1, 0, 'h'},
 						{"schemas", 1, 0, 's'},
+						{"version", 0, 0, 'v'},
 						{0,0,0,0}};
 	int ret_opt;
 	while (EOF != (ret_opt = getopt_long(argc, argv, optstring,
@@ -114,6 +116,8 @@ static void parse_cmdline(int argc, char **argv, char **db_root, char **schemas)
 					*schemas = strdup(optarg);
 				}
 				break;
+			case 'v':
+				goto version_out;
 			default:
 				printf("Invalid argument!\n\n");
 				goto err_usage;
@@ -123,6 +127,10 @@ static void parse_cmdline(int argc, char **argv, char **db_root, char **schemas)
 err_usage:
 	print_usage();
 	exit(-1);
+
+version_out:
+	printf("%s", jal_version_as_string());
+	exit(0);
 }
 
 static void print_usage()
@@ -132,7 +140,8 @@ static void print_usage()
 	-h, --home=H	Specify the root of the JALoP database,\n\
 			defaults to /var/lib/jalop/db.\n \
 	-s, --schema=S	Specify the root of the JALoP schema directory,\n\
-			defaults to <prefix>/share/jalop-v1.0/schemas.\n\n";
+			defaults to <prefix>/share/jalop-v1.0/schemas.\n\
+	--version	Output version information and exit.\n\n";
 	printf("%s", usage);
 }
 
