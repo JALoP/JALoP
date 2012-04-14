@@ -30,12 +30,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "jal_asprintf_internal.h"
 #include <jalop/jal_version.h>
 
 char *jal_version_as_string()
 {
 	char * str;
-	int ret = asprintf(&str, "%.1f\n", JAL_VERSION);
+	int ret = jal_asprintf(&str, "%.1f\n", JAL_VERSION);
 	if (ret < 0)
 		return NULL;
 	return str;
