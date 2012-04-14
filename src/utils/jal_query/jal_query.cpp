@@ -37,6 +37,7 @@
 #include <jaldb_status.h>
 #include <jaldb_query.hpp>
 #include <jaldb_context.h>
+#include <jalop/jal_version.h>
 #include "jal_asprintf_internal.h"
 
 #define ARRAY_MULTIPLIER 20
@@ -227,14 +228,17 @@ out:
 static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid,
 		char *type, char **query, char **home) {
 
-	static const char *optstring = "s:u:t:h:q:";
+	static const char *optstring = "s:u:t:h:q:v:";
 
 	static const struct option long_options[] = { {"type", 1, NULL, 't'}, {"sid", 1, NULL, 's'},
-			{"uuid", 1, NULL, 'u'}, {"home", 1, NULL, 'h'}, {"query", 1, NULL, 'q'}, { 0,0,0,0}};
+			{"uuid", 1, NULL, 'u'}, {"home", 1, NULL, 'h'}, {"query", 1, NULL, 'q'}, 
+			{"version", 1, NULL, 'v'}, { 0,0,0,0}};
 
 	*type = 0;
 
 	if (4 > argc) {
+		if (argc == 2 && strcmp(argv[1], "--version") == 0)
+			goto version_out;
 		goto err_usage;
 	}
 
@@ -303,6 +307,8 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 				}
 				*query = strdup(optarg);
 				break;
+			case 'v':
+				goto version_out;
 			default:
 				goto err_usage;
 		}//switch
@@ -328,6 +334,18 @@ err_out:
 	}
 
 	exit(-1);
+
+version_out:
+
+	printf("%s", jal_version_as_string());
+	free_id_arr(*sid, *num_sid);
+	free_id_arr(*uuid, *num_uuid);
+
+	if ((home != NULL) && (*home != NULL)) {
+		free(*home);
+	}
+
+	exit(0);
 }
 
 static void print_usage()
@@ -343,6 +361,7 @@ static void print_usage()
 			\"l\" (log record), or \"z\" (all).\n\
 	-q, --query=	Execute an arbitrary XQuery search.\n\
 	-h, --home=P	Specify the root of the JALoP database, defaults to /var/lib/jalop/db\n\
+	--version	Output the version information and exit.\n\
 \n\
 	Type and at least 1 sid or uuid must be specified.\n\
 	Multiple ‘-s’ and ‘-u’ options may be specified.\n\n";

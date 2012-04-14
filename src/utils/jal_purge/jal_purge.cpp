@@ -6,6 +6,7 @@
 #include <list>
 #include <string>
 
+#include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 #include "jaldb_purge.hpp"
 #include "jaldb_status.h"
@@ -181,6 +182,7 @@ static void process_options(int argc, char **argv)
 		{"force", no_argument, NULL, 'f'},
 		{"verbose", no_argument, NULL, 'v'},
 		{"home", required_argument, NULL, 'h'},
+		{"version", no_argument, NULL, 'n'},
 		{0, 0, 0, 0}
 	};
 
@@ -223,6 +225,9 @@ static void process_options(int argc, char **argv)
 		case 'h':
 			global_args.home = strdup(optarg);
 			break;
+		case 'n':
+			printf("%s", jal_version_as_string());
+			goto version_out;
 		default:
 			goto err_out;
 		}
@@ -234,6 +239,8 @@ static void process_options(int argc, char **argv)
 	return;
 err_out:
 	usage();
+version_out:
+	exit(0);
 }
 
 static void global_args_free()
@@ -278,7 +285,8 @@ __attribute__((noreturn)) static void usage()
 				prepared to delete.  This reports the sequence number\n\
 				and UUID of each record.  Records are grouped by type.\n\
 	-h, --home=H		Specify the root of the JALoP database,\n\
-				defaults to <prefix>/share/jalop-v1.0/schemas.\n\n";
+				defaults to <prefix>/share/jalop-v1.0/schemas.\n\
+	--version		Output the version information and exit.\n\n";
 	fprintf(stderr, "%s", usage);
 	exit(-1);
 }
