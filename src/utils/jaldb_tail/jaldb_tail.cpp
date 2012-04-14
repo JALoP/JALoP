@@ -48,13 +48,13 @@
 #include <jal_asprintf_internal.h>
 
 #include <jaldb_status.h>
+#include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 
 #define JAL_TAIL_THREAD_SLEEP_SECONDS 10
 #define JAL_TAIL_DEFAULT_NUM_RECORDS 20
 #define JAL_TAIL_DEFAULT_TYPE "l"
 #define JAL_TAIL_DEFAULT_LAST_SID "0"
-#define JAL_TAIL_VERSION "1.0"
 
 #define DEBUG_LOG(args...) \
 do { \
@@ -271,7 +271,7 @@ static void print_usage()
 
 static void print_version()
 {
-	printf("jal_tail v%s\n\n", JAL_TAIL_VERSION);
+	printf("jal_tail v%s\n\n", jal_version_as_string());
 }
 
 static void print_error(enum jaldb_status error)
