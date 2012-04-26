@@ -57,7 +57,7 @@ jaldb_context *jsub_setup_db_layer(
 		goto err;
 	}
 	jaldb_ret = jaldb_context_init(db_ctx, db_root, schemas_root,
-				       1, 0);
+				       0, 0);
 	if (JALDB_OK == jaldb_ret){
 		goto out;
 	}
