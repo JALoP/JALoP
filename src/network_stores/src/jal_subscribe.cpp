@@ -104,6 +104,37 @@ unsigned int get_seconds_from_timeout(char *session_timeout);
 unsigned int alarm(unsigned int seconds);
 void catch_alarm(int sig);
 
+static void sig_handler(__attribute__((unused)) int sig)
+{
+	global_quit = true;
+}
+
+static int setup_signals(void)
+{
+	// Signal action to delete the socket file
+	struct sigaction action_on_sig;
+	action_on_sig.sa_handler = &sig_handler;
+	sigemptyset(&action_on_sig.sa_mask);
+	action_on_sig.sa_flags = 0;
+
+	if (0 != sigaction(SIGABRT, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGABRT.\n");
+		goto err_out;
+	}
+	if (0 != sigaction(SIGTERM, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGTERM.\n");
+		goto err_out;
+	}
+	if (0 != sigaction(SIGINT, &action_on_sig, NULL)) {
+		fprintf(stderr, "failed to register SIGINT.\n");
+		goto err_out;
+	}
+
+	return 0;
+err_out:
+	return -1;
+}
+
 int main(int argc, char **argv)
 {
 	int rc = 0;
@@ -112,6 +143,11 @@ int main(int argc, char **argv)
 	config_t config;
 	config_init(&config);
 	jsub_is_conn_closed = false; // Externed in jsub_callbacks
+
+	rc = setup_signals();
+	if (0 != rc) {
+		goto out;
+	}
 
 	process_options(argc, argv);
 	DEBUG_LOG("Config Path: %s\tDebug: %d",
