@@ -11,13 +11,13 @@ env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_co
 add_project_lib(env, 'db_layer', 'jal-db')
 add_project_lib(env, 'lib_common', 'jal-common')
 
-jal_tail = env.Program(target='jal_tail', source=[sources, lib_common, db_layer])
+jaldb_tail = env.Program(target='jaldb_tail', source=[sources, lib_common, db_layer])
 
-env.Default(jal_tail)
+env.Default(jaldb_tail)
 if (env['release']):
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
-	env.Alias('install', env.Install(sbindir, jal_tail))
+	env.Alias('install', env.Install(sbindir, jaldb_tail))
 
-install_for_build(env, 'bin', jal_tail)
+install_for_build(env, 'bin', jaldb_tail)
 
-Return("jal_tail")
+Return("jaldb_tail")
