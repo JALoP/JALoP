@@ -103,6 +103,11 @@ int main(int argc, char **argv) {
 		goto out;
 	}
 
+	if (!gbl.home) {
+		print_usage();
+		goto out;
+	}
+
 	// Setup defaults if necessary.
 	if (!gbl.type) {
 		gbl.type = jal_strdup(JAL_TAIL_DEFAULT_TYPE);
