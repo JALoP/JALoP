@@ -22,13 +22,14 @@ Packages:
 - gmp		 4.2.1	(sfw)
 - xerces-c	 3.1.1	(src)
 - axl            0.6.4	(src)
-- vortex	 1.1.7	(src)
+- vortex	1.1.11	(src)
 - santuario	 1.6.1	(src)
 - test-dept	0.14.2	(src)
 - scons		 2.0.1	(sfw)
 - libconfig	 1.4.7	(src)
 - xqilla	 2.2.4  (src)
 - dbxml		2.5.16	(src)
+- xmlsec1	1.2.18	(src)
 
 Notes:
 
@@ -40,42 +41,69 @@ source packages.
     xerces:
 	http://xerces.apache.org/xerces-c/download.cgi
 
-	./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
-        Compiled and installed using make.
+	$ ./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
+	$ make
+	$ make install
 
     axl:
         http://sourceforge.net/projects/vortexlibrary/files/
-
-	./configure CFLAGS="__EXTENSIONS__"
-        In src/axl_log.c, getpid() must be casted as an int.  A patch has been
+        
+	In src/axl_log.c, getpid() must be casted as an int.  A patch has been
 	supplied.
-        Compiled and installed using gmake
+
+	$ ./configure CFLAGS="__EXTENSIONS__ -L/usr/local/lib -R/usr/local/lib"
+	$ gmake
+	$ gmake install
 
     vortex:
         http://sourceforge.net/projects/vortexlibrary/files/
 
+	getpid() must be cast as int in the following files:
+		- src/vortex.c
+		- test/vortex-simple-listener.c
+		- test/vortex-listener.c
+		- test/vortex-omr-server.c
+		- test/vortex-regression-listener.c
+		- test/vortex-file-transfer-server.c	
+
 	export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
-        ./configure CFLAGS="-lsocket" --disable-py-vortex
-        Compiled and installed using gmake.
+        $ ./configure CFLAGS="-lncurses -lsocket -D__EXTENSIONS__ -I/usr/local/ssl/include \
+	-L/usr/local/lib -R/usr/local/lib -L/usr/local/ssl/lib \
+	-R/usr/local/ssl/lib" PKG_CONFIG_PATH=/usr/local/lib/pkgconfig \
+	--disable-py-vortex
+	$ gmake
+	$ gmake install
 
     santuario:
 	http://santuario.apache.org/download.html
 
-	export PKG_CONFIG_PATH="/usr/local/ssl/lib/pkgconfig"
-        ./configure LDFLAGS="-L/usr/local/ssl/lib -R/usr/local/ssl/lib"
-        Compiled and installed using make.
+        $ ./configure LDFLAGS="-L/usr/local/ssl/lib -R/usr/local/ssl/lib" PKG_CONFIG_PATH="/usr/local/ssl/lib/pkgconfig"
+	$ gmake
+	$ gmake install
 
     libconfig:
         http://www.hyperrealm.com/libconfig/
 
-	./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
-        Compiled and installed using make.
+	$ ./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
+	$ gmake
+	$ gmake install
+
+    test-dept:
+	$ ./configure
+	$ gmake
+	$ gmake install
+
+    scons:
+	Must be using pythong 2.4.6 in /usr/bin/python
+	
+	$ python setup.py install
 
     xqilla:
 	http://sourceforge.net/projects/xqilla/files/
 
-	./configure LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
-	Compiled and installed using make.
+	$ ./configure --prefix=/usr/local LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
+	$ gmake
+	$ gmake install
 
     dbxml:
 	http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html
@@ -84,8 +112,15 @@ source packages.
 	and the build script was pointed to the local installations of those
 	packages.
 
-	./buildall.sh --prefix=/usr/local --build-one=berkeleydb
-	./buildall.sh --prefix=/usr/local --build-one=dbxml \
-					--with-xqilla-prefix=/usr/local \
-					--with-xerces-prefix=/usr/local \
-					--with-berkeleydb-prefix=/usr/local
+	$ ./buildall.sh --prefix=/usr/local --build-one=berkeleydb \
+	--with-configure-env="LDFLAGS='-L/usr/local/lib -R/usr/local/lib'"
+	$ ./buildall.sh --prefix=/usr/local --build-one=dbxml \
+	--with-xqilla-prefix=/usr/local \
+	--with-xerces-prefix=/usr/local \
+	--with-berkeleydb-prefix=/usr/local \
+	--with-configure-env="LDFLAGS='-L/usr/local/lib -R/usr/local/lib'"
+
+    xmlsec1:
+	$ ./configure --with-openssl=/usr/local/ssl
+	$ gmake
+	$ gmake install
