@@ -1181,7 +1181,7 @@ enum jald_status setup_db_layer(void)
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	db_ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.schemas_root, 0, 0);
+	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.schemas_root, 0);
 
 	if (JALDB_OK != jaldb_ret) {
 		rc = JALD_E_DB_INIT;

@@ -84,7 +84,6 @@ extern "C" void setup()
 		DB_INIT_LOG |
 		DB_INIT_MPOOL |
 		DB_THREAD |
-		DB_RECOVER |
 		DB_INIT_TXN;
 	DB_ENV *env = NULL;
 	db_env_create(&env, 0);

@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
 	//create a jaldb_context to pass to work threads
 	db_ctx = jaldb_context_create();
 	jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root,
-					jalls_ctx->schemas_root, 1, 0);
+					jalls_ctx->schemas_root, 0);
 	if (jal_err != JAL_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
 		goto err_out;

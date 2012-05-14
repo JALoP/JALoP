@@ -61,7 +61,6 @@ enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root,
-	int db_recover_flag,
 	int db_rdonly_flag)
 {
 	if (!ctx) {
@@ -96,9 +95,6 @@ enum jaldb_status jaldb_context_init(
 		DB_INIT_MPOOL |
 		DB_INIT_TXN |
 		DB_THREAD;
-	if (db_recover_flag) {
-		env_flags |= DB_RECOVER;
-	}
 
 	DB_ENV *env = NULL;
 	db_env_create(&env, 0);

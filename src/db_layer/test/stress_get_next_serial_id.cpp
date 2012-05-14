@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 				DB_INIT_LOG |
 				DB_INIT_MPOOL |
 				DB_INIT_TXN | DB_THREAD |
-				DB_AUTO_COMMIT | DB_RECOVER;
+				DB_AUTO_COMMIT;
 	DB_ENV *env = NULL;
 	db_env_create(&env, 0);
 	int dberr;

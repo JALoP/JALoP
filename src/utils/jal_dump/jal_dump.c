@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(ctx, home, NULL, 0, 1);
+	jaldb_ret = jaldb_context_init(ctx, home, NULL, 1);
 
 	if (jaldb_ret != JALDB_OK) {
 		printf("\nContext could not be made.\n");

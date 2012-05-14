@@ -55,8 +55,6 @@ jaldb_context *jaldb_context_create();
  * @param[in] schemas_root The path to the directory containing JALoP related
  * schemas. If schemas_root is NULL, then the default is
  * /usr/share/jalop/schemas.
- * @param[in] db_recover_flag A flag which indicates whether DB_RECOVER should
- * be passed to the DB environment open function.
  * @param[in] db_rdonly_flag A flag which indicates whether DB_RDONLY should
  * be passed to the DB open function.
  *
@@ -67,7 +65,6 @@ enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root,
-	int db_recover_flag,
 	int db_rdonly_flag);
 
 /**
