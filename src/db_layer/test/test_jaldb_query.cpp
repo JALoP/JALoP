@@ -400,7 +400,6 @@ extern "C" void test_jaldb_query_journal_sid_not_found()
 	enum jaldb_status ret;
 
 	ret = jaldb_query_journal_sid(ctx, sid.c_str(), &result);
-	printf("ret: %d\n", ret);
 	assert_equals(ret, JALDB_E_NOT_FOUND);
 	assert_equals(result, NULL);
 }
@@ -429,7 +428,6 @@ extern "C" void test_jaldb_query_journal_sid_not_found_with_other_records()
 		audit_doc, sid);
 
 	ret = jaldb_query_journal_sid(ctx, sid.c_str(), &result);
-	printf("ret: %d\n", ret);
 	assert_equals(ret, JALDB_E_NOT_FOUND);
 	assert_equals(result, NULL);
 
@@ -501,7 +499,6 @@ extern "C" void test_jaldb_query_audit_sid_not_found()
         string sid = "abc";
 
 	ret = jaldb_query_audit_sid(ctx, sid.c_str(), &result);
-	printf("ret: %d\n", ret);
 	assert_equals(JALDB_E_NOT_FOUND, ret);
         assert_equals(result, NULL);
 
@@ -543,7 +540,6 @@ extern "C" void test_jaldb_query_audit_sid_not_found_with_other_records()
 		(uint8_t*) "foobar", strlen("foobar"), sid, &db_err);
 
 	ret = jaldb_query_audit_sid(ctx, sid.c_str(), &result);
-	printf("ret: %d\n", ret);
 	assert_equals(JALDB_E_NOT_FOUND, ret);
         assert_equals(result, NULL);
 

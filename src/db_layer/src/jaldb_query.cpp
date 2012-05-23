@@ -51,7 +51,11 @@ enum jaldb_status jaldb_query_journal_sid(jaldb_context *ctx, const char *sid, c
 
 	enum jaldb_status ret;
 	char *xquery;
-	jal_asprintf(&xquery, JALDB_SID_QUERY_FORMAT, JALDB_JOURNAL_SYS_META_CONT_NAME, sid);
+	jal_asprintf(&xquery,
+			JALDB_QUERY_FORMAT,
+			JALDB_JOURNAL_SYS_META_CONT_NAME,
+			JALDB_SID_WHERE_CLAUSE,
+			sid);
 
 	try {
 		ret = jaldb_xquery_helper(ctx, xquery, NULL, result);
@@ -78,7 +82,11 @@ enum jaldb_status jaldb_query_audit_sid(jaldb_context *ctx, const char *sid, cha
 
 	enum jaldb_status ret;
 	char *xquery;
-	jal_asprintf(&xquery, JALDB_SID_QUERY_FORMAT, JALDB_AUDIT_SYS_META_CONT_NAME, sid);
+	jal_asprintf(&xquery,
+			JALDB_QUERY_FORMAT,
+			JALDB_AUDIT_SYS_META_CONT_NAME,
+			JALDB_SID_WHERE_CLAUSE,
+			sid);
 
 	try {
 		ret = jaldb_xquery_helper(ctx, xquery, NULL, result);
@@ -104,7 +112,11 @@ enum jaldb_status jaldb_query_log_sid(jaldb_context *ctx, const char *sid, char 
 
 	enum jaldb_status ret;
 	char *xquery;
-	jal_asprintf(&xquery, JALDB_SID_QUERY_FORMAT, JALDB_LOG_SYS_META_CONT_NAME, sid);
+	jal_asprintf(&xquery,
+			JALDB_QUERY_FORMAT,
+			JALDB_LOG_SYS_META_CONT_NAME,
+			JALDB_SID_WHERE_CLAUSE,
+			sid);
 
 	try {
 		ret = jaldb_xquery_helper(ctx, xquery, NULL, result);
@@ -132,7 +144,11 @@ enum jaldb_status jaldb_query_journal_uuid(jaldb_context *ctx, const char *uuid,
 
 	enum jaldb_status ret;
 	char *xquery;
-	jal_asprintf(&xquery, JALDB_UUID_QUERY_FORMAT, JALDB_JOURNAL_SYS_META_CONT_NAME, uuid);
+	jal_asprintf(&xquery,
+			JALDB_QUERY_FORMAT,
+			JALDB_JOURNAL_SYS_META_CONT_NAME,
+			JALDB_UUID_WHERE_CLAUSE,
+			uuid);
 
 	try {
 		ret = jaldb_xquery_helper(ctx, xquery, NULL, result);
@@ -158,7 +174,11 @@ enum jaldb_status jaldb_query_audit_uuid(jaldb_context *ctx, const char *uuid, c
 
 	enum jaldb_status ret;
 	char *xquery;
-	jal_asprintf(&xquery, JALDB_UUID_QUERY_FORMAT, JALDB_AUDIT_SYS_META_CONT_NAME, uuid);
+	jal_asprintf(&xquery,
+			JALDB_QUERY_FORMAT,
+			JALDB_AUDIT_SYS_META_CONT_NAME,
+			JALDB_UUID_WHERE_CLAUSE,
+			uuid);
 
 	try {
 		ret = jaldb_xquery_helper(ctx, xquery, NULL, result);
@@ -185,7 +205,11 @@ enum jaldb_status jaldb_query_log_uuid(jaldb_context *ctx, const char *uuid, cha
 
 	enum jaldb_status ret;
 	char *xquery;
-	jal_asprintf(&xquery, JALDB_UUID_QUERY_FORMAT, JALDB_LOG_SYS_META_CONT_NAME, uuid);
+	jal_asprintf(&xquery,
+			JALDB_QUERY_FORMAT,
+			JALDB_LOG_SYS_META_CONT_NAME,
+			JALDB_UUID_WHERE_CLAUSE,
+			uuid);
 
 	try {
 		ret = jaldb_xquery_helper(ctx, xquery, NULL, result);
@@ -263,7 +287,6 @@ enum jaldb_status jaldb_xquery_helper(jaldb_context *ctx, const char *query, con
 	}
 
 }
-
 
 enum jaldb_status jaldb_journal_xquery(jaldb_context *ctx, const char *query, char **result) {
 
