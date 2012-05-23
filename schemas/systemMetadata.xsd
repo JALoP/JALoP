@@ -27,7 +27,7 @@
 			<element name="ProcessID" type="nonNegativeInteger">
 				<annotation><documentation>The process ID of the application that submitted the JAL data to the JAL local store. For example, this must be the PID of the syslog daemon that sends data to the JALoP local store, not the PID of the application that made the syslog() call.</documentation></annotation>
 			</element>
-			<element name="User" type="jsm:UserType">
+			<element name="User" type="jsm:UserType" minOccurs="0" nillable="true">
 				<annotation><documentation>Information related to effective userID of the process that generated this JAL data. In some cases (e.g. syslog) this will not be the actual process that generated the data. Instead, it is related to the process that gave the data to the Local JALoP Store.</documentation></annotation>
 			</element>
 			<element minOccurs="0" name="SecurityLabel" type="string">
