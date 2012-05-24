@@ -1,4 +1,5 @@
 This is a reference implementation of the Journal, Audit, and Logging Protocol (JALoP).
+
 The implementation is divided into a number of components:
   The JALoP Network Library (JNL)
   The JALoP Producer Library (JPL)
@@ -35,25 +36,33 @@ The following libraries are included in the 3rd-party directory:
 
 
 Building and Installing
-This project uses the scons (www.scons.org) build tool, version 2.0.1, and will compile under python 2.4 or 2.6.
+
+This project uses the scons (www.scons.org) build tool, version 2.0.1, and will
+compile under python 2.4 or 2.6.
+
 Later versions of Python should work as well, but were not tested.
 To build, simply run 'scons' within the top level directory:
 
 $ scons
+
 This generates debug, and release directories.
 
-To install the library, simply run the appropriate installation script for your platform (i.e., rhel_x86, rhel_x86_64, or solaris):
+To install the library, simply run the appropriate installation script for your
+platform (i.e., rhel_x86, rhel_x86_64, or solaris):
+
 $ install_<platform>.sh
 
 
 Other Options (these steps do not need to be executed in order to use the JALoP libraries)
 To build the library and execute the unit tests, run
+
 $ scons tests
 
 To generate code coverage reports, run
+
 $ scons cov
-code coverage reports will appear in the 'cov' directory in the root of the
-source tree.
+
+code coverage reports will appear in the 'cov' directory in the root of the source tree.
 
 To generate doxygen documentation, run
 $ scons doc
@@ -80,9 +89,13 @@ LD The linker to use
 CPP The C preprocessor to use
 
 
-All of the source code for the implementation is under the 'src' directory. The src directory is divided into different sections based on functionality, subdirs such as network_lib, local_store, etc.
+All of the source code for the implementation is under the 'src' directory.
+The src directory is divided into different sections based on functionality,
+subdirs such as network_lib, local_store, etc.
 
-A number of patches for external project are included. These patches modify existing projects (e.g. log4cxx) to utilize JALoP as an output method. These may be found under the 'patches' directory.
+A number of patches for external project are included. These patches modify
+existing projects (e.g. log4cxx) to utilize JALoP as an output method. These
+may be found under the 'patches' directory.
 
 This project is built and tested in the following environments:
   RedHat Enterprise Linux (RHEL) 5 on x86_64, using gcc version 4.1.2
@@ -91,7 +104,11 @@ This project is built and tested in the following environments:
   Solaris 10 TX 09/10 on i386, using gcc version 3.4.3
 
 Additional Notes for Solaris (See README-Solaris for more information)
-This project requires GNU awk to build and expects the 'awk' found on the path to be GNU awk. If this is not the case, you will need to install GNU awk either from source (http://www.gnu.org/s/gawk/), Sunfree (http://www.sunfreeware.com). You may also need to modify the 'PATH' enivronment variable to get scons to see the right version, i.e.:
+This project requires GNU awk to build and expects the 'awk' found on the path
+to be GNU awk. If this is not the case, you will need to install GNU awk either
+from source (http://www.gnu.org/s/gawk/), Sunfree (http://www.sunfreeware.com).
+You may also need to modify the 'PATH' enivronment variable to get scons to see
+the right version, i.e.:
 
 $> PATH=/path/to/awk:$PATH scons tests
 
@@ -107,3 +124,22 @@ NOTES
   Whenever a process crashes, or returns the error to run DB_RECOVER, stop all
   processes with access to the DB in question, run db_recover, and then restart
   the processes.
+
+  The Berkeley DB XML database can be taylored to the user's load requirements
+  by adding a DB_CONFIG file, with configuration options, to the directory where
+  the database is to be created.
+
+  Example DB_CONFIG:
+
+  set_lk_max_locks    200000
+  set_lk_max_lockers  200000
+  set_lg_regionmax    200000
+  mutex_set_max       200000
+
+  A sample DB_CONFIG file is provided within the test-input directory.
+
+  Before running the local store or either of the network stores, the directory
+  that is to contain the database should be created and the sample DB_CONFIG file
+  should be placed within it.
+
+  http://docs.oracle.com/cd/E17076_02/html/programmer_reference/env_db_config.html

@@ -98,11 +98,6 @@ enum jaldb_status jaldb_context_init(
 
 	DB_ENV *env = NULL;
 	db_env_create(&env, 0);
-	env->set_lk_max_locks(env, 200000);
-	env->set_lk_max_lockers(env, 200000);
-	env->set_lg_regionmax(env, 200000);
-	env->mutex_set_max(env, 200000);
-	env->mutex_set_increment(env, 200000);
 
 	int db_err = env->open(env, db_root, env_flags, 0);
 	if (db_err != 0) {
