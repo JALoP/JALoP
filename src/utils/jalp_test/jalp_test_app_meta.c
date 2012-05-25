@@ -487,6 +487,28 @@ static int generate_file_info(config_setting_t *file_info, struct jalp_file_info
 		}
 	}
 
+	char *threat_level = NULL;
+	if (-1 == jalptest_config_lookup_string(file_info, "threatLevel", &threat_level, OPTIONAL)) {
+		goto err_file_info;
+	}
+
+	if (NULL == threat_level) {
+		goto out;
+	} else if (0 == strcmp("malicious", threat_level)) {
+		jalp_app_file_info->threat_level = JAL_THREAT_MALICIOUS;
+	} else if (0 == strcmp("safe", threat_level)) {
+		jalp_app_file_info->threat_level = JAL_THREAT_SAFE;
+	} else if (0 == strcmp("unknown", threat_level)) {
+		jalp_app_file_info->threat_level = JAL_THREAT_UNKNOWN;
+	} else if (NULL != threat_level) {
+		printf("Error: line %d: invalid value for field \"threatLevel\"\n",
+			config_setting_source_line(config_setting_get_member(file_info, "threatLevel")));
+
+		goto err_file_info;
+	}
+	free(threat_level);
+
+out:
 	return 0;
 
 err_file_info:
