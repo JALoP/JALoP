@@ -234,6 +234,7 @@ void *jalls_handler(void *thread_ctx_p) {
 	}
 
 out:
+	close(thread_ctx->fd);
 	free(thread_ctx);
 	return NULL;
 }
