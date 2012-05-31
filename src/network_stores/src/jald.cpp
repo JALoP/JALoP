@@ -562,13 +562,13 @@ void pub_sync(
 	DEBUG_LOG_SUB_SESSION(ch_info, "sync: %s", serial_id);
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
-		jaldb_mark_journal_synced(db_ctx, ch_info->hostname, serial_id);
+		jaldb_mark_journal_synced(db_ctx, serial_id, ch_info->hostname);
 		break;
 	case JALN_RTYPE_AUDIT:
-		jaldb_mark_audit_synced(db_ctx, ch_info->hostname, serial_id);
+		jaldb_mark_audit_synced(db_ctx, serial_id, ch_info->hostname);
 		break;
 	case JALN_RTYPE_LOG:
-		jaldb_mark_log_synced(db_ctx, ch_info->hostname, serial_id);
+		jaldb_mark_log_synced(db_ctx, serial_id, ch_info->hostname);
 		break;
 	}
 }
