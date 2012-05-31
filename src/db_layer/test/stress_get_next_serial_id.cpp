@@ -66,22 +66,21 @@ int main(int argc, char **argv) {
 				DB_INIT_TXN | DB_THREAD |
 				DB_AUTO_COMMIT;
 	DB_ENV *env = NULL;
-	db_env_create(&env, 0);
-	int dberr;
+	int dberr = db_env_create(&env, 0);
+	if (0 != dberr) {
+		exit(1);
+	}
+
 	dberr = env->set_lk_detect(env, DB_LOCK_YOUNGEST);
 	if (dberr) {
 		std::cerr << "Failed to enable the lock detector" << std::endl;
-		if (env) {
-			env->close(env, 0);
-		}
+		env->close(env, 0);
 		exit(1);
 	}
 	dberr = env->open(env, "./testEnv", env_flags, 0);
 	if (dberr) {
 		std::cerr << "Failed to open the Environment" << std::endl;
-		if (env) {
-			env->close(env, 0);
-		}
+		env->close(env, 0);
 		exit(1);
 	}
 	XmlContainerConfig cfg;
@@ -119,6 +118,7 @@ int main(int argc, char **argv) {
 		void *ret;
 		pthread_join(threads[i], &ret);
 	}
+	free(threads);
 }
 
 void *main_loop(void *v) {

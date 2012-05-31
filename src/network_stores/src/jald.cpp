@@ -1140,6 +1140,7 @@ enum jald_status set_global_config(config_t *config)
 					return JALD_E_NOMEM;
 				}
 				if (!key) {
+					free(peer_cfg);
 					return JALD_E_CONFIG_LOAD;
 				}
 				axl_hash_insert_full(global_config.peers, key, free, peer_cfg, free);

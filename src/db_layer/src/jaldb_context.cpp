@@ -97,10 +97,13 @@ enum jaldb_status jaldb_context_init(
 		DB_THREAD;
 
 	DB_ENV *env = NULL;
-	db_env_create(&env, 0);
+	int db_err = db_env_create(&env, 0);
+	if (0 != db_err) {
+		return JALDB_E_INVAL;
+	}
 
-	int db_err = env->open(env, db_root, env_flags, 0);
-	if (db_err != 0) {
+	db_err = env->open(env, db_root, env_flags, 0);
+	if (0 != db_err) {
 		return JALDB_E_INVAL;
 	}
 	env->set_lk_detect(env, DB_LOCK_DEFAULT);

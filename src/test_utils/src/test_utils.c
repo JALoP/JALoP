@@ -45,6 +45,7 @@ int dir_cleanup(const char *path)
 	int path_len = 0;
 	DIR *dir = NULL;
 	struct dirent *ent = NULL;
+	char *ent_path = NULL;
 
 	path_len = strlen(path);
 
@@ -55,7 +56,6 @@ int dir_cleanup(const char *path)
 
 	while ((ent = readdir(dir))) {
 		int ent_len = strlen(ent->d_name);
-		char *ent_path = NULL;
 		struct stat st;
 
 		ent_path = malloc(path_len + ent_len + 2);
@@ -89,5 +89,6 @@ int dir_cleanup(const char *path)
 	ret = rmdir(path);
 
 out:
+	free(ent_path);
 	return ret;
 }

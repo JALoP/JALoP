@@ -387,12 +387,12 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	}
 
 	*sid = (char **) malloc(ARRAY_MULTIPLIER * sizeof(char *));
-	if (!sid) {
+	if (!(*sid)) {
 		printf("Insufficient memory\n");
 		exit(-1);
 	}
 	*uuid = (char **) malloc(ARRAY_MULTIPLIER * sizeof(char *));
-	if (!uuid) {
+	if (!(*uuid)) {
 		free(*sid);
 		printf("Insufficient memory for uuid storage. Closing.\n");
 		exit(-1);

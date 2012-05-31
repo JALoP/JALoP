@@ -86,12 +86,14 @@ extern "C" void setup()
 		DB_THREAD |
 		DB_INIT_TXN;
 	DB_ENV *env = NULL;
-	db_env_create(&env, 0);
-	int dberr = env->open(env, OTHER_DB_ROOT, env_flags, 0);
+	int dberr = db_env_create(&env, 0);
 	if (dberr) {
-		if (env) {
-			env->close(env, 0);
-		}
+		exit(1);
+	}
+
+	dberr = env->open(env, OTHER_DB_ROOT, env_flags, 0);
+	if (dberr) {
+		env->close(env, 0);
 		exit(1);
 	}
 	manager = new XmlManager(env, DBXML_ADOPT_DBENV);

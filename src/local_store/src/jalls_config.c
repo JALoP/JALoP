@@ -46,7 +46,7 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	}
 
 	*jalls_ctx = calloc(1, sizeof(**jalls_ctx));
-	if (jalls_ctx == NULL) {
+	if (*jalls_ctx == NULL) {
 		fprintf(stderr, "failed to allocate memory\n");
 		return -1;
 	}

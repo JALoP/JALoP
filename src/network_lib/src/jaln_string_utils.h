@@ -92,5 +92,8 @@ enum jal_status jaln_hex_to_bin(char c, uint8_t *out);
 enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, uint64_t hex_buf_len,
 		uint8_t **dgst_buf_out, uint64_t *dgst_buf_len_out);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _JALN_STRING_UTILS_H_

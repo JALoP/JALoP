@@ -521,6 +521,8 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 {
 	struct jalp_transform *tmp_jalp_transform = NULL;
 	int count = 0;
+	uint8_t *iv_buf = NULL;
+	uint8_t *key_buf = NULL;
 	if (transforms) {
 		count = config_setting_length(transforms);
 	}
@@ -543,7 +545,6 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 		//iv
 		config_setting_t *iv = NULL;
 		iv = config_setting_get_member(tmp_transform, "iv");
-		uint8_t *iv_buf = NULL;
 		if (iv) {
 			if (4 != config_setting_length(iv)) {
 				printf("Error: line %d: \"iv\" should consist of four 32 bit ints\n",
@@ -561,7 +562,6 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 		//key
 		config_setting_t *key = NULL;
 		key = config_setting_get_member(tmp_transform, "key");
-		uint8_t *key_buf = NULL;
 		int key_count = 0;
 		if (key) {
 			key_count = config_setting_length(key);
@@ -652,7 +652,8 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 	return 0;
 
 err_transform:
-
+	free(iv_buf);
+	free(key_buf);
 	return -1;
 }
 

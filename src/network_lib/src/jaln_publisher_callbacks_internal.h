@@ -44,4 +44,8 @@ extern "C" {
  */
 int jaln_publisher_callbacks_is_valid(struct jaln_publisher_callbacks *publisher_callbacks);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _JALN_PUBLISHER_CALLBACKS_INTERNAL_H_

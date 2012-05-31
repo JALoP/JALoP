@@ -431,7 +431,7 @@ void print_payload(uint8_t *payload_buf, size_t payload_size)
 	str_payload[payload_size] = 0;
 	printf("payload(char): %s\n", str_payload);
 	printf("\n");
-
+	free(str_payload);
 }
 
 static void print_error(enum jal_status error)

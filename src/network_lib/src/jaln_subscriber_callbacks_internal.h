@@ -44,4 +44,8 @@ extern "C" {
  */
 int jaln_subscriber_callbacks_is_valid(struct jaln_subscriber_callbacks *subscriber_callbacks);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _JALN_SUBSCRIBER_CALLBACKS_INTERNAL_H_

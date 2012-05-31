@@ -111,7 +111,7 @@ enum jal_status jaln_register_tls(jaln_context *ctx,
 				const char *public_cert,
 				const char *peer_certs);
 
-#ifdef __cpluscplud
+#ifdef __cplusplus
 }
 #endif
 
