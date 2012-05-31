@@ -34,6 +34,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <unistd.h>
 #include <jalop/jaln_network.h>
 #include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
@@ -93,18 +94,17 @@ enum jal_subscribe_status {
 	JAL_E_CONFIG_LOAD = -1
 };
 
-void usage();
-int process_options(int argc, char **argv);
-int config_load(config_t *config, char *config_path);
-void init_global_config(void);
-void free_global_args(void);
-void print_config(void);
-int set_global_config(config_t *config);
-void *timer_do_work(void *ptr);
-void *subscriber_do_work(void *ptr);
-unsigned int get_seconds_from_timeout(char *session_timeout);
-unsigned int alarm(unsigned int seconds);
-void catch_alarm(int sig);
+static void usage();
+static int process_options(int argc, char **argv);
+static int config_load(config_t *config, char *config_path);
+static void init_global_config(void);
+static void free_global_args(void);
+static void print_config(void);
+static int set_global_config(config_t *config);
+static void *timer_do_work(void *ptr);
+static void *subscriber_do_work(void *ptr);
+static unsigned int get_seconds_from_timeout(char *session_timeout);
+static void catch_alarm(int sig);
 
 static void sig_handler(__attribute__((unused)) int sig)
 {
@@ -477,24 +477,6 @@ unsigned int get_seconds_from_timeout(char *session_timeout)
 	total_seconds += second;
 out:
 	return total_seconds;
-}
-
-//
-// Taken from: www.gnu.org/s/hello/manual/libc/Handler-Returns.html#Handler-Returns
-//
-unsigned int alarm(unsigned int seconds)
-{
-	struct itimerval old, new_val;
-	new_val.it_interval.tv_usec = 0;
-	new_val.it_interval.tv_sec = 0;
-	new_val.it_value.tv_usec = 0;
-	new_val.it_value.tv_sec = (long int) seconds;
-	if (setitimer (ITIMER_REAL, &new_val, &old) < 0){
-		return 0;
-	}
-	else {
-		return old.it_value.tv_sec;
-	}
 }
 
 //
