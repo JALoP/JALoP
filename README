@@ -121,6 +121,11 @@ KNOWN ISSUES
   that are able to be compressed into very small packets.
 
 NOTES
+  Due to the method in which the JALoP implementation allocates memory for
+  records and possible system limitations, large files should be sent as
+  journals and passed by file descriptor (i.e. using the jalp_journal_fd()
+  function).
+
   Whenever a process crashes, or returns the error to run DB_RECOVER, stop all
   processes with access to the DB in question, run db_recover, and then restart
   the processes.
