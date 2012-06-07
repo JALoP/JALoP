@@ -1,0 +1,67 @@
+.TH JAL_QUERY 8
+.SH NAME
+.BR jal_query
+-
+.SM JALoP
+database query utility
+.SH SYNOPSIS
+.B jal_query
+[\fIOPTION\fR...]
+.SH "DESCRIPTION"
+This manual page describes the
+.BR jal_query
+command.
+.PP
+The
+.B jal_query
+tool is used to look up information about a single JAL record.
+It reports the JAL timestamp, UUID, sequence ID, and if a record was successfully delivered to a JALoP Network Store.
+It may also be used to execute arbitrary XQueries against the database.
+By default, XQueries are executed against the system metadata for the particular record type.
+.SH OPTIONS
+.TP
+\fB\-s\fR, \fB\-\-sid=S\fR
+Search using the sequence ID \fBS\fR.
+.TP
+\fB\-u\fR, \fB\-\-uuid=U\fR
+Search using the UUID \fBU\fR.
+.TP
+\fB\-t\fR, \fB\-\-type=T\fR
+Search within the specified type.
+.B T
+may be the letter
+.I j
+for journal records),
+.I a
+(for audit records),
+or
+.I l
+(for log records).
+.TP
+\fB\-q\fR, \fB\-\-query=Q\fR
+Execute the arbitrary XQuery
+.B Q
+\.
+.TP
+\fB\-h\fR, \fB\-\-home=H\fR
+Specify the root of the
+.SM JALoP
+database,
+defaults to
+.I /var/lib/jalop/db
+.TP
+\fB\-\-version\fR
+Output the version information and exit.
+.SH EXAMPLE
+.TP
+jal_query --type=l --query="for \\$d in collection() return \\$d" --home=./testdb
+
+.SH "SEE ALSO"
+.BR jald (8),
+.BR jal-local-store (8),
+.BR jal-local-store.config (5),
+.BR jal_dump (8),
+.BR jal_purge (8)
+.BR jal_subscribe (8),
+
+
