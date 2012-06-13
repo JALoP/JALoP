@@ -13,16 +13,16 @@
 static void parse_cmdline(int argc, char **argv, char **db_root, char **schemas);
 static void print_usage();
 static void print_error(enum jaldb_status error);
-static void print_list_stdout(const list<string> &list);
+static void print_list_stdout(const std::list<std::string> &list);
 
 int main(int argc, char **argv)
 {
 	int ret;
 	char *dbroot = NULL;
 	char *schemas = NULL;
-	list<string> *journal_list = NULL;
-	list<string> *audit_list = NULL;
-	list<string> *log_list = NULL;
+	std::list<std::string> *journal_list = NULL;
+	std::list<std::string> *audit_list = NULL;
+	std::list<std::string> *log_list = NULL;
 
 	parse_cmdline(argc, argv, &dbroot, &schemas);
 
@@ -190,11 +190,11 @@ static void print_error(enum jaldb_status error)
 	printf("\n");
 }
 
-static void print_list_stdout(const list<string> &p_list)
+static void print_list_stdout(const std::list<std::string> &p_list)
 {
-	list<string>::const_iterator i;
+	std::list<std::string>::const_iterator i;
 	for(i=p_list.begin(); i != p_list.end(); ++i) {
-		std::string name = (string) *i;
+		std::string name = (std::string) *i;
 		printf("\t%s\n", name.c_str());
 	}
 	if (0 == p_list.size()) {

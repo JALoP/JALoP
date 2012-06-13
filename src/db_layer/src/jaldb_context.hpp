@@ -41,8 +41,6 @@
 typedef std::map<std::string, DbXml::XmlContainer> string_to_container_map;
 typedef std::map<std::string, DB*> string_to_db_map;
 
-using namespace std;
-
 struct jaldb_context_t {
 	DbXml::XmlManager *manager; //<! The manager associated with the context.
 	DbXml::XmlContainer *audit_sys_cont; //<! Container for the audit System Metadata
@@ -985,7 +983,7 @@ enum jaldb_status jaldb_get_journal_resume(
  */
 enum jaldb_status jaldb_get_journal_document_list(
 	jaldb_context *ctx,
-	list<string> **doc_list);
+	std::list<std::string> **doc_list);
 
  /**
  * Retrieve a list of document names present in the audit system container.
@@ -999,7 +997,7 @@ enum jaldb_status jaldb_get_journal_document_list(
  */
 enum jaldb_status jaldb_get_audit_document_list(
 		jaldb_context *ctx,
-		list<string> **doc_list);
+		std::list<std::string> **doc_list);
 
  /**
  * Retrieve a list of document names present in the log system container.
@@ -1013,7 +1011,7 @@ enum jaldb_status jaldb_get_audit_document_list(
  */
 enum jaldb_status jaldb_get_log_document_list(
 		jaldb_context *ctx,
-		list<string> **doc_list);
+		std::list<std::string> **doc_list);
 
  /**
  * Retrieve a list of document names present in the container \p cont.
@@ -1029,7 +1027,7 @@ enum jaldb_status jaldb_get_log_document_list(
 enum jaldb_status jaldb_get_document_list(
 		DbXml::XmlContainer *cont,
 		DbXml::XmlManager *mgr,
-		list<string> **doc_list);
+		std::list<std::string> **doc_list);
 
  /**
  * Retrieve a list of the last \p k records for journal container.
@@ -1045,7 +1043,7 @@ enum jaldb_status jaldb_get_document_list(
 enum jaldb_status jaldb_get_last_k_records_journal(
 		jaldb_context *ctx,
 		int k,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 
  /**
  * Retrieve a list of the last \p k records for audit container.
@@ -1061,7 +1059,7 @@ enum jaldb_status jaldb_get_last_k_records_journal(
 enum jaldb_status jaldb_get_last_k_records_audit(
 		jaldb_context *ctx,
 		int k,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 
  /**
  * Retrieve a list of the last \p k records for log container.
@@ -1077,7 +1075,7 @@ enum jaldb_status jaldb_get_last_k_records_audit(
 enum jaldb_status jaldb_get_last_k_records_log(
 		jaldb_context *ctx,
 		int k,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 
  /**
  * Function to retrieve a list of the last \p k records
@@ -1096,7 +1094,7 @@ enum jaldb_status jaldb_get_last_k_records(
 		DbXml::XmlContainer *cont,
 		DbXml::XmlManager *mgr,
 		int k,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 
  /**
  * Retrieve a list of the journal records received after the record denoted
@@ -1113,7 +1111,7 @@ enum jaldb_status jaldb_get_last_k_records(
 enum jaldb_status jaldb_get_records_since_last_sid_journal(
 		jaldb_context *ctx,
 		char *last_sid,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 
  /**
  * Retrieve a list of the audit records received after the record denoted
@@ -1130,7 +1128,7 @@ enum jaldb_status jaldb_get_records_since_last_sid_journal(
 enum jaldb_status jaldb_get_records_since_last_sid_audit(
 		jaldb_context *ctx,
 		char *last_sid,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 
  /**
  * Retrieve a list of the log records received after the record denoted
@@ -1147,7 +1145,7 @@ enum jaldb_status jaldb_get_records_since_last_sid_audit(
 enum jaldb_status jaldb_get_records_since_last_sid_log(
 		jaldb_context *ctx,
 		char *last_sid,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 		
  /**
  * Retrieve a list of the records received after the record denoted
@@ -1166,7 +1164,7 @@ enum jaldb_status jaldb_get_records_since_last_sid(
 		DbXml::XmlContainer *cont,
 		DbXml::XmlManager *mgr,
 		char *last_sid,
-		list<string> &doc_list);
+		std::list<std::string> &doc_list);
 
  
 #endif // _JALDB_CONTEXT_HPP_
