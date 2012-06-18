@@ -33,9 +33,6 @@
 #include <dbxml/DbXml.hpp>
 #include "jaldb_context.hpp"
 
-using namespace std;
-using namespace DbXml;
-
 struct jaldb_doc_info {
 	char *sid;
 	char *uuid;
@@ -102,11 +99,11 @@ enum jaldb_status jaldb_purge_unconfirmed_journal(
  * @return JALDB_OK on success, or an error.
  */
 enum jaldb_status jaldb_get_docs_to_purge(jaldb_context *ctx,
-					XmlTransaction &txn,
-					XmlUpdateContext &uc,
-					XmlQueryContext &qtx,
-					const string query,
-					list<jaldb_doc_info> &docs);
+					DbXml::XmlTransaction &txn,
+					DbXml::XmlUpdateContext &uc,
+					DbXml::XmlQueryContext &qtx,
+					const std::string query,
+					std::list<jaldb_doc_info> &docs);
 
 /**
  * Helper function that does the actual query and purging of log records.
@@ -124,12 +121,12 @@ enum jaldb_status jaldb_get_docs_to_purge(jaldb_context *ctx,
  *
  * @return JALDB_OK on success, or an error.
  */
-enum jaldb_status jaldb_purge_log(jaldb_context *ctx,                                                                  
-                                XmlTransaction &txn,                                                                   
-                                XmlUpdateContext &uc,                                                                  
-                                XmlQueryContext &qctx,                                                                 
-                                const string query,                                                                    
-                                list<jaldb_doc_info> &docs,                                                            
+enum jaldb_status jaldb_purge_log(jaldb_context *ctx,
+                                DbXml::XmlTransaction &txn,
+                                DbXml::XmlUpdateContext &uc,
+                                DbXml::XmlQueryContext &qctx,
+                                const std::string query,
+                                std::list<jaldb_doc_info> &docs,
                                 int del);
 /**
  * Helper function that does the actual query and purging of audit records.
@@ -148,11 +145,11 @@ enum jaldb_status jaldb_purge_log(jaldb_context *ctx,
  * @return JALDB_OK on success, or an error.
  */
 enum jaldb_status jaldb_purge_audit(jaldb_context *ctx,
-                                XmlTransaction &txn,
-                                XmlUpdateContext &uc,
-                                XmlQueryContext &qctx,
-                                const string query,
-                                list<jaldb_doc_info> &docs,
+                                DbXml::XmlTransaction &txn,
+                                DbXml::XmlUpdateContext &uc,
+                                DbXml::XmlQueryContext &qctx,
+                                const std::string query,
+                                std::list<jaldb_doc_info> &docs,
                                 int del);
 
 /**
@@ -172,11 +169,11 @@ enum jaldb_status jaldb_purge_audit(jaldb_context *ctx,
  * @return JALDB_OK on success, or an error.
  */
 enum jaldb_status jaldb_purge_journal(jaldb_context *ctx,
-                                XmlTransaction &txn,
-                                XmlUpdateContext &uc,
-                                XmlQueryContext &qctx,
-                                const string query,
-                                list<jaldb_doc_info> &docs,
+                                DbXml::XmlTransaction &txn,
+                                DbXml::XmlUpdateContext &uc,
+                                DbXml::XmlQueryContext &qctx,
+                                const std::string query,
+                                std::list<jaldb_doc_info> &docs,
                                 int del);
  
 /**
