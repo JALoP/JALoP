@@ -1,6 +1,6 @@
 /**
-* @file jal_tail.cpp This file contains the implementation for the
-* jal_tail utility.
+* @file jaldb_tail.cpp This file contains the implementation for the
+* jaldb_tail utility.
 *
 * @section LICENSE
 *
@@ -51,14 +51,14 @@
 #include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 
-#define JAL_TAIL_THREAD_SLEEP_SECONDS 10
-#define JAL_TAIL_DEFAULT_NUM_RECORDS 20
-#define JAL_TAIL_DEFAULT_TYPE "l"
-#define JAL_TAIL_DEFAULT_LAST_SID "0"
+#define JALDB_TAIL_THREAD_SLEEP_SECONDS 10
+#define JALDB_TAIL_DEFAULT_NUM_RECORDS 20
+#define JALDB_TAIL_DEFAULT_TYPE "l"
+#define JALDB_TAIL_DEFAULT_LAST_SID "0"
 
 #define DEBUG_LOG(args...) \
 do { \
-	fprintf(stderr, "(jal_tail) %s[%d] ", __FUNCTION__, __LINE__); \
+	fprintf(stderr, "(jaldb_tail) %s[%d] ", __FUNCTION__, __LINE__); \
 	fprintf(stderr, ##args); \
 	fprintf(stderr, "\n"); \
 	} while(0)
@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 
 	gbl.ctx = NULL;
 	gbl.follow_flag = 0;
-	gbl.num_rec = (long) JAL_TAIL_DEFAULT_NUM_RECORDS;
+	gbl.num_rec = (long) JALDB_TAIL_DEFAULT_NUM_RECORDS;
 	gbl.type = NULL;
 	gbl.home = NULL;
 
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 
 	// Setup defaults if necessary.
 	if (!gbl.type) {
-		gbl.type = jal_strdup(JAL_TAIL_DEFAULT_TYPE);
+		gbl.type = jal_strdup(JALDB_TAIL_DEFAULT_TYPE);
 	}
 
 	print_settings(gbl.follow_flag, gbl.num_rec, gbl.type, gbl.home);
@@ -255,7 +255,7 @@ static void print_usage()
 	static const char *usage =
 	"Usage:\n\
 	-f, --follow		Output additional records as the database grows.\n\
-	-n, --records=K		Output the most recent K records. jal_tail uses the serial ID\n\
+	-n, --records=K		Output the most recent K records. jaldb_tail uses the serial ID\n\
 				of the JAL record that the JALoP Local Store or\n\
 				JALoP Network Store assigns to determine the most recent\n\
 				records.\n\
@@ -271,7 +271,7 @@ static void print_usage()
 
 static void print_version()
 {
-	printf("jal_tail v%s\n\n", jal_version_as_string());
+	printf("jaldb_tail v%s\n\n", jal_version_as_string());
 }
 
 static void print_error(enum jaldb_status error)
@@ -323,7 +323,7 @@ static void print_settings(int follow, long int num_rec, char *type, char *home)
 {
 	std::string s_true = "true";
 	std::string s_false = "false";
-	printf("\nJAL_TAIL\n====\nSETTINGS:\n");
+	printf("\nJALDB_TAIL\n====\nSETTINGS:\n");
 	printf("\tFollow:\t\t%s\n",
 		follow == 1 ? s_true.c_str() : s_false.c_str());
 	printf("\tRecords:\t%ld\n", num_rec);
@@ -337,7 +337,7 @@ static void do_work(void *ptr)
 	struct global_members_t *mbrs = (struct global_members_t *) ptr;
 	enum jaldb_status ret = JALDB_OK;
 	list<string> doc_list;
-	std::string last_sid = JAL_TAIL_DEFAULT_LAST_SID;
+	std::string last_sid = JALDB_TAIL_DEFAULT_LAST_SID;
 
 	if (0 == strcmp(mbrs->type, "a")) {
 		printf("\nTAILING AUDIT\n====\n");
@@ -387,7 +387,7 @@ static void do_work(void *ptr)
 			last_sid = doc_list.back();
 		}
 		doc_list.clear();
-		sleep(JAL_TAIL_THREAD_SLEEP_SECONDS);
+		sleep(JALDB_TAIL_THREAD_SLEEP_SECONDS);
 	}
 	return;
 }
