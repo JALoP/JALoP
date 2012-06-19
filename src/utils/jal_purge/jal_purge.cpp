@@ -285,7 +285,7 @@ __attribute__((noreturn)) static void usage()
 				prepared to delete.  This reports the sequence number\n\
 				and UUID of each record.  Records are grouped by type.\n\
 	-h, --home=H		Specify the root of the JALoP database,\n\
-				defaults to <prefix>/share/jalop-v1.0/schemas.\n\
+				defaults to /var/lib/jalop/db\n\
 	--version		Output the version information and exit.\n\n";
 	fprintf(stderr, "%s", usage);
 	exit(-1);
