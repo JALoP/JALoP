@@ -99,6 +99,7 @@
 #define PAYLOAD "SoMe_data   is here\nMoreData is Here!\n"
 
 using namespace DbXml;
+using namespace std;
 //static DB_ENV *env = NULL;
 static DB *dbase = NULL;
 static jaldb_context *ctx = NULL;
