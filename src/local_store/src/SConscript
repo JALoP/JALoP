@@ -2,16 +2,19 @@ Import('*')
 from Utils import add_project_lib
 from Utils import install_for_build
 
+env = env.Clone()
+
 sources = []
 env.MergeFlags('-D_BSD_SOURCE')
 
 for source in (env.Glob("*.c") + env.Glob("*.cpp")):
 	sources.append(source)
 
-local_store_objs = env.SharedObject(source=sources)
+add_project_lib(env, 'lib_common', 'jal-common')
+add_project_lib(env, 'db_layer', 'jal-db')
+add_project_lib(env, 'jal_utils', 'jal-utils')
 
-
-local_store = env.Program(target='jal-local-store', source=local_store_objs)
+local_store = env.Program(target='jal-local-store', source=sources)
 env.Depends(local_store, [lib_common, db_layer, jal_utils])
 
 env.Default(local_store)
@@ -22,4 +25,4 @@ if (env['release']):
 
 install_for_build(env, 'bin', local_store)
 
-Return("local_store")
+Return("local_store env")

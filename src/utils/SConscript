@@ -8,6 +8,7 @@ utilsEnv = env.Clone()
 utilsEnv.MergeFlags(utilsEnv['lfs_cflags'])
 utilsEnv.MergeFlags(utilsEnv['libconfig_cflags'])
 utilsEnv.MergeFlags(utilsEnv['libconfig_ldflags'])
+utilsEnv.PrependENVPath('LD_LIBRARY_PATH', os.path.dirname(str(lib_common[0])))
 
 jalp_test = utilsEnv.SConscript('jalp_test/SConscript', exports='utilsEnv all_tests lib_common producer_lib')
 jalp_dump = utilsEnv.SConscript('jal_dump/SConscript', exports='utilsEnv all_tests lib_common db_layer')

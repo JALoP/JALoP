@@ -102,6 +102,7 @@ debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env['HAVE_SELINUX'] = False;
 
 if platform.system() == 'SunOS':
+	debug_env.Replace(RPATHPREFIX = '-Wl,-R')
 	debug_env.PrependENVPath('PKG_CONFIG_PATH',
 			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
 	debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')

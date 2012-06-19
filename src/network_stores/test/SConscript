@@ -2,19 +2,19 @@ import os
 import string
 Import('*')
 
-tests = []
-
-lib_env = env
 env = env.Clone()
 
-# The test code triggers warnings we'd just as soon ignore
-ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + lib_env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + lib_env['SOURCE_ROOT'] + '/test-input/\\" '
+tests = []
 
+# The test code triggers warnings we'd just as soon ignore
+ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + net_stores_env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + net_stores_env['SOURCE_ROOT'] + '/test-input/\\" '
+
+env.Append(RPATH=os.path.dirname(str(lib_common[0])))
 env.Append(CCFLAGS=ccflags.split())
 env.MergeFlags({'CPPPATH':'#src/network_stores/src:#src/lib_common/src:#src/test_utils/src'.split(':')})
 
-parse_obj = lib_env.SharedObject("../src/jsub_parse.cpp")
-db_layer_obj = lib_env.SharedObject("../src/jsub_db_layer.cpp")
+parse_obj = net_stores_env.SharedObject("../src/jsub_parse.cpp")
+db_layer_obj = net_stores_env.SharedObject("../src/jsub_db_layer.cpp")
 
 tests.append(env.TestDeptTest('test_jsub_db_layer.cpp',
 	other_sources=[lib_common, parse_obj, db_layer, jal_utils, network_lib])[0].abspath)

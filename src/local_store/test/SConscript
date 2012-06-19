@@ -2,41 +2,44 @@ import os
 import string
 Import('*')
 
+env = env.Clone()
+
 tests = []
 
 # The test code triggers warnings we'd just as soon ignore
-ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/test-input/\\" '
+ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
 
-testEnv.MergeFlags(testEnv['santuario_ldflags'])
+env.MergeFlags(env['santuario_ldflags'])
 
-testEnv.Append(CCFLAGS=ccflags.split())
-testEnv.MergeFlags({'CPPPATH':['#src/local_store/src', '#src/lib_common/src', '#src/test_utils/src']})
+env.Append(RPATH=os.path.dirname(str(lib_common[0])))
+env.Append(CCFLAGS=ccflags.split())
+env.MergeFlags({'CPPPATH':['#src/local_store/src', '#src/lib_common/src', '#src/test_utils/src']})
 
-jallsInitObj = env.SharedObject(os.path.join('..', 'src', 'jalls_init.cpp'))
-jallsMsgObj = env.SharedObject(os.path.join('..', 'src', 'jalls_msg.c'))
-jallsHandlerObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handler.c'))
-jallsHandleLogObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handle_log.cpp'))
-jallsHandleAuditObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handle_audit.cpp'))
-jallsHandleJournalObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal.cpp'))
-jallsHandleJournalFDObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal_fd.cpp'))
-jallsXmlUtilsObj = env.SharedObject(os.path.join('..', 'src', 'jalls_xml_utils.cpp'))
-jallsSysMetaXmlObj = env.SharedObject(os.path.join('..', 'src', 'jalls_system_metadata_xml.cpp'))
+jallsInitObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_init.cpp'))
+jallsMsgObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_msg.c'))
+jallsHandlerObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handler.c'))
+jallsHandleLogObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_log.cpp'))
+jallsHandleAuditObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_audit.cpp'))
+jallsHandleJournalObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal.cpp'))
+jallsHandleJournalFDObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal_fd.cpp'))
+jallsXmlUtilsObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_xml_utils.cpp'))
+jallsSysMetaXmlObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_system_metadata_xml.cpp'))
 
-tests.append(testEnv.TestDeptTest('test_jalls_msg.c',
+tests.append(env.TestDeptTest('test_jalls_msg.c',
 	other_sources=[], useProxies=True)[0].abspath)
 
-tests.append(testEnv.TestDeptTest('test_jalls_handler.c',
+tests.append(env.TestDeptTest('test_jalls_handler.c',
 	other_sources=[jallsInitObj, jallsMsgObj, jallsHandleJournalObj, jallsXmlUtilsObj, jallsSysMetaXmlObj,
 		jallsHandleLogObj, jallsHandleAuditObj, jallsHandleJournalFDObj, lib_common, db_layer],
 	useProxies=True)[0].abspath)
 
-tests.append(testEnv.TestDeptTest('test_jalls_xml_utils.cpp',
+tests.append(env.TestDeptTest('test_jalls_xml_utils.cpp',
 	other_sources=[jallsMsgObj, jallsHandlerObj, jallsHandleLogObj,
 			jallsHandleAuditObj, jallsHandleJournalObj,
 			jallsHandleJournalFDObj, jallsSysMetaXmlObj,
 			lib_common, db_layer, test_utils], useProxies=False)[0].abspath)
 
-tests.append(testEnv.TestDeptTest('test_jalls_system_metadata_xml.cpp',
+tests.append(env.TestDeptTest('test_jalls_system_metadata_xml.cpp',
 	other_sources=[test_utils, lib_common, jallsXmlUtilsObj])[0].abspath)
 
 local_store_tests = env.Alias('local_store_tests', tests, 'test_dept ' + " ".join(tests))

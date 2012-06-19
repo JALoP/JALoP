@@ -13,9 +13,8 @@ env.MergeFlags(env['vortex_tls_ldflags'])
 # The vortex libraries shadow global variables, so disable the warning here.
 env.MergeFlags({'CCFLAGS': '-Wno-shadow'.split()})
 
+network_lib, net_lib_env = SConscript('src/SConscript', exports='env')
 SConscript('include/SConscript', exports='env all_tests lib_common')
-# bug-xyz: Stubbing out build environment for jal_subscribe
-SConscript('test/SConscript', exports='env all_tests lib_common test_utils')
+SConscript('test/SConscript', exports='env net_lib_env all_tests lib_common test_utils')
 
-network_lib = SConscript('src/SConscript', exports='env')
 Return('network_lib')

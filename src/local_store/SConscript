@@ -21,13 +21,7 @@ if env['HAVE_SELINUX'] == True:
 	env.MergeFlags('-D__HAVE_SELINUX')
 	env.MergeFlags(env['selinux_ldflags'])
 
-testEnv = env.Clone()
-
-add_project_lib(env, 'lib_common', 'jal-common')
-add_project_lib(env, 'db_layer', 'jal-db')
-add_project_lib(env, 'jal_utils', 'jal-utils')
-
-SConscript('test/SConscript', exports='env testEnv all_tests lib_common test_utils db_layer')
-local_store = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer')
+local_store, ls_env = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer')
+SConscript('test/SConscript', exports='env ls_env all_tests lib_common test_utils db_layer')
 
 Return("local_store")

@@ -1,9 +1,14 @@
 Import('*')
 import os
 from Utils import install_for_build
+from Utils import add_project_lib
+
+env = env.Clone()
 
 sources = []
 sources = env.Glob("*.c")
+
+add_project_lib(env, 'lib_common', 'jal-common')
 
 network_lib = env.SharedLibrary(target='jal-network', source=[sources])
 env.Default(network_lib)
@@ -12,4 +17,4 @@ if (env['release']):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, network_lib))
 
-Return("network_lib")
+Return("network_lib env")

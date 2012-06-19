@@ -1,7 +1,12 @@
 Import('*')
 from Utils import install_for_build
+from Utils import add_project_lib
+
+env = env.Clone()
 
 sources = env.Glob("*.c") + env.Glob("*.cpp")
+
+add_project_lib(env, 'lib_common', 'jal-common')
 
 db_lib = env.SharedLibrary(target='jal-db', source=[sources])
 env.Default(db_lib)
@@ -11,4 +16,4 @@ if (env['release']):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, db_lib))
 
-Return("db_lib")
+Return("db_lib env")

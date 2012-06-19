@@ -1,11 +1,16 @@
 import ConfigDotH
 from Utils import install_for_build
+from Utils import add_project_lib
 
 Import('*')
+
+env = env.Clone()
 
 sources = []
 for source in env.Glob("*.c"):
 	sources.append(source)
+
+add_project_lib(env, 'lib_common', 'jal-common')
 
 # build config.h
 configh = env.Command('jalp_config_internal.h',
@@ -18,4 +23,4 @@ if (env['release']):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, producer_lib))
 
-Return("producer_lib")
+Return("producer_lib env")
