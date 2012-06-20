@@ -60,7 +60,7 @@ static const XMLCh JALLS_XML_JID[] = {
 
 extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, uint64_t data_len, uint64_t meta_len, int journal_fd)
 {
-	if (!thread_ctx || !(thread_ctx->ctx) || (!thread_ctx->signing_key)) {
+	if (!thread_ctx || !(thread_ctx->ctx)) {
 		return -1; //should never happen.
 	}
 
@@ -234,14 +234,16 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	}
 	manifest->appendChild(reference_elem);
 
-	//add signature to the system metadata
-	jal_err = jalls_add_signature_block(thread_ctx->signing_key, thread_ctx->signing_cert,
-		sys_meta_doc, sys_meta_root, manifest, sys_meta_root->getAttribute(JALLS_XML_JID));
-	if (jal_err != JAL_OK) {
-		if (debug) {
-			fprintf(stderr, "could not create system metadata signature\n");
+	if (NULL != thread_ctx->signing_key) {
+		//add signature to the system metadata
+		jal_err = jalls_add_signature_block(thread_ctx->signing_key, thread_ctx->signing_cert,
+			sys_meta_doc, sys_meta_root, manifest, sys_meta_root->getAttribute(JALLS_XML_JID));
+		if (jal_err != JAL_OK) {
+			if (debug) {
+				fprintf(stderr, "could not create system metadata signature\n");
+			}
+			goto err_out;
 		}
-		goto err_out;
 	}
 
 	db_err = jaldb_insert_journal_metadata(thread_ctx->db_ctx,

@@ -12,6 +12,7 @@ testEnv.MergeFlags(testEnv['santuario_ldflags'])
 testEnv.Append(CCFLAGS=ccflags.split())
 testEnv.MergeFlags({'CPPPATH':['#src/local_store/src', '#src/lib_common/src', '#src/test_utils/src']})
 
+jallsInitObj = env.SharedObject(os.path.join('..', 'src', 'jalls_init.cpp'))
 jallsMsgObj = env.SharedObject(os.path.join('..', 'src', 'jalls_msg.c'))
 jallsHandlerObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handler.c'))
 jallsHandleLogObj = env.SharedObject(os.path.join('..', 'src', 'jalls_handle_log.cpp'))
@@ -25,7 +26,7 @@ tests.append(testEnv.TestDeptTest('test_jalls_msg.c',
 	other_sources=[], useProxies=True)[0].abspath)
 
 tests.append(testEnv.TestDeptTest('test_jalls_handler.c',
-	other_sources=[jallsMsgObj, jallsHandleJournalObj, jallsXmlUtilsObj, jallsSysMetaXmlObj,
+	other_sources=[jallsInitObj, jallsMsgObj, jallsHandleJournalObj, jallsXmlUtilsObj, jallsSysMetaXmlObj,
 		jallsHandleLogObj, jallsHandleAuditObj, jallsHandleJournalFDObj, lib_common, db_layer],
 	useProxies=True)[0].abspath)
 

@@ -37,8 +37,10 @@
 #include <unistd.h>
 #include <test-dept.h>
 #include "jal_alloc.h"
+#include "jalls_init.h"
 #include "jalls_msg.h"
 #include "jalls_handler.h"
+#include "jalls_handle_log.hpp"
 
 #define FAKE_MSG_SIZE 128
 
@@ -63,8 +65,8 @@ static int recvmsg_returns_msg_type_zero(__attribute__((unused)) int fd,
 {
 	*(uint16_t *)msg->msg_iov[0].iov_base = 1;
 	*(uint16_t *)msg->msg_iov[1].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[2].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[3].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[2].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[3].iov_base = 0;
 
 	msg->msg_control = NULL;
 
@@ -77,8 +79,8 @@ static int recvmsg_returns_msg_type_jalls_log_msg(__attribute__((unused)) int fd
 {
 	*(uint16_t *)msg->msg_iov[0].iov_base = 1;
 	*(uint16_t *)msg->msg_iov[1].iov_base = 1;
-	*(uint16_t *)msg->msg_iov[2].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[3].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[2].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[3].iov_base = 0;
 
 	msg->msg_control = NULL;
 
@@ -91,8 +93,8 @@ static int recvmsg_returns_msg_type_jalls_audit_msg(__attribute__((unused)) int 
 {
 	*(uint16_t *)msg->msg_iov[0].iov_base = 1;
 	*(uint16_t *)msg->msg_iov[1].iov_base = 2;
-	*(uint16_t *)msg->msg_iov[2].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[3].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[2].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[3].iov_base = 0;
 
 	msg->msg_control = NULL;
 
@@ -105,8 +107,8 @@ static int recvmsg_returns_msg_type_jalls_journal_msg(__attribute__((unused)) in
 {
 	*(uint16_t *)msg->msg_iov[0].iov_base = 1;
 	*(uint16_t *)msg->msg_iov[1].iov_base = 3;
-	*(uint16_t *)msg->msg_iov[2].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[3].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[2].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[3].iov_base = 0;
 
 	msg->msg_control = NULL;
 
@@ -125,8 +127,8 @@ static int recvmsg_returns_msg_type_jalls_journal_fd_msg(int fd,
 
 	*(uint16_t *)msg->msg_iov[0].iov_base = 1;
 	*(uint16_t *)msg->msg_iov[1].iov_base = 4;
-	*(uint16_t *)msg->msg_iov[2].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[3].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[2].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[3].iov_base = 0;
 
 	msg->msg_control = cmsgh;
 
@@ -143,8 +145,8 @@ static int recvmsg_returns_protocol_zero(__attribute__((unused)) int fd,
 {
 	*(uint16_t *)msg->msg_iov[0].iov_base = 0;
 	*(uint16_t *)msg->msg_iov[1].iov_base = 4;
-	*(uint16_t *)msg->msg_iov[2].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[3].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[2].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[3].iov_base = 0;
 
 	msg->msg_control = NULL;
 
@@ -163,8 +165,8 @@ static int recvmsg_returns_non_null_cmsg_len_zero(__attribute__((unused)) int fd
 
 	*(uint16_t *)msg->msg_iov[0].iov_base = 1;
 	*(uint16_t *)msg->msg_iov[1].iov_base = 4;
-	*(uint16_t *)msg->msg_iov[2].iov_base = 0;
-	*(uint16_t *)msg->msg_iov[3].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[2].iov_base = 0;
+	*(uint64_t *)msg->msg_iov[3].iov_base = 0;
 
 	msg->msg_control = cmsgh;
 
@@ -178,6 +180,13 @@ static int recvmsg_returns_non_null_cmsg_len_zero(__attribute__((unused)) int fd
 static int recvmsg_always_fails(__attribute__((unused)) int fd,
 			__attribute__((unused)) struct msghdr *msg,
 			__attribute__((unused)) int flags)
+{
+	return -1;
+}
+
+static int fake_jalls_handle_log(__attribute__((unused)) struct jalls_thread_context *ctx,
+				__attribute__((unused)) uint64_t data_len,
+				__attribute__((unused)) uint64_t meta_len)
 {
 	return -1;
 }
@@ -196,6 +205,8 @@ void setup()
 
 	replace_function(pthread_self, fake_pthread_self);
 	replace_function(pthread_detach, fake_pthread_detach);
+
+	jalls_init();
 }
 
 void teardown()
@@ -203,6 +214,8 @@ void teardown()
 	restore_function(pthread_self);
 	restore_function(pthread_detach);
 	restore_function(jalls_recvmsg_helper);
+
+	jalls_shutdown();
 }
 
 void test_jalls_handler_returns_null_when_given_null()
@@ -235,6 +248,7 @@ void test_jalls_handler_msg_type_is_zero()
 void test_jalls_handler_msg_type_is_jalls_log_msg()
 {
 	replace_function(jalls_recvmsg_helper, recvmsg_returns_msg_type_jalls_log_msg);
+	replace_function(jalls_handle_log, fake_jalls_handle_log);
 	void *ret = jalls_handler(thread_ctx);
 	assert_equals((void *) NULL, ret);
 }

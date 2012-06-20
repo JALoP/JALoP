@@ -1,3 +1,4 @@
 jalls_handler_test_dept_proxy jalls_handler
+jalls_init_test_dept_proxy jalls_init
+jalls_shutdown_test_dept_proxy jalls_shutdown
 fprintf_test_dept_proxy fprintf
-

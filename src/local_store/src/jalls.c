@@ -141,16 +141,18 @@ int main(int argc, char **argv) {
 	}
 
 	//load the private key
-	fp = fopen(jalls_ctx->private_key_file, "r");
-	if (!fp) {
-		fprintf(stderr, "failed to open private key file\n");
-		goto err_out;
-	}
-	key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
-	fclose(fp);
-	if (!key) {
-		fprintf(stderr, "failed to read private key\n");
-		goto err_out;
+	if (jalls_ctx->private_key_file) {
+		fp = fopen(jalls_ctx->private_key_file, "r");
+		if (!fp) {
+			fprintf(stderr, "failed to open private key file\n");
+			goto err_out;
+		}
+		key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+		fclose(fp);
+		if (!key) {
+			fprintf(stderr, "failed to read private key\n");
+			goto err_out;
+		}
 	}
 
 	//load the public cert

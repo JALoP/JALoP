@@ -73,13 +73,19 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 
 	config_setting_t *root = config_root_setting(&jalls_config);
 
-	ret = jalu_config_lookup_string(root, JALLS_CFG_PRIVATE_KEY_FILE, private_key_file, JALU_CFG_REQUIRED);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_PRIVATE_KEY_FILE, private_key_file, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
 	}
 
 	ret = jalu_config_lookup_string(root, JALLS_CFG_PUBLIC_CERT_FILE, public_cert_file, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
+		goto err_out;
+	}
+
+	if (NULL != *public_cert_file && NULL == *private_key_file) {
+		ret = -1;
+		fprintf(stderr, "Error: public certificate given and no private key specified\n");
 		goto err_out;
 	}
 
