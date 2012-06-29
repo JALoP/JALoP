@@ -1,5 +1,6 @@
-set_lk_max_locks    200000
-set_lk_max_lockers  200000
-set_lg_regionmax    200000
-mutex_set_max       200000
-mutex_set_increment 200000
+set_lk_max_locks    400000
+set_lk_max_lockers  400000
+set_lg_regionmax    400000
+mutex_set_max       400000
+mutex_set_increment 400000
+set_tx_max          400000
