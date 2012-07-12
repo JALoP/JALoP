@@ -1,0 +1,28 @@
+.TH JAL_SID_DUMP 8
+.SH NAME
+.BR jal_sid_dump
+- JALoP database serial ID dump utility
+.SH SYNOPSIS
+.B jal_sid_dump
+[\fB\-\-home\fR dbhome]
+[\fB\-\-version\fR]
+.SH "DESCRIPTION"
+.B jal_sid_dump
+is a simple tool that just outputs all the serial IDs available in a particular database. This tool will output all
+serial IDs for journal, audit, and log records.
+
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-home=H\fR
+Specify the root of the JALoP database,
+defaults to
+.I /var/lib/jalop/db
+.TP
+\fB\-\-version\fR
+Output the version of the utility and exit.
+
+.SH "SEE ALSO"
+.BR jald (8),
+.BR jal-local-store(8),
+.BR jal_dump (8),
+.BR jal_subscribe (8)
