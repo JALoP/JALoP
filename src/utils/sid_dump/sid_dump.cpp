@@ -39,7 +39,7 @@
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
 
-static void parse_cmdline(int argc, char **argv, char **db_root, char **schemas);
+static void parse_cmdline(int argc, char **argv, char **db_root);
 static void print_usage();
 static void print_error(enum jaldb_status error);
 static void print_list_stdout(const std::list<std::string> &list);
@@ -48,19 +48,16 @@ int main(int argc, char **argv)
 {
 	int ret;
 	char *dbroot = NULL;
-	char *schemas = NULL;
 	std::list<std::string> *journal_list = NULL;
 	std::list<std::string> *audit_list = NULL;
 	std::list<std::string> *log_list = NULL;
 
-	parse_cmdline(argc, argv, &dbroot, &schemas);
-
-	printf("DB-ROOT: %s\nSCHEMAS: %s\n", dbroot, schemas);
+	parse_cmdline(argc, argv, &dbroot);
 
 	enum jaldb_status jaldb_ret = JALDB_OK;
 
 	jaldb_context *ctx = jaldb_context_create();
-	jaldb_ret = jaldb_context_init(ctx, dbroot, schemas, 1);
+	jaldb_ret = jaldb_context_init(ctx, dbroot, NULL, 1);
 
 	if (jaldb_ret != JALDB_OK) {
 		printf("\nContext could not be made.\n");
@@ -109,7 +106,6 @@ err_out:
 	printf("An error ocurred, closing!\n");
 out:
 	free(dbroot);
-	free(schemas);
 
 	if (ctx) {
 		jaldb_context_destroy(&ctx);
@@ -117,11 +113,10 @@ out:
 	return ret;
 }
 
-static void parse_cmdline(int argc, char **argv, char **db_root, char **schemas)
+static void parse_cmdline(int argc, char **argv, char **db_root)
 {
 	static const char *optstring = "h:s:";
 	static const struct option long_options[] = {{"home", 1, 0, 'h'},
-						{"schemas", 1, 0, 's'},
 						{"version", 0, 0, 'v'},
 						{0,0,0,0}};
 	int ret_opt;
@@ -135,14 +130,6 @@ static void parse_cmdline(int argc, char **argv, char **db_root, char **schemas)
 					*db_root = NULL;
 				} else {
 					*db_root = strdup(optarg);
-				}
-				break;
-			case 's':
-				if (NULL == optarg) {
-					printf("Optarg was null. Schema directory defaulting.\n");
-					*schemas = NULL;
-				} else {
-					*schemas = strdup(optarg);
 				}
 				break;
 			case 'v':
@@ -168,8 +155,6 @@ static void print_usage()
 	"Usage:\n\
 	-h, --home=H	Specify the root of the JALoP database,\n\
 			defaults to /var/lib/jalop/db.\n \
-	-s, --schema=S	Specify the root of the JALoP schema directory,\n\
-			defaults to <prefix>/share/jalop-v1.0/schemas.\n\
 	--version	Output version information and exit.\n\n";
 	printf("%s", usage);
 }
