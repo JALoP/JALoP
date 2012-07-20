@@ -529,9 +529,11 @@ static void print_usage()
 			system metadata for the record. If the record contains application metadata, the\n\
 			directory will also contain a file named \"application-metadata.xml\". Depending on the\n\
 			type of record, this directory may contain a file named \"journal.bin\" (for journal\n\
-			records), \"log.bin\" (for log records), or \"audit.xml\" for audit records.\n\
+			records), \"log.bin\" (for log records), or \"audit.xml\" for audit records. '~' expansion\n\
+			will only work with --path <~path> and not with --path=<~/path>\n\
 	-h, --home=H	Specify the root of the JALoP database, defaults to /var/lib/jalop/db. The entered path\n\
-			must immediately follow the option.\n\
+			must immediately follow the option. '~' expansion will only work with --home <~path>\n\
+			and not with --home=<~path>\n\
 	-w, --write	Signals for a list of serial IDs in the JALoP database to be written\n\
 			to a file for each record type.\n\
 	-v, --version	Outputs the version and exits.\n\
