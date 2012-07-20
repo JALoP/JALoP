@@ -1,5 +1,5 @@
 /**
- * @file test_jalp_journal_metadata_xml.cpp This file contains unit tests for
+ * @file test_jalp_journal_metadata_xml.c This file contains unit tests for
  * converting the jalp_journal_metadata structure to a DOMElement
  * converting journal metadata to XML.
  *

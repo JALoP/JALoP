@@ -1,5 +1,5 @@
 /**
- * @file test_jaldb_query.c This file contains functions to test jaldb_query.c.
+ * @file test_jaldb_query.cpp This file contains functions to test jaldb_query.cpp.
  *
  * @section LICENSE
  *

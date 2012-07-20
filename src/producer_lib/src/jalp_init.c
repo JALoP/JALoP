@@ -1,5 +1,5 @@
 /**
- * @file jalp_init.cpp This file defines the Producer Library
+ * @file jalp_init.c This file defines the Producer Library
  * init and shutdown functions.
  *
  * @section LICENSE

@@ -1,5 +1,5 @@
 /**
- * @file jal_dump.c This file contains the source for jal_dump
+ * @file jal_dump.cpp This file contains the source for jal_dump
  * @section LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective

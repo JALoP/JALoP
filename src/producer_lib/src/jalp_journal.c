@@ -1,5 +1,5 @@
 /**
- * @file jalp_journal.cpp Contains jalp journal functions
+ * @file jalp_journal.c Contains jalp journal functions
  *
  * @section LICENSE
  *

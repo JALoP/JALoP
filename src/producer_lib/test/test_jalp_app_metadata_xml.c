@@ -1,5 +1,5 @@
 /**
- * @file test_jalp_app_metadata_xml.cpp This file contains functions to test jalp_app_metadata_to_elem().
+ * @file test_jalp_app_metadata_xml.c This file contains functions to test jalp_app_metadata_to_elem().
  *
  * @section LICENSE
  *

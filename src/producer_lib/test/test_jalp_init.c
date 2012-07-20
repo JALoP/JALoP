@@ -1,5 +1,5 @@
 /**
- * @file test_jalp_init.cpp This file contains tests for jalp_init.
+ * @file test_jalp_init.c This file contains tests for jalp_init.
  *
  * @section LICENSE
  *

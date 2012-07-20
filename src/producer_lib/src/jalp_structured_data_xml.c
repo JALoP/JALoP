@@ -1,4 +1,3 @@
- 
 /**
  * @file jalp_structured_data_xml.c This file defines functions to handle
  * converting structured data to XML.

@@ -1,5 +1,5 @@
 /**
- * @file jalp_send_helper.cpp This file contains functions for sending an xml buffer.
+ * @file jalp_send_helper.c This file contains functions for sending an xml buffer.
  *
  * @section LICENSE
  *

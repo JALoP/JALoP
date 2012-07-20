@@ -1,5 +1,5 @@
 /**
- * @file jalp_digest_audit_xml.cpp Provides the implementation to parse,
+ * @file jalp_digest_audit_xml.c Provides the implementation to parse,
  * validate, and digest an audit XML file.
  *
  * @section LICENSE
