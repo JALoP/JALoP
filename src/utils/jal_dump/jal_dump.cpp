@@ -48,6 +48,7 @@
 #include "jaldb_strings.h"
 
 #define ARRAY_MULTIPLIER 20
+#define WRITE_MAX 2147479552
 
 #define JOURNAL_FILE_NAME "jal_dump_journal.txt"
 #define AUDIT_FILE_NAME "jal_dump_audit.txt"
@@ -250,9 +251,39 @@ out:
 	return ret;
 }
 
+ssize_t jal_dump_write(int fd, uint8_t *buf, size_t len)
+{
+	ssize_t ret = 0;
+	size_t offset = 0;
+	size_t new_len = 0;
+	if (len > WRITE_MAX) {
+		offset = 0;
+		new_len = len;
+		while(new_len > WRITE_MAX) {
+			ret = write(fd, &buf[offset], WRITE_MAX);
+			if (ret <= 0)
+				break;
+			new_len-=ret;
+			offset+=ret;
+		}
+		if(new_len != 0) {
+			ret = write(fd, &buf[offset], new_len);
+			offset+=ret;
+		}
+	} else {
+		ret = write(fd, buf, len);
+	}
+
+	if (ret <= 0)
+		return ret;
+
+	return offset;
+	
+}
+
 int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_buf, size_t sys_meta_len,
 			 uint8_t *app_meta_buf, size_t app_meta_len, uint8_t *record_buf, size_t record_len) {
-	int ret = 0;
+	ssize_t ret = 0;
 	//Initialize path to write to
 	int fd_sys = 0;
 	int fd_app = 0;
@@ -331,17 +362,17 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 		}
 
 		if (fd_sys) {
-			ret = write(fd_sys, sys_meta_buf, sys_meta_len);
+			ret = jal_dump_write(fd_sys, sys_meta_buf, sys_meta_len);
 			if (ret >= 0)
 				printf("Path for system data is %s.\n", sysstr);
 		}
 		if (ret >= 0 && fd_app) {
-			ret = write(fd_app, app_meta_buf, app_meta_len);
+			ret = jal_dump_write(fd_app, app_meta_buf, app_meta_len);
 			if (ret >= 0)
 				printf("Path for application data is %s.\n", appstr);
 		}
 		if (ret >= 0 && fd_dat) {
-			ret = write(fd_dat, record_buf, record_len);
+			ret = jal_dump_write(fd_dat, record_buf, record_len);
 			if (ret >= 0)
 				printf("Path for record data is %s.\n", datstr);
 		}
