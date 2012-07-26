@@ -118,6 +118,7 @@ struct global_args_t {
 	int daemon;		/* --no_daemon option */
 	bool debug_flag;	/* --debug option */
 	char *config_path;	/* --config option */
+	bool enable_tls;	/* --disable_tls option */
 } global_args;
 
 enum jald_status {
@@ -760,12 +761,14 @@ int main(int argc, char **argv)
 	// The jaln_context owns the digest algorithm, so don't keep a
 	// reference to it.
 	dctx = NULL;
-	jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
-			global_config.remote_cert_dir);
-	if (JAL_OK != jaln_ret) {
-		DEBUG_LOG("Failed to register TLS");
-		rc = -1;
-		goto out;
+	if (global_args.enable_tls) {
+		jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
+				global_config.remote_cert_dir);
+		if (JAL_OK != jaln_ret) {
+			DEBUG_LOG("Failed to register TLS");
+			rc = -1;
+			goto out;
+		}
 	}
 
 	jaln_ret = jaln_register_connection_callbacks(jctx, conn_cbs);
@@ -833,18 +836,20 @@ int process_options(int argc, char **argv)
 	int opt = 0;
 	int long_index = 0;
 
-	static const char *opt_string = "c:d:v";
+	static const char *opt_string = "c:dvs";
 	static const struct option long_options[] = {
 		{"config", required_argument, NULL, 'c'}, /* --config or -c */
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
 		{"no-daemon", no_argument, &global_args.daemon, 0}, /* --no-daemon */
 		{"version", no_argument, NULL, 'v'}, /* --version or -v */
+		{"disable-tls", no_argument, NULL, 's'}, /* --disable-tls or -s */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
 	global_args.daemon = true;
 	global_args.debug_flag = false;
 	global_args.config_path = NULL;
+	global_args.enable_tls = true;
 
 	opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
 
@@ -868,6 +873,10 @@ int process_options(int argc, char **argv)
 				// have no equivalent 'short' option, i.e.
 				// --no-daemon in this case.
 				break;
+			case 's':
+				// disable TLS
+				global_args.enable_tls = false;
+				break;
 			default:
 				usage();
 		}
@@ -882,7 +891,7 @@ int process_options(int argc, char **argv)
 
 __attribute__((noreturn)) void usage()
 {
-	fprintf(stderr, "Usage: jald -c, --config <config_file> [-d, --debug] [-v, --version] [--no-daemon]\n");
+	fprintf(stderr, "Usage: jald -c, --config <config_file> [-d, --debug] [-s, --disable-tls] [-v, --version] [--no-daemon]\n");
 	exit(1);
 }
 
@@ -967,9 +976,13 @@ axl_bool print_peer_cfg(axlPointer key, axlPointer data, __attribute__((unused))
 void print_config(void)
 {
 	printf("\n===\nBEGIN CONFIG VALUES:\n===\n");
-	printf("PRIVATE KEY:\t\t%s\n", global_config.private_key);
-	printf("PUBLIC CERT:\t\t%s\n", global_config.public_cert);
-	printf("REMOTE CERT DIR:\t\t%s\n", global_config.remote_cert_dir);
+	if (global_args.enable_tls) {
+		printf("PRIVATE KEY:\t\t%s\n", global_config.private_key);
+		printf("PUBLIC CERT:\t\t%s\n", global_config.public_cert);
+		printf("REMOTE CERT DIR:\t\t%s\n", global_config.remote_cert_dir);
+	} else {
+		printf("!!!!!!!! TLS DISABLED !!!!!!!!\n");
+	}
 	printf("PORT:\t\t\t%lld\n", global_config.port);
 	printf("HOST:\t\t\t%s\n", global_config.host);
 	printf("PENDING DIGEST MAX:\t%lld\n", global_config.pending_digest_max);
@@ -995,39 +1008,41 @@ enum jald_status set_global_config(config_t *config)
 		return JALD_E_CONFIG_LOAD;
 	}
 	config_setting_t *root = config_root_setting(config);
-	rc = jalu_config_lookup_string(root, JALNS_PRIVATE_KEY, &global_config.private_key, true);
-	if (0 != rc) {
+	if (global_args.enable_tls) {
+		rc = jalu_config_lookup_string(root, JALNS_PRIVATE_KEY, &global_config.private_key, true);
+		if (0 != rc) {
+			return JALD_E_CONFIG_LOAD;
+		}
+		ret = realpath(global_config.private_key, absolute_private_key);
+		if (!ret) {
+			printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.private_key, JALNS_PRIVATE_KEY);
+			return JALD_E_CONFIG_LOAD;
+		}
+		free(global_config.private_key);
+		global_config.private_key = strdup(absolute_private_key);
+		rc = jalu_config_lookup_string(root, JALNS_PUBLIC_CERT, &global_config.public_cert, true);
+		if (0 != rc) {
+			return JALD_E_CONFIG_LOAD;
+		}
+		ret = realpath(global_config.public_cert, absolute_public_cert);
+		if (!ret) {
+			printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.public_cert, JALNS_PUBLIC_CERT);
+			return JALD_E_CONFIG_LOAD;
+		}
+		free(global_config.public_cert);
+		global_config.public_cert = strdup(absolute_public_cert);
+		rc = jalu_config_lookup_string(root, JALNS_REMOTE_CERT_DIR, &global_config.remote_cert_dir, true);
+		if (0 != rc) {
+			return JALD_E_CONFIG_LOAD;
+		}
+		ret = realpath(global_config.remote_cert_dir, absolute_remote_cert_dir);
+		if (!ret) {
+			printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.remote_cert_dir, JALNS_REMOTE_CERT_DIR);
 		return JALD_E_CONFIG_LOAD;
+		}
+		free(global_config.remote_cert_dir);
+		global_config.remote_cert_dir = strdup(absolute_remote_cert_dir);
 	}
-	ret = realpath(global_config.private_key, absolute_private_key);
-	if (!ret) {
-		printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.private_key, JALNS_PRIVATE_KEY);
-		return JALD_E_CONFIG_LOAD;
-	}
-	free(global_config.private_key);
-	global_config.private_key = strdup(absolute_private_key);
-	rc = jalu_config_lookup_string(root, JALNS_PUBLIC_CERT, &global_config.public_cert, true);
-	if (0 != rc) {
-		return JALD_E_CONFIG_LOAD;
-	}
-	ret = realpath(global_config.public_cert, absolute_public_cert);
-	if (!ret) {
-		printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.public_cert, JALNS_PUBLIC_CERT);
-		return JALD_E_CONFIG_LOAD;
-	}
-	free(global_config.public_cert);
-	global_config.public_cert = strdup(absolute_public_cert);
-	rc = jalu_config_lookup_string(root, JALNS_REMOTE_CERT_DIR, &global_config.remote_cert_dir, true);
-	if (0 != rc) {
-		return JALD_E_CONFIG_LOAD;
-	}
-	ret = realpath(global_config.remote_cert_dir, absolute_remote_cert_dir);
-	if (!ret) {
-		printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.remote_cert_dir, JALNS_REMOTE_CERT_DIR);
-		return JALD_E_CONFIG_LOAD;
-	}
-	free(global_config.remote_cert_dir);
-	global_config.remote_cert_dir = strdup(absolute_remote_cert_dir);
 	rc = config_setting_lookup_int64(root, JALNS_PORT, &global_config.port);
 	if (CONFIG_FALSE == rc) {
 		CONFIG_ERROR(root, JALNS_PORT, "expected int64 value");

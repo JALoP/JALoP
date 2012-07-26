@@ -31,6 +31,12 @@ Output debugging information
 Prevent
 .B jald
 from forking to the background.
+.TP
+\fB\-s\fR, \fB\-\-disable\-tls\fR
+Disable attempts at TLS negotiation. This option should not be used in production environment since there will be no privacy over the connection.
+.TP
+\fB\-v\fR, \fB\-\-version\fR
+Output version information and exit.
 .SH "SEE ALSO"
 .BR jald.config (5),
 .BR jal-local-store (8),

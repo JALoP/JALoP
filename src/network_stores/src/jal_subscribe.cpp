@@ -88,6 +88,7 @@ struct global_config_t {
 struct global_args_t {
 	int debug_flag;		/* --debug option */
 	char *config_path;	/* --config option */
+	bool enable_tls;	/* --disable_tls option */
 } global_args;
 
 enum jal_subscribe_status {
@@ -223,16 +224,18 @@ int process_options(int argc, char **argv)
 	int opt = 0;
 	int long_index = 0;
 
-	static const char *opt_string = "c:d:v";
+	static const char *opt_string = "c:dvs";
 	static const struct option long_options[] = {
 		{"config", required_argument, NULL,'c'}, /* --config or -c */
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
 		{"version", no_argument, NULL, 'v'}, /* --version or -v */
+		{"disable-tls", no_argument, NULL, 's'}, /* --disable-tls or -s */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
 	global_args.debug_flag = DEBUG_MODE_OFF;
 	global_args.config_path = NULL;
+	global_args.enable_tls = true;
 
 	opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
 
@@ -247,6 +250,9 @@ int process_options(int argc, char **argv)
 			case 'v':
 				printf("%s\n", jal_version_as_string());
 				return VERSION_CALLED;
+				break;
+			case 's':
+				global_args.enable_tls = false;
 				break;
 			case 0:
 				break;
@@ -264,7 +270,7 @@ int process_options(int argc, char **argv)
 
 __attribute__((noreturn)) void usage()
 {
-        fprintf(stderr, "Usage: jal_subscribe -c, --config <config_directory> [-d, --debug] [-v, --version]\n");
+        fprintf(stderr, "Usage: jal_subscribe -c, --config <config_directory> [-d, --debug] [-s, --disable-tls] [-v, --version]\n");
         exit(1);
 }
 
@@ -315,9 +321,13 @@ void print_config(void)
 {
 	if (global_args.debug_flag) {
 		DEBUG_LOG("\n===\nBEGIN CONFIG VALUES:\n===");
-		DEBUG_LOG("PRIVATE KEY:\t\t%s", global_config.private_key);
-		DEBUG_LOG("PUBLIC CERT:\t\t%s", global_config.public_cert);
-		DEBUG_LOG("REMOTE CERT:\t\t%s", global_config.remote_cert);
+		if (global_args.enable_tls) {
+			DEBUG_LOG("PRIVATE KEY:\t\t%s", global_config.private_key);
+			DEBUG_LOG("PUBLIC CERT:\t\t%s", global_config.public_cert);
+			DEBUG_LOG("REMOTE CERT:\t\t%s", global_config.remote_cert);
+		} else {
+			DEBUG_LOG("!!!!!!!! TLS IS DISABLED !!!!!!!!");
+		}
 		DEBUG_LOG("SESSION TIMEOUT:\t%s", global_config.session_timeout);
 		//DEBUG_LOG("DATA CLASS:\t\t%s\n", global_config.data_class);
 		DEBUG_LOG("DATA CLASS LENGTH:\t%d", global_config.len_data_class);
@@ -342,9 +352,12 @@ int set_global_config(config_t *config)
 		goto out;
 	}
 	// REQUIRED CONFIG VALUES
-	rc = config_lookup_string(config, PRIVATE_KEY, &global_config.private_key);
-	rc &= config_lookup_string(config, PUBLIC_CERT, &global_config.public_cert);
-	rc &= config_lookup_string(config, REMOTE_CERT, &global_config.remote_cert);
+	rc = 0;
+	if (global_args.enable_tls) {
+		rc &= config_lookup_string(config, PRIVATE_KEY, &global_config.private_key);
+		rc &= config_lookup_string(config, PUBLIC_CERT, &global_config.public_cert);
+		rc &= config_lookup_string(config, REMOTE_CERT, &global_config.remote_cert);
+	}
 	rc &= config_lookup_int64(config, PORT, &global_config.port);
 	rc &= config_lookup_string(config, HOST, &global_config.host);
 	rc &= config_lookup_int64(config, PENDING_DIGEST_MAX, &global_config.pending_digest_max);
@@ -507,15 +520,17 @@ void *subscriber_do_work(void *ptr)
 		goto err;
 	}
 	jaln_register_digest_algorithm(net_ctx, dc1);
-	err = jaln_register_tls(net_ctx,
-				global_config.private_key,
-				global_config.public_cert,
-				global_config.remote_cert);
-	if (JAL_OK != err) {
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Error w/ registration of TLS! Quitting.");
+	if (global_args.enable_tls) {
+		err = jaln_register_tls(net_ctx,
+					global_config.private_key,
+					global_config.public_cert,
+					global_config.remote_cert);
+		if (JAL_OK != err) {
+			if (global_args.debug_flag) {
+				DEBUG_LOG("Error w/ registration of TLS! Quitting.");
+			}
+			goto err;
 		}
-		goto err;
 	}
 	err = jaln_register_encoding(net_ctx, "xml");
 	err = jsub_callbacks_init(net_ctx);
