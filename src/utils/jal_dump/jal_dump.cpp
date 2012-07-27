@@ -432,6 +432,13 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 				break;
 			case 'p':
 				*path = strdup(optarg);
+				char *new_path;
+				new_path = NULL;
+				if ((*path)[strlen((*path))-1] != '/') {
+					jal_asprintf(&new_path, "%s/", *path);
+					free(*path);
+					*path = new_path;
+				}
 				break;
 			case 'h':
 				if (NULL == optarg) {
