@@ -603,7 +603,7 @@ enum jaldb_status jaldb_purge_log_by_sid(jaldb_context *ctx,
 					int force,
 					int del)
 {
-	if (!ctx || !sid) {
+	if (!ctx || !sid || sid[0] == '-') {
 		return JALDB_E_INVAL;
 	}
 
@@ -678,7 +678,7 @@ enum jaldb_status jaldb_purge_audit_by_sid(jaldb_context *ctx,
 					int force,
 					int del)
 {
-	if (!ctx || !sid) {
+	if (!ctx || !sid || sid[0] == '-') {
 		return JALDB_E_INVAL;
 	}
 	enum jaldb_status dbret = JALDB_OK;
@@ -752,7 +752,7 @@ enum jaldb_status jaldb_purge_journal_by_sid(jaldb_context *ctx,
 					int force,
 					int del)
 {
-	if (!ctx || !sid) {
+	if (!ctx || !sid || sid[0] == '-') {
 		return JALDB_E_INVAL;
 	}
 	enum jaldb_status dbret = JALDB_OK;

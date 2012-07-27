@@ -139,27 +139,30 @@ JALDB_QUERY_SID_CMP_FUNCTION \
 
 #define JALDB_FIND_SYNCED_AND_SENT_BY_SID_QUERY \
 "declare namespace jal='" JALDB_NS "';\n" \
+JALDB_QUERY_SID_CMP_FUNCTION \
 "for $d in collection()\n" \
-"where fn:compare($d/dbxml:metadata('dbxml:name'), $" JALDB_SID_VAR ") lt 1 and \n" \
+"where local:sid-cmp($d/dbxml:metadata('dbxml:name'), $" JALDB_SID_VAR ") lt 1 and \n" \
 "    $d/dbxml:metadata('jal:" JALDB_GLOBAL_SYNCED_KEY "') and $d/dbxml:metadata('jal:" JALDB_GLOBAL_SENT_KEY "')\n" \
 "return $d\n"
 
 #define JALDB_FIND_ALL_BY_SID_QUERY \
+JALDB_QUERY_SID_CMP_FUNCTION \
 "for $d in collection()\n" \
-"where fn:compare($d/dbxml:metadata('dbxml:name'), $" JALDB_SID_VAR ") lt 1 and \n" \
-"    fn:not(fn:compare($d/dbxml:metadata('dbxml:name'), '" JALDB_SERIAL_ID_DOC_NAME "') eq 0) \n" \
+"where local:sid-cmp($d/dbxml:metadata('dbxml:name'), $" JALDB_SID_VAR ") lt 1 and \n" \
+"    fn:not(local:sid-cmp($d/dbxml:metadata('dbxml:name'), '" JALDB_SERIAL_ID_DOC_NAME "') eq 0) \n" \
 "return $d\n"
 
 #define JALDB_FIND_SYNCED_AND_SENT_BY_UUID_QUERY \
 "declare namespace jsm='" JAL_SYS_META_NAMESPACE_URI "';\n" \
 "declare namespace lsm='" JALDB_NS "';\n" \
+JALDB_QUERY_SID_CMP_FUNCTION \
 "let $uuid_docs := for $d in collection()\n" \
 "where $d/jsm:JALRecord[jsm:RecordID=$" JALDB_UUID_VAR "] and \n" \
 "    $d/dbxml:metadata('lsm:" JALDB_GLOBAL_SYNCED_KEY "') and $d/dbxml:metadata('lsm:" JALDB_GLOBAL_SENT_KEY "')\n" \
 "return $d\n" \
 "for $d in $uuid_docs\n" \
 "    for $d2 in collection()\n" \
-"    where fn:compare($d/dbxml:metadata('dbxml:name'), $d2/dbxml:metadata('dbxml:name')) lt 1 and \n" \
+"    where local:sid-cmp($d/dbxml:metadata('dbxml:name'), $d2/dbxml:metadata('dbxml:name')) lt 1 and \n" \
 "    $d2/dbxml:metadata('lsm:" JALDB_GLOBAL_SYNCED_KEY "') and $d2/dbxml:metadata('lsm:" JALDB_GLOBAL_SENT_KEY "')\n" \
 "    return $d2\n"
 

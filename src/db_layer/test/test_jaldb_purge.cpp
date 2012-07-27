@@ -1381,7 +1381,7 @@ extern "C" void test_jaldb_purge_log_by_sid_fails_with_bad_input()
 	
 	//negative sid
 	dbret = jaldb_purge_log_by_sid(context, "-1", docs, 1, 1);
-	assert_equals(JALDB_OK, dbret);
+	assert_equals(JALDB_E_INVAL, dbret);
 	assert_equals(1, docs.empty());
 
 	//docs should still have 3 entries
@@ -1809,7 +1809,7 @@ extern "C" void test_jaldb_purge_audit_by_sid_fails_with_bad_input()
 
 	//negative ssid
         dbret = jaldb_purge_audit_by_sid(context, "-1", docs, 1, 1);
-        assert_equals(JALDB_OK, dbret);
+        assert_equals(JALDB_E_INVAL, dbret);
 	assert_equals(1, docs.empty());
 
 	dbret = jaldb_get_docs_to_purge(context, txn, uc, qcontext, JALDB_FIND_ALL_BY_SID_QUERY, docs);
@@ -2534,7 +2534,7 @@ extern "C" void test_jaldb_purge_journal_by_sid_fails_with_bad_input()
 
 	//negative sid
         dbret = jaldb_purge_journal_by_sid(context, "-1", docs, 1, 1);
-        assert_equals(JALDB_OK, dbret);
+        assert_equals(JALDB_E_INVAL, dbret);
 	assert_equals(1, docs.empty());
 	
 
