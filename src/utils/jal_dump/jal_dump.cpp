@@ -255,23 +255,10 @@ ssize_t jal_dump_write(int fd, uint8_t *buf, size_t len)
 {
 	ssize_t ret = 0;
 	size_t offset = 0;
-	size_t new_len = 0;
-	if (len > WRITE_MAX) {
-		offset = 0;
-		new_len = len;
-		while(new_len > WRITE_MAX) {
-			ret = write(fd, &buf[offset], WRITE_MAX);
-			if (ret <= 0)
-				break;
-			new_len-=ret;
-			offset+=ret;
-		}
-		if(new_len != 0) {
-			ret = write(fd, &buf[offset], new_len);
-			offset+=ret;
-		}
-	} else {
-		ret = write(fd, buf, len);
+	while(len > 0) {
+		ret = write(fd, &buf[offset], len);
+		len -= ret;
+		offset+=ret;
 	}
 
 	if (ret <= 0)
