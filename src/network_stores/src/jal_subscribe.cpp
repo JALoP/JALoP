@@ -354,17 +354,59 @@ int set_global_config(config_t *config)
 	// REQUIRED CONFIG VALUES
 	rc = 0;
 	if (global_args.enable_tls) {
-		rc &= config_lookup_string(config, PRIVATE_KEY, &global_config.private_key);
-		rc &= config_lookup_string(config, PUBLIC_CERT, &global_config.public_cert);
-		rc &= config_lookup_string(config, REMOTE_CERT, &global_config.remote_cert);
+		rc = config_lookup_string(config, PRIVATE_KEY, &global_config.private_key);
+		if (rc == CONFIG_FALSE){
+			if (global_args.debug_flag) {
+				DEBUG_LOG("Missing setting for '%s'", PRIVATE_KEY);
+			}
+			rc = JAL_E_CONFIG_LOAD;
+			goto out;
+		}
+		rc = config_lookup_string(config, PUBLIC_CERT, &global_config.public_cert);
+		if (rc == CONFIG_FALSE){
+			if (global_args.debug_flag) {
+				DEBUG_LOG("Missing setting for '%s'", PUBLIC_CERT);
+			}
+			rc = JAL_E_CONFIG_LOAD;
+			goto out;
+		}
+		rc = config_lookup_string(config, REMOTE_CERT, &global_config.remote_cert);
+		if (rc == CONFIG_FALSE){
+			if (global_args.debug_flag) {
+				DEBUG_LOG("Missing setting for '%s'", REMOTE_CERT);
+			}
+			rc = JAL_E_CONFIG_LOAD;
+			goto out;
+		}
 	}
-	rc &= config_lookup_int64(config, PORT, &global_config.port);
-	rc &= config_lookup_string(config, HOST, &global_config.host);
-	rc &= config_lookup_int64(config, PENDING_DIGEST_MAX, &global_config.pending_digest_max);
+	rc = config_lookup_int64(config, PORT, &global_config.port);
+	if (rc == CONFIG_FALSE){
+		if (global_args.debug_flag) {
+			DEBUG_LOG("Missing setting for '%s'", PORT);
+		}
+		rc = JAL_E_CONFIG_LOAD;
+		goto out;
+	}
+	rc = config_lookup_string(config, HOST, &global_config.host);
+	if (rc == CONFIG_FALSE){
+		if (global_args.debug_flag) {
+			DEBUG_LOG("Missing setting for '%s'", HOST);
+		}
+		rc = JAL_E_CONFIG_LOAD;
+		goto out;
+	}
+	rc = config_lookup_int64(config, PENDING_DIGEST_MAX, &global_config.pending_digest_max);
+	if (rc == CONFIG_FALSE){
+		if (global_args.debug_flag) {
+			DEBUG_LOG("Missing setting for '%s'", PENDING_DIGEST_MAX);
+		}
+		rc = JAL_E_CONFIG_LOAD;
+		goto out;
+	}
 	rc &= config_lookup_int64(config, PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout);
 	if (rc == CONFIG_FALSE){
 		if (global_args.debug_flag) {
-			DEBUG_LOG("One or more required configuration parameters was not found!");
+			DEBUG_LOG("Missing setting for '%s'", PENDING_DIGEST_TIMEOUT);
 		}
 		rc = JAL_E_CONFIG_LOAD;
 		goto out;
