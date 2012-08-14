@@ -47,7 +47,7 @@
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
 
-#define ARRAY_MULTIPLIER 20
+#define INITIAL_ARRAY_SIZE 20
 #define WRITE_MAX 2147479552
 
 #define JOURNAL_FILE_NAME "jal_dump_journal.txt"
@@ -68,7 +68,14 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 
 static void print_error(enum jaldb_status error);
 
-char ** array_increase(char ***arr);
+/**
+ * Utility function to dynamically grow an array as needed.
+ * If (*max_elms == elm_count) then the array is grown.
+ * @param arr[in,out] The array to grow
+ * @param max_elms[in,out] The original and new maximum size of the array
+ * @param elm_count[in] The current number of elements in the array.
+ */
+static void ensure_capacity(char ***arr, int *max_elms, int elm_count);
 
 static void print_sids(jaldb_context *ctx, char type);
 static void print_list_stdout(const list<string> &p_list);
@@ -393,6 +400,8 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 			{"data",1,0,'d'}, {"path",1,0,'p'},{"home",2,0,'h'},
 			{"version",0,0,'v'},{"write", 0, 0, 'w'}, {0,0,0,0}};
 
+	int sid_arr_sz = INITIAL_ARRAY_SIZE;
+	int uuid_arr_sz = INITIAL_ARRAY_SIZE;
 
 	if (2 == argc) {
 		if ('v' == getopt_long(argc, argv, optstring, long_options, NULL)) {
@@ -403,13 +412,12 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	if (4 > argc) {
 		goto err_usage;
 	}
-
-	*sid = (char **) malloc(ARRAY_MULTIPLIER * sizeof(char *));
+	*sid = (char **) malloc(sid_arr_sz * sizeof(char*));
 	if (!(*sid)) {
 		printf("Insufficient memory\n");
 		exit(-1);
 	}
-	*uuid = (char **) malloc(ARRAY_MULTIPLIER * sizeof(char *));
+	*uuid = (char **) malloc(uuid_arr_sz * sizeof(char*));
 	if (!(*uuid)) {
 		free(*sid);
 		printf("Insufficient memory for uuid storage. Closing.\n");
@@ -421,17 +429,13 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	while (EOF != (ret_opt = getopt_long(argc, argv, optstring, long_options, NULL))) {
 		switch (ret_opt) {
 			case 's':
-				if (0 == ((1 + *num_sid) % ARRAY_MULTIPLIER)) {
-					*sid = array_increase(sid);
-				}
-				*(*sid + *num_sid) = strdup(optarg);
+				ensure_capacity(sid, &sid_arr_sz, *num_sid);
+				(*sid)[*num_sid] = strdup(optarg);
 				(*num_sid)++;
 				break;
 			case 'u':
-				if (0 == ((1 + *num_uuid) % ARRAY_MULTIPLIER)) {
-					*uuid = array_increase(uuid);
-				}
-				*(*uuid + *num_uuid) = strdup(optarg);
+				ensure_capacity(uuid, &uuid_arr_sz, *num_uuid);
+				(*uuid)[*num_uuid] = strdup(optarg);
 				(*num_uuid)++;
 				break;
 			case 't':
@@ -513,20 +517,20 @@ err_usage:
 
 version_out:
 	for (counter = 0; counter < (*num_sid); counter++) {
-                free(*(*sid + counter));
-        }
-        for (counter = 0; counter < (*num_uuid); counter++) {
-                free(*(*uuid + counter));
-        }
+		free(*(*sid + counter));
+	}
+	for (counter = 0; counter < (*num_uuid); counter++) {
+		free(*(*uuid + counter));
+	}
 
-        free(*sid);
-        free(*uuid);
-        if (path != NULL) {
-                free(*path);
-        }
-        if ((home != NULL) && (*home != NULL)) {
-                free(*home);
-        }
+	free(*sid);
+	free(*uuid);
+	if (path != NULL) {
+		free(*path);
+	}
+	if ((home != NULL) && (*home != NULL)) {
+		free(*home);
+	}
 
 	exit(0);
 }
@@ -631,13 +635,23 @@ static void print_error(enum jaldb_status error)
 	printf("\n");
 }
 
-char ** array_increase(char ***arr) {
-	char **tmp = (char**) realloc(*arr, (sizeof(*arr) + (sizeof(char*) * ARRAY_MULTIPLIER)));
-	if (NULL != tmp) {
-		return tmp;
-	} else{
-		return *arr;
+static void ensure_capacity(char ***arr, int *max_elms, int elm_count)
+{
+	if (*max_elms > elm_count) {
+		return;
 	}
+	if (*max_elms < elm_count) {
+		fprintf(stderr, "Error: array is too small for the indicated number of elements\n");
+		exit(-1);
+	}
+	(*max_elms) *= 2;
+	char **tmp = (char**) realloc(*arr, *max_elms * sizeof(char*));
+	if (tmp) {
+		*arr = tmp;
+		return;
+	}
+	printf("Failed to alloc memory for serial IDs");
+	exit(-1);
 }
 
 static void print_sids(jaldb_context *ctx, char type)
