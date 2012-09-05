@@ -23,10 +23,10 @@ will output each record in the order that it was specified on the command line.
 .SH OPTIONS
 .TP
 \fB\-s\fR, \fB\-\-sid=S\fR
-Search using the sequence ID "S".
+Search using the sequence ID "S". Specify any number of "-s" options to output multiple records in the order listed.
 .TP
 \fB\-u\fR, \fB\-\-uuid=U\fR
-Search using the UUID "U".
+Search using the UUID "U". Specify any number of "-u" options to output multiple records in the order listed. 
 .TP
 \fB\-t\fR, \fB\-\-type=T\fR
 Search within the specified type.
@@ -61,7 +61,7 @@ option.
 Copy the record to the specified path
 .B P
 \.
-This will create a sub-directory with the name \fR\fB<record_type>\fR-\fB<sid>/\fR\R where \fB<record_type>\fR is replaced with \fIjournal\fR,
+This will create a sub-directory with the name \fR\fB<record_type>\fR-\fB<sid>/\fR where \fB<record_type>\fR is replaced with \fIjournal\fR,
 \fIaudit\fR,
 or \fIlog\fR,
 and \fB<sid>\fR is replaced with the sequence ID for the record.
@@ -79,11 +79,13 @@ Specify the root of the JALoP database,
 defaults to
 .I /var/lib/jalop/db
 .TP
+\fB\-w\fR, \fB\-\--write\fR
+Signals for a list of serial IDs in the JALoP database to be written to a file for each record type.
+.TP
 \fB\-v\fR, \fB\-\-version\fR
-Outputs the version number
+Output the version number and exit.
 
 .SH "SEE ALSO"
 .BR jald (8),
-.BR jal-local-store(8),
-.BR jal_dump (8),
+.BR jal-local-store (8),
 .BR jal_subscribe (8)

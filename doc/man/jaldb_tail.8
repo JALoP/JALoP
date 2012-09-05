@@ -1,23 +1,23 @@
-.TH JAL_TAIL 8
+.TH JALDB_TAIL 8
 .SH NAME
-.B jal_tail
+.B jaldb_tail
 \-
 .SM JALoP
 database tail utility
 .SH SYNOPSIS
-.B jal_tail
+.B jaldb_tail
 [\fIOPTION\fR...]
 .SH "DESCRIPTION"
 The
-.B jal_tail
+.B jaldb_tail
 tool is similar to the UNIX
 .BR tail (1)
 utility.
 The
-.B jal_tail
+.B jaldb_tail
 tool queries the specified JAL database and lists the last 20 records by default.
 The
-.B jal_tail
+.B jaldb_tail
 utility accepts a number of parameters,
 including switches to filter the records.
 .SH OPTIONS
@@ -27,11 +27,8 @@ Output additional records as the database grows
 .TP
 \fB\-n\fR, \fB\-\-records=K\fR
 Output the most recent \fBK\fR records.
-.B jal_tail
+.B jaldb_tail
 uses the serial ID of the JAL record that the JALoP Local Store or JALoP Network Store assigns to determine the most recent records.
-.TP
-\fB\-\-version\fR
-Output the version information and exit.
 .TP
 \fB\-t\fR, \fB\-\-type=T\fR
 Show only records of a particular type.
@@ -44,7 +41,7 @@ The default behavior displays log records.
 Specify the root of the JALoP database, defaults to
 .I /var/lib/jalop/db/
 .TP
-\fB\-\-version\fR
+\fB\-v\fR, \fB\-\-version\fR
 Output the version information and exit.
 .SH "SEE ALSO"
 .BR jald (8),

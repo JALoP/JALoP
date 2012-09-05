@@ -23,7 +23,7 @@ understands the following configuration options:
 .B private_key
 The path to a PEM formatted private key that
 .BR jal-local-store (8)
-will use to sign system metadata documents. This is required.
+will use to sign all system metadata documents. This is optional.
 .TP
 .B public_cert_file
 The path to a PEM formatted certificate file that
@@ -61,7 +61,7 @@ optional, and defaults to
 .B schemas_root
 The full path to the
 .SM JALoP
-schemas.
+schemas. This is optional.
 .SH EXAMPLES
 .nf
 # Set the PEM key to the file at /etc/jalop/local_store/key.pem

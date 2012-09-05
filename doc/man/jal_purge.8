@@ -32,10 +32,10 @@ leaving records 2 and 4 untouched.
 .SH OPTIONS
 .TP
 \fB\-s\fR, \fB\-\-sid=S\fR
-Search using the sequence ID \fBS\fR.
+Remove all records up to and including the record with serial ID \fB'S'\fR. '-t' must also be specified.
 .TP
 \fB\-u\fR, \fB\-\-uuid=U\fR
-Search using the UUID \fBU\fR.
+Remove all records up to and including the record with UUID \fB'U'\fR.  By default, this checks the serial ID to determine what records came before. '-t' must also be specified.
 .TP
 \fB\-t\fR, \fB\-\-type=T\fR
 Search within the specified type.
@@ -70,13 +70,12 @@ Records are grouped by type.
 Specify the root of the JALoP database, defaults to
 .I /var/lib/jalop/db
 .TP
-\fB\-\-version\fR
+\fB\-n\fR, \fB\-\-version\fR
 Output the version information and exit.
 .SH "SEE ALSO"
 .BR jald (8),
 .BR jal-local-store (5),
 .BR jal_dump (8),
-.BR jal_purge (8)
 .BR jal_query (8),
 .BR jal_subscribe (8)
 

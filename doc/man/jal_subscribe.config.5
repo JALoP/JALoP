@@ -78,6 +78,9 @@ A list of strings that indicates the type(s) of
 records to subscribe to.
 The strings may be any combination of "\fIjournal\fR", "\fIaudit\fR", or
 \fIlog\fR".
+.TP
+.B session_timeout
+Specially formatted string (HH:MM:SS) that specifies the amount of time jal_subscribe will remain connected to the remote publisher.
 .SH EXAMPLES
 .nf
 # the path to the private key, used for TLS negotiation
@@ -107,8 +110,11 @@ pending_digest_max = 10L;
 # For subscribe, the maximum number of seconds to wait, before sending a 'digest' message
 pending_digest_timeout = 100L;
 
-# subscribe to journal and log records
+# Subscribe to journal and log records.
 data_class = ("journal", "log");
+
+# Time before jal_subscribe ends. (HH:MM:SS)
+session_timeout = "00:01:00"
 
 .SH "SEE ALSO"
 .BR jal_subscribe (8),
