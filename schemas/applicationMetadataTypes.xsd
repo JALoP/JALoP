@@ -30,7 +30,7 @@
 			</element>
 			<element ref="ds:Manifest" minOccurs="0">
 				<annotation>
-					<documentation>The manifest allows a place for applications to embed digests for the data they submit to the JALoP local store. The manifest should contain a Reference elements for the payload (journal, audit or log data).
+					<documentation>The manifest allows a place for applications to embed digests for the data they submit to the JALoP local store. The manifest should contain Reference elements for the payload (journal, audit or log data).
 
 	The Reference element for the payload (journal, audit, or log data) must have the URI "jalop:paylod". Applications may use any digest method listed at  http://www.w3.org/TR/xmldsig-core1/#sec-AlgID except SHA1.
 	If the payload is journal or log data, applications must not apply any transforms.  If the payload is audit data, the application must use the canonicalization method "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", and must not apply any additional transforms.
@@ -159,7 +159,8 @@
 	</simpleType>
 	<element name="Transforms" type="jamt:TransformsType"/>
 	<complexType name="TransformsType">
-		<annotation><documentation>The transformsType is an ordered list of transforms the application applied to the journal data before submitting it to the local JAL handler. This may include compression algorithms, encryption, etc. Applications are recommended to encrypt potentially malicious data. The intent here is to prevent accidental execution of malicious code, not necessarily point to point security. It is recomended that applications utilize a simple XOR scheme, using the URI "http://www.dod.mil/algorithms/xor".  Transforms may also include compression algorithms.
+		<annotation>
+			<documentation>The transformsType is an ordered list of transforms the application applied to the journal data before submitting it to the local JAL handler. This may include compression algorithms, encryption, etc. Applications are recommended to encrypt potentially malicious data. The intent here is to prevent accidental execution of malicious code, not necessarily point to point security. It is recomended that applications utilize a simple XOR scheme, using the URI "http://www.dod.mil/algorithms/xor".  Transforms may also include compression algorithms.
 
 The transforms must be listed in reversed order. For example, if an application compressed a document, and then encrypted it, it must list the encryption first, followed by the compression algorithm. Because the transforms here are intended to prevent an end user from accidentally opening a file, applications are encouraged to include any key info required to reverse the encryption.
 

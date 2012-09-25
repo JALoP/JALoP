@@ -33,7 +33,7 @@
 			<element minOccurs="0" name="SecurityLabel" type="string">
 				<annotation><documentation>The security label of the process that generated this piece of JAL data. In some cases (e.g. syslog) this will not be the label of the generated the data. Instead, it is the label of the process that gave the data to the Local JALoP store</documentation></annotation>
 			</element>
-			<element ref="ds:Signature">
+			<element ref="ds:Signature" minOccurs="0">
 				<annotation><documentation>Applications may include a Signature element to sign this document. The SignedInfo element must use the CanonicalizationMethod "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments".  This canonicalization method excludes all namespaces by defaults, applications must include an InclusiveNamespaces element that lists the prefixes used within the SignedInfo element. Any SignatureMethod, except those using SHA1 digests, may be used. The recommended SignatureMethod is "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256".
 	The SignedInfo must contain a single Reference element. The Reference must have the URI "#xpointer(id('ID'))", where 'ID' is the JID of the SystemMetadata element of this document. The Reference element must have 2 Transform elements.
 	The first transform must use the Algorithm "http://www.w3.org/2000/09/xmldsig#enveloped-signature".
