@@ -279,9 +279,9 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 			 uint8_t *app_meta_buf, size_t app_meta_len, uint8_t *record_buf, size_t record_len) {
 	ssize_t ret = 0;
 	//Initialize path to write to
-	int fd_sys = 0;
-	int fd_app = 0;
-	int fd_dat = 0;
+	int fd_sys = -1;
+	int fd_app = -1;
+	int fd_dat = -1;
 	char *tmpstr = NULL;
 	char *sysstr = NULL;
 	char *appstr = NULL;
@@ -308,10 +308,8 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 			printf("\npayload\n");
 			print_payload(record_buf, record_len);
 		}
-	}
-
-	//Print record to file if applicable
-	if (path) {
+	} else {
+		//Print record to file if applicable
 		if ('j' == type) {
 			jal_asprintf(&tmpstr, "%sjournal-%s/", path, sid);
 		} else if ('a' == type) {
@@ -341,52 +339,64 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 
 		if ((0 != sys_meta_len) && (NULL != sys_meta_buf)) {
 			fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 0600);	// Delete existing file(O_TRUNC)?
+			if (fd_sys == -1) {
+				perror("Error Opening System Metadata Doc");
+				ret = -1;
+				goto out;
+			}
+			if (0 < jal_dump_write(fd_sys, sys_meta_buf, sys_meta_len)) {
+				printf("Path for system data is %s.\n", sysstr);
+			} else {
+				ret = -1;
+				goto out;
+			}
 		}
 		if ((0 != app_meta_len) && (NULL != app_meta_buf)) {
 			fd_app = open(appstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
+			if (fd_app == -1) {
+				perror("Error Opening Application Metadata Doc");
+				ret = -1;
+				goto out;
+			}
+			if (0 < jal_dump_write(fd_app, app_meta_buf, app_meta_len)) {
+				printf("Path for application data is %s.\n", appstr);
+			} else {
+				ret = -1;
+				goto out;
+			}
 		}
 		if ((0 != record_len) && (NULL != record_buf)) {
 			fd_dat = open(datstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
-		}
-
-		if (fd_sys < 0 || fd_app < 0 || fd_dat < 0) {
-			printf("file open error\n");
-			printf("System fd was %i, App fd was %i, Data fd was %i\n", fd_sys, fd_app, fd_dat);
-			return -1;
-		}
-
-		if (fd_sys) {
-			ret = jal_dump_write(fd_sys, sys_meta_buf, sys_meta_len);
-			if (ret >= 0)
-				printf("Path for system data is %s.\n", sysstr);
-		}
-		if (ret >= 0 && fd_app) {
-			ret = jal_dump_write(fd_app, app_meta_buf, app_meta_len);
-			if (ret >= 0)
-				printf("Path for application data is %s.\n", appstr);
-		}
-		if (ret >= 0 && fd_dat) {
-			ret = jal_dump_write(fd_dat, record_buf, record_len);
-			if (ret >= 0)
+			if (fd_dat == -1) {
+				perror("Error Opening Payload File");
+				ret = -1;
+				goto out;
+			}
+			if (0 < jal_dump_write(fd_dat, record_buf, record_len)) {
 				printf("Path for record data is %s.\n", datstr);
+			} else {
+				ret = -1;
+				goto out;
+			}
 		}
 
-		free(tmpstr);
-		free(sysstr);
-		free(appstr);
-		free(datstr);
-		ret = 0;
-		ret |= close(fd_sys);
-		ret |= close(fd_app);
-		ret |= close(fd_dat);
-
-		if (0 == ret) {
-			return 0;
-		} else {
-			return -1;
-		}
 	}
-	return 0;
+out:
+	free(tmpstr);
+	free(sysstr);
+	free(appstr);
+	free(datstr);
+	if ((0 < fd_sys) && (-1 == close(fd_sys))) {
+		perror("Error closing system metadata");
+	}
+	if ((0 < fd_app) && (-1 == close(fd_app))) {
+		perror("Error closing system metadata");
+	}
+	if ((0 < fd_dat) && (-1 == close(fd_dat))) {
+		perror("Error closing system metadata");
+	}
+
+	return ret;
 }
 
 static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid,
