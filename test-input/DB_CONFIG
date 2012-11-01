@@ -4,3 +4,4 @@ set_lg_regionmax    400000
 mutex_set_max       400000
 mutex_set_increment 400000
 set_tx_max          400000
+set_cachesize 1 0 4

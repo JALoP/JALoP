@@ -102,11 +102,14 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_INVAL;
 	}
 
+	env->log_set_config(env, DB_LOG_ZERO, 1);
+
 	db_err = env->open(env, db_root, env_flags, 0);
 	if (0 != db_err) {
 		return JALDB_E_INVAL;
 	}
 	env->set_lk_detect(env, DB_LOCK_DEFAULT);
+	env->set_flags(env, DB_TXN_NOSYNC, 1);
 
 	XmlManager *mgr = new XmlManager(env, DBXML_ADOPT_DBENV);
 
@@ -114,33 +117,61 @@ enum jaldb_status jaldb_context_init(
 	XmlContainerConfig cfg;
 	cfg.setThreaded(true);
 	cfg.setTransactional(true);
+	cfg.setIndexNodes(XmlContainerConfig::Off);
+	cfg.setContainerType(XmlContainer::WholedocContainer);
+	cfg.setTransactionNotDurable(true);
+	cfg.setStatistics(XmlContainerConfig::Off);
 	if (db_rdonly_flag) {
 		cfg.setReadOnly(true);
 	} else {
 		cfg.setAllowCreate(true);
 	}
+	mgr->setDefaultContainerConfig(cfg);
 
+	XmlUpdateContext uc = ctx->manager->createUpdateContext();
 	XmlTransaction txn = ctx->manager->createTransaction();
 
-	XmlContainer cont = ctx->manager->openContainer(txn, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
+	XmlContainer cont = ctx->manager->openContainer(txn, JALDB_AUDIT_SYS_META_CONT_NAME);
+	if (!db_rdonly_flag && cont.getAutoIndexing(txn)) {
+		cont.setAutoIndexing(txn, false, uc);
+	}
+
 	ctx->audit_sys_cont = new XmlContainer(cont);
 
-	cont = ctx->manager->openContainer(txn, JALDB_AUDIT_APP_META_CONT_NAME, cfg);
+	cont = ctx->manager->openContainer(txn, JALDB_AUDIT_APP_META_CONT_NAME);
+	if (!db_rdonly_flag && cont.getAutoIndexing(txn)) {
+		cont.setAutoIndexing(txn, false, uc);
+	}
 	ctx->audit_app_cont = new XmlContainer(cont);
 
-	cont = ctx->manager->openContainer(txn, JALDB_AUDIT_CONT_NAME, cfg);
+	cont = ctx->manager->openContainer(txn, JALDB_AUDIT_CONT_NAME);
+	if (!db_rdonly_flag && cont.getAutoIndexing(txn)) {
+		cont.setAutoIndexing(txn, false, uc);
+	}
 	ctx->audit_cont = new XmlContainer(cont);
 
-	cont = ctx->manager->openContainer(txn, JALDB_JOURNAL_SYS_META_CONT_NAME, cfg);
+	cont = ctx->manager->openContainer(txn, JALDB_JOURNAL_SYS_META_CONT_NAME);
+	if (!db_rdonly_flag && cont.getAutoIndexing(txn)) {
+		cont.setAutoIndexing(txn, false, uc);
+	}
 	ctx->journal_sys_cont = new XmlContainer(cont);
 
-	cont = ctx->manager->openContainer(txn, JALDB_JOURNAL_APP_META_CONT_NAME, cfg);
+	cont = ctx->manager->openContainer(txn, JALDB_JOURNAL_APP_META_CONT_NAME);
+	if (!db_rdonly_flag && cont.getAutoIndexing(txn)) {
+		cont.setAutoIndexing(txn, false, uc);
+	}
 	ctx->journal_app_cont = new XmlContainer(cont);
 
-	cont = ctx->manager->openContainer(txn, JALDB_LOG_SYS_META_CONT_NAME, cfg);
+	cont = ctx->manager->openContainer(txn, JALDB_LOG_SYS_META_CONT_NAME);
+	if (!db_rdonly_flag && cont.getAutoIndexing(txn)) {
+		cont.setAutoIndexing(txn, false, uc);
+	}
 	ctx->log_sys_cont = new XmlContainer(cont);
 
-	cont = ctx->manager->openContainer(txn, JALDB_LOG_APP_META_CONT_NAME, cfg);
+	cont = ctx->manager->openContainer(txn, JALDB_LOG_APP_META_CONT_NAME);
+	if (!db_rdonly_flag && cont.getAutoIndexing(txn)) {
+		cont.setAutoIndexing(txn, false, uc);
+	}
 	ctx->log_app_cont = new XmlContainer(cont);
 
 	if (!db_rdonly_flag) {
@@ -303,15 +334,12 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const string& db
 	}
 	string_to_container_map::iterator iter = ctx->temp_containers->find(db_name);
 	if (iter == ctx->temp_containers->end()) {
-		XmlContainerConfig cfg;
-		if (ctx->db_read_only) {
-			cfg.setReadOnly(true);
-		} else {
-			cfg.setAllowCreate(true);
+		XmlUpdateContext uc = ctx->manager->createUpdateContext();
+		cont = ctx->manager->openContainer(db_name);
+		if (!ctx->db_read_only && cont.getAutoIndexing()) {
+			XmlUpdateContext uc = ctx->manager->createUpdateContext();
+			cont.setAutoIndexing(false, uc);
 		}
-		cfg.setThreaded(true);
-		cfg.setTransactional(true);
-		cont = ctx->manager->openContainer(db_name, cfg);
 		(*ctx->temp_containers)[db_name] = cont;
 	} else {
 		cont = iter->second;
