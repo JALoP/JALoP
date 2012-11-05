@@ -9,10 +9,9 @@ sources = env.Glob("*.cpp")
 env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
 env.MergeFlags("-Wno-shadow")
 
-add_project_lib(env, 'db_layer', 'jal-db')
-add_project_lib(env, 'lib_common', 'jal-common')
+jal_purge_objs = env.SharedObject(source=sources)
 
-jal_purge = env.Program(target='jal_purge', source=[sources, lib_common, db_layer])
+jal_purge = env.Program(target='jal_purge', source=jal_purge_objs)
 env.Default(jal_purge)
 if env['variant'] == 'release':
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
