@@ -264,8 +264,8 @@ else:
 
 
 # build release and debug versions in seperate directories
-debug_env['release'] = False;
-release_env['release'] = True;
+debug_env['variant'] = 'debug';
+release_env['variant'] = 'release';
 SConscript('SConscript', variant_dir='debug', duplicate=0, exports={'env':debug_env, 'all_tests':all_tests})
 SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env, 'all_tests':all_tests})
 

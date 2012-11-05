@@ -9,7 +9,7 @@ env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src/:.'.split
 env.Default(jal_utils)
 
 install_for_build(env, 'lib', jal_utils)
-if (env['release']):
+if (env['variant'] == 'release'):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, jal_utils))
 

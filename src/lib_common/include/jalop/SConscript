@@ -1,6 +1,6 @@
 Import('*')
 import ConfigDotH
 
-if env['release']:
+if env['variant'] == 'release':
 	incdir = env['DESTDIR'] + env.subst(env['INCLUDEDIR'])
 	env.Alias('install', env.Install(incdir + '/jalop/', env.Glob("*.h")))

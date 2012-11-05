@@ -25,7 +25,7 @@ jald_objs = env.SharedObject("jald.cpp")
 jald = env.Program(target='jald', source=jald_objs)
 env.Depends(jald, [lib_common, db_layer, jal_utils, network_lib])
 
-if (env['release']):
+if (env['variant'] == 'release'):
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
 	env.Alias('install', env.Install(sbindir, jal_subscribe))
 	env.Alias('install', env.Install(sbindir, jald))

@@ -13,7 +13,7 @@ add_project_lib(env, 'lib_common', 'jal-common')
 network_lib = env.SharedLibrary(target='jal-network', source=[sources])
 env.Default(network_lib)
 install_for_build(env, 'lib', network_lib)
-if (env['release']):
+if (env['variant'] == 'release'):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, network_lib))
 

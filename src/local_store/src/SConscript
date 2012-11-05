@@ -18,7 +18,7 @@ local_store = env.Program(target='jal-local-store', source=sources)
 env.Depends(local_store, [lib_common, db_layer, jal_utils])
 
 env.Default(local_store)
-if (env['release']):
+if (env['variant'] == 'release'):
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
 	env.Alias('install', env.Install(sbindir, local_store))
 

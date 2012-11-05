@@ -12,7 +12,7 @@ db_lib = env.SharedLibrary(target='jal-db', source=[sources])
 env.Default(db_lib)
 
 install_for_build(env, 'lib', db_lib)
-if (env['release']):
+if (env['variant'] == 'release'):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, db_lib))
 

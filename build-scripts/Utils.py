@@ -13,13 +13,9 @@ def recursive_glob(source_dir, pattern):
 	return matches
 
 def add_project_lib(env, libdir, libname):
-	variant = 'debug'
-	if (env['release']):
-		variant = 'release'
+	variant = env['variant']
 	env.MergeFlags("-L%s/%s/src/%s/src/ -l%s" % (env['SOURCE_ROOT'], variant, libdir, libname))
 
 def install_for_build(env, dest, target):
-	variant = 'debug'
-	if (env['release']):
-		variant = 'release'
+	variant = env['variant']
 	env.Default(env.Install("%s/%s/%s" % (env['SOURCE_ROOT'], variant, dest), target))

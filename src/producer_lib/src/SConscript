@@ -19,7 +19,7 @@ configh = env.Command('jalp_config_internal.h',
 producer_lib = env.SharedLibrary(target='jal-producer', source=sources)
 env.Default(producer_lib)
 install_for_build(env, 'lib', producer_lib)
-if (env['release']):
+if (env['variant'] == 'release'):
 	libdir = env['DESTDIR'] + env.subst(env['LIBDIR'])
 	env.Alias('install', env.Install(libdir, producer_lib))
 

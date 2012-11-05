@@ -13,7 +13,7 @@ add_project_lib(env, 'lib_common', 'jal-common')
 
 sid_dump = env.Program(target='jal_sid_dump', source=[sources, lib_common, db_layer])
 env.Default(sid_dump)
-if env['release']:
+if env['variant'] == 'release':
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
 	env.Alias('install', env.Install(sbindir, sid_dump))
 
