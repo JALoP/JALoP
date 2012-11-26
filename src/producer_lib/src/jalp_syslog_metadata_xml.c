@@ -27,8 +27,6 @@
  * limitations under the License.
  */
 
-//#include <xercesc/dom/DOM.hpp>
-//#include <xercesc/util/XMLDateTime.hpp>
 #include <libxml/tree.h>
 
 #include <sys/types.h>

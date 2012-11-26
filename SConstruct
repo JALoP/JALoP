@@ -51,7 +51,6 @@ packages_at_least = {
 	'libconfig'	: ['libconfig', '1.3.2'],
 	'vortex'   	: ['vortex-1.1', '1.1.9'],
 	'vortex_tls'	: ['vortex-tls-1.1', '1.1.9'],
-	'xerces'   	: ['xerces-c', '3.1.1'],
 	'libxml2'	: ['libxml-2.0', '2.6.26'],
 	'xmlsec1'	: ['xmlsec1', '1.2.9'],
 	'xmlsec1_openssl'	: ['xmlsec1-openssl', '1.2.9'],
@@ -105,8 +104,10 @@ if platform.system() == 'SunOS':
 	debug_env.Replace(RPATHPREFIX = '-Wl,-R')
 	debug_env.PrependENVPath('PKG_CONFIG_PATH',
 			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
+	debug_env.MergeFlags('-I/usr/local/BerkeleyDB.4.7/include')
 	debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/lib -Wl,-R,/usr/local/lib -Wl,-R,/usr/local/ssl/lib'.split()})
+	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/BerkeleyDB.4.7/lib -Wl,-R,/usr/local/BerkeleyDB.4.7/lib'.split()})
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
 	debug_env.MergeFlags('-lsocket')
 
@@ -145,10 +146,8 @@ if not (GetOption("clean") or GetOption("help")):
 						     'CheckPKGAtLeastVersion': ConfigHelpers.CheckPKGAtLeastVersion,
 						     'CheckPKGAtMostVersion': ConfigHelpers.CheckPKGAtMostVersion,
 						     'CheckPKGExactVersion': ConfigHelpers.CheckPKGExactVersion,
-						     'CheckSantuario': PackageCheckHelpers.CheckSantuario,
 						     'CheckLibUUID': PackageCheckHelpers.CheckLibUUID,
 						     'CheckSeLinux': PackageCheckHelpers.CheckSeLinux,
-						     'CheckDbXml': PackageCheckHelpers.CheckDbXml,
 						     'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
 						   })
 
@@ -164,9 +163,6 @@ if not (GetOption("clean") or GetOption("help")):
 	if not conf.CheckPKGConfig(pkg_config_version):
 		Exit(-1)
 
-	if not conf.CheckSantuario():
-		Exit(-1)
-
 	if not conf.CheckLibUUID():
 		Exit(-1)
 
@@ -180,9 +176,6 @@ this is want you want, this is OK, re-run scons with the \
 		else:
 			debug_env['HAVE_SELINUX'] = True
 			debug_env['selinux_ldflags'] = '-lselinux'
-
-	if not conf.CheckDbXml():
-		Exit(-1)
 
 	if not conf.CheckProducerLibConfigDotH():
 		Exit(-1)
@@ -211,14 +204,8 @@ def add_lfs_cflags(debug_env, cmd, unique=1):
 
 debug_env.ParseConfig('getconf LFS_CFLAGS', function=add_lfs_cflags)
 
-# add linker flags for santuario
-debug_env["santuario_ldflags"] = "-lxml-security-c"
-
 # linker flags for libuuid
 debug_env["libuuid_ldflags"] = "-luuid"
-
-# linker flags for dbxml
-debug_env["dbxml_ldflags"] = '-Wl,-R,/usr/local/lib -ldbxml -ldb-4.8'.split()
 
 all_tests = debug_env.Alias('tests')
 

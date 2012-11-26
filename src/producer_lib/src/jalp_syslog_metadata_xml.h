@@ -38,14 +38,14 @@
 #include "jalp_context_internal.h"
 
 /**
- * Convert a jalp_syslog_metadata struct to a DOMDocument element
- * for use with the Xerces XML library.
+ * Convert a jalp_syslog_metadata struct to a xmlDocPtr element
+ * for use with the libxml2 library.
  *
  * @param[in] syslogmeta The jalp_syslog_metadata struct to convert.
  * @param[in] ctx The JALP context.
- * @param[in] doc The DOMDocument to create the DOMElement from.
+ * @param[in] doc The xmlDocPtr to create the xmlNodePtr from.
  * Maintains the same namespace.
- * @param[out] new_elem DOMElement that holds the newly created element.
+ * @param[out] new_elem xmlNodePtr that holds the newly created element.
  *
  * @return JAL_OK on success, XML_E_XML_CONVERSION otherwise.
  */

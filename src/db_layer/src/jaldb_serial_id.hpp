@@ -8,7 +8,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2011-2012 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -29,8 +29,7 @@
 #ifndef _JALDB_SERIAL_ID_HPP_
 #define _JALDB_SERIAL_ID_HPP_
 
-#include <dbxml/DbXml.hpp>
-#include <dbxml/XmlTransaction.hpp>
+#include <db.h>
 #include <string>
 
 #include "jaldb_status.h"
@@ -50,9 +49,8 @@
  * This function does not perform any exception handling. The caller must
  * handle exceptions as appropriate.
  */
-enum jaldb_status jaldb_get_next_serial_id(DbXml::XmlTransaction &txn,
-		DbXml::XmlUpdateContext &uc,
-		DbXml::XmlContainer &container,
+enum jaldb_status jaldb_get_next_serial_id(DB_TXN *txn,
+		DB *db,
 		std::string &sid);
 
 /**
@@ -64,8 +62,9 @@ enum jaldb_status jaldb_get_next_serial_id(DbXml::XmlTransaction &txn,
  *
  * @return JALDB_OK or an error code.
  */
-enum jaldb_status jaldb_initialize_serial_id(DbXml::XmlTransaction &txn,
-		DbXml::XmlContainer &cont, int *db_err);
+enum jaldb_status jaldb_initialize_serial_id(DB_TXN *parent_txn,
+		DB *db,
+		int *db_err);
 
 /**
  * Internal helper function that increments a serial ID.

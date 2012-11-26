@@ -27,17 +27,12 @@
 * limitations under the License.
 */
 
+#include <jalop/jal_status.h>
+#include <openssl/pem.h>
 #include <string.h>
 #include <unistd.h>
-#include <xercesc/dom/DOM.hpp>
-#include <openssl/pem.h>
-#include <dbxml/DbXml.hpp>
-#include <jalop/jal_status.h>
-#include "jsub_db_layer.hpp"
-#include "jsub_parse.hpp"
 
-XERCES_CPP_NAMESPACE_USE
-using namespace DbXml;
+#include "jsub_db_layer.hpp"
 
 #define stringify( name ) # name
 #define DEBUG_LOG(args...) \
@@ -77,22 +72,20 @@ int jsub_insert_audit(
 		jaldb_context *db_ctx,
 		char *c_source,
 		uint8_t *sys_meta,
-		size_t sys_len,
-		uint8_t *app_meta,
-		size_t app_len,
+		__attribute__((unused)) size_t sys_len,
+		__attribute__((unused)) uint8_t *app_meta,
+		__attribute__((unused)) size_t app_len,
 		uint8_t *audit,
-		size_t audit_len,
+		__attribute__((unused)) size_t audit_len,
 		char *sid_in,
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	DOMDocument *sys_meta_doc = NULL;
-	DOMDocument *app_meta_doc = NULL;
-	DOMDocument *audit_doc = NULL;
+	void *sys_meta_doc = NULL;
+	void *app_meta_doc = NULL;
+	void *audit_doc = NULL;
 	std::string sid = sid_in;
 	std::string source = c_source;
-	char *schemas_root = db_ctx->schemas_root;
-
 	// Must have sys_meta and audit_doc
 	if (!sys_meta || !audit || !sid_in || !db_ctx) {
 		if (debug) {
@@ -101,59 +94,18 @@ int jsub_insert_audit(
 		ret = JAL_E_INVAL_PARAM;
 		goto out;
 	}
-	ret = jsub_parse_sys_metadata(sys_meta,
-				      sys_len,
-				      schemas_root,
-				      &sys_meta_doc,
-				      debug);
-	if (JAL_OK != ret) {
-		goto err;
-	}
-	if (app_meta && (0 < app_len)) {
-		ret = jsub_parse_app_metadata(app_meta,
-				      app_len,
-				      schemas_root,
-				      &app_meta_doc,
-				      debug);
-		if (JAL_OK != ret) {
-			goto err;
-		}
-	}
-	ret = jsub_parse_audit(audit,
-			       audit_len,
-			       schemas_root,
-			       &audit_doc,
-			       debug);
-	if (JAL_OK != ret) {
-		goto err;
-	}
-	try {
-		ret = jaldb_insert_audit_record_into_temp(
+	// TODO: Switch to new DB APIs & move any parsing that needs to happen
+	// into the DB layer and/or common code.
+	ret = jaldb_insert_audit_record_into_temp(
 						db_ctx,
 						source,
 						sys_meta_doc,
 						app_meta_doc,
 						audit_doc,
 						sid);
-	} catch (XmlException &e) {
-		if (e.getExceptionCode()
-			== XmlException::UNIQUE_ERROR) {
-			DEBUG_LOG("Audit record already exists for serial_id: %s\n",
-			       sid.c_str());
-			ret = JALDB_E_SID;
-		}
-		else {
-			// re-throw e, this is a serious problem.
-			throw(e);
-		}
-	}
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert audit into temp!\n");
 	}
-err:
-	delete sys_meta_doc;
-	delete app_meta_doc;
-	delete audit_doc;
 out:
 
 	return ret;
@@ -163,21 +115,20 @@ int jsub_insert_log(
 		jaldb_context *db_ctx,
 		char *c_source,
 		uint8_t *sys_meta,
-		size_t sys_len,
-		uint8_t *app_meta,
-		size_t app_len,
-		uint8_t *log,
-		size_t log_len,
+		__attribute__((unused)) size_t sys_len,
+		__attribute__((unused)) uint8_t *app_meta,
+		__attribute__((unused)) size_t app_len,
+		__attribute__((unused)) uint8_t *log,
+		__attribute__((unused)) size_t log_len,
 		char *sid_in,
 		int debug)
 {
 	int ret = JALDB_E_UNKNOWN;
 	int db_err;
-	DOMDocument *sys_meta_doc = NULL;
-	DOMDocument *app_meta_doc = NULL;
+	void *sys_meta_doc = NULL;
+	void *app_meta_doc = NULL;
 	std::string sid = sid_in;
 	std::string source = c_source;
-	char *schemas_root = db_ctx->schemas_root;
 	std::string err_str;
 
 	// Only requires sys_meta
@@ -188,21 +139,9 @@ int jsub_insert_log(
 		ret = JAL_E_INVAL_PARAM;
 		goto out;
 	}
-	ret = jsub_parse_sys_metadata(sys_meta, sys_len, schemas_root,
-				      &sys_meta_doc, debug);
-	if (JAL_OK != ret) {
-		goto err;
-	}
-	if (app_meta && 0 < app_len) {
-		ret = jsub_parse_app_metadata(app_meta, app_len,
-					schemas_root,
-					&app_meta_doc, debug);
-		if (JAL_OK != ret) {
-			goto err;
-		}
-	}
-	try {
-		ret = jaldb_insert_log_record_into_temp(
+	// TODO: switch to new DB layer APIs and move any XML parsing into the
+	// DB layer and/or common code.
+	ret = jaldb_insert_log_record_into_temp(
 						db_ctx,
 						source,
 						sys_meta_doc,
@@ -211,24 +150,9 @@ int jsub_insert_log(
 						log_len,
 						sid,
 						&db_err);
-	} catch (XmlException &e) {
-		if (e.getExceptionCode()
-			== XmlException::UNIQUE_ERROR) {
-			DEBUG_LOG("Log record already exists for serial_id: %s\n",
-			       sid.c_str());
-			ret = JALDB_E_SID;
-		}
-		else {
-			// re-throw e, this is a serious problem.
-			throw(e);
-		}
-	}
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert log into temp!\n");
 	}
-err:
-	delete sys_meta_doc;
-	delete app_meta_doc;
 out:
 
 	return ret;
@@ -279,19 +203,18 @@ int jsub_insert_journal_metadata(
 		jaldb_context *db_ctx,
 		char *c_source,
 		uint8_t *sys_meta,
-		size_t sys_len,
-		uint8_t *app_meta,
-		size_t app_len,
-		char *db_payload_path,
+		__attribute__((unused)) size_t sys_len,
+		__attribute__((unused)) uint8_t *app_meta,
+		__attribute__((unused)) size_t app_len,
+		__attribute__((unused)) char *db_payload_path,
 		char *sid_in,
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	DOMDocument *sys_meta_doc = NULL;
-	DOMDocument *app_meta_doc = NULL;
+	void *sys_meta_doc = NULL;
+	void *app_meta_doc = NULL;
 	std::string sid = sid_in;
 	std::string source = c_source;
-	char *schemas_root = db_ctx->schemas_root;
 
 	if (!sys_meta || !db_ctx){
 		if (debug) {
@@ -300,19 +223,8 @@ int jsub_insert_journal_metadata(
 		ret = JAL_E_INVAL_PARAM;
 		goto out;
 	}
-	ret = jsub_parse_sys_metadata(sys_meta, sys_len, schemas_root,
-				      &sys_meta_doc, debug);
-	if (JAL_OK != ret) {
-		goto err;
-	}
-	if (app_meta && (0 < app_len)) {
-		ret = jsub_parse_app_metadata(app_meta, app_len,
-						schemas_root,
-						&app_meta_doc, debug);
-		if (JAL_OK != ret) {
-			goto err;
-		}
-	}
+	//TODO: switch to new DB layer APIs and move any XML parsing to
+	//dblayer/common code.
 	ret = jaldb_insert_journal_metadata_into_temp(
 						db_ctx,
 						source,
@@ -323,9 +235,6 @@ int jsub_insert_journal_metadata(
 	if ((JALDB_OK != ret) && debug) {
 		printf("DEBUG_LOG to insert journal metadata into temp!\n");
 	}
-err:
-	delete sys_meta_doc;
-	delete app_meta_doc;
 out:
 
 	return ret;

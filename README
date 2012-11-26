@@ -7,7 +7,6 @@ The implementation is divided into a number of components:
   JALoP Network Stores
 
 This project makes use of the following libraries:
-  dbxml - http://www.dbxml.com
   lcov - http://ltp.sourceforge.net/coverage/lcov.php
   libaxl - http://www.aspl.es/xml
   libconfig - http://freshmeat.net/projects/libconfigduo
@@ -16,24 +15,17 @@ This project makes use of the following libraries:
   libxml2 - http://xmlsoft.org/
   libxmlsec1 - http://www.aleksey.com/xmlsec/
   openssl - http://www.openssl.org/
-  santaurio - http://santuario.apache.org
   site_scons - http://scons.org/
   test-dept - http://code.google.com/p/test-dept/
   vortex - http://www.aspl.es/vortex
-  xerces - http://xerces.apache.org
-  xqilla - http://xqilla.sourceforge.net
+  Berkeley DB - http://www.oracle.com/us/products/database/berkeley-db/overview/index.html
 
 The following libraries are included in the 3rd-party directory:
   axl
-  dbxml
   lcov
   libconfig
-  santaurio
   site_scons
   vortex
-  xerces
-  xqilla 
-
 
 Building and Installing
 
@@ -130,7 +122,7 @@ NOTES
   processes with access to the DB in question, run db_recover, and then restart
   the processes.
 
-  The Berkeley DB XML database can be taylored to the user's load requirements
+  The Berkeley DB database can be tailored to the user's load requirements
   by adding a DB_CONFIG file, with configuration options, to the directory where
   the database is to be created.
 

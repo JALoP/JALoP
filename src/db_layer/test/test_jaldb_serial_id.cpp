@@ -43,7 +43,6 @@ extern "C" {
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <dbxml/XmlContainer.hpp>
 #include <db.h>
 #include "jaldb_serial_id.hpp"
 #include "jaldb_context.hpp"
@@ -52,12 +51,6 @@ extern "C" {
 #define OTHER_DB_ROOT "./testdb/"
 #define INVALID_JALDB_NS "jalop/metadata"
 #define INVALID_JALDB_SERIAL_ID_NAME "serial_id"
-
-using namespace DbXml;
-XERCES_CPP_NAMESPACE_USE
-
-static XmlManager *manager = NULL;
-static XmlContainerConfig cfg;
 
 extern "C" void setup()
 {
@@ -96,179 +89,15 @@ extern "C" void setup()
 		env->close(env, 0);
 		exit(1);
 	}
-	manager = new XmlManager(env, DBXML_ADOPT_DBENV);
-	if (manager->existsContainer(JALDB_AUDIT_SYS_META_CONT_NAME)) {
-		manager->removeContainer(JALDB_AUDIT_SYS_META_CONT_NAME);
-	}
-	cfg.setAllowCreate(true);
-	cfg.setThreaded(true);
-	cfg.setTransactional(true);
 }
 
 extern "C" void teardown()
 {
-	delete manager;
 }
 
-extern "C" void test_get_next_serial_id_returns_ok_with_valid_input()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer cont = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	XmlUpdateContext update_ctx = manager->createUpdateContext();
-	XmlDocument doc = manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
-	XmlValue attrVal(XmlValue::STRING, "1");
-	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
-	cont.putDocument(doc, update_ctx, 0);
-	std::string ser_id;
-	enum jaldb_status ret;
-	ret = jaldb_get_next_serial_id(transaction, update_ctx, cont, ser_id);
-	assert_equals(JALDB_OK, ret);
-
-	assert_string_equals("1", ser_id.c_str());
-
-	ret = jaldb_get_next_serial_id(transaction, update_ctx, cont, ser_id);
-	assert_equals(JALDB_OK, ret);
-
-	assert_string_equals("2", ser_id.c_str());
-
-	ret = jaldb_get_next_serial_id(transaction, update_ctx, cont, ser_id);
-	transaction.commit();
-	assert_equals(JALDB_OK, ret);
-
-	assert_string_equals("3", ser_id.c_str());
-}
-
-extern "C" void test_get_next_serial_id_returns_error_with_invalid_namespace()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer cont = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	XmlUpdateContext update_ctx = manager->createUpdateContext();
-	XmlDocument doc = manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
-	XmlValue attrVal(XmlValue::STRING, "1");
-	doc.setMetaData(INVALID_JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
-	cont.putDocument(doc, update_ctx, 0);
-	std::string ser_id;
-	enum jaldb_status ret;
-	ret = jaldb_get_next_serial_id(transaction, update_ctx, cont, ser_id);
-	transaction.commit();
-	assert_equals(JALDB_E_CORRUPTED, ret);
-}
-
-extern "C" void test_get_next_serial_id_returns_error_with_invalid_serial_id_name()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer cont = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	XmlUpdateContext update_ctx = manager->createUpdateContext();
-	XmlDocument doc = manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
-	XmlValue attrVal(XmlValue::STRING, "1");
-	doc.setMetaData(INVALID_JALDB_NS, INVALID_JALDB_SERIAL_ID_NAME, attrVal);
-	cont.putDocument(doc, update_ctx, 0);
-	std::string ser_id;
-	enum jaldb_status ret;
-	ret = jaldb_get_next_serial_id(transaction, update_ctx, cont, ser_id);
-	transaction.commit();
-	assert_equals(JALDB_E_CORRUPTED, ret);
-}
-
-extern "C" void test_get_next_serial_id_returns_error_with_invalid_attribute_value()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer cont = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	XmlUpdateContext update_ctx = manager->createUpdateContext();
-	XmlDocument doc = manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
-	XmlValue attrVal((double)1);
-	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
-	cont.putDocument(doc, update_ctx, 0);
-	enum jaldb_status ret;
-	std::string ser_id;
-	ret = jaldb_get_next_serial_id(transaction, update_ctx, cont, ser_id);
-	transaction.commit();
-	assert_equals(JALDB_E_CORRUPTED, ret);
-}
-
-extern "C" void test_initialize_serial_id_returns_ok_with_valid_input()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer container = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	XmlUpdateContext update_ctx = manager->createUpdateContext();
-	XmlDocument doc = manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
-	XmlValue attrVal(XmlValue::STRING, "1");
-	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
-	container.putDocument(doc, update_ctx, 0);
-	int db_error = 0;
-	enum jaldb_status ret;
-	ret = jaldb_initialize_serial_id(transaction, container, &db_error);
-	assert_equals(JALDB_OK, ret);
-}
-
-extern "C" void test_initialize_serial_id_returns_ok_when_doc_already_exists()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer container = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	XmlUpdateContext update_ctx = manager->createUpdateContext();
-	XmlDocument doc = manager->createDocument();
-	doc.setName(JALDB_SERIAL_ID_DOC_NAME);
-	XmlValue attrVal(XmlValue::STRING, "1");
-	doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, attrVal);
-	container.putDocument(doc, update_ctx, 0);
-	int db_error = 0;
-	enum jaldb_status ret;
-	ret = jaldb_initialize_serial_id(transaction, container, &db_error);
-	ret = jaldb_initialize_serial_id(transaction, container, &db_error);
-	assert_equals(JALDB_OK, ret);
-
-	XmlDocument document = container.getDocument(JALDB_SERIAL_ID_DOC_NAME);
-	XmlValue val;
-	bool metadataFound = false;
-	metadataFound = document.getMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, val);
-	std::string sid = val.asString();
-	assert_string_equals("1", sid.c_str());
-}
-
-extern "C" void test_initialize_serial_id_returns_error_with_invalid_input()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer container = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	enum jaldb_status ret;
-	ret = jaldb_initialize_serial_id(transaction, container, NULL);
-	assert_equals(JALDB_E_INVAL, ret);
-
-	XmlTransaction txn;
-	int db_error = 0;
-	try {
-		ret = jaldb_initialize_serial_id(txn, container, &db_error);
-	}
-	catch (XmlException &e) {
-		return;
-	}
-	assert_true(0);
-}
-
-extern "C" void test_initialize_serial_id_returns_error_code_with_invalid_input()
-{
-	XmlTransaction transaction = manager->createTransaction();
-	XmlContainer container = manager->openContainer(
-		transaction, JALDB_AUDIT_SYS_META_CONT_NAME, cfg);
-	enum jaldb_status ret;
-	ret =  jaldb_initialize_serial_id(transaction, container, NULL);
-	assert_equals(JALDB_E_INVAL, ret);
-}
 
 extern "C" void test_increment_serial_id_returns_expected_results()
 {
-	test_get_next_serial_id_returns_ok_with_valid_input();
 	std::string ser_id = "9";
 	jaldb_increment_serial_id(ser_id);
 	assert_string_equals("A", ser_id.c_str());

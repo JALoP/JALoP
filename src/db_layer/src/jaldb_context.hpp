@@ -33,30 +33,19 @@
 #include <list>
 #include <string>
 #include <map>
-#include <dbxml/DbXml.hpp>
-#include <dbxml/XmlContainer.hpp>
-#include <xercesc/dom/DOMDocument.hpp>
+#include <db.h>
 #include "jaldb_context.h"
 
-typedef std::map<std::string, DbXml::XmlContainer> string_to_container_map;
 typedef std::map<std::string, DB*> string_to_db_map;
 
 struct jaldb_context_t {
-	DbXml::XmlManager *manager; //<! The manager associated with the context.
-	DbXml::XmlContainer *audit_sys_cont; //<! Container for the audit System Metadata
-	DbXml::XmlContainer *audit_app_cont; //<! Container for the audit Application Metadata
-	DbXml::XmlContainer *audit_cont; //<! Container for the audit data
-	DbXml::XmlContainer *journal_sys_cont; //<! Container for the journal System Metadata
-	DbXml::XmlContainer *journal_app_cont; //<! Container for the journal Application Metadata
-	DbXml::XmlContainer *log_sys_cont; //<! Container for the log System Metadata
-	DbXml::XmlContainer *log_app_cont; //<! Container for the log Application Metadata
 	char *journal_root; //<! The journal record root path.
 	char *schemas_root; //<! The schemas root path.
+	DB_ENV *env; //<! The Berkeley DB Environment.
 	DB *journal_conf_db; //<! The database for conf'ed journal records
 	DB *audit_conf_db; //<! The database for conf'ed audit records
 	DB *log_conf_db; //<! The database for conf'ed log records
 	DB *log_dbp; //<! The log database.
-	string_to_container_map *temp_containers; //<! a map from strings to XmlContainers that identifies temporary databases for use by the network stores.
 	string_to_db_map *temp_dbs; //<! a map from strings to Berkeley DBs that identifies temporary databases for use by the network stores.
 	int db_read_only; //<! Whether or not to open the databases read only
 };
@@ -134,28 +123,6 @@ enum jaldb_status jaldb_store_confed_log_sid_tmp(
 		int *db_err_out);
 
 /**
-* Store a confirmed serial_id in the temp container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] cont The container to store the confirmed \p sid in.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_store_confed_sid_tmp_helper(
-		jaldb_context *ctx,
-		DbXml::XmlContainer *cont,
-		const char *remote_host,
-		const char *sid,
-		int *db_err_out);
-
-/**
 * Retrieve a confirmed serial_id from the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
@@ -212,28 +179,6 @@ enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
 enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		std::string &sid,
-		int *db_err_out);
-
-/**
-* Retrieve a confirmed serial_id from the container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] cont The database container to retrieve the \p sid from.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_get_last_confed_sid_tmp_helper(
-		jaldb_context *ctx,
-		DbXml::XmlContainer *cont,
-		const std::string &remote_host,
 		std::string &sid,
 		int *db_err_out);
 
@@ -308,110 +253,6 @@ enum jaldb_status jaldb_xfer_journal(
 	std::string &next_sid);
 
 /**
- * Delete log records from the application and system containers.
- * @param[in] txn The transaction to use.
- * @param[in] uc The update context to use.
- * @param[in] sys_cont The system metadata container.
- * @param[in] app_cont The application metadata container.
- * @param[in] log_db The database holding the log payload.
- * @param[in] sid The serial ID of the record to be deleted.
- * @param[in] sys_doc The system metadata document to be deleted.
- * @param[in] app_doc The application metadata document to be deleted.
- * @param[out] db_err_out The error code (if any) returned by Berkeley DB
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_NOT_FOUND if the document with \p sid was not found.
- *  - JALDB_E_CORRUPTED if the record did not contain 
- *    application or log data.
- *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
- *  for more info.
- * @throw XmlException
- */
-enum jaldb_status jaldb_delete_log(
-	DbXml::XmlTransaction &txn, 
-	DbXml::XmlUpdateContext &uc,
-	DbXml::XmlContainer &sys_cont,
-	DbXml::XmlContainer &app_cont,
-	DB *log_db,
-	const std::string &sid,
-	DbXml::XmlDocument *sys_doc,
-	DbXml::XmlDocument *app_doc,
-	int *db_err_out);
-
-/**
- * Save log records to the application and system containers.
- * @param[in] txn The transaction to use.
- * @param[in] uc The update context to use.
- * @param[in] sys_cont The system metadata container.
- * @param[in] app_cont The application metadata container.
- * @param[in] log_db The database holding the log payload.
- * @param[in] sid The serial ID of the record to be saved.
- * @param[in] sys_doc The system metadata document to be saved.
- * @param[in] app_doc The application metadata document to be saved.
- * @param[in] log_buf The log payload.
- * @param[in] log_len The length of the data referenced by \p log_buf.
- * @param[out] db_err_out The error code (if any) returned by Berkeley DB
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_SID if a record with this \p sid already exists.
- *  - JALDB_E_CORRUPTED if the record did not contain 
- *    application or log data.
- *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
- *  for more info.
- * @throw XmlException
- */
-enum jaldb_status jaldb_save_log(
-	DbXml::XmlTransaction &txn, 
-	DbXml::XmlUpdateContext &uc,
-	DbXml::XmlContainer &sys_cont,
-	DbXml::XmlContainer &app_cont,
-	DB *log_db,
-	const std::string &sid,
-	DbXml::XmlDocument *sys_doc,
-	DbXml::XmlDocument *app_doc,
-	uint8_t *log_buf,
-	size_t  log_len,
-	int *db_err_out);
-
-/**
- * Retrieve log records to the application and system containers.
- * @param[in] txn The transaction to use.
- * @param[in] uc The update context to use.
- * @param[in] sys_cont The system metadata container.
- * @param[in] app_cont The application metadata container.
- * @param[in] log_db The database holding the log payload.
- * @param[in] sid The serial ID of the record to be retrieved.
- * @param[out] sys_doc The system metadata document to be retrieved.
- * @param[out] app_doc The application metadata document to be retrieved.
- * @param[out] log_buf The log payload \p log_buf.
- * @param[out] log_len The length of the data referenced by \p log_buf.
- * @param[out] db_err_out The error code (if any) returned by Berkeley DB
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_NOT_FOUND if a document was not found with \p sid.
- *  - JALDB_E_CORRUPTED if the record did not contain 
- *    application or log data.
- *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
- *  for more info.
- * @throw XmlException
- */
-enum jaldb_status jaldb_retrieve_log(
-	DbXml::XmlTransaction &txn, 
-	DbXml::XmlUpdateContext &uc,
-	DbXml::XmlContainer &sys_cont,
-	DbXml::XmlContainer &app_cont,
-	DB *log_db,
-	const std::string &sid,
-	DbXml::XmlDocument *sys_doc,
-	DbXml::XmlDocument *app_doc,
-	uint8_t **log_buf,
-	size_t *log_len,
-	int *db_err_out);
-
-/**
  * Store the most recently confirmed journal record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
@@ -478,74 +319,6 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
 		const char *remote_host, const char *sid, int *db_err_out);
 
 /**
- * Helper function for storing conf'ed serial IDs
- *
- * This first verifies that \p sid is a valid Serial ID (i.e. it comes
- * sequentially before the next available Serial ID).
- *
- * @param[int] cont The DbXml container to check \p sid against.
- * @param[in] db The Berkeley DB object to store the conf'ed Serial ID in
- * @param[in] remote_host The host (IP address, domain name, or whatever) to
- * associate with the serial ID.
- * @param[in] sid The actual Serial ID
- * @param[out] db_err_out Will be set to a Berkeley DB error code if there was a
- * problem updating the database. This is only valid when the function returns
- * JALDB_E_DB.
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_ALREADY_CONFED if the current mapping in the database is
- *    the same as \p sid or sequentially later.
- *  - JALDB_E_SID if the Serial is sequentially after the next available
- *  Serial ID
- *  - JALDB_E_CORRUPTED is the latest serial ID cannot be found. This
- *  indicates an internal problem with the database.
- *  - JALDB_E_DB if there was an error updated the database, check \p db_err_out
- *  for more info.
- * @throw XmlException
- *
- */
-enum jaldb_status jaldb_store_confed_sid_helper(DbXml::XmlContainer *cont, DB *db,
-		const char *remote_host, const char *sid, int *db_err_out);
-
-/**
- * Helper utility for inserting and audit record into the appropriate
- * containers
- * The caller will need to commit the transaction.
- *
- * @param[in] source The 'source' identifier to use. If empty, this will be set
- * to 'localhost'
- * @param[in] txn The transaction to use.
- * @param[in] manager The manager that owns the containers
- * @param[in] uc The update context to use.
- * @param[in] sys_cont The container that holds the system metadata
- * @param[in] app_cont The container that holds the application metadata
- * @param[in] audit_cont The container that holds the audit documents
- * @param[in] sys_doc The DOMDocument that contains the System Metadata for
- * this record.
- * @param[in] app_doc The DOMDocument (if any) that contains the application Metadata for
- * this record (may be NULL).
- * @param[in] audit_doc The DOMDocument that contains the audit data for this record.
- * @param[in,out] sid The serial ID to use. If sid is empty, then this function
- * will attempt to get the next serial ID from \p sys_cont
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters is bad
- */
-enum jaldb_status jaldb_insert_audit_helper(
-		const std::string &source,
-		DbXml::XmlTransaction &txn,
-		DbXml::XmlManager &manager,
-		DbXml::XmlUpdateContext &uc,
-		DbXml::XmlContainer &sys_cont,
-		DbXml::XmlContainer &app_cont,
-		DbXml::XmlContainer &audit_cont,
-		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_doc,
-		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_doc,
-		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
-		const std::string &sid);
-
-/**
  * Inserts an audit record.
  * @param[in] ctx The context.
  * @param[in] source The source of the record. If NULL, then this is set to the
@@ -562,9 +335,9 @@ enum jaldb_status jaldb_insert_audit_helper(
 enum jaldb_status jaldb_insert_audit_record(
 	jaldb_context *ctx,
 	std::string &source,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
+	const void *sys_meta_doc,
+	const void *app_meta_doc,
+	const void *audit_doc,
 	std::string &sid);
 
 /**
@@ -586,9 +359,9 @@ enum jaldb_status jaldb_insert_audit_record(
 enum jaldb_status jaldb_insert_audit_record_into_temp(
 	jaldb_context *ctx,
 	std::string &source,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *audit_doc,
+	const void *sys_doc,
+	const void *app_doc,
+	const void *audit_doc,
 	const std::string &sid);
 
 /**
@@ -601,20 +374,6 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
  * @return a string to use as the database name.
  */
 std::string jaldb_make_temp_db_name(const std::string &id, const std::string &suffix);
-
-/**
- * Open a temporary database for storing records while communicating with a network
- * store.
- * The container is cached within the context for quicker access later.
- * @param[in] ctx the context to associate with
- * @param[in] db_name The name of the database
- * @param[out] cont Once the database is opened, the new XmlContainer is
- * assigned to \p cont.
- *
- * @return JALDB_OK on success
- * JALDB_E_INVAL if ctx is invalid
- */
-enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const std::string& db_name, DbXml::XmlContainer &cont);
 
 /**
  * Inserts a log record.
@@ -636,8 +395,8 @@ enum jaldb_status jaldb_open_temp_container(jaldb_context *ctx, const std::strin
 enum jaldb_status jaldb_insert_log_record(
 	jaldb_context *ctx,
 	const std::string &source,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const void *sys_meta_doc,
+	const void *app_meta_doc,
 	uint8_t *log_buf,
 	const size_t log_len,
 	std::string &sid,
@@ -664,54 +423,12 @@ enum jaldb_status jaldb_insert_log_record(
 enum jaldb_status jaldb_insert_log_record_into_temp(
 	jaldb_context *ctx,
 	std::string &source,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const void *sys_meta_doc,
+	const void *app_meta_doc,
 	uint8_t *log_buf,
 	const size_t log_len,
 	const std::string &sid,
 	int *db_err);
-
-/**
- * Helper utility for inserting log records into various containers.
- *
- * Although either app_meta_doc or log_buf may be NULL, it is an error to
- * specify NULL for both. It is also an error to specify NULL for app_meta_doc
- * and specify the log_len as 0.
- * @param[in] source Where the record came from. If length == 0, this will be
- * set to localhost
- * @param[in] txn The transaction to use
- * @param[in] manager The manager to use
- * @param[in] uc The update context to use
- * @param[in] sys_cont The container to insert the system metadata into
- * @param[in] app_cont The container to insert the application metadata into
- * @param[in] log_db The database to store the log record in
- * @param[in] sys_meta_doc The DOMDocument that is the system metadata, may
- * not be NULL
- * @param[in] app_meta_doc The DOMDocument that is the application metadata,
- * @param[in] log_buf The byte buffer that contains the log entry
- * @param[in] log_len The length (in bytes) of \p log_buf.
- * may be NULL
- * @param[in] sid The serial ID to associate with this record.
- * @param[out] db_err Error code from Berkeley DB. This will only have a valid
- * value if the function returns JALDB_E_DB
- * @return
- *   - JALDB_OK on success
- *   - JALDB_E_DB if there was an error inserting into the log DB
- *   - JALDB_E_INVAL if any of the parameters are invalid
- */
-enum jaldb_status jaldb_insert_log_record_helper(const std::string &source,
-		DbXml::XmlTransaction &txn,
-		DbXml::XmlManager &manager,
-		DbXml::XmlUpdateContext &uc,
-		DbXml::XmlContainer &sys_cont,
-		DbXml::XmlContainer &app_cont,
-		DB *log_db,
-		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
-		const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
-		uint8_t *log_buf,
-		const size_t log_len,
-		const std::string &sid,
-		int *db_err);
 
 /**
  * Open a temporary database for storing log records while communicating with a network
@@ -736,38 +453,6 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_n
 		DB **db_out, int *db_err_out);
 
 /**
- * Helper utility for inserting journal metadata.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * obtained via a call to jaldb_create_journal_file.
- * @param[in] txn The transaction to use
- * @param[in] manager The manager to use
- * @param[in] uc The update context to use.
- * @param[in] sys_cont The container to insert the system metadata into
- * @param[in] app_cont The container to insert the application metadata into
- * @param[in] sys_meta_doc The DOMDocument that is the system metadata, must
- * not be NULL.
- * @param[in] app_meta_doc The DOMDocument that is the application metadata,
- * may be NULL.
- * @param[in] path The path of the file that is journal data. This should be
- * @param[in] sid The serial ID for the record, this must be non-zero in
- * length
- *
- * @return JALDB_OK if the function succeeds or a JAL error code if the function
- */
-enum jaldb_status jaldb_insert_journal_metadata_helper(
-	const std::string &source,
-	DbXml::XmlTransaction &txn,
-	DbXml::XmlManager &manager,
-	DbXml::XmlUpdateContext &uc,
-	DbXml::XmlContainer &sys_cont,
-	DbXml::XmlContainer &app_cont,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
-	const std::string &path,
-	const std::string &sid);
-
-/**
  * Inserts journal metadata.
  * @param[in] ctx The context.
  * @param[in] source The source of the record. If NULL, then this is set to the
@@ -784,8 +469,8 @@ enum jaldb_status jaldb_insert_journal_metadata_helper(
 enum jaldb_status jaldb_insert_journal_metadata(
 	jaldb_context *ctx,
 	const std::string &source,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const void *sys_meta_doc,
+	const void *app_meta_doc,
 	const std::string &path,
 	std::string &sid);
 
@@ -803,28 +488,10 @@ enum jaldb_status jaldb_insert_journal_metadata(
 enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	jaldb_context *ctx,
 	const std::string &source,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *sys_meta_doc,
-	const XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument *app_meta_doc,
+	const void *sys_meta_doc,
+	const void *app_meta_doc,
 	const std::string &path,
 	const std::string &sid);
-
-/**
- * Helper function to mark records as 'synced'
- * All records up to and including \p sid
- * that were successfully delivered to \p remote_host are marked as 'synced'.
- *
- * @param[in] ctx The context
- * @param[in] cont The container to process
- * @param[in] sid The sid to look for
- * @param[in] remote_host The machine that is marking the file as synced
- *
- * @return JALDB_OK, or JALDB_E_INVAL
- */
-enum jaldb_status jaldb_mark_synced_common(
-	jaldb_context *ctx,
-	DbXml::XmlContainer *cont,
-	const char *sid,
-	const char *remote_host);
 
 /**
  * Function that marks journal records as 'synced'.
@@ -842,7 +509,6 @@ enum jaldb_status jaldb_mark_journal_synced(
 	jaldb_context *ctx,
 	const char *sid,
 	const char *remote_host);
-
 
 /**
  * Function that marks audit records as 'synced'.
@@ -877,24 +543,6 @@ enum jaldb_status jaldb_mark_log_synced(
 	const char *sid,
 	const char *remote_host);
 
-
-/**
- * Helper function to mark records in the database as being sent successfully to a
- * particular remote peer. This indicates that the remote successfully received
- * the record, however, it is still possible that the remote has not yet been
- * notified that it received the record correctly, i.e. a digest response
- * message may not have been sent, or was lost.
- *
- * @param[in] ctx The context.
- * @param[in] cont The container to look in.
- * @param[in] sid The serial ID of the record to mark as sent_ok.
- * @param[in] remote_name The name of the remote that received the record.
- */
-enum jaldb_status jaldb_mark_sent_ok_common(
-	jaldb_context *ctx,
-	DbXml::XmlContainer *cont,
-	const char *sid,
-	const char *remote_host);
 
 /**
  * Helper function to mark a journal record in the database as being sent successfully to a
@@ -1014,22 +662,6 @@ enum jaldb_status jaldb_get_log_document_list(
 		std::list<std::string> **doc_list);
 
  /**
- * Retrieve a list of document names present in the container \p cont.
- *
- * @param[in] cont the container to retrieve the list from.
- * @param[in] mgr the manager to use to create the transaction.
- * @param[out] doc_list A pointer to a list returned by the function.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_document_list(
-		DbXml::XmlContainer *cont,
-		DbXml::XmlManager *mgr,
-		std::list<std::string> **doc_list);
-
- /**
  * Retrieve a list of the last \p k records for journal container.
  *
  * @param[in] ctx the context to use.
@@ -1074,25 +706,6 @@ enum jaldb_status jaldb_get_last_k_records_audit(
  */
 enum jaldb_status jaldb_get_last_k_records_log(
 		jaldb_context *ctx,
-		int k,
-		std::list<std::string> &doc_list);
-
- /**
- * Function to retrieve a list of the last \p k records
- * for the container \p cont.
- *
- * @param[in] cont the container to retrieve the list from.
- * @param[in] mgr the manager to use to create the transaction.
- * @param[in] k the number of records to retrieve.
- * @param[out] doc_list the list of document names.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_last_k_records(
-		DbXml::XmlContainer *cont,
-		DbXml::XmlManager *mgr,
 		int k,
 		std::list<std::string> &doc_list);
 
@@ -1147,24 +760,4 @@ enum jaldb_status jaldb_get_records_since_last_sid_log(
 		char *last_sid,
 		std::list<std::string> &doc_list);
 		
- /**
- * Retrieve a list of the records received after the record denoted
- * by \p last_sid.
- *
- * @param[in] cont the container to retrieve the list from.
- * @param[in] mgr the manager to use to create the transaction.
- * @param[in] last_sid the serial id of the last record retrieved.
- * @param[out] doc_list the list of document names.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_records_since_last_sid(
-		DbXml::XmlContainer *cont,
-		DbXml::XmlManager *mgr,
-		char *last_sid,
-		std::list<std::string> &doc_list);
-
- 
 #endif // _JALDB_CONTEXT_HPP_

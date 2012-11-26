@@ -8,7 +8,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2011-2012 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -28,69 +28,18 @@
 
 #include "jaldb_serial_id.hpp"
 #include "jaldb_strings.h"
-#include <dbxml/XmlContainer.hpp>
-#include <dbxml/XmlTransaction.hpp>
-#include <dbxml/XmlValue.hpp>
 #include <cstring>
 
 using namespace std;
-using namespace DbXml;
 
-enum jaldb_status jaldb_get_next_serial_id(XmlTransaction &txn, XmlUpdateContext &uc,
-		XmlContainer &container, string &sid)
+enum jaldb_status jaldb_get_next_serial_id(DB_TXN *txn, DB *db, string &sid)
 {
-	XmlManager manager =  container.getManager();
-	XmlDocument serial_doc =
-		container.getDocument(txn, JALDB_SERIAL_ID_DOC_NAME, DB_RMW);
-	XmlValue val;
-	// assume the 'next' serial ID always exists in the database.
-	if (serial_doc.getMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, val)) {
-		if (val.getType() != XmlValue::STRING) {
-			return JALDB_E_CORRUPTED;
-		}
-		string val_str = val.asString();
-		jaldb_increment_serial_id(val_str);
-		XmlValue new_val(XmlValue::STRING, val_str);
-		serial_doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, new_val);
-		container.updateDocument(txn, serial_doc, uc);
-		sid = val.asString();
-		return JALDB_OK;
-	}
-	return JALDB_E_CORRUPTED;
+	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_initialize_serial_id(XmlTransaction &parent_txn,
-		XmlContainer &cont, int *db_err)
+enum jaldb_status jaldb_initialize_serial_id(DB_TXN *parent_txn, DB *db, int *db_err)
 {
-	if (!db_err) {
-		return JALDB_E_INVAL;
-	}
-	while (1) {
-		XmlTransaction txn = parent_txn.createChild();
-		try {
-			XmlUpdateContext uc =
-				cont.getManager().createUpdateContext();
-			XmlDocument doc = cont.getManager().createDocument();
-			string sid = "1";
-			doc.setName(JALDB_SERIAL_ID_DOC_NAME);
-			doc.setMetaData(JALDB_NS, JALDB_SERIAL_ID_NAME, sid);
-			cont.putDocument(txn, doc, uc);
-			txn.commit();
-			break;
-		} catch (XmlException &e) {
-			txn.abort();
-			if (e.getExceptionCode() == XmlException::DATABASE_ERROR &&
-				e.getDbErrno() == DB_LOCK_DEADLOCK) {
-				continue;
-			}
-			if (e.getExceptionCode() == XmlException::UNIQUE_ERROR) {
-				// doc exists/already initialized.
-				break;
-			}
-			throw e;
-		}
-	}
-	return JALDB_OK;
+	return JALDB_E_NOT_IMPL;
 }
 
 void jaldb_increment_serial_id(string &sid)

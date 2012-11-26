@@ -1,6 +1,6 @@
 /**
 * @file test_jsub_db_layer.cpp This file contains functions to test
-* jsub_parse.cpp.
+* jsub_db_layer.cpp.
 *
 * @section LICENSE
 *

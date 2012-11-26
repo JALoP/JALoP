@@ -9,8 +9,6 @@ tests = []
 # The test code triggers warnings we'd just as soon ignore
 ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
 
-env.MergeFlags(env['santuario_ldflags'])
-
 env.Append(RPATH=os.path.dirname(str(lib_common[0])))
 env.Append(CCFLAGS=ccflags.split())
 env.MergeFlags({'CPPPATH':['#src/local_store/src', '#src/lib_common/src', '#src/test_utils/src']})
@@ -23,24 +21,20 @@ jallsHandleAuditObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handl
 jallsHandleJournalObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal.cpp'))
 jallsHandleJournalFDObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal_fd.cpp'))
 jallsXmlUtilsObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_xml_utils.cpp'))
-jallsSysMetaXmlObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_system_metadata_xml.cpp'))
 
 tests.append(env.TestDeptTest('test_jalls_msg.c',
 	other_sources=[], useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jalls_handler.c',
-	other_sources=[jallsInitObj, jallsMsgObj, jallsHandleJournalObj, jallsXmlUtilsObj, jallsSysMetaXmlObj,
+	other_sources=[jallsInitObj, jallsMsgObj, jallsHandleJournalObj, jallsXmlUtilsObj,
 		jallsHandleLogObj, jallsHandleAuditObj, jallsHandleJournalFDObj, lib_common, db_layer],
 	useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jalls_xml_utils.cpp',
 	other_sources=[jallsMsgObj, jallsHandlerObj, jallsHandleLogObj,
 			jallsHandleAuditObj, jallsHandleJournalObj,
-			jallsHandleJournalFDObj, jallsSysMetaXmlObj,
+			jallsHandleJournalFDObj,
 			lib_common, db_layer, test_utils], useProxies=False)[0].abspath)
-
-tests.append(env.TestDeptTest('test_jalls_system_metadata_xml.cpp',
-	other_sources=[test_utils, lib_common, jallsXmlUtilsObj])[0].abspath)
 
 local_store_tests = env.Alias('local_store_tests', tests, 'test_dept ' + " ".join(tests))
 

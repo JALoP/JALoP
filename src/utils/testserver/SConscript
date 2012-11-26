@@ -2,9 +2,9 @@ Import('*')
 from Utils import install_for_build
 from Utils import add_project_lib
 
-testserver = utilsEnv.Alias('testserver')
+testserver = env.Alias('testserver')
 
-testserver_env = utilsEnv.Clone()
+testserver_env = env.Clone()
 
 testserver_env.MergeFlags({'CPPPATH':'#src/lib_common/include:.'.split(':')})
 
@@ -15,4 +15,4 @@ testserver_env.Depends(server, lib_common)
 testserver_env.Depends(testserver, server)
 install_for_build(testserver_env, 'bin', server)
 
-utilsEnv.Default(testserver)
+env.Default(testserver)

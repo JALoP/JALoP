@@ -31,30 +31,21 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <xercesc/dom/DOM.hpp>
 
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
 
 #include "jal_alloc.h"
-#include "jalls_xml_utils.hpp"
-#include "jalls_msg.h"
-#include "jalls_context.h"
-#include "jalls_handler.h"
-#include "jalls_xml_utils.hpp"
-#include "jalls_handle_journal.hpp"
+
 #include "jaldb_context.hpp"
-#include "jalls_system_metadata_xml.hpp"
+
+#include "jalls_context.h"
+#include "jalls_handle_journal.hpp"
+#include "jalls_handler.h"
+#include "jalls_msg.h"
+#include "jalls_xml_utils.hpp"
 
 #define JALLS_JOURNAL_BUF_LEN 8192
-
-XERCES_CPP_NAMESPACE_USE
-
-static const XMLCh JALLS_XML_MANIFEST[] = {
-	chLatin_M, chLatin_a, chLatin_n, chLatin_i, chLatin_f, chLatin_e, chLatin_s, chLatin_t, chNull };
-
-static const XMLCh JALLS_XML_JID[] = {
-	chLatin_J, chLatin_I, chLatin_D, chNull };
 
 extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uint64_t data_len, uint64_t meta_len)
 {
@@ -62,9 +53,6 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	if (!thread_ctx || !(thread_ctx->ctx)) {
 		return -1; //should never happen.
 	}
-
-	XMLCh *namespace_uri = XMLString::transcode(JAL_SYS_META_NAMESPACE_URI);
-	XMLCh *manifest_namespace_uri = XMLString::transcode(JAL_XMLDSIG_URI);
 
 	int db_payload_fd = -1;
 	char *db_payload_path = NULL;
@@ -81,9 +69,6 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	int debug = thread_ctx->ctx->debug;
 
 	uint64_t bytes_remaining;
-
-	DOMDocument *app_meta_doc = NULL;
-	DOMDocument *sys_meta_doc = NULL;
 
 	struct jal_digest_ctx *digest_ctx = NULL;
 	uint8_t *digest = NULL;
@@ -202,61 +187,12 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		goto err_out;
 	}
 
-	//Parse and Validate the app metadata
-	if (meta_len) {
-		err = jalls_parse_app_metadata(app_meta_buf, (size_t)meta_len, thread_ctx->ctx->schemas_root, &app_meta_doc, debug);
-		if (err < 0) {
-			if (debug) {
-				fprintf(stderr, "could not parse the application metadata\n");
-			}
-			goto err_out;
-		}
-	}
-
-	//create system metadata
-	err = jalls_create_system_metadata(JALLS_JOURNAL, thread_ctx->ctx->hostname, thread_ctx->ctx->system_uuid,
-	        thread_ctx->fd, thread_ctx->peer_pid, thread_ctx->peer_uid, &sys_meta_doc);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "could not create system metadata\n");
-		}
-		goto err_out;
-	}
-
-	//append a manifest element to the system metadata
-	DOMElement *manifest;
-	manifest = sys_meta_doc->createElementNS(manifest_namespace_uri, JALLS_XML_MANIFEST);
-	DOMElement *sys_meta_root;
-	sys_meta_root = sys_meta_doc->getDocumentElement();
-	sys_meta_root->appendChild(manifest);
-	DOMElement *reference_elem;
-	reference_elem = NULL;
-	jal_err = jalls_create_reference_elem(JAL_PAYLOAD_URI, digest_ctx->algorithm_uri,
-		digest, digest_length, sys_meta_doc, &reference_elem);
-	if (jal_err != JAL_OK) {
-		if (debug) {
-			fprintf(stderr, "could not create system metadata manifest\n");
-		}
-		goto err_out;
-	}
-	manifest->appendChild(reference_elem);
-
-	if (NULL != thread_ctx->signing_key) {
-		//add signature to the system metadata
-		jal_err = jalls_add_signature_block(thread_ctx->signing_key, thread_ctx->signing_cert,
-			sys_meta_doc, sys_meta_root, manifest, sys_meta_root->getAttribute(JALLS_XML_JID));
-		if (jal_err != JAL_OK) {
-			if (debug) {
-				fprintf(stderr, "could not create system metadata signature\n");
-			}
-			goto err_out;
-		}
-	}
+	// TODO: Parse & validate the app metadata if needed.
 
 	db_err = jaldb_insert_journal_metadata(thread_ctx->db_ctx,
 			source,
-			sys_meta_doc,
-			app_meta_doc,
+			NULL,
+			NULL,
 			path,
 			sid);
 
@@ -271,15 +207,7 @@ err_out:
 		digest_ctx->destroy(sha256_instance);
 		jal_digest_ctx_destroy(&digest_ctx);
 	}
-	XMLString::release(&namespace_uri);
-	XMLString::release(&manifest_namespace_uri);
 	free(digest);
 	free(app_meta_buf);
-	if (sys_meta_doc) {
-		delete sys_meta_doc;
-	}
-	if (app_meta_doc) {
-		delete app_meta_doc;
-	}
 	return ret;
 }

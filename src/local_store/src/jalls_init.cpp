@@ -29,31 +29,18 @@
 
 #include "jalls_init.h"
 
-#include <xercesc/util/PlatformUtils.hpp>
-#include <xsec/framework/XSECProvider.hpp>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 
-XERCES_CPP_NAMESPACE_USE
 
 int jalls_init()
 {
-	try {
-		XMLPlatformUtils::Initialize();
-		XSECPlatformUtils::Initialise();
-	} catch(...) {
-		return -1;
-	}
-
 	SSL_library_init();
 	return 0;
 }
 
 void jalls_shutdown()
 {
-	XSECPlatformUtils::Terminate();
-	XMLPlatformUtils::Terminate();
-
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 }

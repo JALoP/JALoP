@@ -34,7 +34,7 @@
  * JPL exposes an API that allows applications to connect to and submit JAL
  * data to a JALoP Local Store.
  *
- * The JALoP Producer Library is built on top of Apache Xerces, Santuario,
+ * The JALoP Producer Library is built on top of
  * OpenSSL, and the BSD sockets API. The API provides helper functions for
  * generating the application metadata and adding digital signatures. The API
  * provides functions to send JAL data and metadata to the JALoP Local Store.

@@ -3,7 +3,6 @@ import string
 Import('*')
 
 tests = []
-test_progs = []
 
 env = env.Clone()
 # The test-dept macros trigger this warning, so disable it for all the test
@@ -12,27 +11,21 @@ env.Append(CPPPATH='#/src/test_utils/src')
 ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
 env.Append(CCFLAGS=ccflags.split())
 env.Append(RPATH=os.path.dirname(str(lib_common[0])))
+env.Append(LINKFLAGS="-ldb")
 
 contextObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_context.cpp'))
 utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
-xmlDocStorageObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_xml_doc_storage.cpp'))
-eventWriterObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_dom_to_event_writer.cpp'))
 serialIdObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serial_id.cpp'))
 
 tests.append(env.TestDeptTest('test_jaldb_utils.c',
 	other_sources=[lib_common, test_utils], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
-	other_sources=[test_utils, lib_common, xmlDocStorageObj, eventWriterObj, serialIdObj, utilsObj])[0].abspath)
+	other_sources=[test_utils, lib_common, serialIdObj, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_purge.cpp',
-	other_sources=[test_utils, lib_common, xmlDocStorageObj, contextObj, eventWriterObj, serialIdObj, utilsObj])[0].abspath)
-tests.append(env.TestDeptTest('test_jaldb_dom_to_event_writer.cpp',
-	other_sources=[test_utils, lib_common, xmlDocStorageObj, utilsObj, contextObj, serialIdObj])[0].abspath)
+	other_sources=[test_utils, lib_common, contextObj, serialIdObj, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
 	other_sources=[lib_common])[0].abspath)
 
-test_progs.append(env.Program('stress_get_next_serial_id', ['stress_get_next_serial_id.cpp', db_lib, lib_common]))
-
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
-env.Alias('db_tests', test_progs)
 AlwaysBuild(db_tests)
 env.Depends(all_tests, db_tests)

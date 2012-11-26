@@ -4,9 +4,6 @@ env = env.Clone()
 env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src:#src/db_layer/src/:.'.split(':')})
 
 env.MergeFlags(env['lfs_cflags'])
-env.MergeFlags(env['xerces_cflags'])
-env.MergeFlags(env['xerces_ldflags'])
-env.MergeFlags({'LINKFLAGS':env['dbxml_ldflags']})
 env.MergeFlags('-Wno-shadow -Wno-unused-parameter'.split())
 
 db_lib, db_env = SConscript('src/SConscript', exports='env')

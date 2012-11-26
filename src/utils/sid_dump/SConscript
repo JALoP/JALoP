@@ -2,7 +2,9 @@ Import('*')
 from Utils import install_for_build
 from Utils import add_project_lib
 
-env = utilsEnv.Clone()
+env = env.Clone()
+add_project_lib(env, 'db_layer', 'jal-db')
+env.MergeFlags("-ldb")
 
 sources = env.Glob("*.cpp")
 

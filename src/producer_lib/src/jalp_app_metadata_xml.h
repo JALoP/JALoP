@@ -41,7 +41,7 @@ extern "C" {
 #include "jalp_context_internal.h"
 
 /**
- * Convert jalp_app_metadata struct into a Xerces DOMDocument
+ * Convert jalp_app_metadata struct into a libxml2 xmlDocPtr
  *
  * @param[in] app_meta The struct to convert
  * @param[in] ctx The jalp_context

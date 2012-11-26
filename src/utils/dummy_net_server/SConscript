@@ -1,6 +1,6 @@
 Import('*')
 
-env = utilsEnv.Clone()
+env = env.Clone()
 
 env.MergeFlags(env['vortex_cflags'])
 env.MergeFlags(env['vortex_ldflags'])

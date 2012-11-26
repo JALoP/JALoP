@@ -31,7 +31,6 @@
 #define _JSUB_DB_LAYER_HPP_
 
 #include <string>
-#include <xercesc/dom/DOM.hpp>
 #include <openssl/pem.h>
 #include <jalop/jaln_network_types.h>
 #include "jaldb_status.h"

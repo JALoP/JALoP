@@ -24,15 +24,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+
+#include <getopt.h>
+#include <iostream>
+#include <list>
+#include <jalop/jal_version.h>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
 
-#include <list>
-#include <string>
-
-#include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 #include "jaldb_purge.hpp"
 #include "jaldb_status.h"

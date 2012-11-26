@@ -30,7 +30,6 @@
 #define _JALDB_PURGE_HPP_
 
 #include <list>
-#include <dbxml/DbXml.hpp>
 #include "jaldb_context.hpp"
 
 struct jaldb_doc_info {
@@ -83,99 +82,6 @@ enum jaldb_status jaldb_purge_unconfirmed_journal(
 		jaldb_context *ctx,
 		const char *remote_host);
 
-/**
- * Helper function that queries the database and retrieves all records
- * specified by the passed in query.  The docs list is populated with
- * the sid and uuid of the retreived records.
- *
- * @param[in] ctx The context to use.
- * @param[in] txn the DB transaction to use.
- * @param[in] uc The DB update context to use.
- * @param[in] qtx The DB query context to use.
- * @param[in] query The query string.
- * @param[in] docs the list of jaldb_doc_info objects that contain info on each document
- * 			to be removed.
- * 
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_get_docs_to_purge(jaldb_context *ctx,
-					DbXml::XmlTransaction &txn,
-					DbXml::XmlUpdateContext &uc,
-					DbXml::XmlQueryContext &qtx,
-					const std::string query,
-					std::list<jaldb_doc_info> &docs);
-
-/**
- * Helper function that does the actual query and purging of log records.
- * If the del flag is set, the function will delete all specified
- * records.
- *
- * @param[in] ctx The context to use.
- * @param[in] txn The DB transaction to use.
- * @param[in[ uc The DB update context to use.
- * @param[in] qtx The DB query context to use.
- * @param[in] query The query string.
- * @param[in] docs The list of jaldb_doc_info objects that contain info on each document
- * 			to be removed.
- * @param[in] del The delete flag.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_log(jaldb_context *ctx,
-                                DbXml::XmlTransaction &txn,
-                                DbXml::XmlUpdateContext &uc,
-                                DbXml::XmlQueryContext &qctx,
-                                const std::string query,
-                                std::list<jaldb_doc_info> &docs,
-                                int del);
-/**
- * Helper function that does the actual query and purging of audit records.
- * If the del flag is set, the function will delete all specified
- * records.
- *
- * @param[in] ctx The context to use.
- * @param[in] txn The DB transaction to use.
- * @param[in[ uc The DB update context to use.
- * @param[in] qtx The DB query context to use.
- * @param[in] query The query string.
- * @param[in] docs The list od jaldb_doc_info objects that contain info on each document
- * 			to be removed.
- * @param[in] del The delete flag.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_audit(jaldb_context *ctx,
-                                DbXml::XmlTransaction &txn,
-                                DbXml::XmlUpdateContext &uc,
-                                DbXml::XmlQueryContext &qctx,
-                                const std::string query,
-                                std::list<jaldb_doc_info> &docs,
-                                int del);
-
-/**
- * Helper function that does the actual query and purging of journal
- * records.  If the del flag is set, the function will delete all specified
- * records.
- *
- * @param[in] ctx The context to use.
- * @param[in] txn The DB transaction to use.
- * @param[in[ uc The DB update context to use.
- * @param[in] qtx The DB query context to use.
- * @param[in] query The query string.
- * @param[in] docs The list od jaldb_doc_info objects that contain info on each document
- * 			to be removed.
- * @param[in] del The delete flag.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_journal(jaldb_context *ctx,
-                                DbXml::XmlTransaction &txn,
-                                DbXml::XmlUpdateContext &uc,
-                                DbXml::XmlQueryContext &qctx,
-                                const std::string query,
-                                std::list<jaldb_doc_info> &docs,
-                                int del);
- 
 /**
  * Purge all log records up to and including the specified sid.
  * By default, this creates a list of document info objects that contain

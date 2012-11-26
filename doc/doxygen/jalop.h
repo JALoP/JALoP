@@ -90,21 +90,13 @@
  * installed:
  *  - OpenSSL to generate SHA256 digests and handle TLS negotiation
  *  - Vortex/AXL for BEEP over TCP.
- *  - Xerces-C++ to generate the application  metadata and perform schema
- *    validation of audit records, application metadata, and system metadat.
- *  - Santaurio to add a RSA+SHA256 signature to the application and system metadata.
  *  - Libuuid to generate a UUID that is added to the application and system metadata.
  *  - libconfig for configuration file parsing.
- *  - Berkeley DB XML & Berkeley DB for storing JALoP records.
- *  - XQuilla for XQuery 1.0 and XPath 2.0 support within Berkeley DB XML.
+ *  - Berkeley DB for storing JALoP records.
  *  - test_dept (for running unit tests)
  *
  * RPMs are provided for some of the packages under the 3rd-party directory:
- *  - Xerces-C
- *  - Santurio - included in the repository
  *  - Vortex/AXL
- *  - XQuilla
- *  - Berkeley DB XML
  *  - libconfig
  *
  *  \subsection step2 Step 2: Building

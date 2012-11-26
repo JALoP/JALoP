@@ -28,18 +28,6 @@ def __checkCanLink(context, source, source_type, message_libname, real_libs=[]):
 	return ret
 
 
-santuario_source = '''
-#include <xsec/framework/XSECProvider.hpp>
-int main () {
-	XSECPlatformUtils::Initialise();
-	return 0;
-}
-'''
-def CheckSantuario(context):
-	return __checkCanLink(context, santuario_source, ".cpp", "santuario", ["xml-security-c", "xerces-c"])
-
-
-
 libuuid_source = '''
 #include <uuid/uuid.h>
 int main() {
@@ -64,12 +52,3 @@ int main() {
 def CheckSeLinux(context):
 	return __checkCanLink(context, selinux_source, '.cpp', 'selinux', ['selinux'])
 
-dbxml_source = '''
-#include <dbxml/DbXml.hpp>
-int main() {
-	DbXml::XmlContainer c;
-	return 0;
-}
-'''
-def CheckDbXml(context):
-	return __checkCanLink(context, dbxml_source, '.cpp', 'dbxml', ['dbxml'])
