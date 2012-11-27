@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
@@ -47,8 +48,10 @@
 
 #include "jalp_test_app_meta.h"
 
+#define JALP_TEST_DEFEAULT_NUM_REPEAT (long) 1
+
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path);
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt);
 
 static void print_usage();
 
@@ -73,9 +76,10 @@ int main(int argc, char **argv)
 	char record_type = 0;
 	char *schema_path = NULL;
 	char *socket_path = NULL;
+	long int repeat_cnt = JALP_TEST_DEFEAULT_NUM_REPEAT;
 
 	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path,
-			&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path);
+			&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path, &repeat_cnt);
 
 	struct jalp_app_metadata *app_meta = NULL;
 	uint8_t *payload_buf = NULL;
@@ -139,9 +143,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	switch(record_type) {
+	for(long int cnt = 0; cnt < repeat_cnt; cnt++) {
+		switch(record_type) {
 		case ('j'):
-			if (send_payload) {
+			if (send_payload && cnt == 0) {
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
 			}
 			if (ret != 0) {
@@ -155,7 +160,7 @@ int main(int argc, char **argv)
 			}
 			break;
 		case ('a'):
-			if (send_payload) {
+			if (send_payload && cnt == 0) {
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
 			}
 			if (ret != 0) {
@@ -169,7 +174,7 @@ int main(int argc, char **argv)
 			}
 			break;
 		case ('l'):
-			if (send_payload) {
+			if (send_payload && cnt == 0) {
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
 			}
 			if (ret != 0) {
@@ -193,6 +198,7 @@ int main(int argc, char **argv)
 		default:
 			//control should never reach here
 			exit(-1);
+		}
 	}
 
 
@@ -218,9 +224,9 @@ err_out:
 }
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char ** schema_path)
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt)
 {
-	static const char *optstring = "a:p:st:hj:k:c:dx:v";
+	static const char *optstring = "a:p:st:hj:k:c:dx:n:v";
 	static const struct option long_options[] = { {"type", 1, 0, 't'}, {"version", 0, 0, 'v'}, {NULL, 0, 0, 0} };
 
 	int ret_opt;
@@ -267,6 +273,14 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 			case 'x':
 				*schema_path = strdup(optarg);
 				break;
+			case 'n':
+				if((optarg && strtol(optarg, NULL, 10))
+					&& (ERANGE != errno)) {
+					*repeat_cnt = strtol(optarg, NULL, 10);
+				} else {
+					goto err_usage;
+				}
+				break;
 			case 'v':
 				printf("%s\n", jal_version_as_string());
 				goto version_out;
@@ -302,6 +316,10 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 	}
 	if ((*record_type == 'j' || *record_type == 'a') && (!(*payload_path)) && (!(*stdin_payload))) {
 		printf("Error: bad usage, record type of \'j\' or \'a\' requires a payload\n");
+		goto err_usage;
+	}
+	if (*repeat_cnt <= 0) {
+		printf("Error: bad usage, the number of times to perform an event must be a positive number.\n");
 		goto err_usage;
 	}
 	return;
@@ -343,6 +361,7 @@ static void print_usage()
 	-c	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
 	-d	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
 	-x	The full or relative path to the JALoP Schemas.\n\
+	-n	The number of times to repeat an event. Must be a positive numeric value within the representable range.\n\
 	-v, --version Print the version number and exit.";
 
 	printf("%s\n", usage);
