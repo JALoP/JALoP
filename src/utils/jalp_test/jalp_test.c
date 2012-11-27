@@ -36,6 +36,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
@@ -274,9 +275,13 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 				*schema_path = strdup(optarg);
 				break;
 			case 'n':
-				if((optarg && strtol(optarg, NULL, 10))
-					&& (ERANGE != errno)) {
-					*repeat_cnt = strtol(optarg, NULL, 10);
+				errno = 0;
+				char *end_ptr = NULL; 
+				long int tmp_cnt = strtol(optarg, &end_ptr, 10);
+
+				if(tmp_cnt && (LONG_MAX != tmp_cnt || ERANGE != errno) 
+					&& '\0' == *end_ptr) {
+					*repeat_cnt = tmp_cnt;
 				} else {
 					goto err_usage;
 				}
