@@ -59,7 +59,7 @@ packages_at_least = {
 
 # flags are shared by both debug and release builds
 default_ccflags = ' -Wall -W -Wundef -Wshadow -Wmissing-noreturn -Wformat=2 -Wmissing-format-attribute '
-default_ccflags += ' -Wextra -Wno-unreachable-code -Werror -D_FORTIFY_SOURCE=2 -fexceptions '
+default_ccflags += ' -Wextra -Wno-unreachable-code -D_FORTIFY_SOURCE=2 -fexceptions '
 default_ccflags += ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE -DHAVE_VA_COPY '
 default_cflags = ' -std=gnu99 '
 
@@ -139,6 +139,12 @@ def merge_with_os_env(env):
 		env.MergeFlags(d)
 merge_with_os_env(debug_env)
 
+
+# somewhat hacky... The DBXML code shadows variables, etc, so need to disable
+# warnings... Also don't really want to pollute the environment if things
+# dont't pan out, so only set the ENV flags to run configure.
+debug_env.MergeFlags('-L/usr/local/dbxml/lib -I/usr/local/dbxml/include')
+
 if not (GetOption("clean") or GetOption("help")):
 	conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
 						     'CheckPKG': ConfigHelpers.CheckPKG,
@@ -209,6 +215,7 @@ else:
 def add_lfs_cflags(debug_env, cmd, unique=1):
 	debug_env["lfs_cflags"] = cmd.split()
 
+debug_env.MergeFlags('-Werror')
 debug_env.ParseConfig('getconf LFS_CFLAGS', function=add_lfs_cflags)
 
 # add linker flags for santuario
@@ -218,8 +225,9 @@ debug_env["santuario_ldflags"] = "-lxml-security-c"
 debug_env["libuuid_ldflags"] = "-luuid"
 
 # linker flags for dbxml
-debug_env["dbxml_ldflags"] = '-Wl,-R,/usr/local/lib -ldbxml -ldb-4.8'.split()
-
+debug_env["dbxml_ldflags"] = '-L/usr/local/dbxml/lib -Wl,-R,/usr/local/dbxml/lib -ldbxml -ldb-4.8'.split()
+debug_env["dbxml_cflags"] = '-Wno-shadow -Wno-unused-parameter -I/usr/local/dbxml/include'.split()
+ 
 all_tests = debug_env.Alias('tests')
 
 # Clone the debug environment after it's been configured, no need to re-run all the conf checks
@@ -234,6 +242,7 @@ if debug_env['CC'] == 'gcc':
 	debug_env.Prepend(CCFLAGS=profiling_ccflags, LINKFLAGS=profiling_ldflags)
 	# Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
 	(major, _, _) = debug_env['CCVERSION'].split('.')
+	#print "using GCC version: " + debug_env['CCVERSION']
 	if int(major) >= 4:
 		debug_env.Prepend(CCFLAGS=stack_protector_ccflags)
 

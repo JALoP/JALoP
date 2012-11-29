@@ -6,8 +6,8 @@ env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src:#src/db_l
 env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags(env['xerces_cflags'])
 env.MergeFlags(env['xerces_ldflags'])
-env.MergeFlags({'LINKFLAGS':env['dbxml_ldflags']})
-env.MergeFlags('-Wno-shadow -Wno-unused-parameter'.split())
+env.MergeFlags(env['dbxml_ldflags'])
+env.MergeFlags(env['dbxml_cflags'])
 
 db_lib, db_env = SConscript('src/SConscript', exports='env')
 SConscript('test/SConscript', exports='env db_env all_tests lib_common db_lib test_utils ')

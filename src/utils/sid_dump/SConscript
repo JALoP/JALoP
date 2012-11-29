@@ -7,6 +7,8 @@ env = utilsEnv.Clone()
 sources = env.Glob("*.cpp")
 
 env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
+env.MergeFlags(env['dbxml_ldflags'])
+env.MergeFlags(env['dbxml_cflags'])
 
 sid_dump_objs = env.SharedObject(source=sources)
 
