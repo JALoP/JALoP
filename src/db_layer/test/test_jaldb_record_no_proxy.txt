@@ -1,0 +1,3 @@
+printf_test_dept_proxy printf
+jaldb_create_record_test_dept_proxy jaldb_create_record
+jaldb_destroy_record_test_dept_proxy jaldb_destroy_record

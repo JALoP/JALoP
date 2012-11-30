@@ -28,18 +28,70 @@
  */
 
 #include <test-dept.h>
+#include <unistd.h>
+
+#include "jal_alloc.h"
 
 #include "jaldb_segment.h"
 
-// This should be removed once actual unit tests exist. This line is only here
-// to do a basic compile test.
-struct jaldb_segment s;
+static int closed_called;
+
+int mocked_close(int fd) {
+	closed_called = 1;
+	return 0;
+}
 
 void setup()
 {
+	replace_function(&close, &mocked_close);
+	closed_called = 0;
 }
 
 void teardown()
 {
+	closed_called = 1;
+	restore_function(&close);
 }
 
+void test_jaldb_destroy_segment_does_not_crash()
+{
+	struct jaldb_segment *segment = NULL;
+	jaldb_destroy_segment(&segment);
+	jaldb_destroy_segment(NULL);
+}
+
+void test_jaldb_create_segment_works()
+{
+	struct jaldb_segment *segment = jaldb_create_segment();
+	assert_not_equals(NULL, segment);
+	assert_equals(0, segment->length);
+	assert_equals(-1, segment->fd);
+	assert_pointer_equals(NULL, segment->payload);
+	jaldb_destroy_segment(&segment);
+}
+
+void test_jaldb_destroy_segment_closes_fds()
+{
+	struct jaldb_segment *segment = jaldb_create_segment();
+	segment->fd = 12;
+	jaldb_destroy_segment(&segment);
+	assert_pointer_equals((void*) NULL, segment);
+	assert_equals(1, closed_called);
+}
+
+void test_jaldb_destroy_segment_does_not_close_invalid_fds()
+{
+	struct jaldb_segment *segment = jaldb_create_segment();
+	jaldb_destroy_segment(&segment);
+	assert_pointer_equals((void*) NULL, segment);
+	assert_equals(0, closed_called);
+}
+
+void test_jaldb_destroy_segment_frees_payload_buffer()
+{
+	struct jaldb_segment *segment = jaldb_create_segment();
+	segment->payload = jal_malloc(100);
+	jaldb_destroy_segment(&segment);
+	assert_pointer_equals((void*) NULL, segment);
+	assert_equals(0, closed_called);
+}
