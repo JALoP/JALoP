@@ -26,6 +26,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <unistd.h>
+
+#include "jal_alloc.h"
 
 #include "jaldb_segment.h"
+
+struct jaldb_segment *jaldb_create_segment()
+{
+	struct jaldb_segment *ret = jal_calloc(1, sizeof(*ret));
+	ret->fd = -1;
+	return ret;
+}
+
+void jaldb_destroy_segment(struct jaldb_segment **ppsegment)
+{
+	if (!ppsegment || !*ppsegment) {
+		return;
+	}
+	struct jaldb_segment *seg = *ppsegment;
+	if (seg->fd >= 0) {
+		close(seg->fd);
+	}
+	if (seg->fd >= 0) {
+		close(seg->fd);
+	}
+	free(seg->payload);
+	free(seg);
+	*ppsegment = NULL;
+}
 

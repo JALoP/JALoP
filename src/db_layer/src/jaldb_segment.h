@@ -58,6 +58,20 @@ struct jaldb_segment {
 	char          on_disk;    //!< indicates if the payload is the raw content, or if the data exists on disk.
 };
 
+/**
+ * Function to create a jaldb_segment
+ * @return a newly allocated jaldb_segment.
+ */
+struct jaldb_segment *jaldb_create_segment();
+
+/**
+ * Function to destroy a jaldb_segment.
+ * This will call close the file descriptor (if it's valid) & call free on the
+ * other members.
+ * @param [in,out] ppsegment The jaldb_segment to destroy. This will be set to NULL.
+ */
+void jaldb_destroy_segment(struct jaldb_segment **ppsegmennt);
+
 #ifdef __cplusplus
 }
 #endif

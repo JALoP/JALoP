@@ -38,7 +38,10 @@
 extern "C" {
 #endif
 
+#define JALDB_RECORD_VERSION 1
+
 struct jaldb_segment;
+
 
 /**
 * Enum used to distinguish between record types
@@ -71,6 +74,19 @@ struct jaldb_record {
 	uuid_t               host_uuid;  //!< The UUID of the machine that created the record.
 	uuid_t               uuid;       //!< The UUID of the record.
 };
+
+/**
+ * Function to create a jaldb_record
+ * @return a newly allocated jaldb_record.
+ */
+struct jaldb_record *jaldb_create_record();
+
+/**
+ * Function to destroy a jaldb_record.
+ * This will call appropriate destroy functions & free on all of it's members.
+ * @param [in,out] pprecord The jaldb_record to destroy. This will be set to NULL.
+ */
+void jaldb_destroy_record(struct jaldb_record **pprecord);
 
 #ifdef __cplusplus
 }

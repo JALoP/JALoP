@@ -23,8 +23,10 @@ tests.append(env.TestDeptTest('test_jaldb_context.cpp',
 	other_sources=[test_utils, lib_common, serialIdObj, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_purge.cpp',
 	other_sources=[test_utils, lib_common, contextObj, serialIdObj, utilsObj])[0].abspath)
-tests.append(env.TestDeptTest('test_jaldb_record.c', other_sources=[])[0].abspath)
-tests.append(env.TestDeptTest('test_jaldb_segment.c', other_sources=[])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_record.c',
+	other_sources=[lib_common, segmentObj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_segment.c',
+	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_utils.c',

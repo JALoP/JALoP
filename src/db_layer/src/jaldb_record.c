@@ -27,5 +27,36 @@
  * limitations under the License.
  */
 
+#include "jal_alloc.h"
+
 #include "jaldb_record.h"
+#include "jaldb_segment.h"
+
+struct jaldb_record *jaldb_create_record()
+{
+	struct jaldb_record *ret = jal_calloc(1, sizeof(*ret));
+	ret->version = JALDB_RECORD_VERSION;
+	ret->type = JALDB_RTYPE_UNKNOWN;
+	uuid_clear(ret->uuid);
+	return ret;
+}
+
+void jaldb_destroy_record(struct jaldb_record **pprecord)
+{
+	if (!pprecord || !*pprecord) {
+		return;
+	}
+
+	struct jaldb_record *rec = *pprecord;
+	jaldb_destroy_segment(&(rec->sys_meta));
+	jaldb_destroy_segment(&(rec->app_meta));
+	jaldb_destroy_segment(&(rec->payload));
+	free(rec->source);
+	free(rec->hostname);
+	free(rec->timestamp);
+	free(rec->username);
+	free(rec->sec_lbl);
+	free(rec);
+	*pprecord = NULL;
+}
 
