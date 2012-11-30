@@ -14,17 +14,21 @@ env.Append(RPATH=os.path.dirname(str(lib_common[0])))
 env.Append(LINKFLAGS="-ldb")
 
 contextObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_context.cpp'))
-utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
+recordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record.c'))
+segmentObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_segment.c'))
 serialIdObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serial_id.cpp'))
+utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
 
-tests.append(env.TestDeptTest('test_jaldb_utils.c',
-	other_sources=[lib_common, test_utils], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
 	other_sources=[test_utils, lib_common, serialIdObj, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_purge.cpp',
 	other_sources=[test_utils, lib_common, contextObj, serialIdObj, utilsObj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_record.c', other_sources=[])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_segment.c', other_sources=[])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
 	other_sources=[lib_common])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_utils.c',
+	other_sources=[lib_common, test_utils], useProxies=True)[0].abspath)
 
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(db_tests)

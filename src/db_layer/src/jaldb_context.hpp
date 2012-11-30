@@ -51,18 +51,6 @@ struct jaldb_context_t {
 };
 
 /**
-* Enum used to distinguish between record types
-*/
-enum jaldb_record_type {
-	/** Indicates a Journal Record */
-	JALDB_RTYPE_JOURNAL = 1 << 0,
-	/** Indicates an Audit Record */
-	JALDB_RTYPE_AUDIT = 1 << 1,
-	/** Indicates a Log Record */
-	JALDB_RTYPE_LOG = 1 << 2,
-};
-
-/**
 * Store a confirmed serial_id in the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
