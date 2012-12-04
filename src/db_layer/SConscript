@@ -5,6 +5,7 @@ env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src:#src/db_l
 
 env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags('-Wno-shadow -Wno-unused-parameter'.split())
+env.MergeFlags(env['libuuid_ldflags'])
 
 db_lib, db_env = SConscript('src/SConscript', exports='env')
 SConscript('test/SConscript', exports='env db_env all_tests lib_common db_lib test_utils ')
