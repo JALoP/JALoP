@@ -50,6 +50,7 @@ enum jaldb_status {
 	JALDB_E_READ_ONLY,
 	JALDB_E_QUERY_EVAL,
 	JALDB_E_NOT_IMPL,
+	JALDB_E_SIZE,
 	JALDB_OK = 0,
 };
 

@@ -18,6 +18,7 @@ datetimeObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_datetime.c'))
 recordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record.c'))
 segmentObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_segment.c'))
 serialIdObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serial_id.cpp'))
+serializeRecordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serialize_record.c'))
 utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
 
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
