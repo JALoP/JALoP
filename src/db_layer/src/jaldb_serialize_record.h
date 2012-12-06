@@ -148,9 +148,50 @@ enum jaldb_status jaldb_serialize_record(
  */
 enum jaldb_status jaldb_deserialize_record(
 					const char byte_swap,
-					const uint8_t *buffer,
-					const size_t bsize,
+					uint8_t *buffer,
+					size_t bsize,
 					struct jaldb_record **record);
+
+/**
+ * Extract the next string from the memory buffer.
+ * This functions scans \p *buffer for a \p null terminator to construct a
+ * string. The search is limited to bytes in the range \p *buffer -
+ * \p (buffer + *size). If a \p null byte is not found in that range, an error
+ * is returned, and \p *buffer & \p size are unchanged.
+ *
+ * If a \p null byte is found, then a copy of the string is created, it must be
+ * freed with a call to free().
+ *
+ * @param[in,out] buffer the buffer extract a string from. On success \p buffer
+ * will be advanced by strlen(*str);
+ * @param[in,out] size the number of bytes remaining in \p buffer.
+ * @param[out] str on success, a newly allocated copy of the string.
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_deserialize_string(uint8_t **buffer, size_t *size, char** str);
+
+/**
+ * Extract a jaldb_segment from the buffer.
+ * This function will create & populate a jaldb_segment structure from the
+ * buffer.
+ *
+ * @param[in] on_disk flag to indicate if the actual contents of the segment
+ * are located on the disk, or in the database.
+ * @param[in,out] buffer the buffer to read from. \p buffer will be advanced
+ * past the segment on success.
+ * @param[in,out] size the number of bytes remaining in \p buffer. \p size will
+ * be decrement by the number of bytes consumed by the jaldb_segment.
+ * @param[out] segment an address to copy the segment into. The caller is
+ * responsible for freeing this memory with jaldb_destroy_segment().
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_deserialize_segment(char on_disk,
+		size_t segment_length,
+		uint8_t **buffer,
+		size_t *size,
+		struct jaldb_segment **segment);
 
 #ifdef __cplusplus
 }

@@ -273,12 +273,183 @@ out:
 
 enum jaldb_status jaldb_deserialize_record(
 					const char byte_swap,
-					const uint8_t *buffer,
-					const size_t bsize,
+					uint8_t *buffer,
+					size_t bsize,
 					struct jaldb_record **record)
 {
-	if (!buffer || !record || !*record) {
+	struct jaldb_serialize_record_headers *headers = NULL;
+	struct jaldb_record *res = NULL;
+	enum jaldb_status ret = JALDB_E_UNKNOWN;
+	bs16_func bs16 = NULL;
+	bs32_func bs32 = NULL;
+	bs64_func bs64 = NULL;
+	if (!buffer || !record || *record) {
+		ret = JALDB_E_INVAL;
+		goto err_out;
+	}
+
+	if (bsize < sizeof(*headers)) {
+		ret = JALDB_E_INVAL;
+		goto err_out;
+	}
+
+	if (byte_swap) {
+		bs16 = jaldb_bs16;
+		bs32 = jaldb_bs32;
+		bs64 = jaldb_bs64;
+	} else {
+		bs16 = jaldb_bs16_nop;
+		bs32 = jaldb_bs32_nop;
+		bs64 = jaldb_bs64_nop;
+	}
+
+	headers = (struct jaldb_serialize_record_headers*) buffer;
+	res = jaldb_create_record();
+
+	headers->version = bs16(headers->version);
+	if (headers->version != JALDB_DB_LAYOUT_VERSION) {
+		ret = JALDB_E_LAYOUT_VERSION_UNKNOWN;
+		goto err_out;
+	}
+	headers->flags = bs32(headers->flags);
+
+	res->version = JALDB_DB_LAYOUT_VERSION;
+	res->type = JALDB_RTYPE_UNKNOWN;
+	res->synced = headers->flags & JALDB_RFLAGS_SYNCED ? 1 : 0;
+	res->have_uid = headers->flags & JALDB_RFLAGS_HAVE_UID ? 1 : 0;
+	res->pid = bs64(headers->pid);
+	res->uid = bs64(headers->uid);
+	uuid_copy(res->host_uuid, headers->host_uuid);
+	uuid_copy(res->uuid, headers->record_uuid);
+
+	buffer += sizeof(*headers);
+	bsize -= sizeof(*headers);
+
+	ret = jaldb_deserialize_string(&buffer, &bsize, &res->timestamp);
+	if (ret != JALDB_OK) {
+		goto err_out;
+	}
+	ret = jaldb_deserialize_string(&buffer, &bsize, &res->source);
+	if (ret != JALDB_OK) {
+		goto err_out;
+	}
+	ret = jaldb_deserialize_string(&buffer, &bsize, &res->sec_lbl);
+	if (ret != JALDB_OK) {
+		goto err_out;
+	}
+	ret = jaldb_deserialize_string(&buffer, &bsize, &res->hostname);
+	if (ret != JALDB_OK) {
+		goto err_out;
+	}
+	ret = jaldb_deserialize_string(&buffer, &bsize, &res->username);
+	if (ret != JALDB_OK) {
+		goto err_out;
+	}
+
+	if (headers->flags & JALDB_RFLAGS_HAVE_SYS_META) {
+		ret = jaldb_deserialize_segment(headers->flags & JALDB_RFLAGS_SYS_META_ON_DISK ? 1 : 0,
+				headers->sys_meta_sz,
+				&buffer,
+				&bsize,
+				&res->sys_meta);
+		if (ret != JALDB_OK) {
+			goto err_out;
+		}
+	}
+
+	if (headers->flags & JALDB_RFLAGS_HAVE_APP_META) {
+		ret = jaldb_deserialize_segment(headers->flags & JALDB_RFLAGS_APP_META_ON_DISK ? 1 : 0,
+				headers->app_meta_sz,
+				&buffer,
+				&bsize,
+				&res->app_meta);
+		if (ret != JALDB_OK) {
+			goto err_out;
+		}
+	}
+	if (headers->flags & JALDB_RFLAGS_HAVE_PAYLOAD) {
+		ret = jaldb_deserialize_segment(headers->flags & JALDB_RFLAGS_PAYLOAD_ON_DISK ? 1 : 0,
+				headers->payload_sz,
+				&buffer,
+				&bsize,
+				&res->payload);
+		if (ret != JALDB_OK) {
+			goto err_out;
+		}
+	}
+
+	*record = res;
+	goto out;
+err_out:
+	jaldb_destroy_record(&res);
+out:
+	return ret;
+}
+
+enum jaldb_status jaldb_deserialize_string(uint8_t **buffer, size_t *size, char** str)
+{
+	if (!buffer || !*buffer || !size || !str || *str) {
 		return JALDB_E_INVAL;
 	}
-	return JALDB_E_NOT_IMPL;
+	if (*size == 0) {
+		return JALDB_E_INVAL;
+	}
+	size_t s_len = strlen((char*)*buffer);
+	if (0 == s_len) {
+		*str = NULL;
+		*buffer += 1;
+		*size -= 1;
+		return JALDB_OK;
+	}
+
+	if (s_len >= *size) {
+		// ran off the end, not good.
+		return JALDB_E_INVAL;
+	}
+
+	*str = jal_strdup((char*)*buffer);
+	*buffer += (s_len + 1);
+	*size -= (s_len + 1);
+	return JALDB_OK;
+}
+
+enum jaldb_status jaldb_deserialize_segment(char on_disk,
+		size_t segment_length,
+		uint8_t **buffer,
+		size_t *bsize,
+		struct jaldb_segment **segment)
+{
+	if (!buffer || !*buffer || !bsize || !segment || *segment) {
+		return JALDB_E_INVAL;
+	}
+	enum jaldb_status ret;
+	struct jaldb_segment *seg = jaldb_create_segment();
+	seg->length = segment_length;
+	if (on_disk) {
+		char *pl = NULL;
+		ret = jaldb_deserialize_string(buffer, bsize, &pl);
+		if (ret != JALDB_OK) {
+			ret = JALDB_E_INVAL;
+			goto err_out;
+		}
+		seg->payload = (uint8_t*) pl;
+		seg->on_disk = 1;
+	} else {
+		seg->on_disk = 0;
+		if (seg->length > *bsize) {
+			ret = JALDB_E_INVAL;
+			goto err_out;
+		}
+		seg->payload = (uint8_t*)jal_malloc(seg->length);
+		memcpy(seg->payload, *buffer, seg->length);
+		*buffer += seg->length;
+		*bsize -= seg->length;
+	}
+	ret = JALDB_OK;
+	*segment = seg;
+	goto out;
+err_out:
+	jaldb_destroy_segment(&seg);
+out:
+	return ret;
 }
