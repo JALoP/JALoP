@@ -35,6 +35,9 @@
 #define __STRICT_ANSI__
 #endif
 
+#include <db.h>
+#include <openssl/bn.h>
+
 extern "C" {
 #include <test-dept.h>
 }
@@ -51,6 +54,8 @@ extern "C" {
 #define OTHER_DB_ROOT "./testdb/"
 #define INVALID_JALDB_NS "jalop/metadata"
 #define INVALID_JALDB_SERIAL_ID_NAME "serial_id"
+
+DB_ENV *env = NULL;
 
 extern "C" void setup()
 {
@@ -78,7 +83,6 @@ extern "C" void setup()
 		DB_INIT_MPOOL |
 		DB_THREAD |
 		DB_INIT_TXN;
-	DB_ENV *env = NULL;
 	int dberr = db_env_create(&env, 0);
 	if (dberr) {
 		exit(1);
@@ -93,6 +97,7 @@ extern "C" void setup()
 
 extern "C" void teardown()
 {
+	env->close(env, 0);
 }
 
 
@@ -122,3 +127,63 @@ extern "C" void test_increment_serial_id_returns_expected_results()
 	jaldb_increment_serial_id(ser_id);
 	assert_string_equals("1000", ser_id.c_str());
 }
+
+extern "C" void test_sid_compare()
+{
+#define BN_MAX_BYTES 64
+	DBT dbt1, dbt2;
+	BIGNUM *bn1p = NULL;
+	BIGNUM *bn2p = NULL;
+	//BN_init(bn1p);
+	//BN_init(bn2p);
+	unsigned char bn1bytes[BN_MAX_BYTES];
+	unsigned char bn2bytes[BN_MAX_BYTES];
+	int err;
+	int bn1size;
+	int bn2size;
+	err = BN_dec2bn(&bn1p, "123456789012343567890123456789012345678901234567890");
+	assert_not_equals(0, err);
+	err = BN_dec2bn(&bn2p, "123456789012343567890123456789012345678901234567891");
+	assert_not_equals(0, err);
+
+	bn1size = BN_num_bytes(bn1p);
+	assert_true((bn1size <= BN_MAX_BYTES));
+	BN_bn2bin(bn1p, bn1bytes);
+	dbt1.data = bn1bytes;
+	dbt1.size = bn1size;
+
+	bn2size = BN_num_bytes(bn2p);
+	assert_true((bn2size <= BN_MAX_BYTES));
+	BN_bn2bin(bn2p, bn2bytes);
+	dbt2.data = bn2bytes;
+	dbt2.size = bn2size;
+
+	err = jaldb_sid_compare(NULL, &dbt1, &dbt2);
+	assert_true((err < 0));
+
+	err = jaldb_sid_compare(NULL, &dbt2, &dbt1);
+	assert_true((err > 0));
+
+	err = jaldb_sid_compare(NULL, &dbt1, &dbt1);
+	assert_equals(0, err);
+
+	BN_free(bn1p);
+	BN_free(bn2p);
+
+#undef BN_MAX_BYTES
+}
+
+// Sanity check that the comparison function matches the Berkeley DB signature.
+void test_sid_compare_prototype_is_valid()
+{
+	DB *db;
+	int db_err;
+	db_err = db_create(&db, NULL, 0);
+	assert_equals(0, db_err);
+
+	db_err = db->set_bt_compare(db, jaldb_sid_compare);
+	assert_equals(0, db_err);
+
+	db->close(db, DB_NOSYNC);
+}
+
