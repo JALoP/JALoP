@@ -29,10 +29,10 @@
 #ifndef _JALDB_SERIAL_ID_HPP_
 #define _JALDB_SERIAL_ID_HPP_
 
-#include <db.h>
 #include <string>
 
-#include "jaldb_status.h"
+#include "jaldb_serial_id.h"
+
 /**
  * Obtain the next serial ID from a container and update the value in the
  * database.
@@ -52,19 +52,6 @@
 enum jaldb_status jaldb_get_next_serial_id(DB_TXN *txn,
 		DB *db,
 		std::string &sid);
-
-/**
- * Helper function to insert the first serial ID for a container.
- *
- * @param [in] txn A transaction to use.
- * @param [in] cont The container to insert into.
- * @param [out] db_err An internal DB_ERROR
- *
- * @return JALDB_OK or an error code.
- */
-enum jaldb_status jaldb_initialize_serial_id(DB_TXN *parent_txn,
-		DB *db,
-		int *db_err);
 
 /**
  * Internal helper function that increments a serial ID.

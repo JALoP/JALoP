@@ -24,11 +24,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
+
+#include <cstring>
+#include <jalop/jal_status.h>
+#include <openssl/bn.h>
+
+#include "jal_error_callback_internal.h"
 
 #include "jaldb_serial_id.hpp"
 #include "jaldb_strings.h"
-#include <cstring>
 
 using namespace std;
 
@@ -67,3 +72,21 @@ void jaldb_increment_serial_id(string &sid)
 		sid.insert(0, 1, '1');
 	}
 }
+
+int jaldb_sid_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
+{
+	BIGNUM *bn1 = BN_new();
+	BIGNUM *bn2 = BN_new();
+	if (!dbt1 || !dbt1->data || (0 == dbt1->size) || !dbt2 || !dbt2->data || (0 == dbt2->size)) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+
+	BN_bin2bn((unsigned char *)dbt1->data, dbt1->size, bn1);
+	BN_bin2bn((unsigned char *)dbt2->data, dbt2->size, bn2);
+	int ret = BN_cmp(bn1, bn2);
+
+	BN_free(bn1);
+	BN_free(bn2);
+	return ret;
+}
+
