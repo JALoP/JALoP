@@ -36,6 +36,78 @@
 #include "jaldb_segment.h"
 #include "jaldb_serialize_record.h"
 
+/**
+ * @section DB_LAYOUT Database Layout
+ *
+ * This section covers the in-database layout of of a JALoP record.
+ * The goal of the in-database layout is to be as simple as possible while
+ * allowing access to important fields (i.e. for indexing) in a simple
+ * manner. Boolean fields are packed using bit-masks for some minor space
+ * savings.
+ *
+ * @subsection ByteOrdering Byte Ordering
+ * Berkeley DB does not perform any byte swapping of data as it is inserted or
+ * retrieved from the DB. Therefore, the code here that
+ * serializes/de-serializes a JALoP record performs byte-swapping as necessary.
+ * This would allow (in the future) for a JALoP DB created on a big-endian
+ * machine to be transferred & read by JALoP Processes on a little-endian
+ * machine.
+ *
+ * @subsection RecordLayout Record Layout
+ * The type of record (journal, audit, log) does not affect the layout of the
+ * record in the database, nor is the type of the record stored with the data
+ * associated withe the record. Distinct databases are kept for each type of
+ * record. The in-database representation of a record can be viewed as a
+ * collection of record headers (binary numbers & flags) followed by a
+ * collection of strings. All strings are null-terminated. The length of a
+ * string is not stored in the database.
+ *
+ * @subsubsection RecordHeaders Record Headers
+ * The order, size, and type of the records headers is documented in the
+ * section \ref jaldb_serialze_record_headers.
+ *
+ * @subsubsection StringData Record String Data
+ * Each record includes the following string data
+ *  - timestamp\n
+ *      This is an <a href http://www.w3.org/TR/xmlschema-2/#dateTimeXML>XML Schema DateTime</a>.
+ *      It is always stored in UTC time (i.e. timezone 'z'). Because it is not always possible to compare
+ *      DateTimes when one has a timezone and another does not, when a DateTime is
+ *      missing timezone data, it is assumed to be in UTC time, and a 'z' will be
+ *      appended to it.
+ *  - source\n
+ *      This is the \p source of the record, not to be confused with
+ *      the \p hostname. The \p source indicates (as far as a network store is
+ *      concerned) where a record came from.
+ *  - Security Label\n
+ *      This is the Security Label (if any) of the process that generated the
+ *      record.
+ *  - hostname\n
+ *      This is the \p hostname of the machine where the event was generated
+ *  - username\n
+ *      This is the \p username of the process that generated the event.
+ *  - System Meta-data\n
+ *      This is either the raw System Meta-data document, empty, or the relative
+ *      path on disk to the actual system meta-data.
+ *  - Application Meta-data\n
+ *      This is the raw Application Meta-data document, empty, or the relative
+ *      path on disk to the actual application meta-data.
+ *  - Payload\n
+ *      This is the raw payload (journal, audit, or log data), empty, or the relative
+ *      path on disk to the actual payload data is stored
+ *
+ * Because the System Meta-data, Application Meta-data, and Payload, may be
+ * null, a path, or just a blob of data, they are treated slightly differently
+ * than the rest of the fields. The \p flags in the headers indicate which (if
+ * any) of these sections are included with the record. Unlike the other string
+ * data segments, if one of these sections is omitted, a \p null terminator is
+ * not stored for the segment.
+ *
+ * Although System Meta-Data is required for each record, to reduce processing
+ * on insertions to the local store, the actual System Meta-Data document may be
+ * omitted. Note that the record stored in the database has all the
+ * necessary information to create the XML document as needed.
+ */
+
 typedef uint16_t (*bs16_func)(const uint16_t);
 typedef uint32_t (*bs32_func)(const uint32_t);
 typedef uint64_t (*bs64_func)(const uint64_t);
