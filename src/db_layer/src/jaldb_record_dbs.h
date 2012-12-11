@@ -51,6 +51,24 @@ struct jaldb_record_dbs {
 	DB *sid_db;                 //<! The database to use for obtaining the 'next' serial ID.
 };
 
+/**
+ * Create and initialize a jaldb_record_dbs structure.
+ * All pointers will be initialized to NULL. The returned object must be
+ * released with a call to jaldb_destroy_record_dbs.
+ *
+ * @return a newly allocated & initialized jaldb_record_dbs structure.
+ */
+struct jaldb_record_dbs *jaldb_create_record_dbs();
+
+/**
+ * Close DBs and release memory associated with a record DBs structure.
+ * The assumption is that all secondary indices are associated with
+ *
+ * @param[in,out] record_dbs the jaldb_record_dbs structure to release. This
+ * will close all associated DB handles.
+ */
+void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs);
+
 #ifdef __cplusplus
 }
 #endif
