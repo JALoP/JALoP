@@ -27,13 +27,16 @@
  * limitations under the License.
 */
 
+#include <ctype.h>
 #include <libxml/xmlschemastypes.h>
-
 #include <jalop/jal_status.h>
+#include <string.h>
 
+#include "jal_alloc.h"
 #include "jal_error_callback_internal.h"
 
 #include "jaldb_datetime.h"
+#include "jaldb_serialize_record.h"
 
 int jaldb_xml_datetime_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
 {
@@ -74,4 +77,115 @@ int jaldb_xml_datetime_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
 	// but need to do something or else the compiler complains.
 	return 0;
 }
+
+enum jaldb_status jaldb_extract_datetime_key_common(
+		const uint8_t* buffer,
+		char **dtString,
+		size_t *dtLen,
+		char *has_tz)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+	struct jaldb_serialize_record_headers *headers = NULL;
+	char *stmp;
+	size_t slen;
+	int xml_ret;
+
+	if (!buffer || !dtString || *dtString || !dtLen || !has_tz) {
+		return JALDB_E_INVAL;
+	}
+
+	headers = (struct jaldb_serialize_record_headers*)buffer;
+	xmlSchemaValPtr dt = NULL;
+	xmlSchemaTypePtr xs_datetime = NULL;
+
+	xs_datetime = xmlSchemaGetBuiltInType(XML_SCHEMAS_DATETIME);
+	if (NULL == xs_datetime) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	// TODO: Need BOM for this to work correctly
+	if (headers->version != JALDB_DB_LAYOUT_VERSION) {
+		ret = JALDB_E_CORRUPTED;
+		goto out;
+	}
+
+	buffer += sizeof(*headers);
+	stmp = (char*)buffer;
+	slen = strlen(stmp);
+
+	xml_ret = xmlSchemaValidatePredefinedType(xs_datetime, (const xmlChar*) buffer, &dt);
+	if (0 != xml_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	// Check for timezone...
+	*has_tz = 0;
+	if (toupper(stmp[slen - 1] == 'Z')) {
+		*has_tz = 1;
+	} else {
+		size_t tz_len = strlen("+00:00");
+		if (tz_len >= slen) {
+			// This should never happen since a valid datetime
+			// string should be well over 6 characters long.
+			ret = JALDB_E_INVAL;
+			goto out;
+		}
+		char *tz = stmp + (slen - tz_len);
+		if (('-' == tz[0]) || ('+' == tz[0])) {
+			if (isdigit(tz[1]) && isdigit(tz[2]) && (':' == tz[3]) &&
+				isdigit(tz[4]) && isdigit(tz[5])) {
+				*has_tz = 1;
+			}
+		}
+	}
+	ret = JALDB_OK;
+	*dtString = stmp;
+	*dtLen = slen;
+out:
+	if (dt) {
+		xmlSchemaFreeValue(dt);
+	}
+	return ret;
+}
+
+int jaldb_extract_datetime_w_tz_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+{
+	enum jaldb_status ret;
+	char *dtString = NULL;
+	size_t dtLen = 0;
+	char has_tz = 0;
+
+	ret = jaldb_extract_datetime_key_common(data->data, &dtString, &dtLen, &has_tz);
+	if (ret != JALDB_OK) {
+		return -1;
+	}
+	if (has_tz) {
+		result->data = dtString;
+		result->size = dtLen + 1; // keep the null terminator
+		return 0;
+	}
+	return DB_DONOTINDEX;
+}
+
+int jaldb_extract_datetime_wo_tz_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+{
+	enum jaldb_status ret;
+	char *dtString = NULL;
+	size_t dtLen = 0;
+	char has_tz = 0;
+
+	ret = jaldb_extract_datetime_key_common(data->data, &dtString, &dtLen, &has_tz);
+	if (ret != JALDB_OK) {
+		return -1;
+	}
+	if (!has_tz) {
+		result->data = dtString;
+		result->size = dtLen + 1; // keep the null terminator
+		return 0;
+	}
+	return DB_DONOTINDEX;
+}
+
 
