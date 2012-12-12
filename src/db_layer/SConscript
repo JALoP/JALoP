@@ -3,11 +3,15 @@ Import('*')
 env = env.Clone()
 env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src:#src/db_layer/src/:.'.split(':')})
 
+env.MergeFlags(env['libxml2_cflags'])
+env.MergeFlags(env['libxml2_ldflags'])
+
 env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags('-Wno-shadow -Wno-unused-parameter'.split())
 env.MergeFlags(env['libuuid_ldflags'])
 env.MergeFlags(env['openssl_cflags'])
 env.MergeFlags(env['openssl_ldflags'])
+
 
 db_lib, db_env = SConscript('src/SConscript', exports='env')
 SConscript('test/SConscript', exports='env db_env all_tests lib_common db_lib test_utils ')
