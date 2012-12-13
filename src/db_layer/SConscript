@@ -2,6 +2,7 @@ Import('*')
 
 env = env.Clone()
 env.MergeFlags({'CPPPATH':'#src/lib_common/include:#src/lib_common/src:#src/db_layer/src/:.'.split(':')})
+env.MergeFlags(env["libuuid_ldflags"]);
 
 env.MergeFlags(env['libxml2_cflags'])
 env.MergeFlags(env['libxml2_ldflags'])
