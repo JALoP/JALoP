@@ -33,6 +33,7 @@
 #define _JALDB_SEGMENT_H_
 
 #include <stdint.h>
+#include "jaldb_status.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,6 +72,14 @@ struct jaldb_segment *jaldb_create_segment();
  * @param [in,out] ppsegment The jaldb_segment to destroy. This will be set to NULL.
  */
 void jaldb_destroy_segment(struct jaldb_segment **ppsegmennt);
+
+/**
+ * Helper function to sanity check a segment before inserting into the DB.
+ *
+ * @param[in] segment The jaldb_segment to check.
+ * @return JALDB_OK on success, JALDB_E_INVAL on failure.
+ */
+enum jaldb_status jaldb_sanity_check_segment(const struct jaldb_segment *segment);
 
 #ifdef __cplusplus
 }

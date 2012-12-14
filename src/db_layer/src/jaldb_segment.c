@@ -56,3 +56,16 @@ void jaldb_destroy_segment(struct jaldb_segment **ppsegment)
 	*ppsegment = NULL;
 }
 
+enum jaldb_status jaldb_sanity_check_segment(const struct jaldb_segment *segment)
+{
+	if (!segment) {
+		return JALDB_OK;
+	}
+	if (segment->on_disk && !segment->payload) {
+		// in this case, payload should be the path to the FD.
+		return JALDB_E_INVAL;
+	} else if (!segment->on_disk && (segment->length > 0) && (!segment->payload)) {
+		return JALDB_E_INVAL;
+	}
+	return JALDB_OK;
+}
