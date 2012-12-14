@@ -36,14 +36,6 @@
 
 #define EXPECTED_RECORD_VERSION 1
 
-void setup()
-{
-}
-
-void teardown()
-{
-}
-
 void test_jaldb_create_record_works()
 {
 	uuid_t test_uuid;
@@ -104,3 +96,124 @@ void test_jaldb_destroy_works()
 	assert_pointer_equals((void*) NULL, record);
 }
 
+void test_jaldfb_record_sanity_check_works_for_journal()
+{
+	enum jaldb_status ret;
+	struct jaldb_record *record = jaldb_create_record();
+
+	record->version = EXPECTED_RECORD_VERSION;
+	record->payload = jaldb_create_segment();
+	record->source = jal_strdup("source");
+	record->type = JALDB_RTYPE_JOURNAL;
+
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->app_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->sys_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	jaldb_destroy_segment(&record->payload);
+	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	jaldb_destroy_record(&record);
+}
+
+void test_jaldfb_record_sanity_check_works_for_audit()
+{
+	enum jaldb_status ret;
+	struct jaldb_record *record = jaldb_create_record();
+
+	record->version = EXPECTED_RECORD_VERSION;
+	record->payload = jaldb_create_segment();
+	record->source = jal_strdup("source");
+	record->type = JALDB_RTYPE_AUDIT;
+
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->app_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->sys_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	jaldb_destroy_segment(&record->payload);
+	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	jaldb_destroy_record(&record);
+}
+void test_jaldfb_record_sanity_check_works_for_log()
+{
+	enum jaldb_status ret;
+	struct jaldb_record *record = jaldb_create_record();
+
+	record->version = EXPECTED_RECORD_VERSION;
+	record->source = jal_strdup("source");
+	record->type = JALDB_RTYPE_LOG;
+
+	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	record->app_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->sys_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->payload = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	jaldb_destroy_segment(&record->app_meta);
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	jaldb_destroy_record(&record);
+}
+
+void test_jaldb_record_sanity_check_fails_for_null()
+{
+	enum jaldb_status ret;
+
+	ret = jaldb_record_sanity_check(NULL);
+	assert_not_equals(JALDB_OK, ret);
+}
+
+void test_jaldfb_record_sanity_check_fails_on_bad_segments()
+{
+	enum jaldb_status ret;
+	struct jaldb_record *record = jaldb_create_record();
+
+	record->version = EXPECTED_RECORD_VERSION;
+	record->source = jal_strdup("source");
+	record->type = JALDB_RTYPE_LOG;
+
+	record->app_meta = jaldb_create_segment();
+	record->app_meta->on_disk = 1;
+
+	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	record->sys_meta = record->app_meta;
+	record->app_meta = NULL;
+	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	record->payload = record->sys_meta;
+	record->sys_meta = NULL;
+	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	jaldb_destroy_record(&record);
+}
