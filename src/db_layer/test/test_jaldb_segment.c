@@ -95,3 +95,50 @@ void test_jaldb_destroy_segment_frees_payload_buffer()
 	assert_pointer_equals((void*) NULL, segment);
 	assert_equals(0, closed_called);
 }
+
+void test_jaldb_santity_check_segment_fails_with_bad_input()
+{
+	enum jaldb_status ret;
+	struct jaldb_segment *seg = jaldb_create_segment();
+	seg->on_disk = 1;
+	seg->payload = NULL;
+
+	ret = jaldb_sanity_check_segment(seg);
+	assert_not_equals(JALDB_OK, ret);
+
+	seg->on_disk = 0;
+	seg->length = 1;
+	seg->payload = NULL;
+
+	ret = jaldb_sanity_check_segment(seg);
+	assert_not_equals(JALDB_OK, ret);
+
+	jaldb_destroy_segment(&seg);
+}
+void test_jaldb_santity_check_segment_works()
+{
+	enum jaldb_status ret;
+	struct jaldb_segment *seg = jaldb_create_segment();
+	seg->on_disk = 1;
+	seg->payload = (void*) 0xdeadbeef;
+
+	ret = jaldb_sanity_check_segment(NULL);
+	assert_equals(JALDB_OK, ret);
+
+
+	ret = jaldb_sanity_check_segment(seg);
+	assert_equals(JALDB_OK, ret);
+
+	seg->on_disk = 0;
+	seg->length = 1;
+	ret = jaldb_sanity_check_segment(seg);
+	assert_equals(JALDB_OK, ret);
+
+	seg->on_disk = 0;
+	seg->length = 0;
+	seg->payload = NULL;
+	ret = jaldb_sanity_check_segment(seg);
+	assert_equals(JALDB_OK, ret);
+
+	jaldb_destroy_segment(&seg);
+}

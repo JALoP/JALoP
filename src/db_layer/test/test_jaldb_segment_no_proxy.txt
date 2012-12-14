@@ -1,3 +1,4 @@
 printf_test_dept_proxy printf
 jaldb_create_segment_test_dept_proxy jaldb_create_segment
 jaldb_destroy_segment_test_dept_proxy jaldb_destroy_segment
+jaldb_sanity_check_segment_test_dept_proxy jaldb_sanity_check_segment
