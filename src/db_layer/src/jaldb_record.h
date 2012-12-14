@@ -34,6 +34,8 @@
 #include <stdint.h>
 #include <uuid/uuid.h>
 
+#include "jaldb_status.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -87,6 +89,20 @@ struct jaldb_record *jaldb_create_record();
  * @param [in,out] pprecord The jaldb_record to destroy. This will be set to NULL.
  */
 void jaldb_destroy_record(struct jaldb_record **pprecord);
+
+/**
+ * Perform some basic sanity checks on a record before inserting into the DB.
+ * This function ensures that some basic attributes are in place and that each
+ * data type includes the requisite sections of a jalop record. I.e. Log
+ * records must have either application meta-data or a payload, or both,
+ * whereas for journal and audit data, the payload is required, and the
+ * application meta-data is optional. Note that this function does not perform
+ * any schema validation checks.
+ *
+ * @param[in] rec The jaldb_record object to check;
+ * @return JALDB_OK on success, or JALDB_EINVAL on error.
+ */
+enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *);
 
 #ifdef __cplusplus
 }

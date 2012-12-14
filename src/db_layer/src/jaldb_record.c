@@ -31,6 +31,7 @@
 
 #include "jaldb_record.h"
 #include "jaldb_segment.h"
+#include "jaldb_serialize_record.h"
 
 struct jaldb_record *jaldb_create_record()
 {
@@ -60,3 +61,49 @@ void jaldb_destroy_record(struct jaldb_record **pprecord)
 	*pprecord = NULL;
 }
 
+enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec)
+{
+	enum jaldb_status ret;
+	if (rec == NULL) {
+		return JALDB_E_INVAL;
+	}
+	if (rec->version != JALDB_DB_LAYOUT_VERSION) {
+		return JALDB_E_INVAL;
+	}
+	if (!rec->source) {
+		return JALDB_E_INVAL;
+	}
+
+	ret = jaldb_sanity_check_segment(rec->sys_meta);
+	if (JALDB_OK != ret) {
+		return ret;
+	}
+
+	ret = jaldb_sanity_check_segment(rec->app_meta);
+	if (JALDB_OK != ret) {
+		return ret;
+	}
+
+	ret = jaldb_sanity_check_segment(rec->payload);
+	if (JALDB_OK != ret) {
+		return ret;
+	}
+
+	switch (rec->type) {
+	case JALDB_RTYPE_UNKNOWN:
+		return JALDB_E_INVAL;
+	case JALDB_RTYPE_JOURNAL:
+		// fall through
+	case JALDB_RTYPE_AUDIT:
+		if (!rec->payload) {
+			return JALDB_E_INVAL;
+		}
+		break;
+	case JALDB_RTYPE_LOG:
+		if (!rec->payload && !rec->app_meta) {
+			return JALDB_E_INVAL;
+		}
+		break;
+	}
+	return JALDB_OK;
+}
