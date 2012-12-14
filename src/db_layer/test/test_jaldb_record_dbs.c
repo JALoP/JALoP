@@ -9,7 +9,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011-2012 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -28,10 +28,14 @@
  */
 
 #include <test-dept.h>
-
 #include <db.h>
+#include <errno.h>
+#include <libxml/xmlschemastypes.h>
+#include <stdlib.h>
+#include <uuid/uuid.h>
 
 #include "jaldb_record_dbs.h"
+#include "jaldb_serialize_record.h"
 
 #define DEF_MOCK_CLOSE(dbname) \
 char dbname ## _closed; \
@@ -52,10 +56,16 @@ DEF_MOCK_CLOSE(timestamp_no_tz_idx_db)
 DEF_MOCK_CLOSE(record_id_idx_db)
 DEF_MOCK_CLOSE(sid_db)
 
+static void silent_errcall(const DB_ENV *dbenv, const char *errpfx, const char *msg)
+{
+	// do nothing... This is silent, remember?
+}
+struct jaldb_record_dbs *rdbs;
+
 char primary_db_closed;
 char secondaries_closed_before_primary;
 
-int mock_primary_db_close(DB *db, u_int32_t flags)
+static int mock_primary_db_close(DB *db, u_int32_t flags)
 {
 	if (!timestamp_no_tz_idx_db_closed || !timestamp_tz_idx_db_closed || !record_id_idx_db_closed || !sid_db_closed) {
 		secondaries_closed_before_primary = 0;
@@ -65,41 +75,221 @@ int mock_primary_db_close(DB *db, u_int32_t flags)
 	return 0;
 }
 
+static int set_bt_compare_fails(DB *db,
+    int (*bt_compare_fcn)(DB *db, const DBT *dbt1, const DBT *dbt2))
+{
+	return EINVAL;
+}
+
+static int associate_fail_at;
+static int associate_fails_by_count(DB *primary, DB_TXN *txnid, DB *secondary,
+    int (*callback)(DB *secondary,
+    const DBT *key, const DBT *data, DBT *result), u_int32_t flags)
+{
+	if (associate_fail_at-- == 0) {
+		return EINVAL;
+	}
+	return 0;
+}
+
+static int db_create_fail_at;
+
+static int db_create_fails_by_count(DB **dbp, DB_ENV *dbenv, u_int32_t flags)
+{
+	if (db_create_fail_at == 0) {
+		return EINVAL;
+	}
+	db_create_fail_at--;
+	restore_function(db_create);
+	int ret = db_create(dbp, dbenv, flags);
+	replace_function(db_create, db_create_fails_by_count);
+	return ret;
+}
+static int bt_compare_fail_at;
+static int db_create_fails_bt_compare_by_count(DB **dbp, DB_ENV *dbenv, u_int32_t flags)
+{
+	restore_function(db_create);
+	int ret = db_create(dbp, dbenv, flags);
+	replace_function(db_create, db_create_fails_bt_compare_by_count);
+	if (ret != 0) {
+		// something else went wrong, so fail here
+		abort();
+	}
+	if (bt_compare_fail_at == 0) {
+		(*dbp)->set_bt_compare = set_bt_compare_fails;
+		(*dbp)->set_errcall(*dbp, silent_errcall);
+	}
+	bt_compare_fail_at--;
+	return ret;
+}
+
+int open_fails(DB *db, DB_TXN *txnid, const char *file,
+    const char *database, DBTYPE type, u_int32_t flags, int mode)
+{
+	return EINVAL;
+}
+
+static int open_fail_at;
+static int db_create_fails_open_by_count(DB **dbp, DB_ENV *dbenv, u_int32_t flags)
+{
+	restore_function(db_create);
+	int ret = db_create(dbp, dbenv, flags);
+	replace_function(db_create, db_create_fails_open_by_count);
+	if (ret != 0) {
+		// something else went wrong, so fail here
+		abort();
+	}
+	if (open_fail_at-- == 0) {
+		(*dbp)->open = open_fails;
+		(*dbp)->set_errcall(*dbp, silent_errcall);
+	}
+	return ret;
+}
+
+static int db_create_fails_associate_by_count(DB **dbp, DB_ENV *dbenv, u_int32_t flags)
+{
+	restore_function(db_create);
+	int ret = db_create(dbp, dbenv, flags);
+	replace_function(db_create, db_create_fails_associate_by_count);
+	if (ret != 0) {
+		// something else went wrong, so fail here
+		abort();
+	}
+	(*dbp)->associate = associate_fails_by_count;
+	(*dbp)->set_errcall(*dbp, silent_errcall);
+	return ret;
+}
+#define PADDING 1024
+#define BUFFER_SIZE (sizeof(struct jaldb_serialize_record_headers) + PADDING)
+
+#define MAKE_REC(recn) \
+static DBT rec ## recn ## _key, rec  ## recn ## _data, rec ## recn ## _ts_key, rec  ## recn ## _uuid_key; \
+static uint8_t rec ## recn ## _key_buffer; \
+static uint8_t rec ## recn ## _data_buffer[BUFFER_SIZE]; \
+struct jaldb_serialize_record_headers *rec ## recn ## _headers = (struct jaldb_serialize_record_headers *) rec ## recn ## _data_buffer; \
+static uuid_t rec ## recn ## _uuid = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, recn};
+
+
+MAKE_REC(1)
+MAKE_REC(2)
+MAKE_REC(3)
+MAKE_REC(4)
+MAKE_REC(5)
+MAKE_REC(6)
+MAKE_REC(7)
+MAKE_REC(8)
+
+#define INIT_REC(recn, ts) \
+do { \
+rec ## recn ## _key_buffer = recn; \
+rec ## recn ## _headers->version = JALDB_DB_LAYOUT_VERSION; \
+uuid_copy(rec ## recn ## _headers->record_uuid, rec ## recn ##_uuid); \
+strcpy((char*) rec ## recn ## _data_buffer + sizeof(struct jaldb_serialize_record_headers), ts); \
+memset(&rec ## recn ## _key, 0, sizeof(rec ## recn ##_key)); \
+memset(&rec ## recn ## _data, 0, sizeof(rec ## recn ##_data)); \
+memset(&rec ## recn ## _ts_key, 0, sizeof(rec ## recn ##_ts_key)); \
+memset(&rec ## recn ## _uuid_key, 0, sizeof(rec ## recn ##_uuid_key)); \
+rec ## recn ## _key.data = &rec ## recn ## _key_buffer; \
+rec ## recn ## _key.size = sizeof(rec ## recn ## _key_buffer); \
+rec ## recn ## _data.data = rec ## recn ## _data_buffer; \
+rec ## recn ## _data.size = BUFFER_SIZE; \
+rec ## recn ## _ts_key.data = (void*) ts; \
+rec ## recn ## _ts_key.size = strlen(ts) + 1; \
+rec ## recn ## _uuid_key.data = (void*) rec ## recn ## _uuid; \
+rec ## recn ## _uuid_key.size = sizeof(rec ## recn ## _uuid); \
+} while (0)
+
+#define R1_DATETIME_TZ "2012-12-12T09:00:00Z"
+#define R2_DATETIME_TZ "2012-12-12T09:00:00Z"
+#define R3_DATETIME_TZ "2012-12-12T09:00:00+00:00"
+#define R4_DATETIME_TZ "2012-12-12T09:00:01+00:00"
+
+#define R5_DATETIME_NO_TZ "2012-12-12T09:00:00"
+#define R6_DATETIME_NO_TZ "2012-12-12T09:00:00"
+#define R7_DATETIME_NO_TZ "2012-12-12T09:00:01"
+
+#define R8_DATETIME_BAD "2012-12-12T09:00:0"
+
 void setup()
 {
+	xmlSchemaInitTypes();
+	db_create_fail_at = 0;
+	bt_compare_fail_at = 0;
+	associate_fail_at = 0;
+	open_fail_at = 0;
 	primary_db_closed = 0;
 	timestamp_no_tz_idx_db_closed = 0;
 	timestamp_tz_idx_db_closed = 0;
 	record_id_idx_db_closed = 0;
 	sid_db_closed = 0;
 	secondaries_closed_before_primary = 1;
+	rdbs = NULL;
+	INIT_REC(1, R1_DATETIME_TZ);
+	INIT_REC(2, R2_DATETIME_TZ);
+	INIT_REC(3, R3_DATETIME_TZ);
+	INIT_REC(4, R4_DATETIME_TZ);
+	INIT_REC(5, R5_DATETIME_NO_TZ);
+	INIT_REC(6, R6_DATETIME_NO_TZ);
+	INIT_REC(7, R7_DATETIME_NO_TZ);
+	INIT_REC(8, R8_DATETIME_BAD);
 }
+
+#define REMOVE_DB(db) \
+	do { \
+		if (db) { \
+			const char *fname = NULL; \
+			const char *dbname = NULL; \
+			db->get_dbname(db, &fname, NULL); \
+			/* Need to make copies since BDB returns a pointer to
+			 * the file/db name, rather than make a copy. This
+			 * pointer is invalid once close() is called, but we
+			 * need the fname/dbname for the call to remove...
+			 */ \
+			if (fname) { \
+				fname = strdup(fname); \
+			} \
+			db->close(db, DB_NOSYNC);\
+			db_create(&(db), NULL, 0); \
+			db->remove(db, fname, NULL, 0); \
+			db = NULL; \
+			free((void*)fname); \
+			free((void*)dbname); \
+		} \
+	} while(0)
 
 void teardown()
 {
+	//if (rdbs) {
+		//REMOVE_DB(rdbs->timestamp_tz_idx_db);
+		//REMOVE_DB(rdbs->timestamp_no_tz_idx_db);
+		//REMOVE_DB(rdbs->record_id_idx_db);
+		//REMOVE_DB(rdbs->sid_db);
+		//REMOVE_DB(rdbs->primary_db);
+	//}
+
+	jaldb_destroy_record_dbs(&rdbs);
+	restore_function(db_create);
+	xmlSchemaCleanupTypes();
 }
 
 void test_create_initializes_to_null()
 {
-	struct jaldb_record_dbs *ret = jaldb_create_record_dbs();
 	struct jaldb_record_dbs null_rdbs;
 	memset(&null_rdbs, 0, sizeof(null_rdbs));
-	ret = jaldb_create_record_dbs();
-	assert_not_equals((void*) NULL, ret);
-	assert_equals(0, memcmp(ret, &null_rdbs, sizeof(*ret)));
+	rdbs = jaldb_create_record_dbs();
+	assert_not_equals((void*) NULL, rdbs);
+	assert_equals(0, memcmp(rdbs, &null_rdbs, sizeof(*rdbs)));
 }
 
 void test_destroy_validates_input()
 {
-	struct jaldb_record_dbs *rdbs = NULL;
-
 	jaldb_destroy_record_dbs(&rdbs);
 	jaldb_destroy_record_dbs(NULL);
 }
 
 void test_destroy_record_dbs_works()
 {
-	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
+	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_tz_idx_db);
@@ -118,7 +308,7 @@ void test_destroy_record_dbs_works()
 
 void test_destroy_record_dbs_works_without_tz_timestamp()
 {
-	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
+	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
@@ -137,7 +327,7 @@ void test_destroy_record_dbs_works_without_tz_timestamp()
 
 void test_destroy_record_dbs_works_without_no_tz_timestamp()
 {
-	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
+	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_tz_idx_db);
@@ -156,7 +346,7 @@ void test_destroy_record_dbs_works_without_no_tz_timestamp()
 
 void test_destroy_record_dbs_works_without_record_id_db()
 {
-	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
+	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_tz_idx_db);
@@ -176,7 +366,7 @@ void test_destroy_record_dbs_works_without_record_id_db()
 
 void test_destroy_record_dbs_works_without_sid()
 {
-	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
+	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_tz_idx_db);
@@ -191,6 +381,422 @@ void test_destroy_record_dbs_works_without_sid()
 	assert_true(timestamp_tz_idx_db_closed);
 	assert_true(timestamp_no_tz_idx_db_closed);
 	assert_true(record_id_idx_db_closed);
+}
+
+void test_create_primary_dbs_w_indices_works()
+{
+	enum jaldb_status ret;
+	int db_err;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_equals(JALDB_OK, ret);
+
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec1_key, &rec1_data, DB_NOOVERWRITE);
+	assert_equals(0, db_err);
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec2_key, &rec2_data, DB_NOOVERWRITE);
+	assert_equals(0, db_err);
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec3_key, &rec3_data, DB_NOOVERWRITE);
+	assert_equals(0, db_err);
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec4_key, &rec4_data, DB_NOOVERWRITE);
+	assert_equals(0, db_err);
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec5_key, &rec5_data, DB_NOOVERWRITE);
+	assert_equals(0, db_err);
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec6_key, &rec6_data, DB_NOOVERWRITE);
+	assert_equals(0, db_err);
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec7_key, &rec7_data, DB_NOOVERWRITE);
+	assert_equals(0, db_err);
+
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec8_key, &rec8_data, DB_NOOVERWRITE);
+	assert_not_equals(0, db_err);
+
+	// make sure records showed up in the correct indexes & order
+	DBT key;
+	DBT pkey;
+	DBT val;
+	DBC *ts_tz_c = NULL;
+	DBC *ts_no_tz_c = NULL;
+	DBC *r_uuid_c = NULL;
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+
+	db_err = rdbs->timestamp_tz_idx_db->cursor(rdbs->timestamp_tz_idx_db, NULL, &ts_tz_c, 0);
+	assert_equals(0, db_err);
+	db_err = rdbs->timestamp_no_tz_idx_db->cursor(rdbs->timestamp_no_tz_idx_db, NULL, &ts_no_tz_c, 0);
+	assert_equals(0, db_err);
+	db_err = rdbs->record_id_idx_db->cursor(rdbs->record_id_idx_db, NULL, &r_uuid_c, 0);
+	assert_equals(0, db_err);
+
+	// the index for timezones should have r1, r2, r3, and r4. r1, r2, and
+	// r3 all have the same value for the timestamp...
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT);
+	assert_equals(0, db_err);
+	assert_equals(1, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	assert_equals(0, db_err);
+	assert_equals(2, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	assert_equals(0, db_err);
+	assert_equals(3, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	assert_equals(DB_NOTFOUND, db_err); // only the first three records have the same TS
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(4, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT);
+	assert_equals(DB_NOTFOUND, db_err); // Shouldn't be any more records in the DB.
+	ts_tz_c->c_close(ts_tz_c);
+	ts_tz_c = NULL;
+
+	// Now check the index for dattimes without timezones...
+	// the index for no timezones should have r5, r6, and r7. r5, and r6 have the same value for the timestamp...
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT);
+	assert_equals(0, db_err);
+	assert_equals(5, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	assert_equals(0, db_err);
+	assert_equals(6, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	assert_equals(DB_NOTFOUND, db_err); // only the first two records have the same TS
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(7, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT);
+	assert_equals(DB_NOTFOUND, db_err); // Shouldn't be any more records in the DB.
+	ts_no_tz_c->c_close(ts_no_tz_c);
+	ts_no_tz_c = NULL;
+
+	// Lastly, check the UUID index, everything should make it in here...
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT);
+	assert_equals(0, db_err);
+	assert_equals(1, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(2, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(3, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) { free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(4, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(5, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(6, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	assert_equals(0, db_err);
+	assert_equals(7, *((uint8_t*)pkey.data));
+	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(key.data);
+	}
+	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(pkey.data);
+	}
+	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
+		free(val.data);
+	}
+
+	r_uuid_c->c_close(r_uuid_c);
+	r_uuid_c = NULL;
 
 }
 
+void test_create_primary_w_indices_dbs_returns_error_on_bad_input()
+{
+	enum jaldb_status ret;
+
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, NULL);
+	assert_not_equals(JALDB_OK, ret);
+
+	rdbs = (struct jaldb_record_dbs*) 0xdeadbeef;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	rdbs = NULL;
+}
+
+void test_create_primary_w_indices_dbs_returns_error_when_db_create_fails()
+{
+	enum jaldb_status ret;
+	// This is slightly hacky, and works by failing based on the call
+	// count fo db_create_fails...
+	replace_function(db_create, db_create_fails_by_count);
+	db_create_fail_at = 0;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	db_create_fail_at = 1;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	db_create_fail_at = 2;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	db_create_fail_at = 3;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	db_create_fail_at = 4;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+}
+
+void test_create_primary_w_indices_dbs_returns_error_when_set_bt_compare_fails()
+{
+	enum jaldb_status ret;
+	// This is slightly hacky, and works by failing based on the call
+	// count fo db_create_fails...
+	replace_function(db_create, db_create_fails_bt_compare_by_count);
+	bt_compare_fail_at = 0;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	bt_compare_fail_at = 1;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	bt_compare_fail_at = 2;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+}
+
+void test_create_primary_w_indices_dbs_returns_error_when_associate_fails()
+{
+	enum jaldb_status ret;
+	// This is slightly hacky, and works by failing based on the call
+	// count fo db_create_fails...
+	replace_function(db_create, db_create_fails_associate_by_count);
+	associate_fail_at = 0;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	associate_fail_at = 1;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	associate_fail_at = 2;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+}
+
+void test_create_primary_w_indices_dbs_returns_error_when_db_open_fails()
+{
+	enum jaldb_status ret;
+	// This is slightly hacky, and works by failing based on the call
+	// count fo db_create_fails...
+	replace_function(db_create, db_create_fails_open_by_count);
+	open_fail_at = 0;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	open_fail_at = 1;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	open_fail_at = 2;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	open_fail_at = 3;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+	open_fail_at = 4;
+	ret = jaldb_create_primary_dbs_with_indices(NULL, NULL, NULL, DB_CREATE, &rdbs);
+	assert_not_equals(JALDB_OK, ret);
+	assert_pointer_equals((void*) NULL, rdbs);
+
+}
