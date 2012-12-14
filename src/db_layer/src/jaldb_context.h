@@ -29,13 +29,13 @@
 #ifndef _JALDB_CONTEXT_H_
 #define _JALDB_CONTEXT_H_
 
+#include "jaldb_status.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include "jaldb_status.h"
-
+struct jaldb_record_dbs;
 struct jaldb_context_t;
 typedef struct jaldb_context_t jaldb_context;
 
@@ -284,7 +284,6 @@ enum jaldb_status jaldb_next_journal_record(
 	uint8_t **app_meta_buf,
 	size_t *app_meta_len,
 	int *fd, size_t *fd_sz);
-
 
 #ifdef __cplusplus
 }

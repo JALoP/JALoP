@@ -38,7 +38,7 @@
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
-#include "jaldb_serial_id.hpp"
+#include "jaldb_record_dbs.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
@@ -127,6 +127,24 @@ enum jaldb_status jaldb_context_init(
 	} else {
 		db_flags |= DB_CREATE;
 	}
+	enum jaldb_status ret;
+	ret = jaldb_create_primary_dbs_with_indices(env, db_txn, "log", db_flags, &ctx->log_dbs);
+	if (ret != JALDB_OK) {
+		db_txn->abort(db_txn);
+		return JALDB_E_INVAL;
+	}
+
+	ret = jaldb_create_primary_dbs_with_indices(env, db_txn, "audit", db_flags, &ctx->audit_dbs);
+	if (ret != JALDB_OK) {
+		db_txn->abort(db_txn);
+		return JALDB_E_INVAL;
+	}
+
+	ret = jaldb_create_primary_dbs_with_indices(env, db_txn, "journal", db_flags, &ctx->journal_dbs);
+	if (ret != JALDB_OK) {
+		db_txn->abort(db_txn);
+		return JALDB_E_INVAL;
+	}
 
 	db_ret = db_create(&ctx->journal_conf_db, env, 0);
 	if (db_ret != 0) {
@@ -170,19 +188,6 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_DB;
 	}
 
-	db_ret = db_create(&ctx->log_dbp, env, 0);
-	if (db_ret != 0) {
-		db_txn->abort(db_txn);;
-		JALDB_DB_ERR((ctx->log_dbp), db_ret);
-		return JALDB_E_DB;
-	}
-	db_ret = ctx->log_dbp->open(ctx->log_dbp, db_txn,
-			JALDB_LOG_DB_NAME, NULL, DB_BTREE, db_flags, 0);
-	if (db_ret != 0) {
-		db_txn->abort(db_txn);;
-		JALDB_DB_ERR((ctx->log_dbp), db_ret);
-		return JALDB_E_DB;
-	}
 	db_txn->commit(db_txn, 0);
 
 	return JALDB_OK;
@@ -210,9 +215,9 @@ void jaldb_context_destroy(jaldb_context **ctx)
 		(*ctx)->log_conf_db->close((*ctx)->log_conf_db, 0);
 	}
 
-	if (ctxp->log_dbp) {
-		ctxp->log_dbp->close((*ctx)->log_dbp, 0);
-	}
+	jaldb_destroy_record_dbs(&(ctxp->journal_dbs));
+	jaldb_destroy_record_dbs(&(ctxp->audit_dbs));
+	jaldb_destroy_record_dbs(&(ctxp->log_dbs));
 
 	if (ctxp->temp_dbs) {
 		for (string_to_db_map::iterator iter = ctxp->temp_dbs->begin();

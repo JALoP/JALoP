@@ -38,14 +38,18 @@
 
 typedef std::map<std::string, DB*> string_to_db_map;
 
+struct jaldb_record_dbs;
+
 struct jaldb_context_t {
 	char *journal_root; //<! The journal record root path.
 	char *schemas_root; //<! The schemas root path.
 	DB_ENV *env; //<! The Berkeley DB Environment.
+	struct jaldb_record_dbs *log_dbs; //<! The DBs associated with log records
+	struct jaldb_record_dbs *audit_dbs; //<! The DBs associated with audit records
+	struct jaldb_record_dbs *journal_dbs; //<! The DBs associated with journal records
 	DB *journal_conf_db; //<! The database for conf'ed journal records
 	DB *audit_conf_db; //<! The database for conf'ed audit records
 	DB *log_conf_db; //<! The database for conf'ed log records
-	DB *log_dbp; //<! The log database.
 	string_to_db_map *temp_dbs; //<! a map from strings to Berkeley DBs that identifies temporary databases for use by the network stores.
 	int db_read_only; //<! Whether or not to open the databases read only
 };
