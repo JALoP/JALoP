@@ -31,6 +31,7 @@
 #define _JALDB_RECORD_BDS_
 
 #include <db.h>
+#include "jaldb_status.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +69,13 @@ struct jaldb_record_dbs *jaldb_create_record_dbs();
  * will close all associated DB handles.
  */
 void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs);
+
+enum jaldb_status jaldb_create_primary_dbs_with_indices(
+		DB_ENV *env,
+		DB_TXN *txn,
+		const char *prefix,
+		const u_int32_t db_flags,
+		struct jaldb_record_dbs **pprdbs);
 
 #ifdef __cplusplus
 }
