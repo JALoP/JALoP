@@ -38,6 +38,7 @@ extern "C" {
 #include <openssl/pem.h>
 #include <sys/types.h>
 #include <stdint.h>
+#include <uuid/uuid.h>
 
 #include "jaldb_context.h"
 
@@ -52,7 +53,7 @@ struct jalls_context {
 	/** The full path to the public cert used when adding signatures to the system metadata*/
 	char *public_cert_file;
 	/** The system uuid, as stored in the config file to be recorded in the system metadata*/
-	char *system_uuid;
+	uuid_t system_uuid;
 	/** The hostname the JALoP Local Store should record in the system metadata */
 	char *hostname;
 	/** The full path to a directory that has the schemas */

@@ -51,9 +51,10 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		return -1;
 	}
 
+	char *system_uuid_str = NULL;
 	char **private_key_file = &((*jalls_ctx)->private_key_file);
 	char **public_cert_file = &((*jalls_ctx)->public_cert_file);
-	char **system_uuid = &((*jalls_ctx)->system_uuid);
+	uuid_t *system_uuid = &(*jalls_ctx)->system_uuid;
 	char **hostname = &((*jalls_ctx)->hostname);
 	char **schemas_root = &((*jalls_ctx)->schemas_root);
 	char **db_root = &((*jalls_ctx)->db_root);
@@ -89,13 +90,12 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		goto err_out;
 	}
 
-	ret = jalu_config_lookup_string(root, JALLS_CFG_SYSTEM_UUID, system_uuid, JALU_CFG_REQUIRED);
+	ret = jalu_config_lookup_string(root, JALLS_CFG_SYSTEM_UUID, &system_uuid_str, JALU_CFG_REQUIRED);
 	if (-1 == ret) {
 		goto err_out;
 	}
 	//validate the uuid:
-	uuid_t tmp_uu;
-	ret = uuid_parse(*system_uuid, tmp_uu);
+	ret = uuid_parse(system_uuid_str, *system_uuid);
 	if (-1 == ret) {
 		fprintf(stderr, "Error: failed to validate uuid\n");
 		goto err_out;
@@ -160,7 +160,7 @@ err_out:
 
 	free((*jalls_ctx)->private_key_file);
 	free((*jalls_ctx)->public_cert_file);
-	free((*jalls_ctx)->system_uuid);
+	free(system_uuid_str);
 	free((*jalls_ctx)->hostname);
 	free((*jalls_ctx)->schemas_root);
 	free((*jalls_ctx)->db_root);

@@ -20,13 +20,14 @@ jallsHandleLogObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_
 jallsHandleAuditObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_audit.cpp'))
 jallsHandleJournalObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal.cpp'))
 jallsHandleJournalFDObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_handle_journal_fd.cpp'))
+jallsRecordUtilsObj = ls_env.SharedObject(os.path.join('..', 'src', 'jalls_record_utils.c'))
 
 tests.append(env.TestDeptTest('test_jalls_msg.c',
 	other_sources=[], useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jalls_handler.c',
 	other_sources=[jallsInitObj, jallsMsgObj, jallsHandleJournalObj,
-		jallsHandleLogObj, jallsHandleAuditObj, jallsHandleJournalFDObj, lib_common, db_layer],
+		jallsHandleLogObj, jallsHandleAuditObj, jallsHandleJournalFDObj, jallsRecordUtilsObj, lib_common, db_layer],
 	useProxies=True)[0].abspath)
 
 local_store_tests = env.Alias('local_store_tests', tests, 'test_dept ' + " ".join(tests))

@@ -28,6 +28,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -38,11 +39,15 @@
 #include "jal_alloc.h"
 
 #include "jaldb_context.hpp"
+#include "jaldb_record.h"
+#include "jaldb_segment.h"
+#include "jaldb_utils.h"
 
 #include "jalls_context.h"
 #include "jalls_msg.h"
 #include "jalls_handle_log.hpp"
 #include "jalls_handler.h"
+#include "jalls_record_utils.h"
 
 extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_t data_len, uint64_t meta_len)
 {
@@ -50,6 +55,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		return -1; //should never happen.
 	}
 	struct jal_digest_ctx *digest_ctx = NULL;
+	struct jaldb_record *rec = NULL;
 
 	int debug = thread_ctx->ctx->debug;
 	int err;
@@ -60,9 +66,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 
 	void *instance = NULL;
 
-	enum jal_status jal_err;
 	enum jaldb_status db_err;
-	int bdb_err;
 	uint8_t *digest = NULL;
 	std::string source;
 	std::string sid;
@@ -119,53 +123,37 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		goto out;
 	}
 
-	//Parse and Validate the app metadata
-	//TODO: parse app metadata if needed
-
-	//digest the log data
-	digest_ctx = jal_sha256_ctx_create();
-
-	instance = digest_ctx->create();
-	digest = (uint8_t *)jal_malloc(digest_ctx->len);
-
-	jal_err = digest_ctx->init(instance);
-	if(jal_err != JAL_OK) {
+	err = jalls_create_record(JALDB_RTYPE_LOG, thread_ctx, &rec);
+	if (err < 0) {
 		if (debug) {
-			fprintf(stderr, "could not init sha256 digest\n");
+			fprintf(stderr, "failed to create record struct\n");
 		}
 		goto out;
 	}
 
-	jal_err = digest_ctx->update(instance, data_buf, data_len);
-	if(jal_err != JAL_OK) {
-		if (debug) {
-			fprintf(stderr, "could not digest the log\n");
-		}
-		goto out;
-	}
-	size_t digest_length;
-	digest_length = digest_ctx->len;
-	jal_err = digest_ctx->final(instance, digest, &digest_length);
-	if(jal_err != JAL_OK) {
-		if (debug) {
-			fprintf(stderr, "could not digest the log\n");
-		}
-		goto out;
+	if (meta_len) {
+		rec->app_meta = jaldb_create_segment();
+		rec->app_meta->length = meta_len;
+		rec->app_meta->payload = app_meta_buf;
+		rec->app_meta->on_disk = 0;
+		app_meta_buf = NULL;
 	}
 
-	//create system metadata
-	db_err =  jaldb_insert_log_record(
-			thread_ctx->db_ctx,
-			source, NULL,
-			NULL, data_buf,
-			data_len, sid, &bdb_err);
-	if (db_err != JALDB_OK) {
-		goto out;
+	if (data_len > 0) {
+		rec->payload = jaldb_create_segment();
+		rec->payload->length = data_len;
+		rec->payload->payload = data_buf;
+		rec->payload->on_disk = 0;
+		data_buf = NULL;
+	}
+
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec);
+	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "failed to insert log record\n");
 		}
+		goto out;
 	}
-
 	ret = 0;
 
 out:
@@ -176,5 +164,6 @@ out:
 	free(digest);
 	free(data_buf);
 	free(app_meta_buf);
+	jaldb_destroy_record(&rec);
 	return ret;
 }

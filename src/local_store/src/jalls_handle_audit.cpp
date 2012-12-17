@@ -36,17 +36,20 @@
 #include <jalop/jal_status.h>
 
 #include "jal_alloc.h"
-#include "jaldb_context.hpp"
+#include "jaldb_context.h"
+#include "jaldb_segment.h"
 #include "jalls_context.h"
 #include "jalls_msg.h"
 #include "jalls_handle_audit.hpp"
 #include "jalls_handler.h"
+#include "jalls_record_utils.h"
 
 extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint64_t data_len, uint64_t meta_len)
 {
 	if (!thread_ctx || !(thread_ctx->ctx)) {
 		return -1; //should never happen.
 	}
+	struct jaldb_record *rec = NULL;
 
 	int ret = -1;
 
@@ -55,8 +58,6 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	uint8_t *data_buf = (uint8_t *)jal_malloc(data_len);
 	uint8_t *app_meta_buf = NULL;
 
-	std::string sid = "";
-	std::string source = "";
 	enum jaldb_status db_err = JALDB_OK;
 	//get the payload audit
 
@@ -118,23 +119,37 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		goto err_out;
 	}
 
-	digest_ctx = jal_sha256_ctx_create();
+	err = jalls_create_record(JALDB_RTYPE_AUDIT, thread_ctx, &rec);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "failed to create record struct\n");
+		}
+		goto err_out;
+	}
 
-	// TODO: switch to new forms for inserting records into the DB.
-	db_err = jaldb_insert_audit_record(
-			thread_ctx->db_ctx,
-			source,
-			NULL,
-			NULL,
-			NULL,
-			sid);
-	if (db_err != JALDB_OK) {
+	if (meta_len) {
+		rec->app_meta = jaldb_create_segment();
+		rec->app_meta->length = meta_len;
+		rec->app_meta->payload = app_meta_buf;
+		rec->app_meta->on_disk = 0;
+		app_meta_buf = NULL;
+	}
+
+	if (data_len > 0) {
+		rec->payload = jaldb_create_segment();
+		rec->payload->length = data_len;
+		rec->payload->payload = data_buf;
+		rec->payload->on_disk = 0;
+		data_buf = NULL;
+	}
+
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec);
+	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "could not insert audit record into database\n");
 		}
 		goto err_out;
 	}
-
 	ret = 0;
 
 err_out:
@@ -142,5 +157,6 @@ err_out:
 	free(digest);
 	free(data_buf);
 	free(app_meta_buf);
+	jaldb_destroy_record(&rec);
 	return ret;
 }

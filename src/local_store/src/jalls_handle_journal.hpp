@@ -30,8 +30,6 @@
 #ifndef _JALLS_HANDLE_JOURNAL_HPP_
 #define _JALLS_HANDLE_JOURNAL_HPP_
 
-#include <string.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>

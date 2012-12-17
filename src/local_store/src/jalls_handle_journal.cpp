@@ -27,6 +27,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -37,12 +38,14 @@
 
 #include "jal_alloc.h"
 
-#include "jaldb_context.hpp"
+#include "jaldb_context.h"
+#include "jaldb_segment.h"
 
 #include "jalls_context.h"
 #include "jalls_handle_journal.hpp"
 #include "jalls_handler.h"
 #include "jalls_msg.h"
+#include "jalls_record_utils.h"
 
 #define JALLS_JOURNAL_BUF_LEN 8192
 
@@ -53,11 +56,10 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		return -1; //should never happen.
 	}
 
+	struct jaldb_record *rec = NULL;
+
 	int db_payload_fd = -1;
 	char *db_payload_path = NULL;
-	std::string path;
-	std::string sid;
-	std::string source;
 	enum jal_status jal_err;
 	enum jaldb_status db_err;
 
@@ -81,7 +83,6 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		}
 		goto err_out;
 	}
-	path.assign(db_payload_path);
 
 	//get the payload, write it to the db file.
 	//digests the payload as well
@@ -186,19 +187,36 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		goto err_out;
 	}
 
-	// TODO: Parse & validate the app metadata if needed.
-
-	db_err = jaldb_insert_journal_metadata(thread_ctx->db_ctx,
-			source,
-			NULL,
-			NULL,
-			path,
-			sid);
-
-	if (db_err != JALDB_OK) {
+	err = jalls_create_record(JALDB_RTYPE_JOURNAL, thread_ctx, &rec);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "failed to create record struct\n");
+		}
 		goto err_out;
 	}
 
+	if (meta_len) {
+		rec->app_meta = jaldb_create_segment();
+		rec->app_meta->length = meta_len;
+		rec->app_meta->payload = app_meta_buf;
+		rec->app_meta->on_disk = 0;
+		app_meta_buf = NULL;
+	}
+
+	rec->payload = jaldb_create_segment();
+	rec->payload->length = data_len;
+	rec->payload->payload = (uint8_t*)db_payload_path;
+	rec->payload->on_disk = 1;
+	rec->payload->fd = db_payload_fd;
+	db_payload_path = NULL;
+
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec);
+	if (JALDB_OK != db_err) {
+		if (debug) {
+			fprintf(stderr, "could not insert journal record into database\n");
+		}
+		goto err_out;
+	}
 	ret = 0;
 
 err_out:
@@ -208,5 +226,6 @@ err_out:
 	}
 	free(digest);
 	free(app_meta_buf);
+	jaldb_destroy_record(&rec);
 	return ret;
 }

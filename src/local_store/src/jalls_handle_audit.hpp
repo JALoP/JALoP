@@ -30,7 +30,6 @@
 #ifndef _JALLS_HANDLE_AUDIT_H_
 #define _JALLS_HANDLE_AUDIT_H_
 
-#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>

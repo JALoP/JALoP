@@ -31,6 +31,9 @@
 
 #include <sys/types.h>
 
+#include "jaldb_record.h"
+#include "jalls_context.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,6 +54,14 @@ char *jalls_get_user_id_str(uid_t uid);
  */
 char *jalls_get_security_label(int socketFd);
 #endif
+
+/**
+ * Helper utility to create a record.
+ *
+ */
+int jalls_create_record(enum jaldb_rec_type rec_type,
+			struct jalls_thread_context *thread_ctx,
+			struct jaldb_record **prec);
 
 #ifdef __cplusplus
 }
