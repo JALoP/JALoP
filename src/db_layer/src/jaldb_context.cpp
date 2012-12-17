@@ -39,6 +39,7 @@
 #include "jal_asprintf_internal.h"
 #include "jaldb_context.hpp"
 #include "jaldb_record_dbs.h"
+#include "jaldb_serial_id.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
@@ -145,6 +146,29 @@ enum jaldb_status jaldb_context_init(
 		db_txn->abort(db_txn);
 		return JALDB_E_INVAL;
 	}
+
+	if (!ctx->db_read_only) {
+		db_ret = jaldb_initialize_serial_id(ctx->journal_dbs->sid_db, db_txn);
+		if (0 != db_ret) {
+			return JALDB_E_INVAL;
+			db_txn->abort(db_txn);
+			return JALDB_E_INVAL;
+		}
+		db_ret = jaldb_initialize_serial_id(ctx->audit_dbs->sid_db, db_txn);
+		if (0 != db_ret) {
+			return JALDB_E_INVAL;
+			db_txn->abort(db_txn);
+			return JALDB_E_INVAL;
+		}
+		db_ret = jaldb_initialize_serial_id(ctx->log_dbs->sid_db, db_txn);
+		if (0 != db_ret) {
+			return JALDB_E_INVAL;
+			db_txn->abort(db_txn);
+			return JALDB_E_INVAL;
+		}
+
+	}
+
 
 	db_ret = db_create(&ctx->journal_conf_db, env, 0);
 	if (db_ret != 0) {
