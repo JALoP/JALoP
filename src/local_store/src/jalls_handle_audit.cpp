@@ -41,7 +41,6 @@
 #include "jalls_msg.h"
 #include "jalls_handle_audit.hpp"
 #include "jalls_handler.h"
-#include "jalls_xml_utils.hpp"
 
 extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint64_t data_len, uint64_t meta_len)
 {

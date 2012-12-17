@@ -43,7 +43,6 @@
 #include "jalls_msg.h"
 #include "jalls_handle_journal_fd.hpp"
 #include "jalls_handler.h"
-#include "jalls_xml_utils.hpp"
 
 
 #define JALLS_JOURNAL_BUF_LEN 8192

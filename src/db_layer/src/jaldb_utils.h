@@ -98,6 +98,14 @@ enum jaldb_status jaldb_create_file(
 	char **path,
 	int *fd);
 
+/**
+ * Create a timestamp for the Current time in the XML DateTime format.
+ *
+ * @return a newly allocated string that contains the current time as an XML
+ * DateTime string.
+ */
+char *jaldb_gen_timestamp();
+
 #ifdef __cplusplus
 }
 #endif
