@@ -19,7 +19,7 @@ recordDbsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record_dbs.c
 recordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record.c'))
 recordUuidObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record_uuid.c'))
 segmentObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_segment.c'))
-serialIdObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serial_id.cpp'))
+serialIdObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serial_id.c'))
 serializeRecordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serialize_record.c'))
 utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
 
@@ -37,7 +37,7 @@ tests.append(env.TestDeptTest('test_jaldb_record_uuid.c',
 	other_sources=[])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_segment.c',
 	other_sources=[lib_common], useProxies=True)[0].abspath)
-tests.append(env.TestDeptTest('test_jaldb_serial_id.cpp',
+tests.append(env.TestDeptTest('test_jaldb_serial_id.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_serialize_record.c',
 	other_sources=[lib_common, recordObj, segmentObj])[0].abspath)

@@ -189,6 +189,7 @@ enum jaldb_status jaldb_context_init(
 	}
 
 	db_txn->commit(db_txn, 0);
+	ctx->env = env;
 
 	return JALDB_OK;
 }
