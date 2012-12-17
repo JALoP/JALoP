@@ -29,16 +29,22 @@
 
 #define __STDC_FORMAT_MACROS
 #include <fcntl.h>
-#include <list>
-#include <string.h>
-#include <sstream>
-#include <sys/stat.h>
+#include <jalop/jal_status.h>
 #include <inttypes.h> // For PRIu64
 #include <list>
+#include <openssl/bn.h>
+#include <sstream>
+#include <string.h>
+#include <sys/stat.h>
+
 #include "jal_alloc.h"
+#include "jal_error_callback_internal.h"
 #include "jal_asprintf_internal.h"
+
 #include "jaldb_context.hpp"
+#include "jaldb_record.h"
 #include "jaldb_record_dbs.h"
+#include "jaldb_serialize_record.h"
 #include "jaldb_serial_id.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
@@ -714,3 +720,96 @@ enum jaldb_status jaldb_get_records_since_last_sid_log(
 	return JALDB_E_NOT_IMPL;
 }
 
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec)
+{
+	int byte_swap;
+	enum jaldb_status ret;
+	BIGNUM *sid = NULL;
+	size_t buf_size = 0;
+	struct jaldb_record_dbs *rdbs = NULL;
+	uint8_t* buffer = NULL;
+	int db_ret;
+	DBT key;
+	DBT val;
+	DB_TXN *txn;
+
+	if (!ctx || !rec) {
+		return JALDB_E_INVAL;
+	}
+	if (!rec->source) {
+		rec->source = jal_strdup("localhost");
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+
+	sid = BN_new();
+	if (!sid) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+
+	ret = jaldb_record_sanity_check(rec);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+
+	switch(rec->type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	ret = jaldb_serialize_record(byte_swap, rec, &buffer, &buf_size);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	val.data = buffer;
+	val.size = buf_size;
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			break;
+		}
+
+		db_ret = jaldb_get_next_serial_id(rdbs->sid_db, txn, &key);
+		if (0 == db_ret) {
+			db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, DB_NOOVERWRITE);
+		}
+		if (0 == db_ret) {
+			db_ret = txn->commit(txn, 0);
+		} else {
+			txn->abort(txn);
+		}
+		if (0 == db_ret) {
+			ret = JALDB_OK;
+			break;
+		}
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else {
+			break;
+		}
+	}
+
+out:
+	BN_free(sid);
+	free(key.data);
+	free(val.data);
+	return ret;
+}

@@ -35,6 +35,7 @@
 extern "C" {
 #endif
 
+struct jaldb_record;
 struct jaldb_record_dbs;
 struct jaldb_context_t;
 typedef struct jaldb_context_t jaldb_context;
@@ -284,6 +285,15 @@ enum jaldb_status jaldb_next_journal_record(
 	uint8_t **app_meta_buf,
 	size_t *app_meta_len,
 	int *fd, size_t *fd_sz);
+
+/**
+ * Utility to insert any JALoP record
+ * @param[in] ctx the DB context.
+ * @param[in] rec The record to insert.
+ *
+ * @return JALDB_OK on success, or an error code.
+ */
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec);
 
 #ifdef __cplusplus
 }
