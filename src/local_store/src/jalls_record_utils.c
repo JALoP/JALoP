@@ -29,9 +29,39 @@
 
 #include "jal_alloc.h"
 #include "jalls_record_utils.h"
+
+#include <pwd.h>
+#include <string.h>
+#include <unistd.h>
+
 #ifdef __HAVE_SELINUX
 #include <selinux/selinux.h>
 #endif
+
+char *jalls_get_user_id_str(uid_t uid)
+{
+	char *ret = NULL;
+	char *pwd_buf = NULL;
+	int err;
+	struct passwd *user_pwd_ptr;
+	struct passwd user_pwd;
+	long pwd_buf_size;
+
+	memset(&user_pwd, 0, sizeof(user_pwd));
+	pwd_buf_size = sysconf(_SC_GETPW_R_SIZE_MAX);
+	pwd_buf = (char *)jal_calloc(1, pwd_buf_size);
+
+	err = getpwuid_r(uid, &user_pwd, pwd_buf, pwd_buf_size, &user_pwd_ptr);
+	if (err < 0) {
+		goto cleanup;
+	}
+	if (user_pwd_ptr) {
+		ret = jal_strdup(user_pwd_ptr->pw_name);
+	}
+cleanup:
+	free(pwd_buf);
+	return ret;
+}
 
 char *jalls_get_security_label(int socketFd)
 {
@@ -47,7 +77,7 @@ char *jalls_get_security_label(int socketFd)
 	freecon(tmp_sec_con);
 	return peercon_str;
 #else
-    socketFd = socketFd;
+	socketFd = socketFd;
 	return NULL;
 #endif //__HAVE_SELINUX
 }

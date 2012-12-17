@@ -29,9 +29,19 @@
 #ifndef _JALLS_UID_UTILS_H_
 #define _JALLS_UID_UTILS_H_
 
+#include <sys/types.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Helper utility to obtain the username for a given UID.
+ *
+ * @return NULL if an error occurred, a string otherwise. The caller is
+ * responsible for freeing the returned string.
+ */
+char *jalls_get_user_id_str(uid_t uid);
 
 #ifdef __HAVE_SELINUX
 /**
