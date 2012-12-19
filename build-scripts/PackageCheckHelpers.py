@@ -28,6 +28,7 @@ def __checkCanLink(context, source, source_type, message_libname, real_libs=[]):
 	return ret
 
 
+
 libuuid_source = '''
 #include <uuid/uuid.h>
 int main() {
@@ -51,4 +52,24 @@ int main() {
 '''
 def CheckSeLinux(context):
 	return __checkCanLink(context, selinux_source, '.cpp', 'selinux', ['selinux'])
+
+byteswap_source = '''
+#include <byteswap.h>
+#include <stdint.h>
+int main() {
+	uint16_t b16 = 0x00FF;
+	uint32_t b32 = 0x0011EEFF;
+	uint64_t b64 = 0x00112233CCDDEEFF;
+
+	bswap_16(b16);
+	bswap_32(b32);
+	bswap_64(b64);
+	return 0;
+}
+'''
+def CheckByteswap(context):
+	context.Message("Checking for byteswap.h...")
+	ret = context.TryCompile(byteswap_source, '.c')
+	context.Result( ret )
+	return ret
 

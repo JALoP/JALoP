@@ -149,6 +149,7 @@ if not (GetOption("clean") or GetOption("help")):
 						     'CheckLibUUID': PackageCheckHelpers.CheckLibUUID,
 						     'CheckSeLinux': PackageCheckHelpers.CheckSeLinux,
 						     'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
+						     'CheckByteswap': PackageCheckHelpers.CheckByteswap,
 						   })
 
 	if not conf.CheckCC():
@@ -162,6 +163,9 @@ if not (GetOption("clean") or GetOption("help")):
 
 	if not conf.CheckPKGConfig(pkg_config_version):
 		Exit(-1)
+
+	if conf.CheckByteswap():
+		debug_env.MergeFlags('-DHAVE_BYTESWAP_H')
 
 	if not conf.CheckLibUUID():
 		Exit(-1)
