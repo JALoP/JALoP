@@ -25,11 +25,11 @@ serializeRecordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serial
 utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
 
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
-	other_sources=[datetimeObj, lib_common, recordObj, recordDbsObj, recordUuidObj, serialIdObj, serializeRecordObj, segmentObj, test_utils, utilsObj])[0].abspath)
+	other_sources=[datetimeObj, lib_common, recordObj, recordDbsObj, recordUuidObj, recordXmlObj, serialIdObj, serializeRecordObj, segmentObj, test_utils, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_datetime.c',
 	other_sources=[lib_common], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_purge.cpp',
-	other_sources=[contextObj, datetimeObj, lib_common, recordObj, recordDbsObj, recordUuidObj, serialIdObj, serializeRecordObj, segmentObj, test_utils, utilsObj])[0].abspath)
+	other_sources=[contextObj, datetimeObj, lib_common, recordObj, recordDbsObj, recordUuidObj, recordXmlObj, serialIdObj, serializeRecordObj, segmentObj, test_utils, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_record.c',
 	other_sources=[lib_common, segmentObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_record_dbs.c',

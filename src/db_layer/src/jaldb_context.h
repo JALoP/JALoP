@@ -35,7 +35,8 @@
 extern "C" {
 #endif
 
-struct jaldb_record;
+#include "jaldb_record.h"
+
 struct jaldb_record_dbs;
 struct jaldb_context_t;
 typedef struct jaldb_context_t jaldb_context;
@@ -114,6 +115,25 @@ enum jaldb_status jaldb_create_journal_file(
 	jaldb_context *ctx,
 	char **path,
 	int *fd);
+
+/**
+ * Retrieves a record by serial ID.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, log).
+ * @param[in] hex_sid The serial ID (hex string) of the record being retrieved.
+ * @param[out] rec This will be filled in as a jaldb_record object if the
+ * record is found. Note that any segments located on disk will not be opened
+ * automatically.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+
+enum jaldb_status jaldb_get_record(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *hex_sid,
+		struct jaldb_record **rec);
 
 /**
  * Retrieves an audit record by serial ID.
