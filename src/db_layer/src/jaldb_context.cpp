@@ -337,30 +337,6 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_insert_audit_record(
-	jaldb_context *ctx,
-	std::string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	const void *audit_doc,
-	std::string &sid)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_insert_log_record(
-	jaldb_context *ctx,
-	const string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	uint8_t *log_buf,
-	const size_t log_len,
-	string &sid,
-	int *db_err)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
 enum jaldb_status jaldb_xfer_log(
 	jaldb_context *ctx,
 	std::string &source,
@@ -413,17 +389,6 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	const void *app_meta_doc,
 	const std::string &path,
 	const std::string &sid)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_insert_journal_metadata(
-	jaldb_context *ctx,
-	const std::string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	const std::string &path,
-	std::string &sid)
 {
 	return JALDB_E_NOT_IMPL;
 }

@@ -311,28 +311,6 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
 		const char *remote_host, const char *sid, int *db_err_out);
 
 /**
- * Inserts an audit record.
- * @param[in] ctx The context.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * @param[in] sys_meta_doc The document containing the System Metadata for the record
- * @param[in] app_meta_doc The document containing the Application Metadata (if any) for the record
- * @param[in] audit_doc The audit document
- * @param[out] sid The serial ID assigned to the record
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters is bad
- *  - JALDB_E_CORRUPTED if there is an internal problem with the database
- */
-enum jaldb_status jaldb_insert_audit_record(
-	jaldb_context *ctx,
-	std::string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	const void *audit_doc,
-	std::string &sid);
-
-/**
  * Insert an audit record into a temporary database. This caches the record
  * for a network store until they receive a digest-conf message back from the
  * remote local store.
@@ -366,33 +344,6 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
  * @return a string to use as the database name.
  */
 std::string jaldb_make_temp_db_name(const std::string &id, const std::string &suffix);
-
-/**
- * Inserts a log record.
- * @param[in] ctx The context.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * @param[in] sys_meta_doc The system metadata document
- * @param[in] app_meta_doc The application  metadata document
- * @param[in] log_buf A buffer containing the audit data.
- * @param[in] log_len The size (in bytes) of audit data.
- * @param[out] sid The serial ID for the record.
- * @param[out] db_err Set to the Berkeley DB error when this function returns
- * JALDB_E_DB
- *
- * @return JALDB_OK if the function succeeds or a JAL error code if the function
- * fails.
- * @throw XmlException if there was an error inserting the record.
- */
-enum jaldb_status jaldb_insert_log_record(
-	jaldb_context *ctx,
-	const std::string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	uint8_t *log_buf,
-	const size_t log_len,
-	std::string &sid,
-	int *db_err);
 
 /**
  * Inserts a log record into a temporary database for use when communicating
@@ -443,28 +394,6 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
  */
 enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_name,
 		DB **db_out, int *db_err_out);
-
-/**
- * Inserts journal metadata.
- * @param[in] ctx The context.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * obtained via a call to jaldb_create_journal_file.
- * @param[in] app_meta_buf A buffer containing the application metadata.
- * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
- * @param[in] path The path of the file that is journal data. This should be
- * @param[out] sid The serial ID for the record.
- *
- * @return JALDB_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_insert_journal_metadata(
-	jaldb_context *ctx,
-	const std::string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	const std::string &path,
-	std::string &sid);
 
 /**
  * Store journal metadata information about a record into a temporary database.

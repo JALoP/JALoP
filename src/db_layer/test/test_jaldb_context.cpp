@@ -268,25 +268,8 @@ extern "C" void test_read_only_flag_prevents_writing_to_db()
 
 	std::string src = "foo";
 	std::string ser_id = "1";
-
-	ret = jaldb_insert_audit_record(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
-	assert_equals(JALDB_E_READ_ONLY, ret);
-
-	ret = jaldb_insert_audit_record_into_temp(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, audit_doc, ser_id);
-	assert_equals(JALDB_E_READ_ONLY, ret);
-
-	ret = jaldb_insert_log_record(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, (uint8_t*) LOG_DATA_X, strlen(LOG_DATA_X), ser_id, &db_err);
-	assert_equals(JALDB_E_READ_ONLY, ret);
-
-	ret = jaldb_insert_log_record_into_temp(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, (uint8_t*) LOG_DATA_X, strlen(LOG_DATA_X), ser_id, &db_err);
-	assert_equals(JALDB_E_READ_ONLY, ret);
-
-	ret = jaldb_insert_journal_metadata(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, ser_id);
-	assert_equals(JALDB_E_READ_ONLY, ret);
-
-	ret = jaldb_insert_journal_metadata_into_temp(ctx, src, audit_sys_meta_doc, audit_app_meta_doc, JOURNAL_ROOT, ser_id);
-	assert_equals(JALDB_E_READ_ONLY, ret);
-
+	
+	assert_true(0);
 	jaldb_context_destroy(&ctx);
 }
 
