@@ -29,15 +29,15 @@
 #ifndef _JALDB_CONTEXT_H_
 #define _JALDB_CONTEXT_H_
 
+#include "jaldb_record.h"
 #include "jaldb_status.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "jaldb_record.h"
-
 struct jaldb_record_dbs;
+struct jaldb_segment;
 struct jaldb_context_t;
 typedef struct jaldb_context_t jaldb_context;
 
@@ -314,6 +314,17 @@ enum jaldb_status jaldb_next_journal_record(
  * @return JALDB_OK on success, or an error code.
  */
 enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec);
+
+/**
+ * Open a segment on disk for reading.
+ *
+ * It is an error to try to open a segment whose \p on_disk flag is not 1.
+ * @param[in] ctx The jaldb_context
+ * @param[in,out] s The segment to open. If this segment already has an open
+ * file descriptor, this function is a no-op.
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_segment *s);
 
 #ifdef __cplusplus
 }

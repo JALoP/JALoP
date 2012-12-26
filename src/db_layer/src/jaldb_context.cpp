@@ -933,3 +933,21 @@ out:
 	return ret;
 }
 
+enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_segment *s)
+{
+	char *path = NULL;
+	int fd = -1;
+	if (!ctx || !s || !s->on_disk || !s->payload || (0 == strlen((char*)s->payload))) {
+		return JALDB_E_INVAL;
+	}
+	if (s->fd != -1) {
+		return JALDB_OK;
+	}
+	jal_asprintf(&path, "%s/%s", ctx->journal_root, (char*)s->payload);
+	fd = open(path, O_RDONLY | O_CLOEXEC);
+	if (-1 == fd) {
+		return JALDB_E_UNKNOWN;
+	}
+	s->fd = fd;
+	return JALDB_OK;
+}
