@@ -45,6 +45,8 @@
 #include <jaldb_status.h>
 #include "jal_dump.h"
 #include "jaldb_context.hpp"
+#include "jaldb_record.h"
+#include "jaldb_segment.h"
 #include "jaldb_strings.h"
 
 #define INITIAL_ARRAY_SIZE 20
@@ -63,8 +65,7 @@ static void print_usage();
 
 void print_payload(uint8_t *payload_buf, size_t payload_size);
 
-int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_buf, size_t sys_meta_len,
-			uint8_t *app_meta_buf, size_t app_meta_len, uint8_t *record_buf, size_t record_len);
+int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct jaldb_record *rec);
 
 static void print_error(enum jaldb_status error);
 
@@ -95,18 +96,10 @@ int main(int argc, char **argv) {
 	int num_uuid = 0;
 	int counter = 0;
 	int ret = 0;
+	enum jaldb_rec_type rtype = JALDB_RTYPE_UNKNOWN;
 
 	parse_cmdline(argc, argv, &sid, &num_sid, &uuid, &num_uuid, &type,
 			 &data, &path, &home);
-
-	uint8_t *sys_meta_buf = NULL;
-	size_t sys_meta_len = 0;
-
-	uint8_t *app_meta_buf = NULL;
-	size_t app_meta_len = 0;
-
-	uint8_t *record_buf = NULL;
-	size_t record_len = 0;
 
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *ctx = jaldb_context_create();
@@ -122,110 +115,38 @@ int main(int argc, char **argv) {
 	if (write_sid_flag) {
 		print_sids(ctx, type);
 	}
+	switch(type) {
+	case ('j'):
+		rtype = JALDB_RTYPE_JOURNAL;
+		break;
+	case ('a'):
+		rtype = JALDB_RTYPE_AUDIT;
+		break;
+	case ('l'):
+		rtype = JALDB_RTYPE_LOG;
+		break;
+	default:
+		goto err_out;
+	}
 
 	for (counter = 0; counter < (num_sid + num_uuid); counter++) {
-		//grab each sid, and display
-		int fd = -1; //for the journal record
-		sys_meta_buf = NULL;
-		app_meta_buf = NULL;
-		record_buf = NULL;
+		struct jaldb_record *rec = NULL;
+		if (counter < num_sid) {
+			jaldb_ret = jaldb_get_record(ctx, rtype, *(sid + counter), &rec);
+		}
+		if (jaldb_ret != JALDB_OK) {
+			printf("failed to retrieve record, err\n");
+			print_error(jaldb_ret);
+			goto err_out;
+		}
 
-		switch(type) {
-			case ('j'):
-				if (counter < num_sid) {
-					jaldb_ret = jaldb_lookup_journal_record(
-						ctx, *(sid + counter), &sys_meta_buf, &sys_meta_len,
-						&app_meta_buf, &app_meta_len, &fd, &record_len);
+		ret = print_record(ctx, *(sid + counter), data, path, rec);
 
-/*				}else{
-					jaldb_ret = jaldb_get_journal_record_by_uuid(
-							ctx, *(uuid + counter - num_sid), &sys_meta_buf, &sys_meta_len,
-							&app_meta_buf, &app_meta_len, &record_buf, &record_len);
-*/				}
-				if (jaldb_ret != JALDB_OK) {
-					printf("jaldb_journal failed %d\n", jaldb_ret);
-					print_error(jaldb_ret);
-					goto err_out;
-				}
-
-				struct stat stat_buf;
-				if (-1 == fstat(fd, &stat_buf)) {
-					goto err_out;
-				}
-				record_len = stat_buf.st_size;
-
-				record_buf = (uint8_t *) mmap64(NULL, record_len, PROT_READ, MAP_NORESERVE | MAP_PRIVATE, fd, 0);
-				ret = print_record(*(sid + counter), data, path, type, sys_meta_buf, sys_meta_len,
-						app_meta_buf, app_meta_len, record_buf, record_len);
-				if (0 > ret) {
-					printf("Error in printing\n");
-					goto err_out;
-				}
-				munmap(record_buf, record_len);
-				record_buf = NULL;
-				record_len = 0;
-
-				close(fd);
-
-				break;
-			case ('a'):
-				if (counter < num_sid) {
-					jaldb_ret = jaldb_lookup_audit_record(
-						ctx, *(sid + counter), &sys_meta_buf, &sys_meta_len,
-						&app_meta_buf, &app_meta_len, &record_buf, &record_len);
-				} /* else{
-					jaldb_ret = jaldb_lookup_audit_record_by_uuid(
-						ctx, *(uuid + counter - num_sid), &sys_meta_buf, &sys_meta_len,
-						 &app_meta_buf, &app_meta_len, &record_buf, &record_len);
-				} */
-
-				if (jaldb_ret != JALDB_OK) {
-					printf("jaldb_audit_lookup failed %d\n", jaldb_ret);
-					print_error(jaldb_ret);
-					goto err_out;
-				}
-				ret = print_record(*(sid + counter), data, path, type, sys_meta_buf, sys_meta_len,
-						app_meta_buf, app_meta_len, record_buf, record_len);
-				if (0 > ret) {
-					printf("Error in printing\n");
-					goto err_out;
-				}
-				break;
-			case ('l'):
-				ret = 0;
-				if (counter < num_sid) {
-					jaldb_ret = jaldb_lookup_log_record(
-						ctx, *(sid + counter), &sys_meta_buf, &sys_meta_len, &app_meta_buf,
-						&app_meta_len, &record_buf, &record_len, &ret);
-				} else {
-/*					jaldb_ret = jaldb_get_log_record_by_uuid(
-						ctx, *(uuid + counter - num_sid), &sys_meta_buf, &sys_meta_len,
-						&app_meta_buf, &app_meta_len, &record_buf, &record_len);
-*/				}
-				if (ret != 0) {
-					printf("\nDB Error: %i\n", ret);
-				}
-
-				if (jaldb_ret != JALDB_OK) {
-					printf("jaldb_log_lookup failed %d\n", jaldb_ret);
-					print_error(jaldb_ret);
-					goto err_out;
-				}
-
-				ret = print_record(*(sid + counter), data, path, type, sys_meta_buf, sys_meta_len,
-						app_meta_buf, app_meta_len, record_buf, record_len);
-				if (0 > ret) {
-					printf("Error in printing\n");
-					goto err_out;
-				}
-				break;
-			default:
-				//control should never reach here
-				goto err_out;
-		} //switch
-		free(sys_meta_buf);
-		free(app_meta_buf);
-		free(record_buf);
+		if (0 > ret) {
+			printf("Error in printing\n");
+			goto err_out;
+		}
+		jaldb_destroy_record(&rec);
 	} //for () loop
 
 	/* deconstruct this util */
@@ -251,32 +172,48 @@ out:
 	if (home) {
 		free(home);
 	}
-	if(ctx) {
-		jaldb_context_destroy(&ctx);
-	}
+	jaldb_context_destroy(&ctx);
 
 	return ret;
 }
 
-ssize_t jal_dump_write(int fd, uint8_t *buf, size_t len)
+ssize_t jal_dump_write(jaldb_context *ctx, int fd, struct jaldb_segment *s)
 {
+#define BUF_SIZE 4096
+	uint8_t buf[BUF_SIZE];
 	ssize_t ret = 0;
-	size_t offset = 0;
-	while(len > 0) {
-		ret = write(fd, &buf[offset], len);
-		len -= ret;
-		offset+=ret;
+	size_t count = 0;
+
+	if (!s) {
+		return 0;
 	}
-
-	if (ret <= 0)
-		return ret;
-
-	return offset;
-	
+	if (s->on_disk) {
+		if (JALDB_OK != jaldb_open_segment_for_read(ctx, s)) {
+			return -1;
+		}
+		while(1) {
+			ssize_t rd = read(s->fd, buf, BUF_SIZE);
+			if (-1 == rd) {
+				return -1;
+			}
+			ret = write(fd, buf, rd);
+			if (-1 == ret) {
+				return -1;
+			}
+			count += ret;
+		}
+	} else {
+		ret = write(fd, s->payload, s->length);
+		if (-1 == ret) {
+			return -1;
+		}
+		count += ret;
+	}
+	return count;
 }
 
-int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_buf, size_t sys_meta_len,
-			 uint8_t *app_meta_buf, size_t app_meta_len, uint8_t *record_buf, size_t record_len) {
+int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct jaldb_record *rec)
+{
 	ssize_t ret = 0;
 	//Initialize path to write to
 	int fd_sys = -1;
@@ -289,97 +226,90 @@ int print_record(char *sid, char data, char *path, char type, uint8_t *sys_meta_
 
 	//Print to stdout if not to a file
 	if (!path) {
-		if (('a' == data || 'z' == data) && (0 != app_meta_len) && app_meta_buf) {
-			printf("\napplication metadata\n");
-			print_payload(app_meta_buf, app_meta_len);
+		if (('a' == data || 'z' == data)) {
+			if (0 > jal_dump_write(ctx, fileno(stdout), rec->app_meta)) {
+				ret = -1;
+				goto out;
+			}
 		}
-		if (('s' == data || 'z' == data) && (0 != sys_meta_len) && sys_meta_buf) {
+		if (('s' == data || 'z' == data)) {
 			printf("\nsystem metadata\n");
-			//(the default)
-			print_payload(sys_meta_buf, sys_meta_len);
+			if (0 > jal_dump_write(ctx, fileno(stdout), rec->sys_meta)) {
+				ret = -1;
+				goto out;
+			}
 		}
-		if (('j' == type) && (('p' == data) || ('z' == data))
-			 && ((size_t)(100) < record_len) && (!record_buf)) {
-			printf("\njournal metadata\n");
-			//used to ensure that journal records don't cause unwanted actions by being too big
-			print_payload(record_buf, ((size_t)100));
-		}
-		if ((('p' == data) || ('z' == data)) && (0 != record_len) && (record_buf)) {
+		if (('p' == data) || ('z' == data)) {
 			printf("\npayload\n");
-			print_payload(record_buf, record_len);
+			if (0 > jal_dump_write(ctx, fileno(stdout), rec->payload)) {
+				ret = -1;
+				goto out;
+			}
 		}
 	} else {
-		//Print record to file if applicable
-		if ('j' == type) {
-			jal_asprintf(&tmpstr, "%sjournal-%s/", path, sid);
-		} else if ('a' == type) {
+		switch (rec->type) {
+		case JALDB_RTYPE_JOURNAL:
+			jal_asprintf(&tmpstr, "%sjournal-%s/journal.bin", path, sid);
+			jal_asprintf(&datstr, "%sjournal.bin",tmpstr);
+			break;
+		case JALDB_RTYPE_AUDIT:
 			jal_asprintf(&tmpstr, "%saudit-%s/", path, sid);
-		} else if ('l' == type) {
+			jal_asprintf(&datstr, "%saudit.xml",tmpstr);
+			break;
+		case JALDB_RTYPE_LOG:
 			jal_asprintf(&tmpstr, "%slog-%s/", path, sid);
+			jal_asprintf(&datstr, "%slog.bin",tmpstr);
+			break;
+		default:
+			goto out;
 		}
 
 		//Make the sub-directory
 		ret = mkdir(tmpstr, S_IRWXU|S_IRGRP|S_IROTH);
 
 		jal_asprintf(&sysstr, "%ssystem-metadata.xml", tmpstr);
+		jal_asprintf(&appstr, "%sapplication-metadata.xml", tmpstr);
 
-		if (0 != app_meta_len && NULL != app_meta_buf) {
-			jal_asprintf(&appstr, "%sapplication-metadata.xml", tmpstr);
+		fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 0600);	// Delete existing file(O_TRUNC)?
+		if (fd_sys == -1) {
+			perror("Error Opening System Metadata Doc");
+			ret = -1;
+			goto out;
 		}
-
-		if ('j' == type) {
-			jal_asprintf(&datstr, "%sjournal.bin",tmpstr);
-		} else if ('a' == type) {
-			jal_asprintf(&datstr, "%saudit.xml",tmpstr);
-		} else if ('l' == type) {
-			jal_asprintf(&datstr, "%slog.bin",tmpstr);
+		if (0 < jal_dump_write(ctx, fd_sys, rec->sys_meta)) {
+			printf("Path for system data is %s.\n", sysstr);
+		} else {
+			ret = -1;
+			goto out;
 		}
-
-		// Now sys_meta_data goes to sysstr ; app_meta_data to appstr ; record to datstr
-
-		if ((0 != sys_meta_len) && (NULL != sys_meta_buf)) {
-			fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 0600);	// Delete existing file(O_TRUNC)?
-			if (fd_sys == -1) {
-				perror("Error Opening System Metadata Doc");
-				ret = -1;
-				goto out;
-			}
-			if (0 < jal_dump_write(fd_sys, sys_meta_buf, sys_meta_len)) {
-				printf("Path for system data is %s.\n", sysstr);
-			} else {
-				ret = -1;
-				goto out;
-			}
-		}
-		if ((0 != app_meta_len) && (NULL != app_meta_buf)) {
+		if (rec->app_meta) {
 			fd_app = open(appstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
 			if (fd_app == -1) {
 				perror("Error Opening Application Metadata Doc");
 				ret = -1;
 				goto out;
 			}
-			if (0 < jal_dump_write(fd_app, app_meta_buf, app_meta_len)) {
+			if (0 < jal_dump_write(ctx, fd_app, rec->app_meta)) {
 				printf("Path for application data is %s.\n", appstr);
 			} else {
 				ret = -1;
 				goto out;
 			}
 		}
-		if ((0 != record_len) && (NULL != record_buf)) {
+		if (rec->payload) {
 			fd_dat = open(datstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
 			if (fd_dat == -1) {
 				perror("Error Opening Payload File");
 				ret = -1;
 				goto out;
 			}
-			if (0 < jal_dump_write(fd_dat, record_buf, record_len)) {
+			if (0 < jal_dump_write(ctx, fd_dat, rec->payload)) {
 				printf("Path for record data is %s.\n", datstr);
 			} else {
 				ret = -1;
 				goto out;
 			}
 		}
-
 	}
 out:
 	free(tmpstr);
