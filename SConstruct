@@ -99,13 +99,13 @@ for t in ['CC', 'CXX', 'CPP' ]:
 
 debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env['HAVE_SELINUX'] = False;
+debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 
 if platform.system() == 'SunOS':
 	debug_env.Replace(RPATHPREFIX = '-Wl,-R')
 	debug_env.PrependENVPath('PKG_CONFIG_PATH',
 			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
 	debug_env.MergeFlags('-I/usr/local/BerkeleyDB.4.7/include')
-	debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/lib -Wl,-R,/usr/local/lib -Wl,-R,/usr/local/ssl/lib'.split()})
 	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/BerkeleyDB.4.7/lib -Wl,-R,/usr/local/BerkeleyDB.4.7/lib'.split()})
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')

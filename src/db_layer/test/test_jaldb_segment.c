@@ -66,7 +66,7 @@ void test_jaldb_create_segment_works()
 	assert_not_equals(NULL, segment);
 	assert_equals(0, segment->length);
 	assert_equals(-1, segment->fd);
-	assert_pointer_equals(NULL, segment->payload);
+	assert_pointer_equals((void*)NULL, segment->payload);
 	jaldb_destroy_segment(&segment);
 }
 

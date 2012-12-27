@@ -114,7 +114,7 @@ enum jaldb_status jaldb_context_init(
 
 
 	DB_TXN *db_txn = NULL;
-	env->txn_begin(env, NULL, &db_txn, DB_READ_UNCOMMITTED);
+	env->txn_begin(env, NULL, &db_txn, DB_DIRTY_READ);
 	db_err = env->open(env, db_root, env_flags, 0);
 	if (0 != db_err) {
 		return JALDB_E_INVAL;
