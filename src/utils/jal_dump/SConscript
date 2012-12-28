@@ -4,7 +4,7 @@ from Utils import add_project_lib
 
 env = env.Clone()
 add_project_lib(env, 'db_layer', 'jal-db')
-env.MergeFlags("-ldb")
+env.MergeFlags(env['bdb_ldflags'])
 
 sources = env.Glob("*.cpp")
 

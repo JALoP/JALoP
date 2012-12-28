@@ -82,7 +82,7 @@ debug_env['JALOP_VERSION_STR'] = '1.0'
 update_env_with_install_paths(debug_env)
 # There is a quirk in scons where it likes to try and normalize the path. Basically, if you use
 # PrependENVPath, it will scan for duplicate path entries, and keep the the first entry, however
-# if you use AppendENVPath, it will scan for duplicate path entries, and keep the last.  Since 
+# if you use AppendENVPath, it will scan for duplicate path entries, and keep the last.  Since
 # we're trying to adopt the user's environment here. Scons won't do this until you either append
 # or prepend a path element, so we need to do a prepend (to keep the user's path in the correct
 # order first. Since the build-scripts is all custom code, there should be no harm in prepending
@@ -105,9 +105,7 @@ if platform.system() == 'SunOS':
 	debug_env.Replace(RPATHPREFIX = '-Wl,-R')
 	debug_env.PrependENVPath('PKG_CONFIG_PATH',
 			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
-	debug_env.MergeFlags('-I/usr/local/BerkeleyDB.4.7/include')
 	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/lib -Wl,-R,/usr/local/lib -Wl,-R,/usr/local/ssl/lib'.split()})
-	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/BerkeleyDB.4.7/lib -Wl,-R,/usr/local/BerkeleyDB.4.7/lib'.split()})
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
 	debug_env.MergeFlags('-lsocket')
 
@@ -150,6 +148,7 @@ if not (GetOption("clean") or GetOption("help")):
 						     'CheckSeLinux': PackageCheckHelpers.CheckSeLinux,
 						     'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
 						     'CheckByteswap': PackageCheckHelpers.CheckByteswap,
+						     'CheckBDB': PackageCheckHelpers.CheckBDB,
 						   })
 
 	if not conf.CheckCC():
@@ -188,6 +187,9 @@ this is want you want, this is OK, re-run scons with the \
 		if not conf.CheckPKGAtLeastVersion(pkg, version):
 			Exit(-1)
 
+	if not conf.CheckBDB():
+		Exit(-1)
+
 	conf.Finish()
 
 	for key, (pkg, version) in packages_at_least.items():
@@ -211,6 +213,15 @@ debug_env.ParseConfig('getconf LFS_CFLAGS', function=add_lfs_cflags)
 # linker flags for libuuid
 debug_env["libuuid_ldflags"] = "-luuid"
 
+# Linker flags for Berkeley DB
+if platform.system() == "SunOS":
+	debug_env["bdb_ldflags"] = "-I/usr/local/BerkeleyDB.4.7/include \
+					-L/usr/local/BerkeleyDB.4.7/lib \
+					-Wl,-R,/usr/local/BerkeleyDB.4.7/lib \
+					-ldb".split()
+else:
+	debug_env["bdb_ldflags"] = "-ldb"
+
 all_tests = debug_env.Alias('tests')
 
 # Clone the debug environment after it's been configured, no need to re-run all the conf checks
@@ -233,7 +244,7 @@ lcov_output_dir = "cov"
 lcov_output_file = "app.info"
 lcov_output_path = os.path.join(lcov_output_dir, lcov_output_file)
 
-coverage = debug_env.Alias(target=lcov_output_dir, source=None, 
+coverage = debug_env.Alias(target=lcov_output_dir, source=None,
 		action=["mkdir -p ${TARGET}",
 			"lcov -q --directory ${TARGET}/.. -b ${TARGET}/.. --capture --output-file %s" % lcov_output_path,
 			"lcov -q --remove %s /usr/\* --output-file %s" % (lcov_output_path, lcov_output_path),

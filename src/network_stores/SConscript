@@ -18,7 +18,7 @@ env.MergeFlags(env['libxml2_ldflags'])
 env.MergeFlags(env['xmlsec1_cflags'])
 env.MergeFlags(env['xmlsec1_ldflags'])
 env.MergeFlags(env['libuuid_ldflags'])
-env.MergeFlags("-ldb")
+env.MergeFlags(env['bdb_ldflags'])
 env.MergeFlags("-Wno-shadow")
 
 jsub, jald, net_stores_env = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer network_lib')

@@ -13,7 +13,7 @@ env.MergeFlags({'CPPPATH':['#src/jal_utils/src', '#src/db_layer/src',
 	'#src/lib_common/include', '#src/lib_common/src', '#src/producer_lib/include', '.']})
 env.MergeFlags(env['libuuid_ldflags'])
 env.MergeFlags('-lpthread')
-env.MergeFlags('-ldb')
+env.MergeFlags(env['bdb_ldflags'])
 env.MergeFlags('-DSCHEMAS_ROOT=\\\\\\"' + env['SOURCE_ROOT']  + '/schemas/\\\\\\"')
 if env['HAVE_SELINUX'] == True:
 	env.MergeFlags('-D__HAVE_SELINUX')

@@ -73,3 +73,24 @@ def CheckByteswap(context):
 	context.Result( ret )
 	return ret
 
+
+bdb_source = '''
+#include <db.h>
+
+#if defined(DB_VERSION_MAJOR) && DB_VERSION_MAJOR >= 4
+	#if DB_VERSION_MAJOR == 4
+		#if defined(DB_VERSION_MINOR) && DB_VERSION_MINOR >= 3
+		#else
+			#error ""
+		#endif
+	#endif
+#else
+	#error ""
+#endif
+'''
+
+def CheckBDB(context):
+	context.Message("Checking for BDB >= 4.3...")
+	ret = context.TryCompile(bdb_source, '.c')
+	context.Result(ret)
+	return ret
