@@ -457,15 +457,14 @@ void test_serialize_record_returns_error()
 
 void test_serialize_deserialize_record_works()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -482,20 +481,21 @@ void test_serialize_deserialize_record_works()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_sys_meta_on_disk()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.sys_meta = &sys_meta_on_disk_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -516,20 +516,21 @@ void test_serialize_deserialize_record_works_with_sys_meta_on_disk()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_sys_meta_in_ram()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.sys_meta = &sys_meta_in_ram_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -551,20 +552,21 @@ void test_serialize_deserialize_record_works_with_sys_meta_in_ram()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_app_meta_on_disk()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.app_meta = &app_meta_on_disk_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -585,20 +587,21 @@ void test_serialize_deserialize_record_works_with_app_meta_on_disk()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_app_meta_in_ram()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.app_meta = &app_meta_in_ram_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -621,20 +624,20 @@ void test_serialize_deserialize_record_works_with_app_meta_in_ram()
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
 
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_payload_on_disk()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.payload = &payload_on_disk_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -655,20 +658,21 @@ void test_serialize_deserialize_record_works_with_payload_on_disk()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_payload_in_ram()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.payload = &payload_in_ram_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -691,11 +695,11 @@ void test_serialize_deserialize_record_works_with_payload_in_ram()
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
 
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_all_segments()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.sys_meta = &sys_meta_on_disk_sgmt;
@@ -703,10 +707,10 @@ void test_serialize_deserialize_record_works_with_all_segments()
 	rec.payload = &payload_in_ram_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -731,21 +735,21 @@ void test_serialize_deserialize_record_works_with_all_segments()
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
 
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_missing_payload()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.sys_meta = &sys_meta_on_disk_sgmt;
 	rec.app_meta = &app_meta_on_disk_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -766,21 +770,21 @@ void test_serialize_deserialize_record_works_missing_payload()
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
 
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_missing_app_meta()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.sys_meta = &sys_meta_on_disk_sgmt;
 	rec.payload = &payload_in_ram_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -802,21 +806,21 @@ void test_serialize_deserialize_record_works_missing_app_meta()
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
 
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_missing_sys_meta()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.app_meta = &app_meta_on_disk_sgmt;
 	rec.payload = &payload_in_ram_sgmt;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -837,20 +841,21 @@ void test_serialize_deserialize_record_works_missing_sys_meta()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_with_no_uid()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.have_uid = 0;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -867,20 +872,21 @@ void test_serialize_deserialize_record_works_with_no_uid()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }
 
 void test_serialize_deserialize_record_works_when_not_synced()
 {
-	uint8_t *res_buf = NULL;
 	size_t res_size = 0;
 	struct jaldb_record *dsr = NULL;
 	rec.synced = 0;
 
 	enum jaldb_status ret;
-	ret = jaldb_serialize_record(0, &rec, &res_buf, &res_size);
+	ret = jaldb_serialize_record(0, &rec, &buffer, &res_size);
 	assert_equals(JALDB_OK, ret);
 
-	ret = jaldb_deserialize_record(0, res_buf, res_size, &dsr);
+	ret = jaldb_deserialize_record(0, buffer, res_size, &dsr);
 	assert_equals(JALDB_OK, ret);
 
 	assert_equals(rec.pid, dsr->pid);
@@ -898,4 +904,6 @@ void test_serialize_deserialize_record_works_when_not_synced()
 	assert_string_equals(rec.sec_lbl, dsr->sec_lbl);
 	assert_equals(1, dsr->version);
 	assert_equals(JALDB_RTYPE_UNKNOWN, dsr->type);
+
+	jaldb_destroy_record(&dsr);
 }

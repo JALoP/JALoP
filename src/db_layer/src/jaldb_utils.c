@@ -64,7 +64,7 @@ enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote
 	key.flags = DB_DBT_USERMEM;
 
 	new_val.data = jal_strdup(sid);
-	new_val.size = strlen(sid);
+	new_val.size = strlen(sid) + 1;
 
 	old_val.flags = DB_DBT_MALLOC;
 	err = db->get(db, txn, &key, &old_val, DB_RMW);

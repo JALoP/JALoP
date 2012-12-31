@@ -120,6 +120,7 @@ void test_store_confed_sid_returns_ok_with_valid_input()
 	free(rhost);
 	free(ser_id);
 	free(data.data);
+	free(key.data);
 	rhost = NULL;
 	ser_id = NULL;
 	data.data = NULL;
