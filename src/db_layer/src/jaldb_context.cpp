@@ -119,14 +119,12 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_INVAL;
 	}
 
-
 	DB_TXN *db_txn = NULL;
-	env->txn_begin(env, NULL, &db_txn, DB_DIRTY_READ);
-	db_err = env->open(env, db_root, env_flags, 0);
-	if (0 != db_err) {
+
+	db_err = env->txn_begin(env, NULL, &db_txn, DB_DIRTY_READ);
+	if (db_err != 0) {
 		return JALDB_E_INVAL;
 	}
-	int db_ret = 0;
 
 	uint32_t db_flags = DB_THREAD;
 	if (db_rdonly_flag) {
@@ -154,20 +152,20 @@ enum jaldb_status jaldb_context_init(
 	}
 
 	if (!ctx->db_read_only) {
-		db_ret = jaldb_initialize_serial_id(ctx->journal_dbs->sid_db, db_txn);
-		if (0 != db_ret) {
+		db_err = jaldb_initialize_serial_id(ctx->journal_dbs->sid_db, db_txn);
+		if (0 != db_err) {
 			return JALDB_E_INVAL;
 			db_txn->abort(db_txn);
 			return JALDB_E_INVAL;
 		}
-		db_ret = jaldb_initialize_serial_id(ctx->audit_dbs->sid_db, db_txn);
-		if (0 != db_ret) {
+		db_err = jaldb_initialize_serial_id(ctx->audit_dbs->sid_db, db_txn);
+		if (0 != db_err) {
 			return JALDB_E_INVAL;
 			db_txn->abort(db_txn);
 			return JALDB_E_INVAL;
 		}
-		db_ret = jaldb_initialize_serial_id(ctx->log_dbs->sid_db, db_txn);
-		if (0 != db_ret) {
+		db_err = jaldb_initialize_serial_id(ctx->log_dbs->sid_db, db_txn);
+		if (0 != db_err) {
 			return JALDB_E_INVAL;
 			db_txn->abort(db_txn);
 			return JALDB_E_INVAL;
@@ -176,45 +174,45 @@ enum jaldb_status jaldb_context_init(
 	}
 
 
-	db_ret = db_create(&ctx->journal_conf_db, env, 0);
-	if (db_ret != 0) {
+	db_err = db_create(&ctx->journal_conf_db, env, 0);
+	if (db_err != 0) {
 		db_txn->abort(db_txn);
-		JALDB_DB_ERR((ctx->journal_conf_db), db_ret);
+		JALDB_DB_ERR((ctx->journal_conf_db), db_err);
 		return JALDB_E_DB;
 	}
-	db_ret = ctx->journal_conf_db->open(ctx->journal_conf_db, db_txn,
+	db_err = ctx->journal_conf_db->open(ctx->journal_conf_db, db_txn,
 			JALDB_CONF_DB, JALDB_JOURNAL_CONF_NAME, DB_BTREE, db_flags, 0);
-	if (db_ret != 0) {
+	if (db_err != 0) {
 		db_txn->abort(db_txn);
-		JALDB_DB_ERR((ctx->journal_conf_db), db_ret);
+		JALDB_DB_ERR((ctx->journal_conf_db), db_err);
 		return JALDB_E_DB;
 	}
 
-	db_ret = db_create(&ctx->audit_conf_db, env, 0);
-	if (db_ret != 0) {
+	db_err = db_create(&ctx->audit_conf_db, env, 0);
+	if (db_err != 0) {
 		db_txn->abort(db_txn);
-		JALDB_DB_ERR((ctx->audit_conf_db), db_ret);
+		JALDB_DB_ERR((ctx->audit_conf_db), db_err);
 		return JALDB_E_DB;
 	}
-	db_ret = ctx->audit_conf_db->open(ctx->audit_conf_db, db_txn,
+	db_err = ctx->audit_conf_db->open(ctx->audit_conf_db, db_txn,
 			JALDB_CONF_DB, JALDB_AUDIT_CONF_NAME, DB_BTREE, db_flags, 0);
-	if (db_ret != 0) {
+	if (db_err != 0) {
 		db_txn->abort(db_txn);
-		JALDB_DB_ERR((ctx->audit_conf_db), db_ret);
+		JALDB_DB_ERR((ctx->audit_conf_db), db_err);
 		return JALDB_E_DB;
 	}
 
-	db_ret = db_create(&ctx->log_conf_db, env, 0);
-	if (db_ret != 0) {
+	db_err = db_create(&ctx->log_conf_db, env, 0);
+	if (db_err != 0) {
 		db_txn->abort(db_txn);;
-		JALDB_DB_ERR((ctx->log_conf_db), db_ret);
+		JALDB_DB_ERR((ctx->log_conf_db), db_err);
 		return JALDB_E_DB;
 	}
-	db_ret = ctx->log_conf_db->open(ctx->log_conf_db, db_txn,
+	db_err = ctx->log_conf_db->open(ctx->log_conf_db, db_txn,
 			JALDB_CONF_DB, JALDB_LOG_CONF_NAME, DB_BTREE, db_flags, 0);
-	if (db_ret != 0) {
+	if (db_err != 0) {
 		db_txn->abort(db_txn);;
-		JALDB_DB_ERR((ctx->log_conf_db), db_ret);
+		JALDB_DB_ERR((ctx->log_conf_db), db_err);
 		return JALDB_E_DB;
 	}
 
