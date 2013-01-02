@@ -258,8 +258,11 @@ void jaldb_context_destroy(jaldb_context **ctx)
 		}
 		delete ctxp->temp_dbs;
 	}
-
-	free(*ctx);
+	if (ctxp->env) {
+		ctxp->env->close(ctxp->env, 0);
+	}
+	ctxp->env = NULL;
+	free(ctxp);
 	*ctx = NULL;
 }
 std::string jaldb_make_temp_db_name(const string &id, const string &suffix)
