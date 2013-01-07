@@ -76,6 +76,8 @@ void test_jalp_param_append_return_list_with_param_inserted_center()
 	struct jalp_param *frst_param = jal_malloc(sizeof(*frst_param));
 	struct jalp_param *scnd_param = jal_malloc(sizeof(*scnd_param));
 	struct jalp_param *new_scnd = NULL;
+	frst_param->next = NULL;
+	scnd_param->next = NULL;
 	frst_param->key = jal_strdup("name");
 	frst_param->value = jal_strdup("value");
 	frst_param->next = scnd_param;
