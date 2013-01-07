@@ -30,7 +30,9 @@
 #ifndef _JALDB_TRAVERSE_H_
 #define _JALDB_TRAVERSE_H_
 
-struct jaldb_record;
+#include "jaldb_context.h"
+#include "jaldb_record.h"
+#include "jaldb_status.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,6 +62,41 @@ enum jaldb_iter_status {
  *               etc.
  */
 typedef enum jaldb_iter_status (*jaldb_iter_cb)(const char *hex_sid, struct jaldb_record *rec, void *up);
+
+/**
+ * Utility function to iterate over the records in a DB in order by SID.
+ *
+ * This function iterates over the database in SID order. Operations performed
+ * on each record are dictated by the return value of the callback. Only SIDs
+ * which fulfill <tt> start_sid <= sid <= end_sid </tt> are examined. SIDs are
+ * never negative numbers.
+ *
+ * If the return from \p cb is JALDB_ITER_CONT, continue processing, but do not 
+ * modify the current record.
+ *
+ * If the return from \p cb is JALDB_ITER_REMOVE, remove the current record,
+ * and continue processing.
+ *
+ * Any other return value causes processing to halt, the current record is not
+ * removed, and control is returned to the caller.
+ *
+ * @param[in] ctx The DB context to use.
+ * @param[in] type The type of record to delete.
+ * @param[in] start_sid The beginning of the range to traverse (SID as hex
+ * string). This may be \p NULL, in which case the value of zero is used.
+ * @param[in] end_sid The end of the range to traverse (SID as hex string).
+ * This may be \p NULL, in which case the value of positive infinity is used.
+ * @param[in] cb The user specified callback.
+ * @param[in] up A pointer value that is passed un-modified to \p cb as the \p up
+ * parameter.
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_iterate_by_sid_range(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		const char *start_sid,
+		const char *end_sid,
+		jaldb_iter_cb cb, void *up);
 
 #ifdef __cplusplus
 }
