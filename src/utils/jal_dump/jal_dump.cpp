@@ -69,6 +69,9 @@ int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct ja
 
 static void print_error(enum jaldb_status error);
 
+int dump_records(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
+	int num_id, enum jaldb_status *ret_status);
+
 /**
  * Utility function to dynamically grow an array as needed.
  * If (*max_elms == elm_count) then the array is grown.
@@ -129,26 +132,20 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
-	for (counter = 0; counter < (num_sid + num_uuid); counter++) {
-		struct jaldb_record *rec = NULL;
-		if (counter < num_sid) {
-			jaldb_ret = jaldb_get_record(ctx, rtype, *(sid + counter), &rec);
-		}
-		if (jaldb_ret != JALDB_OK) {
-			printf("failed to retrieve record, err\n");
-			print_error(jaldb_ret);
-			goto err_out;
-		}
+	ret = dump_records(ctx, rtype, data, path, sid, num_sid, &jaldb_ret);
+	if (jaldb_ret != JALDB_OK) {
+		printf("failed to retrieve record, err\n");
+		print_error(jaldb_ret);
+		goto err_out;
+	}
+	if (0 > ret) {
+		printf("Error in printing\n");
+		goto err_out;
+	}
 
-		ret = print_record(ctx, *(sid + counter), data, path, rec);
-
-		if (0 > ret) {
-			printf("Error in printing\n");
-			goto err_out;
-		}
-		jaldb_destroy_record(&rec);
-	} //for () loop
-
+	if(num_uuid > 0){
+		printf("Dumping via uuid is currently unsupported...\n");
+	}
 	/* deconstruct this util */
 	ret = 0;
 	goto out;
@@ -177,6 +174,39 @@ out:
 	return ret;
 }
 
+int dump_records(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
+			int num_id, enum jaldb_status *ret_status)
+{
+	//TODO: Fix for proper searching via uuid.
+	int cnt = 0;
+	int ret_err = 0;
+
+	for (cnt = 0; cnt < num_id; cnt++) {
+		struct jaldb_record *rec = NULL;
+
+		if (cnt < num_id) {
+			//jaldb_get_record does not currently support finding a record via uuid
+			*ret_status = jaldb_get_record(ctx, rtype, *(id_arr + cnt), &rec);
+		}
+
+		if (*ret_status != JALDB_OK) {
+			ret_err = -1;
+			return ret_err;
+		}
+
+		ret_err = print_record(ctx, *(id_arr + cnt), data, path, rec);
+
+		if (0 > ret_err) {
+			ret_err = -2;
+			return ret_err;
+		}
+
+		jaldb_destroy_record(&rec);
+	}
+
+	return ret_err;
+}
+
 ssize_t jal_dump_write(jaldb_context *ctx, int fd, struct jaldb_segment *s)
 {
 #define BUF_SIZE 4096
@@ -195,6 +225,8 @@ ssize_t jal_dump_write(jaldb_context *ctx, int fd, struct jaldb_segment *s)
 			ssize_t rd = read(s->fd, buf, BUF_SIZE);
 			if (-1 == rd) {
 				return -1;
+			} else if (0 == rd) {
+				break;
 			}
 			ret = write(fd, buf, rd);
 			if (-1 == ret) {
@@ -249,7 +281,7 @@ int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct ja
 	} else {
 		switch (rec->type) {
 		case JALDB_RTYPE_JOURNAL:
-			jal_asprintf(&tmpstr, "%sjournal-%s/journal.bin", path, sid);
+			jal_asprintf(&tmpstr, "%sjournal-%s/", path, sid);
 			jal_asprintf(&datstr, "%sjournal.bin",tmpstr);
 			break;
 		case JALDB_RTYPE_AUDIT:
