@@ -69,8 +69,11 @@ int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct ja
 
 static void print_error(enum jaldb_status error);
 
-int dump_records(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
+int dump_records_by_sid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
 	int num_id, enum jaldb_status *ret_status);
+
+int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **uuid_arr,
+	int num_uuid, enum jaldb_status *ret_status);
 
 /**
  * Utility function to dynamically grow an array as needed.
@@ -132,7 +135,7 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
-	ret = dump_records(ctx, rtype, data, path, sid, num_sid, &jaldb_ret);
+	ret = dump_records_by_sid(ctx, rtype, data, path, sid, num_sid, &jaldb_ret);
 	if (jaldb_ret != JALDB_OK) {
 		printf("failed to retrieve record, err\n");
 		print_error(jaldb_ret);
@@ -143,9 +146,17 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
-	if(num_uuid > 0){
-		printf("Dumping via uuid is currently unsupported...\n");
+	ret = dump_records_by_uuid(ctx, rtype, data, path, uuid, num_uuid, &jaldb_ret);
+	if (jaldb_ret != JALDB_OK) {
+		printf("failed to retrieve record, err\n");
+		print_error(jaldb_ret);
+		goto err_out;
 	}
+	if (0 > ret) {
+		printf("Error in printing\n");
+		goto err_out;
+	}
+
 	/* deconstruct this util */
 	ret = 0;
 	goto out;
@@ -174,10 +185,9 @@ out:
 	return ret;
 }
 
-int dump_records(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
+int dump_records_by_sid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
 			int num_id, enum jaldb_status *ret_status)
 {
-	//TODO: Fix for proper searching via uuid.
 	int cnt = 0;
 	int ret_err = 0;
 
@@ -185,7 +195,6 @@ int dump_records(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char 
 		struct jaldb_record *rec = NULL;
 
 		if (cnt < num_id) {
-			//jaldb_get_record does not currently support finding a record via uuid
 			*ret_status = jaldb_get_record(ctx, rtype, *(id_arr + cnt), &rec);
 		}
 
@@ -195,6 +204,45 @@ int dump_records(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char 
 		}
 
 		ret_err = print_record(ctx, *(id_arr + cnt), data, path, rec);
+
+		if (0 > ret_err) {
+			ret_err = -2;
+			return ret_err;
+		}
+
+		jaldb_destroy_record(&rec);
+	}
+
+	return ret_err;
+}
+
+int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
+			int num_id, enum jaldb_status *ret_status)
+{
+	int cnt = 0;
+	int ret_err = 0;
+	char *sid = NULL;
+
+	for (cnt = 0; cnt < num_id; cnt++) {
+		struct jaldb_record *rec = NULL;
+
+		if (cnt < num_id) {
+			uuid_t uuid;
+			if (0 != uuid_parse(*(id_arr + cnt), uuid)) {
+				fprintf(stderr, "Bad UUID (ignoring): %s\n", *(id_arr + cnt));
+			} else {
+				*ret_status = jaldb_get_record_by_uuid(ctx, rtype, uuid, &sid, &rec);
+			}
+		}
+
+		if (*ret_status != JALDB_OK) {
+			ret_err = -1;
+			return ret_err;
+		}
+
+		ret_err = print_record(ctx, sid, data, path, rec);
+		free(sid);
+		sid = NULL;
 
 		if (0 > ret_err) {
 			ret_err = -2;
@@ -256,8 +304,11 @@ int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct ja
 	char *appstr = NULL;
 	char *datstr = NULL;
 
-	//Print to stdout if not to a file
-	if (!path) {
+	if ('u' == data) {
+		char uuid[37];
+		uuid_unparse(rec->uuid, uuid);
+		printf("%s:%s\n", uuid, sid);
+	} else if (!path) {
 		if (('a' == data || 'z' == data)) {
 			if (0 > jal_dump_write(ctx, fileno(stdout), rec->app_meta)) {
 				ret = -1;
@@ -362,7 +413,8 @@ out:
 }
 
 static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid,
-				char *type, char *data, char **path, char **home) {
+				char *type, char *data, char **path, char **home)
+{
 
 	int counter = 0;
 	static const char *defdir = "/var/lib/jalop/db";
@@ -418,7 +470,7 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 				*type = *optarg;
 				break;
 			case 'd':
-				if (('a' != *optarg) && ('s' != *optarg) && ('p' != *optarg) && ('z' != *optarg)) {
+				if (('a' != *optarg) && ('s' != *optarg) && ('p' != *optarg) && ('z' != *optarg) && ('u' != *optarg)) {
 					*data = 's';
 				} else {
 					*data = *optarg;
@@ -460,8 +512,12 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	if (('j' != *type) && ('a' != *type) && ('l' != *type)) {
 		goto err_usage;
 	}
-	if (('a' != *data) && ('s' != *data) && ('p' != *data) && ('z' != *data)) {
+	if (('a' != *data) && ('s' != *data) && ('p' != *data) && ('z' != *data) && ('u' != *data)) {
 		*data = 's';
+	}
+
+	if (*path && ('u' == *data)) {
+		goto err_usage;
 	}
 	return;
 
@@ -484,6 +540,7 @@ err_usage:
 	if ((home != NULL) && (*home != NULL)) {
 		free(*home);
 	}
+
 
 	exit(-1);
 
@@ -520,7 +577,8 @@ static void print_usage()
 			or \"l\" (log record).\n\
 	-d, --data=D	Specifies which section of the data should be dumped, options are \"a\" for application\n\
 			metadata, \"s\" for system metadata, or \"p\" for the payload (raw journal, audit, or log\n\
-			data). The default is to dump the system metadata. If this option is specified \n\
+			data), or \"u\" for just the UUID. The output will be in the form <sid>:<uuid>. \n\
+			The default is to dump the system metadata. If this option is specified \n\
 			multiple times, the last occurance is used. To retrieve all portions of a record,\n\
 			use \"z\".\n\
 	-p, --path=P	Copy the record to the provided path, \"/P/\". This will create a sub-directory with\n\
