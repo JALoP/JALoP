@@ -156,19 +156,16 @@ enum jaldb_status jaldb_context_init(
 	if (!ctx->db_read_only) {
 		db_err = jaldb_initialize_serial_id(ctx->journal_dbs->sid_db, db_txn);
 		if (0 != db_err) {
-			return JALDB_E_INVAL;
 			db_txn->abort(db_txn);
 			return JALDB_E_INVAL;
 		}
 		db_err = jaldb_initialize_serial_id(ctx->audit_dbs->sid_db, db_txn);
 		if (0 != db_err) {
-			return JALDB_E_INVAL;
 			db_txn->abort(db_txn);
 			return JALDB_E_INVAL;
 		}
 		db_err = jaldb_initialize_serial_id(ctx->log_dbs->sid_db, db_txn);
 		if (0 != db_err) {
-			return JALDB_E_INVAL;
 			db_txn->abort(db_txn);
 			return JALDB_E_INVAL;
 		}
@@ -1040,5 +1037,126 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
 		return JALDB_E_UNKNOWN;
 	}
 	s->fd = fd;
+	return JALDB_OK;
+}
+
+enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *hex_sid)
+{
+	int sid_bytes;
+	enum jaldb_status ret;
+	BIGNUM *sid = NULL;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	DB_TXN *txn = NULL;
+	DBT key;
+
+	if (!ctx || !hex_sid) {
+		return JALDB_E_INVAL;
+	}
+
+	memset(&key, 0, sizeof(key));
+
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = BN_hex2bn(&sid, hex_sid);
+	if (0 == db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	sid_bytes = BN_num_bytes(sid);
+	if (0 >= sid_bytes) {
+		ret = JALDB_E_UNKNOWN;
+		goto out;
+	}
+	key.flags = DB_DBT_REALLOC;
+	key.data = jal_malloc(sid_bytes);
+	key.size = sid_bytes;
+	BN_bn2bin(sid, (unsigned char*)key.data);
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		db_ret = rdbs->primary_db->del(rdbs->primary_db, txn, &key, 0);
+		if (0 == db_ret) {
+			txn->commit(txn, 0);
+			break;
+		}
+
+		txn->abort(txn);
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else if (DB_NOTFOUND == db_ret) {
+			ret = JALDB_E_NOT_FOUND;
+			goto out;
+		}
+		// some other error
+		ret = JALDB_E_DB;
+		goto out;
+	}
+	ret = JALDB_OK;
+out:
+	BN_free(sid);
+	free(key.data);
+	return ret;
+}
+
+enum jaldb_status jaldb_remove_segments_from_disk(jaldb_context *ctx, struct jaldb_record *rec)
+{
+	enum jaldb_status ret = JALDB_OK;
+	enum jaldb_status tmp = JALDB_OK;
+	tmp = jaldb_remove_segment_from_disk(ctx, rec->sys_meta);
+	if (tmp != JALDB_OK) {
+		ret = tmp;
+	}
+	tmp = jaldb_remove_segment_from_disk(ctx, rec->app_meta);
+	if (tmp != JALDB_OK) {
+		ret = tmp;
+	}
+	tmp = jaldb_remove_segment_from_disk(ctx, rec->payload);
+	if (tmp != JALDB_OK) {
+		ret = tmp;
+	}
+	return ret;
+}
+
+enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jaldb_segment *segment)
+{
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+	if (!segment) {
+		return JALDB_OK;
+	}
+	if (!segment->on_disk) {
+		return JALDB_OK;
+	}
+	char *path = NULL;
+	jal_asprintf(&path, "%s/%s", ctx->journal_root, (char*)segment->payload);
+	unlink(path);
+	free(path);
 	return JALDB_OK;
 }

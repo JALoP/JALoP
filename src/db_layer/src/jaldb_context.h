@@ -349,6 +349,37 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
  */
 enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_segment *s);
 
+/**
+ * Remove a record (by SID) from the database
+ *
+ * @param[in] ctx The context.
+ * @param[in] hex_sid The serial ID of the record being retrieved.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *hex_sid);
+
+/**
+ * Utility function to remove all the segments store on disk for a specific
+ * record.
+ * @param[in] ctx the jaldb_context
+ * @param[in] rec the record whose segemnts should be removed.
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jaldb_segment *segment);
+
+/**
+ * Utility function to remove a single segment from disk.
+ * @param[in] ctx the jaldb_context
+ * @param[in] segment the segment to remove.
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_remove_segments_from_disk(jaldb_context *ctx, struct jaldb_record *rec);
+
 #ifdef __cplusplus
 }
 #endif
