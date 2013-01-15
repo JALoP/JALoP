@@ -32,7 +32,7 @@
 extern "C" {
 #endif
 
-#define JAL_VERSION 0.1
+#define JAL_VERSION 0.2
 
 char *jal_version_as_string();
 
