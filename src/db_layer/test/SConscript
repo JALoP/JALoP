@@ -35,7 +35,7 @@ tests.append(env.TestDeptTest('test_jaldb_record.c',
 tests.append(env.TestDeptTest('test_jaldb_record_dbs.c',
 	other_sources=[datetimeObj, lib_common, recordUuidObj, serialIdObj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_record_uuid.c',
-	other_sources=[])[0].abspath)
+	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_record_xml.c',
 	other_sources=[lib_common, test_utils])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_segment.c',

@@ -162,8 +162,9 @@ int jaldb_extract_datetime_w_tz_key(DB *secondary, const DBT *key, const DBT *da
 		return -1;
 	}
 	if (has_tz) {
-		result->data = dtString;
+		result->data = jal_strdup(dtString);
 		result->size = dtLen + 1; // keep the null terminator
+		result->flags = DB_DBT_APPMALLOC;
 		return 0;
 	}
 	return DB_DONOTINDEX;
@@ -181,8 +182,9 @@ int jaldb_extract_datetime_wo_tz_key(DB *secondary, const DBT *key, const DBT *d
 		return -1;
 	}
 	if (!has_tz) {
-		result->data = dtString;
+		result->data = jal_strdup(dtString);
 		result->size = dtLen + 1; // keep the null terminator
+		result->flags = DB_DBT_APPMALLOC;
 		return 0;
 	}
 	return DB_DONOTINDEX;

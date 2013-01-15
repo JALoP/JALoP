@@ -29,6 +29,8 @@
 
 #include <uuid/uuid.h>
 
+#include "jal_alloc.h"
+
 #include "jaldb_record_uuid.h"
 #include "jaldb_serialize_record.h"
 
@@ -47,8 +49,10 @@ int jaldb_extract_record_uuid(DB *secondary, const DBT *key, const DBT *data, DB
 		return -1;
 	}
 
-	result->data = headers->record_uuid;
+	result->data = jal_malloc(sizeof(uuid_t));
+	uuid_copy(result->data, headers->record_uuid);
 	result->size = sizeof(uuid_t);
+	result->flags = DB_DBT_APPMALLOC;
 
 	return 0;
 }

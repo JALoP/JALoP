@@ -26,7 +26,9 @@
  * limitations under the License.
  */
 
+
 #include <db.h>
+#include <stdlib.h>
 #include <test-dept.h>
 #include <uuid/uuid.h>
 
@@ -77,10 +79,10 @@ void test_extract_uuid_works()
 
 	int ret = jaldb_extract_record_uuid(NULL, NULL, &record_dbt, &result);
 	assert_equals(0, ret);
-	assert_pointer_equals(headers->record_uuid, result.data);
 	assert_equals(16, result.size);
 	uuid_copy(uuid_res, result.data);
 	assert_equals(0, uuid_compare(a_uuid, uuid_res));
+	free(result.data);
 }
 
 void test_extract_uuid_returns_error_for_input()

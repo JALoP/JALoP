@@ -271,6 +271,7 @@ void test_extract_datetime_w_tz_key_works()
 	assert_not_equals((void*) NULL, result.data);
 	assert_equals(strlen(DT4) + 1, result.size);
 	assert_equals(0, strcmp(result.data, DT4));
+	free(result.data);
 }
 
 void test_extract_datetime_w_tz_key_returns_no_index_with_no_tz()
@@ -298,6 +299,7 @@ void test_extract_datetime_wo_tz_key_works()
 	assert_not_equals((void*) NULL, result.data);
 	assert_equals(strlen(DT1_NO_TZ) + 1, result.size);
 	assert_equals(0, strcmp(result.data, DT1_NO_TZ));
+	free(result.data);
 }
 
 void test_extract_datetime_wo_tz_key_returns_no_index_with_tz()
