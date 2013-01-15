@@ -31,6 +31,7 @@
 #define _JALDB_RECORD_XML_H_
 
 #include "jaldb_status.h"
+#include <jalop/jal_status.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,6 +56,16 @@ struct jaldb_record;
 enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		char **doc,
 		size_t *dsize);
+
+/*
+ * Function to parse sys metadata xml into a jaldb_record structure
+ * @param xml [in] buffer containing the xml to parse
+ * @param xml_len [in] Length of buffer
+ * @param sys_meta [out] The populated structure
+ */
+enum jal_status jaldb_xml_to_sys_metadata(uint8_t *xml, size_t xml_len, struct jaldb_record **sys_meta);
+
+
 
 #ifdef __cplusplus
 }

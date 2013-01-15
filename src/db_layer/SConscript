@@ -15,6 +15,10 @@ env.MergeFlags(env['openssl_cflags'])
 env.MergeFlags(env['openssl_ldflags'])
 
 
+env.MergeFlags(env['libxml2_cflags'])
+env.MergeFlags(env['libxml2_ldflags'])
+
+
 db_lib, db_env = SConscript('src/SConscript', exports='env')
 SConscript('test/SConscript', exports='env db_env all_tests lib_common db_lib test_utils ')
 Return("db_lib")

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><JALRecord xmlns="http://www.dod.mil/jalop-1.0/systemMetadata" JID="UUID-f9032e9c-7e9a-4f2c-b40e-621b0e66c47f"><JALDataType>journal,/JALDataType><RecordID>f9032e9c-7e9a-4f2c-b40e-621b0e66c47f</RecordID><Hostname>test.jalop.com</Hostname><HostUUID>34c90268-57ba-4d4c-a602-bdb30251ec77</HostUUID><Timestamp>2011-11-10T04:09:55-05:00</Timestamp><ProcessID>0</ProcessID><User name="root">0</User><SecurityLabel>unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023</SecurityLabel><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+<ds:SignedInfo>
+<ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/>
+<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+<ds:Reference URI="#xpointer(id('UUID-f9032e9c-7e9a-4f2c-b40e-621b0e66c47f'))">
+<ds:Transforms>
+<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+</ds:Transforms>
+<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+<ds:DigestValue>ZRSVbNJrTLcAtsEIi2FAD0ksZcJ3ZS3sC8rnRUIhvhA=</ds:DigestValue>
+</ds:Reference>
+</ds:SignedInfo>
+<ds:SignatureValue>mg9UoZ2g6JxSkfkIHMkPDihFqoPAzmppOGTTKPyPHwSUqhFHj+B0yMvPfzb4+g4+
+O4hrbaU+AOiqTeYLDxMX3g==</ds:SignatureValue>
+<ds:KeyInfo>
+<ds:KeyValue>
+<ds:RSAKeyValue>
+<ds:Modulus>3PRI+qegjHCd70xtRMPzknUDqY6iH93XJwfuGqXguiEB8n3dxaZu1ZNzMe1BHpGje2RPaRr5EXBK
+AXMPnw6MXQ==</ds:Modulus>
+<ds:Exponent>AQAB</ds:Exponent>
+</ds:RSAKeyValue>
+</ds:KeyValue>
+<ds:X509Data>
+<ds:X509SubjectName>C=US, ST=MD, L=Columbia, CN=www.tresys.com</ds:X509SubjectName>
+<ds:X509IssuerSerial>
+<ds:X509IssuerName>C=US, ST=MD, L=Columbia, CN=www.tresys.com</ds:X509IssuerName>
+<ds:X509SerialNumber>17415892367561384562</ds:X509SerialNumber>
+</ds:X509IssuerSerial>
+<ds:X509Certificate>MIICszCCAhygAwIBAgIJAPGxrdW+7uJyMA0GCSqGSIb3DQEBBQUAMEYxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJNRDERMA8GA1UEBxMIQ29sdW1iaWExFzAVBgNVBAMTDnd3dy50cmVzeXMuY29tMB4XDTExMDcwNzE3Mjc0MloXDTIxMDcwNDE3Mjc0MlowRjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAk1EMREwDwYDVQQHEwhDb2x1bWJpYTEXMBUGA1UEAxMOd3d3LnRyZXN5cy5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALOzU51HAVI0n3TKPlwxAaRLWvjgswX+CeTYPO0J2PFky16SQ5FYadlsogOZK/9faE4v2pnURersHrzNNfLBljAA+AOaVH+zdAd61ynC/5gWnM53ME3gRliNsa5xKvsz6X9Kce3wEQlTOFh9Z3jVBEo1Pmq+ANK7CQG8ghfuo5A1AgMBAAGjgagwgaUwHQYDVR0OBBYEFLbpMRFjFtaJ+bLk9T4gzlI1yNpOMHYGA1UdIwRvMG2AFLbpMRFjFtaJ+bLk9T4gzlI1yNpOoUqkSDBGMQswCQYDVQQGEwJVUzELMAkGA1UECBMCTUQxETAPBgNVBAcTCENvbHVtYmlhMRcwFQYDVQQDEw53d3cudHJlc3lzLmNvbYIJAPGxrdW+7uJyMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAVl9/nYw9NqmCqbnHnvyGGTHsOGB/JeIGO5ffg/KuuNwYuYFh6ddOPSs7BeoFDtg6qWZ9FR8uKyW4xctz+gK2ZXD8F/E2zMPZTSGx/gJ+hJAQ+/xJpZKhu9x2hiZRan0VecDhfZ49F2Ki/K2Oi8x3uvtb7m+FOnu1vON1fFPDAAs=</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</ds:Signature><Manifest xmlns="http://www.w3.org/2000/09/xmldsig#"><Reference URI="jalop:payload"><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><DigestValue>44yEl95X8QDgaK8LTVrc3FUKBSsfQW0UkxeLdv11dDQ=</DigestValue></Reference></Manifest></JALRecord> 

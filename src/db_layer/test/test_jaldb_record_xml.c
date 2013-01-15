@@ -36,6 +36,8 @@
 
 #include <test-dept.h>
 
+#include "jal_alloc.h"
+
 #include "jaldb_record.h"
 #include "jaldb_record_xml.h"
 #include "jaldb_segment.h"
@@ -56,6 +58,9 @@ struct jaldb_segment payload;
 #define JID "UUID-" REC_UUID
 #define PID_STR "1234"
 #define UID_STR "5678"
+#define GOOD_SYS_META "./test-input/system-metadata.xml"
+#define GOOD_SYS_META_CDATA "./test-input/system-metadata-with-cdata.xml"
+#define MALFORMED_SYS_META "./test-input/system-metadata-malformed.xml"
 
 void setup()
 {
@@ -228,4 +233,80 @@ void test_to_system_fails_with_bad_input()
 	rec.type = JALDB_RTYPE_UNKNOWN;
 	ret = jaldb_record_to_system_metadata_doc(&rec, &dbuf, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
+}
+
+void test_jaldb_xml_to_sys_metadata_works()
+{
+	struct jaldb_record *sys_meta;
+	FILE *fd = fopen(GOOD_SYS_META,"r");
+	assert_not_equals(fd,NULL);
+	assert_equals(fseek(fd, 0L, SEEK_END),0);
+	long bufsize = ftell(fd);
+	assert_not_equals(bufsize,-1);
+	
+	char *buf = jal_calloc(bufsize,sizeof(char));
+	assert_not_equals(NULL,buf);
+	assert_equals(fseek(fd,0L,SEEK_SET),0);
+	assert_not_equals(fread(buf,sizeof(char),bufsize,fd),0);
+
+	assert_equals(JAL_OK,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
+	assert_not_equals(sys_meta,NULL);
+	assert_equals(sys_meta->pid,0);
+	assert_equals(sys_meta->uid,0);
+	assert_string_equals(sys_meta->hostname,"test.jalop.com");
+	assert_string_equals(sys_meta->timestamp,"2011-11-10T04:09:55-05:00");
+	assert_string_equals(sys_meta->username,"root");
+	assert_string_equals(sys_meta->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
+	assert_equals(sys_meta->type,JALDB_RTYPE_JOURNAL);
+	
+	fclose(fd);
+	free(buf);
+}
+
+void test_jaldb_xml_to_sys_metadata_works_with_cdata()
+{
+	struct jaldb_record *sys_meta;
+	FILE *fd = fopen(GOOD_SYS_META_CDATA,"r");
+	assert_not_equals(fd,NULL);
+	assert_equals(fseek(fd, 0L, SEEK_END),0);
+	long bufsize = ftell(fd);
+	assert_not_equals(bufsize,-1);
+	
+	char *buf = jal_calloc(bufsize,sizeof(char));
+	assert_not_equals(NULL,buf);
+	assert_equals(fseek(fd,0L,SEEK_SET),0);
+	assert_not_equals(fread(buf,sizeof(char),bufsize,fd),0);
+
+	assert_equals(JAL_OK,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
+	assert_not_equals(sys_meta,NULL);
+	assert_equals(sys_meta->pid,0);
+	assert_equals(sys_meta->uid,0);
+	assert_string_equals(sys_meta->hostname,"test.jalop.com");
+	assert_string_equals(sys_meta->timestamp,"2011-11-10T04:09:55-05:00");
+	assert_string_equals(sys_meta->username,"root");
+	assert_string_equals(sys_meta->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
+	assert_equals(sys_meta->type,JALDB_RTYPE_JOURNAL);
+	
+	fclose(fd);
+	free(buf);
+}
+
+void test_jaldb_xml_to_sys_metadata_returns_error_on_malformed_data()
+{
+	struct jaldb_record *sys_meta;
+	FILE *fd = fopen(MALFORMED_SYS_META,"r");
+	assert_not_equals(fd,NULL);
+	assert_equals(fseek(fd, 0L, SEEK_END),0);
+	long bufsize = ftell(fd);
+	assert_not_equals(bufsize,-1);
+	
+	char *buf = jal_calloc(bufsize,sizeof(char));
+	assert_not_equals(NULL,buf);
+	assert_equals(fseek(fd,0L,SEEK_SET),0);
+	assert_not_equals(fread(buf,sizeof(char),bufsize,fd),0);
+
+	assert_equals(JALDB_E_INVAL,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
+	
+	fclose(fd);
+	free(buf);
 }
