@@ -39,11 +39,13 @@ extern "C" {
 #include <test-dept.h>
 }
 
+#include "test_utils.h"
 #define __STDC_FORMAT_MACROS
 #include <db.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <libxml/xmlschemastypes.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -52,6 +54,7 @@ extern "C" {
 #include "jal_alloc.h"
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
+#include "jaldb_segment.h"
 #include "jaldb_utils.h"
 
 using namespace std;
@@ -76,6 +79,10 @@ using namespace std;
 #define LAST_SID_VALUE "doc_50"
 #define LAST_K_RECORDS_VALUE 20
 
+#define DT1 "2012-12-12T09:00:00Z"
+#define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
+#define EXPECTED_RECORD_VERSION 1
+
 static void *audit_sys_meta_doc = NULL;
 static void *audit_app_meta_doc = NULL;
 static void *audit_doc = NULL;
@@ -83,28 +90,25 @@ static void *log_sys_meta_doc = NULL;
 static void *log_app_meta_doc = NULL;
 static jaldb_context *context = NULL;
 
+#define ITEMS_IN_DB 1
+struct jaldb_record *records[ITEMS_IN_DB] = { NULL };
 
 extern "C" void setup()
 {
-	struct stat st;
-	if (stat(OTHER_DB_ROOT, &st) != 0) {
-		int status;
-		status = mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	}
-	else {
-		struct dirent *d;
-		DIR *dir;
-		char buf[256];
-		dir = opendir(OTHER_DB_ROOT);
-		while ((d = readdir(dir)) != NULL) {
-			sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
-			remove(buf);
-		}
-		int ret_val;
-		ret_val = closedir(dir);
-	}
+	dir_cleanup(OTHER_DB_ROOT);
+	mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
 	context = jaldb_context_create();
-	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false);
+	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false));
+
+
+	records[0] = jaldb_create_record();
+	records[0]->version = EXPECTED_RECORD_VERSION;
+	records[0]->source = jal_strdup("source");
+	records[0]->type = JALDB_RTYPE_LOG;
+	records[0]->timestamp = jal_strdup(DT1);
+	records[0]->payload = jaldb_create_segment();
+	assert_equals(0, uuid_parse(UUID_1, records[0]->uuid));
 }
 
 extern "C" void teardown()
@@ -115,8 +119,28 @@ extern "C" void teardown()
 	log_sys_meta_doc = NULL;
 	log_app_meta_doc = NULL;
 	jaldb_context_destroy(&context);
+	dir_cleanup(OTHER_DB_ROOT);
+
+	for(int i = 0; i < ITEMS_IN_DB; i++) {
+		jaldb_destroy_record(&records[i]);
+	}
+
+	xmlSchemaCleanupTypes();
 }
 
+extern "C" void test_remove_by_serial_id()
+{
+	struct jaldb_record *rec = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	assert_equals(JALDB_OK, jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"1"));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec));
+}
+
+extern "C" void test_remove_by_serial_id_returns_error_when_not_found()
+{
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"2"));
+}
 // Disabling tests for now
 #if 0
 extern "C" void test_db_destroy_does_not_crash()
