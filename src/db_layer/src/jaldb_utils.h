@@ -36,6 +36,7 @@ extern "C" {
 
 #include <db.h>
 #include "jaldb_status.h"
+#include "jaldb_record.h"
 
 #define JALDB_STR_HELPER(x) #x
 #define JALDB_STR(x) JALDB_STR_HELPER(x)
@@ -96,7 +97,10 @@ int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_l
 enum jaldb_status jaldb_create_file(
 	const char *db_root,
 	char **path,
-	int *fd);
+	int *fd,
+	uuid_t uuid,
+	enum jaldb_rec_type rtype,
+	enum jaldb_data_type dtype);
 
 /**
  * Create a timestamp for the Current time in the XML DateTime format.

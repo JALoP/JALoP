@@ -37,6 +37,7 @@
 #include <test-dept.h>
 #include <time.h>
 #include <unistd.h>
+#include <jalop/jal_status.h>
 
 #include "jal_alloc.h"
 #include "jaldb_strings.h"
@@ -210,79 +211,76 @@ void test_sid_cmp_returns_correct_value()
 	assert_equals(0, ret);
 }
 
-struct tm *gmtime_r_always_fails(__attribute__((unused)) const time_t *timer,
-			__attribute__((unused)) struct tm *out)
-{
-	return NULL;
-}
-
-size_t strftime_always_fails(__attribute__((unused)) char *str,
-			__attribute__((unused)) size_t maxsize,
-			__attribute__((unused)) const char *format,
-			__attribute__((unused)) const struct tm *timeptr)
-{
-	return 0;
-}
-
-int mkstemp_always_fails(__attribute__((unused)) char *template)
+int mkstemps_always_fails(__attribute__((unused)) char *template, __attribute__((unused)) int len)
 {
 	return -1;
 }
 
-void test_jaldb_create_file_returns_cleanly_when_time_fails()
-{
-	replace_function(time, time_always_fails);
-	char *path = NULL;
-	int fd = -1;
-	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
-	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
-	assert_pointer_equals((void*) NULL, path);
-	assert_equals(-1, fd);
-	restore_function(time);
-}
-
-void test_jaldb_create_file_returns_cleanly_when_gmtime_r_fails()
-{
-	replace_function(gmtime_r, gmtime_r_always_fails);
-	char *path = NULL;
-	int fd = -1;
-	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
-	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
-	assert_pointer_equals((void*) NULL, path);
-	assert_equals(-1, fd);
-	restore_function(gmtime_r);
-}
-
-void test_jaldb_create_file_returns_cleanly_when_strftime_fails()
-{
-	replace_function(strftime, strftime_always_fails);
-	char *path = NULL;
-	int fd = -1;
-	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
-	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
-	assert_pointer_equals((void*) NULL, path);
-	assert_equals(-1, fd);
-	restore_function(strftime);
-}
-
 void test_jaldb_create_file_returns_cleanly_when_mkstemp_fails()
 {
-	replace_function(mkstemp, mkstemp_always_fails);
+	replace_function(mkstemps, mkstemps_always_fails);
 	char *path = NULL;
 	int fd = -1;
-	enum jaldb_status ret = jaldb_create_file("./", &path, &fd);
+	uuid_t uuid,uuid_orig;
+	uuid_generate(uuid);
+	uuid_copy(uuid_orig,uuid);
+	enum jaldb_status ret = jaldb_create_file("/tmp/", &path, &fd,uuid,JALDB_RTYPE_AUDIT,JALDB_DTYPE_SYS_META);
 	assert_equals(JALDB_E_INTERNAL_ERROR, ret);
 	assert_pointer_equals((void*) NULL, path);
 	assert_equals(-1, fd);
-	restore_function(mkstemp);
+	assert_equals(uuid_compare(uuid,uuid_orig),0);
+	restore_function(mkstemps);
 }
 
 void test_jaldb_create_file_returns_cleanly_when_db_root_is_null()
 {
 	char *path = NULL;
 	int fd = -1;
-	enum jaldb_status ret = jaldb_create_file(NULL, &path, &fd);
+	uuid_t uuid,uuid_orig;
+	uuid_generate(uuid);
+	uuid_copy(uuid_orig,uuid);
+	enum jaldb_status ret = jaldb_create_file(NULL, &path, &fd,uuid,JALDB_RTYPE_AUDIT,JALDB_DTYPE_SYS_META);
 	assert_equals(JALDB_E_INVAL, ret);
 	assert_pointer_equals((void*) NULL, path);
 	assert_equals(-1, fd);
+	assert_equals(uuid_compare(uuid,uuid_orig),0);
 }
+
+void test_jaldb_create_file_returns_cleanly_when_rtype_is_unknown()
+{
+        char *path = NULL;
+        int fd = -1;
+        uuid_t uuid,uuid_orig;
+        uuid_generate(uuid);
+        uuid_copy(uuid_orig,uuid);
+        enum jaldb_status ret = jaldb_create_file("/tmp/", &path, &fd,uuid,JALDB_RTYPE_UNKNOWN,JALDB_DTYPE_SYS_META);
+        assert_equals(JALDB_E_INVAL, ret);
+        assert_pointer_equals((void*) NULL, path);
+        assert_equals(-1, fd);
+        assert_equals(uuid_compare(uuid,uuid_orig),0);
+}
+
+
+void test_jaldb_create_file_works()
+{
+	char *path = NULL;
+	char *full_path = NULL;
+	int fd = -1;
+	uuid_t uuid, uuid_orig;
+	uuid_generate(uuid);
+	uuid_copy(uuid_orig,uuid);
+
+	enum jaldb_status ret = jaldb_create_file("/tmp/",&path,&fd,uuid,JALDB_RTYPE_AUDIT,JALDB_DTYPE_SYS_META);
+	assert_equals(JAL_OK,ret);
+	assert_equals(uuid_compare(uuid,uuid_orig),0);
+	assert_not_equals(fd,-1);
+	assert_not_equals(path, NULL);
+
+	full_path = jal_calloc(strlen(path)+6,sizeof(char));
+	snprintf(full_path,strlen(path)+6,"/tmp/%s",path);
+
+	assert_equals(access(full_path,F_OK),0);
+
+	free(full_path);
+}
+	

@@ -55,6 +55,17 @@ enum jaldb_rec_type {
 	JALDB_RTYPE_UNKNOWN  = 1 << 3, //!< Indicates the record type is unknown/unset */
 };
 
+/*
+ * Enum used to distinguish between system metadata, application metadata, and payload components of a record
+ */
+
+enum jaldb_data_type {
+        JALDB_DTYPE_SYS_META = 1 << 4, // Indicates System Metadata
+        JALDB_DTYPE_APP_META = 1 << 5, // Indicates Application Metadata
+        JALDB_DTYPE_PAYLOAD  = 1 << 6, // Indicates Payload Metadata
+};
+
+
 /**
  * This structure is used to insert/retrieve records from the database.
  */

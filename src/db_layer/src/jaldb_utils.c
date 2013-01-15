@@ -39,7 +39,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 
 enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote_host,
@@ -110,71 +109,134 @@ int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_l
 enum jaldb_status jaldb_create_file(
 	const char *db_root,
 	char **relative_path_out,
-	int *fd)
+	int *fd,
+	uuid_t uuid,
+	enum jaldb_rec_type rtype,
+	enum jaldb_data_type dtype)
 {
-	if (!db_root || !relative_path_out || *relative_path_out || !fd) {
+	if (!db_root || !relative_path_out || *relative_path_out || !fd || uuid_is_null(uuid) || rtype == JALDB_RTYPE_UNKNOWN) {
 		return JALDB_E_INVAL;
 	}
-	// This is for the string 'yyyy/mm/dd/journal.XXXXXX'
-	#define TEMPLATE_LEN 26
+
+	#define UUID_STRING_REP_LEN 37
+	#define NUM_UUID_SEGMENTS 8
+	#define CHARS_PER_UUID_SEGMENT 5
+	//includes four hexidecimal characters and a "/"
+	#define TYPE_LEN 17
+	//TYPE_LEN is long enough to hold "_journal_sys_meta", which is the longest type name
+	#define FILENAME_PATTERN_LEN 6
+
+	#define FILENAME_LEN FILENAME_PATTERN_LEN + TYPE_LEN + 1
+
+	#define REL_PATH_LEN NUM_UUID_SEGMENTS * CHARS_PER_UUID_SEGMENT + FILENAME_LEN
+
 	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
 	enum jal_status jal_ret = JAL_E_INVAL;
 
-	time_t current_time;
-	struct tm gmt;
 	char *full_path = NULL;
-	char *template = NULL;
-	int written = -1;
-	int len = -1;
+	char *suffix = NULL;
+	int written = 0;
+	int root_len = -1;
 	int lfd = -1;
+	char *uuid_string = jal_calloc(UUID_STRING_REP_LEN,sizeof(char));
+	uuid_unparse(uuid,uuid_string);
 
-	current_time = time(NULL);
-	if (current_time == (time_t) -1) {
-		// should never happen for gettimeofday
+	root_len = strlen(db_root);
+
+	full_path = (char *) jal_calloc(root_len+REL_PATH_LEN,sizeof(char));
+
+	strcpy(full_path,db_root);
+
+	int path_pos = root_len;
+	int uuid_pos = 0;
+
+	for (int i = 0; i < NUM_UUID_SEGMENTS; i++){
+		if (*(uuid_string+uuid_pos) == '-'){
+			uuid_pos += 1;
+		}
+		snprintf(full_path+path_pos,
+			CHARS_PER_UUID_SEGMENT,
+			"%s",
+			uuid_string+uuid_pos);
+		snprintf(full_path+path_pos+CHARS_PER_UUID_SEGMENT-1,
+			2,
+			"/");
+		path_pos += CHARS_PER_UUID_SEGMENT;
+		uuid_pos += CHARS_PER_UUID_SEGMENT -1;
+		written += CHARS_PER_UUID_SEGMENT;
+	}
+
+	suffix = jal_calloc(FILENAME_LEN,sizeof(char));
+
+	
+	if (rtype == JALDB_RTYPE_JOURNAL)
+	{
+		strcpy(suffix,"XXXXXX_journal");
+	}
+	else if (rtype == JALDB_RTYPE_AUDIT)
+	{
+		strcpy(suffix,"XXXXXX_audit");
+	}
+	else if (rtype == JALDB_RTYPE_LOG)
+	{
+		strcpy(suffix,"XXXXXX_log");
+	}
+	else
+	{
+		ret = JALDB_E_INVAL;
 		goto error_out;
 	}
 
-	memset(&gmt, 0, sizeof(gmt));
-	if (NULL == gmtime_r(&current_time, &gmt)) {
+	if (dtype == JALDB_DTYPE_SYS_META)
+	{
+		strcat(suffix,"_sys_meta");
+	}
+	else if (dtype == JALDB_DTYPE_APP_META)
+	{
+		strcat(suffix,"_app_meta");
+	}
+	else if (dtype == JALDB_DTYPE_PAYLOAD)
+	{
+		strcat(suffix,"_payload");
+	}
+	else
+	{
+		ret = JALDB_E_INVAL;
+		goto error_out;
+	}
+
+	written += strlen(suffix);
+	strcat(full_path,suffix);
+
+	if (written >= REL_PATH_LEN){
 		// should never happen
+		ret = JALDB_E_INTERNAL_ERROR;
 		goto error_out;
 	}
-	template = (char*) jal_malloc(TEMPLATE_LEN);
-	if (0 == strftime(template, TEMPLATE_LEN, "%Y/%m/%d/journal.XXXXXX", &gmt)) {
-		// a return of 0 is an error in this case, but it should never
-		// happen.
-		goto error_out;
-	}
-	len = strlen(db_root) + 1 + TEMPLATE_LEN;
-	full_path = (char*) jal_malloc(len);
-	written = snprintf(full_path, len, "%s/%s", db_root, template);
-	if (written >= len) {
-		// shouldn't happen since the size of full_path was calculated
-		// based on db_root & template
-		goto error_out;
-	}
-	jal_ret = jal_create_dirs(full_path);
+
+	jal_ret = jal_create_dirs(full_path);	
 	if (JAL_OK != jal_ret) {
 		goto error_out;
 	}
 	ret = JALDB_OK;
-	lfd = mkstemp(full_path);
+	lfd = mkstemps(full_path,strlen(suffix)-6);
 	if (lfd == -1) {
 		ret = JALDB_E_INTERNAL_ERROR;
 		goto error_out;
 	}
-	memcpy(template, full_path + strlen(db_root) + 1, TEMPLATE_LEN);
+
+	*relative_path_out = jal_calloc(REL_PATH_LEN,sizeof(char));
+
+	memcpy(*relative_path_out, full_path + root_len, REL_PATH_LEN);
 	goto out;
 error_out:
-	free(template);
-	template = NULL;
 	if (lfd > -1) {
 		close(lfd);
 		lfd = -1;
 	}
 out:
-	*relative_path_out = template;
 	free(full_path);
+	free(uuid_string);
 	*fd = lfd;
 	return ret;
 }
