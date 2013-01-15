@@ -901,6 +901,129 @@ out:
 	return ret;
 }
 
+enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		uuid_t uuid,
+		char **hex_sid,
+		struct jaldb_record **recpp)
+{
+	struct jaldb_record *rec = NULL;
+	int byte_swap;
+	enum jaldb_status ret;
+	BIGNUM *sid = NULL;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	DB_TXN *txn = NULL;
+	DBT key;
+	DBT pkey;
+	DBT val;
+
+	if (!ctx || !hex_sid || *hex_sid || !recpp || *recpp) {
+		return JALDB_E_INVAL;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!rdbs || !rdbs->record_id_idx_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	key.flags = DB_DBT_USERMEM;
+	key.data = uuid;
+	key.size = 16; // UUIDs are always 16 bytes
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	val.flags = DB_DBT_REALLOC;
+	pkey.flags = DB_DBT_REALLOC;
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		db_ret = rdbs->record_id_idx_db->pget(rdbs->record_id_idx_db, txn, &key, &pkey, &val, DB_DEGREE_2);
+		if (0 == db_ret) {
+			txn->commit(txn, 0);
+			break;
+		}
+
+		txn->abort(txn);
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else if (DB_NOTFOUND == db_ret) {
+			ret = JALDB_E_NOT_FOUND;
+			goto out;
+		}
+		// some other error
+		ret = JALDB_E_DB;
+		goto out;
+	}
+	ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	rec->type = type;
+	if (!rec->sys_meta) {
+		rec->sys_meta = jaldb_create_segment();
+		char *doc = NULL;
+		size_t doc_len = 0;
+		ret = jaldb_record_to_system_metadata_doc(rec, &doc, &doc_len);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+		rec->sys_meta->payload = (uint8_t*)doc;
+		rec->sys_meta->length = doc_len;
+	}
+
+	sid = BN_bin2bn((unsigned char *)pkey.data, pkey.size, NULL);
+	if (!sid) {
+		ret = JALDB_E_NO_MEM;
+		goto out;
+	}
+	*hex_sid = BN_bn2hex(sid);
+	if (!(*hex_sid)) {
+		ret = JALDB_E_NO_MEM;
+		goto out;
+	}
+
+	*recpp = rec;
+	rec = NULL;
+	ret = JALDB_OK;
+out:
+	jaldb_destroy_record(&rec);
+	if (sid) {
+		BN_free(sid);
+	}
+	free(pkey.data);
+	free(val.data);
+	return ret;
+}
+
 enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_segment *s)
 {
 	char *path = NULL;
