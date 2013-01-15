@@ -87,8 +87,10 @@ int dir_cleanup(const char *path)
 		ent_path = NULL;
 	}
 	ret = rmdir(path);
+	closedir(dir);
 
 out:
 	free(ent_path);
 	return ret;
 }
+

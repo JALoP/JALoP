@@ -29,6 +29,10 @@
 #ifndef __TEST_UTILS_H_
 #define __TEST_UTILS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Remove directory heirarchy
  *
@@ -36,5 +40,9 @@
  * @return 0 on succes, -1 on error
  */
 int dir_cleanup(const char *path);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
