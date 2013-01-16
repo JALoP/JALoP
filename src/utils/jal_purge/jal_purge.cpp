@@ -35,9 +35,10 @@
 #include <string.h>
 
 #include "jaldb_context.hpp"
-#include "jaldb_purge.hpp"
+#include "jaldb_traverse.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
+#include "jaldb_record.h"
 
 using namespace std;
 
@@ -52,16 +53,16 @@ static struct global_args_t {
 	char *home;
 } global_args;
 
-static void print_records_to_delete(list<jaldb_doc_info> &docs);
 static void process_options(int argc, char **argv);
 static void global_args_free();
 static void usage();
+
+extern "C" enum jaldb_iter_status iter_cb(const char *hex_sid, struct jaldb_record *rec, void *up);
 
 int main(int argc, char **argv)
 {
 	enum jaldb_status dbret = (enum jaldb_status)-1;
 	jaldb_context *ctx = NULL;
-	list<jaldb_doc_info> files_to_remove;
 
 	process_options(argc, argv);
 
@@ -77,94 +78,60 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
+	enum jaldb_rec_type type;
+	switch (global_args.type) {
+	case 'j':
+		type = JALDB_RTYPE_JOURNAL;
+		break;
+	case 'a':
+		type = JALDB_RTYPE_AUDIT;
+		break;
+	case 'l':
+		type = JALDB_RTYPE_LOG;
+		break;
+	default:
+		goto out;
+	}
+
+	if (global_args.del) {
+		cout << "Deleted the following records:" << endl;
+	} else {
+		cout << "Would delete the following records:" << endl;
+	}
+
 	if (global_args.sid) {
-		switch (global_args.type) {
-		case 'j':
-			dbret = jaldb_purge_journal_by_sid(ctx,
-							global_args.sid, 
-							files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		case 'a':
-			dbret = jaldb_purge_audit_by_sid(ctx,
-							global_args.sid,
-							files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		case 'l':
-			dbret = jaldb_purge_log_by_sid(ctx,
-							global_args.sid,
-							files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		default:
-			break;
-		}
+		dbret = jaldb_iterate_by_sid_range(ctx, type, NULL, global_args.sid, iter_cb, NULL);
 	} else if (global_args.uuid) {
-		switch (global_args.type) {
-		case 'j':
-			dbret = jaldb_purge_journal_by_uuid(ctx,
-							global_args.uuid,
-							files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		case 'a':
-			dbret = jaldb_purge_audit_by_uuid(ctx,
-							global_args.uuid,
-							files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		case 'l':
-			dbret = jaldb_purge_log_by_uuid(ctx,
-							global_args.uuid,
-							files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		default:
-			break;
+		struct jaldb_record *rec = NULL;
+		char *sid = NULL;
+		uuid_t uuid;
+		if (0 != uuid_parse(global_args.uuid, uuid)) {
+			cout << "Invalid UUID: " << global_args.uuid  << endl;
+			goto out;
 		}
+		dbret = jaldb_get_record_by_uuid(ctx, type, uuid, &sid, &rec);
+		jaldb_destroy_record(&rec);
+		if (dbret != JALDB_OK) {
+			free(sid);
+			goto out;
+		}
+		dbret = jaldb_iterate_by_sid_range(ctx, type, NULL, sid, iter_cb, NULL);
 	} else if (global_args.before) {
 		cout << "Purging by timestamp currently not supported." << endl;
 		dbret = (enum jaldb_status)-1;
 		goto out;
-		/*switch (global_args.type) {
-		case 'j':
-			dbret = jaldb_purge_journal_by_before(ctx,
-							global_args.before,
-							&files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		case 'a':
-			dbret = jaldb_purge_audit_by_before(ctx,
-							global_args.before,
-							&files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
-		case 'l':
-			dbret = jaldb_purge_log_by_before(ctx,
-							global_args.before,
-							&files_to_remove,
-							global_args.force,
-							global_args.del);
-			break;
+		/*
+		dbret = jaldb_iterate_by_time_range(ctx, type, NULL, global_args.time, iter_cb, &global_args);
 		default:
 			break;
-		}*/
+		}
+		*/
 	} else {
 		cout << "Purging without a sid or uuid specified is currently not supported." << endl;
 		dbret = (enum jaldb_status)-1;
 		goto out;
 		// TODO: No arguments/filter specified
 	}
-	print_records_to_delete(files_to_remove);
 
 out:
 	if (JALDB_OK != dbret) {
@@ -176,23 +143,22 @@ out:
 	return dbret;
 }
 
-static void print_records_to_delete(list<jaldb_doc_info> &docs)
+extern "C" enum jaldb_iter_status iter_cb(const char *hex_sid, struct jaldb_record *rec, void *)
 {
-	if (docs.size() > 0) {
-		if (global_args.del) {
-			cout << "Records removed:" << endl;
-		} else {
-			cout << "Records to be removed:" << endl;
-		}
 
-		for (list<jaldb_doc_info>::iterator doc = docs.begin(); doc != docs.end(); doc++) {
-			cout << "SID: " << doc->sid << endl;
-			if (global_args.verbose) {
-				cout << "UUID: " << doc->uuid << endl;
-			}
-			cout << endl;
+	if (global_args.force || rec->synced) {
+		cout << "SID: " << hex_sid << endl;
+		if (global_args.verbose) {
+			char uuid[37]; // UUID are always 36 characters + the NULL terminator
+			uuid_unparse(rec->uuid, uuid);
+			cout << "UUID: " << uuid << endl;
+		}
+		if (global_args.del) {
+			return JALDB_ITER_REM;
 		}
 	}
+	return JALDB_ITER_CONT;
+
 }
 
 static void process_options(int argc, char **argv)
