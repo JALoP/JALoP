@@ -636,48 +636,6 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_next_journal_record(
-	jaldb_context *ctx,
-	const char *last_sid,
-	char **next_sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	int *fd, size_t *journal_size)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_next_audit_record(
-	jaldb_context *ctx,
-	const char *last_sid,
-	char **next_sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	uint8_t **audit_buf,
-	size_t *audit_len)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_next_log_record(
-	jaldb_context *ctx,
-	const char *last_sid,
-	char **next_sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	uint8_t **log_buf,
-	size_t *log_len,
-	int *db_err_out)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
 enum jaldb_status jaldb_store_confed_journal_sid_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
@@ -1191,7 +1149,6 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 	}
 
 	memset(&key, 0, sizeof(key));
-
 	switch(type) {
 	case JALDB_RTYPE_JOURNAL:
 		rdbs = ctx->journal_dbs;
@@ -1206,7 +1163,6 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-
 	if (!rdbs || !rdbs->primary_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
@@ -1293,4 +1249,193 @@ enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jald
 	unlink(path);
 	free(path);
 	return JALDB_OK;
+}
+
+enum jaldb_status jaldb_next_unsynced_record(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	const char *last_sid_hex,
+	char **next_sid_hex,
+	struct jaldb_record **rec_out)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+	struct jaldb_record *rec = NULL;
+	int byte_swap;
+	struct jaldb_serialize_record_headers *headers = NULL;
+	BIGNUM *last_sid = NULL;
+	BIGNUM *next_sid = NULL;
+	BIGNUM *zero = NULL;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	DBT key;
+	DBT val;
+	DBC *cursor = NULL;
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+
+	if (!ctx || !last_sid_hex || !next_sid_hex || *next_sid_hex || *rec_out || !rec_out) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	zero = BN_new();
+	BN_zero(zero);
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = BN_hex2bn(&last_sid, last_sid_hex);
+	if (0 == db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (0 == BN_cmp(zero, last_sid)) {
+		key.size = 1;
+		key.data = jal_malloc(key.size);
+		*((char*)(key.data)) = 0;
+	} else {
+		key.size = BN_num_bytes(last_sid);
+		key.data = jal_malloc(key.size);
+		BN_bn2bin(last_sid, (unsigned char*)key.data);
+	}
+	key.flags = DB_DBT_REALLOC;
+
+	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+	val.dlen = sizeof(*headers);
+	val.size = sizeof(*headers);
+	val.doff = 0;
+	val.data = jal_malloc(val.size);
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	while (1) {
+		if (cursor) {
+			cursor->c_close(cursor);
+			cursor = NULL;
+		}
+		db_ret = rdbs->primary_db->cursor(rdbs->primary_db, NULL, &cursor, DB_DEGREE_2);
+		if (0 != db_ret) {
+			JALDB_DB_ERR(rdbs->primary_db, db_ret);
+			goto out;
+		}
+
+		val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+		db_ret = cursor->c_get(cursor, &key, &val, DB_SET);
+		val.flags = DB_DBT_REALLOC;
+		if (0 == db_ret) {
+			// found the actual SID, move on over to the next one.
+			db_ret = cursor->c_get(cursor, &key, &val, DB_NEXT);
+		} else if (DB_NOTFOUND == db_ret) {
+			// Couldn't match the 'actual' SID, so go for the 'next
+			// greater one'
+			db_ret = cursor->c_get(cursor, &key, &val, DB_SET_RANGE);
+		}
+		if (DB_NOTFOUND == db_ret) {
+		 	ret = JALDB_E_NOT_FOUND;
+			goto out;
+		} else if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			JALDB_DB_ERR(rdbs->primary_db, db_ret);
+			goto out;
+		}
+
+		headers = ((struct jaldb_serialize_record_headers *)val.data);
+		if (headers->flags & JALDB_RFLAGS_SYNCED) {
+			// already synced, so skip
+			continue;
+		}
+		// not synced, get the full record.
+		val.flags = DB_DBT_REALLOC;
+		val.dlen = 0;
+		db_ret = cursor->c_get(cursor, &key, &val, DB_CURRENT);
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		}
+		break;
+	}
+
+	if (db_ret != 0) {
+		ret = JALDB_E_DB;
+		goto out;
+	}
+
+	ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	rec->type = type;
+	if (!rec->sys_meta) {
+		rec->sys_meta = jaldb_create_segment();
+		char *doc = NULL;
+		size_t doc_len = 0;
+		ret = jaldb_record_to_system_metadata_doc(rec, &doc, &doc_len);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+		rec->sys_meta->payload = (uint8_t*)doc;
+		rec->sys_meta->length = doc_len;
+	}
+
+
+	next_sid = BN_bin2bn((unsigned char*)key.data, key.size, NULL);
+	if (NULL == next_sid) {
+		ret = JALDB_E_NO_MEM;
+		goto out;
+	}
+
+	*next_sid_hex = BN_bn2hex(next_sid);
+	if (NULL == *next_sid_hex) {
+		ret = JALDB_E_NO_MEM;
+		goto out;
+	}
+
+	*rec_out = rec;
+	rec = NULL;
+	ret = JALDB_OK;
+out:
+	if (cursor) {
+		cursor->close(cursor);
+	}
+
+	if (last_sid) {
+		BN_free(last_sid);
+		last_sid = NULL;
+	}
+
+	if (next_sid) {
+		BN_free(next_sid);
+		next_sid = NULL;
+	}
+	if (zero) {
+		BN_free(zero);
+		zero = NULL;
+	}
+	free(key.data);
+	free(val.data);
+	jaldb_destroy_record(&rec);
+
+	return ret;
 }
