@@ -414,13 +414,14 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
 	enum jaln_record_type type = ch_info->type;
 	struct jaln_pub_data *pd = sess->pub_data;
 	struct jaln_publisher_callbacks *pub_cbs = sess->jaln_ctx->pub_callbacks;
+	pub_cbs->on_record_complete(sess, ch_info, type, pd->serial_id, sess->jaln_ctx->user_data);
 	if (!sess->errored) {
 		struct jaln_record_info rec_info;
 		memset(&rec_info, 0, sizeof(rec_info));
 		rec_info.type = type;
 		enum jal_status ret =
 			pub_cbs->get_next_record_info_and_metadata(sess, ch_info, type,
-				pd->serial_id, &rec_info, &pd->sys_meta, &pd->app_meta, user_data);
+				pd->serial_id, &rec_info, &pd->sys_meta, &pd->app_meta, sess->jaln_ctx->user_data);
 		if (JAL_OK != ret) {
 			goto err_out;
 		}
