@@ -80,6 +80,9 @@ using namespace std;
 #define LAST_K_RECORDS_VALUE 20
 
 #define DT1 "2012-12-12T09:00:00Z"
+#define HN1 "somehost"
+#define UN1 "someuser"
+#define S1 "source"
 #define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
 #define EXPECTED_RECORD_VERSION 1
 
@@ -107,6 +110,9 @@ extern "C" void setup()
 	records[0]->source = jal_strdup("source");
 	records[0]->type = JALDB_RTYPE_LOG;
 	records[0]->timestamp = jal_strdup(DT1);
+	records[0]->hostname = jal_strdup(HN1);
+	records[0]->source = jal_strdup(S1);
+	records[0]->username = jal_strdup(UN1);
 	records[0]->payload = jaldb_create_segment();
 	assert_equals(0, uuid_parse(UUID_1, records[0]->uuid));
 }

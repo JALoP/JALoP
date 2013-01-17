@@ -74,7 +74,11 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, 
 	char *res = NULL;
 	char *type_str;
 
-	if(!rec || !doc || *doc) {
+	if (!rec || !doc || *doc) {
+		return JALDB_E_INVAL;
+	}
+
+	if (JALDB_OK != jaldb_record_sanity_check(rec)) {
 		return JALDB_E_INVAL;
 	}
 

@@ -104,6 +104,8 @@ void test_jaldfb_record_sanity_check_works_for_journal()
 	record->version = EXPECTED_RECORD_VERSION;
 	record->payload = jaldb_create_segment();
 	record->source = jal_strdup("source");
+	record->hostname = jal_strdup("somehost");
+	record->username = jal_strdup("someuser");
 	record->type = JALDB_RTYPE_JOURNAL;
 
 	ret = jaldb_record_sanity_check(record);
@@ -133,6 +135,8 @@ void test_jaldfb_record_sanity_check_works_for_audit()
 	record->payload = jaldb_create_segment();
 	record->source = jal_strdup("source");
 	record->type = JALDB_RTYPE_AUDIT;
+	record->hostname = jal_strdup("somehost");
+	record->username = jal_strdup("someuser");
 
 	ret = jaldb_record_sanity_check(record);
 	assert_equals(JALDB_OK, ret);
@@ -151,13 +155,15 @@ void test_jaldfb_record_sanity_check_works_for_audit()
 
 	jaldb_destroy_record(&record);
 }
-void test_jaldfb_record_sanity_check_works_for_log()
+void test_jaldb_record_sanity_check_works_for_log()
 {
 	enum jaldb_status ret;
 	struct jaldb_record *record = jaldb_create_record();
 
 	record->version = EXPECTED_RECORD_VERSION;
 	record->source = jal_strdup("source");
+	record->hostname = jal_strdup("somehost");
+	record->username = jal_strdup("someuser");
 	record->type = JALDB_RTYPE_LOG;
 
 	ret = jaldb_record_sanity_check(record);
@@ -197,6 +203,8 @@ void test_jaldfb_record_sanity_check_fails_on_bad_segments()
 
 	record->version = EXPECTED_RECORD_VERSION;
 	record->source = jal_strdup("source");
+	record->hostname = jal_strdup("somehost");
+	record->username = jal_strdup("someuser");
 	record->type = JALDB_RTYPE_LOG;
 
 	record->app_meta = jaldb_create_segment();
@@ -213,6 +221,42 @@ void test_jaldfb_record_sanity_check_fails_on_bad_segments()
 	record->payload = record->sys_meta;
 	record->sys_meta = NULL;
 	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	jaldb_destroy_record(&record);
+}
+
+void test_jaldb_record_sanity_check_fails_on_missing_fields()
+{
+	enum jaldb_status ret;
+	struct jaldb_record *record = jaldb_create_record();
+
+	record->version = EXPECTED_RECORD_VERSION;
+	record->source = jal_strdup("source");
+	record->type = JALDB_RTYPE_LOG;
+	record->hostname = jal_strdup("somehost");
+	record->username = jal_strdup("someuser");
+
+	char *tmp;
+
+	record->payload = jaldb_create_segment();
+
+	tmp = record->hostname;
+	record->hostname = NULL;
+	ret = jaldb_record_sanity_check(record);
+	record->hostname = tmp;
+	assert_not_equals(JALDB_OK, ret);
+
+	tmp = record->username;
+	record->username = NULL;
+	ret = jaldb_record_sanity_check(record);
+	record->username = tmp;
+	assert_not_equals(JALDB_OK, ret);
+
+	tmp = record->source;
+	record->source = NULL;
+	ret = jaldb_record_sanity_check(record);
+	record->source = tmp;
 	assert_not_equals(JALDB_OK, ret);
 
 	jaldb_destroy_record(&record);

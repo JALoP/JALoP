@@ -74,6 +74,14 @@ enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec)
 		return JALDB_E_INVAL;
 	}
 
+	if (!rec->hostname) {
+		return JALDB_E_INVAL;
+	}
+
+	if (!rec->username) {
+		return JALDB_E_INVAL;
+	}
+
 	ret = jaldb_sanity_check_segment(rec->sys_meta);
 	if (JALDB_OK != ret) {
 		return ret;

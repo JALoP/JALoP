@@ -70,12 +70,15 @@ void setup()
 	rec.username = USERNAME;
 	rec.sec_lbl = SEC_LABEL;
 	rec.have_uid = 1;
+	rec.version = 1;
+	rec.payload = jaldb_create_segment();
 	assert_equals(0, uuid_parse(REC_UUID, rec.uuid));
 	assert_equals(0, uuid_parse(HOST_UUID, rec.host_uuid));
 }
 
 void teardown()
 {
+	jaldb_destroy_segment(&rec.payload);
 	xmlCleanupParser();
 }
 
