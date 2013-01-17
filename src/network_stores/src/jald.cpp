@@ -47,6 +47,8 @@
 #include "jalns_strings.h"
 #include "jalu_daemonize.h"
 #include "jalu_config.h"
+#include "jaldb_segment.h"
+#include "jaldb_record.h"
 
 #define ONE_MINUTE 60
 #define VERSION_CALLED 1
@@ -97,8 +99,7 @@ struct peer_config_t {
 	enum jaln_record_type sub_allow;
 };
 struct session_ctx_t {
-	int journal_fd;
-	uint8_t *payload_buf;
+	struct jaldb_record *rec;
 };
 
 struct global_config_t {
@@ -242,8 +243,8 @@ enum jal_status pub_on_journal_resume(
 		const struct jaln_channel_info *ch_info,
 		struct jaln_record_info *record_info,
 		__attribute__((unused)) uint64_t offset,
-		uint8_t **system_metadata_buffer,
-		uint8_t **application_metadata_buffer,
+		__attribute__((unused)) uint8_t **system_metadata_buffer,
+		__attribute__((unused)) uint8_t **application_metadata_buffer,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
@@ -264,17 +265,19 @@ enum jal_status pub_on_journal_resume(
 	}
 	axl_hash_insert_full(gs_journal_subs, strdup(ch_info->hostname), free, ctx, free);
 	pthread_mutex_unlock(&gs_journal_sub_lock);
-	ctx->journal_fd = -1;
+	ctx->rec = NULL;
 	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
 	size_t sys_meta_len = 0;
 	size_t app_meta_len = 0;
 	size_t payload_len = 0;
-	jaldb_ret = jaldb_lookup_journal_record(db_ctx, record_info->serial_id, system_metadata_buffer, &sys_meta_len,
-				application_metadata_buffer, &app_meta_len,
-				&(ctx->journal_fd), &payload_len);
+	// TODO: Fix this to work for journal resume, needs updates to the DB.
+	//jaldb_ret = jaldb_lookup_journal_record(db_ctx, record_info->serial_id, system_metadata_buffer, &sys_meta_len,
+				//application_metadata_buffer, &app_meta_len,
+				//&(ctx->journal_fd), &payload_len);
 	if (JALDB_OK != jaldb_ret) {
 		return JAL_E_INVAL;
 	}
+	return JAL_E_INVAL;
 	record_info->app_meta_len = (uint64_t) app_meta_len;
 	record_info->sys_meta_len = (uint64_t) sys_meta_len;
 	record_info->payload_len = (uint64_t) payload_len;
@@ -323,7 +326,6 @@ enum jal_status pub_on_subscribe(
 		pthread_mutex_unlock(sub_lock);
 		return JAL_E_NO_MEM;
 	}
-	ctx->journal_fd = -1;
 	DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
 	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 	pthread_mutex_unlock(sub_lock);
@@ -340,7 +342,6 @@ enum jal_status pub_get_next_record_info_and_metadata(
 		uint8_t **application_metadata_buffer,
 		__attribute__((unused)) void *user_data)
 {
-
 	char *next_sid = NULL;
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
@@ -370,29 +371,24 @@ enum jal_status pub_get_next_record_info_and_metadata(
 		return JAL_E_INVAL;
 	}
 	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
-	int db_err = 0;
-	size_t sys_meta_len = 0;
-	size_t app_meta_len = 0;
-	size_t payload_len = 0;
+	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
 	jaldb_ret = JALDB_E_NOT_FOUND;
+	switch(type) {
+	case JALN_RTYPE_JOURNAL:
+		db_type = JALDB_RTYPE_JOURNAL;
+		break;
+	case JALN_RTYPE_AUDIT:
+		db_type = JALDB_RTYPE_AUDIT;
+		break;
+	case JALN_RTYPE_LOG:
+		db_type = JALDB_RTYPE_LOG;
+		break;
+	default:
+		return JAL_E_INVAL;
+		break;
+	}
 	while(JALDB_E_NOT_FOUND == jaldb_ret) {
-		switch(type) {
-		case JALN_RTYPE_JOURNAL:
-			jaldb_ret = jaldb_next_journal_record(db_ctx, last_serial_id, &next_sid, system_metadata_buffer, &sys_meta_len,
-					application_metadata_buffer, &app_meta_len,
-					&(ctx->journal_fd), &payload_len);
-			break;
-		case JALN_RTYPE_AUDIT:
-			jaldb_ret = jaldb_next_audit_record(db_ctx, last_serial_id, &next_sid, system_metadata_buffer, &sys_meta_len,
-					application_metadata_buffer, &app_meta_len,
-					&(ctx->payload_buf), &payload_len);
-			break;
-		case JALN_RTYPE_LOG:
-			jaldb_ret = jaldb_next_log_record(db_ctx, last_serial_id, &next_sid, system_metadata_buffer, &sys_meta_len,
-					application_metadata_buffer, &app_meta_len,
-					&(ctx->payload_buf), &payload_len, &db_err);
-			break;
-		}
+		jaldb_ret = jaldb_next_unsynced_record(db_ctx, db_type, last_serial_id, &next_sid, &(ctx->rec));
 		if (JALDB_E_NOT_FOUND == jaldb_ret) {
 			if (JAL_OK != jaln_session_is_ok(sess)) {
 				return JAL_E_INVAL;
@@ -404,27 +400,59 @@ enum jal_status pub_get_next_record_info_and_metadata(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record");
 		return JAL_E_INVAL;
 	}
+	struct jaldb_record *rec = ctx->rec;
+	record_info->sys_meta_len = rec->sys_meta->length;
+	if (rec->sys_meta->on_disk) {
+		// TODO: Handle for on disk (once the LS is updated to support it). i.e. memmap the file or whatever
+	} else {
+		*system_metadata_buffer = rec->sys_meta->payload;
+		rec->sys_meta->payload = NULL;
+	}
+
+	*application_metadata_buffer = NULL;
+	record_info->app_meta_len = 0;
+	if (rec->app_meta) {
+		record_info->app_meta_len =  rec->app_meta->length;
+		if (rec->app_meta->on_disk) {
+			// TODO: Handle this for app meta
+		} else {
+			*application_metadata_buffer = rec->app_meta->payload;
+			rec->app_meta->payload = NULL;
+		}
+	}
+
+	record_info->payload_len = 0;
+	if (rec->payload) {
+		record_info->payload_len = (uint64_t) rec->payload->length;
+		if (rec->payload->on_disk) {
+			jaldb_ret = jaldb_open_segment_for_read(db_ctx, rec->payload);
+			if (JALDB_OK != jaldb_ret) {
+				goto fail;
+			}
+		}
+	}
+	ctx->rec = rec;
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Next record %s", next_sid);
 	record_info->serial_id = next_sid;
-	record_info->app_meta_len = (uint64_t) app_meta_len;
-	record_info->sys_meta_len = (uint64_t) sys_meta_len;
-	record_info->payload_len = (uint64_t) payload_len;
 
 	return JAL_OK;
+fail:
+	ctx->rec = NULL;
+	jaldb_destroy_record(&rec);
+	return JAL_E_INVAL;
 }
 
 enum jal_status pub_release_metadata_buffers(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
-		uint8_t *system_metadata_buffer,
-		uint8_t *application_metadata_buffer,
+		__attribute__((unused)) uint8_t *system_metadata_buffer,
+		__attribute__((unused)) uint8_t *application_metadata_buffer,
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "Release metadata buffers for %s", serial_id);
-	free(system_metadata_buffer);
-	free(application_metadata_buffer);
+	// nothing to do, everything will get freed when the record is complete.
 	return JAL_OK;
 }
 
@@ -443,7 +471,9 @@ enum jal_status pub_acquire_log_data(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
 		return JAL_E_INVAL;
 	}
-	*buffer = ctx->payload_buf;
+	// TODO: Fix this to support when log data is stored on disk (not
+	// supported by LS yet).
+	*buffer = ctx->rec->payload->payload;
 	return JAL_OK;
 }
 
@@ -451,19 +481,11 @@ enum jal_status pub_release_log_data(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
-		uint8_t *buffer,
+		__attribute__((unused)) uint8_t *buffer,
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "Release log data for %s", serial_id);
-	free(buffer);
-	pthread_mutex_lock(&gs_log_sub_lock);
-	struct session_ctx_t *ctx = (struct session_ctx_t*) axl_hash_get(gs_log_subs, ch_info->hostname);
-	pthread_mutex_unlock(&gs_log_sub_lock);
-	if (!ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
-		return JAL_E_INVAL;
-	}
-	ctx->payload_buf = NULL;
+	// Do nothing, everything gets freed when at on_record_complete
 	return JAL_OK;
 }
 
@@ -482,7 +504,9 @@ enum jal_status pub_acquire_audit_data(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
 		return JAL_E_INVAL;
 	}
-	*buffer = ctx->payload_buf;
+	// TODO: Fix this to support when log data is stored on disk (not
+	// supported by LS yet).
+	*buffer = ctx->rec->payload->payload;
 	return JAL_OK;
 }
 
@@ -490,19 +514,11 @@ enum jal_status pub_release_audit_data(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		const char *serial_id,
-		uint8_t *buffer,
+		__attribute__((unused)) uint8_t *buffer,
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "Release audit data for %s\n", serial_id);
-	free(buffer);
-	pthread_mutex_lock(&gs_audit_sub_lock);
-	struct session_ctx_t *ctx = (struct session_ctx_t*) axl_hash_get(gs_audit_subs, ch_info->hostname);
-	pthread_mutex_unlock(&gs_audit_sub_lock);
-	if (!ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
-		return JAL_E_INVAL;
-	}
-	ctx->payload_buf = NULL;
+	// Do nothing, everything gets freed when at on_record_complete
 	return JAL_OK;
 }
 
@@ -522,6 +538,7 @@ enum jal_status pub_acquire_journal_feeder(
 		return JAL_E_INVAL;
 	}
 	feeder->feeder_data = ctx;
+
 	feeder->get_bytes = pub_get_bytes;
 	return JAL_OK;
 }
@@ -535,8 +552,8 @@ enum jal_status pub_release_journal_feeder(
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "Release journal feeder for %s\n", serial_id);
 	struct session_ctx_t *ctx = (struct session_ctx_t*) feeder->feeder_data;
-	close(ctx->journal_fd);
-	ctx->journal_fd = -1;
+	close(ctx->rec->payload->fd);
+	ctx->rec->payload->fd = -1;
 	return JAL_OK;
 }
 
@@ -548,7 +565,34 @@ enum jal_status pub_on_record_complete(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "On record complete: %s", serial_id);
-	// callback is informational, do nothing.
+
+	axlHash *hash = NULL;
+	pthread_mutex_t *sub_lock = NULL;
+	switch (type) {
+	case JALN_RTYPE_JOURNAL:
+		hash = gs_journal_subs;
+		sub_lock = &gs_journal_sub_lock;
+		break;
+	case JALN_RTYPE_AUDIT:
+		hash = gs_audit_subs;
+		sub_lock = &gs_audit_sub_lock;
+		break;
+	case JALN_RTYPE_LOG:
+		hash = gs_log_subs;
+		sub_lock = &gs_log_sub_lock;
+		break;
+	default:
+		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
+		return JAL_E_INVAL;
+	}
+	pthread_mutex_lock(sub_lock);
+	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	pthread_mutex_unlock(sub_lock);
+	if (!ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		return JAL_E_INVAL;
+	}
+	jaldb_destroy_record(&ctx->rec);
 	return JAL_OK;
 }
 
@@ -611,23 +655,26 @@ void pub_peer_digest(
 		return;
 	}
 	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
+	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
 	switch(type) {
 	case JALN_RTYPE_JOURNAL:
-		jaldb_ret = jaldb_mark_journal_sent_ok(db_ctx, serial_id, ch_info->hostname);
+		db_type = JALDB_RTYPE_JOURNAL;
 		break;
 	case JALN_RTYPE_AUDIT:
-		jaldb_ret = jaldb_mark_audit_sent_ok(db_ctx, serial_id, ch_info->hostname);
+		db_type = JALDB_RTYPE_AUDIT;
 		break;
 	case JALN_RTYPE_LOG:
-		jaldb_ret = jaldb_mark_log_sent_ok(db_ctx, serial_id, ch_info->hostname);
+		db_type = JALDB_RTYPE_LOG;
 		break;
 	default:
+		// shouldn't happen.
 		return;
 	}
+	jaldb_ret = jaldb_mark_synced(db_ctx, db_type, serial_id);
 	if (JALDB_OK != jaldb_ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", serial_id);
 	} else {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Mark %s as sent", serial_id);
+		DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", serial_id);
 	}
 }
 
@@ -1231,11 +1278,13 @@ void teardown_db_layer(void)
 
 static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data)
 {
+	// TODO: this may need to support reading from buffers stored in RAM,
+	// rather than disk.
 #define ERRNO_STR_LEN 128
 	off64_t err;
 	struct session_ctx_t *ctx = (struct session_ctx_t*) feeder_data;
 	errno = 0;
-	err = lseek64(ctx->journal_fd, offset, SEEK_SET);
+	err = lseek64(ctx->rec->payload->fd, offset, SEEK_SET);
 	int my_errno = errno;
 	if (-1 == err) {
 		char buf[ERRNO_STR_LEN];
@@ -1244,7 +1293,7 @@ static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buff
 		return JAL_E_INVAL;
 	}
 	size_t to_read = *size;
-	ssize_t bytes_read = read(ctx->journal_fd, buffer, to_read);
+	ssize_t bytes_read = read(ctx->rec->payload->fd, buffer, to_read);
 	if (bytes_read < 0) {
 		return JAL_E_INVAL;
 	}
