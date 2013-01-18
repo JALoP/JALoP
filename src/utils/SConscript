@@ -5,6 +5,7 @@ Import('*')
 
 env = env.Clone()
 
+env.MergeFlags(env["libuuid_ldflags"]);
 env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags(env['libconfig_cflags'])
 env.MergeFlags(env['libconfig_ldflags'])
