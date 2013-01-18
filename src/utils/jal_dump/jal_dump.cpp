@@ -230,6 +230,7 @@ int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char dat
 			uuid_t uuid;
 			if (0 != uuid_parse(*(id_arr + cnt), uuid)) {
 				fprintf(stderr, "Bad UUID (ignoring): %s\n", *(id_arr + cnt));
+				continue;
 			} else {
 				*ret_status = jaldb_get_record_by_uuid(ctx, rtype, uuid, &sid, &rec);
 			}
