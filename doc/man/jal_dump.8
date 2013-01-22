@@ -5,10 +5,8 @@
 .SH SYNOPSIS
 .B jal_dump
 [\fIOPTION\fR...]
-.B \-\-sid
-.I serial_id
-.B \-\-type
-.I type
+.BI \-\-sid= serial_id
+.BI \-\-type= type
 .SH "DESCRIPTION"
 .B jal_dump
 is a tool used to retrieve specific sections of one or more JAL records. If the section of the record is not specified, the tool writes the contents of the record's system metadata to stdout.
@@ -23,7 +21,7 @@ will output each record in the order that it was specified on the command line.
 .SH OPTIONS
 .TP
 \fB\-s\fR, \fB\-\-sid=S\fR
-Search using the sequence ID "S". Specify any number of "-s" options to output multiple records in the order listed.
+Search using the serial ID "S". Specify any number of "-s" options to output multiple records in the order listed.
 .TP
 \fB\-u\fR, \fB\-\-uuid=U\fR
 Search using the UUID "U". Specify any number of "-u" options to output multiple records in the order listed. 
@@ -59,12 +57,11 @@ option.
 .TP
 \fB\-p\fR, \fB\-\-path=P\fR
 Copy the record to the specified path
-.B P
-\.
+.BR P .
 This will create a sub-directory with the name \fR\fB<record_type>\fR-\fB<sid>/\fR where \fB<record_type>\fR is replaced with \fIjournal\fR,
 \fIaudit\fR,
 or \fIlog\fR,
-and \fB<sid>\fR is replaced with the sequence ID for the record.
+and \fB<sid>\fR is replaced with the serial ID for the record.
 This directory will always contain a file named \fIsystem-metadata.xml\fR,
 which is the system metadata for the record.
 If the record contains application metadata,

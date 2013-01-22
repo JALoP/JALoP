@@ -10,9 +10,10 @@
 .B jal-local-store
 is an implementation of a JALoP local store. It will listen on a socket for producer applications and accept journal, audit,
 and log data using the JALoP Producer Protocol.
-.B jal-local-store
-will validate application metadata and audit records against the appropriate schemas,
-which are found, by default, in /usr/share/jalop-v1.0/schemas.
+.\" Below three lines commented out because this is not currently supported but may be supported in the future
+.\".B jal-local-store
+.\"will validate application metadata and audit records against the appropriate schemas,
+.\"which are found, by default, in /usr/share/jalop-v1.0/schemas.
 .B jal-local-store
 will generate system metadata for each record, and insert the record into its database.
 .SH OPTIONS
