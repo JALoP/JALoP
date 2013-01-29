@@ -147,6 +147,23 @@ extern "C" void test_remove_by_serial_id_returns_error_when_not_found()
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"2"));
 }
+
+extern "C" void test_mark_record_synced()
+{
+	struct jaldb_record *rec = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"1"));
+
+	jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec);
+	assert_equals(1, rec->synced);
+}
+
+extern "C" void test_mark_record_synced_returns_error_when_sid_not_found()
+{
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"2"));
+}
+
 // Disabling tests for now
 #if 0
 extern "C" void test_db_destroy_does_not_crash()
@@ -298,7 +315,7 @@ extern "C" void test_read_only_flag_prevents_writing_to_db()
 
 	std::string src = "foo";
 	std::string ser_id = "1";
-	
+
 	assert_true(0);
 	jaldb_context_destroy(&ctx);
 }
