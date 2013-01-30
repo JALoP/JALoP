@@ -46,6 +46,7 @@ extern "C" {
 #include <errno.h>
 #include <fcntl.h>
 #include <libxml/xmlschemastypes.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -79,11 +80,34 @@ using namespace std;
 #define LAST_SID_VALUE "doc_50"
 #define LAST_K_RECORDS_VALUE 20
 
+// record SID 1
 #define DT1 "2012-12-12T09:00:00Z"
 #define HN1 "somehost"
 #define UN1 "someuser"
-#define S1 "source"
+#define S1 "source1"
 #define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
+
+// record SID 2
+#define DT2 "2012-12-12T02:00:00Z"
+#define HN2 "somehost2"
+#define UN2 "someuser2"
+#define S2 "source2"
+#define UUID_2 "21234567-89AB-CDEF-0123-456789ABCDEF"
+
+// record SID 3
+#define DT3 "2012-12-12T03:00:00Z"
+#define HN3 "somehost3"
+#define UN3 "someuser3"
+#define S3 "source3"
+#define UUID_3 "31234567-89AB-CDEF-0123-456789ABCDEF"
+
+// record SID 4
+#define DT4 "2012-12-12T04:00:00Z"
+#define HN4 "somehost4"
+#define UN4 "someuser4"
+#define S4 "source4"
+#define UUID_4 "41234567-89AB-CDEF-0123-456789ABCDEF"
+
 #define EXPECTED_RECORD_VERSION 1
 
 static void *audit_sys_meta_doc = NULL;
@@ -93,8 +117,8 @@ static void *log_sys_meta_doc = NULL;
 static void *log_app_meta_doc = NULL;
 static jaldb_context *context = NULL;
 
-#define ITEMS_IN_DB 1
-struct jaldb_record *records[ITEMS_IN_DB] = { NULL };
+#define ITEMS_IN_DB 4
+struct jaldb_record *records[ITEMS_IN_DB];
 
 extern "C" void setup()
 {
@@ -104,10 +128,8 @@ extern "C" void setup()
 	context = jaldb_context_create();
 	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false));
 
-
 	records[0] = jaldb_create_record();
 	records[0]->version = EXPECTED_RECORD_VERSION;
-	records[0]->source = jal_strdup("source");
 	records[0]->type = JALDB_RTYPE_LOG;
 	records[0]->timestamp = jal_strdup(DT1);
 	records[0]->hostname = jal_strdup(HN1);
@@ -115,6 +137,36 @@ extern "C" void setup()
 	records[0]->username = jal_strdup(UN1);
 	records[0]->payload = jaldb_create_segment();
 	assert_equals(0, uuid_parse(UUID_1, records[0]->uuid));
+
+	records[1] = jaldb_create_record();
+	records[1]->version = EXPECTED_RECORD_VERSION;
+	records[1]->type = JALDB_RTYPE_LOG;
+	records[1]->timestamp = jal_strdup(DT2);
+	records[1]->hostname = jal_strdup(HN2);
+	records[1]->source = jal_strdup(S2);
+	records[1]->username = jal_strdup(UN2);
+	records[1]->payload = jaldb_create_segment();
+	assert_equals(0, uuid_parse(UUID_2, records[1]->uuid));
+
+	records[2] = jaldb_create_record();
+	records[2]->version = EXPECTED_RECORD_VERSION;
+	records[2]->type = JALDB_RTYPE_LOG;
+	records[2]->timestamp = jal_strdup(DT3);
+	records[2]->hostname = jal_strdup(HN3);
+	records[2]->source = jal_strdup(S3);
+	records[2]->username = jal_strdup(UN3);
+	records[2]->payload = jaldb_create_segment();
+	assert_equals(0, uuid_parse(UUID_3, records[2]->uuid));
+
+	records[3] = jaldb_create_record();
+	records[3]->version = EXPECTED_RECORD_VERSION;
+	records[3]->type = JALDB_RTYPE_LOG;
+	records[3]->timestamp = jal_strdup(DT4);
+	records[3]->hostname = jal_strdup(HN4);
+	records[3]->source = jal_strdup(S4);
+	records[3]->username = jal_strdup(UN4);
+	records[3]->payload = jaldb_create_segment();
+	assert_equals(0, uuid_parse(UUID_4, records[3]->uuid));
 }
 
 extern "C" void teardown()
@@ -162,6 +214,55 @@ extern "C" void test_mark_record_synced_returns_error_when_sid_not_found()
 {
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"2"));
+}
+
+extern "C" void test_next_unsynced_works()
+{
+	struct jaldb_record *rec = NULL;
+	char *next_sid = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0])); //sid 1
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1])); //sid 2
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2])); //sid 3
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3])); //sid 4
+
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"1"));
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "0", &next_sid, &rec));
+	assert_equals(2, strtoll(next_sid, NULL, 16));
+	assert_string_equals(S2, rec->source);
+	jaldb_destroy_record(&rec);
+	free(next_sid);
+	next_sid = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "2", &next_sid, &rec));
+	assert_equals(3, strtoll(next_sid, NULL, 16));
+	assert_string_equals(S3, rec->source);
+	jaldb_destroy_record(&rec);
+	free(next_sid);
+	next_sid = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "4", &next_sid, &rec));
+	next_sid = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"2"));
+
+	// now records 1 & 2 are synced.
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "1", &next_sid, &rec));
+	assert_equals(3, strtoll(next_sid, NULL, 16));
+	assert_string_equals(S3, rec->source);
+	jaldb_destroy_record(&rec);
+	free(next_sid);
+	next_sid = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"3"));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"4"));
+	// everything is synced now...
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "1", &next_sid, &rec));
+
 }
 
 // Disabling tests for now
