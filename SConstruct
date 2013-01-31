@@ -108,7 +108,13 @@ if platform.system() == 'SunOS':
 	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/lib -Wl,-R,/usr/local/lib -Wl,-R,/usr/local/ssl/lib'.split()})
 	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
 	debug_env.MergeFlags('-lsocket')
-
+	debug_env["bdb_cflags"] = "-I/usr/local/BerkeleyDB.4.7/include".split()
+	debug_env["bdb_ldflags"] = "-L/usr/local/BerkeleyDB.4.7/lib \
+					-Wl,-R,/usr/local/BerkeleyDB.4.7/lib \
+					-ldb".split()
+else:
+	debug_env["bdb_ldflags"] = "-ldb"
+	debug_env["bdb_cflags"] = ""
 
 def merge_with_os_env(env):
 	if os.environ.has_key('LIBPATH'):
@@ -138,6 +144,7 @@ def merge_with_os_env(env):
 		env.MergeFlags(d)
 merge_with_os_env(debug_env)
 
+
 if not (GetOption("clean") or GetOption("help")):
 	conf = Configure(debug_env, custom_tests = { 'CheckPKGConfig': ConfigHelpers.CheckPKGConfig,
 						     'CheckPKG': ConfigHelpers.CheckPKG,
@@ -148,7 +155,6 @@ if not (GetOption("clean") or GetOption("help")):
 						     'CheckSeLinux': PackageCheckHelpers.CheckSeLinux,
 						     'CheckProducerLibConfigDotH': ConfigDotH.CheckProducerLibConfigDotH,
 						     'CheckByteswap': PackageCheckHelpers.CheckByteswap,
-						     'CheckBDB': PackageCheckHelpers.CheckBDB,
 						   })
 
 	if not conf.CheckCC():
@@ -187,10 +193,18 @@ this is want you want, this is OK, re-run scons with the \
 		if not conf.CheckPKGAtLeastVersion(pkg, version):
 			Exit(-1)
 
-	if not conf.CheckBDB():
-		Exit(-1)
 
 	conf.Finish()
+
+	checkEnv = debug_env.Clone()
+	checkEnv.MergeFlags(checkEnv['bdb_cflags'])
+	checkEnv.MergeFlags(checkEnv['bdb_ldflags'])
+	bdbconf = Configure(checkEnv, custom_tests = {
+						'CheckBDB': PackageCheckHelpers.CheckBDB
+						 })
+	if not bdbconf.CheckBDB():
+		Exit(-1)
+	bdbconf.Finish()
 
 	for key, (pkg, version) in packages_at_least.items():
 		def addCFLAGS(debug_env, cmd, unique=1):
@@ -213,14 +227,6 @@ debug_env.ParseConfig('getconf LFS_CFLAGS', function=add_lfs_cflags)
 # linker flags for libuuid
 debug_env["libuuid_ldflags"] = "-luuid"
 
-# Linker flags for Berkeley DB
-if platform.system() == "SunOS":
-	debug_env["bdb_ldflags"] = "-I/usr/local/BerkeleyDB.4.7/include \
-					-L/usr/local/BerkeleyDB.4.7/lib \
-					-Wl,-R,/usr/local/BerkeleyDB.4.7/lib \
-					-ldb".split()
-else:
-	debug_env["bdb_ldflags"] = "-ldb"
 
 all_tests = debug_env.Alias('tests')
 

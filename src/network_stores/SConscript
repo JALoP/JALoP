@@ -18,6 +18,7 @@ env.MergeFlags(env['libxml2_ldflags'])
 env.MergeFlags(env['xmlsec1_cflags'])
 env.MergeFlags(env['xmlsec1_ldflags'])
 env.MergeFlags(env['libuuid_ldflags'])
+env.MergeFlags(env['bdb_cflags'])
 env.MergeFlags(env['bdb_ldflags'])
 env.MergeFlags("-Wno-shadow")
 
