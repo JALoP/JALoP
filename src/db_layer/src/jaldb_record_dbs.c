@@ -71,6 +71,9 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	if (rdbs->primary_db) {
 		rdbs->primary_db->close(rdbs->primary_db, 0);
 	}
+	if (rdbs->metadata_db) {
+		rdbs->metadata_db->close(rdbs->metadata_db, 0);
+	}
 	free(rdbs);
 	*record_dbs = NULL;
 }

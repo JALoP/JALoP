@@ -43,6 +43,7 @@
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
 #include "test_utils.h"
+#include "jaldb_context.h"
 
 #define OTHER_DB_ROOT "./testdb/"
 
@@ -284,4 +285,30 @@ void test_jaldb_create_file_works()
 	free(full_path);
 	free(path);
 }
+
+void test_jaldb_get_dbs_works()
+{
+	jaldb_context *ctx = jaldb_context_create();
+	jaldb_context_init(ctx,OTHER_DB_ROOT,NULL,0);
+	struct jaldb_record_dbs *rdbs = NULL;
+	struct jaldb_record_dbs *rdbs2 = NULL;
+	struct jaldb_record_dbs *rdbs3 = NULL;
+
+	enum jaldb_status ret = jaldb_get_dbs(ctx,"1.2.3.4",JALDB_RTYPE_LOG,&rdbs);
+	assert_equals(JALDB_OK,ret);
 	
+	assert_not_equals(NULL,rdbs);
+
+	ret = jaldb_get_dbs(ctx,"4.3.2.1",JALDB_RTYPE_LOG,&rdbs2);
+	assert_equals(JALDB_OK, ret);
+
+	assert_not_equals(NULL,rdbs2);
+	assert_not_equals(rdbs,rdbs2);
+
+	ret = jaldb_get_dbs(ctx,"1.2.3.4",JALDB_RTYPE_LOG,&rdbs3);
+	assert_equals(JALDB_OK, ret);
+
+	assert_equals(rdbs,rdbs3);
+
+	jaldb_context_destroy(&ctx);
+}

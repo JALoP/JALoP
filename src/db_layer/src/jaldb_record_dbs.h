@@ -50,6 +50,7 @@ struct jaldb_record_dbs {
 	DB *timestamp_no_tz_idx_db; //<! The secondary database to use for timestamps (without timezones) indices.
 	DB *record_id_idx_db;       //<! The database to use for record UUID indices
 	DB *sid_db;                 //<! The database to use for obtaining the 'next' serial ID.
+	DB *metadata_db;               //<! The database to use for storing metadata about unconfirmed records
 };
 
 /**

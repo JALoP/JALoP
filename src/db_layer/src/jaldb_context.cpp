@@ -57,6 +57,8 @@ using namespace std;
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 
+static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp);
+
 jaldb_context *jaldb_context_create()
 {
 	jaldb_context *context = (jaldb_context *)jal_calloc(1, sizeof(*context));
@@ -218,6 +220,10 @@ enum jaldb_status jaldb_context_init(
 	db_txn->commit(db_txn, 0);
 	ctx->env = env;
 
+	ctx->journal_temp_dbs = new string_to_rdbs_map;
+	ctx->audit_temp_dbs = new string_to_rdbs_map;
+	ctx->log_temp_dbs = new string_to_rdbs_map;
+
 	return JALDB_OK;
 }
 
@@ -247,14 +253,9 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	jaldb_destroy_record_dbs(&(ctxp->audit_dbs));
 	jaldb_destroy_record_dbs(&(ctxp->log_dbs));
 
-	if (ctxp->temp_dbs) {
-		for (string_to_db_map::iterator iter = ctxp->temp_dbs->begin();
-				iter != ctxp->temp_dbs->end();
-				iter++) {
-			iter->second->close(iter->second, 0);
-		}
-		delete ctxp->temp_dbs;
-	}
+	jaldb_destroy_string_to_rdbs_map(ctxp->journal_temp_dbs);
+	jaldb_destroy_string_to_rdbs_map(ctxp->audit_temp_dbs);
+	jaldb_destroy_string_to_rdbs_map(ctxp->log_temp_dbs);
 	if (ctxp->env) {
 		ctxp->env->close(ctxp->env, 0);
 	}
@@ -262,56 +263,24 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	free(ctxp);
 	*ctx = NULL;
 }
+
+static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp)
+{
+	if (temp) {
+		for (string_to_rdbs_map::iterator iter = temp->begin();
+				iter != temp->end();
+				iter++) {
+			jaldb_destroy_record_dbs(&(iter->second));
+		}
+		free(temp);
+	}
+}
+
 std::string jaldb_make_temp_db_name(const string &id, const string &suffix)
 {
 	stringstream o;
 	o << "__" << id << "_" << suffix;
 	return o.str();
-}
-
-enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const string& db_name, DB **db_out, int *db_err_out)
-{
-	if (!ctx || !ctx->temp_dbs || !db_out || *db_out || !db_err_out) {
-		return JALDB_E_INVAL;
-	}
-	if (db_name.length() == 0) {
-		return JALDB_E_INVAL;
-	}
-	if (ctx->db_read_only) {
-		return JALDB_E_READ_ONLY;
-	}
-	DB *db;
-	int db_err = 0;
-	uint32_t db_flags = DB_AUTO_COMMIT | DB_THREAD;
-	enum jaldb_status ret = JALDB_E_DB;
-	string_to_db_map::iterator iter = ctx->temp_dbs->find(db_name);
-	if (iter == ctx->temp_dbs->end()) {
-		DB_ENV *env = ctx->env;
-		db_err = db_create(&db, env, 0);
-		if (db_err != 0) {
-			db = NULL;
-			goto out;
-		}
-		if (ctx->db_read_only) {
-			db_flags |= DB_RDONLY;
-		} else {
-			db_flags |= DB_CREATE;
-		}
-		db_err = db->open(db, NULL, db_name.c_str(), NULL, DB_BTREE, db_flags, 0);
-		if (db_err != 0) {
-			db->close(db, 0);
-			db = NULL;
-			goto out;
-		}
-		(*ctx->temp_dbs)[db_name] = db;
-	} else {
-		db = iter->second;
-	}
-	ret = JALDB_OK;
-out:
-	*db_err_out = db_err;
-	*db_out = db;
-	return ret;
 }
 
 enum jaldb_status jaldb_xfer_audit(
@@ -1638,5 +1607,170 @@ out:
 	free(val.data);
 	jaldb_destroy_record(&rec);
 
+	return ret;
+}
+
+enum jaldb_status jaldb_get_primary_record_dbs(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		struct jaldb_record_dbs **rdbs)
+{
+	if (!ctx || !rdbs) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	switch (type) {
+	case JALDB_RTYPE_JOURNAL:
+		*rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		*rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		*rdbs = ctx->log_dbs;
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+	return JALDB_OK;
+}
+
+enum jaldb_status jaldb_lookup_rdbs_in_map(
+		jaldb_context *ctx,
+		char *source,
+		enum jaldb_rec_type type,
+		struct jaldb_record_dbs **rdbs)
+{
+	string_to_rdbs_map::iterator iter;
+	std::string source_str(source);
+
+	if (!ctx || !source) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	if (!ctx->journal_temp_dbs || !ctx->audit_temp_dbs || !ctx->log_temp_dbs) {
+		return JALDB_E_UNINITIALIZED;
+	}
+	switch (type) {
+	case JALDB_RTYPE_JOURNAL:
+		iter = ctx->journal_temp_dbs->find(source_str);
+		if (iter == ctx->journal_temp_dbs->end()) {
+			*rdbs = NULL;
+			return JALDB_OK;
+		}
+		break;
+	case JALDB_RTYPE_AUDIT:
+		iter = ctx->audit_temp_dbs->find(source_str);
+		if (iter == ctx->audit_temp_dbs->end()) {
+			*rdbs = NULL;
+			return JALDB_OK;
+		}
+		break;
+	case JALDB_RTYPE_LOG:
+		iter = ctx->log_temp_dbs->find(source_str);
+		if (iter == ctx->log_temp_dbs->end()) {
+			*rdbs = NULL;
+			return JALDB_OK;
+		}
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+
+	*rdbs = iter->second;
+
+	return JALDB_OK;
+}
+enum jaldb_status jaldb_store_rdbs_in_map(
+		jaldb_context *ctx,
+		char *source,
+		enum jaldb_rec_type type,
+		struct jaldb_record_dbs *rdbs)
+{
+	std::string source_str(source);
+	if (!ctx || !source) {
+		return JALDB_E_INVAL;
+	}
+	if (ctx->db_read_only) {
+		return JALDB_E_READ_ONLY;
+	}
+	if (!ctx->journal_temp_dbs || !ctx->audit_temp_dbs || !ctx->log_temp_dbs) {
+		return JALDB_E_UNINITIALIZED;
+	}
+	switch (type){
+	case JALDB_RTYPE_JOURNAL:
+		(*ctx->journal_temp_dbs)[source_str] = rdbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		(*ctx->audit_temp_dbs)[source_str] = rdbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		(*ctx->log_temp_dbs)[source_str] = rdbs;
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+	return JALDB_OK;
+}
+
+enum jaldb_status jaldb_open_dbs_for_temp(
+		jaldb_context *ctx,
+		char *source,
+		enum jaldb_rec_type rtype,
+		jaldb_record_dbs *rdbs,
+		const u_int32_t db_flags)
+{
+	int db_ret;
+	jaldb_status ret = JALDB_OK;
+	char *filename;
+
+	switch (rtype) {
+	case JALDB_RTYPE_JOURNAL:
+		jal_asprintf(&filename, "%s_%s",source,"journal");
+		break;
+	case JALDB_RTYPE_AUDIT:
+		jal_asprintf(&filename, "%s_%s",source,"audit");
+		break;
+	case JALDB_RTYPE_LOG:
+		jal_asprintf(&filename, "%s_%s",source,"log");
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+
+	db_ret = db_create(&(rdbs->primary_db), ctx->env, 0);
+	if (db_ret != 0) {
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->primary_db->open(rdbs->primary_db, NULL,
+			filename, "primary", DB_BTREE, db_flags, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->primary_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+	db_ret = db_create(&(rdbs->metadata_db), ctx->env, 0);
+	if (db_ret != 0) {
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+	db_ret = rdbs->metadata_db->open(rdbs->metadata_db, NULL,
+			filename, "metadata", DB_BTREE, db_flags, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->metadata_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+	goto out;
+err_out:
+	jaldb_destroy_record_dbs(&rdbs);
+out:
+	free(filename);
 	return ret;
 }

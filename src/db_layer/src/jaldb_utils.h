@@ -37,6 +37,7 @@ extern "C" {
 #include <db.h>
 #include "jaldb_status.h"
 #include "jaldb_record.h"
+#include "jaldb_context.h"
 
 #define JALDB_STR_HELPER(x) #x
 #define JALDB_STR(x) JALDB_STR_HELPER(x)
@@ -109,6 +110,21 @@ enum jaldb_status jaldb_create_file(
  * DateTime string.
  */
 char *jaldb_gen_timestamp();
+
+/**
+ * Get either the permanent dbs for confirmed records or temporary dbs for unconfired records
+ * @param[in] ctx the context to us
+ * @param[in] source the source of the record
+ * @param[in] type the type of the record
+ * @param[out] rdbs the jaldb_record_dbs struct for your source and type
+ *
+ * @return JALDB_OK on success, or an error code 
+ */
+enum jaldb_status jaldb_get_dbs(
+	jaldb_context *ctx,
+	char *source,
+	enum jaldb_rec_type type,
+	struct jaldb_record_dbs **rdbs);
 
 #ifdef __cplusplus
 }

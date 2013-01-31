@@ -30,6 +30,8 @@
 #include "jaldb_status.h"
 #include "jal_alloc.h"
 #include "jal_fs_utils.h"
+#include "jaldb_context.h"
+#include "jaldb_record_dbs.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -39,6 +41,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <db.h>
 
 #include <stdlib.h>
 
@@ -268,3 +271,31 @@ char *jaldb_gen_timestamp()
 	return ftime;
 }
 
+enum jaldb_status jaldb_get_dbs(
+		jaldb_context *ctx,
+		char *source,
+		enum jaldb_rec_type type,
+		struct jaldb_record_dbs **rdbs)
+{
+	enum jaldb_status ret;
+	u_int32_t db_flags;
+	if (!ctx) {
+		return JALDB_E_INVAL;
+	}
+	if (!source || 0 == strcmp(source,"localhost") || 0 == strcmp(source,"127.0.0.1")) {
+		return jaldb_get_primary_record_dbs(ctx,type,rdbs);
+	}
+	ret = jaldb_lookup_rdbs_in_map(ctx,source,type,rdbs);
+	if (ret == JALDB_OK && *rdbs == NULL) {
+		*rdbs = jaldb_create_record_dbs();
+		db_flags = DB_THREAD | DB_CREATE | DB_AUTO_COMMIT;
+		ret = jaldb_open_dbs_for_temp(ctx,source,type,*rdbs,db_flags);
+		if (ret == JALDB_OK) {
+			ret = jaldb_store_rdbs_in_map(ctx,source,type,*rdbs);
+		}
+	}
+	if (ret != JALDB_OK) {
+		*rdbs = NULL;
+	}
+	return ret;
+}

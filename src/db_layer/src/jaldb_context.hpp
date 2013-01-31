@@ -36,7 +36,7 @@
 #include <db.h>
 #include "jaldb_context.h"
 
-typedef std::map<std::string, DB*> string_to_db_map;
+typedef std::map<std::string, jaldb_record_dbs*> string_to_rdbs_map;
 
 struct jaldb_record_dbs;
 
@@ -50,7 +50,9 @@ struct jaldb_context_t {
 	DB *journal_conf_db; //<! The database for conf'ed journal records
 	DB *audit_conf_db; //<! The database for conf'ed audit records
 	DB *log_conf_db; //<! The database for conf'ed log records
-	string_to_db_map *temp_dbs; //<! a map from strings to Berkeley DBs that identifies temporary databases for use by the network stores.
+	string_to_rdbs_map *journal_temp_dbs;
+	string_to_rdbs_map *audit_temp_dbs;
+	string_to_rdbs_map *log_temp_dbs;
 	int db_read_only; //<! Whether or not to open the databases read only
 };
 

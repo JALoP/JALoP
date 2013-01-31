@@ -46,7 +46,7 @@ tests.append(env.TestDeptTest('test_jaldb_serialize_record.c',
 	other_sources=[lib_common, recordObj, segmentObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_traverse.cpp', other_sources=[lib_common, contextObj, datetimeObj, recordObj, recordDbsObj, recordUuidObj, recordXmlObj, serialIdObj, serializeRecordObj, segmentObj, test_utils, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_utils.c',
-	other_sources=[lib_common, test_utils], useProxies=True)[0].abspath)
+	other_sources=[lib_common,recordDbsObj,contextObj,datetimeObj,recordObj,recordUuidObj,recordXmlObj,serialIdObj,serializeRecordObj,segmentObj,test_utils], useProxies=True)[0].abspath)
 
 db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(db_tests)
