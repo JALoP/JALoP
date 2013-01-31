@@ -211,14 +211,14 @@ void test_sid_cmp_returns_correct_value()
 	assert_equals(0, ret);
 }
 
-int mkstemps_always_fails(__attribute__((unused)) char *template, __attribute__((unused)) int len)
+int mkstemp_always_fails(__attribute__((unused)) char *template)
 {
 	return -1;
 }
 
 void test_jaldb_create_file_returns_cleanly_when_mkstemp_fails()
 {
-	replace_function(mkstemps, mkstemps_always_fails);
+	replace_function(mkstemp, mkstemp_always_fails);
 	char *path = NULL;
 	int fd = -1;
 	uuid_t uuid,uuid_orig;
@@ -229,7 +229,7 @@ void test_jaldb_create_file_returns_cleanly_when_mkstemp_fails()
 	assert_pointer_equals((void*) NULL, path);
 	assert_equals(-1, fd);
 	assert_equals(uuid_compare(uuid,uuid_orig),0);
-	restore_function(mkstemps);
+	restore_function(mkstemp);
 }
 
 void test_jaldb_create_file_returns_cleanly_when_db_root_is_null()
@@ -248,16 +248,16 @@ void test_jaldb_create_file_returns_cleanly_when_db_root_is_null()
 
 void test_jaldb_create_file_returns_cleanly_when_rtype_is_unknown()
 {
-        char *path = NULL;
-        int fd = -1;
-        uuid_t uuid,uuid_orig;
-        uuid_generate(uuid);
-        uuid_copy(uuid_orig,uuid);
-        enum jaldb_status ret = jaldb_create_file("/tmp/", &path, &fd,uuid,JALDB_RTYPE_UNKNOWN,JALDB_DTYPE_SYS_META);
-        assert_equals(JALDB_E_INVAL, ret);
-        assert_pointer_equals((void*) NULL, path);
-        assert_equals(-1, fd);
-        assert_equals(uuid_compare(uuid,uuid_orig),0);
+	char *path = NULL;
+	int fd = -1;
+	uuid_t uuid,uuid_orig;
+	uuid_generate(uuid);
+	uuid_copy(uuid_orig,uuid);
+	enum jaldb_status ret = jaldb_create_file("/tmp/", &path, &fd,uuid,JALDB_RTYPE_UNKNOWN,JALDB_DTYPE_SYS_META);
+	assert_equals(JALDB_E_INVAL, ret);
+	assert_pointer_equals((void*) NULL, path);
+	assert_equals(-1, fd);
+	assert_equals(uuid_compare(uuid,uuid_orig),0);
 }
 
 
@@ -282,5 +282,6 @@ void test_jaldb_create_file_works()
 	assert_equals(access(full_path,F_OK),0);
 
 	free(full_path);
+	free(path);
 }
 	

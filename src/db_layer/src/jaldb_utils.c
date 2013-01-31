@@ -35,11 +35,12 @@
 #include <fcntl.h>
 #include <jalop/jal_status.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <stdlib.h>
 
 enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote_host,
 		const char *sid, int *db_err_out)
@@ -171,15 +172,15 @@ enum jaldb_status jaldb_create_file(
 	
 	if (rtype == JALDB_RTYPE_JOURNAL)
 	{
-		strcpy(suffix,"XXXXXX_journal");
+		strcpy(suffix,"journal");
 	}
 	else if (rtype == JALDB_RTYPE_AUDIT)
 	{
-		strcpy(suffix,"XXXXXX_audit");
+		strcpy(suffix,"audit");
 	}
 	else if (rtype == JALDB_RTYPE_LOG)
 	{
-		strcpy(suffix,"XXXXXX_log");
+		strcpy(suffix,"log");
 	}
 	else
 	{
@@ -189,15 +190,15 @@ enum jaldb_status jaldb_create_file(
 
 	if (dtype == JALDB_DTYPE_SYS_META)
 	{
-		strcat(suffix,"_sys_meta");
+		strcat(suffix,"_sys_meta_XXXXXX");
 	}
 	else if (dtype == JALDB_DTYPE_APP_META)
 	{
-		strcat(suffix,"_app_meta");
+		strcat(suffix,"_app_meta_XXXXXX");
 	}
 	else if (dtype == JALDB_DTYPE_PAYLOAD)
 	{
-		strcat(suffix,"_payload");
+		strcat(suffix,"_payload_XXXXXX");
 	}
 	else
 	{
@@ -219,7 +220,7 @@ enum jaldb_status jaldb_create_file(
 		goto error_out;
 	}
 	ret = JALDB_OK;
-	lfd = mkstemps(full_path,strlen(suffix)-6);
+	lfd = mkstemp(full_path);
 	if (lfd == -1) {
 		ret = JALDB_E_INTERNAL_ERROR;
 		goto error_out;
@@ -237,6 +238,7 @@ error_out:
 out:
 	free(full_path);
 	free(uuid_string);
+	free(suffix);
 	*fd = lfd;
 	return ret;
 }
