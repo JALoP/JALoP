@@ -7,7 +7,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011-2012 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2011-2013 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -25,6 +25,7 @@
  * limitations under the License.
 */
 #include <libconfig.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -350,6 +351,9 @@ int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct ja
 
 		//Make the sub-directory
 		ret = mkdir(tmpstr, S_IRWXU|S_IRGRP|S_IROTH);
+		if ((-1 == ret) && (EEXIST == errno)) {
+			ret = 0;
+		}
 
 		jal_asprintf(&sysstr, "%ssystem-metadata.xml", tmpstr);
 		jal_asprintf(&appstr, "%sapplication-metadata.xml", tmpstr);
