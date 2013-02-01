@@ -473,6 +473,12 @@ enum jal_status pub_acquire_log_data(
 	}
 	// TODO: Fix this to support when log data is stored on disk (not
 	// supported by LS yet).
+	
+	if (!ctx->rec->payload){
+		*buffer = NULL;
+		return JAL_OK;
+	}
+
 	*buffer = ctx->rec->payload->payload;
 	return JAL_OK;
 }
@@ -503,6 +509,10 @@ enum jal_status pub_acquire_audit_data(
 	if (!ctx) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
 		return JAL_E_INVAL;
+	}
+	if (!ctx->rec->payload){
+		*buffer = NULL;
+		return JAL_OK;
 	}
 	// TODO: Fix this to support when log data is stored on disk (not
 	// supported by LS yet).
