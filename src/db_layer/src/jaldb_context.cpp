@@ -405,6 +405,139 @@ enum jaldb_status jaldb_lookup_audit_record(
 	return JALDB_E_NOT_IMPL;
 }
 
+enum jaldb_status jaldb_mark_sent(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	const char *hex_sid)
+{
+	enum jaldb_status ret = JALDB_OK;
+	int db_ret;
+
+	struct jaldb_record_dbs *rdbs = NULL;
+
+	BIGNUM *sid = NULL;
+	int byte_swap;
+	int sid_bytes;
+
+	struct jaldb_serialize_record_headers *header_ptr = NULL;
+	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
+	DB_TXN *txn = NULL;
+	DBT key;
+	DBT val;
+
+	if (!ctx || !type || !hex_sid) {
+		return JALDB_E_INVAL;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+
+	switch (type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!rdbs || !rdbs->record_id_idx_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = BN_hex2bn(&sid, hex_sid);
+	if (0 == db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	sid_bytes = BN_num_bytes(sid);
+	if (0 >= sid_bytes) {
+		ret = JALDB_E_UNKNOWN;
+		goto out;
+	}
+
+	key.flags = DB_DBT_REALLOC;
+	key.size = sid_bytes;
+	key.data = jal_malloc(sid_bytes);
+	BN_bn2bin(sid, (unsigned char *)key.data);
+
+	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+	val.dlen = header_bytes;
+	val.size = header_bytes;
+	val.doff = 0;
+	val.data = jal_malloc(header_bytes);
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret){
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		db_ret = rdbs->primary_db->get(rdbs->primary_db, txn, &key, &val, DB_DEGREE_2);
+		if (0 == db_ret) {
+			header_ptr = (struct jaldb_serialize_record_headers *)val.data;
+			if (header_ptr->version != JALDB_DB_LAYOUT_VERSION) {
+				txn->abort(txn);
+				ret = JALDB_E_INVAL;
+				goto out;
+
+			} else if (header_ptr->flags & JALDB_RFLAGS_SENT) {
+				txn->abort(txn);
+				goto out;
+
+			} else {
+				header_ptr->flags |= JALDB_RFLAGS_SENT;
+				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, 0);
+
+				if (0 == db_ret) {
+					db_ret = txn->commit(txn, 0);
+					if (0 == db_ret) {
+						break;
+					} else {
+						continue;
+					}
+				}
+			}
+		}
+
+		txn->abort(txn);
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else if (DB_NOTFOUND == db_ret) {
+			ret = JALDB_E_NOT_FOUND;
+			goto out;
+		}
+
+		/* Something else went wrong... */
+		ret = JALDB_E_DB;
+		goto out;
+	}
+
+out:
+	if (sid) {
+		BN_free(sid);
+	}
+	free(key.data);
+	free(val.data);
+	return ret;
+}
+
+
 enum jaldb_status jaldb_mark_audit_sent_ok(
 	jaldb_context *ctx,
 	const char *sid,
@@ -516,6 +649,11 @@ enum jaldb_status jaldb_mark_synced(
 		if (0 == db_ret) {
 			header_ptr = (struct jaldb_serialize_record_headers *)val.data;
 			if (header_ptr->version != JALDB_DB_LAYOUT_VERSION) {
+				txn->abort(txn);
+				ret = JALDB_E_INVAL;
+				goto out;
+
+			} else if (!(header_ptr->flags & JALDB_RFLAGS_SENT)) {
 				txn->abort(txn);
 				ret = JALDB_E_INVAL;
 				goto out;

@@ -313,8 +313,12 @@ enum jaldb_status jaldb_serialize_record(
 	if (record->have_uid) {
 		headers.flags |= bs32(JALDB_RFLAGS_HAVE_UID);
 	}
-	if (record->synced) {
+	if (1 == record->synced) {  // record is sent but not synced
+		headers.flags |= bs32(JALDB_RFLAGS_SENT);
+	}
+	if (2 == record->synced) { // record is both synced and sent
 		headers.flags |= bs32(JALDB_RFLAGS_SYNCED);
+		headers.flags |= bs32(JALDB_RFLAGS_SENT);
 	}
 	headers.pid = bs64(record->pid);
 	headers.uid = bs64(record->uid);
@@ -387,7 +391,13 @@ enum jaldb_status jaldb_deserialize_record(
 
 	res->version = JALDB_DB_LAYOUT_VERSION;
 	res->type = JALDB_RTYPE_UNKNOWN;
-	res->synced = headers->flags & JALDB_RFLAGS_SYNCED ? 1 : 0;
+	if (headers->flags & JALDB_RFLAGS_SENT && headers->flags & JALDB_RFLAGS_SYNCED) {
+		res->synced = 2; // Record sent and synced.
+	} else if (!(headers->flags & JALDB_RFLAGS_SYNCED) && headers->flags & JALDB_RFLAGS_SENT) {
+		res->synced = 1; // Record sent but not synced.
+	} else {
+		res->synced = 0; // Record not sent.
+	}
 	res->have_uid = headers->flags & JALDB_RFLAGS_HAVE_UID ? 1 : 0;
 	res->pid = bs64(headers->pid);
 	res->uid = bs64(headers->uid);

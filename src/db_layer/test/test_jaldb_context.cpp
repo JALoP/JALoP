@@ -200,14 +200,10 @@ extern "C" void test_remove_by_serial_id_returns_error_when_not_found()
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"2"));
 }
 
-extern "C" void test_mark_record_synced()
+extern "C" void test_mark_record_synced_fails_if_not_marked_sent()
 {
-	struct jaldb_record *rec = NULL;
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
-	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"1"));
-
-	jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec);
-	assert_equals(1, rec->synced);
+	assert_equals(JALDB_E_INVAL, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"1"));
 }
 
 extern "C" void test_mark_record_synced_returns_error_when_sid_not_found()
@@ -215,6 +211,36 @@ extern "C" void test_mark_record_synced_returns_error_when_sid_not_found()
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"2"));
 }
+
+extern "C" void test_mark_record_sent()
+{
+	struct jaldb_record *rec = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"1"));
+
+	jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec);
+	assert_equals(1, rec->synced);
+	jaldb_destroy_record(&rec);
+}
+
+extern "C" void test_mark_record_sent_and_synced()
+{
+	struct jaldb_record *rec = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"1"));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"1"));
+
+	jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec);
+	assert_equals(2, rec->synced);
+	jaldb_destroy_record(&rec);
+}
+
+extern "C" void test_mark_record_sent_returns_error_when_sid_not_found()
+{
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"2"));
+}
+
 
 extern "C" void test_next_unsynced_works()
 {
@@ -225,6 +251,7 @@ extern "C" void test_next_unsynced_works()
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2])); //sid 3
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3])); //sid 4
 
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"1"));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"1"));
 
 	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "0", &next_sid, &rec));
@@ -247,6 +274,7 @@ extern "C" void test_next_unsynced_works()
 	next_sid = NULL;
 	rec = NULL;
 
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"2"));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"2"));
 
 	// now records 1 & 2 are synced.
@@ -258,7 +286,9 @@ extern "C" void test_next_unsynced_works()
 	next_sid = NULL;
 	rec = NULL;
 
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"3"));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"3"));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"4"));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"4"));
 	// everything is synced now...
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "1", &next_sid, &rec));

@@ -157,11 +157,25 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 		struct jaldb_record **rec);
 
 /**
+ * Finds a given record and marks it as sent to a remote source.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, or log).
+ * @param[in] hex_sid The serial ID (as a hex string) of the record to mark.
+ *
+ * @return JALDB_OK on success, or a different JALDB error code on failure.
+ */
+enum jaldb_status jaldb_mark_sent(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		const char *hex_sid);
+
+
+/**
  * Finds a given record and marks it as synced with a remote source.
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, or log).
- * @param[in] source The remote source to which the record has been sent.
  * @param[in] hex_sid The serial ID (as a hex string) of the record to mark.
  *
  * @return JALDB_OK on success, or a different JALDB error code on failure.

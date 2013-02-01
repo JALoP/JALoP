@@ -46,6 +46,7 @@ extern "C" {
 #define JALDB_RFLAGS_APP_META_ON_DISK (1 << 5)
 #define JALDB_RFLAGS_PAYLOAD_ON_DISK  (1 << 6)
 #define JALDB_RFLAGS_SYNCED           (1 << 7)
+#define JALDB_RFLAGS_SENT             (1 << 8)
 
 struct jaldb_record;
 struct jaldb_segment;
