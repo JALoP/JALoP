@@ -9,7 +9,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -38,7 +38,23 @@ extern "C" {
 
 struct jaldb_record;
 
-enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, char **doc, size_t *dsize);
+/**
+ * Generate a XML document for the system meta-data.
+ * Note that although the returned buffer is NULL terminated, the length
+ * returned in \p dsize, will be the number of characters in the
+ * buffer, not including the NULL terminator.
+ *
+ * @param [in] rec The record to create the document for.
+ * @param [out] doc Upon successful return, this will be assigned to a memory
+ * buffer that contains the XML document.
+ * @param [out] dsize Upon successful return, this will be the size of the
+ * buffer.
+ *
+ * @return JALDB_OK on success, or an error code.
+ */
+enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
+		char **doc,
+		size_t *dsize);
 
 #ifdef __cplusplus
 }

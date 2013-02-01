@@ -9,7 +9,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -223,7 +223,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, 
 		goto err_out;
 	}
 	*doc = res;
-	*dsize = bsize;
+	*dsize = bsize - 1; // Report the string length, not buffer length.
 	ret = JALDB_OK;
 	goto out;
 err_out:
