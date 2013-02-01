@@ -1417,7 +1417,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 	ret = JALDB_OK;
 out:
 	if (cursor) {
-		cursor->close(cursor);
+		cursor->c_close(cursor);
 	}
 
 	if (last_sid) {
