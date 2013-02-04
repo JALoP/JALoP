@@ -867,52 +867,244 @@ enum jaldb_status jaldb_get_log_document_list(
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_get_last_k_records_journal(
+enum jaldb_status jaldb_get_last_k_records(
 		jaldb_context *ctx,
 		int k,
-		list<string> &doc_list)
+		list<string> &sid_list,
+		enum jaldb_rec_type type)
 {
-	return JALDB_E_NOT_IMPL;
+	enum jaldb_status ret = JALDB_OK;
+	int db_ret;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int byte_swap;
+	DBC *cursor = NULL;
+	DBT key;
+	DBT val;
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+	key.flags = DB_DBT_REALLOC;
+	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+	val.doff = 0;
+	val.dlen = 0; //Only interested in the key at this point
+	char *current_sid_hex = NULL;
+	BIGNUM *current_sid = NULL;
+	int count = 0;
+
+	if (!ctx) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+
+	if (!rdbs) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->primary_db->cursor(rdbs->primary_db, NULL, &cursor, DB_DEGREE_2);
+	if (0 != db_ret) {
+		JALDB_DB_ERR(rdbs->primary_db, db_ret);
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = cursor->c_get(cursor, &key, &val, DB_LAST);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	while(count < k && (0 == db_ret)) {
+		current_sid = BN_bin2bn((unsigned char*)key.data, key.size, NULL);
+		if (NULL == current_sid) {
+			ret = JALDB_E_NO_MEM;
+			goto out;
+		}
+
+		current_sid_hex = BN_bn2hex(current_sid);
+		if (NULL == current_sid_hex) {
+			ret = JALDB_E_NO_MEM;
+			goto out;
+		}
+
+		sid_list.push_front(current_sid_hex);
+
+		free(current_sid_hex);
+		current_sid_hex = NULL;
+
+		BN_free(current_sid);
+		current_sid = NULL;
+
+		db_ret = cursor->c_get(cursor, &key, &val, DB_PREV);
+
+		if(0 != db_ret) {
+			break;
+		}
+
+		count++;
+	}
+
+out:
+	if (cursor) {
+		cursor->c_close(cursor);
+	}
+
+	if (current_sid) {
+		BN_free(current_sid);
+		current_sid = NULL;
+	}
+
+	free(current_sid_hex);
+	free(key.data);
+	free(val.data);
+	return ret;
+
 }
 
-enum jaldb_status jaldb_get_last_k_records_audit(
-		jaldb_context *ctx,
-		int k,
-		list<string> &doc_list)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_get_last_k_records_log(
-		jaldb_context *ctx,
-		int k,
-		list<string> &doc_list)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_get_records_since_last_sid_journal(
+enum jaldb_status jaldb_get_records_since_last_sid(
 		jaldb_context *ctx,
 		char *last_sid,
-		list<string> &doc_list)
+		list<string> &sid_list,
+		enum jaldb_rec_type type)
 {
-	return JALDB_E_NOT_IMPL;
-}
+	enum jaldb_status ret = JALDB_OK;
+	int db_ret;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int byte_swap;
+	DBC *cursor = NULL;
+	DBT key;
+	DBT val;
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+	key.flags = DB_DBT_REALLOC;
+	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+	val.doff = 0;
+	val.dlen = 0; //Only interested in the key at this point
+	char *current_sid_hex = NULL;
+	BIGNUM *current_sid = NULL;
 
-enum jaldb_status jaldb_get_records_since_last_sid_audit(
-		jaldb_context *ctx,
-		char *last_sid,
-		list<string> &doc_list)
-{
-	return JALDB_E_NOT_IMPL;
-}
+	if (!ctx) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
 
-enum jaldb_status jaldb_get_records_since_last_sid_log(
-		jaldb_context *ctx,
-		char *last_sid,
-		list<string> &doc_list)
-{
-	return JALDB_E_NOT_IMPL;
+	if (!last_sid || 0 == strlen(last_sid)) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+
+	if (!rdbs) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = BN_hex2bn(&current_sid, last_sid);
+	if ((0 == db_ret) || (NULL == current_sid)) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	key.size = BN_num_bytes(current_sid);
+	key.data = jal_malloc(key.size);
+	BN_bn2bin(current_sid, (unsigned char*)key.data);
+
+	BN_free(current_sid);
+	current_sid = NULL;
+
+	db_ret = rdbs->primary_db->cursor(rdbs->primary_db, NULL, &cursor, DB_DEGREE_2);
+	if (0 != db_ret) {
+		JALDB_DB_ERR(rdbs->primary_db, db_ret);
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = cursor->c_get(cursor, &key, &val, DB_SET_RANGE);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	while(0 == db_ret) {
+		db_ret = cursor->c_get(cursor, &key, &val, DB_NEXT);
+
+		if(0 != db_ret) {
+			break;
+		}
+
+		current_sid = BN_bin2bn((unsigned char*)key.data, key.size, NULL);
+		if (NULL == current_sid) {
+			ret = JALDB_E_NO_MEM;
+			goto out;
+		}
+
+		current_sid_hex = BN_bn2hex(current_sid);
+		if (NULL == current_sid_hex) {
+			ret = JALDB_E_NO_MEM;
+			goto out;
+		}
+
+		sid_list.push_back(current_sid_hex);
+
+		free(current_sid_hex);
+		current_sid_hex = NULL;
+
+		BN_free(current_sid);
+		current_sid = NULL;
+	}
+
+out:
+	if (cursor) {
+		cursor->c_close(cursor);
+	}
+
+	if (current_sid) {
+		BN_free(current_sid);
+		current_sid = NULL;
+	}
+
+	free(current_sid_hex);
+	free(key.data);
+	free(val.data);
+	return ret;
 }
 
 enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec)

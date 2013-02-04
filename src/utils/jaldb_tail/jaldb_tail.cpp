@@ -9,7 +9,7 @@
 *
 * All other source code is copyright Tresys Technology and licensed as below.
 *
-* Copyright (c) 2011-2012 Tresys Technology LLC, Columbia, Maryland, USA
+* Copyright (c) 2011-2013 Tresys Technology LLC, Columbia, Maryland, USA
 *
 * This software was developed by Tresys Technology LLC
 * with U.S. Government sponsorship.
@@ -85,7 +85,7 @@ static void print_error(enum jaldb_status error);
 static void print_settings(int follow, long int num_rec, char *type,
 				char *home);
 static void do_work(void *ptr);
-static void display_records(list<string> &doc_list);
+static void display_records(list<string> &sid_list);
 
 int main(int argc, char **argv) {
 	int ret = 0;
@@ -336,67 +336,58 @@ static void do_work(void *ptr)
 {
 	struct global_members_t *mbrs = (struct global_members_t *) ptr;
 	enum jaldb_status ret = JALDB_OK;
-	list<string> doc_list;
+	list<string> sid_list;
 	std::string last_sid = JALDB_TAIL_DEFAULT_LAST_SID;
+	enum jaldb_rec_type type;
 
 	if (0 == strcmp(mbrs->type, "a")) {
 		printf("\nTAILING AUDIT\n====\n");
-		ret = jaldb_get_last_k_records_audit(mbrs->ctx,
-					mbrs->num_rec, doc_list);
+		type = JALDB_RTYPE_AUDIT;
 	}
 	else if (0 == strcmp(mbrs->type, "j")) {
 		printf("\nTAILING JOURNAL\n====\n");
-		ret = jaldb_get_last_k_records_journal(mbrs->ctx,
-					mbrs->num_rec, doc_list);
+		type = JALDB_RTYPE_JOURNAL;
 	}
 	else {
 		printf("\nTAILING LOG\n====\n");
-		ret = jaldb_get_last_k_records_log(mbrs->ctx,
-					mbrs->num_rec, doc_list);
+		type = JALDB_RTYPE_LOG;
 	}
+
+	ret = jaldb_get_last_k_records(mbrs->ctx,
+			mbrs->num_rec, sid_list, type);
 
 	if (JALDB_OK != ret) {
 		printf("Error retrieving last %ld records for '%s' record.\n",
 			mbrs->num_rec, mbrs->type);
 		print_error(ret);
 	}
-	if (0 < doc_list.size()) {
-		display_records(doc_list);
-		last_sid = doc_list.back();
+	if (0 < sid_list.size()) {
+		display_records(sid_list);
+		last_sid = sid_list.back();
 	}
-	doc_list.clear();
+	sid_list.clear();
 
 	while (mbrs->follow_flag && !exit_flag){
-		if (0 == strcmp(mbrs->type, "a")) {
-			ret = jaldb_get_records_since_last_sid_audit(mbrs->ctx,
-							(char *) last_sid.c_str(),
-							doc_list);
+		ret = jaldb_get_records_since_last_sid(mbrs->ctx,
+						(char *) last_sid.c_str(),
+						sid_list,
+						type);
+
+		if (0 < sid_list.size()) {
+			display_records(sid_list);
+			last_sid = sid_list.back();
 		}
-		else if (0 == strcmp(mbrs->type, "j")) {
-			ret = jaldb_get_records_since_last_sid_journal(mbrs->ctx,
-							(char *) last_sid.c_str(),
-							doc_list);
-		}
-		else {
-			ret = jaldb_get_records_since_last_sid_log(mbrs->ctx,
-							(char *) last_sid.c_str(),
-							doc_list);
-		}
-		if (0 < doc_list.size()) {
-			display_records(doc_list);
-			last_sid = doc_list.back();
-		}
-		doc_list.clear();
+		sid_list.clear();
 		sleep(JALDB_TAIL_THREAD_SLEEP_SECONDS);
 	}
 	return;
 }
 
-static void display_records(list<string> &doc_list)
+static void display_records(list<string> &sid_list)
 {
 	list<string>::iterator it;
-	for (it = doc_list.begin(); it != doc_list.end(); it++) {
-		std::string doc_name = *it;
-		printf("\t%s\n", doc_name.c_str());
+	for (it = sid_list.begin(); it != sid_list.end(); it++) {
+		std::string sid = *it;
+		printf("\t%s\n", sid.c_str());
 	}
 }

@@ -582,103 +582,41 @@ enum jaldb_status jaldb_get_log_document_list(
 		jaldb_context *ctx,
 		std::list<std::string> **doc_list);
 
- /**
- * Retrieve a list of the last \p k records for journal container.
- *
- * @param[in] ctx the context to use.
- * @param[in] k the number of records to retrieve.
- * @param[out] doc_list the list of document names.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_last_k_records_journal(
+/**
+* Retrieve a list of the last \p k records of the given type.
+*
+* @param[in] ctx the context to use.
+* @param[in] k the number of records to retrieve.
+* @param[out] sid_list the list of serial ids.
+* @param[in] type the record type.
+*
+* @return  JALDB_OK - success
+*      JALDB_E_INVAL - invalid parameter.
+*      JALDB_E_DB - Error occurred in database.
+*/
+enum jaldb_status jaldb_get_last_k_records(
 		jaldb_context *ctx,
 		int k,
-		std::list<std::string> &doc_list);
+		std::list<std::string> &sid_list,
+		enum jaldb_rec_type type);
 
  /**
- * Retrieve a list of the last \p k records for audit container.
- *
- * @param[in] ctx the context to use.
- * @param[in] k the number of records to retrieve.
- * @param[out] doc_list the list of document names.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_last_k_records_audit(
-		jaldb_context *ctx,
-		int k,
-		std::list<std::string> &doc_list);
-
- /**
- * Retrieve a list of the last \p k records for log container.
- *
- * @param[in] ctx the context to use.
- * @param[in] k the number of records to retrieve.
- * @param[out] doc_list the list of document names.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_last_k_records_log(
-		jaldb_context *ctx,
-		int k,
-		std::list<std::string> &doc_list);
-
- /**
- * Retrieve a list of the journal records received after the record denoted
- * by \p last_sid.
+ * Retrieve a list of the records with the given type received
+ * after the record denoted by \p last_sid.
  *
  * @param[in] ctx the context to use.
  * @param[in] last_sid the serial id of the last record retrieved.
- * @param[out] doc_list the list of document names.
+ * @param[out] sid_list the list of serial ids.
+ * @param[in] type the record type.
  *
  * @return 	JALDB_OK - success
  *		JALDB_E_INVAL - invalid parameter.
  *		JALDB_E_DB - Error occurred in database.
  */
-enum jaldb_status jaldb_get_records_since_last_sid_journal(
+enum jaldb_status jaldb_get_records_since_last_sid(
 		jaldb_context *ctx,
 		char *last_sid,
-		std::list<std::string> &doc_list);
-
- /**
- * Retrieve a list of the audit records received after the record denoted
- * by \p last_sid.
- *
- * @param[in] ctx the context to use.
- * @param[in] last_sid the serial id of the last record retrieved.
- * @param[out] doc_list the list of document names.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_records_since_last_sid_audit(
-		jaldb_context *ctx,
-		char *last_sid,
-		std::list<std::string> &doc_list);
-
- /**
- * Retrieve a list of the log records received after the record denoted
- * by \p last_sid.
- *
- * @param[in] ctx the context to use.
- * @param[in] last_sid the serial id of the last record retrieved.
- * @param[out] doc_list the list of document names.
- *
- * @return 	JALDB_OK - success
- *		JALDB_E_INVAL - invalid parameter.
- *		JALDB_E_DB - Error occurred in database.
- */
-enum jaldb_status jaldb_get_records_since_last_sid_log(
-		jaldb_context *ctx,
-		char *last_sid,
-		std::list<std::string> &doc_list);
+		std::list<std::string> &sid_list,
+		enum jaldb_rec_type type);
 		
 #endif // _JALDB_CONTEXT_HPP_
