@@ -295,6 +295,68 @@ extern "C" void test_next_unsynced_works()
 
 }
 
+extern "C" void test_jaldb_get_last_k_records_works()
+{
+	enum jaldb_status ret;
+	list<string> sid_list;
+
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0])); //sid 1
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1])); //sid 2
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2])); //sid 3
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3])); //sid 4
+
+	ret = jaldb_get_last_k_records(context, 3, sid_list, JALDB_RTYPE_LOG);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(3, sid_list.size());
+	assert_equals("02", sid_list.front());
+	assert_equals("04", sid_list.back());
+}
+
+extern "C" void test_jaldb_get_last_k_records_returns_error_with_no_records()
+{
+	enum jaldb_status ret;
+	list<string> sid_list;
+
+	ret = jaldb_get_last_k_records(context, 3, sid_list, JALDB_RTYPE_LOG);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_get_records_since_last_sid_works()
+{
+	enum jaldb_status ret;
+	list<string> sid_list;
+
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0])); //sid 1
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1])); //sid 2
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2])); //sid 3
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3])); //sid 4
+
+	char last_sid[] = "02";
+	ret = jaldb_get_records_since_last_sid(context, last_sid, sid_list, JALDB_RTYPE_LOG);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(2, sid_list.size());
+	assert_equals("03", sid_list.front());
+	assert_equals("04", sid_list.back());
+}
+
+extern "C" void test_jaldb_get_records_since_last_sid_returns_error_with_invalid_last_sid()
+{
+	enum jaldb_status ret;
+	list<string> sid_list;
+
+	char last_sid[] = "02";
+	ret = jaldb_get_records_since_last_sid(context, last_sid, sid_list, JALDB_RTYPE_LOG);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
+extern "C" void test_jaldb_get_records_since_last_sid_returns_error_with_no_last_sid()
+{
+	enum jaldb_status ret;
+	list<string> sid_list;
+	ret = jaldb_get_records_since_last_sid(context, NULL, sid_list, JALDB_RTYPE_LOG);
+	assert_equals(JALDB_E_INVAL, ret);
+}
+
 // Disabling tests for now
 #if 0
 extern "C" void test_db_destroy_does_not_crash()
