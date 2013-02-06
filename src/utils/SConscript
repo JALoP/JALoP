@@ -21,7 +21,6 @@ testserver = env.SConscript('testserver/SConscript', exports='env all_tests lib_
 testpush = env.SConscript('testpush/SConscript', exports='env lib_common network_lib')
 dummy_net_server = env.SConscript('dummy_net_server/SConscript', exports='env lib_common network_lib')
 testsub = env.SConscript('testsub/SConscript', exports='env lib_common network_lib')
-sid_dump = env.SConscript('sid_dump/SConscript', exports='env all_tests lib_common db_layer')
 jaldb_tail = env.SConscript('jaldb_tail/SConscript', exports='env all_tests lib_common db_layer')
 
 Return("jalp_test")
