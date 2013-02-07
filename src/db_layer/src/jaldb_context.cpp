@@ -1055,7 +1055,7 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 			goto out;
 		}
 
-		db_ret = rdbs->record_id_idx_db->pget(rdbs->record_id_idx_db, txn, &key, &pkey, &val, DB_DEGREE_2);
+		db_ret = rdbs->record_id_idx_db->pget(rdbs->record_id_idx_db, txn, &key, &pkey, &val, 0);
 		if (0 == db_ret) {
 			txn->commit(txn, 0);
 			break;
