@@ -392,19 +392,6 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_lookup_audit_record(
-	jaldb_context *ctx,
-	const char *sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	uint8_t **audit_buf,
-	size_t *audit_len)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
 enum jaldb_status jaldb_mark_sent(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
@@ -535,31 +522,6 @@ out:
 	free(key.data);
 	free(val.data);
 	return ret;
-}
-
-
-enum jaldb_status jaldb_mark_audit_sent_ok(
-	jaldb_context *ctx,
-	const char *sid,
-	const char *remote_host)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_mark_journal_sent_ok(
-	jaldb_context *ctx,
-	const char *sid,
-	const char *remote_host)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_mark_log_sent_ok(
-	jaldb_context *ctx,
-	const char *sid,
-	const char *remote_host)
-{
-	return JALDB_E_NOT_IMPL;
 }
 
 enum jaldb_status jaldb_mark_synced(
@@ -697,81 +659,6 @@ out:
 	free(key.data);
 	free(val.data);
 	return ret;
-}
-
-enum jaldb_status jaldb_mark_journal_synced(
-	jaldb_context *ctx,
-	const char *sid,
-	const char *remote_host)
-{
-	if (!ctx) {
-		return JALDB_E_INVAL;
-	}
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_mark_audit_synced(
-	jaldb_context *ctx,
-	const char *sid,
-	const char *remote_host)
-{
-	if (!ctx) {
-		return JALDB_E_INVAL;
-	}
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_mark_log_synced(
-	jaldb_context *ctx,
-	const char *sid,
-	const char *remote_host)
-{
-	if (!ctx) {
-		return JALDB_E_INVAL;
-	}
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_lookup_log_record(
-	jaldb_context *ctx,
-	const char *sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	uint8_t **log_buf,
-	size_t *log_len,
-	int *db_err_out)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_lookup_journal_record(
-	jaldb_context *ctx,
-	const char *sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	int *fd, size_t *journal_size)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
-enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
-		const char *remote_host, const char *sid, int *db_err_out)
-{
-	return JALDB_E_NOT_IMPL;
-}
-enum jaldb_status jaldb_store_confed_audit_sid(jaldb_context *ctx,
-		const char *remote_host, const char *sid, int *db_err_out)
-{
-	return JALDB_E_NOT_IMPL;
-}
-enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
-		const char *remote_host, const char *sid, int *db_err_out)
-{
-	return JALDB_E_NOT_IMPL;
 }
 
 enum jaldb_status jaldb_store_confed_journal_sid_tmp(

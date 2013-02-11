@@ -186,31 +186,6 @@ enum jaldb_status jaldb_mark_synced(
 		const char *hex_sid);
 
 /**
- * Retrieves an audit record by serial ID.
- *
- * @param[in] ctx The context.
- * @param[in] sid The serial ID of the record being retrieved.
- * @param[out] sys_meta_buf A buffer containing the system metadata.
- * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
- * @param[in,out] app_meta_buf A buffer containing the application metadata.
- * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
- * @param[in,out] audit_buf A buffer containing the audit data.
- * @param[in] audit_len The size (in bytes) of audit_buf.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_lookup_audit_record(
-	jaldb_context *ctx,
-	const char *sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	uint8_t **audit_buf,
-	size_t *audit_len);
-
-/**
  * Retrieves the next un-synced record from the database.
  *
  * @param[in] ctx The context.
@@ -227,63 +202,6 @@ enum jaldb_status jaldb_next_unsynced_record(
 	const char *last_sid,
 	char **next_sid,
 	struct jaldb_record **rec);
-
-/**
- * Retrieves a log record by serial ID.
- *
- * @param[in] ctx The context.
- * @param[in] sid The serial ID of the record being retrieved.
- * @param[out] sys_meta_buf A buffer containing the system metadata.
- * @param[out] sys_meta_len The size (in bytes) of sys_meta_buf.
- * @param[out] app_meta_buf A buffer containing the application metadata.
- * @param[out] app_meta_len The size (in bytes) of app_meta_buf.
- * @param[out] log_buf A buffer containing the log data.
- * @param[out] log_len The size (in bytes) of log_buf.
- * @param[out] db_err_ou The error code (if any) from the underlying Berkeley
- * DB. This is only valid when the function returns JALDB_E_DB
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if there is a problem with one of the parameters
- *  - JALDB_E_NOT_FOUND if the record could not be located
- *  - JALDB_E_CORRUPTED if there is a problem with the database
- *  - JALDB_E_DB if there was an unexpected error accessing the log DB.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_lookup_log_record(
-	jaldb_context *ctx,
-	const char *sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	uint8_t **log_buf,
-	size_t *log_len,
-	int *db_err_out);
-
-/**
- * Retrieves a journal record by serial ID.
- *
- * @param[in] ctx The context.
- * @param[in] sid The serial ID of the record being retrieved.
- * @param[in] path The path of the file that is journal data.
- * @param[in,out] sys_meta_buf A buffer containing the system metadata.
- * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
- * @param[in,out] app_meta_buf A buffer containing the application metadata.
- * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails
- */
-enum jaldb_status jaldb_lookup_journal_record(
-	jaldb_context *ctx,
-	const char *sid,
-	uint8_t **sys_meta_buf,
-	size_t *sys_meta_len,
-	uint8_t **app_meta_buf,
-	size_t *app_meta_len,
-	int *fd, size_t *fd_sz);
 
 /**
  * Utility to insert any JALoP record
