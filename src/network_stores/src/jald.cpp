@@ -615,16 +615,30 @@ void pub_sync(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "sync: %s", serial_id);
-	switch (type) {
+
+	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
+	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
+
+	switch(type) {
 	case JALN_RTYPE_JOURNAL:
-		jaldb_mark_journal_synced(db_ctx, serial_id, ch_info->hostname);
+		db_type = JALDB_RTYPE_JOURNAL;
 		break;
 	case JALN_RTYPE_AUDIT:
-		jaldb_mark_audit_synced(db_ctx, serial_id, ch_info->hostname);
+		db_type = JALDB_RTYPE_AUDIT;
 		break;
 	case JALN_RTYPE_LOG:
-		jaldb_mark_log_synced(db_ctx, serial_id, ch_info->hostname);
+		db_type = JALDB_RTYPE_LOG;
 		break;
+	default:
+		// shouldn't happen.
+		return;
+	}
+
+	jaldb_ret = jaldb_mark_synced(db_ctx, db_type, serial_id);
+	if (JALDB_OK != jaldb_ret) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced", serial_id);
+	} else {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as synced", serial_id);
 	}
 }
 
@@ -680,7 +694,7 @@ void pub_peer_digest(
 		// shouldn't happen.
 		return;
 	}
-	jaldb_ret = jaldb_mark_synced(db_ctx, db_type, serial_id);
+	jaldb_ret = jaldb_mark_sent(db_ctx, db_type, serial_id);
 	if (JALDB_OK != jaldb_ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", serial_id);
 	} else {
