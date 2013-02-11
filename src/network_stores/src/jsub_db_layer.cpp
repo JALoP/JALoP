@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include "jsub_db_layer.hpp"
+#include "jaldb_utils.h"
 
 #define stringify( name ) # name
 #define DEBUG_LOG(args...) \
@@ -179,7 +180,11 @@ int jsub_write_journal(
 		// Path is NULL and FileDescriptor is invalid,
 		//	get a file from the db layer to write the
 		//	journal data to.
-		ret = jaldb_create_journal_file(db_ctx, db_payload_path, db_payload_fd);
+		uuid_t uuid;
+		uuid_generate(uuid);
+		//TODO: This needs to be updated to parse the uuid from the sys metadata
+		ret = jaldb_create_file(db_ctx->journal_root, db_payload_path, db_payload_fd,
+				uuid, JALDB_RTYPE_JOURNAL, JALDB_DTYPE_PAYLOAD);
 		if (ret != JALDB_OK) {
 			if (debug) {
 				DEBUG_LOG("Could not create a file to store journal data\n");

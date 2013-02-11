@@ -356,22 +356,6 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_create_journal_file(
-	jaldb_context *ctx,
-	char **path,
-	int *fd)
-{
-	/*
-	if (!ctx) {
-		return JALDB_E_INVAL;
-	}
-	if (ctx->db_read_only) {
-		return JALDB_E_READ_ONLY;
-	}
-	*/
-	return JALDB_E_NOT_IMPL;//jaldb_create_file(ctx->journal_root, path, fd);
-}
-
 enum jaldb_status jaldb_xfer_journal(
 	jaldb_context *ctx,
 	const std::string &source,

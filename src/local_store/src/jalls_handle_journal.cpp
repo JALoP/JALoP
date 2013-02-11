@@ -38,8 +38,9 @@
 
 #include "jal_alloc.h"
 
-#include "jaldb_context.h"
+#include "jaldb_context.hpp"
 #include "jaldb_segment.h"
+#include "jaldb_utils.h"
 
 #include "jalls_context.h"
 #include "jalls_handle_journal.hpp"
@@ -76,7 +77,10 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 
 	void *sha256_instance = NULL;
 	//get a file from the db layer to write the journal data to.
-	db_err = jaldb_create_journal_file(thread_ctx->db_ctx, &db_payload_path, &db_payload_fd);
+	uuid_t uuid;
+	uuid_generate(uuid);
+	db_err = jaldb_create_file(thread_ctx->db_ctx->journal_root, &db_payload_path,
+			&db_payload_fd, uuid, JALDB_RTYPE_JOURNAL, JALDB_DTYPE_PAYLOAD);
 	if (db_err != JALDB_OK) {
 		if (debug) {
 			fprintf(stderr, "could not create a file to store journal data\n");

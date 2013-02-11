@@ -1,5 +1,5 @@
 /**
- * @file test_jalls_handler.c This file contains tests for jalls_handler functions.n
+ * @file test_jalls_handler.c This file contains tests for jalls_handler functions.
  *
  * @section LICENSE
  *
@@ -8,7 +8,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2011-2013 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -193,15 +193,19 @@ static int fake_jalls_handle_log(__attribute__((unused)) struct jalls_thread_con
 
 struct jalls_context *jalls_ctx = NULL;
 struct jalls_thread_context *thread_ctx = NULL;
+jaldb_context *db_ctx = NULL;
 
 void setup()
 {
 	jalls_ctx = jal_calloc(1, sizeof(*jalls_ctx));
 	jalls_ctx->debug = 0;
 
+	db_ctx = jaldb_context_create();
+
 	thread_ctx = jal_calloc(1, sizeof(*thread_ctx));
 	thread_ctx->fd = 0;
 	thread_ctx->ctx = jalls_ctx;
+	thread_ctx->db_ctx = db_ctx;
 
 	replace_function(pthread_self, fake_pthread_self);
 	replace_function(pthread_detach, fake_pthread_detach);
@@ -215,6 +219,8 @@ void teardown()
 	restore_function(pthread_detach);
 	restore_function(jalls_recvmsg_helper);
 
+	free(jalls_ctx);
+	jaldb_context_destroy(&db_ctx);
 	jalls_shutdown();
 }
 

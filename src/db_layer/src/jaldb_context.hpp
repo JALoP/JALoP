@@ -403,7 +403,7 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_n
  * @param[in] sys_meta_doc a document that contains the system metadata.
  * @param[in] app_meta_doc a document that contains the app metadata (if any).
  * @param[in] path the path to the journal file (should be obtained using to
- *                 jaldb_create_journal_file).
+ *                 jaldb_create_file).
  * @param[in] sid the serial ID as identified by the remote peer.
  */
 enum jaldb_status jaldb_insert_journal_metadata_into_temp(
@@ -421,7 +421,7 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
  * @param[in] ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
  * @param[in] path the path to the journal file (should be obtained using to
- *                 jaldb_create_journal_file).
+ *                 jaldb_create_file).
  * @param[in] offset the file offset.
  *
  *@return JALDB_OK - Success, an error on failure.
@@ -440,7 +440,7 @@ enum jaldb_status jaldb_store_journal_resume(
  * @param[in] ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
  * @param[out] path the path to the journal file (should be obtained using to
- *                 jaldb_create_journal_file).
+ *                 jaldb_create_file).
  * @param[out] offset the file offset.
  *
  *@return JALDB_OK - Success, an error on failure.

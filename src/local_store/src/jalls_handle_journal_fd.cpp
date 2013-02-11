@@ -40,6 +40,7 @@
 
 #include "jaldb_context.hpp"
 #include "jaldb_segment.h"
+#include "jaldb_utils.h"
 
 #include "jalls_context.h"
 #include "jalls_msg.h"
@@ -95,8 +96,10 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	char *db_payload_path = NULL;
 
 	//get a file from the db layer to write the journal data to.
-	jal_err = (enum jal_status)jaldb_create_journal_file(thread_ctx->db_ctx, 
-			&db_payload_path, &db_payload_fd);
+	uuid_t uuid;
+	uuid_generate(uuid);
+	jal_err = (enum jal_status)jaldb_create_file(thread_ctx->db_ctx->journal_root,
+			&db_payload_path, &db_payload_fd, uuid, JALDB_RTYPE_JOURNAL, JALDB_DTYPE_PAYLOAD);
 	if (jal_err != JAL_OK) {
 		if (debug) {
 			fprintf(stderr, "could not create a file to store journal data\n");

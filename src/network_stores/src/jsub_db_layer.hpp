@@ -272,7 +272,7 @@ int jsub_get_last_confed_sid(
  * @param[in] db_ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
  * @param[in] path the path to the journal file (should be obtained using to
- *                 jaldb_create_journal_file).
+ *                 jaldb_create_file).
  * @param[in] offset the file offset.
  *
  *@return JALDB_OK - Success, an error on failure.
@@ -291,7 +291,7 @@ int jsub_store_journal_resume(
  * @param[in] db_ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
  * @param[out] path the path to the journal file (should be obtained using to
- *                 jaldb_create_journal_file).
+ *                 jaldb_create_file).
  * @param[out] offset the file offset.
  *
  *@return JALDB_OK - Success, an error on failure.

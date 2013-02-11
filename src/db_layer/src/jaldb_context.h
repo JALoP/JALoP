@@ -101,20 +101,6 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	const size_t app_meta_buf_len,
 	const uint8_t *audit_buf,
 	const size_t audit_len);
-/**
- * Creates a journal file.
- * @param[in] ctx The context.
- * @param[out] path The path (relative to the db_root) of the new file.
- * @param[out] fd An open file descriptor for the new file. It is the caller's
- * responsibility to close the file descriptor.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_create_journal_file(
-	jaldb_context *ctx,
-	char **path,
-	int *fd);
 
 /**
  * Retrieves a record by serial ID.
