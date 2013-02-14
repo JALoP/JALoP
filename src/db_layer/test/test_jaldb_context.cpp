@@ -357,6 +357,19 @@ extern "C" void test_jaldb_get_records_since_last_sid_returns_error_with_no_last
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
+extern "C" void test_jaldb_get_records_from_temp_works()
+{
+	enum jaldb_status ret;
+	struct jaldb_record *rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_insert_record_into_temp(context, records[0], (char*)"localhost", (char*)"1")); //sid 1
+	ret = jaldb_get_record_from_temp(context, JALDB_RTYPE_LOG, (char*)"1", (char*)"localhost", &rec);
+
+	assert_equals(JALDB_OK, ret);
+	assert_equals(JALDB_RTYPE_LOG, rec->type);
+	jaldb_destroy_record(&rec);
+}
+
 // Disabling tests for now
 #if 0
 extern "C" void test_db_destroy_does_not_crash()
