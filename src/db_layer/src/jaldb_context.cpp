@@ -1030,6 +1030,106 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 		if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
 		} else {
+			ret = JALDB_E_DB;
+			break;
+		}
+	}
+
+out:
+	BN_free(sid);
+	free(key.data);
+	free(val.data);
+	return ret;
+}
+
+enum jaldb_status jaldb_insert_record_into_temp(
+		jaldb_context *ctx,
+		struct jaldb_record *rec,
+		char* source,
+		char* hex_sid)
+{
+	int byte_swap;
+	enum jaldb_status ret;
+	BIGNUM *sid = NULL;
+	int sid_bytes;
+	size_t buf_size = 0;
+	struct jaldb_record_dbs *rdbs = NULL;
+	uint8_t* buffer = NULL;
+	int db_ret;
+	DBT key;
+	DBT val;
+	DB_TXN *txn;
+
+	if (!ctx || !rec) {
+		return JALDB_E_INVAL;
+	}
+	if (!rec->source) {
+		rec->source = jal_strdup("localhost");
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+
+	ret = jaldb_record_sanity_check(rec);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+
+	db_ret = jaldb_get_dbs(ctx, source, rec->type, &rdbs);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	ret = jaldb_serialize_record(byte_swap, rec, &buffer, &buf_size);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	val.data = buffer;
+	val.size = buf_size;
+
+	db_ret = BN_hex2bn(&sid, hex_sid);
+	if (0 == db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	sid_bytes = BN_num_bytes(sid);
+	if (0 >= sid_bytes) {
+		ret = JALDB_E_UNKNOWN;
+		goto out;
+	}
+	key.flags = DB_DBT_REALLOC;
+	key.data = jal_malloc(sid_bytes);
+	key.size = sid_bytes;
+	BN_bn2bin(sid, (unsigned char*)key.data);
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			break;
+		}
+
+		db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, DB_NOOVERWRITE);
+
+		if (0 == db_ret) {
+			db_ret = txn->commit(txn, 0);
+		} else {
+			txn->abort(txn);
+		}
+		if (0 == db_ret) {
+			ret = JALDB_OK;
+			break;
+		}
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else {
+			ret = JALDB_E_DB;
 			break;
 		}
 	}
@@ -1122,6 +1222,112 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		}
 
 		txn->abort(txn);
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else if (DB_NOTFOUND == db_ret) {
+			ret = JALDB_E_NOT_FOUND;
+			goto out;
+		}
+		// some other error
+		ret = JALDB_E_DB;
+		goto out;
+	}
+	ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+	rec->type = type;
+	if (!rec->sys_meta) {
+		rec->sys_meta = jaldb_create_segment();
+		char *doc = NULL;
+		size_t doc_len = 0;
+		ret = jaldb_record_to_system_metadata_doc(rec, &doc, &doc_len);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+		rec->sys_meta->payload = (uint8_t*)doc;
+		rec->sys_meta->length = doc_len;
+	}
+
+	*recpp = rec;
+	rec = NULL;
+	ret = JALDB_OK;
+out:
+	jaldb_destroy_record(&rec);
+	BN_free(sid);
+	free(key.data);
+	free(val.data);
+	return ret;
+}
+
+enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *hex_sid,
+		char *source,
+		struct jaldb_record **recpp)
+{
+	struct jaldb_record *rec = NULL;
+	int byte_swap;
+	int sid_bytes;
+	enum jaldb_status ret;
+	BIGNUM *sid = NULL;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	DB_TXN *txn = NULL;
+	DBT key;
+	DBT val;
+
+	if (!ctx || !hex_sid || !recpp || *recpp) {
+		return JALDB_E_INVAL;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+
+	db_ret = jaldb_get_dbs(ctx, source, type, &rdbs);
+	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = BN_hex2bn(&sid, hex_sid);
+	if (0 == db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	sid_bytes = BN_num_bytes(sid);
+	if (0 >= sid_bytes) {
+		ret = JALDB_E_UNKNOWN;
+		goto out;
+	}
+	key.flags = DB_DBT_REALLOC;
+	key.data = jal_malloc(sid_bytes);
+	key.size = sid_bytes;
+	BN_bn2bin(sid, (unsigned char*)key.data);
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	val.flags = DB_DBT_REALLOC;
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		db_ret = rdbs->primary_db->get(rdbs->primary_db, txn, &key, &val, DB_DEGREE_2);
+		if (0 == db_ret) {
+			txn->commit(txn, 0);
+			break;
+		}
+
+		txn->abort(txn);
+
 		if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
 		} else if (DB_NOTFOUND == db_ret) {

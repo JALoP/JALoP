@@ -123,6 +123,26 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		struct jaldb_record **rec);
 
 /**
+ * Retrieves a temporary record by serial ID and source.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, log).
+ * @param[in] hex_sid The serial ID (hex string) of the record being retrieved.
+ * @param[in] source The source of the record
+ * @param[out] rec This will be filled in as a jaldb_record object if the
+ * record is found. Note that any segments located on disk will not be opened
+ * automatically.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *hex_sid,
+		char *source,
+		struct jaldb_record **rec);
+
+/**
  * Retrieves a record by serial UUID.
  *
  * @param[in] ctx The context.
@@ -198,6 +218,17 @@ enum jaldb_status jaldb_next_unsynced_record(
  * @return JALDB_OK on success, or an error code.
  */
 enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec);
+
+/**
+ * Utility to insert any JALoP record into a temporary database
+ * @param[in] ctx the DB context.
+ * @param[in,out] rec The record to insert.
+ * @param[in] source The source of the record
+ * @param[in] sid The serial id of the record
+ *
+ * @return JALDB_OK on success, or an error code.
+ */
+enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb_record *rec, char* source, char* sid);
 
 /**
  * Open a segment on disk for reading.
