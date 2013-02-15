@@ -231,6 +231,18 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb_record *rec, char* source, char* sid);
 
 /**
+ * Utility to transfer a record from a temporary database into the permanent database
+ * @param[in] ctx The DB context.
+ * @param[in] type The record type
+ * @param[in] source The source of the record
+ * @param[in] sid The serial id of the record
+ *
+ * @return JALDB_OK on success, or an error code.
+ */
+ enum jaldb_status jaldb_xfer(jaldb_context *ctx, enum jaldb_rec_type type, char* source, char* sid);
+
+
+/**
  * Open a segment on disk for reading.
  *
  * It is an error to try to open a segment whose \p on_disk flag is not 1.

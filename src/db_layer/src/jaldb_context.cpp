@@ -58,6 +58,7 @@ using namespace std;
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 
 static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp);
+static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, char *hex_sid);
 
 jaldb_context *jaldb_context_create()
 {
@@ -1366,6 +1367,7 @@ out:
 	return ret;
 }
 
+
 enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		uuid_t uuid,
@@ -1512,37 +1514,59 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char *hex_sid)
 {
+	int db_ret;
+	enum jaldb_status ret;
+	struct jaldb_record_dbs *rdbs = NULL;
+
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	ret = jaldb_remove_record_from_db(ctx, rdbs, hex_sid);
+
+out:
+	return ret;
+}
+
+enum jaldb_status jaldb_remove_record_from_temp(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *source,
+		char *hex_sid)
+{
+	enum jaldb_status ret;
+	int db_ret;
+	struct jaldb_record_dbs *rdbs = NULL;
+
+	db_ret = jaldb_get_dbs(ctx, source, type, &rdbs);
+	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	ret = jaldb_remove_record_from_db(ctx, rdbs, hex_sid);
+
+out:
+	return ret;
+}
+
+enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx,
+		jaldb_record_dbs *rdbs,
+		char *hex_sid)
+{
 	int sid_bytes;
 	enum jaldb_status ret;
 	BIGNUM *sid = NULL;
-	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
 	DB_TXN *txn = NULL;
 	DBT key;
 
-	if (!ctx || !hex_sid) {
+	if (!ctx || !hex_sid || !rdbs || !rdbs->primary_db) {
 		return JALDB_E_INVAL;
 	}
 
 	memset(&key, 0, sizeof(key));
-	switch(type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-	if (!rdbs || !rdbs->primary_db) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
 
 	db_ret = BN_hex2bn(&sid, hex_sid);
 	if (0 == db_ret) {
@@ -1978,5 +2002,46 @@ err_out:
 	jaldb_destroy_record_dbs(&rdbs);
 out:
 	free(filename);
+	return ret;
+}
+
+enum jaldb_status jaldb_xfer(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *source,
+		char *hex_sid)
+{
+	enum jaldb_status ret = JALDB_OK;
+	struct jaldb_record_dbs *rdbs = NULL;
+	struct jaldb_record *rec = NULL;
+
+	if(!ctx || !source || 0 == strcmp(source,"localhost") ||
+			0 == strcmp(source,"127.0.0.1")) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (0 != ret || !rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	ret = jaldb_get_record_from_temp(ctx, type, hex_sid, source, &rec);
+	if (0 != ret) {
+		goto out;
+	}
+
+	ret = jaldb_insert_record(ctx, rec);
+	if (0 != ret) {
+		goto out;
+	}
+
+	ret = jaldb_remove_record_from_temp(ctx, type, source, hex_sid);
+	if (0 != ret) {
+		goto out;
+	}
+
+out:
+	jaldb_destroy_record(&rec);
 	return ret;
 }
