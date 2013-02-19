@@ -615,6 +615,78 @@ out:
 	return ret;
 }
 
+enum jaldb_status jaldb_store_confed_sid_temp(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char* source,
+		char* sid)
+{
+	int byte_swap;
+	enum jaldb_status ret = JALDB_OK;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	DBT key;
+	DBT val;
+	DB_TXN *txn;
+
+	if (!ctx || !source || !sid) {
+		return JALDB_E_INVAL;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+
+	db_ret = jaldb_get_dbs(ctx, source, type, &rdbs);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	val.size = strlen(sid) + 1;
+	val.data = jal_strdup(sid);
+
+	key.flags = DB_DBT_REALLOC;
+	key.data = jal_strdup(JALDB_LAST_CONFED_SID_NAME);
+	key.size = strlen(JALDB_LAST_CONFED_SID_NAME);
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_INVAL;
+			break;
+		}
+
+		db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &val, 0);
+
+		if (0 == db_ret) {
+			db_ret = txn->commit(txn, 0);
+		} else {
+			ret = JALDB_E_DB;
+			txn->abort(txn);
+		}
+		if (0 == db_ret) {
+			break;
+		}
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else {
+			ret = JALDB_E_DB;
+			break;
+		}
+	}
+
+out:
+	free(key.data);
+	free(val.data);
+	return ret;
+}
+
 enum jaldb_status jaldb_store_confed_journal_sid_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,

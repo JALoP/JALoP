@@ -262,6 +262,21 @@ enum jaldb_status jaldb_xfer_journal(
 	std::string &next_sid);
 
 /**
+* Store the last confirmed serial_id from the given source.
+* @param[in] ctx the jaldb_context
+* @param[in] type The type of record (journal, audit, log).
+* @param[in] source the host the last serial id is from
+* @param[in] sid the last confirmed serial id
+*
+* @return JALDB_OK on success, or a different JALDB error code on failure.
+*/
+enum jaldb_status jaldb_store_confed_sid_temp(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	char* source,
+	char* sid);
+
+/**
  * Store the most recently confirmed journal record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
