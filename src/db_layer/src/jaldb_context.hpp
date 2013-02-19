@@ -117,6 +117,21 @@ enum jaldb_status jaldb_store_confed_log_sid_tmp(
 		int *db_err_out);
 
 /**
+* Retrieve the last confirmed serial_id from the given source.
+* @param[in] ctx the jaldb_context
+* @param[in] type The type of record (journal, audit, log).
+* @param[in] source the host to find the last serial id from
+* @param[out] sid the last confirmed serial id
+*
+* @return JALDB_OK on success, or a different JALDB error code on failure.
+*/
+enum jaldb_status jaldb_get_last_confed_sid_temp(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *source,
+		char **sid);
+
+/**
 * Retrieve a confirmed serial_id from the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
