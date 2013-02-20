@@ -370,6 +370,45 @@ extern "C" void test_jaldb_get_records_from_temp_works()
 	jaldb_destroy_record(&rec);
 }
 
+extern "C" void test_jaldb_xfer_works()
+{
+	struct jaldb_record *rec = NULL;
+	struct jaldb_record *temp_rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_insert_record_into_temp(context, records[0], (char*)"source", (char*)"1")); //sid 1
+	assert_equals(JALDB_OK, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"1"));
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record_from_temp(context, JALDB_RTYPE_LOG, (char*)"1", (char*)"source", &temp_rec));
+
+	jaldb_destroy_record(&rec);
+	jaldb_destroy_record(&temp_rec);
+}
+
+extern "C" void test_jaldb_xfer_returns_error_when_no_record_in_temp_db()
+{
+	struct jaldb_record *temp_rec = NULL;
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record_from_temp(context, JALDB_RTYPE_LOG, (char*)"1", (char*)"source", &temp_rec));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"1"));
+	jaldb_destroy_record(&temp_rec);
+}
+
+extern "C" void test_jaldb_xfer_returns_error_when_localhost()
+{
+	assert_equals(JALDB_E_INVAL, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"localhost", (char*)"1"));
+	assert_equals(JALDB_E_INVAL, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"127.0.0.1", (char*)"1"));
+}
+
+extern "C" void test_jaldb_remove_record_from_temp_works()
+{
+	struct jaldb_record *rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_insert_record_into_temp(context, records[0], (char*)"source", (char*)"1")); //sid 1
+	assert_equals(JALDB_OK, jaldb_remove_record_from_temp(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"1"));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record_from_temp(context, JALDB_RTYPE_LOG, (char*)"1", (char*)"source", &rec));
+
+	jaldb_destroy_record(&rec);
+}
+
 // Disabling tests for now
 #if 0
 extern "C" void test_db_destroy_does_not_crash()

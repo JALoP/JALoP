@@ -266,6 +266,22 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		char *hex_sid);
 
 /**
+ * Remove a record (by SID) from the temporary database
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, log).
+ * @param[in] source The source of the record.
+ * @param[in] hex_sid The serial ID of the record being removed.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_remove_record_from_temp(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *source,
+		char *hex_sid);
+
+/**
  * Utility function to remove all the segments store on disk for a specific
  * record.
  * @param[in] ctx the jaldb_context
