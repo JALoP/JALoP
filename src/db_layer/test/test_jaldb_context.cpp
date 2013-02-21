@@ -416,6 +416,14 @@ extern "C" void test_jaldb_get_last_confed_sid_temp_returns_error_when_none()
 	assert_equals(NULL, last_sid);
 }
 
+extern "C" void test_jaldb_store_confed_sid_temp_works()
+{
+	char* last_sid = NULL;
+	assert_equals(JALDB_OK, jaldb_store_confed_sid_temp(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"2"));
+	assert_equals(JALDB_OK, jaldb_get_last_confed_sid_temp(context, JALDB_RTYPE_LOG, (char*)"source", &last_sid));
+	assert_equals('2', *last_sid);
+}
+
 // Disabling tests for now
 #if 0
 extern "C" void test_db_destroy_does_not_crash()
