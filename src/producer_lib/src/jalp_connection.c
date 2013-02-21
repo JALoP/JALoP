@@ -114,7 +114,11 @@ enum jal_status jalp_connection_fill_out_msghdr(struct iovec *iov,
 
 enum jal_status jalp_sendmsg(jalp_context *ctx, struct msghdr *msgh)
 {
-	int flags = 0;
+#ifdef MSG_NOSIGNAL
+	int flags = MSG_NOSIGNAL; // Don't send SIGPIPE out to library users
+#else
+	int flags = 0; // Solaris does not support MSG_NOSIGNAL
+#endif
 	ssize_t bytes_sent = 0;
 
 	if (!ctx || !msgh) {
