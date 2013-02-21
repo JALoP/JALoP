@@ -409,6 +409,13 @@ extern "C" void test_jaldb_remove_record_from_temp_works()
 	jaldb_destroy_record(&rec);
 }
 
+extern "C" void test_jaldb_get_last_confed_sid_temp_returns_error_when_none()
+{
+	char* last_sid = NULL;
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_last_confed_sid_temp(context, JALDB_RTYPE_LOG, (char*)"source", &last_sid));
+	assert_equals(NULL, last_sid);
+}
+
 // Disabling tests for now
 #if 0
 extern "C" void test_db_destroy_does_not_crash()
