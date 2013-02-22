@@ -59,6 +59,7 @@ using namespace std;
 
 static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp);
 static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, char *hex_sid);
+static jaldb_status jaldb_verify_string_contains_hex(const char *str);
 
 jaldb_context *jaldb_context_create()
 {
@@ -392,7 +393,10 @@ enum jaldb_status jaldb_mark_sent(
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-
+	ret = jaldb_verify_string_contains_hex(hex_sid);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&sid, hex_sid);
 	if (0 == db_ret) {
 		ret = JALDB_E_INVAL;
@@ -525,6 +529,10 @@ enum jaldb_status jaldb_mark_synced(
 		goto out;
 	}
 
+	ret = jaldb_verify_string_contains_hex(hex_sid);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&sid, hex_sid);
 	if (0 == db_ret) {
 		ret = JALDB_E_INVAL;
@@ -1023,6 +1031,10 @@ enum jaldb_status jaldb_get_records_since_last_sid(
 		goto out;
 	}
 
+	ret = jaldb_verify_string_contains_hex(last_sid);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&current_sid, last_sid);
 	if ((0 == db_ret) || (NULL == current_sid)) {
 		ret = JALDB_E_INVAL;
@@ -1240,6 +1252,10 @@ enum jaldb_status jaldb_insert_record_into_temp(
 	val.data = buffer;
 	val.size = buf_size;
 
+	ret = jaldb_verify_string_contains_hex(hex_sid);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&sid, hex_sid);
 	if (0 == db_ret) {
 		ret = JALDB_E_INVAL;
@@ -1330,6 +1346,10 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		goto out;
 	}
 
+	ret = jaldb_verify_string_contains_hex(hex_sid);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&sid, hex_sid);
 	if (0 == db_ret) {
 		ret = JALDB_E_INVAL;
@@ -1436,6 +1456,10 @@ enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 		goto out;
 	}
 
+	ret = jaldb_verify_string_contains_hex(hex_sid);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&sid, hex_sid);
 	if (0 == db_ret) {
 		ret = JALDB_E_INVAL;
@@ -1713,6 +1737,10 @@ enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx,
 
 	memset(&key, 0, sizeof(key));
 
+	ret = jaldb_verify_string_contains_hex(hex_sid);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&sid, hex_sid);
 	if (0 == db_ret) {
 		ret = JALDB_E_INVAL;
@@ -1844,7 +1872,10 @@ enum jaldb_status jaldb_next_unsynced_record(
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-
+	ret = jaldb_verify_string_contains_hex(last_sid_hex);
+	if (JALDB_OK != ret) {
+		goto out;
+	}
 	db_ret = BN_hex2bn(&last_sid, last_sid_hex);
 	if (0 == db_ret) {
 		ret = JALDB_E_INVAL;
@@ -2189,4 +2220,14 @@ enum jaldb_status jaldb_xfer(jaldb_context *ctx,
 out:
 	jaldb_destroy_record(&rec);
 	return ret;
+}
+
+static jaldb_status jaldb_verify_string_contains_hex(const char *str)
+{
+	char valid_chars[] = "1234567890abcdef";
+	if (strlen(str) == strspn(str,valid_chars)) {
+		return JALDB_OK;
+	} else {
+		return JALDB_E_INVAL;
+	}
 }
