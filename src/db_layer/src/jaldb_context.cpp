@@ -1261,7 +1261,7 @@ enum jaldb_status jaldb_insert_record_into_temp(
 			break;
 		}
 
-		db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, DB_NOOVERWRITE);
+		db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, 0);
 
 		if (0 == db_ret) {
 			db_ret = txn->commit(txn, 0);

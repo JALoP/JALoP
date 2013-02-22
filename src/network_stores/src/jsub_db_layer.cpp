@@ -34,6 +34,8 @@
 
 #include "jsub_db_layer.hpp"
 #include "jaldb_utils.h"
+#include "jaldb_record_xml.h"
+#include "jaldb_segment.h"
 
 #define stringify( name ) # name
 #define DEBUG_LOG(args...) \
@@ -73,20 +75,17 @@ int jsub_insert_audit(
 		jaldb_context *db_ctx,
 		char *c_source,
 		uint8_t *sys_meta,
-		__attribute__((unused)) size_t sys_len,
-		__attribute__((unused)) uint8_t *app_meta,
-		__attribute__((unused)) size_t app_len,
+		size_t sys_len,
+		uint8_t *app_meta,
+		size_t app_len,
 		uint8_t *audit,
-		__attribute__((unused)) size_t audit_len,
+		size_t audit_len,
 		char *sid_in,
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	void *sys_meta_doc = NULL;
-	void *app_meta_doc = NULL;
-	void *audit_doc = NULL;
-	std::string sid = sid_in;
-	std::string source = c_source;
+	struct jaldb_record *rec;
+
 	// Must have sys_meta and audit_doc
 	if (!sys_meta || !audit || !sid_in || !db_ctx) {
 		if (debug) {
@@ -95,15 +94,31 @@ int jsub_insert_audit(
 		ret = JAL_E_INVAL_PARAM;
 		goto out;
 	}
-	// TODO: Switch to new DB APIs & move any parsing that needs to happen
-	// into the DB layer and/or common code.
-	ret = jaldb_insert_audit_record_into_temp(
-						db_ctx,
-						source,
-						sys_meta_doc,
-						app_meta_doc,
-						audit_doc,
-						sid);
+
+	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+
+	if (ret < 0) {
+		if (debug) {
+			fprintf(stderr, "failed to create record struct\n");
+		}
+		goto out;
+	}
+
+	if (app_len) {
+		rec->app_meta = jaldb_create_segment();
+		rec->app_meta->length = app_len;
+		rec->app_meta->payload = app_meta;
+		rec->app_meta->on_disk = 0;
+	}
+
+	if (audit_len > 0) {
+		rec->payload = jaldb_create_segment();
+		rec->payload->length = audit_len;
+		rec->payload->payload = audit;
+		rec->payload->on_disk = 0;
+	}
+
+	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, sid_in);
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert audit into temp!\n");
 	}
@@ -116,21 +131,16 @@ int jsub_insert_log(
 		jaldb_context *db_ctx,
 		char *c_source,
 		uint8_t *sys_meta,
-		__attribute__((unused)) size_t sys_len,
-		__attribute__((unused)) uint8_t *app_meta,
-		__attribute__((unused)) size_t app_len,
-		__attribute__((unused)) uint8_t *log,
-		__attribute__((unused)) size_t log_len,
+		size_t sys_len,
+		uint8_t *app_meta,
+		size_t app_len,
+		uint8_t *log,
+		size_t log_len,
 		char *sid_in,
 		int debug)
 {
 	int ret = JALDB_E_UNKNOWN;
-	int db_err;
-	void *sys_meta_doc = NULL;
-	void *app_meta_doc = NULL;
-	std::string sid = sid_in;
-	std::string source = c_source;
-	std::string err_str;
+	struct jaldb_record *rec;
 
 	// Only requires sys_meta
 	if (!sys_meta || !db_ctx){
@@ -140,17 +150,32 @@ int jsub_insert_log(
 		ret = JAL_E_INVAL_PARAM;
 		goto out;
 	}
-	// TODO: switch to new DB layer APIs and move any XML parsing into the
-	// DB layer and/or common code.
-	ret = jaldb_insert_log_record_into_temp(
-						db_ctx,
-						source,
-						sys_meta_doc,
-						app_meta_doc,
-						log,
-						log_len,
-						sid,
-						&db_err);
+
+	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+
+	if (ret < 0) {
+		if (debug) {
+			fprintf(stderr, "failed to create record struct\n");
+		}
+		goto out;
+	}
+
+	if (app_len) {
+		rec->app_meta = jaldb_create_segment();
+		rec->app_meta->length = app_len;
+		rec->app_meta->payload = app_meta;
+		rec->app_meta->on_disk = 0;
+	}
+
+	if (log_len > 0) {
+		rec->payload = jaldb_create_segment();
+		rec->payload->length = log_len;
+		rec->payload->payload = log;
+		rec->payload->on_disk = 0;
+	}
+
+	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, sid_in);
+
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert log into temp!\n");
 	}
@@ -208,18 +233,15 @@ int jsub_insert_journal_metadata(
 		jaldb_context *db_ctx,
 		char *c_source,
 		uint8_t *sys_meta,
-		__attribute__((unused)) size_t sys_len,
-		__attribute__((unused)) uint8_t *app_meta,
-		__attribute__((unused)) size_t app_len,
-		__attribute__((unused)) char *db_payload_path,
+		size_t sys_len,
+		uint8_t *app_meta,
+		size_t app_len,
+		char *db_payload_path,
 		char *sid_in,
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	void *sys_meta_doc = NULL;
-	void *app_meta_doc = NULL;
-	std::string sid = sid_in;
-	std::string source = c_source;
+	struct jaldb_record *rec;
 
 	if (!sys_meta || !db_ctx){
 		if (debug) {
@@ -228,128 +250,33 @@ int jsub_insert_journal_metadata(
 		ret = JAL_E_INVAL_PARAM;
 		goto out;
 	}
-	//TODO: switch to new DB layer APIs and move any XML parsing to
-	//dblayer/common code.
-	ret = jaldb_insert_journal_metadata_into_temp(
-						db_ctx,
-						source,
-						sys_meta_doc,
-						app_meta_doc,
-						db_payload_path,
-						sid);
+
+	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+
+	if (ret < 0) {
+		if (debug) {
+			fprintf(stderr, "failed to create record struct\n");
+		}
+		goto out;
+	}
+
+	if (app_len) {
+		rec->app_meta = jaldb_create_segment();
+		rec->app_meta->length = app_len;
+		rec->app_meta->payload = app_meta;
+		rec->app_meta->on_disk = 0;
+	}
+
+	rec->payload = jaldb_create_segment();
+	rec->payload->payload = (uint8_t*)db_payload_path;
+	rec->payload->on_disk = 1;
+
+	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, sid_in);
 	if ((JALDB_OK != ret) && debug) {
 		printf("DEBUG_LOG to insert journal metadata into temp!\n");
 	}
 out:
 
-	return ret;
-}
-
-int jsub_transfer_audit(
-		jaldb_context *db_ctx,
-		std::string &source,
-		std::string &tmp_sid,
-		std::string &perm_sid)
-{
-	jaldb_status ret = jaldb_xfer_audit(db_ctx, source, tmp_sid,
-					    perm_sid);
-	if (ret == JALDB_OK){
-		return JAL_OK;
-	}
-	return ret;
-}
-
-int jsub_transfer_log(
-		jaldb_context *db_ctx,
-		std::string &source,
-		std::string &tmp_sid,
-		std::string &perm_sid)
-{
-	jaldb_status ret = jaldb_xfer_log(db_ctx, source, tmp_sid,
-					  perm_sid);
-	if (ret == JALDB_OK){
-		return JAL_OK;
-	}
-	return ret;
-}
-
-int jsub_transfer_journal(
-		jaldb_context *db_ctx,
-		std::string &source,
-		std::string &tmp_sid,
-		std::string &perm_sid)
-{
-	jaldb_status ret = jaldb_xfer_journal(db_ctx, source, tmp_sid,
-					      perm_sid);
-	if (ret == JALDB_OK){
-		return JAL_OK;
-	}
-	return ret;
-}
-
-int jsub_store_confed_sid(
-		jaldb_context *db_ctx,
-		const std::string &sid,
-		enum jaln_record_type type,
-		const std::string &source)
-{
-	int ret;
-	int db_err_out;
-	switch (type)
-	{
-		case JALN_RTYPE_JOURNAL:
-			ret = jaldb_store_confed_journal_sid_tmp(
-					db_ctx, source.c_str(),
-					sid.c_str(), &db_err_out);
-			break;
-		case JALN_RTYPE_AUDIT:
-			ret = jaldb_store_confed_audit_sid_tmp(
-					db_ctx, source.c_str(),
-					sid.c_str(), &db_err_out);
-			break;
-		case JALN_RTYPE_LOG:
-			ret = jaldb_store_confed_log_sid_tmp(
-					db_ctx, source.c_str(),
-					sid.c_str(), &db_err_out);
-			break;
-		default:
-			// Nothing
-			ret = JAL_OK;
-			break;
-	}
-	return ret;
-}
-
-int jsub_get_last_confed_sid(
-		jaldb_context *db_ctx,
-		std::string &sid,
-		enum jaln_record_type type,
-		const std::string &source)
-{
-	int ret;
-	int db_err_out;
-	switch (type)
-	{
-		case JALN_RTYPE_JOURNAL:
-			ret = jaldb_get_last_confed_journal_sid_tmp(
-					db_ctx, source.c_str(),
-					sid, &db_err_out);
-			break;
-		case JALN_RTYPE_AUDIT:
-			ret = jaldb_get_last_confed_audit_sid_tmp(
-					db_ctx, source.c_str(),
-					sid, &db_err_out);
-			break;
-		case JALN_RTYPE_LOG:
-			ret = jaldb_get_last_confed_log_sid_tmp(
-					db_ctx, source.c_str(),
-					sid, &db_err_out);
-			break;
-		default:
-			// Nothing
-			ret = JAL_OK;
-			break;
-	}
 	return ret;
 }
 

@@ -160,26 +160,44 @@ int jsub_get_subscribe_request(
 		uint64_t *offset)
 {
 	int ret = 0;
+	enum jaldb_status db_err;
+	enum jaldb_rec_type rec_type;
 	if (jsub_debug) {
 		DEBUG_LOG("GET_SUBSCRIBE_REQUEST");
 		DEBUG_LOG("host_name: %s", ch_info->hostname);
 	}
+
+	switch (type)
+	{
+		case JALN_RTYPE_JOURNAL:
+			rec_type = JALDB_RTYPE_JOURNAL;
+			break;
+		case JALN_RTYPE_AUDIT:
+			rec_type = JALDB_RTYPE_AUDIT;
+			break;
+		case JALN_RTYPE_LOG:
+			rec_type = JALDB_RTYPE_LOG;
+			break;
+		default:
+			rec_type = JALDB_RTYPE_UNKNOWN;
+			break;
+	}
 	// Going to need to store the last confed sid to the
 	// 	temp container so that it can be retrieved here.
 	std::string sid_out;
-	ret = jsub_get_last_confed_sid(jsub_db_ctx, sid_out, type,
-				       ch_info->hostname);
-	if (JAL_OK != ret) {
+
+	db_err = jaldb_get_last_confed_sid_temp(jsub_db_ctx, rec_type, ch_info->hostname, serial_id);
+	if (JALDB_OK != db_err) {
 		if (jsub_debug) {
 			DEBUG_LOG("last confed sid not found, defaulting to 0.");
 		}
 		sid_out = JSUB_INITIAL_SID;
+		*serial_id = jal_strdup((char *)JSUB_INITIAL_SID);
 	}
 	if (jsub_debug) {
 		DEBUG_LOG("record_type: %d ser_id: %s",
 			  type, sid_out.c_str());
 	}
-	*serial_id = (char *)sid_out.c_str();
 	ret = JAL_OK;
 
 	if (type == JALN_RTYPE_JOURNAL) {
@@ -286,6 +304,7 @@ int jsub_on_log(
 		DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%d ud:%p\n",
 			ch_info, serial_id, buffer, cnt, user_data);
 	}
+
 	// Insert log into temp container
 	return jsub_insert_log(jsub_db_ctx, ch_info->hostname, log_sys_meta_buf,
 				log_sys_meta_size, log_app_meta_buf,
@@ -397,34 +416,33 @@ int jsub_on_digest_response(
 		DEBUG_LOG("ch info:%p type:%d serial_id:%s status: %s, ds:%d, ud:%p\n",
 				ch_info, type, serial_id, status_str, status, user_data);
 	}
+	enum jaldb_status db_err;
 	int ret = -1;
+	enum jaldb_rec_type jaldb_type;
 	std::string sid_out = "";
 	std::string source = ch_info->hostname;
 	std::string ser_id = serial_id;
 	std::string rec_type = "";
-	bool wasXfer = false;
+	bool willXfer = false;
 	switch (type)
 	{
 		case JALN_RTYPE_JOURNAL:
 			// xfer journal
-			ret = jsub_transfer_journal(jsub_db_ctx, source,
-						ser_id, sid_out);
-			wasXfer = true;
+			willXfer = true;
 			rec_type = "JOURNAL";
+			jaldb_type = JALDB_RTYPE_JOURNAL;
 			break;
 		case JALN_RTYPE_AUDIT:
 			// xfer audit
-			ret = jsub_transfer_audit(jsub_db_ctx, source,
-						ser_id, sid_out);
-			wasXfer = true;
+			willXfer = true;
 			rec_type = "AUDIT";
+			jaldb_type = JALDB_RTYPE_AUDIT;
 			break;
 		case JALN_RTYPE_LOG:
 			// xfer log
-			ret = jsub_transfer_log(jsub_db_ctx, source,
-						ser_id, sid_out);
-			wasXfer = true;
+			willXfer = true;
 			rec_type = "LOG";
+			jaldb_type = JALDB_RTYPE_LOG;
 			break;
 		default:
 			// Nothing
@@ -432,17 +450,24 @@ int jsub_on_digest_response(
 			rec_type = "UNKNOWN RECORD TYPE";
 			break;
 	}
-	if ((JAL_OK == ret) && wasXfer) {
-		ret = jsub_store_confed_sid(jsub_db_ctx, ser_id, type, source);
-		if (jsub_debug) {
-			if (JAL_OK == ret) {
-				DEBUG_LOG("Store confed sid success! %s sid: %s\n",
-					rec_type.c_str(), ser_id.c_str());
+	if (willXfer) {
+		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(ser_id.c_str()));
+		if(JALDB_OK == db_err) {
+			db_err = jaldb_store_confed_sid_temp(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(ser_id.c_str()));
+			if (jsub_debug) {
+				if (JALDB_OK == db_err) {
+					ret = JAL_OK;
+					DEBUG_LOG("Store confed sid success! %s sid: %s\n",
+						rec_type.c_str(), ser_id.c_str());
+				}
+				else {
+					DEBUG_LOG("Store confed sid fail! %s sid: %s\n",
+						  rec_type.c_str(), ser_id.c_str());
+				}
 			}
-			else {
-				DEBUG_LOG("Store confed sid fail! %s sid: %s\n",
-					  rec_type.c_str(), ser_id.c_str());
-			}
+		} else {
+			DEBUG_LOG("Failed to transfer record! %s sid: %s\n",
+				rec_type.c_str(), ser_id.c_str());
 		}
 	}
 	return ret;
