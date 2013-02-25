@@ -355,20 +355,19 @@ void jsub_flush_stale_data(jaldb_context *db_ctx, const char *host, int data_cla
 	}
 	enum jaldb_status ret = JALDB_OK;
 	if (data_classes & JALN_RTYPE_JOURNAL) {
-		ret = jaldb_purge_unconfirmed_journal(db_ctx, host);
+		ret = jaldb_purge_unconfirmed_records(db_ctx, host, JALDB_RTYPE_JOURNAL);
 		if ((JALDB_OK != ret) && debug) {
 			printf("DEBUG_LOG purging of journal records failed.\n");
 		}
 	}
 	if (data_classes & JALN_RTYPE_AUDIT) {
-		ret = jaldb_purge_unconfirmed_audit(db_ctx, host);
+		ret = jaldb_purge_unconfirmed_records(db_ctx, host, JALDB_RTYPE_AUDIT);
 		if ((JALDB_OK != ret) && debug) {
 			printf("DEBUG_LOG purging of audit records failed.\n");
 		}
 	}
 	if (data_classes & JALN_RTYPE_LOG) {
-		int db_err;
-		ret = jaldb_purge_unconfirmed_log(db_ctx, host, &db_err);
+		ret = jaldb_purge_unconfirmed_records(db_ctx, host, JALDB_RTYPE_LOG);
 		if ((JALDB_OK != ret) && debug) {
 			printf("DEBUG_LOG purging of log records failed.\n");
 		}

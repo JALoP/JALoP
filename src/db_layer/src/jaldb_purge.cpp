@@ -28,7 +28,10 @@
 
 #include <list>
 #include <string.h>
+#include "jal_asprintf_internal.h"
 #include "jal_alloc.h"
+#include "jaldb_record.h"
+#include "jaldb_record_dbs.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
@@ -37,26 +40,61 @@
 
 using namespace std;
 
-enum jaldb_status jaldb_purge_unconfirmed_log(
+enum jaldb_status jaldb_purge_unconfirmed_records(
 		jaldb_context *ctx,
 		const char *remote_host,
-		int *db_err)
+		enum jaldb_rec_type rtype)
 {
-	return JALDB_E_NOT_IMPL;
-}
+	int db_ret = 0;
+	u_int32_t db_flags = DB_THREAD | DB_CREATE | DB_AUTO_COMMIT;
+	jaldb_record_dbs *rdbs = NULL;
+	char *filename = NULL;
 
-enum jaldb_status jaldb_purge_unconfirmed_audit(
-		jaldb_context *ctx,
-		const char *remote_host)
-{
-	return JALDB_E_NOT_IMPL;
-}
+	if (!ctx || !remote_host ||
+			0 == strcmp(remote_host, "localhost") ||
+			0 == strcmp(remote_host, "127.0.0.1")) {
+		return JALDB_E_INVAL;
+	}
 
-enum jaldb_status jaldb_purge_unconfirmed_journal(
-		jaldb_context *ctx,
-		const char *remote_host)
-{
-	return JALDB_E_NOT_IMPL;
+	switch (rtype) {
+	case JALDB_RTYPE_JOURNAL:
+		jal_asprintf(&filename, "%s_%s", remote_host, "journal");
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		jal_asprintf(&filename, "%s_%s", remote_host, "audit");
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		jal_asprintf(&filename, "%s_%s", remote_host, "log");
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+
+	if (!rdbs->primary_db) {
+		return JALDB_E_INVAL;
+	}
+
+	db_ret = rdbs->primary_db->close(rdbs->primary_db, 0);
+	if (0 != db_ret) {
+		return JALDB_E_DB;
+	}
+
+	db_ret = rdbs->primary_db->remove(rdbs->primary_db, filename, "primary", 0);
+	if (0 != db_ret) {
+		return JALDB_E_DB;
+	}
+
+	db_ret = rdbs->primary_db->open(rdbs->primary_db, NULL,
+			filename, "primary", DB_BTREE, db_flags, 0);
+	if (0 != db_ret) {
+		return JALDB_E_DB;
+	}
+
+	return JALDB_OK;
+
 }
 
 enum jaldb_status jaldb_purge_log_by_sid(jaldb_context *ctx,

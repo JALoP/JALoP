@@ -38,49 +38,20 @@ struct jaldb_doc_info {
 };
 
 /**
- * Purge all cached audit records for the given remote.
+ * Purge all cached records for the given remote.
  * This removes all records that were stored in a temporary database, for which
  * a digest and digest-conf message have not been sent or received.
  *
  * @param[in] ctx The context to use.
  * @param[in] remote_host The name of the remote host to purge records for.
+ * @param[in] rtype The type of record stored in the database.
  *
  * @return JALDB_OK on success, or an error.
  */
-enum jaldb_status jaldb_purge_unconfirmed_audit(
-		jaldb_context *ctx,
-		const char *remote_host);
-
-/**
- * Purge all unconfirmed log records for the given remote.
- * This removes all records that were stored in a temporary database, for which
- * a digest and digest-conf message have not been sent or received.
- *
- * @param[in] ctx The context to use.
- * @param[in] remote_host The name of the remote host to purge records for.
- * @param[out] db_err A DB error, this is only set if the function returns
- * JALDB_E_DB.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_unconfirmed_log(
+enum jaldb_status jaldb_purge_unconfirmed_records(
 		jaldb_context *ctx,
 		const char *remote_host,
-		int *db_err);
-
-/**
- * Purge all unconfirmed journal records for the given remote.
- * This removes all records that were stored in a temporary database, for which
- * a digest and digest-conf message have not been sent or received.
- *
- * @param[in] ctx The context to use.
- * @param[in] remote_host The name of the remote host to purge records for.
- *
- * @return JALDB_OK on success, or an error.
- */
-enum jaldb_status jaldb_purge_unconfirmed_journal(
-		jaldb_context *ctx,
-		const char *remote_host);
+		enum jaldb_rec_type rtype);
 
 /**
  * Purge all log records up to and including the specified sid.
