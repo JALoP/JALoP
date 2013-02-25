@@ -9,7 +9,7 @@
 *
 * All other source code is copyright Tresys Technology and licensed as below.
 *
-* Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
+* Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
 *
 * This software was developed by Tresys Technology LLC
 * with U.S. Government sponsorship.
@@ -418,7 +418,7 @@ int jsub_on_digest_response(
 	}
 	enum jaldb_status db_err;
 	int ret = -1;
-	enum jaldb_rec_type jaldb_type;
+	enum jaldb_rec_type jaldb_type = JALDB_RTYPE_UNKNOWN;
 	std::string sid_out = "";
 	std::string source = ch_info->hostname;
 	std::string ser_id = serial_id;
