@@ -53,7 +53,7 @@ char *jalls_get_user_id_str(uid_t uid)
 	pwd_buf = (char *)jal_calloc(1, pwd_buf_size);
 
 	err = getpwuid_r(uid, &user_pwd, pwd_buf, pwd_buf_size, &user_pwd_ptr);
-	if (err < 0) {
+	if (err != 0) {
 		goto cleanup;
 	}
 	if (user_pwd_ptr) {
@@ -101,6 +101,9 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 	rec->sec_lbl = jalls_get_security_label(thread_ctx->fd);
 	uuid_copy(rec->host_uuid, thread_ctx->ctx->system_uuid);
 	uuid_generate(rec->uuid);
+	if (rec->username == NULL) {
+		return -1;	
+	}
 
 	*prec = rec;
 	return 0;

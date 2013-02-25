@@ -214,6 +214,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	ret = 0;
 
 err_out:
+	close(journal_fd);
 	free(app_meta_buf);
 	if (digest_ctx) {
 		digest_ctx->destroy(sha256_instance);
