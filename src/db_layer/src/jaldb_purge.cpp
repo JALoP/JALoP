@@ -59,21 +59,23 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 	switch (rtype) {
 	case JALDB_RTYPE_JOURNAL:
 		jal_asprintf(&filename, "%s_%s", remote_host, "journal");
-		rdbs = ctx->journal_dbs;
 		break;
 	case JALDB_RTYPE_AUDIT:
 		jal_asprintf(&filename, "%s_%s", remote_host, "audit");
-		rdbs = ctx->audit_dbs;
 		break;
 	case JALDB_RTYPE_LOG:
 		jal_asprintf(&filename, "%s_%s", remote_host, "log");
-		rdbs = ctx->log_dbs;
 		break;
 	default:
 		return JALDB_E_INVAL;
 	}
 
-	if (!rdbs->primary_db) {
+	db_ret = jaldb_get_dbs(ctx,remote_host,rtype,&rdbs);
+	if (0 != db_ret) {
+		return JALDB_E_INVAL;
+	}
+
+	if (!rdbs || !rdbs->primary_db) {
 		return JALDB_E_INVAL;
 	}
 

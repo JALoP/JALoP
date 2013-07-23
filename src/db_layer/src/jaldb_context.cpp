@@ -2045,7 +2045,7 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 
 enum jaldb_status jaldb_lookup_rdbs_in_map(
 		jaldb_context *ctx,
-		char *source,
+		const char *source,
 		enum jaldb_rec_type type,
 		struct jaldb_record_dbs **rdbs)
 {
@@ -2093,7 +2093,7 @@ enum jaldb_status jaldb_lookup_rdbs_in_map(
 }
 enum jaldb_status jaldb_store_rdbs_in_map(
 		jaldb_context *ctx,
-		char *source,
+		const char *source,
 		enum jaldb_rec_type type,
 		struct jaldb_record_dbs *rdbs)
 {
@@ -2125,7 +2125,7 @@ enum jaldb_status jaldb_store_rdbs_in_map(
 
 enum jaldb_status jaldb_open_dbs_for_temp(
 		jaldb_context *ctx,
-		char *source,
+		const char *source,
 		enum jaldb_rec_type rtype,
 		jaldb_record_dbs *rdbs,
 		const u_int32_t db_flags)

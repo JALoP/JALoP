@@ -151,3 +151,12 @@ extern "C" void teardown()
 	jaldb_context_destroy(&context);
 }
 
+extern "C" void test_jaldb_purge_unconfirmed_records()
+{
+	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(context,"localhost",JALDB_RTYPE_JOURNAL));
+	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(context,"1.2.3.4",JALDB_RTYPE_UNKNOWN));
+	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(NULL,"1.2.3.4",JALDB_RTYPE_JOURNAL));
+
+	//TODO: Write additional unit tests.  The functions needed for more unit tests have not yet been implemented.	
+
+}

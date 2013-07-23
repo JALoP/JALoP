@@ -122,7 +122,7 @@ char *jaldb_gen_timestamp();
  */
 enum jaldb_status jaldb_get_dbs(
 	jaldb_context *ctx,
-	char *source,
+	const char *source,
 	enum jaldb_rec_type type,
 	struct jaldb_record_dbs **rdbs);
 
