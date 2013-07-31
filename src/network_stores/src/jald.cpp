@@ -434,7 +434,7 @@ enum jal_status pub_get_next_record_info_and_metadata(
 	ctx->rec = rec;
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Next record %s", next_sid);
-	record_info->serial_id = next_sid;
+	record_info->nonce = next_sid;
 
 	return JAL_OK;
 fail:

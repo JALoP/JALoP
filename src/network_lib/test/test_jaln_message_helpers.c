@@ -322,7 +322,7 @@ void setup()
 
 	rec_info = jaln_record_info_create();
 	rec_info->type = JALN_RTYPE_LOG;
-	rec_info->serial_id = jal_strdup(sid_1_str);
+	rec_info->nonce = jal_strdup(sid_1_str);
 
 	rec_info->sys_meta_len = 10;
 	rec_info->app_meta_len = 20;

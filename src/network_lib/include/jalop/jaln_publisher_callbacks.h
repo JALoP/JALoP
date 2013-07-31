@@ -46,10 +46,10 @@ struct jaln_publisher_callbacks {
 	 * 'journal-resume' message.
 	 *
 	 * @param[in] session The jaln_session.
-	 * @param[in] serial_id The serial ID of the record that is being resumed.
+	 * @param[in] nonce The nonce of the record that is being resumed.
 	 * @param[in] offset The offset into the record the peer would like to
 	 * begin transferring from.
-	 * @param[in,out] record_info The JNL will fill in the serial ID,
+	 * @param[in,out] record_info The JNL will fill in the nonce,
 	 * applications must fill in the rest of this structure.
 	 * @param[out] system_metadata_buffer a user allocated buffer that contains the bytes
 	 * of the system metadata. The \p sys_meta_len field of \p record_info
@@ -80,7 +80,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] session The jaln_session.
 	 * @param[in] type The type of records the remote is subscribing 
 	 * to (journal, audit, or log).
-	 * @param[in] serial_id The serial_id in the subscribe message
+	 * @param[in] nonce The nonce in the subscribe message
 	 * @param[in] headers additional mime headers sent as part of this message
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
@@ -90,7 +90,7 @@ struct jaln_publisher_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			const char *serial_id,
+			const char *nonce,
 			struct jaln_mime_header *headers,
 			void *user_data);
 
@@ -102,7 +102,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] ch_info Information about the connection
 	 * @param type The type of record (journal, audit, or log) to obtain
 	 * data for.
-	 * @param[in] serial_id The serial_id sent by the peer as part of this
+	 * @param[in] nonce The nonce sent by the peer as part of this
 	 * 'subscribe' message.
 	 * @param[out] record_info The application must properly fill out the
 	 * jaln_record_info structure. The JNL assumes ownership of this
@@ -128,7 +128,7 @@ struct jaln_publisher_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			const char *last_serial_id,
+			const char *last_nonce,
 			struct jaln_record_info *record_info,
 			uint8_t **system_metadata_buffer,
 			uint8_t **application_metadata_buffer,
@@ -143,7 +143,7 @@ struct jaln_publisher_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The serial_id of the record.
+	 * @param[in] nonce The nonce of the record.
 	 * @param[in] system_metadata_buffer The buffer obtained by the call
 	 * to \p get_next_record_info_and_metadata.
 	 * @param[in] application_metadata_buffer The buffer obtained by the call
@@ -157,7 +157,7 @@ struct jaln_publisher_callbacks {
 	enum jal_status (*release_metadata_buffers)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			uint8_t *system_metadata_buffer,
 			uint8_t *application_metadata_buffer,
 			void *user_data);
@@ -170,7 +170,7 @@ struct jaln_publisher_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The serial_id of the record to get.
+	 * @param[in] nonce The nonce of the record to get.
 	 * @param[out] buffer a user allocated buffer that contains the bytes
 	 * of the log entry.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -182,7 +182,7 @@ struct jaln_publisher_callbacks {
 	enum jal_status (*acquire_log_data)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			uint8_t **buffer,
 			void *user_data);
 
@@ -191,7 +191,7 @@ struct jaln_publisher_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The serial id relating to this buffer
+	 * @param[in] nonce The nonce relating to this buffer
 	 * @param[in] buffer a pointer that was obtained by the call to
 	 * acquire_log_buffer()
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -203,7 +203,7 @@ struct jaln_publisher_callbacks {
 	enum jal_status (*release_log_data)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			uint8_t *buffer,
 			void *user_data);
 
@@ -215,7 +215,7 @@ struct jaln_publisher_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The serial_id of the record to get.
+	 * @param[in] nonce The nonce of the record to get.
 	 * @param[out] buffer a user allocated buffer that contains the bytes
 	 * of the payload.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -227,7 +227,7 @@ struct jaln_publisher_callbacks {
 	enum jal_status (*acquire_audit_data)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			uint8_t **buffer,
 			void *user_data);
 
@@ -236,7 +236,7 @@ struct jaln_publisher_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The serial id relating to this buffer
+	 * @param[in] nonce The nonce relating to this buffer
 	 * @param[in] a pointer that was obtained by a call to
 	 * acquire_audit_data()
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -248,17 +248,17 @@ struct jaln_publisher_callbacks {
 	enum jal_status (*release_audit_data)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			uint8_t *buffer,
 			void *user_data);
 
 	/**
-	 * Acquire a payload feeder for the journal record identified by serial_id.
+	 * Acquire a payload feeder for the journal record identified by the nonce.
 	 * When the JNL is finished with the feeder, it will call #release_journal_feeder()
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The serial id of the record to get.
+	 * @param[in] nonce The nonce of the record to get.
 	 * @param[out] feeder The callbacks necessary to retrieve bytes of data
 	 * for the payload.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -270,16 +270,16 @@ struct jaln_publisher_callbacks {
 	enum jal_status (*acquire_journal_feeder)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
 
 	/**
-	 * Release a payload feeder for journal record identified by \p serial_id.
+	 * Release a payload feeder for journal record identified by \p nonce.
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The serial id of the record to get.
+	 * @param[in] nonce The nonce of the record to get.
 	 * @param[in] feeder The feeder object
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
@@ -288,7 +288,7 @@ struct jaln_publisher_callbacks {
 	enum jal_status (*release_journal_feeder)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
 
@@ -301,7 +301,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
-	 * @param[in] serial_id The serial_id of this record_info
+	 * @param[in] nonce The nonce of this record_info
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 */
@@ -309,7 +309,7 @@ struct jaln_publisher_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			char *serial_id,
+			char *nonce,
 			void *user_data);
 
 	/**
@@ -319,7 +319,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
-	 * @param[in] serial_id the serial_id sent by the remote peer.
+	 * @param[in] nonce the nonce of the record sent by the remote peer.
 	 * @param[in] headers Any additional headers sent with this message.
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
@@ -329,13 +329,13 @@ struct jaln_publisher_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			const char *serial_id,
+			const char *nonce,
 			struct jaln_mime_header *headers,
 			void *user_data);
 
 	/**
 	 * Informs the application of the calculated checksum of the record
-	 * identified by serial_id. This is the checksum calculated as the
+	 * identified by nonce. This is the checksum calculated as the
 	 * record is sent, not the digest received by the remote side. This is
 	 * purely informational as the JNL maintains the sent of sent, but not
 	 * yet confirmed digests.
@@ -343,7 +343,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
-	 * @param[in] serial_id The serial_id of the record.
+	 * @param[in] nonce The nonce of the record.
 	 * @param[in] digest The digest value of the record.
 	 * @param[in] lenght The length of the digest, in bytes.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -358,32 +358,32 @@ struct jaln_publisher_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			const char *serial_id,
+			const char *nonce,
 			const uint8_t *digest,
 			const uint32_t size,
 			void *user_data);
 
 	/**
 	 * Inform the application of the calculated checksum sent by the peer.
-	 * The JNL tracks the serial_id and digests for all records sent on each
+	 * The JNL tracks the nonce and digests for all records sent on each
 	 * channel. The JNL automatically checks the peer's calculated digest
 	 * against the locally calculated digest and builds an appropriate
 	 * 'digest-response' message for every 'digest' message. Once the JNL
 	 * sends a 'digest-response' message to the peer, the JNL removes the
-	 * entry from it's internal structures.
+	 * entry from its internal structures.
 	 *
 	 * This is called for each record in the 'digest' message.
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of record (journal, audit, or log)
-	 * @param[in] serial_id The serial_id of a particular record
+	 * @param[in] nonce The nonce of a particular record
 	 * @param[in] local_digest The digest, as calculated by the JNL when the
-	 * record was sent. If the serial ID has not been seen, or was already
-	 * flushed from memory, \p local_digest will be NULL.
+	 * record was sent. If the nonce of this record has not been seen, or 
+	 * was already flushed from memory, \p local_digest will be NULL.
 	 * @param[in] local_size The size, in bytes, of the local_digest. If
-	 * the serial ID has not been seen, or was already flushed from
-	 * memory, \p local_size will be 0.
+	 * the nonce of this record has not been seen, or was already flushed 
+	 * from memory, \p local_size will be 0.
 	 * @param[in] peer_digest The digest, as calculated by the remote peer.
 	 * @param[in] peer_size The size, in bytes, of #peer_digest
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -393,7 +393,7 @@ struct jaln_publisher_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			const char *serial_id,
+			const char *nonce,
 			const uint8_t *local_digest,
 			const uint32_t local_size,
 			const uint8_t *peer_digest,

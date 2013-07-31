@@ -142,9 +142,9 @@ enum jal_status pub_get_next_record_info_and_metadata(
 	DEBUG_LOG("last sid: %s", last_serial_id);
 
 	size_t sz = snprintf(NULL, 0, "%"PRIu64, sid);
-	record_info->serial_id = calloc(1, sz + 1);
-	snprintf(record_info->serial_id, sz + 1, "%"PRIu64, sid);
-	DEBUG_LOG("next: %s", record_info->serial_id);
+	record_info->nonce = calloc(1, sz + 1);
+	snprintf(record_info->nonce, sz + 1, "%"PRIu64, sid);
+	DEBUG_LOG("next: %s", record_info->nonce);
 
 	sid++;
 
@@ -342,15 +342,15 @@ int sub_on_record_info(
 	DEBUG_LOG("ch info:%p type:%d rec_info: %p headers: %p smb: %p sms:%d amb:%p ams:%d ud:%p\n",
 		ch_info, type, record_info, headers, system_metadata_buffer, system_metadata_size,
 		application_metadata_buffer, application_metadata_size, user_data);
-	DEBUG_LOG("(%s)sys_meta[%"PRIu64"/%zu] '%s'", record_info->serial_id,
+	DEBUG_LOG("(%s)sys_meta[%"PRIu64"/%zu] '%s'", record_info->nonce,
 			record_info->sys_meta_len,
 			strlen((char*) system_metadata_buffer),
 			(char *) system_metadata_buffer);
-	DEBUG_LOG("(%s)app_meta[%"PRIu64"/%zu] '%s'", record_info->serial_id,
+	DEBUG_LOG("(%s)app_meta[%"PRIu64"/%zu] '%s'", record_info->nonce,
 			record_info->app_meta_len,
 			strlen((char*) application_metadata_buffer),
 			(char*) application_metadata_buffer);
-	DEBUG_LOG("(%s)payload_sz[%"PRIu64"]", record_info->serial_id,
+	DEBUG_LOG("(%s)payload_sz[%"PRIu64"]", record_info->nonce,
 			record_info->payload_len);
 
 

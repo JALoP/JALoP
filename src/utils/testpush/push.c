@@ -133,9 +133,9 @@ int get_next_record_info_and_metadata(
 	DEBUG_LOG("last sid: %s", last_serial_id);
 
 	size_t sz = snprintf(NULL, 0, "%"PRIu64, sid);
-	record_info->serial_id = calloc(1, sz + 1);
-	snprintf(record_info->serial_id, sz + 1, "%"PRIu64, sid);
-	DEBUG_LOG("next: %s", record_info->serial_id);
+	record_info->nonce = calloc(1, sz + 1);
+	snprintf(record_info->nonce, sz + 1, "%"PRIu64, sid);
+	DEBUG_LOG("next: %s", record_info->nonce);
 
 	sid++;
 	record_info->sys_meta_len = strlen("sys_meta_buffer");

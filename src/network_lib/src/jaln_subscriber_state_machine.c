@@ -468,7 +468,7 @@ axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *fr
 			struct jaln_record_info *info = jaln_record_info_create();
 
 			info->type = session->ch_info->type;
-			info->serial_id = jal_strdup(session->sub_data->sm->serial_id);
+			info->nonce = jal_strdup(session->sub_data->sm->serial_id);
 			info->sys_meta_len = session->sub_data->sm->sys_meta_sz;
 			info->app_meta_len = session->sub_data->sm->app_meta_sz;
 			info->payload_len = session->sub_data->sm->payload_sz;

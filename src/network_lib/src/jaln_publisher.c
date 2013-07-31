@@ -283,7 +283,7 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	struct jaln_record_info rec_info;
 	memset(&rec_info, 0, sizeof(rec_info));
 	rec_info.type = type;
-	rec_info.serial_id = jal_strdup(sid);
+	rec_info.nonce = jal_strdup(sid);
 
 	ret = cbs->on_journal_resume(sess, ch_info, &rec_info, offset, &pd->sys_meta, &pd->app_meta, NULL, ud);
 	if (JAL_OK != ret) {
@@ -294,7 +294,7 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	sess->pub_data->serial_id = jal_strdup(sid);
 
 	ret = jaln_pub_begin_next_record_ans(sess, offset, &rec_info, chan);
-	free(rec_info.serial_id);
+	free(rec_info.nonce);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}

@@ -494,7 +494,7 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
 	default:
 		return JAL_E_INVAL;
 	}
-	*headers_len_out = jal_asprintf(headers_out, REC_FORMAT_STR, msg, rec_info->serial_id,
+	*headers_len_out = jal_asprintf(headers_out, REC_FORMAT_STR, msg, rec_info->nonce,
 			rec_info->sys_meta_len, rec_info->app_meta_len,
 			length_header, rec_info->payload_len);
 

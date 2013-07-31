@@ -144,7 +144,7 @@ enum jal_status my_get_next_record_info_and_metadata(
 	record_info->sys_meta_len = strlen(SYS_META);
 	record_info->app_meta_len = strlen(APP_META);
 	record_info->payload_len = strlen(PAYLOAD);
-	record_info->serial_id = strdup(SID);
+	record_info->nonce = strdup(SID);
 	return JAL_OK;
 }
 

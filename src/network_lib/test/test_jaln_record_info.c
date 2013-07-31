@@ -39,7 +39,7 @@ void setup()
 {
 	rec_info = jaln_record_info_create();
 	rec_info->type = JALN_RTYPE_LOG;
-	rec_info->serial_id = jal_strdup(SERIAL_ID);
+	rec_info->nonce = jal_strdup(SERIAL_ID);
 
 	rec_info->sys_meta_len = 10;
 	rec_info->app_meta_len = 20;
@@ -57,7 +57,7 @@ void test_record_info_create_works()
 	struct jaln_record_info *ri = jaln_record_info_create();
 	assert_not_equals((void*)NULL, ri);
 	assert_equals(0, ri->type);
-	assert_equals((void*)NULL, ri->serial_id);
+	assert_equals((void*)NULL, ri->nonce);
 	assert_equals(0, ri->sys_meta_len);
 	assert_equals(0, ri->app_meta_len);
 	assert_equals(0, ri->payload_len);
@@ -90,10 +90,10 @@ void test_record_info_is_valid_fails_with_bad_type()
 	assert_false(jaln_record_info_is_valid(rec_info));
 }
 
-void test_record_info_is_valid_fails_with_bad_serial_id()
+void test_record_info_is_valid_fails_with_bad_nonce()
 {
-	free(rec_info->serial_id);
-	rec_info->serial_id = NULL;
+	free(rec_info->nonce);
+	rec_info->nonce = NULL;
 	assert_false(jaln_record_info_is_valid(rec_info));
 }
 

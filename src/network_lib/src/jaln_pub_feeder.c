@@ -323,7 +323,7 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t jour
 
 	jaln_pub_feeder_calculate_size_for_vortex(sess);
 
-	pd->serial_id = jal_strdup(rec_info->serial_id);
+	pd->serial_id = jal_strdup(rec_info->nonce);
 
 	ret = jaln_create_record_ans_rpy_headers(rec_info, &pd->headers, &pd->headers_sz);
 	if (JAL_OK != ret) {

@@ -98,8 +98,8 @@ struct jaln_channel_info {
 struct jaln_record_info {
 	/** The type of this record (journal, audit, or log) */
 	enum jaln_record_type type;
-	/** The serial ID of this record */
-	char *serial_id;
+	/** The nonce of this record */
+	char *nonce;
 	/** The length of the system metadata */
 	uint64_t sys_meta_len;
 	/** The length of the application metadata */
@@ -116,7 +116,7 @@ enum jaln_digest_status {
 	JALN_DIGEST_STATUS_CONFIRMED,
 	/** Indicates the digest calculated by both peers is not the same */
 	JALN_DIGEST_STATUS_INVALID,
-	/** Indicates the serial_id was not recognized */
+	/** Indicates the nonce was not recognized */
 	JALN_DIGEST_STATUS_UNKNOWN,
 };
 

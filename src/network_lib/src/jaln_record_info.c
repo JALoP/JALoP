@@ -41,7 +41,7 @@ void jaln_record_info_destroy(struct jaln_record_info **rec_info) {
 	if (!rec_info || !*rec_info) {
 		return;
 	}
-	free((*rec_info)->serial_id);
+	free((*rec_info)->nonce);
 	//jaln_mime_headers_destroy(&(*rec_info)->headers);
 	free(*rec_info);
 	*rec_info = NULL;
@@ -55,7 +55,7 @@ axl_bool jaln_record_info_is_valid(struct jaln_record_info *rec_info)
 	if (0 == rec_info->sys_meta_len) {
 		return axl_false;;
 	}
-	if (NULL == rec_info->serial_id) {
+	if (NULL == rec_info->nonce) {
 		return axl_false;
 	}
 	switch (rec_info->type) {

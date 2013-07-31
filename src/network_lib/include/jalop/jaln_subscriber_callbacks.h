@@ -49,24 +49,24 @@ struct jaln_subscriber_callbacks {
 	 * 'subscriber' the JNL calls this function to get the parameters
 	 * needed to send a 'subscribe' or 'journal-resume' message. For
 	 * journal and audit records, the application only needs to set the
-	 * serial_id. The JNL interprets this as the last serial_id the
+	 * nonce. The JNL interprets this as the last record the
 	 * application downloaded and received a 'digest-conf' for. The JNL
-	 * will send a 'subscribe' message with this serial_id.  Applications
-	 * should use the special strings JALN_SERIAL_ID_EPOCH and
-	 * JALN_SERIAL_ID_NOW to specify transfer should start with the oldest
-	 * records, or only receive new records.
+	 * will send a 'subscribe' message indicating that this was the last
+	 * record received.  Applications should use the special strings 
+	 * JALN_SERIAL_ID_EPOCH and JALN_SERIAL_ID_NOW to specify transfer should 
+	 * start with the oldest records, or only receive new records.
 	 *
 	 * For journal records, the Application must specify the offset. When
 	 * the offset is 0, the JNL behaves in the same way as audit and
 	 * log records. When the offset is non-zero, the JNL will send a
 	 * 'journal-resume' message and indicate that \p offset bytes of the
-	 * record identified by \p serial_id were downloaded.
+	 * record identified by \p nonce were downloaded.
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of JAL record the JNL is getting ready to
 	 * subscribe to.
-	 * @param[out] serial_id The serial_id to send, the JNL will release
+	 * @param[out] nonce The last record received, the JNL will release
 	 * this memory by calling free().
 	 * @param[out] offset The number of bytes already downloaded.
 	 * @return JAL_OK to continue with the request, anything else to close
@@ -76,7 +76,7 @@ struct jaln_subscriber_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			char **serial_id,
+			char **nonce,
 			uint64_t *offset);
 
 	/**
@@ -123,7 +123,7 @@ struct jaln_subscriber_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] nonce The previously provided nonce of this record
 	 * @param[in] buffer A buffer containing audit entry. The
 	 * application is responsible for freeing this memory with a call to
 	 * free()
@@ -137,7 +137,7 @@ struct jaln_subscriber_callbacks {
 	int (*on_audit)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			const uint8_t *buffer,
 			const uint32_t cnt,
 			void *user_data);
@@ -148,7 +148,7 @@ struct jaln_subscriber_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] nonce The previously provided nonce of this record
 	 * @param[in] buffer A buffer containing the entire log entry. The
 	 * application is responsible for freeing this memory with a call to
 	 * free()
@@ -162,7 +162,7 @@ struct jaln_subscriber_callbacks {
 	int (*on_log)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			const uint8_t *buffer,
 			const uint32_t cnt,
 			void *user_data);
@@ -175,7 +175,7 @@ struct jaln_subscriber_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] serial_id The Publisher assigned sequence ID of this record
+	 * @param[in] nonce The previously provided nonce of this record
 	 * @param[in] buffer A buffer containing bytes of the journal, after
 	 * this application returns from this call they must not access buffer.
 	 * @param[in] cnt The number of bytes contained in buffer
@@ -191,7 +191,7 @@ struct jaln_subscriber_callbacks {
 	int (*on_journal)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			const uint8_t *buffer,
 			const uint32_t cnt,
 			const uint64_t offset,
@@ -205,7 +205,8 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of this record (journal, audit, or log).
-	 * @param[in] serial_id The Publisher assigned sequence ID of the record
+	 * @param[in] nonce The previously provided nonce of this record
+
 	 * @param[in] digest A buffer containing bytes of the digest
 	 * @param[in] len The length of the digest, in bytes.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -219,7 +220,7 @@ struct jaln_subscriber_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			char *serial_id,
+			char *nonce,
 			const uint8_t *digest,
 			const uint32_t len,
 			const void *user_data);
@@ -231,7 +232,7 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of this record (journal, audit, or log).
-	 * @param[in] serial_id The Publisher assigned sequence ID of the record
+	 * @param[in] nonce The previously provided nonce of this record
 	 * @param[in] status Indicates whether or not the digest calculated locally
 	 * matches the digest calculated by the remote side.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -245,7 +246,7 @@ struct jaln_subscriber_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			const char *serial_id,
+			const char *nonce,
 			const enum jaln_digest_status status,
 			const void *user_data);
 
@@ -274,7 +275,7 @@ struct jaln_subscriber_callbacks {
 	 * downloaded when it calls jaln_context_subscribe.
 	 *
 	 * @param[in] session The jaln_session.
-	 * @param[in] serial_id The serial id of the record to get.
+	 * @param[in] nonce The nonce of the record to get.
 	 * @param[out] feeder The callbacks necessary to retrieve the already
 	 * downloaded portions of the record.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -286,15 +287,15 @@ struct jaln_subscriber_callbacks {
 	int (*acquire_journal_feeder)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
 
 	/**
-	 * Release a payload feeder for the identified serial_id.
+	 * Release a payload feeder for the identified nonce.
 	 *
 	 * @param[in] session The jaln_session.
-	 * @param[in] serial_id The serial id of the record to get.
+	 * @param[in] nonce The nonce of the record to get.
 	 * @param[in] feeder The callbacks necessary to retrieve bytes of data
 	 * for the payload.
 	 * @param[in] user_data A pointer to user data that was passed into
@@ -304,7 +305,7 @@ struct jaln_subscriber_callbacks {
 	void (*release_journal_feeder)(
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
-			const char *serial_id,
+			const char *nonce,
 			struct jaln_payload_feeder *feeder,
 			void *user_data);
 };
