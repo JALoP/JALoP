@@ -293,11 +293,6 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	sess->pub_data->msg_no = msg_no;
 	sess->pub_data->serial_id = jal_strdup(sid);
 
-	ret = jaln_pub_begin_next_record_ans(sess, offset, &rec_info, chan);
-	free(rec_info.nonce);
-	if (JAL_OK != ret) {
-		goto err_out;
-	}
 	goto out;
 
 err_out:
@@ -310,44 +305,31 @@ out:
 
 enum jal_status jaln_pub_handle_subscribe(jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
 {
-	enum jal_status ret = JAL_E_INVAL;
 	if (!sess || !chan || !frame || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks ||
 			!sess->ch_info || !sess->pub_data) {
-		return ret;
+		return JAL_E_INVAL;
 	}
+
+	enum jal_status ret = JAL_E_INVAL;
 	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
 	struct jaln_pub_data *pd = sess->pub_data;
 	struct jaln_channel_info *ch_info = sess->ch_info;
 	enum jaln_record_type type = ch_info->type;
 	void *user_data = sess->jaln_ctx->user_data;
 	char *sid = NULL;
+
 	ret = jaln_process_subscribe(frame, &sid);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
+
+	pd->msg_no = msg_no;
+
 	ret = cbs->on_subscribe(sess, ch_info, type, sid, NULL, user_data);
-
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
 
-	sess->pub_data->msg_no = msg_no;
-	sess->pub_data->serial_id = sid;
-	sid = NULL;
-
-	struct jaln_record_info rec_info;
-	memset(&rec_info, 0, sizeof(rec_info));
-	rec_info.type = type;
-
-	ret = cbs->get_next_record_info_and_metadata(sess, ch_info, type,
-			pd->serial_id, &rec_info, &pd->sys_meta, &pd->app_meta, user_data);
-	if (JAL_OK != ret) {
-		goto err_out;
-	}
-	ret = jaln_pub_begin_next_record_ans(sess, 0, &rec_info, chan);
-	if (JAL_OK != ret) {
-		goto err_out;
-	}
 	goto out;
 
 err_out:

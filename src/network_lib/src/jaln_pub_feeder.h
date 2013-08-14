@@ -163,8 +163,6 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
  * @return JAL_OK on success, or an error.
  */
 enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
-		uint64_t journal_offset,
-		struct jaln_record_info *rec_info,
-		VortexChannel *chan);
+		struct jaln_record_info *rec_info);
 
 #endif // JALN_PUB_FEEDER

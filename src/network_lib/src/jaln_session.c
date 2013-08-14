@@ -48,6 +48,12 @@ jaln_session *jaln_session_create()
 	if (!vortex_mutex_create(&sess->lock)) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
+	if (!vortex_mutex_create(&sess->wait_lock)) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	if (!vortex_cond_create(&sess->wait)) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
 	sess->ref_cnt = 1;
 	sess->rec_chan_num = -1;
 	sess->dgst_chan_num = -1;

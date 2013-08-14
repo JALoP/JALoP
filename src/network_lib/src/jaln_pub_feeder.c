@@ -71,12 +71,14 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 			pd->headers_off = 0;
 		}
 	}
+
 	if (!pd->finished_sys_meta && (dst_sz > dst_off)) {
 		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->sys_meta, pd->sys_meta_sz, &pd->sys_meta_off, axl_true);
 		if (pd->sys_meta_sz == pd->sys_meta_off) {
 			pd->finished_sys_meta = axl_true;
 		}
 	}
+
 	if (!pd->finished_sys_meta_break && (dst_sz > dst_off)) {
 		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
@@ -84,23 +86,20 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 			pd->break_off = 0;
 		}
 	}
+
 	if (!pd->finished_app_meta && (dst_sz > dst_off)) {
 		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->app_meta, pd->app_meta_sz, &pd->app_meta_off, axl_true);
 		if (pd->app_meta_off == pd->app_meta_sz) {
 			pd->finished_app_meta = axl_true;
-			ret = cbs->release_metadata_buffers(sess, ch_info, pd->serial_id, pd->sys_meta, pd->app_meta, ud);
 			pd->sys_meta = NULL;
 			pd->sys_meta_off = 0;
 			pd->sys_meta_sz = 0;
 			pd->app_meta = NULL;
 			pd->app_meta_sz = 0;
 			pd->app_meta_off = 0;
-			if (JAL_OK != ret) {
-				jaln_session_set_errored(sess);
-				return axl_false;
-			}
 		}
 	}
+
 	if (!pd->finished_app_meta_break && (dst_sz > dst_off)) {
 		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
@@ -108,6 +107,7 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 			pd->break_off = 0;
 		}
 	}
+
 	if (!pd->finished_payload && (dst_sz > dst_off)) {
 		switch (ch_info->type) {
 		case JALN_RTYPE_AUDIT:
@@ -120,12 +120,20 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 		case JALN_RTYPE_JOURNAL: {
 			uint64_t left_in_buffer = dst_sz - dst_off;
 			uint64_t bytes_acquired = left_in_buffer;
-			ret = pd->journal_feeder.get_bytes(pd->payload_off, buffer + dst_off, &bytes_acquired,
-					pd->journal_feeder.feeder_data);
+
+			ret = pd->journal_feeder.get_bytes(pd->payload_off,
+							buffer + dst_off,
+							&bytes_acquired,
+							pd->journal_feeder.feeder_data);
 			if (ret != JAL_OK || (bytes_acquired > left_in_buffer)) {
 				return axl_false;
 			}
+
 			ret = sess->dgst->update(pd->dgst_inst, buffer + dst_off, bytes_acquired);
+			if (JAL_OK != ret) {
+				return axl_false;
+			}
+
 			dst_off += bytes_acquired;
 			pd->payload_off += bytes_acquired;
 			break;
@@ -135,32 +143,17 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 		}
 		if (pd->payload_sz == pd->payload_off) {
 			pd->finished_payload = axl_true;
-			switch(ch_info->type) {
-			case JALN_RTYPE_AUDIT:
-				ret = cbs->release_audit_data(sess, ch_info, pd->serial_id, pd->payload, ud);
-				break;
-			case JALN_RTYPE_LOG:
-				ret = cbs->release_log_data(sess, ch_info, pd->serial_id, pd->payload, ud);
-				break;
-			case JALN_RTYPE_JOURNAL:
-				ret = cbs->release_journal_feeder(sess, ch_info, pd->serial_id, &pd->journal_feeder, ud);
-				memset(&pd->journal_feeder, 0, sizeof(pd->journal_feeder));
-				break;
-			default:
-				return axl_false;
-			}
 			size_t dgst_len = sess->dgst->len;
 			if (JAL_OK != sess->dgst->final(pd->dgst_inst, pd->dgst, &dgst_len)) {
 				return axl_false;
 			}
+
 			jaln_session_add_to_dgst_list(sess, pd->serial_id, pd->dgst, dgst_len);
 			cbs->notify_digest(sess, ch_info, ch_info->type, pd->serial_id, pd->dgst, dgst_len, ud);
 			pd->payload = NULL;
-			if (JAL_OK != ret) {
-				return axl_false;
-			}
 		}
 	}
+
 	if (!pd->finished_payload_break && (dst_sz > dst_off)) {
 		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
@@ -217,12 +210,13 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	if (!sess || !sess->pub_data) {
 		return;
 	}
+
 	struct jaln_pub_data *pd = sess->pub_data;
+
 	free(pd->serial_id);
+
 	pd->serial_id = 0;
-
 	pd->vortex_feeder_sz = 0;
-
 	pd->headers_off = 0;
 	pd->sys_meta_off = 0;
 	pd->app_meta_off = 0;
@@ -240,10 +234,13 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	if (pd->dgst_inst) {
 		sess->dgst->destroy(pd->dgst_inst);
 	}
+
 	pd->dgst_inst = sess->dgst->create();
+
 	if (!pd->dgst_inst) {
 		goto err_out;
 	}
+
 	if (JAL_OK != sess->dgst->init(pd->dgst_inst)) {
 		goto err_out;
 	}
@@ -292,120 +289,40 @@ axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add)
 	return axl_true;
 }
 
-enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess, uint64_t journal_offset,
-		struct jaln_record_info *rec_info, VortexChannel *chan)
+enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
+						struct jaln_record_info *rec_info)
 {
-	if (!sess || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks ||
-			!sess->ch_info | !sess->pub_data || !chan) {
-		return JAL_E_INVAL;
-	}
-	if ((SIZE_MAX < rec_info->sys_meta_len) ||
-			(SIZE_MAX < rec_info->app_meta_len)) {
+	if (!sess || !sess->pub_data) {
 		return JAL_E_INVAL;
 	}
 
 	enum jal_status ret = JAL_OK;
-	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
-	struct jaln_channel_info *ch_info = sess->ch_info;
 	struct jaln_pub_data *pd = sess->pub_data;
-	void *ud = sess->jaln_ctx->user_data;
-
-	if (((JALN_RTYPE_AUDIT == ch_info->type) || (JALN_RTYPE_LOG == ch_info->type)) &&
-			(SIZE_MAX < rec_info->app_meta_len)) {
-			return JAL_E_INVAL;
-	}
-
-	jaln_pub_feeder_reset_state(sess);
-
-	pd->sys_meta_sz = rec_info->sys_meta_len;
-	pd->app_meta_sz = rec_info->app_meta_len;
-	pd->payload_sz = rec_info->payload_len;
-
-	jaln_pub_feeder_calculate_size_for_vortex(sess);
-
-	pd->serial_id = jal_strdup(rec_info->nonce);
 
 	ret = jaln_create_record_ans_rpy_headers(rec_info, &pd->headers, &pd->headers_sz);
 	if (JAL_OK != ret) {
-		goto err_out;
+		goto out;
 	}
 
-	ret = sess->dgst->update(pd->dgst_inst, pd->sys_meta, pd->sys_meta_sz);
-	if (JAL_OK != ret) {
-		goto err_out;
-	}
-	ret = sess->dgst->update(pd->dgst_inst, pd->app_meta, pd->app_meta_sz);
-	if (JAL_OK != ret) {
-		goto err_out;
-	}
-	switch(ch_info->type) {
-	case JALN_RTYPE_AUDIT:
-		ret = cbs->acquire_audit_data(sess, ch_info, pd->serial_id, &pd->payload, ud);
-		if (ret != JAL_OK) {
-			goto err_out;
-		}
-		ret = sess->dgst->update(pd->dgst_inst, pd->payload, pd->payload_sz);
-		if (ret != JAL_OK) {
-			goto err_out;
-		}
-		break;
-	case JALN_RTYPE_LOG:
-		ret = cbs->acquire_log_data(sess, ch_info, pd->serial_id, &pd->payload, ud);
-		if (ret != JAL_OK) {
-			goto err_out;
-		}
-		ret = sess->dgst->update(pd->dgst_inst, pd->payload, pd->payload_sz);
-		if (ret != JAL_OK) {
-			goto err_out;
-		}
-		break;
-	case JALN_RTYPE_JOURNAL:
-		memset(&pd->journal_feeder, 0, sizeof(pd->journal_feeder));
-		ret = cbs->acquire_journal_feeder(sess, ch_info, pd->serial_id, &pd->journal_feeder, ud);
-		if (ret != JAL_OK) {
-			goto err_out;
-		}
-#define BUF_SIZE (4*1024)
-		uint8_t buf[BUF_SIZE];
-		uint64_t left_to_process = journal_offset;
-		uint64_t offset = 0;
-		while(left_to_process != 0) {
-			uint64_t to_copy = (uint64_t) (BUF_SIZE < left_to_process) ? 
-				BUF_SIZE : left_to_process;
-			uint64_t tmp = to_copy;
-			ret = pd->journal_feeder.get_bytes(offset, buf, &tmp,
-					pd->journal_feeder.feeder_data);
-			if ((JAL_OK != ret) || (0 == tmp) || (tmp > to_copy)) {
-				ret = JAL_E_INVAL;
-				goto err_out;
-			}
-			ret = sess->dgst->update(pd->dgst_inst, buf, tmp);
-			if (JAL_OK != ret) {
-				goto err_out;
-			}
-			left_to_process -= tmp;
-		}
-		pd->payload_off = journal_offset;
-		break;
-	default:
-		ret = JAL_E_INVAL;
-		goto err_out;
-	}
-	if (JAL_OK != ret) {
-		goto err_out;
-	}
-
+	jaln_pub_feeder_calculate_size_for_vortex(sess);
 
 	jaln_session_ref(sess);
+
 	VortexPayloadFeeder *feeder = vortex_payload_feeder_new(jaln_pub_feeder_handler, sess);
 	vortex_payload_feeder_set_on_finished(feeder, jaln_pub_feeder_on_finished, sess);
-	vortex_channel_send_ans_rpy_from_feeder(chan, feeder, pd->msg_no);
 
-err_out:
+	vortex_mutex_lock(&sess->wait_lock);
+
+	vortex_channel_send_ans_rpy_from_feeder(sess->rec_chan, feeder, pd->msg_no);
+
+	vortex_cond_wait(&sess->wait, &sess->wait_lock);
+
+	vortex_mutex_unlock(&sess->wait_lock);
+out:
 	return ret;
 }
 
-void jaln_pub_feeder_on_finished(VortexChannel *chan,
+void jaln_pub_feeder_on_finished(__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) VortexPayloadFeeder *feeder,
 		axlPointer user_data)
 {
@@ -414,30 +331,23 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
 	enum jaln_record_type type = ch_info->type;
 	struct jaln_pub_data *pd = sess->pub_data;
 	struct jaln_publisher_callbacks *pub_cbs = sess->jaln_ctx->pub_callbacks;
+
 	pub_cbs->on_record_complete(sess, ch_info, type, pd->serial_id, sess->jaln_ctx->user_data);
+
 	if (!sess->errored) {
-		struct jaln_record_info rec_info;
-		memset(&rec_info, 0, sizeof(rec_info));
-		rec_info.type = type;
-		enum jal_status ret =
-			pub_cbs->get_next_record_info_and_metadata(sess, ch_info, type,
-				pd->serial_id, &rec_info, &pd->sys_meta, &pd->app_meta, sess->jaln_ctx->user_data);
-		if (JAL_OK != ret) {
-			goto err_out;
-		}
 		if (sess->closing) {
 			goto err_out;
 		}
-		ret = jaln_pub_begin_next_record_ans(sess, 0, &rec_info, chan);
-		if (ret != JAL_OK) {
-			goto err_out;
-		}
 	}
-goto out;
+	goto out;
+
 err_out:
 	jaln_session_set_errored(sess);
 	vortex_channel_finalize_ans_rpy(chan, sess->pub_data->msg_no);
 out:
+	vortex_mutex_lock(&sess->wait_lock);
+	vortex_mutex_unlock(&sess->wait_lock);
 	jaln_session_unref(sess);
+	vortex_cond_signal(&sess->wait);
 	return;
 }

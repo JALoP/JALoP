@@ -55,14 +55,6 @@ int jaln_publisher_callbacks_is_valid(struct jaln_publisher_callbacks *publisher
 	if (!publisher_callbacks ||
 			!publisher_callbacks->on_journal_resume ||
 			!publisher_callbacks->on_subscribe ||
-			!publisher_callbacks->get_next_record_info_and_metadata ||
-			!publisher_callbacks->release_metadata_buffers ||
-			!publisher_callbacks->acquire_log_data ||
-			!publisher_callbacks->release_log_data ||
-			!publisher_callbacks->acquire_audit_data ||
-			!publisher_callbacks->release_audit_data ||
-			!publisher_callbacks->acquire_journal_feeder ||
-			!publisher_callbacks->release_journal_feeder ||
 			!publisher_callbacks->on_record_complete ||
 			!publisher_callbacks->sync ||
 			!publisher_callbacks->notify_digest ||

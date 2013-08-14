@@ -61,90 +61,6 @@ int my_on_subscribe(
 	return 0;
 }
 
-int my_get_next_record_info_and_metadata(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *last_serial_id,
-		__attribute__((unused)) struct jaln_record_info *record_info,
-		__attribute__((unused)) uint8_t **system_metadata_buffer,
-		__attribute__((unused)) uint8_t **application_metadata_buffer,
-		__attribute__((unused)) void *user_data)
-{
-	return 0;
-}
-
-int my_release_metadata_buffers(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t *system_metadata_buffer,
-		__attribute__((unused)) uint8_t *application_metadata_buffer,
-		__attribute__((unused)) void *user_data)
-{
-	return 0;
-}
-
-int my_acquire_log_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t **buffer,
-		__attribute__((unused)) void *user_data)
-{
-	return 0;
-}
-
-int my_release_log_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t *buffer,
-		__attribute__((unused)) void *user_data)
-{
-	return 0;
-}
-
-int my_acquire_audit_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t **buffer,
-		__attribute__((unused)) void *user_data)
-{
-	return 0;
-}
-
-int my_release_audit_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t *buffer,
-		__attribute__((unused)) void *user_data)
-{
-	return 0;
-}
-
-enum jal_status my_acquire_journal_feeder(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) struct jaln_payload_feeder *feeder,
-		__attribute__((unused)) void *user_data)
-{
-	return JAL_OK;
-}
-
-enum jal_status my_release_journal_feeder(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) struct jaln_payload_feeder *feeder,
-		__attribute__((unused)) void *user_data)
-{
-	return JAL_OK;
-}
-
 enum jal_status my_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
@@ -199,14 +115,6 @@ void setup()
 
 	pub_cbs->on_journal_resume = my_on_journal_resume;
 	pub_cbs->on_subscribe = my_on_subscribe;
-	pub_cbs->get_next_record_info_and_metadata = my_get_next_record_info_and_metadata;
-	pub_cbs->release_metadata_buffers = my_release_metadata_buffers;
-	pub_cbs->acquire_log_data = my_acquire_log_data;
-	pub_cbs->release_log_data = my_release_log_data;
-	pub_cbs->acquire_audit_data = my_acquire_audit_data;
-	pub_cbs->release_audit_data = my_release_audit_data;
-	pub_cbs->acquire_journal_feeder = my_acquire_journal_feeder;
-	pub_cbs->release_journal_feeder = my_release_journal_feeder;
 	pub_cbs->on_record_complete = my_on_record_complete;
 	pub_cbs->sync = my_sync;
 	pub_cbs->notify_digest = my_notify_digest;
@@ -265,38 +173,6 @@ void test_pub_callbacks_is_valid_returns_false_for_invalid_structure()
 	pub_cbs->on_subscribe = NULL;
 	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
 	pub_cbs->on_subscribe = my_on_subscribe;
-
-	pub_cbs->get_next_record_info_and_metadata = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->get_next_record_info_and_metadata = my_get_next_record_info_and_metadata;
-
-	pub_cbs->release_metadata_buffers = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->release_metadata_buffers = my_release_metadata_buffers;
-
-	pub_cbs->acquire_log_data = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->acquire_log_data = my_acquire_log_data;
-
-	pub_cbs->release_log_data = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->release_log_data = my_release_log_data;
-
-	pub_cbs->acquire_audit_data = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->acquire_audit_data = my_acquire_audit_data;
-
-	pub_cbs->release_audit_data = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->release_audit_data = my_release_audit_data;
-
-	pub_cbs->acquire_journal_feeder = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->acquire_journal_feeder = my_acquire_journal_feeder;
-
-	pub_cbs->release_journal_feeder = NULL;
-	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));
-	pub_cbs->release_journal_feeder = my_release_journal_feeder;
 
 	pub_cbs->on_record_complete = NULL;
 	assert_false(jaln_publisher_callbacks_is_valid(pub_cbs));

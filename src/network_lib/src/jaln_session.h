@@ -55,6 +55,8 @@ struct jaln_pub_data;
  */
 struct jaln_session_t {
 	VortexMutex lock;                    //!< Mutex to lock the structure
+	VortexMutex wait_lock;               //!< Mutex to lock the structure on wait
+	VortexCond wait;                     //!< Condition variable to wait on	
 	int ref_cnt;                         //!< Reference count
 
 	jaln_context *jaln_ctx;              //!< The context we belong to.
