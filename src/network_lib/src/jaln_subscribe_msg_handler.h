@@ -36,10 +36,9 @@
  * Helper to process the contents of an 'initialize' message
  *
  * @param[in] frame The frame to inspect
- * @param[out] sid The serial ID indicated in the subscribe message.
  *
  * @return JAL_OK on success, or JAL_E_INVAL if there was an error.
  */
-enum jal_status jaln_process_subscribe(VortexFrame *frame, char **sid);
+enum jal_status jaln_process_subscribe(VortexFrame *frame);
 
 #endif // JALN_SUBSCRIBE_MSG_HANDLER

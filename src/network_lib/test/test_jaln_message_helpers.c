@@ -521,14 +521,13 @@ void test_create_subscribe_msg_with_valid_parameters()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "serialID";
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
 	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
-	ret = jaln_create_subscribe_msg(serial_id, &msg_out, msg_out_len);
+	ret = jaln_create_subscribe_msg(&msg_out, msg_out_len);
 	free(msg_out);
 	assert_equals(JAL_OK, ret);
 }
@@ -537,50 +536,32 @@ void test_create_subscribe_msg_with_valid_parameters_is_formatted_correctly()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *correct_msg = "Content-Type: application/beep+jalop\r\nContent-Transfer-Encoding: binary\r\nJAL-Message: subscribe\r\nJAL-Serial-Id: 1234562\r\n\r\n";
+	char *correct_msg = "Content-Type: application/beep+jalop\r\nContent-Transfer-Encoding: binary\r\nJAL-Message: subscribe\r\n\r\n";
 
-	char *serial_id = "1234562";
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
 	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
-	ret = jaln_create_subscribe_msg(serial_id, &msg_out, msg_out_len);
+	ret = jaln_create_subscribe_msg(&msg_out, msg_out_len);
 
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(correct_msg, msg_out);
 	free(msg_out);
 }
 
-void test_create_subscribe_msg_with_invalid_parameters_serial_id_is_null()
-{
-	enum jal_status ret = JAL_OK;
-
-	char *serial_id = NULL;
-	char *msg_out = NULL;
-	uint64_t *msg_out_len = NULL;
-	uint64_t len = sizeof(msg_out);
-
-	msg_out_len = &len;
-
-	ret = jaln_create_subscribe_msg(serial_id, &msg_out, msg_out_len);
-	free(msg_out);
-	assert_equals(JAL_E_INVAL, ret);
-}
-
 void test_create_subscribe_msg_with_invalid_parameters_msg_out_not_null()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "serialid";
 	char *msg_out = "some text!";
 	uint64_t *msg_out_len = NULL;
 	uint64_t len = sizeof(msg_out);
 
 	msg_out_len = &len;
 
-	ret = jaln_create_subscribe_msg(serial_id, &msg_out, msg_out_len);
+	ret = jaln_create_subscribe_msg(&msg_out, msg_out_len);
 	assert_equals(JAL_E_INVAL, ret);
 }
 
@@ -588,11 +569,10 @@ void test_create_subscribe_msg_with_invalid_parameters_msg_out_len_is_null()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "serialid";
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
 
-	ret = jaln_create_subscribe_msg(serial_id, &msg_out, msg_out_len);
+	ret = jaln_create_subscribe_msg(&msg_out, msg_out_len);
 	free(msg_out);
 	assert_equals(JAL_E_INVAL, ret);
 }

@@ -74,7 +74,7 @@ enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, uint64_t
  * JAL_OK on success
  *
  */
-enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, uint64_t *msg_out_len);
+enum jal_status jaln_create_subscribe_msg(char **msg_out, uint64_t *msg_out_len);
 
 /**
  * Sanity check to make sure the MIME headers for a particular frame contain

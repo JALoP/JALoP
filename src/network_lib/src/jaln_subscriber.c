@@ -322,7 +322,7 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 			goto err_out;
 		}
 	} else {
-		if (JAL_OK != jaln_create_subscribe_msg(serial_id, &msg, &msg_len)) {
+		if (JAL_OK != jaln_create_subscribe_msg(&msg, &msg_len)) {
 			goto err_out;
 		}
 	}

@@ -302,7 +302,6 @@ enum jaldb_status pub_get_next_record(
 	enum jaldb_status ret = JALDB_E_NOT_FOUND;
 	struct session_ctx_t *ctx = NULL;
 	struct jaldb_record *rec = NULL;
-
 	pthread_mutex_lock(sub_lock);
 	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
 	pthread_mutex_unlock(sub_lock);
@@ -646,7 +645,6 @@ enum jal_status pub_on_subscribe(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		const char *serial_id,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
@@ -664,7 +662,6 @@ enum jal_status pub_on_subscribe(
 
 	data.sess = sess;
 	data.ch_info = ch_info;
-	data.serial_id = serial_id;
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:

@@ -316,16 +316,14 @@ enum jal_status jaln_pub_handle_subscribe(jaln_session *sess, VortexChannel *cha
 	struct jaln_channel_info *ch_info = sess->ch_info;
 	enum jaln_record_type type = ch_info->type;
 	void *user_data = sess->jaln_ctx->user_data;
-	char *sid = NULL;
 
-	ret = jaln_process_subscribe(frame, &sid);
+	ret = jaln_process_subscribe(frame);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
 
 	pd->msg_no = msg_no;
-
-	ret = cbs->on_subscribe(sess, ch_info, type, sid, NULL, user_data);
+	ret = cbs->on_subscribe(sess, ch_info, type, NULL, user_data);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
@@ -336,7 +334,6 @@ err_out:
 	vortex_channel_finalize_ans_rpy(chan, msg_no);
 	jaln_session_set_errored(sess);
 out:
-	free(sid);
 	return ret;
 }
 

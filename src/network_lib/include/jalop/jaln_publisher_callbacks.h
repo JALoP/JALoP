@@ -80,7 +80,6 @@ struct jaln_publisher_callbacks {
 	 * @param[in] session The jaln_session.
 	 * @param[in] type The type of records the remote is subscribing 
 	 * to (journal, audit, or log).
-	 * @param[in] nonce The nonce in the subscribe message
 	 * @param[in] headers additional mime headers sent as part of this message
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
@@ -90,7 +89,6 @@ struct jaln_publisher_callbacks {
 			jaln_session *session,
 			const struct jaln_channel_info *ch_info,
 			enum jaln_record_type type,
-			const char *nonce,
 			struct jaln_mime_header *headers,
 			void *user_data);
 

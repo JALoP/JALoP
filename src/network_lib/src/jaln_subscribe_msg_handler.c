@@ -36,9 +36,9 @@
 #include "jaln_message_helpers.h"
 #include "jaln_strings.h"
 
-enum jal_status jaln_process_subscribe(VortexFrame *frame, char **sid_out)
+enum jal_status jaln_process_subscribe(VortexFrame *frame)
 {
-	if (!frame || !sid_out || *sid_out) {
+	if (!frame) {
 		return JAL_E_INVAL;
 	}
 	enum jal_status ret = JAL_E_INVAL;
@@ -55,21 +55,10 @@ enum jal_status jaln_process_subscribe(VortexFrame *frame, char **sid_out)
 		goto err_out;
 	}
 
-	const char *sid = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_SERIAL_ID);
-	if (!sid) {
-		goto err_out;
-	}
-	*sid_out = jal_strdup(sid);
-	axl_stream_trim(*sid_out);
-	if (0 == strlen(*sid_out)) {
-		goto err_out;
-	}
 	ret = JAL_OK;
 	goto out;
 
 err_out:
-	free(*sid_out);
-	*sid_out = NULL;
 out:
 	return ret;
 }

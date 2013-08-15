@@ -154,7 +154,6 @@ enum jal_status on_subscribe(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		const char *serial_id,
 		struct jaln_mime_header *headers,
 		void *user_data)
 {
@@ -163,7 +162,6 @@ enum jal_status on_subscribe(
 	user_data = user_data;
 	DEBUG_LOG("ch_info: %p", ch_info);
 	DEBUG_LOG("record_type: %d", type);
-	DEBUG_LOG("sid: %p", serial_id);
 	DEBUG_LOG("headers: %p", headers);
 
 	pthread_t journal_thread;
@@ -179,7 +177,6 @@ enum jal_status on_subscribe(
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
 	data.sess = sess;
-	data.sid = (char *)serial_id;
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:

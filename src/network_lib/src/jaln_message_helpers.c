@@ -121,19 +121,15 @@ out:
 
 }
 
-enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out, uint64_t *msg_out_len)
+enum jal_status jaln_create_subscribe_msg(char **msg_out, uint64_t *msg_out_len)
 {
-	static const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_SUBSCRIBE JALN_CRLF \
-		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE;
+	static const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_SUBSCRIBE;
 	enum jal_status ret = JAL_E_INVAL;
 	if (!msg_out || *msg_out || !msg_out_len) {
 		goto out;
 	}
-	if (!serial_id) {
-		goto out;
-	}
 	uint64_t cnt = strlen(preamble) + 1;
-	uint64_t tmp = strlen(serial_id) + 2 * strlen(JALN_CRLF);
+	uint64_t tmp = 2 * strlen(JALN_CRLF);
 	if (cnt > (SIZE_MAX - tmp)) {
 		goto out;
 	}
@@ -141,7 +137,6 @@ enum jal_status jaln_create_subscribe_msg(const char *serial_id, char **msg_out,
 	char *msg = (char*) jal_malloc(cnt);
 	msg[0] = '\0';
 	strcat(msg, preamble);
-	strcat(msg, serial_id);
 	strcat(msg, JALN_CRLF JALN_CRLF);
 	*msg_out = msg;
 	*msg_out_len = cnt - 1;
