@@ -295,6 +295,114 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn);
  */
 enum jal_status jaln_session_is_ok(jaln_session *sess);
 
+/**
+ * Send the journal record to the awaiting subscriber.
+ *
+ * This method should be called to send a journal record to the awaiting
+ * subscriber. The method expects the calling implementation to obtain
+ * and provide the journal record information and provide a payload feeder
+ * that will be used to read the journal payload data. The calling implementation
+ * is in charge of freeing the allocated resources.
+ *
+ * @param[in] sess The session containg the connection and subscriber information
+ * @param[in] nonce Used to construct a mapping to the current sequence id
+ * @param[in] seq_id The current record sequence id
+ * @param[in] sys_meta_buf The buffer containing the system metadata
+ * @param[in] sys_meta_len The length of the system metadata buffer
+ * @param[in] app_meta_buf The buffer containing the application metadata
+ * @param[in] app_meta_len The length of the system metadata buffer
+ * @param[in] offset The offset at which the feeder should start reading the journal data
+ * @param[in] feeder The payload feeder that will be used to read the journal data
+ *
+ * @return JAL_OK on successfully sending the journal record or an error otherwise
+ */
+enum jal_status jaln_send_journal(
+			jaln_session *sess,
+			void *nonce,
+			char *seq_id,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len,
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint64_t offset,
+			struct jaln_payload_feeder *feeder);
+
+/**
+ * Send the audit record to the awaiting subscriber.
+ *
+ * This method should be called to send an audit record to the awaiting
+ * subscriber. The method expects the calling implementation to obtain
+ * and provide the audit record information. The calling implementation
+ * is in charge of freeing the allocated resources.
+ *
+ * @param[in] sess The session containg the connection and subscriber information
+ * @param[in] nonce Used to construct a mapping to the current sequence id
+ * @param[in] seq_id The current record sequence id
+ * @param[in] sys_meta_buf The buffer containing the system metadata
+ * @param[in] sys_meta_len The length of the system metadata buffer
+ * @param[in] app_meta_buf The buffer containing the application metadata
+ * @param[in] app_meta_len The length of the system metadata buffer
+ * @param[in] payload_buf The buffer containing the audit record
+ * @param[in] payload_len The length of the payload buffer
+ *
+ * @return JAL_OK on successfully sending the audit record or an error otherwise
+ */
+enum jal_status jaln_send_audit(
+			jaln_session *sess,
+			void *nonce,
+			char *seq_id,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len,
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint8_t *payload_buf,
+			uint64_t payload_len);
+
+/**
+ * Send the log record to the awaiting subscriber.
+ *
+ * This method should be called to send a log record to the awaiting
+ * subscriber. The method expects the calling implementation to obtain
+ * and provide the log record information. The calling implementation
+ * is in charge of freeing the allocated resources.
+ *
+ * @param[in] sess The session containing the connection and subscriber information
+ * @param[in] nonce Used to construct a mapping to the current sequence id
+ * @param[in] seq_id The current record sequence id
+ * @param[in] sys_meta_buf The buffer containing the system metadata
+ * @param[in] sys_meta_len The length of the system metadata buffer
+ * @param[in] app_meta_buf The buffer containing the application metadata
+ * @param[in] app_meta_len The length of the system metadata buffer
+ * @param[in] payload_buf The buffer containing the log record
+ * @param[in] payload_len The length of the payload buffer
+ *
+ * @return JAL_OK on successfully sending the log record or an error otherwise
+ */
+enum jal_status jaln_send_log(
+			jaln_session *sess,
+			void *nonce,
+			char *seq_id,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len,
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint8_t *payload_buf,
+			uint64_t payload_len);
+
+/**
+ * Notify the library that the publisher is finished sending records.
+ *
+ * This method should be called when all records have been sent. The
+ * method will send the final message to the subscriber, indicating
+ * that the record sending has been completed. This method will also
+ * attempt to close the channel used to send the records.
+ *
+ * @param[in] sess The session containing the connection information
+ *
+ * @return JAL_OK on success or an error otherwise
+ */
+enum jal_status jaln_finish(jaln_session *sess);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,0 +1,325 @@
+/**
+* @file jaln_push.c  This file contains function
+* definitions related to the jal publisher.
+*
+* @section LICENSE
+*
+* Source code in 3rd-party is licensed and owned by their respective
+* copyright holders.
+*
+* All other source code is copyright Tresys Technology and licensed as below.
+*
+* Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
+*
+* This software was developed by Tresys Technology LLC
+* with U.S. Government sponsorship.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+#include <jalop/jaln_network.h>
+#include <vortex.h>
+
+#include "jal_alloc.h"
+#include "jaln_session.h"
+#include "jaln_pub_feeder.h"
+
+/*
+ * Helper method used to initialize the record information
+ * that is to be sent to the subscriber.
+ */
+enum jal_status jaln_send_record_init(
+			jaln_session *sess,
+			__attribute__((unused)) void *nonce,
+			char *seq_id,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len, 
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			struct jaln_record_info *rec_info)
+{
+	enum jal_status ret = JAL_E_INVAL;
+	struct jaln_pub_data *pub_data = NULL;
+
+	jaln_pub_feeder_reset_state(sess);
+
+	pub_data = sess->pub_data;
+
+	pub_data->serial_id = jal_strdup(seq_id);
+	pub_data->sys_meta = sys_meta_buf;
+	pub_data->sys_meta_sz = sys_meta_len;
+	pub_data->app_meta = app_meta_buf;
+	pub_data->app_meta_sz = app_meta_len;
+
+	memset(rec_info, 0, sizeof(*rec_info));
+	rec_info->type = sess->ch_info->type;
+	rec_info->nonce = seq_id;
+	rec_info->sys_meta_len = sys_meta_len;
+	rec_info->app_meta_len = app_meta_len;
+
+	ret = sess->dgst->update(pub_data->dgst_inst,
+				pub_data->sys_meta,
+				pub_data->sys_meta_sz);
+	if (JAL_OK != ret) {
+		goto out;
+	}
+
+	ret = sess->dgst->update(pub_data->dgst_inst,
+				pub_data->app_meta,
+				pub_data->app_meta_sz);
+out:
+	return ret;
+}
+
+/*
+ * Helper method used to send the record, in the form of buffers,
+ * to the subscriber.
+ *
+ * This method initializes the record information to be sent and
+ * subsequently initiates the process of sending the record to the
+ * subscriber.
+ */
+enum jal_status jaln_send_record(
+			jaln_session *sess,
+			__attribute__((unused)) void *nonce,
+			char *seq_id,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len, 
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint8_t *payload_buf,
+			uint64_t payload_len)
+{
+	if (!sess || !seq_id || !sys_meta_buf || !payload_buf) {
+		return JAL_E_INVAL;
+	}
+
+	if (SIZE_MAX < app_meta_len || SIZE_MAX < sys_meta_len) {
+		return JAL_E_INVAL;
+	}
+
+	if (JAL_OK != jaln_session_is_ok(sess)) {
+		return JAL_E_INVAL;
+	}
+
+	enum jal_status ret = JAL_E_INVAL;
+	struct jaln_pub_data *pub_data = NULL;
+	struct jaln_record_info rec_info;
+
+	ret = jaln_send_record_init(sess,
+				nonce,
+				seq_id,
+				sys_meta_buf,
+				sys_meta_len,
+				app_meta_buf,
+				app_meta_len,
+				&rec_info);
+	if (JAL_OK != ret) {
+		goto out;
+	}
+
+	pub_data = sess->pub_data;
+	pub_data->payload = payload_buf;
+	pub_data->payload_sz = payload_len;
+
+	rec_info.payload_len = payload_len;
+
+	ret = sess->dgst->update(pub_data->dgst_inst,
+				pub_data->payload,
+				pub_data->payload_sz);
+	if (JAL_OK != ret) {
+		goto out;
+	}
+
+	ret = jaln_pub_begin_next_record_ans(sess, &rec_info);
+out:
+	return ret;
+}
+
+/*
+ * Helper method used to send a record, via a feeder, to the
+ * subscriber.
+ * 
+ * This method initializes the record information to be sent,
+ * reads the payload data from the feeder, and subsequently
+ * initiates the process of sending the record to the subscriber.
+ *
+ * TODO: Convert audit and log handling to feeders.
+ */
+enum jal_status jaln_send_record_feeder(
+			jaln_session *sess,
+			void *nonce,
+			char *seq_id,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len, 
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint64_t offset,
+			struct jaln_payload_feeder *feeder)
+{
+	if (!sess || !seq_id || !sys_meta_buf || !app_meta_buf || !feeder) {
+		return JAL_E_INVAL_PARAM;
+	}
+
+	if (SIZE_MAX < app_meta_len || SIZE_MAX < sys_meta_len) {
+		return JAL_E_INVAL_PARAM;
+	}
+
+	if (JAL_OK != jaln_session_is_ok(sess)) {
+		return JAL_E_NOT_CONNECTED;
+	}
+
+	enum jal_status ret = JAL_E_INVAL;
+	struct jaln_pub_data *pub_data = NULL;
+	struct jaln_record_info rec_info;
+
+	ret = jaln_send_record_init(sess,
+				nonce,
+				seq_id,
+				sys_meta_buf,
+				sys_meta_len,
+				app_meta_buf,
+				app_meta_len,
+				&rec_info);
+	if (JAL_OK != ret) {
+		goto out;
+	}
+
+	pub_data = sess->pub_data;
+
+#define BUF_SIZE (4*1024)
+	uint8_t buf[BUF_SIZE];
+	uint64_t left_to_process = offset;
+	offset = 0;
+
+	while (left_to_process != 0) {
+		uint64_t to_copy = (uint64_t) (BUF_SIZE < left_to_process) ? 
+			BUF_SIZE : left_to_process;
+		uint64_t tmp = to_copy;
+		ret = feeder->get_bytes(offset, buf, &tmp,
+				feeder->feeder_data);
+		if ((JAL_OK != ret) || (0 == tmp) || (tmp > to_copy)) {
+			ret = JAL_E_INVAL;
+			goto out;
+		}
+
+		ret = sess->dgst->update(pub_data->dgst_inst, buf, tmp);
+		if (JAL_OK != ret) {
+			goto out;
+		}
+		left_to_process -= tmp;
+		offset += tmp;
+	}
+	pub_data->payload_off = offset;
+
+	ret = jaln_pub_begin_next_record_ans(sess, &rec_info); 
+out:
+	return ret;
+}
+
+enum jal_status jaln_send_journal(
+			jaln_session *sess,
+			__attribute__((unused)) void *nonce,
+			__attribute__((unused)) char *seq_id,
+			__attribute__((unused)) uint8_t *sys_meta_buf,
+			__attribute__((unused)) uint64_t sys_meta_len, 
+			__attribute__((unused)) uint8_t *app_meta_buf,
+			__attribute__((unused)) uint64_t app_meta_len,
+			__attribute__((unused)) uint64_t offset,
+			__attribute__((unused)) struct jaln_payload_feeder *feeder)
+{
+	if (NULL == sess || NULL == sess->ch_info || JALN_RTYPE_JOURNAL != sess->ch_info->type) {
+		return JAL_E_INVAL_PARAM;
+	}
+
+	return jaln_send_record_feeder(sess,
+					nonce,
+					seq_id,
+					sys_meta_buf,
+					sys_meta_len, 
+					app_meta_buf,
+					app_meta_len,
+					offset,
+					feeder);
+
+}
+
+enum jal_status jaln_send_audit(
+			jaln_session *sess,
+			__attribute__((unused)) void *nonce,
+			__attribute__((unused)) char *seq_id,
+			__attribute__((unused)) uint8_t *sys_meta_buf,
+			__attribute__((unused)) uint64_t sys_meta_len, 
+			__attribute__((unused)) uint8_t *app_meta_buf,
+			__attribute__((unused)) uint64_t app_meta_len,
+			__attribute__((unused)) uint8_t *payload_buf,
+			__attribute__((unused)) uint64_t payload_len)
+{
+	if (NULL == sess || NULL == sess->ch_info || JALN_RTYPE_AUDIT != sess->ch_info->type) {
+		return JAL_E_INVAL_PARAM;
+	}
+
+	return jaln_send_record(sess,
+				nonce,
+				seq_id,
+				sys_meta_buf,
+				sys_meta_len,
+				app_meta_buf,
+				app_meta_len,
+				payload_buf,
+				payload_len);
+}
+
+enum jal_status jaln_send_log(
+			jaln_session *sess,
+			__attribute__((unused)) void *nonce,
+			__attribute__((unused)) char *seq_id,
+			__attribute__((unused)) uint8_t *sys_meta_buf,
+			__attribute__((unused)) uint64_t sys_meta_len, 
+			__attribute__((unused)) uint8_t *app_meta_buf,
+			__attribute__((unused)) uint64_t app_meta_len,
+			__attribute__((unused)) uint8_t *payload_buf,
+			__attribute__((unused)) uint64_t payload_len)
+{
+	if (NULL == sess || NULL == sess->ch_info || JALN_RTYPE_LOG != sess->ch_info->type) {
+		return JAL_E_INVAL_PARAM;
+	}
+
+	return jaln_send_record(sess,
+				nonce,
+				seq_id,
+				sys_meta_buf,
+				sys_meta_len,
+				app_meta_buf,
+				app_meta_len,
+				payload_buf,
+				payload_len);
+}
+
+enum jal_status jaln_finish(jaln_session *sess)
+{
+	if (NULL == sess || NULL == sess->pub_data) {
+		return JAL_E_INVAL_PARAM;
+	}
+
+	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
+	if (!ans_rpy_sent) {
+		return JAL_E_COMM;
+	}
+
+	if (!vortex_channel_close_full(sess->rec_chan, NULL, NULL)) {
+		return JAL_E_COMM;
+	}
+
+	return JAL_OK;
+}
