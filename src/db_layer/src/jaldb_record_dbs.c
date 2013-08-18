@@ -34,7 +34,7 @@
 
 #include "jaldb_datetime.h"
 #include "jaldb_record_dbs.h"
-#include "jaldb_record_uuid.h"
+#include "jaldb_record_extract.h"
 #include "jaldb_serial_id.h"
 #include "jaldb_utils.h"
 
@@ -64,6 +64,9 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	}
 	if (rdbs->record_id_idx_db) {
 		rdbs->record_id_idx_db->close(rdbs->record_id_idx_db, 0);
+	}
+	if (rdbs->record_sent_db) {
+		rdbs->record_sent_db->close(rdbs->record_sent_db, 0);
 	}
 	if (rdbs->sid_db) {
 		rdbs->sid_db->close(rdbs->sid_db, 0);
@@ -95,6 +98,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	char *timestamp_tz_name = NULL;
 	char *timestamp_no_tz_name = NULL;
 	char *record_uuid_name = NULL;
+	char *record_sent_name = NULL;
 	char *sid_name = NULL;
 
 	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
@@ -104,6 +108,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		jal_asprintf(&timestamp_tz_name, "%s_timestamp_tz_idx.db", prefix);
 		jal_asprintf(&timestamp_no_tz_name, "%s_timestamp_no_tz_idx.db", prefix);
 		jal_asprintf(&record_uuid_name, "%s_record_uuid_idx.db", prefix);
+		jal_asprintf(&record_sent_name, "%s_record_sent.db", prefix);
 		jal_asprintf(&sid_name, "%s_sid.db", prefix);
 	}
 
@@ -219,6 +224,29 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
+	// Open the sent DB.  This is a secondary index grouping whether records
+	// Have been sent.
+	db_ret = db_create(&(rdbs->record_sent_db), env, 0);
+	if (db_ret != 0) {
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->record_sent_db->set_flags(rdbs->record_sent_db, DB_DUP | DB_DUPSORT);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->record_sent_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->record_sent_db->open(rdbs->record_sent_db, txn,
+			record_sent_name, NULL, DB_BTREE, db_flags, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->record_sent_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
 	db_ret = db_create(&(rdbs->sid_db), env, 0);
 	if (db_ret != 0) {
 		ret = JALDB_E_DB;
@@ -252,6 +280,14 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 
 	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->record_id_idx_db,
 			jaldb_extract_record_uuid, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->primary_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->record_sent_db,
+			jaldb_extract_record_sent_flag, 0);
 	if (db_ret != 0) {
 		JALDB_DB_ERR((rdbs->primary_db), db_ret);
 		ret = JALDB_E_DB;

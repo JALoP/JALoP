@@ -1,5 +1,5 @@
 /**
- * @file jaldb_record_uuid.c Implementation of utilties related to the record
+ * @file jaldb_record_extract.c Implementation of utilties related to the record
  * UUID stored with the JALoP record in the database.
  *
  * @section LICENSE
@@ -28,10 +28,11 @@
 */
 
 #include <uuid/uuid.h>
+#include <stdio.h>
 
 #include "jal_alloc.h"
 
-#include "jaldb_record_uuid.h"
+#include "jaldb_record_extract.h"
 #include "jaldb_serialize_record.h"
 
 int jaldb_extract_record_uuid(DB *secondary, const DBT *key, const DBT *data, DBT *result)
@@ -52,6 +53,29 @@ int jaldb_extract_record_uuid(DB *secondary, const DBT *key, const DBT *data, DB
 	result->data = jal_malloc(sizeof(uuid_t));
 	uuid_copy(result->data, headers->record_uuid);
 	result->size = sizeof(uuid_t);
+	result->flags = DB_DBT_APPMALLOC;
+
+	return 0;
+}
+
+int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+{
+	struct jaldb_serialize_record_headers *headers = NULL;
+
+	if (!data || !result || !data->data || (sizeof(headers) > data->size)) {
+		return -1;
+	}
+
+	headers = (struct jaldb_serialize_record_headers*)data->data;
+
+	// TODO: Need BOM for this to work correctly
+	if (headers->version != JALDB_DB_LAYOUT_VERSION) {
+		return -1;
+	}
+
+	result->data = jal_malloc(sizeof(char));
+	*((uint32_t*)result->data) = headers->flags & JALDB_RFLAGS_SENT;
+	result->size = sizeof(uint32_t);
 	result->flags = DB_DBT_APPMALLOC;
 
 	return 0;

@@ -185,10 +185,20 @@ extern "C" void setup()
 	records[3]->source = jal_strdup(S4);
 	assert_equals(0, uuid_parse(UUID_4, records[3]->uuid));
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1]));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2]));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3]));
+	char *nonce = NULL;
+
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], &nonce));
+	free(nonce);
+	nonce = NULL;
 
 	start = BN_new();
 	BN_set_word(start, 1);

@@ -28,6 +28,7 @@
 */
 
 #define __STDC_FORMAT_MACROS
+
 #include <fcntl.h>
 #include <jalop/jal_status.h>
 #include <inttypes.h> // For PRIu64
@@ -59,7 +60,6 @@ using namespace std;
 
 static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp);
 static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, char *hex_sid);
-static jaldb_status jaldb_verify_string_contains_hex(const char *str);
 
 jaldb_context *jaldb_context_create()
 {
@@ -350,16 +350,14 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 enum jaldb_status jaldb_mark_sent(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	const char *hex_sid)
+	const char *nonce)
 {
 	enum jaldb_status ret = JALDB_OK;
 	int db_ret;
 
 	struct jaldb_record_dbs *rdbs = NULL;
 
-	BIGNUM *sid = NULL;
 	int byte_swap;
-	int sid_bytes;
 
 	struct jaldb_serialize_record_headers *header_ptr = NULL;
 	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
@@ -367,7 +365,7 @@ enum jaldb_status jaldb_mark_sent(
 	DBT key;
 	DBT val;
 
-	if (!ctx || !type || !hex_sid) {
+	if (!ctx || !type || !nonce) {
 		return JALDB_E_INVAL;
 	}
 
@@ -393,26 +391,11 @@ enum jaldb_status jaldb_mark_sent(
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-	ret = jaldb_verify_string_contains_hex(hex_sid);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&sid, hex_sid);
-	if (0 == db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	sid_bytes = BN_num_bytes(sid);
-	if (0 >= sid_bytes) {
-		ret = JALDB_E_UNKNOWN;
-		goto out;
-	}
 
 	key.flags = DB_DBT_REALLOC;
-	key.size = sid_bytes;
-	key.data = jal_malloc(sid_bytes);
-	BN_bn2bin(sid, (unsigned char *)key.data);
+	key.size = strlen(nonce)+1;
+	key.data = jal_malloc(key.size);
+	key.data = jal_strdup(nonce);
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.dlen = header_bytes;
@@ -474,9 +457,6 @@ enum jaldb_status jaldb_mark_sent(
 	}
 
 out:
-	if (sid) {
-		BN_free(sid);
-	}
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -485,16 +465,14 @@ out:
 enum jaldb_status jaldb_mark_synced(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	const char *hex_sid)
+	const char *nonce)
 {
 	enum jaldb_status ret = JALDB_OK;
 	int db_ret;
 
 	struct jaldb_record_dbs *rdbs = NULL;
 
-	BIGNUM *sid = NULL;
 	int byte_swap;
-	int sid_bytes;
 
 	struct jaldb_serialize_record_headers *header_ptr = NULL;
 	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
@@ -502,7 +480,7 @@ enum jaldb_status jaldb_mark_synced(
 	DBT key;
 	DBT val;
 
-	if (!ctx || !type || !hex_sid) {
+	if (!ctx || !type || !nonce) {
 		return JALDB_E_INVAL;
 	}
 
@@ -529,26 +507,10 @@ enum jaldb_status jaldb_mark_synced(
 		goto out;
 	}
 
-	ret = jaldb_verify_string_contains_hex(hex_sid);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&sid, hex_sid);
-	if (0 == db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	sid_bytes = BN_num_bytes(sid);
-	if (0 >= sid_bytes) {
-		ret = JALDB_E_UNKNOWN;
-		goto out;
-	}
-
 	key.flags = DB_DBT_REALLOC;
-	key.size = sid_bytes;
-	key.data = jal_malloc(sid_bytes);
-	BN_bn2bin(sid, (unsigned char *)key.data);
+	key.size = strlen(nonce)+1;
+	key.data = jal_malloc(key.size);
+	key.data = jal_strdup(nonce);
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.dlen = header_bytes;
@@ -615,9 +577,6 @@ enum jaldb_status jaldb_mark_synced(
 	}
 
 out:
-	if (sid) {
-		BN_free(sid);
-	}
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -864,7 +823,7 @@ enum jaldb_status jaldb_get_log_document_list(
 enum jaldb_status jaldb_get_last_k_records(
 		jaldb_context *ctx,
 		int k,
-		list<string> &sid_list,
+		list<string> &nonce_list,
 		enum jaldb_rec_type type)
 {
 	enum jaldb_status ret = JALDB_OK;
@@ -880,8 +839,7 @@ enum jaldb_status jaldb_get_last_k_records(
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.doff = 0;
 	val.dlen = 0; //Only interested in the key at this point
-	char *current_sid_hex = NULL;
-	BIGNUM *current_sid = NULL;
+	char *current_nonce = NULL;
 	int count = 0;
 
 	if (!ctx) {
@@ -928,25 +886,16 @@ enum jaldb_status jaldb_get_last_k_records(
 	}
 
 	while(count < k && (0 == db_ret)) {
-		current_sid = BN_bin2bn((unsigned char*)key.data, key.size, NULL);
-		if (NULL == current_sid) {
+		current_nonce = jal_strdup((const char*)key.data);
+		if (NULL == current_nonce) {
 			ret = JALDB_E_NO_MEM;
 			goto out;
 		}
 
-		current_sid_hex = BN_bn2hex(current_sid);
-		if (NULL == current_sid_hex) {
-			ret = JALDB_E_NO_MEM;
-			goto out;
-		}
+		nonce_list.push_front(current_nonce);
 
-		sid_list.push_front(current_sid_hex);
-
-		free(current_sid_hex);
-		current_sid_hex = NULL;
-
-		BN_free(current_sid);
-		current_sid = NULL;
+		free(current_nonce);
+		current_nonce = NULL;
 
 		db_ret = cursor->c_get(cursor, &key, &val, DB_PREV);
 
@@ -962,22 +911,21 @@ out:
 		cursor->c_close(cursor);
 	}
 
-	if (current_sid) {
-		BN_free(current_sid);
-		current_sid = NULL;
+	if (current_nonce) {
+		free(current_nonce);
+		current_nonce = NULL;
 	}
 
-	free(current_sid_hex);
 	free(key.data);
 	free(val.data);
 	return ret;
 
 }
 
-enum jaldb_status jaldb_get_records_since_last_sid(
+enum jaldb_status jaldb_get_records_since_last_nonce(
 		jaldb_context *ctx,
-		char *last_sid,
-		list<string> &sid_list,
+		char *last_nonce,
+		list<string> &nonce_list,
 		enum jaldb_rec_type type)
 {
 	enum jaldb_status ret = JALDB_OK;
@@ -993,15 +941,14 @@ enum jaldb_status jaldb_get_records_since_last_sid(
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.doff = 0;
 	val.dlen = 0; //Only interested in the key at this point
-	char *current_sid_hex = NULL;
-	BIGNUM *current_sid = NULL;
+	char *current_nonce = NULL;
 
 	if (!ctx) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	if (!last_sid || 0 == strlen(last_sid)) {
+	if (!last_nonce || 0 == strlen(last_nonce)) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1031,22 +978,8 @@ enum jaldb_status jaldb_get_records_since_last_sid(
 		goto out;
 	}
 
-	ret = jaldb_verify_string_contains_hex(last_sid);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&current_sid, last_sid);
-	if ((0 == db_ret) || (NULL == current_sid)) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	key.size = BN_num_bytes(current_sid);
-	key.data = jal_malloc(key.size);
-	BN_bn2bin(current_sid, (unsigned char*)key.data);
-
-	BN_free(current_sid);
-	current_sid = NULL;
+	key.size = strlen(last_nonce)+1;
+	key.data = jal_strdup(last_nonce);
 
 	db_ret = rdbs->primary_db->cursor(rdbs->primary_db, NULL, &cursor, DB_DEGREE_2);
 	if (0 != db_ret) {
@@ -1068,25 +1001,16 @@ enum jaldb_status jaldb_get_records_since_last_sid(
 			break;
 		}
 
-		current_sid = BN_bin2bn((unsigned char*)key.data, key.size, NULL);
-		if (NULL == current_sid) {
+		current_nonce = jal_strdup((const char *)key.data);
+		if (NULL == current_nonce) {
 			ret = JALDB_E_NO_MEM;
 			goto out;
 		}
 
-		current_sid_hex = BN_bn2hex(current_sid);
-		if (NULL == current_sid_hex) {
-			ret = JALDB_E_NO_MEM;
-			goto out;
-		}
+		nonce_list.push_back(current_nonce);
 
-		sid_list.push_back(current_sid_hex);
-
-		free(current_sid_hex);
-		current_sid_hex = NULL;
-
-		BN_free(current_sid);
-		current_sid = NULL;
+		free(current_nonce);
+		current_nonce = NULL;
 	}
 
 out:
@@ -1094,22 +1018,16 @@ out:
 		cursor->c_close(cursor);
 	}
 
-	if (current_sid) {
-		BN_free(current_sid);
-		current_sid = NULL;
-	}
-
-	free(current_sid_hex);
+	free(current_nonce);
 	free(key.data);
 	free(val.data);
 	return ret;
 }
 
-enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec)
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, char **nonce)
 {
 	int byte_swap;
 	enum jaldb_status ret;
-	BIGNUM *sid = NULL;
 	size_t buf_size = 0;
 	struct jaldb_record_dbs *rdbs = NULL;
 	uint8_t* buffer = NULL;
@@ -1118,7 +1036,7 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	DBT val;
 	DB_TXN *txn;
 
-	if (!ctx || !rec) {
+	if (!ctx || !rec || !nonce || *nonce) {
 		return JALDB_E_INVAL;
 	}
 	if (!rec->source) {
@@ -1127,11 +1045,6 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 
 	memset(&key, 0, sizeof(key));
 	memset(&val, 0, sizeof(val));
-
-	sid = BN_new();
-	if (!sid) {
-		jal_error_handler(JAL_E_NO_MEM);
-	}
 
 	ret = jaldb_record_sanity_check(rec);
 	if (ret != JALDB_OK) {
@@ -1172,10 +1085,17 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 			break;
 		}
 
-		db_ret = jaldb_get_next_serial_id(rdbs->sid_db, txn, &key);
-		if (0 == db_ret) {
-			db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, DB_NOOVERWRITE);
+		char *primary_key = jaldb_gen_primary_key(rec->uuid);
+		if (NULL == primary_key) {
+			ret = JALDB_E_INVAL;
+			goto out;
 		}
+
+		key.data = primary_key;
+		key.size = strlen(primary_key) + 1;
+		key.flags = DB_DBT_REALLOC;
+
+		db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, DB_NOOVERWRITE);
 		if (0 == db_ret) {
 			db_ret = txn->commit(txn, 0);
 		} else {
@@ -1194,7 +1114,7 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	}
 
 out:
-	BN_free(sid);
+	*nonce = jal_strdup((const char *)key.data);
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -1204,12 +1124,10 @@ enum jaldb_status jaldb_insert_record_into_temp(
 		jaldb_context *ctx,
 		struct jaldb_record *rec,
 		char* source,
-		char* hex_sid)
+		char* nonce)
 {
 	int byte_swap;
 	enum jaldb_status ret;
-	BIGNUM *sid = NULL;
-	int sid_bytes;
 	size_t buf_size = 0;
 	struct jaldb_record_dbs *rdbs = NULL;
 	uint8_t* buffer = NULL;
@@ -1252,24 +1170,9 @@ enum jaldb_status jaldb_insert_record_into_temp(
 	val.data = buffer;
 	val.size = buf_size;
 
-	ret = jaldb_verify_string_contains_hex(hex_sid);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&sid, hex_sid);
-	if (0 == db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-	sid_bytes = BN_num_bytes(sid);
-	if (0 >= sid_bytes) {
-		ret = JALDB_E_UNKNOWN;
-		goto out;
-	}
 	key.flags = DB_DBT_REALLOC;
-	key.data = jal_malloc(sid_bytes);
-	key.size = sid_bytes;
-	BN_bn2bin(sid, (unsigned char*)key.data);
+	key.data = jal_strdup(nonce);
+	key.size = strlen(nonce)+1;
 
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
@@ -1297,7 +1200,6 @@ enum jaldb_status jaldb_insert_record_into_temp(
 	}
 
 out:
-	BN_free(sid);
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -1305,21 +1207,19 @@ out:
 
 enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *hex_sid,
+		char *nonce,
 		struct jaldb_record **recpp)
 {
 	struct jaldb_record *rec = NULL;
 	int byte_swap;
-	int sid_bytes;
 	enum jaldb_status ret;
-	BIGNUM *sid = NULL;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
 	DB_TXN *txn = NULL;
 	DBT key;
 	DBT val;
 
-	if (!ctx || !hex_sid || !recpp || *recpp) {
+	if (!ctx || !nonce || !recpp || *recpp) {
 		return JALDB_E_INVAL;
 	}
 
@@ -1346,31 +1246,15 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		goto out;
 	}
 
-	ret = jaldb_verify_string_contains_hex(hex_sid);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&sid, hex_sid);
-	if (0 == db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-	sid_bytes = BN_num_bytes(sid);
-	if (0 >= sid_bytes) {
-		ret = JALDB_E_UNKNOWN;
-		goto out;
-	}
 	key.flags = DB_DBT_REALLOC;
-	key.data = jal_malloc(sid_bytes);
-	key.size = sid_bytes;
-	BN_bn2bin(sid, (unsigned char*)key.data);
+	key.size = strlen(nonce)+1;
+	key.data = jal_strdup(nonce);
 
 	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-
 
 	val.flags = DB_DBT_REALLOC;
 
@@ -1420,7 +1304,6 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 	ret = JALDB_OK;
 out:
 	jaldb_destroy_record(&rec);
-	BN_free(sid);
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -1428,22 +1311,20 @@ out:
 
 enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *hex_sid,
+		char *nonce,
 		char *source,
 		struct jaldb_record **recpp)
 {
 	struct jaldb_record *rec = NULL;
 	int byte_swap;
-	int sid_bytes;
 	enum jaldb_status ret;
-	BIGNUM *sid = NULL;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
 	DB_TXN *txn = NULL;
 	DBT key;
 	DBT val;
 
-	if (!ctx || !hex_sid || !recpp || *recpp) {
+	if (!ctx || !nonce || !recpp || *recpp) {
 		return JALDB_E_INVAL;
 	}
 
@@ -1456,24 +1337,9 @@ enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 		goto out;
 	}
 
-	ret = jaldb_verify_string_contains_hex(hex_sid);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&sid, hex_sid);
-	if (0 == db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-	sid_bytes = BN_num_bytes(sid);
-	if (0 >= sid_bytes) {
-		ret = JALDB_E_UNKNOWN;
-		goto out;
-	}
 	key.flags = DB_DBT_REALLOC;
-	key.data = jal_malloc(sid_bytes);
-	key.size = sid_bytes;
-	BN_bn2bin(sid, (unsigned char*)key.data);
+	key.data = jal_strdup(nonce);
+	key.size = strlen(nonce)+1;
 
 	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
 	if (0 != db_ret) {
@@ -1530,7 +1396,6 @@ enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 	ret = JALDB_OK;
 out:
 	jaldb_destroy_record(&rec);
-	BN_free(sid);
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -1681,7 +1546,7 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
 
 enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *hex_sid)
+		char *nonce)
 {
 	int db_ret;
 	enum jaldb_status ret;
@@ -1693,7 +1558,7 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		goto out;
 	}
 
-	ret = jaldb_remove_record_from_db(ctx, rdbs, hex_sid);
+	ret = jaldb_remove_record_from_db(ctx, rdbs, nonce);
 
 out:
 	return ret;
@@ -1722,39 +1587,23 @@ out:
 
 enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx,
 		jaldb_record_dbs *rdbs,
-		char *hex_sid)
+		char *nonce)
 {
-	int sid_bytes;
 	enum jaldb_status ret;
-	BIGNUM *sid = NULL;
 	int db_ret;
 	DB_TXN *txn = NULL;
 	DBT key;
 
-	if (!ctx || !hex_sid || !rdbs || !rdbs->primary_db) {
+	if (!ctx || !nonce || !rdbs || !rdbs->primary_db) {
 		return JALDB_E_INVAL;
 	}
 
 	memset(&key, 0, sizeof(key));
 
-	ret = jaldb_verify_string_contains_hex(hex_sid);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&sid, hex_sid);
-	if (0 == db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-	sid_bytes = BN_num_bytes(sid);
-	if (0 >= sid_bytes) {
-		ret = JALDB_E_UNKNOWN;
-		goto out;
-	}
 	key.flags = DB_DBT_REALLOC;
-	key.data = jal_malloc(sid_bytes);
-	key.size = sid_bytes;
-	BN_bn2bin(sid, (unsigned char*)key.data);
+	key.data = jal_malloc(strlen(nonce)+1);
+	key.size = strlen(nonce)+1;
+	key.data = jal_strdup(nonce);
 
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
@@ -1782,7 +1631,6 @@ enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx,
 	}
 	ret = JALDB_OK;
 out:
-	BN_free(sid);
 	free(key.data);
 	return ret;
 }
@@ -1827,32 +1675,27 @@ enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jald
 enum jaldb_status jaldb_next_unsynced_record(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	const char *last_sid_hex,
-	char **next_sid_hex,
+	char **nonce,
 	struct jaldb_record **rec_out)
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
 	struct jaldb_record *rec = NULL;
 	int byte_swap;
 	struct jaldb_serialize_record_headers *headers = NULL;
-	BIGNUM *last_sid = NULL;
-	BIGNUM *next_sid = NULL;
-	BIGNUM *zero = NULL;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
-	DBT key;
+	DBT skey;
+	DBT pkey;
 	DBT val;
-	DBC *cursor = NULL;
-	memset(&key, 0, sizeof(key));
+	memset(&skey, 0, sizeof(skey));
+	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
 
-	if (!ctx || !last_sid_hex || !next_sid_hex || *next_sid_hex || *rec_out || !rec_out) {
+	if (!ctx || !nonce || *nonce || *rec_out || !rec_out) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	zero = BN_new();
-	BN_zero(zero);
 	switch(type) {
 	case JALDB_RTYPE_JOURNAL:
 		rdbs = ctx->journal_dbs;
@@ -1868,30 +1711,15 @@ enum jaldb_status jaldb_next_unsynced_record(
 		goto out;
 	}
 
-	if (!rdbs || !rdbs->primary_db) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-	ret = jaldb_verify_string_contains_hex(last_sid_hex);
-	if (JALDB_OK != ret) {
-		goto out;
-	}
-	db_ret = BN_hex2bn(&last_sid, last_sid_hex);
-	if (0 == db_ret) {
+	if (!rdbs || !rdbs->primary_db || !rdbs->record_sent_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	if (0 == BN_cmp(zero, last_sid)) {
-		key.size = 1;
-		key.data = jal_malloc(key.size);
-		*((char*)(key.data)) = 0;
-	} else {
-		key.size = BN_num_bytes(last_sid);
-		key.data = jal_malloc(key.size);
-		BN_bn2bin(last_sid, (unsigned char*)key.data);
-	}
-	key.flags = DB_DBT_REALLOC;
+	skey.size = sizeof(uint32_t);
+	skey.data = jal_malloc(skey.size);
+	*((uint32_t*)(skey.data)) = 0;// Not sent
+	skey.flags = DB_DBT_REALLOC;
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.dlen = sizeof(*headers);
@@ -1899,34 +1727,25 @@ enum jaldb_status jaldb_next_unsynced_record(
 	val.doff = 0;
 	val.data = jal_malloc(val.size);
 
-	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	pkey.flags = DB_DBT_REALLOC;
+
+	db_ret = rdbs->record_sent_db->get_byteswapped(rdbs->primary_db, &byte_swap);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
 	while (1) {
-		if (cursor) {
-			cursor->c_close(cursor);
-			cursor = NULL;
-		}
-		db_ret = rdbs->primary_db->cursor(rdbs->primary_db, NULL, &cursor, DB_DEGREE_2);
 		if (0 != db_ret) {
 			JALDB_DB_ERR(rdbs->primary_db, db_ret);
+			ret = JALDB_E_DB;
 			goto out;
 		}
 
 		val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
-		db_ret = cursor->c_get(cursor, &key, &val, DB_SET);
+		db_ret = rdbs->record_sent_db->pget(rdbs->record_sent_db, NULL, &skey, &pkey, &val, 0);
 		val.flags = DB_DBT_REALLOC;
-		if (0 == db_ret) {
-			// found the actual SID, move on over to the next one.
-			db_ret = cursor->c_get(cursor, &key, &val, DB_NEXT);
-		} else if (DB_NOTFOUND == db_ret) {
-			// Couldn't match the 'actual' SID, so go for the 'next
-			// greater one'
-			db_ret = cursor->c_get(cursor, &key, &val, DB_SET_RANGE);
-		}
+		
 		if (DB_NOTFOUND == db_ret) {
 		 	ret = JALDB_E_NOT_FOUND;
 			goto out;
@@ -1946,7 +1765,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 		// not synced, get the full record.
 		val.flags = DB_DBT_REALLOC;
 		val.dlen = 0;
-		db_ret = cursor->c_get(cursor, &key, &val, DB_CURRENT);
+		db_ret = rdbs->record_sent_db->pget(rdbs->record_sent_db, NULL, &skey, &pkey, &val, 0);
 		if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
 		}
@@ -1975,15 +1794,8 @@ enum jaldb_status jaldb_next_unsynced_record(
 		rec->sys_meta->length = doc_len;
 	}
 
-
-	next_sid = BN_bin2bn((unsigned char*)key.data, key.size, NULL);
-	if (NULL == next_sid) {
-		ret = JALDB_E_NO_MEM;
-		goto out;
-	}
-
-	*next_sid_hex = BN_bn2hex(next_sid);
-	if (NULL == *next_sid_hex) {
+	*nonce = jal_strdup((char*)pkey.data);
+	if (NULL == nonce) {
 		ret = JALDB_E_NO_MEM;
 		goto out;
 	}
@@ -1992,24 +1804,8 @@ enum jaldb_status jaldb_next_unsynced_record(
 	rec = NULL;
 	ret = JALDB_OK;
 out:
-	if (cursor) {
-		cursor->c_close(cursor);
-	}
-
-	if (last_sid) {
-		BN_free(last_sid);
-		last_sid = NULL;
-	}
-
-	if (next_sid) {
-		BN_free(next_sid);
-		next_sid = NULL;
-	}
-	if (zero) {
-		BN_free(zero);
-		zero = NULL;
-	}
-	free(key.data);
+	free(skey.data);
+	free(pkey.data);
 	free(val.data);
 	jaldb_destroy_record(&rec);
 
@@ -2184,7 +1980,8 @@ out:
 enum jaldb_status jaldb_xfer(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char *source,
-		char *hex_sid)
+		char *nonce_in,
+		char **nonce_out)
 {
 	enum jaldb_status ret = JALDB_OK;
 	struct jaldb_record_dbs *rdbs = NULL;
@@ -2202,32 +1999,22 @@ enum jaldb_status jaldb_xfer(jaldb_context *ctx,
 		goto out;
 	}
 
-	ret = jaldb_get_record_from_temp(ctx, type, hex_sid, source, &rec);
+	ret = jaldb_get_record_from_temp(ctx, type, nonce_in, source, &rec);
 	if (0 != ret) {
 		goto out;
 	}
 
-	ret = jaldb_insert_record(ctx, rec);
+	ret = jaldb_insert_record(ctx, rec, nonce_out);
 	if (0 != ret) {
 		goto out;
 	}
 
-	ret = jaldb_remove_record_from_temp(ctx, type, source, hex_sid);
+	ret = jaldb_remove_record_from_temp(ctx, type, source, nonce_in);
 	if (0 != ret) {
 		goto out;
 	}
-
 out:
 	jaldb_destroy_record(&rec);
 	return ret;
 }
 
-static jaldb_status jaldb_verify_string_contains_hex(const char *str)
-{
-	char valid_chars[] = "1234567890abcdef";
-	if (strlen(str) == strspn(str,valid_chars)) {
-		return JALDB_OK;
-	} else {
-		return JALDB_E_INVAL;
-	}
-}

@@ -94,6 +94,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 
 	int db_payload_fd = -1;
 	char *db_payload_path = NULL;
+	char *nonce = NULL;
 
 	//get a file from the db layer to write the journal data to.
 	uuid_t uuid;
@@ -204,7 +205,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	rec->payload->fd = db_payload_fd;
 	db_payload_path = NULL;
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, &nonce);
 	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "could not insert journal record into database\n");
@@ -214,6 +215,8 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	ret = 0;
 
 err_out:
+	free(nonce);
+	nonce = NULL;
 	close(journal_fd);
 	free(app_meta_buf);
 	if (digest_ctx) {

@@ -186,174 +186,252 @@ extern "C" void teardown()
 	xmlSchemaCleanupTypes();
 }
 
-extern "C" void test_remove_by_serial_id()
+extern "C" void test_remove_by_nonce()
 {
 	struct jaldb_record *rec = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
-	assert_equals(JALDB_OK, jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"1"));
-	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec));
+
+	char *nonce = NULL;	
+
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	assert_equals(JALDB_OK, jaldb_remove_record(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
+
+	free(nonce);
+	nonce = NULL;
 }
 
-extern "C" void test_remove_by_serial_id_returns_error_when_not_found()
+extern "C" void test_remove_by_nonce_returns_error_when_not_found()
 {
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	char *nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"2"));
+	free(nonce);
+	nonce = NULL;
 }
 
 extern "C" void test_mark_record_synced_fails_if_not_marked_sent()
 {
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
-	assert_equals(JALDB_E_INVAL, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"1"));
+	char *nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	assert_equals(JALDB_E_INVAL, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+	free(nonce);
+	nonce = NULL;
 }
 
-extern "C" void test_mark_record_synced_returns_error_when_sid_not_found()
+extern "C" void test_mark_record_synced_returns_error_when_nonce_not_found()
 {
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	char *nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"2"));
+	free(nonce);
+	nonce = NULL;
 }
 
 extern "C" void test_mark_record_sent()
 {
 	struct jaldb_record *rec = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"1"));
+	char *nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
 
-	jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec);
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 	assert_equals(1, rec->synced);
 	jaldb_destroy_record(&rec);
+	free(nonce);
 }
 
 extern "C" void test_mark_record_sent_and_synced()
 {
 	struct jaldb_record *rec = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"1"));
-	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"1"));
+	char *nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 
-	jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec);
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 	assert_equals(2, rec->synced);
 	jaldb_destroy_record(&rec);
+	free(nonce);
 }
 
 extern "C" void test_mark_record_sent_returns_error_when_sid_not_found()
 {
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0]));
+	char *nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"2"));
+	free(nonce);
+	nonce = NULL;
 }
 
 
 extern "C" void test_next_unsynced_works()
 {
 	struct jaldb_record *rec = NULL;
-	char *next_sid = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0])); //sid 1
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1])); //sid 2
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2])); //sid 3
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3])); //sid 4
+	char *nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], &nonce));
+	free(nonce);
+	nonce = NULL;
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"1"));
-	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"1"));
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+	assert_string_equals(S1, rec->source);
+	jaldb_destroy_record(&rec);
 
-	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "0", &next_sid, &rec));
-	assert_equals(2, strtoll(next_sid, NULL, 16));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
 	assert_string_equals(S2, rec->source);
 	jaldb_destroy_record(&rec);
-	free(next_sid);
-	next_sid = NULL;
 	rec = NULL;
 
-	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "2", &next_sid, &rec));
-	assert_equals(3, strtoll(next_sid, NULL, 16));
+	free(nonce);
+	nonce = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+	assert_string_equals(S2, rec->source);
+	jaldb_destroy_record(&rec);
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	// now records 1 and 2 are synced.
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
 	assert_string_equals(S3, rec->source);
 	jaldb_destroy_record(&rec);
-	free(next_sid);
-	next_sid = NULL;
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+
+	free(nonce);
+	nonce = NULL;
 	rec = NULL;
 
-	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "4", &next_sid, &rec));
-	next_sid = NULL;
-	rec = NULL;
-
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"2"));
-	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"2"));
-
-	// now records 1 & 2 are synced.
-	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "1", &next_sid, &rec));
-	assert_equals(3, strtoll(next_sid, NULL, 16));
-	assert_string_equals(S3, rec->source);
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+	assert_string_equals(S4, rec->source);
 	jaldb_destroy_record(&rec);
-	free(next_sid);
-	next_sid = NULL;
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+
+	free(nonce);
+	nonce = NULL;
 	rec = NULL;
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"3"));
-	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"3"));
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (char*)"4"));
-	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (char*)"4"));
 	// everything is synced now...
-	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, "1", &next_sid, &rec));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
 
 }
 
 extern "C" void test_jaldb_get_last_k_records_works()
 {
 	enum jaldb_status ret;
-	list<string> sid_list;
+	list<string> nonce_list;
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0])); //sid 1
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1])); //sid 2
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2])); //sid 3
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3])); //sid 4
+	char *nonce = NULL;
+	char *nonce2 = NULL;
+	char *nonce4 = NULL;
 
-	ret = jaldb_get_last_k_records(context, 3, sid_list, JALDB_RTYPE_LOG);
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], &nonce2));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], &nonce4));
+
+	ret = jaldb_get_last_k_records(context, 3, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_OK, ret);
-	assert_equals(3, sid_list.size());
-	assert_equals("02", sid_list.front());
-	assert_equals("04", sid_list.back());
+	assert_equals(3, nonce_list.size());
+	assert_equals(nonce2, nonce_list.front());
+	assert_equals(nonce4, nonce_list.back());
+
+	free(nonce2);
+	free(nonce4);
+	nonce2 = NULL;
+	nonce4= NULL;
 }
 
 extern "C" void test_jaldb_get_last_k_records_returns_error_with_no_records()
 {
 	enum jaldb_status ret;
-	list<string> sid_list;
+	list<string> nonce_list;
 
-	ret = jaldb_get_last_k_records(context, 3, sid_list, JALDB_RTYPE_LOG);
+	ret = jaldb_get_last_k_records(context, 3, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
-extern "C" void test_jaldb_get_records_since_last_sid_works()
+extern "C" void test_jaldb_get_records_since_last_nonce_works()
 {
 	enum jaldb_status ret;
-	list<string> sid_list;
+	list<string> nonce_list;
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0])); //sid 1
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1])); //sid 2
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2])); //sid 3
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3])); //sid 4
+	char *nonce = NULL;
+	char *nonce2 = NULL;
+	char *nonce3 = NULL;
+	char *nonce4 = NULL;
 
-	char last_sid[] = "02";
-	ret = jaldb_get_records_since_last_sid(context, last_sid, sid_list, JALDB_RTYPE_LOG);
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], &nonce2));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], &nonce3));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], &nonce4));
+
+	ret = jaldb_get_records_since_last_nonce(context, nonce2, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_OK, ret);
-	assert_equals(2, sid_list.size());
-	assert_equals("03", sid_list.front());
-	assert_equals("04", sid_list.back());
+	
+	assert_equals(2, nonce_list.size());
+	assert_equals(nonce3, nonce_list.front());
+	assert_equals(nonce4, nonce_list.back());
+
+	free(nonce2);
+	free(nonce3);
+	free(nonce4);
+	nonce2 = NULL;
+	nonce3 = NULL;
+	nonce4 = NULL;
 }
 
-extern "C" void test_jaldb_get_records_since_last_sid_returns_error_with_invalid_last_sid()
+extern "C" void test_jaldb_get_records_since_last_nonce_returns_error_with_invalid_last_nonce()
 {
 	enum jaldb_status ret;
-	list<string> sid_list;
+	list<string> nonce_list;
 
-	char last_sid[] = "02";
-	ret = jaldb_get_records_since_last_sid(context, last_sid, sid_list, JALDB_RTYPE_LOG);
+	char last_nonce[] = "02";
+	ret = jaldb_get_records_since_last_nonce(context, last_nonce, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
-extern "C" void test_jaldb_get_records_since_last_sid_returns_error_with_no_last_sid()
+extern "C" void test_jaldb_get_records_since_last_nonce_returns_error_with_no_last_nonce()
 {
 	enum jaldb_status ret;
-	list<string> sid_list;
-	ret = jaldb_get_records_since_last_sid(context, NULL, sid_list, JALDB_RTYPE_LOG);
+	list<string> nonce_list;
+	ret = jaldb_get_records_since_last_nonce(context, NULL, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
@@ -374,12 +452,14 @@ extern "C" void test_jaldb_xfer_works()
 {
 	struct jaldb_record *rec = NULL;
 	struct jaldb_record *temp_rec = NULL;
+	char *nonce = NULL;
 
 	assert_equals(JALDB_OK, jaldb_insert_record_into_temp(context, records[0], (char*)"source", (char*)"1")); //sid 1
-	assert_equals(JALDB_OK, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"1"));
-	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"1", &rec));
+	assert_equals(JALDB_OK, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"1",&nonce));
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record_from_temp(context, JALDB_RTYPE_LOG, (char*)"1", (char*)"source", &temp_rec));
 
+	free(nonce);
 	jaldb_destroy_record(&rec);
 	jaldb_destroy_record(&temp_rec);
 }
@@ -387,15 +467,20 @@ extern "C" void test_jaldb_xfer_works()
 extern "C" void test_jaldb_xfer_returns_error_when_no_record_in_temp_db()
 {
 	struct jaldb_record *temp_rec = NULL;
+	char *nonce = NULL;
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record_from_temp(context, JALDB_RTYPE_LOG, (char*)"1", (char*)"source", &temp_rec));
-	assert_equals(JALDB_E_NOT_FOUND, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"1"));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"source", (char*)"1",&nonce));
+	assert_equals(NULL, nonce);
 	jaldb_destroy_record(&temp_rec);
 }
 
 extern "C" void test_jaldb_xfer_returns_error_when_localhost()
 {
-	assert_equals(JALDB_E_INVAL, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"localhost", (char*)"1"));
-	assert_equals(JALDB_E_INVAL, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"127.0.0.1", (char*)"1"));
+	char *nonce = NULL;
+	assert_equals(JALDB_E_INVAL, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"localhost", (char*)"1",&nonce));
+	assert_equals(NULL,nonce);
+	assert_equals(JALDB_E_INVAL, jaldb_xfer(context, JALDB_RTYPE_LOG, (char*)"127.0.0.1", (char*)"1",&nonce));
+	assert_equals(NULL,nonce);
 }
 
 extern "C" void test_jaldb_remove_record_from_temp_works()

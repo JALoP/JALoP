@@ -396,6 +396,7 @@ int jsub_on_digest_response(
 		__attribute__((unused)) const enum jaln_digest_status status,
 		__attribute__((unused)) const void *user_data)
 {
+	char *nonce = NULL;
 	// Once received, perform transfer operation
 	const char *status_str;
 	switch (status) {
@@ -451,7 +452,7 @@ int jsub_on_digest_response(
 			break;
 	}
 	if (willXfer) {
-		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(ser_id.c_str()));
+		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(ser_id.c_str()), &nonce);
 		if(JALDB_OK == db_err) {
 			db_err = jaldb_store_confed_sid_temp(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(ser_id.c_str()));
 			if (jsub_debug) {
@@ -470,6 +471,7 @@ int jsub_on_digest_response(
 				rec_type.c_str(), ser_id.c_str());
 		}
 	}
+	free(nonce);
 	return ret;
 }
 

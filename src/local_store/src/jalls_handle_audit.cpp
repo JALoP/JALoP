@@ -78,6 +78,8 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	struct jal_digest_ctx *digest_ctx = NULL;
 	uint8_t *digest = NULL;
 
+	char *nonce = NULL;
+
 	bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 	if (bytes_received < 0) {
 		if (debug) {
@@ -143,7 +145,9 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		data_buf = NULL;
 	}
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, &nonce);
+	free(nonce);
+	nonce = NULL;
 	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "could not insert audit record into database\n");

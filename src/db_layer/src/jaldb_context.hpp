@@ -530,7 +530,7 @@ enum jaldb_status jaldb_get_log_document_list(
 *
 * @param[in] ctx the context to use.
 * @param[in] k the number of records to retrieve.
-* @param[out] sid_list the list of serial ids.
+* @param[out] nonce_list the list of nonces.
 * @param[in] type the record type.
 *
 * @return  JALDB_OK - success
@@ -540,26 +540,26 @@ enum jaldb_status jaldb_get_log_document_list(
 enum jaldb_status jaldb_get_last_k_records(
 		jaldb_context *ctx,
 		int k,
-		std::list<std::string> &sid_list,
+		std::list<std::string> &nonce_list,
 		enum jaldb_rec_type type);
 
  /**
  * Retrieve a list of the records with the given type received
- * after the record denoted by \p last_sid.
+ * after the record denoted by \p last_nonce.
  *
  * @param[in] ctx the context to use.
- * @param[in] last_sid the serial id of the last record retrieved.
- * @param[out] sid_list the list of serial ids.
+ * @param[in] nonce the nonce of the last record retrieved.
+ * @param[out] nonce_list the list of nonces.
  * @param[in] type the record type.
  *
  * @return 	JALDB_OK - success
  *		JALDB_E_INVAL - invalid parameter.
  *		JALDB_E_DB - Error occurred in database.
  */
-enum jaldb_status jaldb_get_records_since_last_sid(
+enum jaldb_status jaldb_get_records_since_last_nonce(
 		jaldb_context *ctx,
-		char *last_sid,
-		std::list<std::string> &sid_list,
+		char *last_nonce,
+		std::list<std::string> &nonce_list,
 		enum jaldb_rec_type type);
 		
 #endif // _JALDB_CONTEXT_HPP_

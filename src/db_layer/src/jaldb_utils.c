@@ -29,6 +29,7 @@
 #include "jaldb_utils.h"
 #include "jaldb_status.h"
 #include "jal_alloc.h"
+#include "jal_asprintf_internal.h"
 #include "jal_fs_utils.h"
 #include "jaldb_context.h"
 #include "jaldb_record_dbs.h"
@@ -38,12 +39,15 @@
 #include <jalop/jal_status.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <string.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
+#include <string.h>
 #include <unistd.h>
 #include <db.h>
 
 #include <stdlib.h>
+
+#define UUID_STR_LEN 37
 
 enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote_host,
 		const char *sid, int *db_err_out)
@@ -298,4 +302,25 @@ enum jaldb_status jaldb_get_dbs(
 		*rdbs = NULL;
 	}
 	return ret;
+}
+
+char *jaldb_gen_primary_key(uuid_t uuid)
+{
+	if (uuid_is_null(uuid)) {
+		return NULL;
+	}
+
+	char uuid_str[UUID_STR_LEN];
+	uuid_unparse(uuid,uuid_str);
+
+	char *ts = jaldb_gen_timestamp();
+	pid_t pid = getpid();
+	pid_t tid = syscall(SYS_gettid);
+	char *key = NULL;
+
+	jal_asprintf(&key, "%s_%s_%d_%d", uuid_str, ts, pid, tid);
+
+	free(ts);
+
+	return key;
 }

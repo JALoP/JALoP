@@ -368,7 +368,7 @@ static void do_work(void *ptr)
 	sid_list.clear();
 
 	while (mbrs->follow_flag && !exit_flag){
-		ret = jaldb_get_records_since_last_sid(mbrs->ctx,
+		ret = jaldb_get_records_since_last_nonce(mbrs->ctx,
 						(char *) last_sid.c_str(),
 						sid_list,
 						type);

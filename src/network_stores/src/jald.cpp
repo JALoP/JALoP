@@ -289,7 +289,7 @@ enum jaldb_status pub_get_next_record(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
 			const char *sid,
-			char **next_sid,
+			char **nonce,
 			uint8_t **sys_meta_buf,
 			uint64_t *sys_meta_len,
 			uint8_t **app_meta_buf,
@@ -314,7 +314,7 @@ enum jaldb_status pub_get_next_record(
 		goto out;
 	}
 	while (JALDB_E_NOT_FOUND == ret) {
-		ret = jaldb_next_unsynced_record(db_ctx, db_type, sid, next_sid, &(ctx->rec));
+		ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
 		if (JALDB_E_NOT_FOUND == ret) {
 			if (JAL_OK != jaln_session_is_ok(sess)) {
 				ret = JALDB_E_INVAL;
@@ -367,8 +367,6 @@ enum jaldb_status pub_get_next_record(
 		}
 	}
 	ctx->rec = rec;
-
-	DEBUG_LOG_SUB_SESSION(ch_info, "Next record %s", *next_sid);
 
 	ret = JALDB_OK;
 out:

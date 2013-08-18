@@ -1,5 +1,5 @@
 /**
- * @file jaldb_record_uuid.h Declaration of utilties related to the record
+ * @file jaldb_record_extract.h Declaration of utilties related to the record
  * UUID stored with the JALoP record in the database.
  *
  * @section LICENSE
@@ -51,6 +51,23 @@ extern "C" {
  * occurred.
  */
 int jaldb_extract_record_uuid(DB *secondary, const DBT *key, const DBT *data, DBT *result);
+
+/**
+ * Function to extract the record sent flag as a secondary key.
+ *
+ * This function extracts the sent flag component of the JALoP record as it is
+ * inserted into the database.
+ *
+ * @param[in] secondary Pointer to the secondary DB that is getting modified,
+ * this is only checked to see if the record is byte-swapped.
+ * @param[in] key The key for the data in the primary DB
+ * @param[in] data The data for the record
+ * @param[out] result the DBT object to fill in for the sent flag secondary key.
+ *
+ * @return 0 to indicate the record should be indexed, -1 to indicate an error
+ * occurred.
+ */
+int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *data, DBT *result);
 
 #ifdef __cplusplus
 }

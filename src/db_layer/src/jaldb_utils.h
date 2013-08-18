@@ -126,6 +126,15 @@ enum jaldb_status jaldb_get_dbs(
 	enum jaldb_rec_type type,
 	struct jaldb_record_dbs **rdbs);
 
+/**
+ * Generate a primary key for use in the database.  The format is:
+ * uuid_timestamp_pid_tid
+ * @param[in] uuid the uuid to use in the key
+ *
+ * @return key generated, or NULL on error
+ */
+char *jaldb_gen_primary_key(uuid_t uuid);
+
 #ifdef __cplusplus
 }
 #endif

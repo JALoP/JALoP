@@ -108,7 +108,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
- * @param[in] hex_sid The serial ID (hex string) of the record being retrieved.
+ * @param[in] nonce The nonce of the record being retrieved.
  * @param[out] rec This will be filled in as a jaldb_record object if the
  * record is found. Note that any segments located on disk will not be opened
  * automatically.
@@ -119,7 +119,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 
 enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *hex_sid,
+		char *nonce,
 		struct jaldb_record **rec);
 
 /**
@@ -168,14 +168,14 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, or log).
- * @param[in] hex_sid The serial ID (as a hex string) of the record to mark.
+ * @param[in] hex_sid The nonce of the record to mark.
  *
  * @return JALDB_OK on success, or a different JALDB error code on failure.
  */
 enum jaldb_status jaldb_mark_sent(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		const char *hex_sid);
+		const char *nonce);
 
 
 /**
@@ -183,22 +183,21 @@ enum jaldb_status jaldb_mark_sent(
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, or log).
- * @param[in] hex_sid The serial ID (as a hex string) of the record to mark.
+ * @param[in] hex_sid The nonce of the record to mark.
  *
  * @return JALDB_OK on success, or a different JALDB error code on failure.
  */
 enum jaldb_status jaldb_mark_synced(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		const char *hex_sid);
+		const char *nonce);
 
 /**
  * Retrieves the next un-synced record from the database.
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record to retrieve.
- * @param[in] last_sid The last serial ID, i.e. where to start looking.
- * @param[out] next_sid The serial ID for the returned record.
+ * @param[out] nonce The nonce for the returned record.
  * @param[out] rec The record from the DB.
  *
  * @return JALDB_OK if the function succeeds or an error code.
@@ -206,18 +205,18 @@ enum jaldb_status jaldb_mark_synced(
 enum jaldb_status jaldb_next_unsynced_record(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	const char *last_sid,
-	char **next_sid,
+	char **nonce,
 	struct jaldb_record **rec);
 
 /**
  * Utility to insert any JALoP record
  * @param[in] ctx the DB context.
  * @param[in] rec The record to insert.
+ * @param[out] nonce The nonce assigned to the record by the DB
  *
  * @return JALDB_OK on success, or an error code.
  */
-enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec);
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, char **nonce);
 
 /**
  * Utility to insert any JALoP record into a temporary database
@@ -235,11 +234,12 @@ enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb
  * @param[in] ctx The DB context.
  * @param[in] type The record type
  * @param[in] source The source of the record
- * @param[in] sid The serial id of the record
+ * @param[in] nonce_in The nonce of the record in the temp db
+ * @param[out] nonce_out The nonce of the record in the permanent db
  *
  * @return JALDB_OK on success, or an error code.
  */
- enum jaldb_status jaldb_xfer(jaldb_context *ctx, enum jaldb_rec_type type, char* source, char* sid);
+ enum jaldb_status jaldb_xfer(jaldb_context *ctx, enum jaldb_rec_type type, char* source, char* nonce_in, char** nonce_out);
 
 
 /**
@@ -254,16 +254,16 @@ enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb
 enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_segment *s);
 
 /**
- * Remove a record (by SID) from the database
+ * Remove a record (by nonce) from the database
  *
  * @param[in] ctx The context.
- * @param[in] hex_sid The serial ID of the record being retrieved.
+ * @param[in] nonce The serial ID of the record being retrieved.
  *
  * @return JALDB_OK if the function succeeds or an error code.
  */
 enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *hex_sid);
+		char *nonce);
 
 /**
  * Remove a record (by SID) from the temporary database
