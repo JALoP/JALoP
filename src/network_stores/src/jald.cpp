@@ -49,6 +49,7 @@
 #include "jalu_config.h"
 #include "jaldb_segment.h"
 #include "jaldb_record.h"
+#include "jal_alloc.h"
 
 #define ONE_MINUTE 60
 #define VERSION_CALLED 1
@@ -284,99 +285,225 @@ enum jal_status pub_on_journal_resume(
 	return JAL_OK;
 }
 
-enum jal_status pub_on_subscribe(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		enum jaln_record_type type,
-		const char *serial_id,
-		__attribute__((unused)) struct jaln_mime_header *headers,
-		__attribute__((unused)) void *user_data)
+enum jaldb_status pub_get_next_record(
+			jaln_session *sess,
+			const struct jaln_channel_info *ch_info,
+			const char *sid,
+			char **next_sid,
+			uint8_t **sys_meta_buf,
+			uint64_t *sys_meta_len,
+			uint8_t **app_meta_buf,
+			uint64_t *app_meta_len,
+			uint8_t **payload_buf,
+			uint64_t *payload_len,
+			axlHash *hash,
+			pthread_mutex_t *sub_lock,
+			enum jaldb_rec_type db_type)
 {
-	DEBUG_LOG_SUB_SESSION(ch_info, "Subscribe message, serial ID is: %s\n", serial_id);
-	axlHash *hash = NULL;
-	pthread_mutex_t *sub_lock = NULL;
+	enum jaldb_status ret = JALDB_E_NOT_FOUND;
+	struct session_ctx_t *ctx = NULL;
+	struct jaldb_record *rec = NULL;
+
+	DEBUG_LOG_SUB_SESSION(ch_info, "Retrieving next record, last serial ID was %s\n", sid);
+
+	pthread_mutex_lock(sub_lock);
+	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	pthread_mutex_unlock(sub_lock);
+	if (!ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session");
+		goto out;
+	}
+	while (JALDB_E_NOT_FOUND == ret) {
+		ret = jaldb_next_unsynced_record(db_ctx, db_type, sid, next_sid, &(ctx->rec));
+		if (JALDB_E_NOT_FOUND == ret) {
+			if (JAL_OK != jaln_session_is_ok(sess)) {
+				ret = JALDB_E_INVAL;
+				goto out;
+			}
+			sleep(ONE_MINUTE);
+		}
+	}
+
+	if (JALDB_OK != ret) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record");
+		goto out;
+	}
+
+	rec = ctx->rec;
+
+	*sys_meta_buf = NULL;
+	*sys_meta_len = rec->sys_meta->length;
+	if (rec->sys_meta->on_disk) {
+		// TODO: Handle for on disk (once the LS is updated to support it). i.e. memmap the file or whatever
+	} else {
+		*sys_meta_buf = rec->sys_meta->payload;
+		rec->sys_meta->payload = NULL;
+	}
+
+	*app_meta_buf = NULL;
+	*app_meta_len = 0;
+	if (rec->app_meta) {
+		*app_meta_len = rec->app_meta->length;
+		if (rec->app_meta->on_disk) {
+			// TODO: Handle this for app meta
+		} else {
+			*app_meta_buf = rec->app_meta->payload;
+			rec->app_meta->payload = NULL;
+		}
+	}
+
+	*payload_buf = NULL;
+	*payload_len = 0;
+	if (rec->payload) {
+		*payload_len = rec->payload->length;
+		if (rec->payload->on_disk) {
+			ret = jaldb_open_segment_for_read(db_ctx, rec->payload);
+			if (JALDB_OK != ret) {
+				ret = JALDB_E_INVAL;
+				goto out;
+			}
+		} else {
+			*payload_buf = ctx->rec->payload->payload;
+		}
+	}
+	ctx->rec = rec;
+
+	DEBUG_LOG_SUB_SESSION(ch_info, "Next record %s", *next_sid);
+
+	ret = JALDB_OK;
+out:
+	return ret;
+}
+
+/*
+ * Should support every record type in the future.
+ * TODO: Convert log and audit record handling to feeders
+ */
+enum jal_status pub_send_records_feeder(
+			jaln_session *sess,
+			const struct jaln_channel_info *ch_info,
+			const char *sid,
+			axlHash *hash,
+			pthread_mutex_t *sub_lock,
+			enum jal_status (*send)(jaln_session *, void *, char *,
+						uint8_t *, uint64_t, uint8_t *,
+						uint64_t, uint64_t, struct jaln_payload_feeder *))
+{
+	enum jal_status ret = JAL_E_INVAL;
+	enum jaldb_status db_ret = JALDB_E_INVAL;
+	enum jaln_record_type type = ch_info->type;
+	char *next_sid = NULL;
+	uint8_t *sys_meta_buf = NULL;
+	uint64_t sys_meta_len = 0;
+	uint8_t *app_meta_buf = NULL;
+	uint64_t app_meta_len = 0;
+	uint8_t *payload_buf = NULL;
+	uint64_t payload_len = 0;
+	struct session_ctx_t *ctx = NULL;
+	struct jaln_payload_feeder feeder;
+
+	enum jaldb_rec_type db_type;
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
-		hash = gs_journal_subs;
-		sub_lock = &gs_journal_sub_lock;
-		break;
-	case JALN_RTYPE_AUDIT:
-		hash = gs_audit_subs;
-		sub_lock = &gs_audit_sub_lock;
-		break;
-	case JALN_RTYPE_LOG:
-		hash = gs_log_subs;
-		sub_lock = &gs_log_sub_lock;
+		db_type = JALDB_RTYPE_JOURNAL;
 		break;
 	default:
-		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
 		return JAL_E_INVAL;
 	}
+
 	pthread_mutex_lock(sub_lock);
-	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+
+	ctx = (struct session_ctx_t *) axl_hash_get(hash, ch_info->hostname);
 	if (ctx) {
 		// The library should prevent this from happening, but just in case.
 		DEBUG_LOG_SUB_SESSION(ch_info, "Subscribe exists, rejecting subscribe request");
 		pthread_mutex_unlock(sub_lock);
-		return JAL_E_INVAL;
+		ret = JAL_E_INVAL;
+		goto out;
 	}
+
 	ctx = (struct session_ctx_t*) calloc(1, sizeof(*ctx));
 	if (!ctx) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to allocate context");
 		pthread_mutex_unlock(sub_lock);
-		return JAL_E_NO_MEM;
+		ret = JAL_E_NO_MEM;
+		goto out;
 	}
+
 	DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
+
 	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
+
 	pthread_mutex_unlock(sub_lock);
-	return JAL_OK;
+
+	feeder.feeder_data = ctx;
+	feeder.get_bytes = pub_get_bytes;
+
+	do {
+		db_ret = pub_get_next_record(sess,
+					ch_info,
+					sid,
+					&next_sid,
+					&sys_meta_buf,
+					&sys_meta_len,
+					&app_meta_buf,
+					&app_meta_len,
+					&payload_buf,
+					&payload_len,
+					hash,
+					sub_lock,
+					db_type);
+		if (JALDB_OK != db_ret) {
+			if (JALDB_E_NOT_FOUND == db_ret) {
+				ret = JAL_OK;
+				goto out;
+			}
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record (%d)", db_ret);
+			ret = JAL_E_INVAL;
+			goto out;
+		}
+
+		ret = send(sess, NULL, next_sid, sys_meta_buf, sys_meta_len,
+				app_meta_buf, app_meta_len, 0, &feeder);
+		if (JAL_OK != ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
+			goto out;
+		}
+
+		sid = next_sid;
+		next_sid = NULL;
+	} while (JALDB_OK == db_ret);
+
+	ret = jaln_finish(sess);
+out:
+	return ret;
 }
 
-enum jal_status pub_get_next_record_info_and_metadata(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		enum jaln_record_type type,
-		const char *last_serial_id,
-		struct jaln_record_info *record_info,
-		uint8_t **system_metadata_buffer,
-		uint8_t **application_metadata_buffer,
-		__attribute__((unused)) void *user_data)
+
+enum jal_status pub_send_records(
+			jaln_session *sess,
+			const struct jaln_channel_info *ch_info,
+			const char *sid,
+			axlHash *hash,
+			pthread_mutex_t *sub_lock,
+			enum jal_status (*send)(jaln_session *, void *, char *,
+						uint8_t *, uint64_t, uint8_t *,
+						uint64_t, uint8_t *, uint64_t))
 {
+	enum jal_status ret = JAL_E_INVAL;
+	enum jaldb_status db_ret = JALDB_E_INVAL;
+	enum jaln_record_type type = ch_info->type;
 	char *next_sid = NULL;
-	axlHash *hash = NULL;
-	pthread_mutex_t *sub_lock = NULL;
+	uint8_t *sys_meta_buf = NULL;
+	uint64_t sys_meta_len = 0;
+	uint8_t *app_meta_buf = NULL;
+	uint64_t app_meta_len = 0;
+	uint8_t *payload_buf = NULL;
+	uint64_t payload_len = 0;
+	struct session_ctx_t *ctx = NULL;
+
+	enum jaldb_rec_type db_type;
 	switch (type) {
-	case JALN_RTYPE_JOURNAL:
-		hash = gs_journal_subs;
-		sub_lock = &gs_journal_sub_lock;
-		break;
-	case JALN_RTYPE_AUDIT:
-		hash = gs_audit_subs;
-		sub_lock = &gs_audit_sub_lock;
-		break;
-	case JALN_RTYPE_LOG:
-		hash = gs_log_subs;
-		sub_lock = &gs_log_sub_lock;
-		break;
-	default:
-		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal record type");
-		return JAL_E_INVAL;
-	}
-	DEBUG_LOG_SUB_SESSION(ch_info, "Retrieving next record, last serial ID was %s\n", last_serial_id);
-	pthread_mutex_lock(sub_lock);
-	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
-	pthread_mutex_unlock(sub_lock);
-	if (!ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session");
-		return JAL_E_INVAL;
-	}
-	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
-	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
-	jaldb_ret = JALDB_E_NOT_FOUND;
-	switch(type) {
-	case JALN_RTYPE_JOURNAL:
-		db_type = JALDB_RTYPE_JOURNAL;
-		break;
 	case JALN_RTYPE_AUDIT:
 		db_type = JALDB_RTYPE_AUDIT;
 		break;
@@ -385,186 +512,213 @@ enum jal_status pub_get_next_record_info_and_metadata(
 		break;
 	default:
 		return JAL_E_INVAL;
+	}
+
+	pthread_mutex_lock(sub_lock);
+
+	ctx = (struct session_ctx_t *) axl_hash_get(hash, ch_info->hostname);
+	if (ctx) {
+		// The library should prevent this from happening, but just in case.
+		DEBUG_LOG_SUB_SESSION(ch_info, "Subscribe exists, rejecting subscribe request");
+		pthread_mutex_unlock(sub_lock);
+		ret = JAL_E_INVAL;
+		goto out;
+	}
+
+	ctx = (struct session_ctx_t*) calloc(1, sizeof(*ctx));
+	if (!ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to allocate context");
+		pthread_mutex_unlock(sub_lock);
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
+
+	DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
+
+	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
+
+	pthread_mutex_unlock(sub_lock);
+
+	do {
+		db_ret = pub_get_next_record(sess,
+					ch_info,
+					sid,
+					&next_sid,
+					&sys_meta_buf,
+					&sys_meta_len,
+					&app_meta_buf,
+					&app_meta_len,
+					&payload_buf,
+					&payload_len,
+					hash,
+					sub_lock,
+					db_type);
+		if (JALDB_OK != db_ret) {
+			if (JALDB_E_NOT_FOUND == db_ret) {
+				ret = JAL_OK;
+				goto out;
+			}
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record (%d)", db_ret);
+			ret = JAL_E_INVAL;
+			goto out;
+		}
+
+		ret = send(sess, NULL, next_sid, sys_meta_buf, sys_meta_len,
+				app_meta_buf, app_meta_len, payload_buf, payload_len);
+		if (JAL_OK != ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
+			goto out;
+		}
+
+		sid = next_sid;
+		next_sid = NULL;
+	} while (JALDB_OK == db_ret);
+
+	ret = jaln_finish(sess);
+out:
+	return ret;
+}
+
+struct thread_data {
+	jaln_session *sess;
+	const struct jaln_channel_info *ch_info;
+	const char *serial_id;
+};
+
+/*
+ * Called in a thread to handle journal data publishing.  Allocates memory for return status.
+ * Caller is reponsible for freeing this memory
+ */
+__attribute__((noreturn))
+void *pub_send_journal(__attribute__((unused)) void *args)
+{
+	enum jal_status *ret = (enum jal_status *) jal_malloc(sizeof(enum jal_status));
+	*ret = JAL_E_INVAL;
+	struct thread_data *data = (struct thread_data *) args;
+	jaln_session *sess = data->sess;
+	const struct jaln_channel_info *ch_info = data->ch_info;
+	const char *sid = data->serial_id;
+	axlHash *hash = gs_journal_subs;
+	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
+
+	*ret = pub_send_records_feeder(sess, ch_info, sid, hash, sub_lock, &jaln_send_journal);
+
+	pthread_exit((void*)ret);
+}
+
+/*
+* Called in a thread to handle audit data publishing.  Allocates memory for return status.
+* Caller is reponsible for freeing this memory
+*/
+__attribute__((noreturn))
+void *pub_send_audit(void *args)
+{
+	enum jal_status *ret = (enum jal_status *) jal_malloc(sizeof(enum jal_status));
+	*ret = JAL_E_INVAL;
+	struct thread_data *data = (struct thread_data *) args;
+	jaln_session *sess = data->sess;
+	const struct jaln_channel_info *ch_info = data->ch_info;
+	const char *sid = data->serial_id;
+	axlHash *hash = gs_audit_subs;
+	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
+
+	*ret = pub_send_records(sess, ch_info, sid, hash, sub_lock, &jaln_send_audit);
+	pthread_exit((void*)ret);
+}
+
+/*
+ * Called in a thread to handle log data publishing.  Allocates memory for return status.
+ * Caller is reponsible for freeing this memory
+ */
+__attribute__((noreturn))
+void *pub_send_log(void *args)
+{
+	enum jal_status *ret = (enum jal_status *) jal_malloc(sizeof(enum jal_status));
+	*ret = JAL_E_INVAL;
+	struct thread_data *data = (struct thread_data *) args;
+	jaln_session *sess = data->sess;
+	const struct jaln_channel_info *ch_info = data->ch_info;
+	const char *sid = data->serial_id;
+	axlHash *hash = gs_log_subs;
+	pthread_mutex_t *sub_lock = &gs_log_sub_lock;
+
+	*ret = pub_send_records(sess, ch_info, sid, hash, sub_lock, &jaln_send_log);
+	pthread_exit((void*)ret);
+}
+
+enum jal_status pub_on_subscribe(
+		__attribute__((unused)) jaln_session *sess,
+		const struct jaln_channel_info *ch_info,
+		enum jaln_record_type type,
+		const char *serial_id,
+		__attribute__((unused)) struct jaln_mime_header *headers,
+		__attribute__((unused)) void *user_data)
+{
+	enum jal_status ret = JAL_E_INVAL;
+	pthread_t journal_thread;
+	pthread_t audit_thread;
+	pthread_t log_thread;
+	pthread_attr_t attr;
+	struct thread_data data;
+	void *status = NULL;
+	int rc = 0;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+	data.sess = sess;
+	data.ch_info = ch_info;
+	data.serial_id = serial_id;
+
+	switch (type) {
+	case JALN_RTYPE_JOURNAL:
+		pthread_create(&journal_thread, &attr, pub_send_journal, &data);
+
+		pthread_attr_destroy(&attr);
+
+		rc = pthread_join(journal_thread, &status);
+		if (rc) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: return code from pthread_create() is %d\n", rc);
+			free(status);
+			return JAL_E_INVAL;
+		}
 		break;
-	}
-	while(JALDB_E_NOT_FOUND == jaldb_ret) {
-		jaldb_ret = jaldb_next_unsynced_record(db_ctx, db_type, last_serial_id, &next_sid, &(ctx->rec));
-		if (JALDB_E_NOT_FOUND == jaldb_ret) {
-			if (JAL_OK != jaln_session_is_ok(sess)) {
-				return JAL_E_INVAL;
-			}
-			sleep(ONE_MINUTE);
+	case JALN_RTYPE_AUDIT:
+		pthread_create(&audit_thread, &attr, pub_send_audit, &data);
+
+		pthread_attr_destroy(&attr);
+
+		rc = pthread_join(audit_thread, &status);
+		if (rc) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Error while joining thread (%d)\n", rc);
+			free(status);
+			return JAL_E_INVAL;
 		}
-	}
-	if (JALDB_OK != jaldb_ret) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record");
-		return JAL_E_INVAL;
-	}
-	struct jaldb_record *rec = ctx->rec;
-	record_info->sys_meta_len = rec->sys_meta->length;
-	if (rec->sys_meta->on_disk) {
-		// TODO: Handle for on disk (once the LS is updated to support it). i.e. memmap the file or whatever
-	} else {
-		*system_metadata_buffer = rec->sys_meta->payload;
-		rec->sys_meta->payload = NULL;
-	}
+		break;
+	case JALN_RTYPE_LOG:
+		pthread_create(&log_thread, &attr, pub_send_log, &data);
 
-	*application_metadata_buffer = NULL;
-	record_info->app_meta_len = 0;
-	if (rec->app_meta) {
-		record_info->app_meta_len =  rec->app_meta->length;
-		if (rec->app_meta->on_disk) {
-			// TODO: Handle this for app meta
-		} else {
-			*application_metadata_buffer = rec->app_meta->payload;
-			rec->app_meta->payload = NULL;
+		pthread_attr_destroy(&attr);
+
+		rc = pthread_join(log_thread, &status);
+		if (rc) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Error while joining thread (%d)\n", rc);
+			free(status);
+			return JAL_E_INVAL;
 		}
-	}
-
-	record_info->payload_len = 0;
-	if (rec->payload) {
-		record_info->payload_len = (uint64_t) rec->payload->length;
-		if (rec->payload->on_disk) {
-			jaldb_ret = jaldb_open_segment_for_read(db_ctx, rec->payload);
-			if (JALDB_OK != jaldb_ret) {
-				goto fail;
-			}
-		}
-	}
-	ctx->rec = rec;
-
-	DEBUG_LOG_SUB_SESSION(ch_info, "Next record %s", next_sid);
-	record_info->nonce = next_sid;
-
-	return JAL_OK;
-fail:
-	ctx->rec = NULL;
-	jaldb_destroy_record(&rec);
-	return JAL_E_INVAL;
-}
-
-enum jal_status pub_release_metadata_buffers(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
-		__attribute__((unused)) uint8_t *system_metadata_buffer,
-		__attribute__((unused)) uint8_t *application_metadata_buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG_SUB_SESSION(ch_info, "Release metadata buffers for %s", serial_id);
-	// nothing to do, everything will get freed when the record is complete.
-	return JAL_OK;
-}
-
-enum jal_status pub_acquire_log_data(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
-		uint8_t **buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG_SUB_SESSION(ch_info, "Getting log data for %s", serial_id);
-	pthread_mutex_lock(&gs_log_sub_lock);
-	struct session_ctx_t *ctx = (struct session_ctx_t*) axl_hash_get(gs_log_subs, ch_info->hostname);
-	pthread_mutex_unlock(&gs_log_sub_lock);
-	if (!ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		break;
+	default:
+		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
 		return JAL_E_INVAL;
 	}
-	// TODO: Fix this to support when log data is stored on disk (not
-	// supported by LS yet).
-	
-	if (!ctx->rec->payload){
-		*buffer = NULL;
-		return JAL_OK;
+
+	ret = *((enum jal_status *) status);
+	free(status);
+	if (JAL_OK != ret) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed while sending records to subscriber");
 	}
 
-	*buffer = ctx->rec->payload->payload;
-	return JAL_OK;
-}
-
-enum jal_status pub_release_log_data(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
-		__attribute__((unused)) uint8_t *buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG_SUB_SESSION(ch_info, "Release log data for %s", serial_id);
-	// Do nothing, everything gets freed when at on_record_complete
-	return JAL_OK;
-}
-
-enum jal_status pub_acquire_audit_data(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
-		uint8_t **buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG_SUB_SESSION(ch_info, "Acquiring audit data for %s\n", serial_id);
-	pthread_mutex_lock(&gs_audit_sub_lock);
-	struct session_ctx_t *ctx = (struct session_ctx_t*) axl_hash_get(gs_audit_subs, ch_info->hostname);
-	pthread_mutex_unlock(&gs_audit_sub_lock);
-	if (!ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
-		return JAL_E_INVAL;
-	}
-	if (!ctx->rec->payload){
-		*buffer = NULL;
-		return JAL_OK;
-	}
-	// TODO: Fix this to support when log data is stored on disk (not
-	// supported by LS yet).
-	*buffer = ctx->rec->payload->payload;
-	return JAL_OK;
-}
-
-enum jal_status pub_release_audit_data(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
-		__attribute__((unused)) uint8_t *buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG_SUB_SESSION(ch_info, "Release audit data for %s\n", serial_id);
-	// Do nothing, everything gets freed when at on_record_complete
-	return JAL_OK;
-}
-
-enum jal_status pub_acquire_journal_feeder(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
-		struct jaln_payload_feeder *feeder,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG_SUB_SESSION(ch_info, "Acquire journal feeder for %s\n", serial_id);
-	pthread_mutex_lock(&gs_journal_sub_lock);
-	struct session_ctx_t*ctx = (struct session_ctx_t*) axl_hash_get(gs_journal_subs, ch_info->hostname);
-	pthread_mutex_unlock(&gs_journal_sub_lock);
-	if (!ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
-		return JAL_E_INVAL;
-	}
-	feeder->feeder_data = ctx;
-
-	feeder->get_bytes = pub_get_bytes;
-	return JAL_OK;
-}
-
-enum jal_status pub_release_journal_feeder(
-		__attribute__((unused)) jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
-		struct jaln_payload_feeder *feeder,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG_SUB_SESSION(ch_info, "Release journal feeder for %s\n", serial_id);
-	struct session_ctx_t *ctx = (struct session_ctx_t*) feeder->feeder_data;
-	close(ctx->rec->payload->fd);
-	ctx->rec->payload->fd = -1;
-	return JAL_OK;
+	return ret;
 }
 
 enum jal_status pub_on_record_complete(
@@ -575,9 +729,9 @@ enum jal_status pub_on_record_complete(
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "On record complete: %s", serial_id);
-
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
+
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
 		hash = gs_journal_subs;
@@ -595,6 +749,7 @@ enum jal_status pub_on_record_complete(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
 		return JAL_E_INVAL;
 	}
+
 	pthread_mutex_lock(sub_lock);
 	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
 	pthread_mutex_unlock(sub_lock);
@@ -602,6 +757,7 @@ enum jal_status pub_on_record_complete(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
 		return JAL_E_INVAL;
 	}
+
 	jaldb_destroy_record(&ctx->rec);
 	return JAL_OK;
 }
@@ -797,14 +953,6 @@ int main(int argc, char **argv)
 	pub_cbs = jaln_publisher_callbacks_create();
 	pub_cbs->on_journal_resume = pub_on_journal_resume;
 	pub_cbs->on_subscribe = pub_on_subscribe;
-	pub_cbs->get_next_record_info_and_metadata = pub_get_next_record_info_and_metadata;
-	pub_cbs->release_metadata_buffers = pub_release_metadata_buffers;
-	pub_cbs->acquire_log_data = pub_acquire_log_data;
-	pub_cbs->release_log_data = pub_release_log_data;
-	pub_cbs->acquire_audit_data = pub_acquire_audit_data;
-	pub_cbs->release_audit_data = pub_release_audit_data;
-	pub_cbs->acquire_journal_feeder = pub_acquire_journal_feeder;
-	pub_cbs->release_journal_feeder = pub_release_journal_feeder;
 	pub_cbs->on_record_complete = pub_on_record_complete;
 	pub_cbs->sync = pub_sync;
 	pub_cbs->notify_digest = pub_notify_digest;

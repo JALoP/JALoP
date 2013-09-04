@@ -27,6 +27,7 @@
  */
 
 #include <inttypes.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <jalop/jaln_network.h>
@@ -47,6 +48,11 @@
 #define JOURNAL_PAYLOAD_TXT "big_payload.txt"
 #define SYS_META_XML "system-metadata.xml"
 #define APP_META_XML "good_app_meta_input.xml"
+
+struct thread_data {
+	jaln_session *sess;
+	char *sid;
+};
 
 uint8_t *m_sys_meta_buf = NULL;
 uint8_t *m_app_meta_buf = NULL;
@@ -114,147 +120,141 @@ enum jal_status pub_on_journal_resume(
 	return JAL_E_INVAL;
 }
 
+enum jal_status __send_record(jaln_session *sess, char *sid, uint8_t *buf, uint64_t buf_len, 
+			enum jal_status (*send)(jaln_session *, void *, char *,
+						uint8_t *, uint64_t, uint8_t *,
+						uint64_t, uint8_t *, uint64_t))
+{
+	enum jal_status ret = send(sess, NULL, sid, m_sys_meta_buf, m_sys_meta_buf_len,
+				m_app_meta_buf, m_app_meta_buf_len, buf, buf_len);
+
+	return ret;
+}
+
+__attribute__((noreturn))
+void *send_journal(__attribute__((unused)) void *args) {
+	DEBUG_LOG("not impl");
+	pthread_exit(NULL);
+}
+
+__attribute__((noreturn))
+void *send_audit(void *args) {
+	struct thread_data *data = (struct thread_data *) args;
+	jaln_session *sess = data->sess;
+	char *sid = data->sid;
+	enum jal_status ret = JAL_E_INVAL;
+
+	while (1) {
+		ret = __send_record(sess, sid, m_audit_buf, m_audit_buf_len, &jaln_send_audit);
+		if (JAL_OK != ret) {
+			DEBUG_LOG("Failed to send audit record");
+			goto out;
+		}
+		sleep(1);
+	}
+
+out:
+	pthread_exit(&ret);
+}
+
+__attribute__((noreturn))
+void *send_log(void *args) {
+	struct thread_data *data = (struct thread_data *) args;
+	jaln_session *sess = data->sess;
+	char *sid = data->sid;
+	enum jal_status ret = JAL_E_INVAL;
+
+	while (1) {
+		ret = __send_record(sess, sid, m_journal_buf, m_journal_buf_len, &jaln_send_audit);
+		if (JAL_OK != ret) {
+			DEBUG_LOG("Failed to send audit record");
+			goto out;
+		}
+		sleep(1);
+	}
+
+out:
+	pthread_exit(&ret);
+}
+
 enum jal_status pub_on_subscribe(
 		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) struct jaln_mime_header *headers,
-		__attribute__((unused)) void *user_data)
+		const struct jaln_channel_info *ch_info,
+		enum jaln_record_type type,
+		const char *serial_id,
+		struct jaln_mime_header *headers,
+		void *user_data)
 {
-	DEBUG_LOG("sid: %s", serial_id);
-	return JAL_OK;
+	// remote is sending a subscribe message for the particular type
+	// indicate they wish to begin receiving records at serial_id
+	user_data = user_data;
+	DEBUG_LOG("ch_info: %p", ch_info);
+	DEBUG_LOG("record_type: %d", type);
+	DEBUG_LOG("sid: %p", serial_id);
+	DEBUG_LOG("headers: %p", headers);
 
-}
+	pthread_t journal_thread;
+	pthread_t audit_thread;
+	pthread_t log_thread;
+	pthread_attr_t attr;
+	struct thread_data data;
+	enum jal_status ret = JAL_E_INVAL;
+	void *status = NULL;
+	int rc = 0;
 
-enum jal_status pub_get_next_record_info_and_metadata(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *last_serial_id,
-		__attribute__((unused)) struct jaln_record_info *record_info,
-		__attribute__((unused)) uint8_t **system_metadata_buffer,
-		__attribute__((unused)) uint8_t **application_metadata_buffer,
-		__attribute__((unused)) void *user_data)
-{
-	sleep(1);
-	static uint64_t sid = 1;
-	DEBUG_LOG("last sid: %s", last_serial_id);
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-	size_t sz = snprintf(NULL, 0, "%"PRIu64, sid);
-	record_info->nonce = calloc(1, sz + 1);
-	snprintf(record_info->nonce, sz + 1, "%"PRIu64, sid);
-	DEBUG_LOG("next: %s", record_info->nonce);
+	data.sess = sess;
+	data.sid = (char *)serial_id;
 
-	sid++;
+	switch (type) {
+	case JALN_RTYPE_JOURNAL:
+		pthread_create(&journal_thread, &attr, send_journal, &data);
 
-	*system_metadata_buffer = m_sys_meta_buf;
-	*application_metadata_buffer = m_app_meta_buf;
-	record_info->sys_meta_len = m_sys_meta_buf_len;
-	record_info->app_meta_len = m_app_meta_buf_len;
+		pthread_attr_destroy(&attr);
 
-	switch (type)
-	{
-		case JALN_RTYPE_JOURNAL:
-			record_info->payload_len = m_journal_buf_len;
-			break;
-		case JALN_RTYPE_AUDIT:
-			record_info->payload_len = m_audit_buf_len;
-			break;
-		case JALN_RTYPE_LOG:
-			record_info->payload_len = m_journal_buf_len;
-			break;
-		default:
-			// Nothing
-			break;
+		rc = pthread_join(journal_thread, &status);
+		if (rc) {
+			DEBUG_LOG("ERROR: return code from pthread_create() is %d\n", rc);
+			return JAL_E_INVAL;
+		}
+		break;
+	case JALN_RTYPE_AUDIT:
+		pthread_create(&audit_thread, &attr, send_audit, &data);
+
+		pthread_attr_destroy(&attr);
+
+		rc = pthread_join(audit_thread, &status);
+		if (rc) {
+			DEBUG_LOG("Error while joining thread (%d)\n", rc);
+			return JAL_E_INVAL;
+		}
+		break;
+	case JALN_RTYPE_LOG:
+		pthread_create(&log_thread, &attr, send_log, &data);
+
+		pthread_attr_destroy(&attr);
+
+		rc = pthread_join(log_thread, &status);
+		if (rc) {
+			DEBUG_LOG("Error while joining thread (%d)\n", rc);
+			return JAL_E_INVAL;
+		}
+		break;
+	default:
+		DEBUG_LOG("Illegal Record Type");
+		return JAL_E_INVAL;
 	}
+
+	ret = *((enum jal_status *) status);
+	if (JAL_OK != ret) {
+		DEBUG_LOG("Failed to send records to subscriber");
+	}
+
+	return ret;
+
 	return JAL_OK;
-}
-
-enum jal_status pub_release_metadata_buffers(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t *system_metadata_buffer,
-		__attribute__((unused)) uint8_t *application_metadata_buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG("sid: %s", serial_id);
-	system_metadata_buffer = NULL;
-	application_metadata_buffer = NULL;
-	return JAL_OK;
-}
-
-enum jal_status pub_acquire_log_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t **buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG("sid: %s", serial_id);
-	*buffer = m_journal_buf;
-	return JAL_OK;
-}
-
-enum jal_status pub_release_log_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t *buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG("sid: %s", serial_id);
-	buffer = NULL;
-	return JAL_OK;
-}
-
-enum jal_status pub_acquire_audit_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t **buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG("sid: %s", serial_id);
-	*buffer = m_audit_buf;
-	return JAL_OK;
-}
-
-enum jal_status pub_release_audit_data(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) uint8_t *buffer,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG("sid: %s", serial_id);
-	buffer = NULL;
-	return JAL_OK;
-}
-
-enum jal_status pub_acquire_journal_feeder(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) struct jaln_payload_feeder *feeder,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG("sid: %s", serial_id);
-	DEBUG_LOG("not impl");
-	return JAL_E_INVAL;
-}
-
-enum jal_status pub_release_journal_feeder(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
-		__attribute__((unused)) struct jaln_payload_feeder *feeder,
-		__attribute__((unused)) void *user_data)
-{
-	DEBUG_LOG("sid: %s", serial_id);
-	DEBUG_LOG("not impl");
-	return JAL_E_INVAL;
 }
 
 enum jal_status pub_on_record_complete(
@@ -464,9 +464,9 @@ int sub_acquire_journal_feeder(
 		struct jaln_payload_feeder *feeder,
 		void *user_data)
 {
-	user_data = user_data;
-	DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n", ch_info, serial_id, feeder);
-	return 0;
+       user_data = user_data;
+       DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n", ch_info, serial_id, feeder);
+       return 0;
 }
 
 void sub_release_journal_feeder(
@@ -476,11 +476,9 @@ void sub_release_journal_feeder(
 		struct jaln_payload_feeder *feeder,
 		void *user_data)
 {
-	user_data = user_data;
-	DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n", ch_info, serial_id, feeder);
+       user_data = user_data;
+       DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n", ch_info, serial_id, feeder);
 }
-
-
 
 int main()
 {
@@ -500,14 +498,6 @@ int main()
 	struct jaln_publisher_callbacks *pub_cbs = jaln_publisher_callbacks_create();
 	pub_cbs->on_journal_resume = pub_on_journal_resume;
 	pub_cbs->on_subscribe = pub_on_subscribe;
-	pub_cbs->get_next_record_info_and_metadata = pub_get_next_record_info_and_metadata;
-	pub_cbs->release_metadata_buffers = pub_release_metadata_buffers;
-	pub_cbs->acquire_log_data = pub_acquire_log_data;
-	pub_cbs->release_log_data = pub_release_log_data;
-	pub_cbs->acquire_audit_data = pub_acquire_audit_data;
-	pub_cbs->release_audit_data = pub_release_audit_data;
-	pub_cbs->acquire_journal_feeder = pub_acquire_journal_feeder;
-	pub_cbs->release_journal_feeder = pub_release_journal_feeder;
 	pub_cbs->on_record_complete = pub_on_record_complete;
 	pub_cbs->sync = pub_sync;
 	pub_cbs->notify_digest = pub_notify_digest;
