@@ -242,7 +242,9 @@ int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char dat
 			return ret_err;
 		}
 
-		ret_err = print_record(ctx, sid, data, path, rec);
+		char uuid[37];
+		uuid_unparse(rec->uuid, uuid);
+		ret_err = print_record(ctx, uuid, data, path, rec);
 		free(sid);
 		sid = NULL;
 
@@ -294,7 +296,7 @@ ssize_t jal_dump_write(jaldb_context *ctx, int fd, struct jaldb_segment *s)
 	return count;
 }
 
-int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct jaldb_record *rec)
+int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct jaldb_record *rec)
 {
 	ssize_t ret = 0;
 	//Initialize path to write to
@@ -309,7 +311,7 @@ int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct ja
 	if ('u' == data) {
 		char uuid[37];
 		uuid_unparse(rec->uuid, uuid);
-		printf("%s:%s\n", uuid, sid);
+		printf("%s:%s\n", uuid, uuid);
 	} else if (!path) {
 		if (('a' == data || 'z' == data)) {
 			if (0 > jal_dump_write(ctx, fileno(stdout), rec->app_meta)) {
@@ -334,15 +336,15 @@ int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct ja
 	} else {
 		switch (rec->type) {
 		case JALDB_RTYPE_JOURNAL:
-			jal_asprintf(&tmpstr, "%sjournal-%s/", path, sid);
+			jal_asprintf(&tmpstr, "%sjournal-%s/", path, uuid);
 			jal_asprintf(&datstr, "%sjournal.bin",tmpstr);
 			break;
 		case JALDB_RTYPE_AUDIT:
-			jal_asprintf(&tmpstr, "%saudit-%s/", path, sid);
+			jal_asprintf(&tmpstr, "%saudit-%s/", path, uuid);
 			jal_asprintf(&datstr, "%saudit.xml",tmpstr);
 			break;
 		case JALDB_RTYPE_LOG:
-			jal_asprintf(&tmpstr, "%slog-%s/", path, sid);
+			jal_asprintf(&tmpstr, "%slog-%s/", path, uuid);
 			jal_asprintf(&datstr, "%slog.bin",tmpstr);
 			break;
 		default:
