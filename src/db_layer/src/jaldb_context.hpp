@@ -532,6 +532,7 @@ enum jaldb_status jaldb_get_log_document_list(
 * @param[in] k the number of records to retrieve.
 * @param[out] nonce_list the list of nonces.
 * @param[in] type the record type.
+* @param[in] get all records of given type.
 *
 * @return  JALDB_OK - success
 *      JALDB_E_INVAL - invalid parameter.
@@ -541,7 +542,25 @@ enum jaldb_status jaldb_get_last_k_records(
 		jaldb_context *ctx,
 		int k,
 		std::list<std::string> &nonce_list,
+		enum jaldb_rec_type type,
+		bool get_all=false);
+
+/**
+* Retrieve a list of the all records of the given type.
+*
+* @param[in] ctx the context to use.
+* @param[out] nonce_list the list of nonces.
+* @param[in] type the record type.
+*
+* @return  JALDB_OK - success
+*      JALDB_E_INVAL - invalid parameter.
+*      JALDB_E_DB - Error occurred in database.
+*/
+enum jaldb_status jaldb_get_all_records(
+		jaldb_context *ctx,
+		std::list<std::string> &nonce_list,
 		enum jaldb_rec_type type);
+
 
  /**
  * Retrieve a list of the records with the given type received

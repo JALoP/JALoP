@@ -824,7 +824,8 @@ enum jaldb_status jaldb_get_last_k_records(
 		jaldb_context *ctx,
 		int k,
 		list<string> &nonce_list,
-		enum jaldb_rec_type type)
+		enum jaldb_rec_type type,
+		bool get_all)
 {
 	enum jaldb_status ret = JALDB_OK;
 	int db_ret;
@@ -885,7 +886,7 @@ enum jaldb_status jaldb_get_last_k_records(
 		goto out;
 	}
 
-	while(count < k && (0 == db_ret)) {
+	while((count < k || get_all) && (0 == db_ret)) {
 		current_nonce = jal_strdup((const char*)key.data);
 		if (NULL == current_nonce) {
 			ret = JALDB_E_NO_MEM;
@@ -920,6 +921,14 @@ out:
 	free(val.data);
 	return ret;
 
+}
+
+enum jaldb_status jaldb_get_all_records(
+		jaldb_context *ctx,
+		list<string> &nonce_list,
+		enum jaldb_rec_type type)
+{
+	return jaldb_get_last_k_records(ctx, 0, nonce_list, type, true);
 }
 
 enum jaldb_status jaldb_get_records_since_last_nonce(

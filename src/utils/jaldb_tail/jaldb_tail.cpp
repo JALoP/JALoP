@@ -54,7 +54,7 @@
 #define JALDB_TAIL_THREAD_SLEEP_SECONDS 10
 #define JALDB_TAIL_DEFAULT_NUM_RECORDS 20
 #define JALDB_TAIL_DEFAULT_TYPE "l"
-#define JALDB_TAIL_DEFAULT_LAST_SID "0"
+#define JALDB_TAIL_DEFAULT_LAST_UUID "0"
 
 #define DEBUG_LOG(args...) \
 do { \
@@ -85,7 +85,7 @@ static void print_error(enum jaldb_status error);
 static void print_settings(int follow, long int num_rec, char *type,
 				char *home);
 static void do_work(void *ptr);
-static void display_records(list<string> &sid_list);
+static void display_records(list<string> &uuid_list);
 
 int main(int argc, char **argv) {
 	int ret = 0;
@@ -186,7 +186,7 @@ static void parse_cmdline(int argc, char **argv)
 					the value entered for the number of records.\n");
 					exit_flag = 1;
 				}
-				if (0 >= gbl.num_rec && !my_err_no) {
+				if (0 > gbl.num_rec && !my_err_no) {
 					// User probably entered 0 (errno was not set).
 					printf("Number of records should be a positive value.\n");
 					exit_flag = 1;
@@ -255,10 +255,10 @@ static void print_usage()
 	static const char *usage =
 	"Usage:\n\
 	-f, --follow		Output additional records as the database grows.\n\
-	-n, --records=K		Output the most recent K records. jaldb_tail uses the serial ID\n\
+	-n, --records=K		Output the most recent K records. jaldb_tail uses the nonce\n\
 				of the JAL record that the JALoP Local Store or\n\
 				JALoP Network Store assigns to determine the most recent\n\
-				records.\n\
+				records. Selecting '0' outputs all records.\n\
 	--version		Output the version information and exit.\n\
 	-t, --type=T		Show only records of a particular type. \n\
 				T may be: \"j\" (journal record), \"a\" (audit record),\n\
@@ -336,8 +336,8 @@ static void do_work(void *ptr)
 {
 	struct global_members_t *mbrs = (struct global_members_t *) ptr;
 	enum jaldb_status ret = JALDB_OK;
-	list<string> sid_list;
-	std::string last_sid = JALDB_TAIL_DEFAULT_LAST_SID;
+	list<string> uuid_list;
+	std::string last_uuid = JALDB_TAIL_DEFAULT_LAST_UUID;
 	enum jaldb_rec_type type;
 
 	if (0 == strcmp(mbrs->type, "a")) {
@@ -354,40 +354,40 @@ static void do_work(void *ptr)
 	}
 
 	ret = jaldb_get_last_k_records(mbrs->ctx,
-			mbrs->num_rec, sid_list, type);
+			mbrs->num_rec, uuid_list, type, (mbrs->num_rec == 0));
 
 	if (JALDB_OK != ret) {
 		printf("Error retrieving last %ld records for '%s' record.\n",
 			mbrs->num_rec, mbrs->type);
 		print_error(ret);
 	}
-	if (0 < sid_list.size()) {
-		display_records(sid_list);
-		last_sid = sid_list.back();
+	if (0 < uuid_list.size()) {
+		display_records(uuid_list);
+		last_uuid = uuid_list.back();
 	}
-	sid_list.clear();
+	uuid_list.clear();
 
 	while (mbrs->follow_flag && !exit_flag){
 		ret = jaldb_get_records_since_last_nonce(mbrs->ctx,
-						(char *) last_sid.c_str(),
-						sid_list,
+						(char *) last_uuid.c_str(),
+						uuid_list,
 						type);
 
-		if (0 < sid_list.size()) {
-			display_records(sid_list);
-			last_sid = sid_list.back();
+		if (0 < uuid_list.size()) {
+			display_records(uuid_list);
+			last_uuid = uuid_list.back();
 		}
-		sid_list.clear();
+		uuid_list.clear();
 		sleep(JALDB_TAIL_THREAD_SLEEP_SECONDS);
 	}
 	return;
 }
 
-static void display_records(list<string> &sid_list)
+static void display_records(list<string> &uuid_list)
 {
 	list<string>::iterator it;
-	for (it = sid_list.begin(); it != sid_list.end(); it++) {
-		std::string sid = *it;
-		printf("\t%s\n", sid.c_str());
+	for (it = uuid_list.begin(); it != uuid_list.end(); it++) {
+		std::string uuid = *it;
+		printf("\t%s\n", uuid.c_str());
 	}
 }
