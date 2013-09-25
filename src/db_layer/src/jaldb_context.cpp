@@ -1501,6 +1501,11 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 	}
 
 	*nonce = jal_strdup((char*)pkey.data);
+	if (!nonce) {
+		ret = JALDB_E_NO_MEM;
+		goto out;
+	}
+
 	*recpp = rec;
 	rec = NULL;
 	ret = JALDB_OK;

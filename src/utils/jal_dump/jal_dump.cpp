@@ -59,19 +59,16 @@
 
 using namespace std;
 
-static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid, char *type,
+static void parse_cmdline(int argc, char **argv, char ***uuid, int *num_uuid, char *type,
 	char *data, char **path, char **home);
 
 static void print_usage();
 
 void print_payload(uint8_t *payload_buf, size_t payload_size);
 
-int print_record(jaldb_context *ctx, char *sid, char data, char *path, struct jaldb_record *rec);
+int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct jaldb_record *rec);
 
 static void print_error(enum jaldb_status error);
-
-int dump_records_by_sid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
-	int num_id, enum jaldb_status *ret_status);
 
 int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **uuid_arr,
 	int num_uuid, enum jaldb_status *ret_status);
@@ -85,27 +82,25 @@ int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char dat
  */
 static void ensure_capacity(char ***arr, int *max_elms, int elm_count);
 
-static void print_sids(jaldb_context *ctx, char type);
+static void print_uuids(jaldb_context *ctx, char type);
 static void print_list_stdout(const list<string> &p_list);
 static void print_list_file(const list<string> &p_list, const char *p_file_name);
 
 static const size_t BUF_SIZE = 8192;
-static int write_sid_flag = 0;
+static int write_uuid_flag = 0;
 
 int main(int argc, char **argv) {
-	char **sid = NULL;
 	char **uuid = NULL;
 	char data = 0;
 	char type = 0;
 	char *path = NULL;
 	char *home = NULL;
-	int num_sid = 0;
 	int num_uuid = 0;
 	int counter = 0;
 	int ret = 0;
 	enum jaldb_rec_type rtype = JALDB_RTYPE_UNKNOWN;
 
-	parse_cmdline(argc, argv, &sid, &num_sid, &uuid, &num_uuid, &type,
+	parse_cmdline(argc, argv, &uuid, &num_uuid, &type,
 			 &data, &path, &home);
 
 	enum jaldb_status jaldb_ret = JALDB_OK;
@@ -119,8 +114,8 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
-	if (write_sid_flag) {
-		print_sids(ctx, type);
+	if (write_uuid_flag) {
+		print_uuids(ctx, type);
 	}
 	switch(type) {
 	case ('j'):
@@ -133,17 +128,6 @@ int main(int argc, char **argv) {
 		rtype = JALDB_RTYPE_LOG;
 		break;
 	default:
-		goto err_out;
-	}
-
-	ret = dump_records_by_sid(ctx, rtype, data, path, sid, num_sid, &jaldb_ret);
-	if (jaldb_ret != JALDB_OK) {
-		printf("failed to retrieve record, err\n");
-		print_error(jaldb_ret);
-		goto err_out;
-	}
-	if (0 > ret) {
-		printf("Error in printing\n");
 		goto err_out;
 	}
 
@@ -166,13 +150,11 @@ err_out:
 	ret = -1;
 	printf("You have hit error out. Closing out.\n");
 out:
-	for (counter = 0; counter < (num_sid); counter++) {
-		free(*(sid + counter));
+	for (counter = 0; counter < (num_uuid); counter++) {
 	}
 	for (counter = 0; counter < (num_uuid); counter++) {
 		free(*(uuid + counter));
 	}
-	free(sid);
 	free(uuid);
 
 	if (path) {
@@ -186,43 +168,12 @@ out:
 	return ret;
 }
 
-int dump_records_by_sid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
-			int num_id, enum jaldb_status *ret_status)
-{
-	int cnt = 0;
-	int ret_err = 0;
-
-	for (cnt = 0; cnt < num_id; cnt++) {
-		struct jaldb_record *rec = NULL;
-
-		if (cnt < num_id) {
-			*ret_status = jaldb_get_record(ctx, rtype, *(id_arr + cnt), &rec);
-		}
-
-		if (*ret_status != JALDB_OK) {
-			ret_err = -1;
-			return ret_err;
-		}
-
-		ret_err = print_record(ctx, *(id_arr + cnt), data, path, rec);
-
-		if (0 > ret_err) {
-			ret_err = -2;
-			return ret_err;
-		}
-
-		jaldb_destroy_record(&rec);
-	}
-
-	return ret_err;
-}
-
 int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char data, char *path, char **id_arr,
 			int num_id, enum jaldb_status *ret_status)
 {
 	int cnt = 0;
 	int ret_err = 0;
-	char *sid = NULL;
+	char *nonce = NULL;
 
 	for (cnt = 0; cnt < num_id; cnt++) {
 		struct jaldb_record *rec = NULL;
@@ -233,7 +184,7 @@ int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char dat
 				fprintf(stderr, "Bad UUID (ignoring): %s\n", *(id_arr + cnt));
 				continue;
 			} else {
-				*ret_status = jaldb_get_record_by_uuid(ctx, rtype, uuid, &sid, &rec);
+				*ret_status = jaldb_get_record_by_uuid(ctx, rtype, uuid, &nonce, &rec);
 			}
 		}
 
@@ -245,8 +196,8 @@ int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char dat
 		char uuid[37];
 		uuid_unparse(rec->uuid, uuid);
 		ret_err = print_record(ctx, uuid, data, path, rec);
-		free(sid);
-		sid = NULL;
+		free(nonce);
+		nonce = NULL;
 
 		if (0 > ret_err) {
 			ret_err = -2;
@@ -308,11 +259,7 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 	char *appstr = NULL;
 	char *datstr = NULL;
 
-	if ('u' == data) {
-		char uuid[37];
-		uuid_unparse(rec->uuid, uuid);
-		printf("%s:%s\n", uuid, uuid);
-	} else if (!path) {
+	if (!path) {
 		if (('a' == data || 'z' == data)) {
 			if (0 > jal_dump_write(ctx, fileno(stdout), rec->app_meta)) {
 				ret = -1;
@@ -419,7 +366,7 @@ out:
 	return ret;
 }
 
-static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char ***uuid, int *num_uuid,
+static void parse_cmdline(int argc, char **argv, char ***uuid, int *num_uuid,
 				char *type, char *data, char **path, char **home)
 {
 
@@ -427,11 +374,10 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	static const char *defdir = "/var/lib/jalop/db";
 	static const char *optstring = "s:u:t:d:p:h:v:w";
 	static const struct option long_options[] = {
-			{"type", 1, 0, 't'}, {"sid",1,0,'s'},{"uuid",1,0,'u'},
+			{"type", 1, 0, 't'}, {"uuid",1,0,'u'},
 			{"data",1,0,'d'}, {"path",1,0,'p'},{"home",2,0,'h'},
 			{"version",0,0,'v'},{"write", 0, 0, 'w'}, {0,0,0,0}};
 
-	int sid_arr_sz = INITIAL_ARRAY_SIZE;
 	int uuid_arr_sz = INITIAL_ARRAY_SIZE;
 
 	if (2 == argc) {
@@ -443,14 +389,9 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	if (4 > argc) {
 		goto err_usage;
 	}
-	*sid = (char **) malloc(sid_arr_sz * sizeof(char*));
-	if (!(*sid)) {
-		printf("Insufficient memory\n");
-		exit(-1);
-	}
+
 	*uuid = (char **) malloc(uuid_arr_sz * sizeof(char*));
 	if (!(*uuid)) {
-		free(*sid);
 		printf("Insufficient memory for uuid storage. Closing.\n");
 		exit(-1);
 	}
@@ -459,11 +400,6 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	int ret_opt;
 	while (EOF != (ret_opt = getopt_long(argc, argv, optstring, long_options, NULL))) {
 		switch (ret_opt) {
-			case 's':
-				ensure_capacity(sid, &sid_arr_sz, *num_sid);
-				(*sid)[*num_sid] = strdup(optarg);
-				(*num_sid)++;
-				break;
 			case 'u':
 				ensure_capacity(uuid, &uuid_arr_sz, *num_uuid);
 				(*uuid)[*num_uuid] = strdup(optarg);
@@ -477,7 +413,7 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 				*type = *optarg;
 				break;
 			case 'd':
-				if (('a' != *optarg) && ('s' != *optarg) && ('p' != *optarg) && ('z' != *optarg) && ('u' != *optarg)) {
+				if (('a' != *optarg) && ('s' != *optarg) && ('p' != *optarg) && ('z' != *optarg)) {
 					*data = 's';
 				} else {
 					*data = *optarg;
@@ -502,7 +438,7 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 				}
 				break;
 			case 'w':
-				write_sid_flag = 1;
+				write_uuid_flag = 1;
 				break;
 			case 'v':
 				printf("%s\n", jal_version_as_string());
@@ -519,27 +455,20 @@ static void parse_cmdline(int argc, char **argv, char ***sid, int *num_sid, char
 	if (('j' != *type) && ('a' != *type) && ('l' != *type)) {
 		goto err_usage;
 	}
-	if (('a' != *data) && ('s' != *data) && ('p' != *data) && ('z' != *data) && ('u' != *data)) {
+	if (('a' != *data) && ('s' != *data) && ('p' != *data) && ('z' != *data)) {
 		*data = 's';
 	}
 
-	if (*path && ('u' == *data)) {
-		goto err_usage;
-	}
 	return;
 
 err_usage:
 
 	printf("\nError: Usage\n");
 	print_usage();
-	for (counter = 0; counter < (*num_sid); counter++) {
-		free(*(*sid + counter));
-	}
 	for (counter = 0; counter < (*num_uuid); counter++) {
 		free(*(*uuid + counter));
 	}
 
-	free(*sid);
 	free(*uuid);
 	if (path != NULL) {
 		free(*path);
@@ -552,14 +481,10 @@ err_usage:
 	exit(-1);
 
 version_out:
-	for (counter = 0; counter < (*num_sid); counter++) {
-		free(*(*sid + counter));
-	}
 	for (counter = 0; counter < (*num_uuid); counter++) {
 		free(*(*uuid + counter));
 	}
 
-	free(*sid);
 	free(*uuid);
 	if (path != NULL) {
 		free(*path);
@@ -576,21 +501,19 @@ static void print_usage()
 {
 	static const char *usage =
 	"Usage:\n\
-	-s, --sid=S	Search using the sequence ID \"s\". Specify any number of \"-s\" options to output \n\
-			multiple records in the order listed.\n\
 	-u, --uuid	Search using the UUID \"u\". Specify any number of \"-u\" options to output multiple\n\
 			records in the order listed. \n\
 	-t, --type=T	Search within the specified type. T may be: \"j\" (journal record), \"a\" (audit record),\n\
 			or \"l\" (log record).\n\
 	-d, --data=D	Specifies which section of the data should be dumped, options are \"a\" for application\n\
 			metadata, \"s\" for system metadata, or \"p\" for the payload (raw journal, audit, or log\n\
-			data), or \"u\" for just the UUID. The output will be in the form <sid>:<uuid>. \n\
+			data). \n\
 			The default is to dump the system metadata. If this option is specified \n\
 			multiple times, the last occurance is used. To retrieve all portions of a record,\n\
 			use \"z\".\n\
 	-p, --path=P	Copy the record to the provided path, \"/P/\". This will create a sub-directory with\n\
-			the name <record_type>-<sid>/ where <record_type> is replaced with \"journal\", \n\
-			\"audit\", or \"log\", and <sid> is replaced with the sequence ID for the record. \n\
+			the name <record_type>-<UUID>/ where <record_type> is replaced with \"journal\", \n\
+			\"audit\", or \"log\", and <UUID> is replaced with the UUID for the record. \n\
 			This directory will always contain a file named \"system-metadata.xml\", which is the\n\
 			system metadata for the record. If the record contains application metadata, the\n\
 			directory will also contain a file named \"application-metadata.xml\". Depending on the\n\
@@ -604,7 +527,7 @@ static void print_usage()
 			to a file for each record type.\n\
 	-v, --version	Outputs the version and exits.\n\
 \n\
-	Type and at least 1 sid or uuid must be specified.\n\n";
+	Type and at least 1 uuid must be specified.\n\n";
 
 	printf("%s\n", usage);
 }
@@ -691,14 +614,14 @@ static void ensure_capacity(char ***arr, int *max_elms, int elm_count)
 	exit(-1);
 }
 
-static void print_sids(jaldb_context *ctx, char type)
+static void print_uuids(jaldb_context *ctx, char type)
 {
 	enum jaldb_status db_ret = JALDB_E_UNKNOWN;
 
 	list<string> *doc_list = NULL;
 	string print_list_filename;
 
-	printf("SERIAL_IDs:\n");
+	printf("UUIDs:\n");
 	switch (type){
 		case 'j':
 			db_ret = jaldb_get_journal_document_list(ctx, &doc_list);
@@ -717,6 +640,7 @@ static void print_sids(jaldb_context *ctx, char type)
 			break;
 	}
 	if (db_ret != JALDB_OK) {
+		printf("%d\n", db_ret);
 		goto err_out;
 	}
 	doc_list->remove(JALDB_SERIAL_ID_DOC_NAME);
@@ -724,7 +648,7 @@ static void print_sids(jaldb_context *ctx, char type)
 	print_list_file(*doc_list, print_list_filename.c_str());
 	return;
 err_out:
-	printf("Failed to retrieve SIDs from the database");
+	printf("Failed to retrieve UUIDs from the database");
 }
 
 static void print_list_stdout(const list<string> &p_list)
