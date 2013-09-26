@@ -29,7 +29,7 @@
 // The test-dept code doesn't work very well in C++ when __STRICT_ANSI__ is
 // not defined. It tries to use some gcc extensions that don't work well with
 // C++.
-
+/*
 #ifndef __STRICT_ANSI__
 #define __STRICT_ANSI__
 #endif
@@ -381,3 +381,5 @@ extern "C" void test_with_deletion_works()
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, (char*)"4", &rec));
 	jaldb_destroy_record(&rec);
 }
+
+*/
