@@ -49,6 +49,7 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 	u_int32_t db_flags = DB_THREAD | DB_CREATE | DB_AUTO_COMMIT;
 	jaldb_record_dbs *rdbs = NULL;
 	char *filename = NULL;
+	DB *temp_handle = NULL;
 
 	if (!ctx || !remote_host ||
 			0 == strcmp(remote_host, "localhost") ||
@@ -84,15 +85,20 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		return JALDB_E_DB;
 	}
 
-	db_ret = rdbs->primary_db->remove(rdbs->primary_db, filename, "primary", 0);
+	/* Need to re-create handle after calling close or remove */
+	db_ret = db_create(&temp_handle, NULL, 0);
 	if (0 != db_ret) {
+		return JALDB_E_INVAL;
+	}
+
+	db_ret = temp_handle->remove(temp_handle, filename, "primary", 0);
+	if ((0 != db_ret) && (2 != db_ret)) {
 		return JALDB_E_DB;
 	}
 
-	db_ret = rdbs->primary_db->open(rdbs->primary_db, NULL,
-			filename, "primary", DB_BTREE, db_flags, 0);
+	db_ret = jaldb_open_dbs_for_temp(ctx, remote_host, rtype, rdbs, db_flags);
 	if (0 != db_ret) {
-		return JALDB_E_DB;
+		return JALDB_E_INVAL;
 	}
 
 	return JALDB_OK;
