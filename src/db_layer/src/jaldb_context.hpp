@@ -69,7 +69,7 @@ struct jaldb_context_t {
 *  - JALDB_E_INVAL if one of the parameters was invalid.
 *  - JALDB_E_READONLY if the database is read-only.
 *  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
+*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
 enum jaldb_status jaldb_store_confed_journal_sid_tmp(
@@ -89,7 +89,7 @@ enum jaldb_status jaldb_store_confed_journal_sid_tmp(
 *  - JALDB_E_INVAL if one of the parameters was invalid.
 *  - JALDB_E_READONLY if the database is read-only.
 *  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
+*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
 enum jaldb_status jaldb_store_confed_audit_sid_tmp(
@@ -109,7 +109,7 @@ enum jaldb_status jaldb_store_confed_audit_sid_tmp(
 *  - JALDB_E_INVAL if one of the parameters was invalid.
 *  - JALDB_E_READONLY if the database is read-only.
 *  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
+*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
 enum jaldb_status jaldb_store_confed_log_sid_tmp(
@@ -144,7 +144,7 @@ enum jaldb_status jaldb_get_last_confed_sid_temp(
 *  - JALDB_E_INVAL if one of the parameters was invalid.
 *  - JALDB_E_READONLY if the database is read-only.
 *  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
+*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
 enum jaldb_status jaldb_get_last_confed_journal_sid_tmp(
@@ -164,7 +164,7 @@ enum jaldb_status jaldb_get_last_confed_journal_sid_tmp(
 *  - JALDB_E_INVAL if one of the parameters was invalid.
 *  - JALDB_E_READONLY if the database is read-only.
 *  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
+*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
 enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
@@ -184,7 +184,7 @@ enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
 *  - JALDB_E_INVAL if one of the parameters was invalid.
 *  - JALDB_E_READONLY if the database is read-only.
 *  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_SID if their already exists a record with this \p sid.
+*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
 enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
@@ -206,7 +206,7 @@ enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
  *  - JALDB_E_INVAL if one of the parameters was invalid.
  *  - JALDB_E_READONLY if the database is read-only.
  *  - JALDB_E_NOT_FOUND if the record was not found.
- *  - JALDB_E_SID if their already exists a record with this \p sid.
+ *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
  * @throw XmlException
  */
 enum jaldb_status jaldb_xfer_audit(
@@ -228,7 +228,7 @@ enum jaldb_status jaldb_xfer_audit(
  *  - JALDB_E_INVAL if one of the parameters was invalid.
  *  - JALDB_E_READONLY if the database is read-only.
  *  - JALDB_E_NOT_FOUND if the record was not found.
- *  - JALDB_E_SID if their already exists a record with this \p sid.
+ *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
  *  - JALDB_E_CORRUPTED if the record did not contain 
  *    application or log data.
  *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
@@ -254,7 +254,7 @@ enum jaldb_status jaldb_xfer_log(
  *  - JALDB_E_INVAL if one of the parameters was invalid.
  *  - JALDB_E_READONLY if the database is read-only.
  *  - JALDB_E_NOT_FOUND if the record was not found.
- *  - JALDB_E_SID if their already exists a record with this \p sid.
+ *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
  * @throw XmlException
  */
 enum jaldb_status jaldb_xfer_journal(
@@ -287,10 +287,10 @@ enum jaldb_status jaldb_store_confed_sid_temp(
  * @return
  *  - JALDB_OK on success
  *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_SID if the Serial is sequentially after the next available
- *  Serial ID
+ *  - JALDB_E_NONCE if the Nonce is sequentially after the next available
+ *  Nonce ID
  *  - JALDB_E_ALREADY_CONFED if the current mapping in the database is
- *    the same as \p sid or sequentially later.
+ *    the same as \p nonce or sequentially later.
  *  - JALDB_E_CORRUPTED is the latest serial ID cannot be found. This
  *  indicates an internal problem with the database.
  *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
@@ -310,9 +310,9 @@ enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
  *  - JALDB_OK on success
  *  - JALDB_E_INVAL if one of the parameters was invalid.
  *  - JALDB_E_ALREADY_CONFED if the current mapping in the database is
- *    the same as \p sid or sequentially later.
- *  - JALDB_E_SID if the Serial is sequentially after the next available
- *  Serial ID
+ *    the same as \p nonce or sequentially later.
+ *  - JALDB_E_NONCE if the Nonce is sequentially after the next available
+ *  Nonce ID
  *  - JALDB_E_CORRUPTED is the latest serial ID cannot be found. This
  *  indicates an internal problem with the database.
  *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
@@ -332,9 +332,9 @@ enum jaldb_status jaldb_store_confed_audit_sid(jaldb_context *ctx,
  *  - JALDB_OK on success
  *  - JALDB_E_INVAL if one of the parameters was invalid.
  *  - JALDB_E_ALREADY_CONFED if the current mapping in the database is
- *    the same as \p sid or sequentially later.
- *  - JALDB_E_SID if the Serial is sequentially after the next available
- *  Serial ID
+ *    the same as \p nonce or sequentially later.
+ *  - JALDB_E_NONCE if the Nonce is sequentially after the next available
+ *  Nonce ID
  *  - JALDB_E_CORRUPTED is the latest serial ID cannot be found. This
  *  indicates an internal problem with the database.
  *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out

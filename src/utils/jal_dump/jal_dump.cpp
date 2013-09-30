@@ -580,8 +580,8 @@ static void print_error(enum jaldb_status error)
 		case JALDB_E_CORRUPTED:
 			printf("JALDB_E_CORRUPTED");
 			break;
-		case JALDB_E_SID:
-			printf("JALDB_E_SID");
+		case JALDB_E_NONCE:
+			printf("JALDB_E_NONCE");
 			break;
 		case JALDB_E_NOT_FOUND:
 			printf("JALDB_E_NOT_FOUND");
