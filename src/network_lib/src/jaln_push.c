@@ -100,7 +100,7 @@ enum jal_status jaln_send_record(
 			uint8_t *payload_buf,
 			uint64_t payload_len)
 {
-	if (!sess || !seq_id || !sys_meta_buf || !payload_buf) {
+	if (!sess || !seq_id || !sys_meta_buf || ((payload_len != 0) && !payload_buf)) {
 		return JAL_E_INVAL;
 	}
 
