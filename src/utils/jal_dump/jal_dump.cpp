@@ -646,6 +646,7 @@ static void print_uuids(jaldb_context *ctx, char type)
 	doc_list->remove(JALDB_SERIAL_ID_DOC_NAME);
 	print_list_stdout(*doc_list);
 	print_list_file(*doc_list, print_list_filename.c_str());
+	delete(doc_list);
 	return;
 err_out:
 	printf("Failed to retrieve UUIDs from the database");

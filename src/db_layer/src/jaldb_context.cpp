@@ -803,21 +803,27 @@ enum jaldb_status jaldb_get_journal_document_list(
 	jaldb_context *ctx,
 	list<string> **doc_list)
 {
-	return JALDB_E_NOT_IMPL;
+	enum jaldb_status ret = JALDB_OK;
+	ret = jaldb_get_all_records(ctx, doc_list, JALDB_RTYPE_JOURNAL);
+	return ret;
 }
 
 enum jaldb_status jaldb_get_audit_document_list(
 		jaldb_context *ctx,
 		list<string> **doc_list)
 {
-	return JALDB_E_NOT_IMPL;
+	enum jaldb_status ret = JALDB_OK;
+	ret = jaldb_get_all_records(ctx, doc_list, JALDB_RTYPE_AUDIT);
+	return ret;
 }
 
 enum jaldb_status jaldb_get_log_document_list(
 		jaldb_context *ctx,
 		list<string> **doc_list)
 {
-	return JALDB_E_NOT_IMPL;
+	enum jaldb_status ret = JALDB_OK;
+	ret = jaldb_get_all_records(ctx, doc_list, JALDB_RTYPE_LOG);
+	return ret;
 }
 
 enum jaldb_status jaldb_get_last_k_records(
@@ -925,10 +931,17 @@ out:
 
 enum jaldb_status jaldb_get_all_records(
 		jaldb_context *ctx,
-		list<string> &nonce_list,
+		list<string> **nonce_list,
 		enum jaldb_rec_type type)
 {
-	return jaldb_get_last_k_records(ctx, 0, nonce_list, type, true);
+	if (!ctx || !nonce_list || *nonce_list) {
+		return JALDB_E_INVAL;
+	}
+
+	enum jaldb_status ret = JALDB_OK;
+	*nonce_list = new list<string>;
+	ret = jaldb_get_last_k_records(ctx, 0, **nonce_list, type, true);
+	return ret;
 }
 
 enum jaldb_status jaldb_get_records_since_last_nonce(

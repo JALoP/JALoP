@@ -558,7 +558,7 @@ enum jaldb_status jaldb_get_last_k_records(
 */
 enum jaldb_status jaldb_get_all_records(
 		jaldb_context *ctx,
-		std::list<std::string> &nonce_list,
+		std::list<std::string> **nonce_list,
 		enum jaldb_rec_type type);
 
 
