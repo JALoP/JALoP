@@ -288,7 +288,6 @@ enum jal_status pub_on_journal_resume(
 enum jaldb_status pub_get_next_record(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
-			const char *sid,
 			char **nonce,
 			uint8_t **sys_meta_buf,
 			uint64_t *sys_meta_len,
@@ -303,8 +302,6 @@ enum jaldb_status pub_get_next_record(
 	enum jaldb_status ret = JALDB_E_NOT_FOUND;
 	struct session_ctx_t *ctx = NULL;
 	struct jaldb_record *rec = NULL;
-
-	DEBUG_LOG_SUB_SESSION(ch_info, "Retrieving next record, last serial ID was %s\n", sid);
 
 	pthread_mutex_lock(sub_lock);
 	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
@@ -380,7 +377,6 @@ out:
 enum jal_status pub_send_records_feeder(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
-			const char *sid,
 			axlHash *hash,
 			pthread_mutex_t *sub_lock,
 			enum jal_status (*send)(jaln_session *, void *, char *,
@@ -390,7 +386,7 @@ enum jal_status pub_send_records_feeder(
 	enum jal_status ret = JAL_E_INVAL;
 	enum jaldb_status db_ret = JALDB_E_INVAL;
 	enum jaln_record_type type = ch_info->type;
-	char *next_sid = NULL;
+	char *nonce = NULL;
 	uint8_t *sys_meta_buf = NULL;
 	uint64_t sys_meta_len = 0;
 	uint8_t *app_meta_buf = NULL;
@@ -440,8 +436,7 @@ enum jal_status pub_send_records_feeder(
 	do {
 		db_ret = pub_get_next_record(sess,
 					ch_info,
-					sid,
-					&next_sid,
+					&nonce,
 					&sys_meta_buf,
 					&sys_meta_len,
 					&app_meta_buf,
@@ -461,15 +456,13 @@ enum jal_status pub_send_records_feeder(
 			goto out;
 		}
 
-		ret = send(sess, NULL, next_sid, sys_meta_buf, sys_meta_len,
+		ret = send(sess, NULL, nonce, sys_meta_buf, sys_meta_len,
 				app_meta_buf, app_meta_len, 0, &feeder);
 		if (JAL_OK != ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
 
-		sid = next_sid;
-		next_sid = NULL;
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
@@ -481,7 +474,6 @@ out:
 enum jal_status pub_send_records(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
-			const char *sid,
 			axlHash *hash,
 			pthread_mutex_t *sub_lock,
 			enum jal_status (*send)(jaln_session *, void *, char *,
@@ -491,7 +483,7 @@ enum jal_status pub_send_records(
 	enum jal_status ret = JAL_E_INVAL;
 	enum jaldb_status db_ret = JALDB_E_INVAL;
 	enum jaln_record_type type = ch_info->type;
-	char *next_sid = NULL;
+	char *nonce = NULL;
 	uint8_t *sys_meta_buf = NULL;
 	uint64_t sys_meta_len = 0;
 	uint8_t *app_meta_buf = NULL;
@@ -540,8 +532,7 @@ enum jal_status pub_send_records(
 	do {
 		db_ret = pub_get_next_record(sess,
 					ch_info,
-					sid,
-					&next_sid,
+					&nonce,
 					&sys_meta_buf,
 					&sys_meta_len,
 					&app_meta_buf,
@@ -561,15 +552,14 @@ enum jal_status pub_send_records(
 			goto out;
 		}
 
-		ret = send(sess, NULL, next_sid, sys_meta_buf, sys_meta_len,
+		ret = send(sess, NULL, nonce, sys_meta_buf, sys_meta_len,
 				app_meta_buf, app_meta_len, payload_buf, payload_len);
 		if (JAL_OK != ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
+		nonce = NULL;
 
-		sid = next_sid;
-		next_sid = NULL;
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
@@ -595,11 +585,10 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
 	const struct jaln_channel_info *ch_info = data->ch_info;
-	const char *sid = data->serial_id;
 	axlHash *hash = gs_journal_subs;
 	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
 
-	*ret = pub_send_records_feeder(sess, ch_info, sid, hash, sub_lock, &jaln_send_journal);
+	*ret = pub_send_records_feeder(sess, ch_info, hash, sub_lock, &jaln_send_journal);
 
 	pthread_exit((void*)ret);
 }
@@ -616,11 +605,10 @@ void *pub_send_audit(void *args)
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
 	const struct jaln_channel_info *ch_info = data->ch_info;
-	const char *sid = data->serial_id;
 	axlHash *hash = gs_audit_subs;
 	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
 
-	*ret = pub_send_records(sess, ch_info, sid, hash, sub_lock, &jaln_send_audit);
+	*ret = pub_send_records(sess, ch_info, hash, sub_lock, &jaln_send_audit);
 	pthread_exit((void*)ret);
 }
 
@@ -636,11 +624,10 @@ void *pub_send_log(void *args)
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
 	const struct jaln_channel_info *ch_info = data->ch_info;
-	const char *sid = data->serial_id;
 	axlHash *hash = gs_log_subs;
 	pthread_mutex_t *sub_lock = &gs_log_sub_lock;
 
-	*ret = pub_send_records(sess, ch_info, sid, hash, sub_lock, &jaln_send_log);
+	*ret = pub_send_records(sess, ch_info, hash, sub_lock, &jaln_send_log);
 	pthread_exit((void*)ret);
 }
 

@@ -52,6 +52,7 @@ void jaldb_destroy_record(struct jaldb_record **pprecord)
 	jaldb_destroy_segment(&(rec->sys_meta));
 	jaldb_destroy_segment(&(rec->app_meta));
 	jaldb_destroy_segment(&(rec->payload));
+	free(rec->network_nonce);
 	free(rec->source);
 	free(rec->hostname);
 	free(rec->timestamp);

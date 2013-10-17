@@ -212,11 +212,11 @@ enum jaldb_status jaldb_next_unsynced_record(
  * Utility to insert any JALoP record
  * @param[in] ctx the DB context.
  * @param[in] rec The record to insert.
- * @param[out] nonce The nonce assigned to the record by the DB
+ * @param[out] local_nonce The nonce assigned to the record by the DB
  *
  * @return JALDB_OK on success, or an error code.
  */
-enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, char **nonce);
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, char **local_nonce);
 
 /**
  * Utility to insert any JALoP record into a temporary database

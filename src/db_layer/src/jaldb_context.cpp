@@ -1046,7 +1046,7 @@ out:
 	return ret;
 }
 
-enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, char **nonce)
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, char **local_nonce)
 {
 	int byte_swap;
 	enum jaldb_status ret;
@@ -1054,19 +1054,23 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	struct jaldb_record_dbs *rdbs = NULL;
 	uint8_t* buffer = NULL;
 	int db_ret;
+	int update_network_nonce = 0;
 	DBT key;
 	DBT val;
 	DB_TXN *txn;
 
-	if (!ctx || !rec || !nonce || *nonce) {
+	if (!ctx || !rec || !local_nonce || *local_nonce) {
 		return JALDB_E_INVAL;
 	}
 	if (!rec->source) {
 		rec->source = jal_strdup("localhost");
 	}
+	if (!rec->network_nonce) {
+		update_network_nonce = 1;
+	}
 
 	memset(&key, 0, sizeof(key));
-	memset(&val, 0, sizeof(val));
+	memset(&val, 0, sizeof(val));	
 
 	ret = jaldb_record_sanity_check(rec);
 	if (ret != JALDB_OK) {
@@ -1094,13 +1098,6 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 		goto out;
 	}
 
-	ret = jaldb_serialize_record(byte_swap, rec, &buffer, &buf_size);
-	if (ret != JALDB_OK) {
-		goto out;
-	}
-	val.data = buffer;
-	val.size = buf_size;
-
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
 		if (0 != db_ret) {
@@ -1117,6 +1114,18 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 		key.size = strlen(primary_key) + 1;
 		key.flags = DB_DBT_REALLOC;
 
+		if (update_network_nonce) {
+			free(rec->network_nonce);
+			rec->network_nonce = jal_strdup(primary_key);
+		}
+
+		ret = jaldb_serialize_record(byte_swap, rec, &buffer, &buf_size);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+		val.data = buffer;
+		val.size = buf_size;
+
 		db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, DB_NOOVERWRITE);
 		if (0 == db_ret) {
 			db_ret = txn->commit(txn, 0);
@@ -1127,7 +1136,7 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 			ret = JALDB_OK;
 			break;
 		}
-		if (DB_LOCK_DEADLOCK == db_ret) {
+		if (DB_LOCK_DEADLOCK == db_ret || DB_KEYEXIST == db_ret) {
 			continue;
 		} else {
 			ret = JALDB_E_DB;
@@ -1136,7 +1145,7 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	}
 
 out:
-	*nonce = jal_strdup((const char *)key.data);
+	*local_nonce = jal_strdup((const char *)key.data);
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -1688,7 +1697,7 @@ enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jald
 enum jaldb_status jaldb_next_unsynced_record(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	char **nonce,
+	char **network_nonce,
 	struct jaldb_record **rec_out)
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
@@ -1704,7 +1713,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
 
-	if (!ctx || !nonce || *nonce || *rec_out || !rec_out) {
+	if (!ctx || !network_nonce || *network_nonce || *rec_out || !rec_out) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1807,8 +1816,8 @@ enum jaldb_status jaldb_next_unsynced_record(
 		rec->sys_meta->length = doc_len;
 	}
 
-	*nonce = jal_strdup((char*)pkey.data);
-	if (NULL == nonce) {
+	*network_nonce = jal_strdup(rec->network_nonce);
+	if (NULL == network_nonce) {
 		ret = JALDB_E_NO_MEM;
 		goto out;
 	}

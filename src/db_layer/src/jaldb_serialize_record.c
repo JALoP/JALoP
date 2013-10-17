@@ -267,6 +267,10 @@ enum jaldb_status jaldb_serialize_record(
 	if (JALDB_OK != ret) {
 		goto err_out;
 	}
+	ret = jaldb_serialize_inc_by_string(&size, record->network_nonce);
+	if (JALDB_OK != ret) {
+		goto err_out;
+	}
 	ret = jaldb_serialize_inc_by_string(&size, record->source);
 	if (JALDB_OK != ret) {
 		goto err_out;
@@ -329,6 +333,7 @@ enum jaldb_status jaldb_serialize_record(
 	memcpy(buf, &headers, sizeof(headers));
 	uint8_t *tmp = buf + sizeof(headers);
 	jaldb_serialize_add_string(&tmp, record->timestamp);
+	jaldb_serialize_add_string(&tmp, record->network_nonce);
 	jaldb_serialize_add_string(&tmp, record->source);
 	jaldb_serialize_add_string(&tmp, record->sec_lbl);
 	jaldb_serialize_add_string(&tmp, record->hostname);
@@ -408,6 +413,10 @@ enum jaldb_status jaldb_deserialize_record(
 	bsize -= sizeof(*headers);
 
 	ret = jaldb_deserialize_string(&buffer, &bsize, &res->timestamp);
+	if (ret != JALDB_OK) {
+		goto err_out;
+	}
+	ret = jaldb_deserialize_string(&buffer, &bsize, &res->network_nonce);
 	if (ret != JALDB_OK) {
 		goto err_out;
 	}
