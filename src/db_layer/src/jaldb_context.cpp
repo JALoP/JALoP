@@ -1405,13 +1405,12 @@ out:
 enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		uuid_t uuid,
-		char **hex_sid,
+		char **nonce,
 		struct jaldb_record **recpp)
 {
 	struct jaldb_record *rec = NULL;
 	int byte_swap;
 	enum jaldb_status ret;
-	BIGNUM *sid = NULL;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
 	DB_TXN *txn = NULL;
@@ -1419,7 +1418,7 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 	DBT pkey;
 	DBT val;
 
-	if (!ctx || !hex_sid || *hex_sid || !recpp || *recpp) {
+	if (!ctx || !nonce || *nonce || !recpp || *recpp) {
 		return JALDB_E_INVAL;
 	}
 
@@ -1501,25 +1500,12 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 		rec->sys_meta->length = doc_len;
 	}
 
-	sid = BN_bin2bn((unsigned char *)pkey.data, pkey.size, NULL);
-	if (!sid) {
-		ret = JALDB_E_NO_MEM;
-		goto out;
-	}
-	*hex_sid = BN_bn2hex(sid);
-	if (!(*hex_sid)) {
-		ret = JALDB_E_NO_MEM;
-		goto out;
-	}
-
+	*nonce = jal_strdup((char*)pkey.data);
 	*recpp = rec;
 	rec = NULL;
 	ret = JALDB_OK;
 out:
 	jaldb_destroy_record(&rec);
-	if (sid) {
-		BN_free(sid);
-	}
 	free(pkey.data);
 	free(val.data);
 	return ret;

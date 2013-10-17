@@ -148,7 +148,7 @@ enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
  * @param[in] uuid The UUID of the record to retrieved.
- * @param[out] hex_sid The serial ID (hex string) of the retrieved record. The
+ * @param[out] nonce The nonce of the retrieved record. The
  * caller is responsible for freeing this memory.
  * @param[out] rec This will be filled in as a jaldb_record object if the
  * record is found. Note that any segments located on disk will not be opened
@@ -160,7 +160,7 @@ enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		uuid_t uuid,
-		char **hex_sid,
+		char **nonce,
 		struct jaldb_record **rec);
 
 /**

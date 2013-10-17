@@ -64,11 +64,11 @@ enum jaldb_iter_status {
 typedef enum jaldb_iter_status (*jaldb_iter_cb)(const char *hex_sid, struct jaldb_record *rec, void *up);
 
 /**
- * Utility function to iterate over the records in a DB in order by SID.
+ * Utility function to iterate over the records in a DB in order by timestamp.
  *
- * This function iterates over the database in SID order. Operations performed
- * on each record are dictated by the return value of the callback. Only SIDs
- * which fulfill <tt> start_sid <= sid <= end_sid </tt> are examined. SIDs are
+ * This function iterates over the database in timestamp order. Operations performed
+ * on each record are dictated by the return value of the callback. Only timestamps
+ * which fulfill <tt> start_time <= current_time <= end_time </tt> are examined. Timestamps are
  * never negative numbers.
  *
  * If the return from \p cb is JALDB_ITER_CONT, continue processing, but do not 
@@ -82,21 +82,19 @@ typedef enum jaldb_iter_status (*jaldb_iter_cb)(const char *hex_sid, struct jald
  *
  * @param[in] ctx The DB context to use.
  * @param[in] type The type of record to delete.
- * @param[in] start_sid The beginning of the range to traverse (SID as hex
+ * @param[in] timestamp The beginning of the range to traverse (SID as hex
  * string). This may be \p NULL, in which case the value of zero is used.
- * @param[in] end_sid The end of the range to traverse (SID as hex string).
- * This may be \p NULL, in which case the value of positive infinity is used.
  * @param[in] cb The user specified callback.
  * @param[in] up A pointer value that is passed un-modified to \p cb as the \p up
  * parameter.
  *
  * @return JALDB_OK on success, or an error.
  */
-enum jaldb_status jaldb_iterate_by_sid_range(jaldb_context *ctx,
+enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		const char *start_sid,
-		const char *end_sid,
+		const char *timestamp,
 		jaldb_iter_cb cb, void *up);
+
 
 #ifdef __cplusplus
 }

@@ -46,8 +46,8 @@ static struct global_args_t {
 	int del;
 	int force;
 	int verbose;
-	char *sid;
-	char *uuid;
+	char *nonce;
+	list<string> uuids;
 	char type;
 	char *before;
 	char *home;
@@ -57,7 +57,7 @@ static void process_options(int argc, char **argv);
 static void global_args_free();
 static void usage();
 
-extern "C" enum jaldb_iter_status iter_cb(const char *hex_sid, struct jaldb_record *rec, void *up);
+extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record *rec, void *up);
 
 int main(int argc, char **argv)
 {
@@ -99,35 +99,35 @@ int main(int argc, char **argv)
 		cout << "Would delete the following records:" << endl;
 	}
 
-	if (global_args.sid) {
-		dbret = jaldb_iterate_by_sid_range(ctx, type, NULL, global_args.sid, iter_cb, NULL);
-	} else if (global_args.uuid) {
+	if (!global_args.uuids.empty()) {
 		struct jaldb_record *rec = NULL;
-		char *sid = NULL;
 		uuid_t uuid;
-		if (0 != uuid_parse(global_args.uuid, uuid)) {
-			cout << "Invalid UUID: " << global_args.uuid  << endl;
-			goto out;
+		char *nonce = NULL;
+		list<string>::iterator iter;
+		for(iter = global_args.uuids.begin(); iter != global_args.uuids.end(); iter++) {
+			printf("UUID: %s\n", iter->c_str());
+			if (0 != uuid_parse(iter->c_str(), uuid)) {
+				cout << "Invalid UUID: " << iter->c_str()  << endl;
+				goto out;
+			}
+			dbret = jaldb_get_record_by_uuid(ctx, type, uuid, &nonce, &rec);
+			if (dbret != 0) {
+				printf("Error getting record %s\n", uuid);
+			}
+
+			dbret = jaldb_remove_record(ctx, type, nonce);
+			if (dbret != 0) {
+				printf("Error removing record\n");
+			}
+
+			jaldb_destroy_record(&rec);
+			free(nonce);
 		}
-		dbret = jaldb_get_record_by_uuid(ctx, type, uuid, &sid, &rec);
-		jaldb_destroy_record(&rec);
-		if (dbret != JALDB_OK) {
-			free(sid);
-			goto out;
-		}
-		dbret = jaldb_iterate_by_sid_range(ctx, type, NULL, sid, iter_cb, NULL);
 	} else if (global_args.before) {
-		cout << "Purging by timestamp currently not supported." << endl;
-		dbret = (enum jaldb_status)-1;
+		dbret = jaldb_iterate_by_timestamp(ctx, type, global_args.before, iter_cb, &global_args);
 		goto out;
-		/*
-		dbret = jaldb_iterate_by_time_range(ctx, type, NULL, global_args.time, iter_cb, &global_args);
-		default:
-			break;
-		}
-		*/
 	} else {
-		cout << "Purging without a sid or uuid specified is currently not supported." << endl;
+		cout << "Purging without a nonce or uuid specified is currently not supported." << endl;
 		dbret = (enum jaldb_status)-1;
 		goto out;
 		// TODO: No arguments/filter specified
@@ -143,11 +143,11 @@ out:
 	return dbret;
 }
 
-extern "C" enum jaldb_iter_status iter_cb(const char *hex_sid, struct jaldb_record *rec, void *)
+extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record *rec, void *)
 {
 
 	if (global_args.force || rec->synced) {
-		cout << "SID: " << hex_sid << endl;
+		cout << "NONCE: " << nonce << endl;
 		if (global_args.verbose) {
 			char uuid[37]; // UUID are always 36 characters + the NULL terminator
 			uuid_unparse(rec->uuid, uuid);
@@ -167,8 +167,6 @@ static void process_options(int argc, char **argv)
 
 	static const char *opt_string = "s:u:t:b:dfvh:";
 	static const struct option long_options[] = {
-		{"sid", required_argument, NULL, 's'},
-		{"uuid", required_argument, NULL, 'u'},
 		{"type", required_argument, NULL, 't'},
 		{"before", required_argument, NULL, 'b'},
 		{"delete", no_argument, NULL, 'd'},
@@ -181,18 +179,6 @@ static void process_options(int argc, char **argv)
 
 	while (EOF != (opt = getopt_long(argc, argv, opt_string, long_options, NULL))) {
 		switch (opt) {
-		case 's':
-			if (global_args.uuid || global_args.before) {
-				goto err_out;
-			}
-			global_args.sid = strdup(optarg);
-			break;
-		case 'u':
-			if (global_args.sid || global_args.before) {
-				goto err_out;
-			}
-			global_args.uuid = strdup(optarg);
-			break;
 		case 't':
 			if ('j' != *optarg && 'a' != *optarg && 'l' != *optarg) {
 				fprintf(stderr, "Invalid type\n");
@@ -201,9 +187,6 @@ static void process_options(int argc, char **argv)
 			global_args.type = *optarg;
 			break;
 		case 'b':
-			if (global_args.sid || global_args.uuid) {
-				goto err_out;
-			}
 			global_args.before = strdup(optarg);
 			break;
 		case 'd':
@@ -225,7 +208,13 @@ static void process_options(int argc, char **argv)
 			goto err_out;
 		}
 	}
-	if ((global_args.sid || global_args.uuid || global_args.before) && !global_args.type) {
+
+	/* Process UUIDS */
+	while (optind < argc) {
+		global_args.uuids.push_front(string(argv[optind++]));
+	}
+
+	if ((!global_args.uuids.empty() || global_args.before) && !global_args.type) {
 		goto err_out;
 	}
 
@@ -238,8 +227,6 @@ version_out:
 
 static void global_args_free()
 {
-	free(global_args.sid);
-	free(global_args.uuid);
 	free(global_args.before);
 	free(global_args.home);
 }
@@ -248,8 +235,8 @@ __attribute__((noreturn)) static void usage()
 {
 	static const char *usage =
 	"Usage:\n\
-	-s, --sid=S		Remove all records up to and including the\n\
-				record with serial ID 'S'. '-t' must also\n\
+	-n, --nonce=N		Remove all records up to and including the\n\
+				record with nonce 'N'. '-t' must also\n\
 				be specified\n\
 	-u, --uuid=U		Remove all records up to and including the\n\
 				record with UUID 'U'.  By default, this checks\n\
