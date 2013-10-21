@@ -462,7 +462,13 @@ enum jal_status pub_send_records_feeder(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
-
+		db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+		if (JALDB_OK != db_ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
+		} else {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
+		}
+		nonce = NULL;
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
@@ -558,8 +564,13 @@ enum jal_status pub_send_records(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
+		db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+		if (JALDB_OK != db_ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
+		} else {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
+		}
 		nonce = NULL;
-
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
@@ -801,7 +812,7 @@ void pub_peer_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		const char *serial_id,
+		__attribute__((unused)) const char *serial_id,
 		const uint8_t *local_digest,
 		const uint32_t local_size,
 		const uint8_t *peer_digest,
@@ -819,7 +830,6 @@ void pub_peer_digest(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Local digest and peer digest do not match");
 		return;
 	}
-	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
 	switch(type) {
 	case JALN_RTYPE_JOURNAL:
@@ -834,12 +844,6 @@ void pub_peer_digest(
 	default:
 		// shouldn't happen.
 		return;
-	}
-	jaldb_ret = jaldb_mark_sent(db_ctx, db_type, serial_id);
-	if (JALDB_OK != jaldb_ret) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", serial_id);
-	} else {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", serial_id);
 	}
 }
 
