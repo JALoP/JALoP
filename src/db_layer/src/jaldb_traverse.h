@@ -82,8 +82,7 @@ typedef enum jaldb_iter_status (*jaldb_iter_cb)(const char *hex_sid, struct jald
  *
  * @param[in] ctx The DB context to use.
  * @param[in] type The type of record to delete.
- * @param[in] timestamp The beginning of the range to traverse (SID as hex
- * string). This may be \p NULL, in which case the value of zero is used.
+ * @param[in] timestamp The end time to stop iterating
  * @param[in] cb The user specified callback.
  * @param[in] up A pointer value that is passed un-modified to \p cb as the \p up
  * parameter.

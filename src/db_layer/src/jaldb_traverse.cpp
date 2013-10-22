@@ -49,10 +49,6 @@ enum jaldb_status jaldb_iterate_by_sid_range(jaldb_context *ctx,
 	return JALDB_E_NOT_IMPL;
 }
 
-/*
- * Get all records up to the given timestamp
- */
-
 enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		const char *timestamp,
@@ -60,12 +56,10 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
 	struct tm end_time, current_time;
-	strptime(timestamp, "%Y-%m-%dT%H:%M:%S-%z", &end_time);
 	struct jaldb_record *rec = NULL;
 	int byte_swap;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
-	char keep_going = 1;
 	DBT key;
 	DBT pkey;
 	DBT val;
@@ -75,6 +69,11 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 	memset(&val, 0, sizeof(val));
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC;
+
+	if (!strptime(timestamp, "%Y-%m-%dT%H:%M:%S-%z", &end_time)) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
 
 	if (!ctx || !cb) {
 		ret = JALDB_E_INVAL;
@@ -113,10 +112,9 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		goto out;
 	}
 
-	while(keep_going && (0 == db_ret)) {
+	while(0 == db_ret) {
 		db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_NEXT);
 		if (0 != db_ret) {
-			keep_going = 0;
 			if (DB_NOTFOUND == db_ret) {
 				ret = JALDB_OK;
 			} else {
@@ -129,9 +127,13 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		cursor->c_close(cursor);
 		cursor = NULL;
 
-		// current_time is > end_time, so break out
-		strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S-%z", &current_time);
+		if (!strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S-%z", &current_time)) {
+			ret = JALDB_E_INVAL;
+			goto out;
+		}
+
 		if (difftime(mktime(&end_time), mktime(&current_time)) < 0) {
+			// current_time is > end_time, so break out
 			goto out;
 		}
 
