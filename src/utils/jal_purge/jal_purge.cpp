@@ -40,6 +40,8 @@
 #include "jaldb_strings.h"
 #include "jaldb_record.h"
 
+#include "jal_alloc.h"
+
 using namespace std;
 
 static struct global_args_t {
@@ -106,10 +108,19 @@ int main(int argc, char **argv)
 		list<string>::iterator iter;
 		for(iter = global_args.uuids.begin(); iter != global_args.uuids.end(); iter++) {
 			printf("UUID: %s\n", iter->c_str());
+#ifdef sun
+			char * uuid_string = jal_strdup(iter->c_str());
+			if (0 != uuid_parse(uuid_string, uuid)) {
+				free(uuid_string);
+#else
 			if (0 != uuid_parse(iter->c_str(), uuid)) {
+#endif
 				cout << "Invalid UUID: " << iter->c_str()  << endl;
 				goto out;
 			}
+#ifdef sun
+			free(uuid_string);
+#endif
 			dbret = jaldb_get_record_by_uuid(ctx, type, uuid, &nonce, &rec);
 			if (dbret != 0) {
 				printf("Error getting record %s\n", uuid);

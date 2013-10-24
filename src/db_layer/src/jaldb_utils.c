@@ -315,10 +315,10 @@ char *jaldb_gen_primary_key(uuid_t uuid)
 
 	char *ts = jaldb_gen_timestamp();
 	pid_t pid = getpid();
-	pid_t tid = syscall(SYS_gettid);
+	pthread_t tid = pthread_self();//portable
 	char *key = NULL;
 
-	jal_asprintf(&key, "%s_%s_%d_%d", uuid_str, ts, pid, tid);
+	jal_asprintf(&key, "%s_%s_%d_%u", uuid_str, ts, pid, tid);
 
 	free(ts);
 
