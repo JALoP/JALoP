@@ -371,7 +371,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
  * network store.
  *
  * @param[in] An identifier for the database
- * @param[suffix] A suffix to use (i.e. '_audit_meta.dbxml')
+ * @param[suffix] A suffix to use (i.e. '_audit_meta.db')
  *
  * @return a string to use as the database name.
  */
