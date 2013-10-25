@@ -125,6 +125,28 @@ enum jaldb_status jaldb_extract_datetime_key_common(
 		size_t *dtLen,
 		char *has_tz);
 
+/**
+ * Function to extract the nonce timestamp as a secondary key.
+ *
+ * This function extracts the XML DateTime timestamp from the nonce, creates
+ * a copy, and stores it in \p result for use as a secondary index.
+ *
+ * @see jaldb_xml_datetime_compare
+ *
+ * @param[in] secondary Pointer to the secondary DB that is getting modified,
+ * this is only checked to see if the record is byte-swapped.
+ * @param[in] key The key for the data in the primary DB
+ * @param[in] data The data for the record
+ * @param[out] result the DBT object to fill in for the datetime secondary key.
+ *
+ * @return 0 on success, -1 on error
+ */
+
+int jaldb_extract_nonce_timestamp_key(DB *secondary,
+		const DBT *key,
+		const DBT *data,
+		DBT *result);
+
 #ifdef __cplusplus
 }
 #endif

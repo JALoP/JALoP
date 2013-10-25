@@ -109,6 +109,18 @@ struct jaln_record_info {
 };
 
 /**
+ * Enum used to indicate the publishing mode (Archive or Live)
+ */
+enum jaln_publish_mode {
+	/** Publisher should send all data, including historical data  */
+	JALN_ARCHIVE_MODE,
+	/** Publisher should send only new data as of the time of the Subscribe request */
+	JALN_LIVE_MODE,
+	/** The mode has not been initialized */
+	JALN_UNKNOWN_MODE,
+};
+
+/**
  * Enum used to indicate the 'status' of a digest
  */
 enum jaln_digest_status {
@@ -202,13 +214,19 @@ struct jaln_connect_request {
 	/** The number of digests in the array. */
 	int dgst_cnt;
 	/**
-	 * The mode as sent by the remote peer. Note that when the peer sends a
-	 * 'connect' message with the mode set to JALN_ROLE_SUBSCRIBE, it is
+	 * The role as sent by the remote peer. Note that when the peer sends a
+	 * 'connect' message with the role set to JALN_ROLE_SUBSCRIBE, it is
 	 * indicating that it plans on acting as a subscriber. Conversely, when
-	 * the mode is JALN_ROLE_PUBLISH, it indicates the peer plans on acting
+	 * the role is JALN_ROLE_PUBLISH, it indicates the peer plans on acting
 	 * as a publisher.
 	 */
 	enum jaln_role role;
+	/**
+ 	 * The mode sent by the remote peer.  Can be either JALN_LIVE_MODE or
+ 	 * JALN_ARCHIVE_MODE.  In archive mode, the publisher should send all
+ 	 * data.  In live mode, the publisher should send only new data.
+ 	 */
+	enum jaln_publish_mode mode;
 	/**
 	 * The jal user agent string (if any). This is the user agent of the
 	 * sender of the 'connect' message.

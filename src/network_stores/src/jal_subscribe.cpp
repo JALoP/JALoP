@@ -51,6 +51,7 @@
 #define DATA_CLASS "data_class"
 #define PORT "port"
 #define HOST "host"
+#define MODE "mode"
 #define PENDING_DIGEST_MAX "pending_digest_max"
 #define PENDING_DIGEST_TIMEOUT "pending_digest_timeout"
 #define DB_ROOT "db_root"
@@ -77,6 +78,7 @@ struct global_config_t {
 	config_setting_t *data_class;	/* Array */
 	long long int port;
 	const char *host;
+	const char *mode;
 	long long int pending_digest_max;
 	long long int pending_digest_timeout;
 	int len_data_class;
@@ -307,6 +309,7 @@ void init_global_config(void)
 	global_config.session_timeout = NULL;
 	global_config.data_class = NULL;
 	global_config.host = NULL;
+	global_config.mode = NULL;
 	global_config.db_root = NULL;
 	global_config.schemas_root = NULL;
 	global_config.data_classes = 0;
@@ -333,6 +336,7 @@ void print_config(void)
 		DEBUG_LOG("DATA CLASS LENGTH:\t%d", global_config.len_data_class);
 		DEBUG_LOG("PORT:\t\t\t%lld", global_config.port);
 		DEBUG_LOG("HOST:\t\t\t%s", global_config.host);
+		DEBUG_LOG("MODE:\t\t\t%s", global_config.mode);
 		DEBUG_LOG("PENDING DIGEST MAX:\t%lld", global_config.pending_digest_max);
 		DEBUG_LOG("PENDING DIGEST TIMEOUT:\t%lld", global_config.pending_digest_timeout);
 		DEBUG_LOG("DB ROOT:\t\t%s\n", global_config.db_root);
@@ -391,6 +395,14 @@ int set_global_config(config_t *config)
 	if (rc == CONFIG_FALSE){
 		if (global_args.debug_flag) {
 			DEBUG_LOG("Missing setting for '%s'", HOST);
+		}
+		rc = JAL_E_CONFIG_LOAD;
+		goto out;
+	}
+	rc = config_lookup_string(config, MODE, &global_config.mode);
+	if (rc == CONFIG_FALSE){
+		if (global_args.debug_flag) {
+			DEBUG_LOG("Missing setting for '%s'", MODE);
 		}
 		rc = JAL_E_CONFIG_LOAD;
 		goto out;
@@ -554,6 +566,7 @@ void *subscriber_do_work(void *ptr)
 	jaln_context *net_ctx = jaln_context_create();
 	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
 	enum jal_status err;
+	enum jaln_publish_mode mode = JALN_UNKNOWN_MODE;
 
 	if (0 > ret){
 		if (global_args.debug_flag) {
@@ -582,11 +595,20 @@ void *subscriber_do_work(void *ptr)
 		}
 		goto err;
 	}
+	if (0 == strcmp("archive",global_config.mode)) {
+		mode = JALN_ARCHIVE_MODE;
+	} else if (0 == strcmp("live",global_config.mode)) {
+		mode = JALN_LIVE_MODE;
+	} else {
+		DEBUG_LOG("Bad mode specification in config file! Quitting.");
+		goto err;
+	}
 	conn = jaln_subscribe(
 				net_ctx,
 				global_config.host,
 				port,
 				global_config.data_classes,
+				mode,
 				jsub_db_ctx);
 	if (!conn){
 		if (global_args.debug_flag) {

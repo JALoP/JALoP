@@ -277,7 +277,7 @@ int main() {
 	err = jaln_register_connection_callbacks(net_ctx, conn_cbs);
 	err = jaln_register_subscriber_callbacks(net_ctx, sub_cbs);
 	//struct jaln_connection *conn = jaln_subscribe(net_ctx, "192.168.246.156", "55555", JALN_RTYPE_LOG, NULL);
-	struct jaln_connection *conn = jaln_subscribe(net_ctx, "localhost", "55555", JALN_RTYPE_LOG, NULL);
+	struct jaln_connection *conn = jaln_subscribe(net_ctx, "localhost", "55555", JALN_RTYPE_LOG, JALN_ARCHIVE_MODE, NULL);
 	DEBUG_LOG("got jal con %p\n", conn);
 	//sleep(120);
 	//err = jaln_disconnect(conn);

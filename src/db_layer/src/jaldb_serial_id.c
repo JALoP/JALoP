@@ -173,3 +173,21 @@ out:
 	return err;
 }
 
+ 
+int jaldb_nonce_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
+{
+	int ret;
+	if (!dbt1 || !dbt1->data || (0 == dbt1->size) || !dbt2 || !dbt2->data || (0 == dbt2->size)) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	if (dbt1->size == dbt2->size) {
+		ret = strncmp(dbt1->data, dbt2->data, dbt1->size);
+	} else if (dbt1->size > dbt2->size) {
+		ret = strncmp(dbt1->data, dbt2->data, dbt2->size);
+		if (ret == 0) ret = 1;
+	} else {
+		ret = strncmp(dbt1->data, dbt2->data, dbt1->size);
+		if (ret == 0) ret = -1;
+	}
+	return ret;
+}

@@ -54,9 +54,10 @@ jaln_session *jaln_session_create()
 	if (!vortex_cond_create(&sess->wait)) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
+	sess->mode = JALN_UNKNOWN_MODE;
 	sess->ref_cnt = 1;
 	sess->rec_chan_num = -1;
-	sess->dgst_chan_num = -1;
+	sess->dgst_chan_num = -1; 
 	sess->ch_info = jaln_channel_info_create();
 	sess->dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
 	if (!sess->dgst_list) {

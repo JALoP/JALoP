@@ -209,6 +209,27 @@ enum jaldb_status jaldb_next_unsynced_record(
 	struct jaldb_record **rec);
 
 /**
+ * Retrieves the next chronological record from the database.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record to retrieve.
+ * @param[out] nonce The nonce for the returned record.
+ * @param[out] rec The record from the DB.
+ * @param[in/out] timestamp The timestamp of the last sent record.
+ * 		Overwritten to the new timestamp when a record is returned
+ * 		Calling with a timestamp less than a previous timestamp
+ * 		may result in records being sent multiple times.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_next_chronological_record(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	char **nonce,
+	struct jaldb_record **rec,
+	char** timestamp);
+
+/**
  * Utility to insert any JALoP record
  * @param[in] ctx the DB context.
  * @param[in] rec The record to insert.

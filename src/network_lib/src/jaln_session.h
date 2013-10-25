@@ -58,6 +58,7 @@ struct jaln_session_t {
 	VortexMutex wait_lock;               //!< Mutex to lock the structure on wait
 	VortexCond wait;                     //!< Condition variable to wait on	
 	int ref_cnt;                         //!< Reference count
+	enum jaln_publish_mode mode;         //!< Whether to send messages as archive or live
 
 	jaln_context *jaln_ctx;              //!< The context we belong to.
 	struct jal_digest_ctx *dgst;         //!< A copy of the digest to use.
@@ -69,10 +70,10 @@ struct jaln_session_t {
 
 	axl_bool closing;                    //!< Flag that indicates this
 	axl_bool errored;                    //!< Flag that indicates an error occurred within the session
-	axlList *dgst_list;                //!< A list of jaln_digest_info structures that are calculated as data is sent/received
+	axlList *dgst_list;                  //!< A list of jaln_digest_info structures that are calculated as data is sent/received
 	enum jaln_role role;                 //!< The role this context is performing (subscriber or publisher)
-	int dgst_list_max;                 //!< The maximum number of digest entries to keep as a subscriber
-	long dgst_timeout;                 //!< The maximum amount of time to wait before sending a 'digest' message
+	int dgst_list_max;                   //!< The maximum number of digest entries to keep as a subscriber
+	long dgst_timeout;                   //!< The maximum amount of time to wait before sending a 'digest' message
 	union {
 		struct jaln_sub_data* sub_data;   //!< Data specific to a subscriber
 		struct jaln_pub_data* pub_data;   //!< Data specific to a publisher

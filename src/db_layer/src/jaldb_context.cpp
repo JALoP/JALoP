@@ -226,6 +226,8 @@ enum jaldb_status jaldb_context_init(
 	ctx->audit_temp_dbs = new string_to_rdbs_map;
 	ctx->log_temp_dbs = new string_to_rdbs_map;
 
+	ctx->seen_records = new std::set<string>();
+
 	return JALDB_OK;
 }
 
@@ -258,6 +260,9 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	jaldb_destroy_string_to_rdbs_map(ctxp->journal_temp_dbs);
 	jaldb_destroy_string_to_rdbs_map(ctxp->audit_temp_dbs);
 	jaldb_destroy_string_to_rdbs_map(ctxp->log_temp_dbs);
+
+	delete ctxp->seen_records;
+
 	if (ctxp->env) {
 		ctxp->env->close(ctxp->env, 0);
 	}
@@ -1834,6 +1839,166 @@ out:
 	jaldb_destroy_record(&rec);
 
 	return ret;
+}
+
+enum jaldb_status jaldb_next_chronological_record(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	char **network_nonce,
+	struct jaldb_record **rec_out,
+	char **timestamp)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+	struct jaldb_record *rec = NULL;
+	struct tm search_time, current_time;
+	memset(&search_time,0,sizeof(search_time));
+	memset(&current_time,0,sizeof(current_time));
+	int byte_swap;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	std::string nonce_string;
+	DBT key;
+	DBT pkey;
+	DBT val;
+	DBC *cursor = NULL;
+	memset(&key, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+	key.flags = DB_DBT_REALLOC;
+	val.flags = DB_DBT_REALLOC;
+
+	if (!strptime(*timestamp, "%Y-%m-%dT%H:%M:%S", &search_time)) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!ctx || !network_nonce || *network_nonce || !rec_out || *rec_out) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!rdbs) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	key.size = strlen(*timestamp) + 1;
+	key.data = jal_strdup(*timestamp);
+
+	db_ret = rdbs->nonce_timestamp_db->get_byteswapped(rdbs->nonce_timestamp_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->nonce_timestamp_db->cursor(rdbs->nonce_timestamp_db, NULL, &cursor, DB_DEGREE_2);
+	if (0 != db_ret) {
+		JALDB_DB_ERR(rdbs->nonce_timestamp_db, db_ret);
+		goto out;
+	}
+
+	db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_SET_RANGE);
+	if (0 != db_ret) {
+		if (DB_NOTFOUND == db_ret) {
+			ret = JALDB_E_NOT_FOUND;
+		} else {
+			JALDB_DB_ERR(rdbs->nonce_timestamp_db, db_ret);
+		}
+		goto out;
+	}
+
+	if (!strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time)) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	nonce_string = (char *)pkey.data;
+
+	while (difftime(mktime(&search_time), mktime(&current_time)) == 0) {
+		// Check to see if we already got a record at this time
+		if (ctx->seen_records->count(nonce_string) == 0) {
+			//Haven't seen it
+			ctx->seen_records->insert(nonce_string);
+			break;
+		} else {
+			db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_NEXT);
+			if (0 != db_ret) {
+				if (DB_NOTFOUND == db_ret) {
+					ret = JALDB_E_NOT_FOUND;
+				} else {
+					JALDB_DB_ERR(rdbs->nonce_timestamp_db, db_ret);
+				}
+				goto out;
+			}
+			nonce_string = (char *)pkey.data;
+		}
+		if (!strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time)) {
+			ret = JALDB_E_INVAL;
+			goto out;
+		}
+	}
+
+	if (difftime(mktime(&search_time), mktime(&current_time)) != 0) {
+		free(*timestamp);
+		*timestamp = jal_strdup((char*)key.data);
+		ctx->seen_records->clear();
+		ctx->seen_records->insert(nonce_string);
+	}
+
+	ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+
+	rec->type = type;
+	if (!rec->sys_meta) {
+		rec->sys_meta = jaldb_create_segment();
+		char *doc = NULL;
+		size_t doc_len = 0;
+		ret = jaldb_record_to_system_metadata_doc(rec, &doc, &doc_len);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+		rec->sys_meta->payload = (uint8_t*)doc;
+		rec->sys_meta->length = doc_len;
+	}
+
+	*network_nonce = jal_strdup(rec->network_nonce);
+	if (NULL == network_nonce) {
+		ret = JALDB_E_NO_MEM;
+		goto out;
+	}
+
+	*rec_out = rec;
+	rec = NULL;
+	ret = JALDB_OK;
+
+out:
+	if (cursor) {
+		cursor->c_close(cursor);
+	}
+
+	free(key.data);
+	free(val.data);
+	jaldb_destroy_record(&rec);
+	return ret;
+
+
 }
 
 enum jaldb_status jaldb_get_primary_record_dbs(

@@ -187,6 +187,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 	jaln_axl_string_list_to_array(info->encodings, &conn_req->encodings, &conn_req->enc_cnt);
 	jaln_axl_string_list_to_array(info->digest_algs, &conn_req->digests, &conn_req->dgst_cnt);
 	conn_req->role = info->role;
+	conn_req->mode = info->mode;
 	conn_req->jaln_agent = jal_strdup(info->peer_agent);
 
 	int sel_enc= -1;
@@ -273,6 +274,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 		vortex_mutex_unlock(&sess->lock);
 		goto err_out;
 	}
+	sess->mode = info->mode;
 	vortex_mutex_unlock(&sess->lock);
 	jaln_create_init_ack_msg(conn_req->encodings[sel_enc], conn_req->digests[sel_dgst], &msg, &msg_len);
 	vortex_channel_send_rpy(chan, msg, msg_len, msg_no);

@@ -295,7 +295,7 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 	return axl_true;
 }
 
-enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type type,
+enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_publish_mode mode, enum jaln_record_type type,
 		axlList *dgst_list, axlList *enc_list, char **msg_out, uint64_t *msg_len_out)
 {
 	if (!dgst_list || !enc_list ||
@@ -312,10 +312,28 @@ enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type 
 	char *role_str;
 	switch (role) {
 		case JALN_ROLE_SUBSCRIBER:
-			role_str = JALN_MSG_SUBSCRIBE;
+			switch (mode) {
+				case JALN_LIVE_MODE:
+					role_str = JALN_MSG_SUBSCRIBE_LIVE;
+					break;
+				case JALN_ARCHIVE_MODE:
+					role_str = JALN_MSG_SUBSCRIBE_ARCHIVE;
+					break;
+				default:
+					return JAL_E_INVAL;
+			}
 			break;
 		case JALN_ROLE_PUBLISHER:
-			role_str = JALN_MSG_PUBLISH;
+			switch (mode) {
+				case JALN_LIVE_MODE:
+					role_str = JALN_MSG_PUBLISH_LIVE;
+					break;
+				case JALN_ARCHIVE_MODE:
+					role_str = JALN_MSG_PUBLISH_ARCHIVE;
+					break;
+				default:
+					return JAL_E_INVAL;
+			}
 			break;
 		default:
 			return JAL_E_INVAL;

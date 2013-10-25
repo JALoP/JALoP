@@ -38,6 +38,7 @@
 
 struct jaln_init_info {
 	enum jaln_role role;
+	enum jaln_publish_mode mode;
 	enum jaln_record_type type;
 	char *peer_agent;
 	axlList *digest_algs;

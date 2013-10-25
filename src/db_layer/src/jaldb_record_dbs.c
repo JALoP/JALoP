@@ -62,6 +62,9 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	if (rdbs->timestamp_no_tz_idx_db) {
 		rdbs->timestamp_no_tz_idx_db->close(rdbs->timestamp_no_tz_idx_db, 0);
 	}
+	if (rdbs->nonce_timestamp_db) {
+		rdbs->nonce_timestamp_db->close(rdbs->nonce_timestamp_db, 0);
+	}
 	if (rdbs->record_id_idx_db) {
 		rdbs->record_id_idx_db->close(rdbs->record_id_idx_db, 0);
 	}
@@ -97,6 +100,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	char *primary_name =  NULL;
 	char *timestamp_tz_name = NULL;
 	char *timestamp_no_tz_name = NULL;
+	char *nonce_timestamp_name = NULL;
 	char *record_uuid_name = NULL;
 	char *record_sent_name = NULL;
 	char *sid_name = NULL;
@@ -107,6 +111,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		jal_asprintf(&primary_name, "%s_records.db", prefix);
 		jal_asprintf(&timestamp_tz_name, "%s_timestamp_tz_idx.db", prefix);
 		jal_asprintf(&timestamp_no_tz_name, "%s_timestamp_no_tz_idx.db", prefix);
+		jal_asprintf(&nonce_timestamp_name, "%s_nonce_timestamp.db", prefix);
 		jal_asprintf(&record_uuid_name, "%s_record_uuid_idx.db", prefix);
 		jal_asprintf(&record_sent_name, "%s_record_sent.db", prefix);
 		jal_asprintf(&sid_name, "%s_sid.db", prefix);
@@ -119,7 +124,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
-	db_ret = rdbs->primary_db->set_bt_compare(rdbs->primary_db, jaldb_sid_compare);
+	db_ret = rdbs->primary_db->set_bt_compare(rdbs->primary_db, jaldb_nonce_compare);
 	if (db_ret != 0) {
 		JALDB_DB_ERR((rdbs->primary_db), db_ret);
 		ret = JALDB_E_DB;
@@ -200,6 +205,40 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
+	// Open the 'Nonce timestamp' DB. The Primary DB keys are XML DateTime
+	// strings. The nonce timestamp DB is is used as a secondary index for the
+	// primary DB.
+
+	db_ret = db_create(&(rdbs->nonce_timestamp_db), env, 0);
+	if (db_ret != 0) {
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->nonce_timestamp_db->set_flags(rdbs->nonce_timestamp_db, DB_DUP | DB_DUPSORT);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->nonce_timestamp_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->nonce_timestamp_db->set_bt_compare(rdbs->nonce_timestamp_db,
+			jaldb_xml_datetime_compare);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->nonce_timestamp_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->nonce_timestamp_db->open(rdbs->nonce_timestamp_db, txn,
+			nonce_timestamp_name, NULL, DB_BTREE, db_flags, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->nonce_timestamp_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+
 	// Open the record id DB. This is used as (yet another) secondary
 	// index for the primary DB. The keys for this DB are the record UUID
 	// identified in the system metadata.
@@ -272,6 +311,14 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 
 	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->timestamp_no_tz_idx_db,
 			jaldb_extract_datetime_wo_tz_key, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->primary_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->nonce_timestamp_db,
+			jaldb_extract_nonce_timestamp_key, 0);
 	if (db_ret != 0) {
 		JALDB_DB_ERR((rdbs->primary_db), db_ret);
 		ret = JALDB_E_DB;

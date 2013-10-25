@@ -228,6 +228,7 @@ struct jaln_connection *jaln_subscribe(
 		const char *host,
 		const char *port,
 		const int data_classes,
+		enum jaln_publish_mode mode,
 		void *user_data);
 
 /**
@@ -239,6 +240,7 @@ struct jaln_connection *jaln_subscribe(
  * @param port The port to connect to on the remote peer.
  * @param data_classes bitmask of JAL record types to publish. Must be
  * comprised of the entries of enum jaln_record_type.
+ * @param mode The mode (archive or live) to publish in.
  * @param[in] user_data An address that will be passed into all the callback
  * methods.
  *
@@ -249,6 +251,7 @@ struct jaln_connection *jaln_publish(
 		const char *host,
 		const char *port,
 		const int data_classes,
+		enum jaln_publish_mode mode,
 		void *user_data);
 
 /**

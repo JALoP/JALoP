@@ -154,6 +154,7 @@ enum jal_status on_subscribe(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
+		__attribute__((unused)) enum jaln_publish_mode mode,
 		struct jaln_mime_header *headers,
 		void *user_data)
 {
@@ -246,6 +247,7 @@ void on_sync(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
+		enum jaln_publish_mode mode,
 		const char *serial_id,
 		struct jaln_mime_header *headers,
 		void *user_data)
@@ -254,6 +256,7 @@ void on_sync(
 	user_data = user_data;
 	DEBUG_LOG("ch_info: %p", ch_info);
 	DEBUG_LOG("record_type: %d", type);
+	DEBUG_LOG("mode: %d", mode);
 	DEBUG_LOG("sid: %p", serial_id);
 	DEBUG_LOG("headers: %p", headers);
 }
@@ -327,7 +330,7 @@ int main() {
 	DEBUG_LOG("register conn cbs: %d\n", err);
 	err = jaln_register_publisher_callbacks(net_ctx, pub_callbacks);
 	DEBUG_LOG("register pub cbs: %d\n", err);
-	struct jaln_connection *conn = jaln_publish(net_ctx, "127.0.0.1", "55555", JALN_RTYPE_LOG, NULL);
+	struct jaln_connection *conn = jaln_publish(net_ctx, "127.0.0.1", "55555", JALN_RTYPE_LOG, JALN_ARCHIVE_MODE, NULL);
 	DEBUG_LOG("got jal con %p\n", conn);
 	sleep(9999);
 	//err = jaln_shutdown(conn);

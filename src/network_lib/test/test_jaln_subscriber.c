@@ -505,28 +505,29 @@ void test_jaln_subscriber_create_session_works()
 
 void test_jaln_subscribe_does_not_crash_with_bad_input()
 {
-	assert_pointer_equals((void *) NULL, jaln_subscribe(NULL, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, NULL));
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, NULL, FAKE_PORT, JALN_RTYPE_ALL, NULL));
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, NULL, JALN_RTYPE_ALL, NULL));
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, 0, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(NULL, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, NULL, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, NULL, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, 0, JALN_ARCHIVE_MODE, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_UNKNOWN_MODE, NULL));
 }
 
 void test_jaln_subscribe_fails_when_missing_conn_callbacks()
 {
 	jaln_connection_callbacks_destroy(&ctx->conn_callbacks);
-	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, NULL));
+	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
 }
 
 void test_jaln_subscribe_fails_when_missing_sub_callbacks()
 {
 	jaln_subscriber_callbacks_destroy(&ctx->sub_callbacks);
-	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, NULL));
+	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
 }
 
 void test_jaln_subscribe_fails_when_already_connected()
 {
 	ctx->is_connected = axl_true;
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_JOURNAL, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL));
 }
 
 void test_jaln_subscribe_success_for_all_types()
@@ -534,7 +535,7 @@ void test_jaln_subscribe_success_for_all_types()
 	replace_function(vortex_connection_set_on_close_full, fake_vortex_connection_set_on_close_full);
 	struct jaln_connection *conn = NULL;
 	
-	conn = jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, NULL);
+	conn = jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL);
 	assert_not_equals((void *) NULL, conn);
 	jaln_connection_destroy(&conn);
 	restore_function(vortex_connection_set_on_close_full);

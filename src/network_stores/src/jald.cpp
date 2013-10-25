@@ -49,6 +49,7 @@
 #include "jalu_config.h"
 #include "jaldb_segment.h"
 #include "jaldb_record.h"
+#include "jaldb_utils.h"
 #include "jal_alloc.h"
 
 #define ONE_MINUTE 60
@@ -289,6 +290,7 @@ enum jaldb_status pub_get_next_record(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
 			char **nonce,
+			char **timestamp,
 			uint8_t **sys_meta_buf,
 			uint64_t *sys_meta_len,
 			uint8_t **app_meta_buf,
@@ -310,7 +312,20 @@ enum jaldb_status pub_get_next_record(
 		goto out;
 	}
 	while (JALDB_E_NOT_FOUND == ret) {
-		ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
+		if (!*timestamp) {
+			// Archive mode
+			DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Archive Mode");
+			ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
+		} else {
+			// Live mode
+			DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Live Mode");
+			ret = jaldb_next_chronological_record(db_ctx,
+							     db_type,
+							     nonce,
+							     &(ctx->rec),
+							     timestamp);
+		}
+
 		if (JALDB_E_NOT_FOUND == ret) {
 			if (JAL_OK != jaln_session_is_ok(sess)) {
 				ret = JALDB_E_INVAL;
@@ -376,6 +391,7 @@ out:
 enum jal_status pub_send_records_feeder(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
+			char **timestamp,
 			axlHash *hash,
 			pthread_mutex_t *sub_lock,
 			enum jal_status (*send)(jaln_session *, void *, char *,
@@ -437,6 +453,7 @@ enum jal_status pub_send_records_feeder(
 		db_ret = pub_get_next_record(sess,
 					ch_info,
 					&nonce,
+					timestamp,
 					&sys_meta_buf,
 					&sys_meta_len,
 					&app_meta_buf,
@@ -461,7 +478,10 @@ enum jal_status pub_send_records_feeder(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
-		db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+		if (*timestamp) {
+			//Archive mode
+			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+		}
 		if (JALDB_OK != db_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
 		} else {
@@ -479,6 +499,7 @@ out:
 enum jal_status pub_send_records(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
+			char **timestamp,
 			axlHash *hash,
 			pthread_mutex_t *sub_lock,
 			enum jal_status (*send)(jaln_session *, void *, char *,
@@ -538,6 +559,7 @@ enum jal_status pub_send_records(
 		db_ret = pub_get_next_record(sess,
 					ch_info,
 					&nonce,
+					timestamp,
 					&sys_meta_buf,
 					&sys_meta_len,
 					&app_meta_buf,
@@ -580,7 +602,7 @@ out:
 struct thread_data {
 	jaln_session *sess;
 	const struct jaln_channel_info *ch_info;
-	const char *serial_id;
+	char *timestamp;
 };
 
 /*
@@ -598,7 +620,7 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 	axlHash *hash = gs_journal_subs;
 	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
 
-	*ret = pub_send_records_feeder(sess, ch_info, hash, sub_lock, &jaln_send_journal);
+	*ret = pub_send_records_feeder(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_journal);
 
 	pthread_exit((void*)ret);
 }
@@ -618,7 +640,7 @@ void *pub_send_audit(void *args)
 	axlHash *hash = gs_audit_subs;
 	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
 
-	*ret = pub_send_records(sess, ch_info, hash, sub_lock, &jaln_send_audit);
+	*ret = pub_send_records(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_audit);
 	pthread_exit((void*)ret);
 }
 
@@ -637,7 +659,7 @@ void *pub_send_log(void *args)
 	axlHash *hash = gs_log_subs;
 	pthread_mutex_t *sub_lock = &gs_log_sub_lock;
 
-	*ret = pub_send_records(sess, ch_info, hash, sub_lock, &jaln_send_log);
+	*ret = pub_send_records(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_log);
 	pthread_exit((void*)ret);
 }
 
@@ -645,6 +667,7 @@ enum jal_status pub_on_subscribe(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
+		enum jaln_publish_mode mode,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
@@ -662,6 +685,15 @@ enum jal_status pub_on_subscribe(
 
 	data.sess = sess;
 	data.ch_info = ch_info;
+	data.timestamp = NULL;
+
+	if (JALN_LIVE_MODE == mode) {
+		data.timestamp = jaldb_gen_timestamp();
+	} else if (JALN_ARCHIVE_MODE != mode) {
+		// Bad mode
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: Bad mode");
+		return JAL_E_INVAL;
+	}
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
@@ -759,6 +791,7 @@ void pub_sync(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
+		enum jaln_publish_mode mode,
 		const char *serial_id,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
@@ -783,7 +816,9 @@ void pub_sync(
 		return;
 	}
 
-	jaldb_ret = jaldb_mark_synced(db_ctx, db_type, serial_id);
+	if (mode == JALN_ARCHIVE_MODE) {
+		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, serial_id);
+	}
 	if (JALDB_OK != jaldb_ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced", serial_id);
 	} else {

@@ -55,7 +55,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 	if (0 == strcasecmp(header_name, "jal-message")) {
 		return (VortexMimeHeader*) "initialize";
 	} else if (0 == strcasecmp(header_name, "jal-mode")) {
-		return (VortexMimeHeader*) "subscribe";
+		return (VortexMimeHeader*) "subscribe-live";
 	} else if (0 == strcasecmp(header_name, "jal-agent")) {
 		return (VortexMimeHeader*) "some/agent";
 	} else if (0 == strcasecmp(header_name, "jal-data-class")) {
@@ -91,7 +91,7 @@ DECL_MIME_HANDLER(fake_get_mime_header_no_encs, "jal-accept-encoding", NULL)
 DECL_MIME_HANDLER(fake_get_mime_header_no_agent, "jal-agent", NULL)
 DECL_MIME_HANDLER(fake_get_mime_header_audit, "jal-data-class", "audit");
 DECL_MIME_HANDLER(fake_get_mime_header_log, "jal-data-class", "log");
-DECL_MIME_HANDLER(fake_get_mime_header_publisher, "jal-mode", "publish");
+DECL_MIME_HANDLER(fake_get_mime_header_publisher, "jal-mode", "publish-live");
 
 static axl_bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
 {
@@ -127,6 +127,7 @@ void test_process_init_works_with_good_input()
 	assert_not_equals((void*) NULL, info->encodings);
 
 	assert_equals(JALN_ROLE_SUBSCRIBER, info->role);
+	assert_equals(JALN_LIVE_MODE, info->mode);
 	assert_equals(JALN_RTYPE_JOURNAL, info->type);
 	assert_string_equals("some/agent", info->peer_agent);
 	assert_equals(3, axl_list_length(info->digest_algs));
@@ -295,6 +296,7 @@ void test_process_init_works_for_publisher()
 	assert_not_equals((void*) NULL, info);
 
 	assert_equals(JALN_ROLE_PUBLISHER, info->role);
+	assert_equals(JALN_LIVE_MODE, info->mode);
 	assert_equals(JALN_RTYPE_JOURNAL, info->type);
 	assert_string_equals("some/agent", info->peer_agent);
 	assert_equals(3, axl_list_length(info->digest_algs));

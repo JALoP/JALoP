@@ -85,6 +85,18 @@ int jaldb_get_next_serial_id(DB *db,
 		DB_TXN *txn,
 		DBT *sid);
 
+/**
+ * Comparison function for use by Berkeley DB when performing nonce comparisons.
+ *
+ * @param [in] db The DB the comparison is happening on.
+ * @param [in] dbt1 The first element's key.
+ * @param [in] dbt2 The second element's key.
+ *
+ * @return less than zero if <tt>dbt1 < dbt2</tt>, greater than zero if
+ * <tt>dbt1 > dbt2</tt>, and 0 if <tt>dbt1 == dbt2</tt>.
+ */
+
+int jaldb_nonce_compare(DB *db, const DBT *dbt1, const DBT *dbt2);
 
 #ifdef __cplusplus
 }

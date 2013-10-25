@@ -190,4 +190,23 @@ int jaldb_extract_datetime_wo_tz_key(DB *secondary, const DBT *key, const DBT *d
 	return DB_DONOTINDEX;
 }
 
+int jaldb_extract_nonce_timestamp_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+{
+	char *timestamp = strchr((char*)key->data,'_');
+	if (!timestamp) {
+		return DB_DONOTINDEX;
+	}
+	timestamp += 1;
+	char *timestamp_end = strchr(timestamp,'_');
+	if (!timestamp_end) {
+		return DB_DONOTINDEX;
+	}
+	size_t string_len = timestamp_end - timestamp;
+	result->data = jal_malloc(string_len + 1);
+	memset(result->data,0,string_len+1);
+	result->size = string_len + 1;
+	result->flags = DB_DBT_APPMALLOC;
+	strncpy((char*)result->data, timestamp, string_len);
 
+	return 0;
+}

@@ -107,6 +107,7 @@ struct jaln_connection *jaln_subscribe(
 		const char *host,
 		const char *port,
 		const int data_classes,
+		enum jaln_publish_mode mode,
 		void *user_data)
 {
 	if (!ctx || !host || !port ||
@@ -150,6 +151,7 @@ struct jaln_connection *jaln_subscribe(
 
 	if (data_classes & JALN_RTYPE_JOURNAL) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_JOURNAL);
+		session->mode = mode;
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
@@ -157,6 +159,7 @@ struct jaln_connection *jaln_subscribe(
 	}
 	if (data_classes & JALN_RTYPE_AUDIT) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_AUDIT);
+		session->mode = mode;
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
@@ -164,6 +167,7 @@ struct jaln_connection *jaln_subscribe(
 	}
 	if (data_classes & JALN_RTYPE_LOG) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_LOG);
+		session->mode = mode;
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
@@ -371,7 +375,7 @@ void jaln_subscriber_on_channel_create(int channel_num,
 	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(chan, 2);
 
-	enum jal_status ret = jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, sess->ch_info->type,
+	enum jal_status ret = jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, sess->mode, sess->ch_info->type,
 			sess->jaln_ctx->dgst_algs, sess->jaln_ctx->xml_encodings, &init_msg,
 			&init_msg_len);
 	if (ret != JAL_OK) {

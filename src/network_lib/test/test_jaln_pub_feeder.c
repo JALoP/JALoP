@@ -122,6 +122,7 @@ enum jal_status my_on_subscribe(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) enum jaln_publish_mode mode,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
@@ -158,6 +159,7 @@ void my_sync(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) enum jaln_publish_mode mode,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)

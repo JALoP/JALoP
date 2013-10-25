@@ -73,8 +73,8 @@ int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *dat
 		return -1;
 	}
 
-	result->data = jal_malloc(sizeof(char));
-	*((uint32_t*)result->data) = headers->flags & JALDB_RFLAGS_SENT;
+	result->data = jal_malloc(sizeof(uint32_t));
+	*((uint32_t*)(result->data)) = headers->flags & JALDB_RFLAGS_SENT;
 	result->size = sizeof(uint32_t);
 	result->flags = DB_DBT_APPMALLOC;
 

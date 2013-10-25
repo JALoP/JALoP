@@ -72,6 +72,7 @@ void on_sync(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) enum jaln_publish_mode mode,
 		__attribute__((unused)) const char *serial_id,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
@@ -577,21 +578,23 @@ void test_publish_fails_with_bad_input()
 {
 	struct jaln_connection *conn = NULL;
 
-	conn = jaln_publish(NULL, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	conn = jaln_publish(NULL, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 
-	conn = jaln_publish(ctx, NULL, "1234", JALN_RTYPE_JOURNAL, NULL);
+	conn = jaln_publish(ctx, NULL, "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 
-	conn = jaln_publish(ctx, "some_host", NULL, JALN_RTYPE_JOURNAL, NULL);
+	conn = jaln_publish(ctx, "some_host", NULL, JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 
-	conn = jaln_publish(ctx, "some_host", "1234", 0, NULL);
+	conn = jaln_publish(ctx, "some_host", "1234", 0, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 
-	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL | (1 << 4), NULL);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL | (1 << 4), JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE -1, NULL);
+	assert_pointer_equals((void*) NULL, conn);
 }
 
 void test_publish_fails_when_missing_conn_callbacks()
@@ -599,7 +602,7 @@ void test_publish_fails_when_missing_conn_callbacks()
 	struct jaln_connection *conn = NULL;
 
 	jaln_connection_callbacks_destroy(&ctx->conn_callbacks);
-	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 }
 
@@ -608,7 +611,7 @@ void test_publish_fails_when_missing_pub_callbacks()
 	struct jaln_connection *conn = NULL;
 
 	jaln_publisher_callbacks_destroy(&ctx->pub_callbacks);
-	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 }
 
@@ -617,7 +620,7 @@ void test_publish_fails_when_already_connected()
 	struct jaln_connection *conn = NULL;
 	ctx->is_connected = axl_true;
 
-	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, NULL);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 }
 
@@ -626,7 +629,7 @@ void test_publish_success_for_all_types()
 	replace_function(vortex_connection_set_on_close_full, fake_vortex_connection_set_on_close_full);
 	struct jaln_connection *conn = NULL;
 
-	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL, NULL);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL);
 	assert_not_equals((void*) NULL, conn);
 	jaln_connection_destroy(&conn);
 	restore_function(vortex_connection_set_on_close_full);

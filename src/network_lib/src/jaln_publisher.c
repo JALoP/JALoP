@@ -135,7 +135,7 @@ enum jal_status jaln_publisher_handle_sync(jaln_session *sess,
 	if (ret != JAL_OK) {
 		goto out;
 	}
-	sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, serial_id, NULL, sess->jaln_ctx->user_data);
+	sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, sess->mode, serial_id, NULL, sess->jaln_ctx->user_data);
 	free(serial_id);
 out:
 	if (!ans_rpy_sent) {
@@ -323,7 +323,7 @@ enum jal_status jaln_pub_handle_subscribe(jaln_session *sess, VortexChannel *cha
 	}
 
 	pd->msg_no = msg_no;
-	ret = cbs->on_subscribe(sess, ch_info, type, NULL, user_data);
+	ret = cbs->on_subscribe(sess, ch_info, type, sess->mode, NULL, user_data);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
@@ -380,7 +380,7 @@ void jaln_publisher_on_channel_create(int channel_num,
 
 	vortex_channel_set_received_handler(chan, jaln_publisher_init_reply_frame_handler, session);
 
-	enum jal_status ret = jaln_create_init_msg(JALN_ROLE_PUBLISHER, session->ch_info->type,
+	enum jal_status ret = jaln_create_init_msg(JALN_ROLE_PUBLISHER, session->mode, session->ch_info->type,
 			session->jaln_ctx->dgst_algs, session->jaln_ctx->xml_encodings, &init_msg, &init_msg_len);
 
 	if (JAL_OK != ret) {
@@ -403,6 +403,7 @@ struct jaln_connection *jaln_publish(
 		const char *host,
 		const char *port,
 		const int data_classes,
+		enum jaln_publish_mode mode,
 		void *user_data)
 {
 	if (!ctx || !host || !port) {
@@ -443,27 +444,23 @@ struct jaln_connection *jaln_publish(
 
 	vortex_connection_set_on_close_full(v_conn, jaln_publisher_on_connection_close, jconn);
 
+	jaln_session *session = NULL;
+
 	if (data_classes & JALN_RTYPE_JOURNAL) {
-		jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_JOURNAL);
-		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
-				NULL, NULL,
-				NULL, NULL,
-				jaln_publisher_on_channel_create, session);
+		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_JOURNAL);
+	} else if (data_classes & JALN_RTYPE_AUDIT) {
+		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_AUDIT);
+	} else if (data_classes & JALN_RTYPE_LOG) {
+		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_LOG);
+	} else {
+		return NULL;
 	}
-	if (data_classes & JALN_RTYPE_AUDIT) {
-		jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_AUDIT);
-		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
-				NULL, NULL,
-				NULL, NULL,
-				jaln_publisher_on_channel_create, session);
-	}
-	if (data_classes & JALN_RTYPE_LOG) {
-		jaln_session* session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_LOG);
-		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
-				NULL, NULL,
-				NULL, NULL,
-				jaln_publisher_on_channel_create, session);
-	}
+	session->mode = mode;
+	vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
+			NULL, NULL,
+			NULL, NULL,
+			jaln_publisher_on_channel_create, session);
+
 	return jconn;
 }
 

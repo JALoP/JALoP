@@ -76,6 +76,10 @@
 #define JALN_MSG_LOG "log-record"
 #define JALN_MSG_PUBLISH "publish"
 #define JALN_MSG_SUBSCRIBE "subscribe"
+#define JALN_MSG_PUBLISH_LIVE "publish-live"
+#define JALN_MSG_PUBLISH_ARCHIVE "publish-archival"
+#define JALN_MSG_SUBSCRIBE_LIVE "subscribe-live"
+#define JALN_MSG_SUBSCRIBE_ARCHIVE "subscribe-archival"
 #define JALN_MSG_SYNC "sync"
 
 #define JALN_DGST_SHA256 "sha256"

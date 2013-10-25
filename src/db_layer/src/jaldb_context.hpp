@@ -31,6 +31,7 @@
 #define _JALDB_CONTEXT_HPP_
 
 #include <list>
+#include <set>
 #include <string>
 #include <map>
 #include <db.h>
@@ -54,6 +55,7 @@ struct jaldb_context_t {
 	string_to_rdbs_map *audit_temp_dbs;
 	string_to_rdbs_map *log_temp_dbs;
 	int db_read_only; //<! Whether or not to open the databases read only
+	std::set<std::string> *seen_records; //<! Records already seen in live mode
 };
 
 /**

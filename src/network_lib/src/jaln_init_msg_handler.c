@@ -53,17 +53,27 @@ enum jal_status jaln_process_init(VortexFrame *frame, struct jaln_init_info **in
 	if (!msg) {
 		goto err_out;
 	}
+
 	if (0 != strcasecmp(msg, JALN_MSG_INIT)) {
 		goto err_out;
 	}
+
 	const char *role = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MODE);
 	if (!role) {
 		goto err_out;
 	}
-	if (0 == strcasecmp(role, JALN_MSG_SUBSCRIBE)) {
+	if (0 == strcasecmp(role, JALN_MSG_SUBSCRIBE_LIVE)) {
 		info->role = JALN_ROLE_SUBSCRIBER;
-	} else if (0 == strcasecmp(role, JALN_MSG_PUBLISH)) {
+		info->mode = JALN_LIVE_MODE;
+	} else if (0 ==strcasecmp(role, JALN_MSG_SUBSCRIBE_ARCHIVE)) {
+		info->role = JALN_ROLE_SUBSCRIBER;
+		info->mode = JALN_ARCHIVE_MODE;
+	} else if (0 == strcasecmp(role, JALN_MSG_PUBLISH_LIVE)) {
 		info->role = JALN_ROLE_PUBLISHER;
+		info->mode = JALN_LIVE_MODE;
+	} else if (0 == strcasecmp(role, JALN_MSG_PUBLISH_ARCHIVE)) {
+		info->role = JALN_ROLE_PUBLISHER;
+		info->mode = JALN_ARCHIVE_MODE;
 	} else {
 		goto err_out;
 	}

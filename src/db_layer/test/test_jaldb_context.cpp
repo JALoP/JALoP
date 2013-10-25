@@ -346,6 +346,76 @@ extern "C" void test_next_unsynced_works()
 
 }
 
+extern "C" void test_next_chronological_works()
+{
+	struct jaldb_record *rec = NULL;
+	char *nonce = NULL;
+	char *start_time = NULL;
+	char *end_time = NULL;
+
+	start_time = jaldb_gen_timestamp();
+
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], &nonce));
+	free(nonce);
+	nonce = NULL;
+
+	sleep(2);
+	
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], &nonce));
+	free(nonce);
+	nonce = NULL;
+
+	sleep(2);
+
+	end_time = jaldb_gen_timestamp();
+
+	assert_equals(JALDB_OK, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time));
+	assert_string_equals(S1, rec->source);
+	jaldb_destroy_record(&rec);
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time));
+	assert_string_equals(S2, rec->source);
+	jaldb_destroy_record(&rec);
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &end_time));
+
+	assert_equals(JALDB_OK, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time));
+	assert_string_equals(S3, rec->source);
+	jaldb_destroy_record(&rec);
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time));
+	assert_string_equals(S4, rec->source);
+	jaldb_destroy_record(&rec);
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time));
+
+	free(start_time);
+	free(end_time);
+
+}
+
 extern "C" void test_jaldb_get_last_k_records_works()
 {
 	enum jaldb_status ret;

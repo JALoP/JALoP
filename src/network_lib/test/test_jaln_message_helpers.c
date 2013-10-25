@@ -193,55 +193,55 @@ static char *output_str;
 	di_2_str \
 	di_3_str
 
-#define INIT_PUB_LOG \
+#define INIT_PUB_LOG_ARCHIVE \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: publish\r\n" \
+	"JAL-Mode: publish-archival\r\n" \
 	"JAL-Data-Class: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
 	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
 
-#define INIT_SUB_LOG \
+#define INIT_SUB_LOG_ARCHIVE \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe\r\n" \
+	"JAL-Mode: subscribe-archival\r\n" \
 	"JAL-Data-Class: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
 	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
 
-#define INIT_SUB_JOURNAL \
+#define INIT_SUB_JOURNAL_ARCHIVE \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe\r\n" \
+	"JAL-Mode: subscribe-archival\r\n" \
 	"JAL-Data-Class: journal\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
 	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
 
-#define INIT_SUB_AUDIT \
+#define INIT_SUB_AUDIT_ARCHIVE \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe\r\n" \
+	"JAL-Mode: subscribe-archival\r\n" \
 	"JAL-Data-Class: audit\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
 	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
 
-#define INIT_SUB_LOG_NO_ENC \
+#define INIT_SUB_LOG_ARCHIVE_NO_ENC \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe\r\n" \
+	"JAL-Mode: subscribe-archival\r\n" \
 	"JAL-Data-Class: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n\r\n" \
 
-#define INIT_SUB_LOG_NO_DGST \
+#define INIT_SUB_LOG_ARCHIVE_NO_DGST \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe\r\n" \
+	"JAL-Mode: subscribe-archival\r\n" \
 	"JAL-Data-Class: log\r\n" \
 	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
 
@@ -754,10 +754,10 @@ void test_create_init_msg_works_for_publish()
 {
 	char *msg_out = NULL;
 	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_PUBLISHER, JALN_RTYPE_LOG,
+	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_PUBLISHER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_PUB_LOG), len);
-	assert_equals(0, memcmp(INIT_PUB_LOG, msg_out, len));
+	assert_equals(strlen(INIT_PUB_LOG_ARCHIVE), len);
+	assert_equals(0, memcmp(INIT_PUB_LOG_ARCHIVE, msg_out, len));
 	free(msg_out);
 }
 
@@ -765,10 +765,10 @@ void test_create_init_msg_works_for_log()
 {
 	char *msg_out = NULL;
 	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
+	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG), len);
-	assert_equals(0, memcmp(INIT_SUB_LOG, msg_out, len));
+	assert_equals(strlen(INIT_SUB_LOG_ARCHIVE), len);
+	assert_equals(0, memcmp(INIT_SUB_LOG_ARCHIVE, msg_out, len));
 	free(msg_out);
 }
 
@@ -776,10 +776,10 @@ void test_create_init_msg_works_for_audit()
 {
 	char *msg_out = NULL;
 	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_AUDIT,
+	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_AUDIT,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_AUDIT), len);
-	assert_equals(0, memcmp(INIT_SUB_AUDIT, msg_out, len));
+	assert_equals(strlen(INIT_SUB_AUDIT_ARCHIVE), len);
+	assert_equals(0, memcmp(INIT_SUB_AUDIT_ARCHIVE, msg_out, len));
 	free(msg_out);
 }
 
@@ -787,10 +787,10 @@ void test_create_init_msg_works_for_journal_data()
 {
 	char *msg_out = NULL;
 	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_JOURNAL,
+	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL,
 				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_JOURNAL), len);
-	assert_equals(0, memcmp(INIT_SUB_JOURNAL, msg_out, len));
+	assert_equals(strlen(INIT_SUB_JOURNAL_ARCHIVE), len);
+	assert_equals(0, memcmp(INIT_SUB_JOURNAL_ARCHIVE, msg_out, len));
 	free(msg_out);
 }
 
@@ -799,10 +799,10 @@ void test_create_init_msg_works_with_no_enc()
 	axlList *empty_list = axl_list_new(jaln_string_list_case_insensitive_func, free);
 	char *msg_out = NULL;
 	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
+	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
 				dgst_algs, empty_list, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG_NO_ENC), len);
-	assert_equals(0, memcmp(INIT_SUB_LOG_NO_ENC, msg_out, len));
+	assert_equals(strlen(INIT_SUB_LOG_ARCHIVE_NO_ENC), len);
+	assert_equals(0, memcmp(INIT_SUB_LOG_ARCHIVE_NO_ENC, msg_out, len));
 	axl_list_free(empty_list);
 	free(msg_out);
 }
@@ -812,10 +812,10 @@ void test_create_init_msg_works_with_no_digests()
 	axlList *empty_list = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
 	char *msg_out = NULL;
 	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_RTYPE_LOG,
+	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
 				empty_list, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG_NO_DGST), len);
-	assert_equals(0, memcmp(INIT_SUB_LOG_NO_DGST, msg_out, len));
+	assert_equals(strlen(INIT_SUB_LOG_ARCHIVE_NO_DGST), len);
+	assert_equals(0, memcmp(INIT_SUB_LOG_ARCHIVE_NO_DGST, msg_out, len));
 	axl_list_free(empty_list);
 	free(msg_out);
 }
@@ -827,22 +827,25 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 	char *msg_out = NULL;
 	uint64_t len;
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER - 1, type, dgst_algs,
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER - 1, JALN_ARCHIVE_MODE, type, dgst_algs,
 							xml_encs, &msg_out, &len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT,
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE - 1, type, dgst_algs,
+							xml_encs, &msg_out, &len));	
+
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT,
 							dgst_algs, xml_encs, &msg_out, &len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, type, NULL, xml_encs, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, NULL, xml_encs, &msg_out, &len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, type, dgst_algs, NULL, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, NULL, &msg_out, &len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, type, dgst_algs, xml_encs, NULL, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, NULL, &len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, type, dgst_algs, xml_encs, &msg_out, NULL));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, &msg_out, NULL));
 
 	msg_out = (char*) 0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, type, dgst_algs, xml_encs, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, &msg_out, &len));
 }
 
 void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()

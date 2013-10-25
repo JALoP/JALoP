@@ -196,7 +196,7 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
  * JAL_OK on success
  *
  */
-enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_record_type type,
+enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_publish_mode mode, enum jaln_record_type type,
 		axlList *dgst_algs, axlList *xml_encodings, char **msg_out, uint64_t *msg_len_out);
 
 /**
