@@ -44,6 +44,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <db.h>
+#include <pthread.h>
 
 #include <stdlib.h>
 
