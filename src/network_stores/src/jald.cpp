@@ -380,7 +380,8 @@ enum jal_status pub_send_records_feeder(
 			pthread_mutex_t *sub_lock,
 			enum jal_status (*send)(jaln_session *, void *, char *,
 						uint8_t *, uint64_t, uint8_t *,
-						uint64_t, uint64_t, struct jaln_payload_feeder *))
+						uint64_t, uint64_t, uint64_t,
+						struct jaln_payload_feeder *))
 {
 	enum jal_status ret = JAL_E_INVAL;
 	enum jaldb_status db_ret = JALDB_E_INVAL;
@@ -454,9 +455,8 @@ enum jal_status pub_send_records_feeder(
 			ret = JAL_E_INVAL;
 			goto out;
 		}
-
 		ret = send(sess, NULL, nonce, sys_meta_buf, sys_meta_len,
-				app_meta_buf, app_meta_len, 0, &feeder);
+				app_meta_buf, app_meta_len, payload_len, 0, &feeder);
 		if (JAL_OK != ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;

@@ -311,6 +311,7 @@ enum jal_status jaln_session_is_ok(jaln_session *sess);
  * @param[in] sys_meta_len The length of the system metadata buffer
  * @param[in] app_meta_buf The buffer containing the application metadata
  * @param[in] app_meta_len The length of the system metadata buffer
+ * @param[in] payload_len The length of the payload buffer
  * @param[in] offset The offset at which the feeder should start reading the journal data
  * @param[in] feeder The payload feeder that will be used to read the journal data
  *
@@ -324,6 +325,7 @@ enum jal_status jaln_send_journal(
 			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
+			uint64_t payload_len,
 			uint64_t offset,
 			struct jaln_payload_feeder *feeder);
 

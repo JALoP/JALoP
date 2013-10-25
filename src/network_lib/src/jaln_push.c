@@ -164,6 +164,7 @@ enum jal_status jaln_send_record_feeder(
 			uint64_t sys_meta_len, 
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
+			uint64_t payload_len,
 			uint64_t offset,
 			struct jaln_payload_feeder *feeder)
 {
@@ -191,9 +192,11 @@ enum jal_status jaln_send_record_feeder(
 				app_meta_buf,
 				app_meta_len,
 				&rec_info);
+
 	if (JAL_OK != ret) {
 		goto out;
 	}
+	rec_info.payload_len = payload_len;
 
 	pub_data = sess->pub_data;
 
@@ -221,6 +224,8 @@ enum jal_status jaln_send_record_feeder(
 		offset += tmp;
 	}
 	pub_data->payload_off = offset;
+	pub_data->payload_sz = payload_len;
+	pub_data->journal_feeder = *feeder;
 
 	ret = jaln_pub_begin_next_record_ans(sess, &rec_info); 
 out:
@@ -235,6 +240,7 @@ enum jal_status jaln_send_journal(
 			__attribute__((unused)) uint64_t sys_meta_len, 
 			__attribute__((unused)) uint8_t *app_meta_buf,
 			__attribute__((unused)) uint64_t app_meta_len,
+			__attribute__((unused)) uint64_t payload_len,
 			__attribute__((unused)) uint64_t offset,
 			__attribute__((unused)) struct jaln_payload_feeder *feeder)
 {
@@ -249,6 +255,7 @@ enum jal_status jaln_send_journal(
 					sys_meta_len, 
 					app_meta_buf,
 					app_meta_len,
+					payload_len,
 					offset,
 					feeder);
 
