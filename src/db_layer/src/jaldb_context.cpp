@@ -1758,18 +1758,13 @@ enum jaldb_status jaldb_next_unsynced_record(
 	}
 
 	while (1) {
-		if (0 != db_ret) {
-			JALDB_DB_ERR(rdbs->primary_db, db_ret);
-			ret = JALDB_E_DB;
-			goto out;
-		}
-
+		
 		val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 		db_ret = rdbs->record_sent_db->pget(rdbs->record_sent_db, NULL, &skey, &pkey, &val, 0);
 		val.flags = DB_DBT_REALLOC;
 		
 		if (DB_NOTFOUND == db_ret) {
-		 	ret = JALDB_E_NOT_FOUND;
+			ret = JALDB_E_NOT_FOUND;
 			goto out;
 		} else if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
@@ -1791,6 +1786,13 @@ enum jaldb_status jaldb_next_unsynced_record(
 		if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
 		}
+
+		if (0 != db_ret) {
+			JALDB_DB_ERR(rdbs->primary_db, db_ret);
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
 		break;
 	}
 
