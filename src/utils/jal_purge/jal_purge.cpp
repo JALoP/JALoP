@@ -133,6 +133,7 @@ int main(int argc, char **argv)
 
 			jaldb_destroy_record(&rec);
 			free(nonce);
+			nonce = NULL;
 		}
 	} else if (global_args.before) {
 		dbret = jaldb_iterate_by_timestamp(ctx, type, global_args.before, iter_cb, &global_args);
