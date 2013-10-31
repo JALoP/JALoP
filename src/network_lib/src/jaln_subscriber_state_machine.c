@@ -127,7 +127,7 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_sys_meta);
 	axl_bool ret = session->sub_data->sm->curr_state->frame_handler(session, frame, 0, more);
-	vortex_frame_free(session->sub_data->sm->cached_frame);
+	vortex_frame_unref(session->sub_data->sm->cached_frame);
 	session->sub_data->sm->cached_frame = NULL;
 	return ret;
 err_out:
@@ -537,7 +537,7 @@ void jaln_sub_state_reset(jaln_session *session)
 	sm->payload_off = 0;
 	memset(sm->break_buf, 0, sm->break_sz);
 	sm->break_off = 0;
-	vortex_frame_free(sm->cached_frame);
+	vortex_frame_unref(sm->cached_frame);
 	if (session->sub_data->sm->dgst_inst) {
 		session->dgst->destroy(sm->dgst_inst);
 	}
@@ -645,7 +645,7 @@ void jaln_sub_state_machine_destroy(struct jaln_sub_state_machine **psm)
 	free(sm->app_meta_buf);
 	free(sm->payload_buf);
 	free(sm->break_buf);
-	vortex_frame_free(sm->cached_frame);
+	vortex_frame_unref(sm->cached_frame);
 
 	jaln_sub_state_destroy(&sm->wait_for_mime);
 	jaln_sub_state_destroy(&sm->wait_for_app_meta);
