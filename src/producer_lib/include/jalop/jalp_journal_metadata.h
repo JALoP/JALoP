@@ -69,7 +69,8 @@ struct jalp_transform_other_info {
  * @param [in] uri The URI to use for the transform.
  * @param xml_snippet A snippet of XML that will be parsed and added as
  * child(ren) elments of the transform.
- * @return a new jalp_transform_other object, or NULL if \puri is NULL.
+ * @return a new jalp_transform_other object, or NULL if \p uri
+ *         is NULL.
  */
 struct jalp_transform_other_info *jalp_transform_other_info_create(const char *uri, const char *xml_snippet);
 /**
@@ -79,7 +80,7 @@ struct jalp_transform_other_info *jalp_transform_other_info_create(const char *u
  */
 void jalp_transform_other_info_destroy(struct jalp_transform_other_info **other_info);
 /**
- * Enum to indicate which AES algirthm to create.
+ * Enum to indicate which AES algorithm to create.
  */
 enum jalp_aes_key_size {
 	/** Indicates a 128 bit (16 byte) key */
@@ -90,10 +91,15 @@ enum jalp_aes_key_size {
 	JALP_AES256 = 32,
 };
 
+/** Size in bytes of AES initialization vector   */
 #define JALP_TRANSFORM_AES_IVSIZE (128 / 8)
+/** Size in bytes of AES 128 bit key */
 #define JALP_TRANSFORM_AES128_KEYSIZE (128 / 8)
+/** Size in bytes of AES 192 bit key */
 #define JALP_TRANSFORM_AES192_KEYSIZE (192 / 8)
+/** Size in bytes of AES 256 bit key */
 #define JALP_TRANSFORM_AES256_KEYSIZE (256 / 8)
+/** Size in bytes of exclusive-or key */
 #define JALP_TRANSFORM_XOR_KEYSIZE (32 / 8)
 /**
  * A structure used to add additional information for encryption transforms.
@@ -135,6 +141,11 @@ struct jalp_transform_encryption_info *jalp_transform_encryption_info_create(con
  * @param[in, out] enc_info The object to destroy. This will get set to NULL.
  */
 void jalp_transform_encryption_info_destroy(struct jalp_transform_encryption_info **enc_info);
+
+/**
+ * Enum to indicate which transform type is being applied to an 
+ * entry. 
+ */
 enum jalp_transform_type {
 	JALP_TRANSFORM_OTHER,
 	JALP_TRANSFORM_AES128,
@@ -150,26 +161,26 @@ enum jalp_transform_type {
 struct jalp_transform {
 	/** the type for this transform.
 	 *
-	 * If the transform is JALP_TRANSFORM_AES128, and the \penc_info
-	 * is non-null, it may contain a 128 bit key element, and a 128 bit iv
-	 * element.
+	 * If the transform is JALP_TRANSFORM_AES128, and the \p 
+	 * enc_info is non-null, it may contain a 128 bit key element, 
+	 * and a 128 bit iv element. 
 	 *
-	 * If the transform is JALP_TRANSFORM_AES192, and the \penc_info
-	 * is non-null, it may contain a 192 bit key element, and a 128 bit iv
-	 * element.
+	 * If the transform is JALP_TRANSFORM_AES192, and the \p 
+	 * enc_info is non-null, it may contain a 192 bit key element, 
+	 * and a 128 bit iv element. 
 	 *
-	 * If the transform is JALP_TRANSFORM_AES256, and the \penc_info
-	 * is non-null, it may contain a 256 bit key element, and a 128 bit iv
-	 * element.
+	 * If the transform is JALP_TRANSFORM_AES256, and the \p 
+	 * enc_info is non-null, it may contain a 256 bit key element, 
+	 * and a 128 bit iv element. 
 	 *
-	 * If the transform is JALP_TRANSFORM_XOR, and the \penc_info
+	 * If the transform is JALP_TRANSFORM_XOR, and the \p enc_info
 	 * is non-null, it may contain a 32 bit key element, but must not
 	 * contain an IV element.
 	 *
-	 * If the transform is JALP_TRANSFORM_DEFLATE, then the \penc_info
-	 * element must be NULL.
+	 * If the transform is JALP_TRANSFORM_DEFLATE, then the \p 
+	 * enc_info element must be NULL. 
 	 *
-	 * If the transform is JALP_TRANSFORM_OTHER, then the \pother
+	 * If the transform is JALP_TRANSFORM_OTHER, then the \p other
 	 * element must non-NULL and must contain a valid uri. It may also
 	 * contain an xml snippet that will be added to the document as child
 	 * elements for the transform.
@@ -250,7 +261,8 @@ struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev
  * is assumed to contain a 128 bit (16 byte) IV.
  *
  * @note If you call this function with \p key or \p iv as NULL, then this
- * transform will be created without the <Key> or <IV> nodes, respectively.
+ * transform will be created without the \p Key or \p IV nodes,
+ * respectively. 
  *
  * @return a pointer to the newly created transform
  */

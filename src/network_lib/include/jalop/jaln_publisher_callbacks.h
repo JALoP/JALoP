@@ -215,7 +215,8 @@ struct jaln_publisher_callbacks *jaln_publisher_callbacks_create();
 /**
  * Destroy a jaln_publisher_callbacks structure
  *
- * @param[in,out] handlers The structure to destroy. This will be set to NULL.
+ * @param[in,out] callbacks The structure to destroy. This will 
+ *       be set to NULL.
  */
 void jaln_publisher_callbacks_destroy(struct jaln_publisher_callbacks **callbacks);
 

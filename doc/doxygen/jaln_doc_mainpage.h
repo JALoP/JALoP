@@ -217,13 +217,15 @@ int main(void)
  * via a call to jaln_register_connection_callbacks().
  *
  * \subsection d_step7 Step 7: Initiate a connection to a remote, or listen for
- * connections from remotes. A #jaln_connection may be used with used with
- * single call to jaln_subscribe(), jaln_publish(), or jaln_listen(). The
- * #jaln_context must be fully configured, with all necessary callbacks, digest
- * algorithms, XML encodings, etc. registered prior to these calls. Each of
- * these functions accepts a \p user_data pointer as one of the arguments. This
- * pointer is passed into every callback function for the application to use.
- * It may be anything at all, or NULL.
+ * connections from remotes. A jaln_connection may be used with
+ * used with single call to jaln_subscribe(), jaln_publish(), or
+ * jaln_listen(). The #jaln_context must be fully configured,
+ * with all necessary callbacks, digest algorithms, XML
+ * encodings, etc. registered prior to these calls. Each of
+ * these functions accepts a \p user_data pointer as one of the
+ * arguments. This pointer is passed into every callback
+ * function for the application to use. It may be anything at
+ * all, or NULL.
  *
  * \subsubsection d_step7a Step 7a: Using a #jaln_context to initiate a
  * connection a subscribe to a remote peer. If the #jaln_context is going to be

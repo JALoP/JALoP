@@ -33,10 +33,19 @@
 extern "C" {
 #endif
 
+/** JALoP metadata URI */
 #define JAL_APP_META_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadata"
+
+/** JALoP namespace URI */
 #define JAL_APP_META_TYPES_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
+
+/** JALoP Schema for XML Signatures URI */
 #define JAL_XMLDSIG_URI "http://www.w3.org/2000/09/xmldsig#"
+
+/** JALoP system metadata URI */
 #define JAL_SYS_META_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/systemMetadata"
+
+/** JALoP payload URI string  */
 #define JAL_PAYLOAD_URI "jalop:payload"
 
 #ifdef __cplusplus

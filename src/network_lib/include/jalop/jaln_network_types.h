@@ -37,6 +37,7 @@ extern "C" {
 #include <jalop/jal_status.h>
 #include <stdint.h>
 
+/** Integer version of JALoP network protocol */
 #define JALN_JALOP_VERSION_ONE 1
 
 /**
@@ -50,6 +51,8 @@ enum jaln_record_type {
 	/** Indicates a Log Record */
 	JALN_RTYPE_LOG = 1 << 2,
 };
+
+/** Defined bit value for all possible records types */
 #define JALN_RTYPE_ALL (JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT | JALN_RTYPE_LOG)
 /**
  * Structure to encompass MIME headers
@@ -65,6 +68,10 @@ struct jaln_mime_header {
 
 /**
  * Create a jaln_mime_header list.
+ *  
+ * @param[in,out] headers The structure will contain the list of
+ *       headers. This will be set to NULL.
+ *  
  * @return a newly created jaln_mime_header_list
  */
 struct jaln_mime_header *jaln_mime_header_create(struct jaln_mime_header **headers);

@@ -39,9 +39,9 @@ extern "C" {
 #endif
 
 enum jaldb_iter_status {
-	JALDB_ITER_CONT, //<! Continue processing records.
-	JALDB_ITER_REM,  //<! Remove the current record.
-	JALDB_ITER_ABORT, //<! Stop processing and return control to the caller.
+	JALDB_ITER_CONT,	//!< Continue processing records.
+	JALDB_ITER_REM,		//!< Remove the current record.
+	JALDB_ITER_ABORT,	//!< Stop processing and return control to the caller.
 };
 
 /**

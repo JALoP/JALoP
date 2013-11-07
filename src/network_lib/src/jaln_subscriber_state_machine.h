@@ -68,35 +68,35 @@ struct jaln_sub_state {
  * Journal/audit/log Record message
  */
 struct jaln_sub_state_machine {
-	char *expected_msg;                //<! The expected message type (journal, audit, or log records)
-	char *payload_len_hdr;             //<! The expected MIME header for the size of the payload ('jal-log-lenght
-	char *serial_id;                   //<! The serial ID of the record currently in process
-	uint8_t *sys_meta_buf;            //<! bufer containing the system metadata
-	uint64_t sys_meta_sz;              //<! the total size of the sys_meta_bufer
-	uint64_t sys_meta_off;               //<! offset into the bufer to begin writing the next hunk of data
-	uint8_t *app_meta_buf;            //<! bufer containing the system metadata
-	uint64_t app_meta_sz;                //<! the total size of the sys_meta_bufer
-	uint64_t app_meta_off;               //<! offset into the bufer to begin writing the next hunk of data
-	uint8_t *payload_buf;             //<! bufer containing the system metadata
-	uint64_t payload_sz;                 //<! the total size of the sys_meta_bufer
-	uint64_t payload_off;                //<! offset into the bufer to begin writing the next hunk of data
-	uint8_t *break_buf;               //<! bufer to hold the break string between data segments
-	uint64_t break_sz;                   //<! size of the break string
-	uint64_t break_off;                  //<! offset into the bufer to begin writing the next hunk of data
-	VortexFrame *cached_frame;         //<! used to collect frames until the complete MIME headers are available.
-	void *dgst_inst;                   //<! An instance of a digest_ctx for a particular record.
-	uint8_t *dgst;                     //<! A buffer to hold the final contents of a digest
+	char *expected_msg;                //!< The expected message type (journal, audit, or log records)
+	char *payload_len_hdr;             //!< The expected MIME header for the size of the payload ('jal-log-lenght
+	char *serial_id;                   //!< The serial ID of the record currently in process
+	uint8_t *sys_meta_buf;             //!< bufer containing the system metadata
+	uint64_t sys_meta_sz;              //!< the total size of the sys_meta_bufer
+	uint64_t sys_meta_off;             //!< offset into the bufer to begin writing the next hunk of data
+	uint8_t *app_meta_buf;             //!< bufer containing the system metadata
+	uint64_t app_meta_sz;              //!< the total size of the sys_meta_bufer
+	uint64_t app_meta_off;             //!< offset into the bufer to begin writing the next hunk of data
+	uint8_t *payload_buf;              //!< bufer containing the system metadata
+	uint64_t payload_sz;               //!< the total size of the sys_meta_bufer
+	uint64_t payload_off;              //!< offset into the bufer to begin writing the next hunk of data
+	uint8_t *break_buf;                //!< bufer to hold the break string between data segments
+	uint64_t break_sz;                 //!< size of the break string
+	uint64_t break_off;                //!< offset into the bufer to begin writing the next hunk of data
+	VortexFrame *cached_frame;         //!< used to collect frames until the complete MIME headers are available.
+	void *dgst_inst;                   //!< An instance of a digest_ctx for a particular record.
+	uint8_t *dgst;                     //!< A buffer to hold the final contents of a digest
 
-	struct jaln_sub_state *curr_state;                //<! The current state.
-	struct jaln_sub_state *wait_for_mime;             //<! The initial state, waiting for enough data to come through to parse the MIME headers.
-	struct jaln_sub_state *wait_for_sys_meta;         //<! The state that handles reading the system metadata from the frame payload.
-	struct jaln_sub_state *wait_for_sys_meta_break;   //<! The state that reads the 'BREAK' marker between the system metadata and app metadata.
-	struct jaln_sub_state *wait_for_app_meta;         //<! The state that handles reading the app metadata from the frame payload.
-	struct jaln_sub_state *wait_for_app_meta_break;   //<! The state that reads the 'BREAK' marker between the app metadata and the record data.
-	struct jaln_sub_state *wait_for_payload;          //<! The state that handles reading record data from the frame payload.
-	struct jaln_sub_state *wait_for_payload_break;    //<! The state that reads the 'BREAK' marker following the record data.
-	struct jaln_sub_state *record_complete;           //<! The state that finalizes a record.
-	struct jaln_sub_state *error_state;;              //<! The error state.
+	struct jaln_sub_state *curr_state;                //!< The current state.
+	struct jaln_sub_state *wait_for_mime;             //!< The initial state, waiting for enough data to come through to parse the MIME headers.
+	struct jaln_sub_state *wait_for_sys_meta;         //!< The state that handles reading the system metadata from the frame payload.
+	struct jaln_sub_state *wait_for_sys_meta_break;   //!< The state that reads the 'BREAK' marker between the system metadata and app metadata.
+	struct jaln_sub_state *wait_for_app_meta;         //!< The state that handles reading the app metadata from the frame payload.
+	struct jaln_sub_state *wait_for_app_meta_break;   //!< The state that reads the 'BREAK' marker between the app metadata and the record data.
+	struct jaln_sub_state *wait_for_payload;          //!< The state that handles reading record data from the frame payload.
+	struct jaln_sub_state *wait_for_payload_break;    //!< The state that reads the 'BREAK' marker following the record data.
+	struct jaln_sub_state *record_complete;           //!< The state that finalizes a record.
+	struct jaln_sub_state *error_state;;              //!< The error state.
 };
 
 

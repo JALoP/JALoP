@@ -76,7 +76,7 @@
  *  With the exception of \p jalp_test (since this is really a development tool),
  *  *NIX man pages are provided for the various utilities and configuration files.
  *  They can be accessed in the source under doc/man/, or post-installation under
- *  <prefix>/share/man/.
+ *  PREFIX/share/man/.
  *
  * \section install_sec Installation
  *

@@ -134,10 +134,6 @@ enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
  * Register a new digest algorithm.
  *
  * @param[in] jal_ctx The jaln_context to associate with this the jal_digest_ctx.
- * @param[in] algorithm The name of the digest method. The JNL makes a copy of this
- * string. Algorithm names are case-insensitive, so sha256, SHA256, and sHa256
- * are all the same. The JNL strips any leading or trailing whitespace from the
- * algorithm name.
  * @param[in] digest_ctx The function pointers and data sizes for the digest algorithm.
  *
  * Based on the 'connect' message exchange, the JNL will choose a specific
@@ -293,6 +289,8 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn);
  * it should periodically call this function to determine if the remote is
  * still connected. Otherwise, the internal resources can never be reclaimed.
  *
+ * @param[in] sess The session containg the connection and subscriber information
+ *  
  * @return JAL_OK if the session is active, or an error if the connection was
  * disconnected.
  */
