@@ -1851,6 +1851,7 @@ enum jaldb_status jaldb_next_chronological_record(
 	enum jaldb_status ret = JALDB_E_INVAL;
 	struct jaldb_record *rec = NULL;
 	struct tm search_time, current_time;
+	int search_microseconds, cur_microseconds;
 	memset(&search_time,0,sizeof(search_time));
 	memset(&current_time,0,sizeof(current_time));
 	int byte_swap;
@@ -1867,7 +1868,14 @@ enum jaldb_status jaldb_next_chronological_record(
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC;
 
-	if (!strptime(*timestamp, "%Y-%m-%dT%H:%M:%S", &search_time)) {
+	char *end_timestamp = strptime(*timestamp, "%Y-%m-%dT%H:%M:%S", &search_time);
+
+	if (!end_timestamp) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!sscanf(end_timestamp,".%d-%*d:%*d",&search_microseconds)) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1922,14 +1930,22 @@ enum jaldb_status jaldb_next_chronological_record(
 		goto out;
 	}
 
-	if (!strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time)) {
+	end_timestamp = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
+
+	if (!end_timestamp) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!sscanf(end_timestamp,".%d-%*d:%*d",&cur_microseconds)) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
 	nonce_string = (char *)pkey.data;
 
-	while (difftime(mktime(&search_time), mktime(&current_time)) == 0) {
+	while (difftime(mktime(&search_time), mktime(&current_time)) == 0 &&
+			search_microseconds == cur_microseconds) {
 		// Check to see if we already got a record at this time
 		if (ctx->seen_records->count(nonce_string) == 0) {
 			//Haven't seen it
@@ -1953,7 +1969,8 @@ enum jaldb_status jaldb_next_chronological_record(
 		}
 	}
 
-	if (difftime(mktime(&search_time), mktime(&current_time)) != 0) {
+	if (difftime(mktime(&search_time), mktime(&current_time)) != 0 ||
+			search_microseconds != cur_microseconds) {
 		free(*timestamp);
 		*timestamp = jal_strdup((char*)key.data);
 		ctx->seen_records->clear();

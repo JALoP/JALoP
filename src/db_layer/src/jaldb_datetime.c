@@ -27,6 +27,7 @@
  * limitations under the License.
 */
 
+#include <stdio.h>
 #include <ctype.h>
 #include <libxml/xmlschemastypes.h>
 #include <jalop/jal_status.h>

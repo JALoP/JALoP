@@ -354,6 +354,7 @@ extern "C" void test_next_chronological_works()
 	char *end_time = NULL;
 
 	start_time = jaldb_gen_timestamp();
+	assert_not_equals(NULL, start_time);
 
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
 	free(nonce);
@@ -374,6 +375,7 @@ extern "C" void test_next_chronological_works()
 	sleep(2);
 
 	end_time = jaldb_gen_timestamp();
+	assert_not_equals(NULL,end_time);
 
 	assert_equals(JALDB_OK, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time));
 	assert_string_equals(S1, rec->source);

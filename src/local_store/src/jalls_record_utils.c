@@ -89,6 +89,11 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 		return -1;
 	}
 
+	char *timestamp = jaldb_gen_timestamp();
+	if (!timestamp) {
+		return -1;
+	}
+
 	struct jaldb_record *rec = jaldb_create_record();
 
 	rec->type = rec_type;
@@ -96,7 +101,7 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 	rec->have_uid = 1;
 	rec->uid = thread_ctx->peer_uid;
 	rec->hostname = jal_strdup(thread_ctx->ctx->hostname);
-	rec->timestamp = jaldb_gen_timestamp();
+	rec->timestamp = timestamp;
 	rec->username = jalls_get_user_id_str(thread_ctx->peer_uid);
 	rec->sec_lbl = jalls_get_security_label(thread_ctx->fd);
 	uuid_copy(rec->host_uuid, thread_ctx->ctx->system_uuid);

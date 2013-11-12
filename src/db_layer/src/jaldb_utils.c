@@ -253,14 +253,23 @@ out:
 
 char *jaldb_gen_timestamp()
 {
-	char *ftime = (char*)jal_malloc(26);
+	char *ftime = (char*)jal_malloc(34);
 	char *tz_offset = (char*)jal_malloc(7);
-	time_t rawtime;
-	struct tm *tm;
+	struct tm *tm = (struct tm*)jal_malloc(sizeof(struct tm));
 
-	time(&rawtime);
-	tm = localtime(&rawtime);
-	strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
+	struct timeval *tv = jal_malloc(sizeof(struct timeval));
+
+	if (gettimeofday(tv,NULL)) {
+		return NULL;
+	}
+
+	if (!localtime_r(&tv->tv_sec, tm)) {
+		return NULL;
+	}
+
+	int bytes = strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
+
+	snprintf(ftime+bytes,7,".%06ld",tv->tv_usec);
 
 	/* Timezone
 	 * Inserts ':' into [+-]HHMM for [+-]HH:MM */
@@ -315,6 +324,9 @@ char *jaldb_gen_primary_key(uuid_t uuid)
 	uuid_unparse(uuid,uuid_str);
 
 	char *ts = jaldb_gen_timestamp();
+	if (!ts) {
+		return NULL;
+	}
 	pid_t pid = getpid();
 	pthread_t tid = pthread_self();//portable
 	char *key = NULL;

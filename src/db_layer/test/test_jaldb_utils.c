@@ -311,4 +311,20 @@ void test_jaldb_get_dbs_works()
 	assert_equals(rdbs,rdbs3);
 
 	jaldb_context_destroy(&ctx);
+
+}
+
+void test_jaldb_gen_timestamp_works()
+{
+	char *timestamp = jaldb_gen_timestamp();
+	assert_not_equals(NULL,timestamp);
+	struct tm time;
+	int ms;
+
+	char *end_timestamp = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &time);
+
+	assert_not_equals(NULL,end_timestamp);
+
+	assert_equals(1,sscanf(end_timestamp,".%d-%*d:%*d",&ms));
+
 }

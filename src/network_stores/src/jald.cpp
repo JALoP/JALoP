@@ -689,6 +689,10 @@ enum jal_status pub_on_subscribe(
 
 	if (JALN_LIVE_MODE == mode) {
 		data.timestamp = jaldb_gen_timestamp();
+		if (!data.timestamp) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Error: Error generating timestamp");
+			return JAL_E_INVAL_TIMESTAMP;
+		}
 	} else if (JALN_ARCHIVE_MODE != mode) {
 		// Bad mode
 		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: Bad mode");
