@@ -478,14 +478,14 @@ enum jal_status pub_send_records_feeder(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
-		if (*timestamp) {
+		if (!*timestamp) {
 			//Archive mode
 			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
-		}
-		if (JALDB_OK != db_ret) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
-		} else {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
+			if (JALDB_OK != db_ret) {
+				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
+			} else {
+				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
+			}
 		}
 		nonce = NULL;
 	} while (JALDB_OK == db_ret);
@@ -585,11 +585,14 @@ enum jal_status pub_send_records(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
-		db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
-		if (JALDB_OK != db_ret) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
-		} else {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
+		if (!*timestamp) {
+			//Archive mode
+			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+			if (JALDB_OK != db_ret) {
+				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
+			} else {
+				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
+			}
 		}
 		nonce = NULL;
 	} while (JALDB_OK == db_ret);
