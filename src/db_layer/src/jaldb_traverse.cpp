@@ -56,6 +56,8 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
 	struct tm end_time, current_time;
+	int end_ms, current_ms;
+	char *tmp_time;
 	struct jaldb_record *rec = NULL;
 	int byte_swap;
 	struct jaldb_record_dbs *rdbs = NULL;
@@ -70,7 +72,13 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC;
 
-	if (!strptime(timestamp, "%Y-%m-%dT%H:%M:%S-%z", &end_time)) {
+	tmp_time = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &end_time);
+	if (!tmp_time) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!sscanf(tmp_time,".%d-%*d:%*d", &end_ms)) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -123,11 +131,13 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 			goto out;
 		}
 
-		// Need to close cursor before removing record
-		cursor->c_close(cursor);
-		cursor = NULL;
+		tmp_time = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
+		if (!tmp_time) {
+			ret = JALDB_E_INVAL;
+			goto out;
+		}
 
-		if (!strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S-%z", &current_time)) {
+		if (!sscanf(tmp_time,".%d-%*d:%*d", &current_ms)) {
 			ret = JALDB_E_INVAL;
 			goto out;
 		}
@@ -135,6 +145,12 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		if (difftime(mktime(&end_time), mktime(&current_time)) < 0) {
 			// current_time is > end_time, so break out
 			goto out;
+		}
+		
+		if (difftime(mktime(&end_time), mktime(&current_time)) == 0) {
+			if (current_ms > end_ms) {
+				goto out;
+			}
 		}
 
 		ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
@@ -146,12 +162,22 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		case JALDB_ITER_CONT:
 			break;
 		case JALDB_ITER_REM:
+			// Need to close cursor before removing record
+			cursor->c_close(cursor);
+			cursor = NULL;
+
 			ret = jaldb_remove_record(ctx, type, (char*) pkey.data);
 			if (JALDB_OK == ret) {
 				ret = jaldb_remove_segments_from_disk(ctx, rec);
 			}
 			if (ret != JALDB_OK) {
 				// something went wrong...
+				goto out;
+			}
+
+			db_ret = rdbs->timestamp_tz_idx_db->cursor(rdbs->timestamp_tz_idx_db, NULL, &cursor, DB_DEGREE_2);
+			if (0 != db_ret) {
+				JALDB_DB_ERR(rdbs->timestamp_tz_idx_db, db_ret);
 				goto out;
 			}
 			break;
@@ -161,11 +187,6 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 
 		jaldb_destroy_record(&rec);
 
-		db_ret = rdbs->timestamp_tz_idx_db->cursor(rdbs->timestamp_tz_idx_db, NULL, &cursor, DB_DEGREE_2);
-		if (0 != db_ret) {
-			JALDB_DB_ERR(rdbs->timestamp_tz_idx_db, db_ret);
-			goto out;
-		}
 	}
 
 out:
@@ -176,7 +197,6 @@ out:
 	jaldb_destroy_record(&rec);
 
 	free(key.data);
-	free(pkey.data);
 	free(val.data);
 	return ret;
 }
