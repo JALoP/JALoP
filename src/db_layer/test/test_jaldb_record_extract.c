@@ -134,6 +134,21 @@ void test_extract_record_sent_flag_works()
 	free(result.data);
 }
 
+void test_extract_record_sent_flag_works_after_a_record_is_synced()
+{
+	DBT result;
+	memset(&result, 0, sizeof(result));
+
+	headers->flags |= JALDB_RFLAGS_SYNCED;
+
+	int ret = jaldb_extract_record_sent_flag(NULL, NULL, &record_dbt, &result);
+	assert_equals(0, ret);
+	assert_equals(sizeof(uint32_t), result.size);
+	assert_equals(JALDB_RFLAGS_SENT,*((uint32_t*)result.data));
+
+	free(result.data);
+}
+
 void test_extract_record_sent_flag_returns_error_for_input()
 {
 	DBT result;

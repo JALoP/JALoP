@@ -44,8 +44,17 @@ static BIGNUM *bn_one;
 static BIGNUM *bn_two;
 static DBT dbt_one;
 static DBT dbt_two;
+static DBT nonce_dbt1;
+static DBT nonce_dbt2;
+static DBT nonce_dbt3;
+static DBT nonce_dbt4;
 static uint8_t one;
 static uint8_t two;
+
+#define NONCE1 "9b5754ef-ce82-4dd2-af61-d329cc526203_2013-11-20T09:12:34.12345_1234_12345"
+#define NONCE2 "9b5754ef-ce82-4dd2-af61-d329cc526203_2013-11-20T09:12:34.12345_1234_1234567"
+#define NONCE3 "9b5754ef-ce82-4dd2-af61-d329cc526203_2013-11-20T09:12:34.12345_1234_12346"
+#define NONCE4 "9c5754ef-ce82-4dd2-af61-d329cc526203_2013-11-20T09:12:34.12345_1234_12345"
 
 void setup()
 {
@@ -66,6 +75,22 @@ void setup()
 	assert_not_equals((void*) NULL, bn_two);
 	dbt_two.data = &two;
 	dbt_two.size = sizeof(two);
+
+	memset(&nonce_dbt1, 0, sizeof(DBT));
+	nonce_dbt1.data = NONCE1;
+	nonce_dbt1.size = strlen(NONCE1) + 1;
+
+	memset(&nonce_dbt2, 0, sizeof(DBT));
+	nonce_dbt2.data = NONCE2;
+	nonce_dbt2.size = strlen(NONCE2) + 1;
+
+	memset(&nonce_dbt3, 0, sizeof(DBT));
+	nonce_dbt3.data = NONCE3;
+	nonce_dbt3.size = strlen(NONCE3) + 1;
+
+	memset(&nonce_dbt4, 0, sizeof(DBT));
+	nonce_dbt4.data = NONCE4;
+	nonce_dbt4.size = strlen(NONCE4) + 1;
 }
 
 void teardown()
@@ -213,3 +238,26 @@ void test_get_next_serial_id_works()
 	free(sid.data);
 }
 
+void test_nonce_compare_works()
+{
+	// nonces should sort in order 1,2,3,4
+	assert_true(0 > jaldb_nonce_compare(NULL, &nonce_dbt1, &nonce_dbt2));
+	assert_true(0 > jaldb_nonce_compare(NULL, &nonce_dbt2, &nonce_dbt3));
+	assert_true(0 > jaldb_nonce_compare(NULL, &nonce_dbt3, &nonce_dbt4));
+	assert_true(0 > jaldb_nonce_compare(NULL, &nonce_dbt1, &nonce_dbt4));
+	assert_true(0 > jaldb_nonce_compare(NULL, &nonce_dbt2, &nonce_dbt4));
+	assert_true(0 > jaldb_nonce_compare(NULL, &nonce_dbt1, &nonce_dbt3));
+
+	assert_true(0 == jaldb_nonce_compare(NULL, &nonce_dbt1, &nonce_dbt1));
+	assert_true(0 == jaldb_nonce_compare(NULL, &nonce_dbt2, &nonce_dbt2));
+	assert_true(0 == jaldb_nonce_compare(NULL, &nonce_dbt3, &nonce_dbt3));
+	assert_true(0 == jaldb_nonce_compare(NULL, &nonce_dbt4, &nonce_dbt4));
+
+	assert_true(0 < jaldb_nonce_compare(NULL, &nonce_dbt4, &nonce_dbt3));
+	assert_true(0 < jaldb_nonce_compare(NULL, &nonce_dbt4, &nonce_dbt2));
+	assert_true(0 < jaldb_nonce_compare(NULL, &nonce_dbt4, &nonce_dbt1));
+	assert_true(0 < jaldb_nonce_compare(NULL, &nonce_dbt3, &nonce_dbt2));
+	assert_true(0 < jaldb_nonce_compare(NULL, &nonce_dbt3, &nonce_dbt1));
+	assert_true(0 < jaldb_nonce_compare(NULL, &nonce_dbt2, &nonce_dbt1));
+
+}

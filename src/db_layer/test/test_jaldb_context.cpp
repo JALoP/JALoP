@@ -260,6 +260,37 @@ extern "C" void test_mark_record_sent_and_synced()
 	free(nonce);
 }
 
+extern "C" void test_marking_record_synced_doesnt_affect_sent_ordering()
+{
+	struct jaldb_record *rec1 = NULL;
+	struct jaldb_record *rec2 = NULL;
+	struct jaldb_record *rec3 = NULL;
+	char *nonce1 = NULL;
+	char *nonce2 = NULL;
+	char *nonce3 = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], &nonce2));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce1));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce1));
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context,JALDB_RTYPE_LOG, &nonce3, &rec3));
+
+	assert_equals(0, strcmp(nonce2,nonce3));
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce2));
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce1, &rec1));
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec2));
+	assert_equals(2, rec1->synced);
+	assert_equals(1, rec2->synced);
+	jaldb_destroy_record(&rec1);
+	jaldb_destroy_record(&rec2);
+	jaldb_destroy_record(&rec3);
+	free(nonce1);
+	free(nonce2);
+	free(nonce3);
+}
+
 extern "C" void test_mark_record_sent_returns_error_when_sid_not_found()
 {
 	char *nonce = NULL;

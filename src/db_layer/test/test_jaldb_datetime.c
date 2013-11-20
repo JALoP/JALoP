@@ -37,17 +37,23 @@
 #include "jaldb_datetime.h"
 #include "jaldb_serialize_record.h"
 
-#define DT1 "2012-12-12T09:00:00Z"
-#define DT2 "2012-12-12T09:00:01Z"
-#define DT3 "2012-12-12T09:00:00+13:00"
-#define DT4 "2012-12-12T09:00:00-13:00"
+#define DT1 "2012-12-12T09:00:00.00001Z"
+#define DT2 "2012-12-12T09:00:01.00001Z"
+#define DT3 "2012-12-12T09:00:00.00001+13:00"
+#define DT4 "2012-12-12T09:00:00.00001-13:00"
+#define DT5 "2012-12-12T08:59:59.99999-08:00"
+#define DT6 "2012-12-12T09:00:00.00000-08:00"
+#define DT7 "2012-12-12T09:00:00.00001-08:00"
 
-#define DT1_NO_TZ "2012-12-12T09:00:00"
+#define DT1_NO_TZ "2012-12-12T09:00:00.00001"
 
 #define BAD_DATETIME "Not a DateTime"
 
 static DBT dbt1;
 static DBT dbt2;
+static DBT dbt5;
+static DBT dbt6;
+static DBT dbt7;
 static DBT dbt1_no_tz;
 
 static DBT dbt_record;
@@ -84,6 +90,18 @@ void setup()
 	dbt2.data = DT2;
 	dbt2.size = strlen(DT2) + 1;
 
+	memset(&dbt5, 0, sizeof(dbt5));
+	dbt5.data = DT5;
+	dbt5.size = strlen(DT5) + 1;
+
+	memset(&dbt6, 0, sizeof(dbt6));
+	dbt6.data = DT6;
+	dbt6.size = strlen(DT6) + 1;
+
+	memset(&dbt7, 0, sizeof(dbt7));
+	dbt7.data = DT7;
+	dbt7.size = strlen(DT7) + 1;
+
 	memset(&dbt1_no_tz, 0, sizeof(dbt1_no_tz));
 	dbt1_no_tz.data = DT1_NO_TZ;
 	dbt1_no_tz.size = strlen(DT1_NO_TZ) + 1;
@@ -111,6 +129,16 @@ void test_xml_datetime_compare_works()
 	assert_equals(-1, jaldb_xml_datetime_compare(NULL, &dbt1, &dbt2));
 	assert_equals( 1, jaldb_xml_datetime_compare(NULL, &dbt2, &dbt1));
 	assert_equals( 0, jaldb_xml_datetime_compare(NULL, &dbt1, &dbt1));
+
+	assert_equals( 0, jaldb_xml_datetime_compare(NULL, &dbt5, &dbt5));
+	assert_equals( 0, jaldb_xml_datetime_compare(NULL, &dbt6, &dbt6));
+	assert_equals( 0, jaldb_xml_datetime_compare(NULL, &dbt7, &dbt7));
+	assert_equals(-1, jaldb_xml_datetime_compare(NULL, &dbt5, &dbt7));
+	assert_equals(-1, jaldb_xml_datetime_compare(NULL, &dbt5, &dbt6));
+	assert_equals(-1, jaldb_xml_datetime_compare(NULL, &dbt6, &dbt7));
+	assert_equals( 1, jaldb_xml_datetime_compare(NULL, &dbt7, &dbt6));
+	assert_equals( 1, jaldb_xml_datetime_compare(NULL, &dbt7, &dbt5));
+	assert_equals( 1, jaldb_xml_datetime_compare(NULL, &dbt6, &dbt5));
 }
 
 void test_xml_datetime_calls_error_handler_on_bad_parse()
