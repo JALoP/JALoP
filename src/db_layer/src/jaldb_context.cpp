@@ -1142,6 +1142,8 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 			break;
 		}
 		if (DB_LOCK_DEADLOCK == db_ret || DB_KEYEXIST == db_ret) {
+			free(buffer);
+			buffer = NULL;
 			continue;
 		} else {
 			ret = JALDB_E_DB;
