@@ -43,6 +43,7 @@ extern "C" {
 #define JALNS_PEERS "peers"
 #define JALNS_PENDING_DIGEST_MAX "pending_digest_max"
 #define JALNS_PENDING_DIGEST_TIMEOUT "pending_digest_timeout"
+#define JALNS_POLL_TIME "poll_time"
 #define JALNS_PORT "port"
 #define JALNS_PRIVATE_KEY "private_key"
 #define JALNS_PUBLIC_CERT "public_cert"

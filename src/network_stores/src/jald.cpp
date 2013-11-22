@@ -52,7 +52,6 @@
 #include "jaldb_utils.h"
 #include "jal_alloc.h"
 
-#define ONE_MINUTE 60
 #define VERSION_CALLED 1
 
 #define DEBUG_LOG_SUB_SESSION(ch_info, args...) \
@@ -115,6 +114,7 @@ struct global_config_t {
 	long long int port;
 	long long int pending_digest_max;
 	long long int pending_digest_timeout;
+	long long int poll_time;
 } global_config;
 
 struct global_args_t {
@@ -331,7 +331,7 @@ enum jaldb_status pub_get_next_record(
 				ret = JALDB_E_INVAL;
 				goto out;
 			}
-			sleep(ONE_MINUTE);
+			sleep(global_config.poll_time);
 		}
 	}
 
@@ -1245,6 +1245,7 @@ void print_config(void)
 	printf("HOST:\t\t\t%s\n", global_config.host);
 	printf("PENDING DIGEST MAX:\t%lld\n", global_config.pending_digest_max);
 	printf("PENDING DIGEST TIMEOUT:\t%lld\n", global_config.pending_digest_timeout);
+	printf("POLL TIME:\t%lld\n", global_config.poll_time);
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
 	printf("PEERS\n%15s | %18s | %18s", "HOST", "PUBLISH_ALLOW", "SUBSCRIBE_ALLOW");
@@ -1319,6 +1320,12 @@ enum jald_status set_global_config(config_t *config)
 	rc = config_setting_lookup_int64(root, JALNS_PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout);
 	if (CONFIG_FALSE == rc) {
 		CONFIG_ERROR(root, JALNS_PENDING_DIGEST_TIMEOUT, "expected integer value");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	rc = config_setting_lookup_int64(root, JALNS_POLL_TIME, &global_config.poll_time);
+	if (CONFIG_FALSE == rc || global_config.poll_time <= 0) {
+		CONFIG_ERROR(root, JALNS_POLL_TIME, "expected positive integer value");
 		return JALD_E_CONFIG_LOAD;
 	}
 
