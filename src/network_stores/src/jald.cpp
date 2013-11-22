@@ -480,7 +480,9 @@ enum jal_status pub_send_records_feeder(
 		}
 		if (!*timestamp) {
 			//Archive mode
+			pthread_mutex_lock(sub_lock);
 			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
 			} else {
@@ -587,7 +589,9 @@ enum jal_status pub_send_records(
 		}
 		if (!*timestamp) {
 			//Archive mode
+			pthread_mutex_lock(sub_lock);
 			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
 			} else {
@@ -621,7 +625,7 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 	jaln_session *sess = data->sess;
 	const struct jaln_channel_info *ch_info = data->ch_info;
 	axlHash *hash = gs_journal_subs;
-	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
+	pthread_mutex_t *sub_lock = &gs_journal_sub_lock;
 
 	*ret = pub_send_records_feeder(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_journal);
 
@@ -808,15 +812,20 @@ void pub_sync(
 	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
 
+	pthread_mutex_t *sub_lock = NULL;
+
 	switch(type) {
 	case JALN_RTYPE_JOURNAL:
 		db_type = JALDB_RTYPE_JOURNAL;
+		sub_lock = &gs_journal_sub_lock;
 		break;
 	case JALN_RTYPE_AUDIT:
 		db_type = JALDB_RTYPE_AUDIT;
+		sub_lock = &gs_audit_sub_lock;
 		break;
 	case JALN_RTYPE_LOG:
 		db_type = JALDB_RTYPE_LOG;
+		sub_lock = &gs_log_sub_lock;
 		break;
 	default:
 		// shouldn't happen.
@@ -824,13 +833,15 @@ void pub_sync(
 	}
 
 	if (mode == JALN_ARCHIVE_MODE) {
+		pthread_mutex_lock(sub_lock);
 		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, serial_id);
-	}
-	if (JALDB_OK != jaldb_ret) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced", serial_id);
-	} else {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as synced", serial_id);
-	}
+		pthread_mutex_unlock(sub_lock);
+		if (JALDB_OK != jaldb_ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced", serial_id);
+		} else {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as synced", serial_id);
+		}
+	}	
 }
 
 void pub_notify_digest(
