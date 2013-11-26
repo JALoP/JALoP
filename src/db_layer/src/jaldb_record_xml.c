@@ -263,7 +263,6 @@ void jaldb_end_document(void *user_data)
 	   !sp_user_data->sys_meta->hostname	||
 	   !sp_user_data->sys_meta->timestamp	||
 	   !sp_user_data->sys_meta->username	||
-	   !sp_user_data->sys_meta->sec_lbl	||
 	   !sp_user_data->sys_meta->type	||
 	   !sp_user_data->sys_meta->host_uuid	||
 	   !sp_user_data->sys_meta->uuid) {
