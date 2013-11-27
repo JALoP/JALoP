@@ -40,6 +40,7 @@
 #include <fstream>
 
 #include <jal_alloc.h>
+#include <jal_fs_utils.h>
 #include <jal_asprintf_internal.h>
 #include <jalop/jal_version.h>
 
@@ -299,9 +300,10 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 		}
 
 		//Make the sub-directory
-		ret = mkdir(tmpstr, S_IRWXU|S_IRGRP|S_IROTH);
-		if ((-1 == ret) && (EEXIST == errno)) {
-			ret = 0;
+		ret = jal_create_dirs(tmpstr);
+		if (ret != JAL_OK) {
+			fprintf(stderr, "Error creating directories");
+			goto out;
 		}
 
 		jal_asprintf(&sysstr, "%ssystem-metadata.xml", tmpstr);
