@@ -247,22 +247,22 @@ int jsub_on_record_info(
 	
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
-		journal_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
 		journal_sys_meta_size = system_metadata_size;
-		journal_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
+		journal_sys_meta_buf = (uint8_t *) jal_strndup((char *)system_metadata_buffer, system_metadata_size);
 		journal_app_meta_size = application_metadata_size;
+		journal_app_meta_buf = (uint8_t *) jal_strndup((char *)application_metadata_buffer, application_metadata_size);
 		break;
 	case JALN_RTYPE_AUDIT:
-		audit_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
 		audit_sys_meta_size = system_metadata_size;
-		audit_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
+		audit_sys_meta_buf = (uint8_t *) jal_strndup((char *)system_metadata_buffer, system_metadata_size);
 		audit_app_meta_size = application_metadata_size;
+		audit_app_meta_buf = (uint8_t *) jal_strndup((char *)application_metadata_buffer, application_metadata_size);
 		break;
 	case JALN_RTYPE_LOG:
-		log_sys_meta_buf = (uint8_t *) jal_strdup((char *)system_metadata_buffer);
 		log_sys_meta_size = system_metadata_size;
-		log_app_meta_buf = (uint8_t *) jal_strdup((char *)application_metadata_buffer);
+		log_sys_meta_buf = (uint8_t *) jal_strndup((char *)system_metadata_buffer, system_metadata_size);
 		log_app_meta_size = application_metadata_size;
+		log_app_meta_buf = (uint8_t *) jal_strndup((char *)application_metadata_buffer, application_metadata_size);
 		break;
 	default:
 		break;

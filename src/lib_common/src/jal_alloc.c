@@ -80,3 +80,17 @@ char *jal_strdup(const char *str)
 	}
 	return tmp;
 }
+
+char *jal_strndup(const char *str, size_t size)
+{
+	/* Return immediately if there is nothing to copy */
+	if (0 == size || !str) {
+		return NULL;
+	}
+	char *tmp = strndup(str, size);
+	if (!tmp) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	return tmp;
+}
+

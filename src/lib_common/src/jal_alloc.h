@@ -100,6 +100,19 @@ void *jal_realloc(void *ptr, size_t size);
  */
 char *jal_strdup(const char *str);
 
+/**
+ * Calls strndup.
+ * If strndup returns with no issues, returns a pointer to the 
+ * new duplicate string. Otherwise, calls jal_error_handler. 
+ * 
+ * @param[in] str pointer to string to be duplicated. 
+ * @param[in] size maximum number of string bytes to copy. 
+ *
+ * @return a char pointer to the duplicate string, to be freed with free()
+ *
+ */
+char *jal_strndup(const char *str, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
