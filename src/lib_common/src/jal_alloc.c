@@ -87,10 +87,13 @@ char *jal_strndup(const char *str, size_t size)
 	if (0 == size || !str) {
 		return NULL;
 	}
-	char *tmp = strndup(str, size);
+	char *tmp = malloc(size + 1); 
 	if (!tmp) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
-	return tmp;
+	/* binary copy of requested size and null terminate string */
+	memcpy(tmp, str, size);
+	tmp[size+1] = '\0';
+	return(tmp);
 }
 
