@@ -1,7 +1,7 @@
 /**
  * @file jaln_init_info.h This file contains functions related to a
  * jaln_init_info structure. The jaln_init_info structure is used
- * to store the calculated/receive digest value and serial ID for a
+ * to store the calculated/receive digest value and nonce for a
  * record.
  *
  * @section LICENSE

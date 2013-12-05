@@ -39,12 +39,12 @@
 #define JALDB_AUDIT_CONF_NAME "conf_audit"
 #define JALDB_LOG_CONF_NAME "conf_log"
 
-#define JALDB_INITIAL_SID "0"
+#define JALDB_INITIAL_NONCE "0"
 #define JALDB_DEFAULT_OFFSET "0"
 #define JALDB_NS "jalop:localstore/metadata"
-#define JALDB_SERIAL_ID_NAME "serialId"
-#define JALDB_LAST_CONFED_SID_NAME "last_confed_serialId"
-#define JALDB_SERIAL_ID_DOC_NAME "__next_sid"
+#define JALDB_NONCE_NAME "nonce"
+#define JALDB_LAST_CONFED_NONCE_NAME "last_confed_nonce"
+#define JALDB_NONCE_DOC_NAME "__next_nonce"
 #define JALDB_CONNECTION_METADATA_DOC_NAME "__connection_metadata"
 #define JALDB_OFFSET_NAME "offsetName"
 #define JALDB_JOURNAL_PATH "journalPath"
@@ -53,15 +53,15 @@
 #define JALDB_HAS_APP_META "hasAppMeta"
 #define JALDB_HAS_LOG "hasLog"
 
-#define JALDB_QUERY_SID_CMP_FUNCTION \
-"declare function local:sid-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
+#define JALDB_QUERY_NONCE_CMP_FUNCTION \
+"declare function local:nonce-cmp($a as xs:string, $b as xs:string) as xs:integer {\n" \
 "    if (fn:string-length($a) lt fn:string-length($b)) then -1\n" \
 "    else if (fn:string-length($b) lt fn:string-length($a)) then 1\n" \
 "    else (fn:compare ($a, $b))\n" \
 "}; \n"
 
-#define JALDB_NEXT_SID_QUERY_CONT_VAR "cont"
-#define JALDB_NEXT_SID_QUERY \
+#define JALDB_NEXT_NONCE_QUERY_CONT_VAR "cont"
+#define JALDB_NEXT_NONCE_QUERY \
 
 #define JALDB_REMOTE_META_PREFIX "_.."
 #define JALDB_QUERY_NS "jal:"
@@ -75,9 +75,9 @@
 #define JALDB_SYNC_META_VAR "sync_meta_name"
 #define JALDB_SENT_META_VAR "sent_meta_name"
 
-#define JALDB_SID_VAR "sid"
+#define JALDB_NONCE_VAR "nonce"
 #define JALDB_UUID_VAR "uuid"
 
-#define JALDB_QUERY_VAR_LAST_SID "last_sid"
+#define JALDB_QUERY_VAR_LAST_NONCE "last_nonce"
 
 #endif // _JALDB_STRINGS_H_

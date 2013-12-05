@@ -48,7 +48,7 @@
 #include "jaldb_record_xml.h"
 #include "jaldb_segment.h"
 #include "jaldb_serialize_record.h"
-#include "jaldb_serial_id.h"
+#include "jaldb_nonce.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
@@ -59,7 +59,7 @@ using namespace std;
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 
 static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp);
-static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, char *hex_sid);
+static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, char *nonce);
 
 jaldb_context *jaldb_context_create()
 {
@@ -156,26 +156,6 @@ enum jaldb_status jaldb_context_init(
 		db_txn->abort(db_txn);
 		return JALDB_E_INVAL;
 	}
-
-	if (!ctx->db_read_only) {
-		db_err = jaldb_initialize_serial_id(ctx->journal_dbs->sid_db, db_txn);
-		if (0 != db_err) {
-			db_txn->abort(db_txn);
-			return JALDB_E_INVAL;
-		}
-		db_err = jaldb_initialize_serial_id(ctx->audit_dbs->sid_db, db_txn);
-		if (0 != db_err) {
-			db_txn->abort(db_txn);
-			return JALDB_E_INVAL;
-		}
-		db_err = jaldb_initialize_serial_id(ctx->log_dbs->sid_db, db_txn);
-		if (0 != db_err) {
-			db_txn->abort(db_txn);
-			return JALDB_E_INVAL;
-		}
-
-	}
-
 
 	db_err = db_create(&ctx->journal_conf_db, env, 0);
 	if (db_err != 0) {
@@ -297,8 +277,8 @@ std::string jaldb_make_temp_db_name(const string &id, const string &suffix)
 enum jaldb_status jaldb_xfer_audit(
 	jaldb_context *ctx,
 	std::string &source,
-	const std::string &sid,
-	std::string &next_sid)
+	const std::string &nonce,
+	std::string &next_nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }
@@ -309,7 +289,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	const void *sys_doc,
 	const void *app_doc,
 	const void *audit_doc,
-	const std::string &sid)
+	const std::string &nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }
@@ -317,8 +297,8 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 enum jaldb_status jaldb_xfer_log(
 	jaldb_context *ctx,
 	std::string &source,
-	const std::string &sid,
-	std::string &next_sid)
+	const std::string &nonce,
+	std::string &next_nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }
@@ -330,7 +310,7 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 	const void *app_meta_doc,
 	uint8_t *log_buf,
 	const size_t log_len,
-	const string &sid,
+	const string &nonce,
 	int *db_err)
 {
 	return JALDB_E_NOT_IMPL;
@@ -339,8 +319,8 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 enum jaldb_status jaldb_xfer_journal(
 	jaldb_context *ctx,
 	const std::string &source,
-	const std::string &sid,
-	std::string &next_sid)
+	const std::string &nonce,
+	std::string &next_nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }
@@ -351,7 +331,7 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	const void *sys_meta_doc,
 	const void *app_meta_doc,
 	const std::string &path,
-	const std::string &sid)
+	const std::string &nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }
@@ -591,11 +571,11 @@ out:
 	return ret;
 }
 
-enum jaldb_status jaldb_store_confed_sid_temp(
+enum jaldb_status jaldb_store_confed_nonce_temp(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char* source,
-		char* sid)
+		char* nonce)
 {
 	int byte_swap;
 	enum jaldb_status ret = JALDB_OK;
@@ -605,7 +585,7 @@ enum jaldb_status jaldb_store_confed_sid_temp(
 	DBT val;
 	DB_TXN *txn;
 
-	if (!ctx || !source || !sid) {
+	if (!ctx || !source || !nonce) {
 		return JALDB_E_INVAL;
 	}
 
@@ -624,12 +604,12 @@ enum jaldb_status jaldb_store_confed_sid_temp(
 		goto out;
 	}
 
-	val.size = strlen(sid) + 1;
-	val.data = jal_strdup(sid);
+	val.size = strlen(nonce) + 1;
+	val.data = jal_strdup(nonce);
 
 	key.flags = DB_DBT_REALLOC;
-	key.data = jal_strdup(JALDB_LAST_CONFED_SID_NAME);
-	key.size = strlen(JALDB_LAST_CONFED_SID_NAME);
+	key.data = jal_strdup(JALDB_LAST_CONFED_NONCE_NAME);
+	key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME);
 
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
@@ -663,38 +643,38 @@ out:
 	return ret;
 }
 
-enum jaldb_status jaldb_store_confed_journal_sid_tmp(
+enum jaldb_status jaldb_store_confed_journal_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		const char *sid,
+		const char *nonce,
 		int *db_err_out)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_store_confed_audit_sid_tmp(
+enum jaldb_status jaldb_store_confed_audit_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		const char *sid,
+		const char *nonce,
 		int *db_err_out)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_store_confed_log_sid_tmp(
+enum jaldb_status jaldb_store_confed_log_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		const char *sid,
+		const char *nonce,
 		int *db_err_out)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_get_last_confed_sid_temp(
+enum jaldb_status jaldb_get_last_confed_nonce_temp(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char *source,
-		char **sid)
+		char **nonce)
 {
 	int byte_swap;
 	enum jaldb_status ret = JALDB_OK;
@@ -718,8 +698,8 @@ enum jaldb_status jaldb_get_last_confed_sid_temp(
 	}
 
 	key.flags = DB_DBT_REALLOC;
-	key.data = jal_strdup(JALDB_LAST_CONFED_SID_NAME);
-	key.size = strlen(JALDB_LAST_CONFED_SID_NAME);
+	key.data = jal_strdup(JALDB_LAST_CONFED_NONCE_NAME);
+	key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME);
 
 	db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
 	if (0 != db_ret) {
@@ -755,7 +735,7 @@ enum jaldb_status jaldb_get_last_confed_sid_temp(
 		goto out;
 	}
 
-	*sid = jal_strdup((char*)val.data);
+	*nonce = jal_strdup((char*)val.data);
 
 out:
 	free(key.data);
@@ -763,28 +743,28 @@ out:
 	return ret;
 }
 
-enum jaldb_status jaldb_get_last_confed_journal_sid_tmp(
+enum jaldb_status jaldb_get_last_confed_journal_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		std::string &sid,
+		std::string &nonce,
 		int *db_err_out)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
+enum jaldb_status jaldb_get_last_confed_audit_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		std::string &sid,
+		std::string &nonce,
 		int *db_err_out)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
+enum jaldb_status jaldb_get_last_confed_log_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		std::string &sid,
+		std::string &nonce,
 		int *db_err_out)
 {
 	return JALDB_E_NOT_IMPL;
@@ -1600,7 +1580,7 @@ out:
 enum jaldb_status jaldb_remove_record_from_temp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char *source,
-		char *hex_sid)
+		char *nonce)
 {
 	enum jaldb_status ret;
 	int db_ret;
@@ -1612,7 +1592,7 @@ enum jaldb_status jaldb_remove_record_from_temp(jaldb_context *ctx,
 		goto out;
 	}
 
-	ret = jaldb_remove_record_from_db(ctx, rdbs, hex_sid);
+	ret = jaldb_remove_record_from_db(ctx, rdbs, nonce);
 
 out:
 	return ret;

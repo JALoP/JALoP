@@ -40,15 +40,6 @@
 #include "jaldb_traverse.h"
 #include "jaldb_utils.h"
 
-enum jaldb_status jaldb_iterate_by_sid_range(jaldb_context *ctx,
-		enum jaldb_rec_type type,
-		const char *hex_start_sid,
-		const char *hex_end_sid,
-		jaldb_iter_cb cb, void *up)
-{
-	return JALDB_E_NOT_IMPL;
-}
-
 enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		const char *timestamp,

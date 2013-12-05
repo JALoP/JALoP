@@ -43,7 +43,7 @@
 		fprintf(stdout, "\n"); \
 	} while(0)
 
-#define JSUB_INITIAL_SID "0"
+#define JSUB_INITIAL_NONCE "0"
 
 volatile bool jsub_is_conn_closed = false;
 volatile int jsub_debug = 0;
@@ -157,7 +157,7 @@ int jsub_get_subscribe_request(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		char **serial_id,
+		char **nonce,
 		uint64_t *offset)
 {
 	int ret = 0;
@@ -183,21 +183,21 @@ int jsub_get_subscribe_request(
 			rec_type = JALDB_RTYPE_UNKNOWN;
 			break;
 	}
-	// Going to need to store the last confed sid to the
+	// Going to need to store the last confed nonce to the
 	// 	temp container so that it can be retrieved here.
-	std::string sid_out;
+	std::string nonce_out;
 
-	db_err = jaldb_get_last_confed_sid_temp(jsub_db_ctx, rec_type, ch_info->hostname, serial_id);
+	db_err = jaldb_get_last_confed_nonce_temp(jsub_db_ctx, rec_type, ch_info->hostname, nonce);
 	if (JALDB_OK != db_err) {
 		if (jsub_debug) {
-			DEBUG_LOG("last confed sid not found, defaulting to 0.");
+			DEBUG_LOG("last confed nonce not found, defaulting to 0.");
 		}
-		sid_out = JSUB_INITIAL_SID;
-		*serial_id = jal_strdup((char *)JSUB_INITIAL_SID);
+		nonce_out = JSUB_INITIAL_NONCE;
+		*nonce = jal_strdup((char *)JSUB_INITIAL_NONCE);
 	}
 	if (jsub_debug) {
-		DEBUG_LOG("record_type: %d ser_id: %s",
-			  type, sid_out.c_str());
+		DEBUG_LOG("record_type: %d nonce: %s",
+			  type, nonce_out.c_str());
 	}
 	ret = JAL_OK;
 
@@ -275,48 +275,48 @@ int jsub_on_record_info(
 int jsub_on_audit(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
 		__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ON_AUDIT");
-		DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%d ud:%p\n",
-			ch_info, serial_id, buffer, cnt, user_data);
+		DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
+			ch_info, nonce, buffer, cnt, user_data);
 	}
 	// Insert audit into temp container
 	return jsub_insert_audit(jsub_db_ctx, ch_info->hostname, audit_sys_meta_buf,
 				 audit_sys_meta_size, audit_app_meta_buf,
 				 audit_app_meta_size, (uint8_t *)buffer, cnt,
-				 (char *)serial_id, jsub_debug);
+				 (char *)nonce, jsub_debug);
 }
 
 int jsub_on_log(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
 		__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ON_LOG");
-		DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%d ud:%p\n",
-			ch_info, serial_id, buffer, cnt, user_data);
+		DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
+			ch_info, nonce, buffer, cnt, user_data);
 	}
 
 	// Insert log into temp container
 	return jsub_insert_log(jsub_db_ctx, ch_info->hostname, log_sys_meta_buf,
 				log_sys_meta_size, log_app_meta_buf,
 				log_app_meta_size, (uint8_t *)buffer, cnt,
-				(char *)serial_id, jsub_debug);
+				(char *)nonce, jsub_debug);
 }
 
 int jsub_on_journal(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
 		__attribute__((unused)) const uint64_t offset,
@@ -326,8 +326,8 @@ int jsub_on_journal(
 	if (jsub_debug) {
 		DEBUG_LOG("ON_JOURNAL");
 		DEBUG_LOG("more: %d", more);
-		DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%d ud:%p\n",
-			  ch_info, serial_id, buffer, cnt, user_data);
+		DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
+			  ch_info, nonce, buffer, cnt, user_data);
 	}
 	// Write data to disk until there is no more data to write.
 	// Then write the system/application metadata to DB.
@@ -355,7 +355,7 @@ int jsub_on_journal(
 					journal_app_meta_size,
 					db_payload_path,
 					journal_payload_size,
-					(char *)serial_id,
+					(char *)nonce,
 					jsub_debug);
 	} else {
 		// There will be more data, append what we've
@@ -376,15 +376,15 @@ int jsub_notify_digest(
 		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) char *nonce,
 		__attribute__((unused)) const uint8_t *digest,
 		__attribute__((unused)) const uint32_t len,
 		__attribute__((unused)) const void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("NOTIFY_DIGEST");
-		DEBUG_LOG("ch info:%p type:%d serial_id:%s dgst:%p, len:%d, ud:%p\n",
-			ch_info, type, serial_id, digest, len,
+		DEBUG_LOG("ch info:%p type:%d nonce:%s dgst:%p, len:%d, ud:%p\n",
+			ch_info, type, nonce, digest, len,
 			user_data);
 		char *b64 = jal_base64_enc(digest, len);
 		DEBUG_LOG("dgst: %s\n", b64);
@@ -396,11 +396,11 @@ int jsub_on_digest_response(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		const char *serial_id,
+		const char *nonce,
 		__attribute__((unused)) const enum jaln_digest_status status,
 		__attribute__((unused)) const void *user_data)
 {
-	char *nonce = NULL;
+	char *tmp_nonce = NULL;
 	// Once received, perform transfer operation
 	const char *status_str;
 	switch (status) {
@@ -418,15 +418,15 @@ int jsub_on_digest_response(
 	}
 	if (jsub_debug) {
 		DEBUG_LOG("ON_DIGEST_RESPONSE");
-		DEBUG_LOG("ch info:%p type:%d serial_id:%s status: %s, ds:%d, ud:%p\n",
-				ch_info, type, serial_id, status_str, status, user_data);
+		DEBUG_LOG("ch info:%p type:%d nonce:%s status: %s, ds:%d, ud:%p\n",
+				ch_info, type, nonce, status_str, status, user_data);
 	}
 	enum jaldb_status db_err;
 	int ret = -1;
 	enum jaldb_rec_type jaldb_type = JALDB_RTYPE_UNKNOWN;
-	std::string sid_out = "";
+	std::string nonce_out = "";
 	std::string source = ch_info->hostname;
-	std::string ser_id = serial_id;
+	std::string nonce_str = nonce;
 	std::string rec_type = "";
 	bool willXfer = false;
 	switch (type)
@@ -456,26 +456,26 @@ int jsub_on_digest_response(
 			break;
 	}
 	if (willXfer) {
-		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(ser_id.c_str()), &nonce);
+		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(nonce_str.c_str()), &tmp_nonce);
 		if(JALDB_OK == db_err) {
-			db_err = jaldb_store_confed_sid_temp(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(ser_id.c_str()));
+			db_err = jaldb_store_confed_nonce_temp(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(nonce_str.c_str()));
 			if (jsub_debug) {
 				if (JALDB_OK == db_err) {
 					ret = JAL_OK;
-					DEBUG_LOG("Store confed sid success! %s sid: %s\n",
-						rec_type.c_str(), ser_id.c_str());
+					DEBUG_LOG("Store confed nonce success! %s nonce: %s\n",
+						rec_type.c_str(), nonce_str.c_str());
 				}
 				else {
-					DEBUG_LOG("Store confed sid fail! %s sid: %s\n",
-						  rec_type.c_str(), ser_id.c_str());
+					DEBUG_LOG("Store confed nonce fail! %s nonce: %s\n",
+						  rec_type.c_str(), nonce_str.c_str());
 				}
 			}
 		} else {
-			DEBUG_LOG("Failed to transfer record! %s sid: %s\n",
-				rec_type.c_str(), ser_id.c_str());
+			DEBUG_LOG("Failed to transfer record! %s nonce: %s\n",
+				rec_type.c_str(), nonce_str.c_str());
 		}
 	}
-	free(nonce);
+	free(tmp_nonce);
 	return ret;
 }
 
@@ -572,14 +572,14 @@ enum jal_status jsub_get_bytes(
 int jsub_acquire_journal_feeder(
 		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ACQUIRE_JOURNAL_FEEDER");
-		DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n",
-			  ch_info, serial_id, feeder);
+		DEBUG_LOG("ch_info: %p, nonce:%s, feeder:%p\n",
+			  ch_info, nonce, feeder);
 	}
 	feeder->feeder_data = user_data;
 	feeder->get_bytes = jsub_get_bytes;
@@ -589,14 +589,14 @@ int jsub_acquire_journal_feeder(
 void jsub_release_journal_feeder(
 		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("RELEASE_JOURNAL_FEEDER");
-		DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n",
-			  ch_info, serial_id, feeder);
+		DEBUG_LOG("ch_info: %p, nonce:%s, feeder:%p\n",
+			  ch_info, nonce, feeder);
 	}
 	// Unclear what to do here
 }

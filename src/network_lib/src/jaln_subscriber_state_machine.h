@@ -70,7 +70,7 @@ struct jaln_sub_state {
 struct jaln_sub_state_machine {
 	char *expected_msg;                //!< The expected message type (journal, audit, or log records)
 	char *payload_len_hdr;             //!< The expected MIME header for the size of the payload ('jal-log-lenght
-	char *serial_id;                   //!< The serial ID of the record currently in process
+	char *nonce;                   //!< The nonce of the record currently in process
 	uint8_t *sys_meta_buf;             //!< bufer containing the system metadata
 	uint64_t sys_meta_sz;              //!< the total size of the sys_meta_bufer
 	uint64_t sys_meta_off;             //!< offset into the bufer to begin writing the next hunk of data

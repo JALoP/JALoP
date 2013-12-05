@@ -59,7 +59,7 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 		if (axl_list_length(sess->dgst_list) > 0) {
 			axlList *dgst_list = sess->dgst_list;
 			sess->dgst_list =
-				axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
+				axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 			jaln_send_digest_and_sync_no_lock(sess, dgst_list);
 		}
 	}
@@ -113,12 +113,12 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	while (axl_list_cursor_has_item(cursor)) {
 		struct jaln_digest_resp_info *resp_info = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
 		sess->jaln_ctx->sub_callbacks->
-			on_digest_response(sess, sess->ch_info, sess->ch_info->type, resp_info->serial_id, resp_info->status, sess->jaln_ctx->user_data);
+			on_digest_response(sess, sess->ch_info, sess->ch_info->type, resp_info->nonce, resp_info->status, sess->jaln_ctx->user_data);
 		axl_list_cursor_next(cursor);
 	}
 
 	struct jaln_digest_info *info = axl_list_get_last(dgst_list);
-	jaln_create_sync_msg(info->serial_id, &msg, &len);
+	jaln_create_sync_msg(info->nonce, &msg, &len);
 
 	if (!vortex_channel_send_msg(sess->dgst_chan, msg, len, NULL)) {
 		goto out;

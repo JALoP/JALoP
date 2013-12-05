@@ -54,7 +54,7 @@ rdbs->m->close = mock_ ## m ## _close;
 DEF_MOCK_CLOSE(timestamp_tz_idx_db)
 DEF_MOCK_CLOSE(timestamp_no_tz_idx_db)
 DEF_MOCK_CLOSE(record_id_idx_db)
-DEF_MOCK_CLOSE(sid_db)
+DEF_MOCK_CLOSE(nonce_db)
 
 static void silent_errcall(const DB_ENV *dbenv, const char *errpfx, const char *msg)
 {
@@ -67,7 +67,7 @@ char secondaries_closed_before_primary;
 
 static int mock_primary_db_close(DB *db, u_int32_t flags)
 {
-	if (!timestamp_no_tz_idx_db_closed || !timestamp_tz_idx_db_closed || !record_id_idx_db_closed || !sid_db_closed) {
+	if (!timestamp_no_tz_idx_db_closed || !timestamp_tz_idx_db_closed || !record_id_idx_db_closed || !nonce_db_closed) {
 		secondaries_closed_before_primary = 0;
 		return 1;
 	}
@@ -221,7 +221,7 @@ void setup()
 	timestamp_no_tz_idx_db_closed = 0;
 	timestamp_tz_idx_db_closed = 0;
 	record_id_idx_db_closed = 0;
-	sid_db_closed = 0;
+	nonce_db_closed = 0;
 	secondaries_closed_before_primary = 1;
 	rdbs = NULL;
 	INIT_REC(1, R1_DATETIME_TZ);
@@ -263,7 +263,7 @@ void teardown()
 		//REMOVE_DB(rdbs->timestamp_tz_idx_db);
 		//REMOVE_DB(rdbs->timestamp_no_tz_idx_db);
 		//REMOVE_DB(rdbs->record_id_idx_db);
-		//REMOVE_DB(rdbs->sid_db);
+		//REMOVE_DB(rdbs->nonce_db);
 		//REMOVE_DB(rdbs->primary_db);
 	//}
 
@@ -295,13 +295,13 @@ void test_destroy_record_dbs_works()
 	MOCK_DB(rdbs, timestamp_tz_idx_db);
 	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
 	MOCK_DB(rdbs, record_id_idx_db);
-	MOCK_DB(rdbs, sid_db);
+	MOCK_DB(rdbs, nonce_db);
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
 	assert_true(timestamp_tz_idx_db_closed);
 	assert_true(timestamp_no_tz_idx_db_closed);
-	assert_true(sid_db_closed);
+	assert_true(nonce_db_closed);
 	assert_true(record_id_idx_db_closed);
 
 }
@@ -313,13 +313,13 @@ void test_destroy_record_dbs_works_without_tz_timestamp()
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
 	MOCK_DB(rdbs, record_id_idx_db);
-	MOCK_DB(rdbs, sid_db);
+	MOCK_DB(rdbs, nonce_db);
 
 	timestamp_tz_idx_db_closed = 1;
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
-	assert_true(sid_db_closed);
+	assert_true(nonce_db_closed);
 	assert_true(record_id_idx_db_closed);
 	assert_true(timestamp_tz_idx_db_closed);
 
@@ -332,13 +332,13 @@ void test_destroy_record_dbs_works_without_no_tz_timestamp()
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_tz_idx_db);
 	MOCK_DB(rdbs, record_id_idx_db);
-	MOCK_DB(rdbs, sid_db);
+	MOCK_DB(rdbs, nonce_db);
 
 	timestamp_no_tz_idx_db_closed = 1;
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
-	assert_true(sid_db_closed);
+	assert_true(nonce_db_closed);
 	assert_true(record_id_idx_db_closed);
 	assert_true(timestamp_tz_idx_db_closed);
 
@@ -351,20 +351,20 @@ void test_destroy_record_dbs_works_without_record_id_db()
 	MOCK_DB(rdbs, primary_db);
 	MOCK_DB(rdbs, timestamp_tz_idx_db);
 	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
-	MOCK_DB(rdbs, sid_db);
+	MOCK_DB(rdbs, nonce_db);
 
 	// pretend it was closed for mocked function
 	record_id_idx_db_closed = 1;
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
-	assert_true(sid_db_closed);
+	assert_true(nonce_db_closed);
 	assert_true(timestamp_tz_idx_db_closed);
 	assert_true(timestamp_no_tz_idx_db_closed);
 
 }
 
-void test_destroy_record_dbs_works_without_sid()
+void test_destroy_record_dbs_works_without_nonce()
 {
 	rdbs = jaldb_create_record_dbs();
 
@@ -374,7 +374,7 @@ void test_destroy_record_dbs_works_without_sid()
 	MOCK_DB(rdbs, record_id_idx_db);
 
 	// pretend it was closed for mocked function
-	sid_db_closed = 1;
+	nonce_db_closed = 1;
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);

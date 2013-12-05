@@ -127,7 +127,7 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
- * @param[in] hex_sid The serial ID (hex string) of the record being retrieved.
+ * @param[in] nonce The serial ID (hex string) of the record being retrieved.
  * @param[in] source The source of the record
  * @param[out] rec This will be filled in as a jaldb_record object if the
  * record is found. Note that any segments located on disk will not be opened
@@ -138,7 +138,7 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
  */
 enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *hex_sid,
+		char *nonce,
 		char *source,
 		struct jaldb_record **rec);
 
@@ -168,7 +168,7 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, or log).
- * @param[in] hex_sid The nonce of the record to mark.
+ * @param[in] nonce The nonce of the record to mark.
  *
  * @return JALDB_OK on success, or a different JALDB error code on failure.
  */
@@ -183,7 +183,7 @@ enum jaldb_status jaldb_mark_sent(
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, or log).
- * @param[in] hex_sid The nonce of the record to mark.
+ * @param[in] nonce The nonce of the record to mark.
  *
  * @return JALDB_OK on success, or a different JALDB error code on failure.
  */
@@ -244,11 +244,11 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
  * @param[in] ctx the DB context.
  * @param[in,out] rec The record to insert.
  * @param[in] source The source of the record
- * @param[in] sid The serial id of the record
+ * @param[in] nonce The nonce of the record
  *
  * @return JALDB_OK on success, or an error code.
  */
-enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb_record *rec, char* source, char* sid);
+enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb_record *rec, char* source, char* nonce);
 
 /**
  * Utility to transfer a record from a temporary database into the permanent database
@@ -287,12 +287,12 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		char *nonce);
 
 /**
- * Remove a record (by SID) from the temporary database
+ * Remove a record (by NONCE) from the temporary database
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
  * @param[in] source The source of the record.
- * @param[in] hex_sid The serial ID of the record being removed.
+ * @param[in] nonce The serial ID of the record being removed.
  *
  * @return JALDB_OK if the function succeeds or an error code.
  */
@@ -300,7 +300,7 @@ enum jaldb_status jaldb_remove_record_from_temp(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char *source,
-		char *hex_sid);
+		char *nonce);
 
 /**
  * Utility function to remove all the segments store on disk for a specific

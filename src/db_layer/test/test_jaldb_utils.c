@@ -94,7 +94,7 @@ void teardown()
 	env = NULL;
 }
 
-void test_store_confed_sid_returns_ok_with_valid_input()
+void test_store_confed_nonce_returns_ok_with_valid_input()
 {
 	DB_TXN *transaction = NULL;
 	int db_error = env->txn_begin(env, NULL, &transaction, 0);
@@ -104,7 +104,7 @@ void test_store_confed_sid_returns_ok_with_valid_input()
 	char *ser_id = jal_strdup("1234");
 	int err = 0;
 	int *db_error_out = &err;
-	int ret = jaldb_store_confed_sid(dbase, transaction, rhost, ser_id, db_error_out);
+	int ret = jaldb_store_confed_nonce(dbase, transaction, rhost, ser_id, db_error_out);
 	transaction->commit(transaction, 0);
 	DBT key;
 	DBT data;
@@ -130,7 +130,7 @@ void test_store_confed_sid_returns_ok_with_valid_input()
 	assert_equals(JALDB_OK, ret);
 }
 
-void test_store_confed_sid_returns_error_when_trying_to_insert_sid_twice()
+void test_store_confed_nonce_returns_error_when_trying_to_insert_nonce_twice()
 {
 	DB_TXN *transaction = NULL;
 	int db_error = env->txn_begin(env, NULL, &transaction, 0);
@@ -140,11 +140,11 @@ void test_store_confed_sid_returns_error_when_trying_to_insert_sid_twice()
 	char *ser_id = jal_strdup("1234");
 	int err = 0;
 	int *db_error_out = &err;
-	int ret = jaldb_store_confed_sid(dbase, transaction, rhost, ser_id, db_error_out);
+	int ret = jaldb_store_confed_nonce(dbase, transaction, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_OK, ret);
 
 	char *serid = jal_strdup("1234");
-	ret = jaldb_store_confed_sid(dbase, transaction, rhost, serid, db_error_out);
+	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, serid, db_error_out);
 	transaction->commit(transaction, 0);
 	free(rhost);
 	free(ser_id);
@@ -155,7 +155,7 @@ void test_store_confed_sid_returns_error_when_trying_to_insert_sid_twice()
 	assert_equals(JALDB_E_ALREADY_CONFED, ret);
 }
 
-void test_store_confed_sid_returns_error_with_invalid_input()
+void test_store_confed_nonce_returns_error_with_invalid_input()
 {
 	DB_TXN *transaction = NULL;
 	int db_error = env->txn_begin(env, NULL, &transaction, 0);
@@ -165,19 +165,19 @@ void test_store_confed_sid_returns_error_with_invalid_input()
 	char *ser_id = jal_strdup("1234");
 	int err = 0;
 	int *db_error_out = &err;
-	int ret = jaldb_store_confed_sid(NULL, transaction, rhost, ser_id, db_error_out);
+	int ret = jaldb_store_confed_nonce(NULL, transaction, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_sid(dbase, NULL, rhost, ser_id, db_error_out);
+	ret = jaldb_store_confed_nonce(dbase, NULL, rhost, ser_id, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_sid(dbase, transaction, NULL, ser_id, db_error_out);
+	ret = jaldb_store_confed_nonce(dbase, transaction, NULL, ser_id, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_sid(dbase, transaction, rhost, NULL, db_error_out);
+	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, NULL, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_sid(dbase, transaction, rhost, ser_id, NULL);
+	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, ser_id, NULL);
 	transaction->commit(transaction, 0);
 	free(rhost);
 	free(ser_id);
@@ -186,7 +186,7 @@ void test_store_confed_sid_returns_error_with_invalid_input()
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
-void test_sid_cmp_returns_correct_value()
+void test_nonce_cmp_returns_correct_value()
 {
 	int db_error = db_create(&dbase, env, 0);
 	db_error = dbase->open(dbase, NULL, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
@@ -194,21 +194,21 @@ void test_sid_cmp_returns_correct_value()
 	size_t slen1 = strlen(s1);
 	const char *s2 = "1234";
 	size_t slen2 = strlen(s2);
-	int ret = jaldb_sid_cmp(s1, slen1, s2, slen2);
+	int ret = jaldb_nonce_cmp(s1, slen1, s2, slen2);
 	assert_equals(1, ret);
 
 	const char *s3 = "2345";
 	slen1 = strlen(s3);
 	const char *s4 = "23456";
 	slen2 = strlen(s4);
-	ret = jaldb_sid_cmp(s3, slen1, s4, slen2);
+	ret = jaldb_nonce_cmp(s3, slen1, s4, slen2);
 	assert_equals(-1, ret);
 
 	const char *s5 = "3456";
 	slen1 = strlen(s5);
 	const char *s6 = "3456";
 	slen2 = strlen(s6);
-	ret = jaldb_sid_cmp(s5, slen1, s6, slen2);
+	ret = jaldb_nonce_cmp(s5, slen1, s6, slen2);
 	assert_equals(0, ret);
 }
 

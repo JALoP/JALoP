@@ -148,8 +148,8 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 				return axl_false;
 			}
 
-			jaln_session_add_to_dgst_list(sess, pd->serial_id, pd->dgst, dgst_len);
-			cbs->notify_digest(sess, ch_info, ch_info->type, pd->serial_id, pd->dgst, dgst_len, ud);
+			jaln_session_add_to_dgst_list(sess, pd->nonce, pd->dgst, dgst_len);
+			cbs->notify_digest(sess, ch_info, ch_info->type, pd->nonce, pd->dgst, dgst_len, ud);
 			pd->payload = NULL;
 		}
 	}
@@ -213,9 +213,9 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 
 	struct jaln_pub_data *pd = sess->pub_data;
 
-	free(pd->serial_id);
+	free(pd->nonce);
 
-	pd->serial_id = 0;
+	pd->nonce = 0;
 	pd->vortex_feeder_sz = 0;
 	pd->headers_off = 0;
 	pd->sys_meta_off = 0;
@@ -332,7 +332,7 @@ void jaln_pub_feeder_on_finished(__attribute__((unused)) VortexChannel *chan,
 	struct jaln_pub_data *pd = sess->pub_data;
 	struct jaln_publisher_callbacks *pub_cbs = sess->jaln_ctx->pub_callbacks;
 
-	pub_cbs->on_record_complete(sess, ch_info, type, pd->serial_id, sess->jaln_ctx->user_data);
+	pub_cbs->on_record_complete(sess, ch_info, type, pd->nonce, sess->jaln_ctx->user_data);
 
 	if (!sess->errored) {
 		if (sess->closing) {

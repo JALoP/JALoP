@@ -44,13 +44,13 @@
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
 
-#define sid_1_str "sid_1"
+#define nonce_1_str "nonce_1"
 
 #define EXPECTED_SYNC_MSG \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n" \
 	"JAL-Message: sync\r\n" \
-	"JAL-Serial-Id: " sid_1_str "\r\n\r\n"
+	"JAL-Serial-Id: " nonce_1_str "\r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_VERSION \
 	"Content-Type: application/beep+jalop\r\n" \
@@ -180,9 +180,9 @@ static uint8_t di_buf_1[DGST_LEN] = {  0,  1,  2,  3,  4, 5,   6 };
 static uint8_t di_buf_2[DGST_LEN] = {  7,  8,  9, 10, 11, 12, 13 };
 static uint8_t di_buf_3[DGST_LEN] = { 14, 15, 16, 17, 18, 19, 20 };
 static char *output_str;
-#define di_1_str "00010203040506=sid_1\r\n"
-#define di_2_str "0708090a0b0c0d=sid_2\r\n"
-#define di_3_str "0e0f1011121314=sid_3\r\n"
+#define di_1_str "00010203040506=nonce_1\r\n"
+#define di_2_str "0708090a0b0c0d=nonce_2\r\n"
+#define di_3_str "0e0f1011121314=nonce_3\r\n"
 
 #define EXPECTED_DGST_MSG \
 	"Content-Type: application/beep+jalop\r\n" \
@@ -249,7 +249,7 @@ static char *output_str;
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: journal-record\r\n" \
-	"JAL-Serial-Id: " sid_1_str "\r\n" \
+	"JAL-Serial-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Journal-Length: 30\r\n\r\n"
@@ -258,7 +258,7 @@ static char *output_str;
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: audit-record\r\n" \
-	"JAL-Serial-Id: " sid_1_str "\r\n" \
+	"JAL-Serial-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Audit-Length: 30\r\n\r\n"
@@ -267,7 +267,7 @@ static char *output_str;
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: log-record\r\n" \
-	"JAL-Serial-Id: " sid_1_str "\r\n" \
+	"JAL-Serial-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Log-Length: 30\r\n\r\n"
@@ -281,9 +281,9 @@ static char *output_str;
 	dr_2_str \
 	dr_3_str
 
-#define dr_1_str "confirmed=sid_1\r\n"
-#define dr_2_str "invalid=sid_2\r\n"
-#define dr_3_str "unknown=sid_3\r\n"
+#define dr_1_str "confirmed=nonce_1\r\n"
+#define dr_2_str "invalid=nonce_2\r\n"
+#define dr_3_str "unknown=nonce_3\r\n"
 
 static struct jaln_record_info *rec_info;
 
@@ -295,11 +295,11 @@ axlList *dgst_resp_list;
 void setup()
 {
 	replace_function(vortex_frame_mime_header_content, fake_get_mime_content);
-	di_1 = jaln_digest_info_create("sid_1", di_buf_1, DGST_LEN);
-	di_2 = jaln_digest_info_create("sid_2", di_buf_2, DGST_LEN);
-	di_3 = jaln_digest_info_create("sid_3", di_buf_3, DGST_LEN);
+	di_1 = jaln_digest_info_create("nonce_1", di_buf_1, DGST_LEN);
+	di_2 = jaln_digest_info_create("nonce_2", di_buf_2, DGST_LEN);
+	di_3 = jaln_digest_info_create("nonce_3", di_buf_3, DGST_LEN);
 	output_str = jal_calloc(strlen(di_1_str) + 1, sizeof(char));
-	dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
+	dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 	axl_list_append(dgst_list, di_1);
 	axl_list_append(dgst_list, di_2);
 	axl_list_append(dgst_list, di_3);
@@ -322,16 +322,16 @@ void setup()
 
 	rec_info = jaln_record_info_create();
 	rec_info->type = JALN_RTYPE_LOG;
-	rec_info->nonce = jal_strdup(sid_1_str);
+	rec_info->nonce = jal_strdup(nonce_1_str);
 
 	rec_info->sys_meta_len = 10;
 	rec_info->app_meta_len = 20;
 	rec_info->payload_len = 30;
 
-	dr_1 = jaln_digest_resp_info_create("sid_1", JALN_DIGEST_STATUS_CONFIRMED);
-	dr_2 = jaln_digest_resp_info_create("sid_2", JALN_DIGEST_STATUS_INVALID);
-	dr_3 = jaln_digest_resp_info_create("sid_3", JALN_DIGEST_STATUS_UNKNOWN);
-	dgst_resp_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id,
+	dr_1 = jaln_digest_resp_info_create("nonce_1", JALN_DIGEST_STATUS_CONFIRMED);
+	dr_2 = jaln_digest_resp_info_create("nonce_2", JALN_DIGEST_STATUS_INVALID);
+	dr_3 = jaln_digest_resp_info_create("nonce_3", JALN_DIGEST_STATUS_UNKNOWN);
+	dgst_resp_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_nonce,
 			jaln_axl_destroy_digest_resp_info);
 	axl_list_append(dgst_resp_list, dr_1);
 	axl_list_append(dgst_resp_list, dr_2);
@@ -354,7 +354,7 @@ void test_create_journal_resume_msg_with_valid_parameters()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "serialID";
+	char *nonce = "nonce";
 	uint64_t offset = 1;
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
@@ -362,7 +362,7 @@ void test_create_journal_resume_msg_with_valid_parameters()
 
 	msg_out_len = &len;
 
-	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
+	ret = jaln_create_journal_resume_msg(nonce, offset, &msg_out, msg_out_len);
 	assert_equals(JAL_OK, ret);
 	free(msg_out);
 }
@@ -373,7 +373,7 @@ void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly
 
 	char *correct_msg = "Content-Type: application/beep+jalop\r\nContent-Transfer-Encoding: binary\r\nJAL-Message: journal-resume\r\nJAL-Serial-Id: 1234562\r\nJAL-Journal-Offset: 47996\r\n\r\n";
 
-	char *serial_id = "1234562";
+	char *nonce = "1234562";
 	uint64_t offset = 47996;
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
@@ -381,18 +381,18 @@ void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly
 
 	msg_out_len = &len;
 
-	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
+	ret = jaln_create_journal_resume_msg(nonce, offset, &msg_out, msg_out_len);
 
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(correct_msg, msg_out);
 	free(msg_out);
 }
 
-void test_create_journal_resume_msg_with_invalid_parameters_serial_id_is_null()
+void test_create_journal_resume_msg_with_invalid_parameters_nonce_is_null()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = NULL;
+	char *nonce = NULL;
 	uint64_t offset = 1;
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
@@ -400,7 +400,7 @@ void test_create_journal_resume_msg_with_invalid_parameters_serial_id_is_null()
 
 	msg_out_len = &len;
 
-	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
+	ret = jaln_create_journal_resume_msg(nonce, offset, &msg_out, msg_out_len);
 	free(msg_out);
 	assert_equals(JAL_E_INVAL, ret);
 }
@@ -409,7 +409,7 @@ void test_create_journal_resume_msg_with_invalid_parameters_msg_out_not_null()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "serialid";
+	char *nonce = "nonce";
 	uint64_t offset = 1;
 	char *msg_out = "some text!";
 	uint64_t *msg_out_len = NULL;
@@ -417,7 +417,7 @@ void test_create_journal_resume_msg_with_invalid_parameters_msg_out_not_null()
 
 	msg_out_len = &len;
 
-	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
+	ret = jaln_create_journal_resume_msg(nonce, offset, &msg_out, msg_out_len);
 	assert_equals(JAL_E_INVAL, ret);
 }
 
@@ -425,12 +425,12 @@ void test_create_journal_resume_msg_with_invalid_parameters_msg_out_len_is_null(
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "serialid";
+	char *nonce = "nonce";
 	uint64_t offset = 1;
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
 
-	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
+	ret = jaln_create_journal_resume_msg(nonce, offset, &msg_out, msg_out_len);
 	free(msg_out);
 	assert_equals(JAL_E_INVAL, ret);
 }
@@ -439,7 +439,7 @@ void test_create_journal_resume_msg_with_invalid_parameters_offset_is_zero()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "serialid";
+	char *nonce = "nonce";
 	uint64_t offset = 0;
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
@@ -447,7 +447,7 @@ void test_create_journal_resume_msg_with_invalid_parameters_offset_is_zero()
 
 	msg_out_len = &len;
 
-	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
+	ret = jaln_create_journal_resume_msg(nonce, offset, &msg_out, msg_out_len);
 	free(msg_out);
 	assert_equals(JAL_E_INVAL, ret);
 }
@@ -456,7 +456,7 @@ void test_create_journal_resume_msg_with_valid_parameters_offset_is_very_large()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *serial_id = "1234562";
+	char *nonce = "1234562";
 	uint64_t offset = UINT64_MAX;
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
@@ -464,7 +464,7 @@ void test_create_journal_resume_msg_with_valid_parameters_offset_is_very_large()
 
 	msg_out_len = &len;
 
-	ret = jaln_create_journal_resume_msg(serial_id, offset, &msg_out, msg_out_len);
+	ret = jaln_create_journal_resume_msg(nonce, offset, &msg_out, msg_out_len);
 
 	assert_equals(JAL_OK, ret);
 
@@ -500,7 +500,7 @@ void test_create_sync_msg_works()
 {
 	char *msg_out = NULL;
 	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_sync_msg(sid_1_str, &msg_out, &len));
+	assert_equals(JAL_OK, jaln_create_sync_msg(nonce_1_str, &msg_out, &len));
 	assert_equals(strlen(EXPECTED_SYNC_MSG), len);
 	assert_equals(0, memcmp(EXPECTED_SYNC_MSG, msg_out, len));
 	free(msg_out);
@@ -511,10 +511,10 @@ void test_create_sync_msg_does_not_crash_on_bad_input()
 	char *msg_out = NULL;
 	uint64_t len;
 	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(NULL, &msg_out, &len));
-	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, NULL, &len));
-	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, &msg_out, NULL));
+	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(nonce_1_str, NULL, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(nonce_1_str, &msg_out, NULL));
 	msg_out = (char*)0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(sid_1_str, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_sync_msg(nonce_1_str, &msg_out, &len));
 }
 
 void test_create_subscribe_msg_with_valid_parameters()
@@ -619,18 +619,18 @@ void test_digest_info_strlen_works_for_valid_input()
 	assert_equals(strlen(di_1_str), len);
 }
 
-void test_digest_info_strlen_returns_0_when_missing_sid()
+void test_digest_info_strlen_returns_0_when_missing_nonce()
 {
-	free(di_1->serial_id);
-	di_1->serial_id = NULL;
+	free(di_1->nonce);
+	di_1->nonce = NULL;
 	uint64_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(0, len);
 }
 
-void test_digest_info_strlen_fails_for_zero_length_sid()
+void test_digest_info_strlen_fails_for_zero_length_nonce()
 {
-	free(di_1->serial_id);
-	di_1->serial_id = jal_strdup("");;
+	free(di_1->nonce);
+	di_1->nonce = jal_strdup("");;
 	uint64_t len = jaln_digest_info_strlen(di_1);
 	assert_equals(0, len);
 }
@@ -671,8 +671,8 @@ void test_digest_info_strcat_returns_null_for_null_digest_info()
 
 void test_digest_info_strcat_returns_null_for_bad_digest_info()
 {
-	free(di_1->serial_id);
-	di_1->serial_id = NULL;
+	free(di_1->nonce);
+	di_1->nonce = NULL;
 
 	char *ret = jaln_digest_info_strcat(output_str, di_1);
 	assert_pointer_equals((void*)NULL, ret);
@@ -709,7 +709,7 @@ void test_create_returns_error_with_bad_digest_list()
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
 
-	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
+	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(empty_list, &msg_out, &msg_out_len));
 	axl_list_free(empty_list);
 
@@ -916,18 +916,18 @@ void test_digest_resp_info_strlen_works_for_valid_input()
 	assert_equals(strlen(dr_3_str), len);
 }
 
-void test_digest_resp_info_strlen_returns_0_when_missing_sid()
+void test_digest_resp_info_strlen_returns_0_when_missing_nonce()
 {
-	free(dr_1->serial_id);
-	dr_1->serial_id = NULL;
+	free(dr_1->nonce);
+	dr_1->nonce = NULL;
 	uint64_t len = jaln_digest_resp_info_strlen(dr_1);
 	assert_equals(0, len);
 }
 
-void test_digest_resp_info_strlen_returns_0_when_sid_is_emtpy()
+void test_digest_resp_info_strlen_returns_0_when_nonce_is_emtpy()
 {
-	free(dr_1->serial_id);
-	dr_1->serial_id = jal_strdup("");
+	free(dr_1->nonce);
+	dr_1->nonce = jal_strdup("");
 	uint64_t len = jaln_digest_resp_info_strlen(dr_1);
 	assert_equals(0, len);
 }
@@ -974,8 +974,8 @@ void test_digest_resp_info_strcat_returns_null_for_null_digest_resp_info()
 
 void test_digest_resp_info_strcat_returns_null_for_bad_digest_resp_info()
 {
-	free(dr_1->serial_id);
-	dr_1->serial_id = NULL;
+	free(dr_1->nonce);
+	dr_1->nonce = NULL;
 
 	char *ret = jaln_digest_resp_info_strcat(output_str, dr_1);
 	assert_pointer_equals((void*)NULL, ret);
@@ -1012,7 +1012,7 @@ void test_create_digest_resp_returns_error_with_bad_digest_list()
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
 
-	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id, jaln_axl_destroy_digest_resp_info);
+	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_nonce, jaln_axl_destroy_digest_resp_info);
 	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(empty_list, &msg_out, &msg_out_len));
 	axl_list_free(empty_list);
 

@@ -59,7 +59,7 @@ jaln_session *jaln_session_create()
 	sess->rec_chan_num = -1;
 	sess->dgst_chan_num = -1; 
 	sess->ch_info = jaln_channel_info_create();
-	sess->dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
+	sess->dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 	if (!sess->dgst_list) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
@@ -312,12 +312,12 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 	jaln_session_unref(sess);
 }
 
-enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess, char *serial_id, uint8_t *dgst_buf, uint64_t dgst_len)
+enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess, char *nonce, uint8_t *dgst_buf, uint64_t dgst_len)
 {
-	if (!sess || !serial_id || !dgst_buf || (0 == dgst_len)) {
+	if (!sess || !nonce || !dgst_buf || (0 == dgst_len)) {
 		return JAL_E_INVAL;
 	}
-	struct jaln_digest_info *dgst_info = jaln_digest_info_create(serial_id, dgst_buf, dgst_len);
+	struct jaln_digest_info *dgst_info = jaln_digest_info_create(nonce, dgst_buf, dgst_len);
 
 	vortex_mutex_lock(&sess->lock);
 	axl_list_append(sess->dgst_list, dgst_info);

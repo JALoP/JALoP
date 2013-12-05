@@ -41,29 +41,29 @@
 #include "jaln_digest_info.h"
 #include "jaln_digest_msg_handler.h"
 
-#define sid_1_str "sid_1"
-#define sid_2_str "sid_2"
-#define sid_3_str "sid_3"
+#define nonce_1_str "nonce_1"
+#define nonce_2_str "nonce_2"
+#define nonce_3_str "nonce_3"
 
-#define dr_1_str "abcd1234=sid_1\r\n"
-#define dr_2_str "1234abcd=sid_2\r\n"
-#define dr_3_str "11aa22bb=sid_3\r\n"
+#define dr_1_str "abcd1234=nonce_1\r\n"
+#define dr_2_str "1234abcd=nonce_2\r\n"
+#define dr_3_str "11aa22bb=nonce_3\r\n"
 #define dgst_len 4
 
 static uint8_t dgst_1_val[dgst_len] = { 0xab, 0xcd, 0x12, 0x34 };
 static uint8_t dgst_2_val[dgst_len] = { 0x12, 0x34, 0xab, 0xcd };
 static uint8_t dgst_3_val[dgst_len] = { 0x11, 0xaa, 0x22, 0xbb };
 
-#define bad_sid_line_one   "1234 =sid_9\r\n"
-#define bad_sid_line_two   " 1234=sid_9\r\n"
-#define bad_sid_line_three  "=sid_9\r\n"
-#define bad_sid_line_four  "1234=sid_9\n"
-#define bad_sid_line_five   "1234=sid_9\r"
-#define bad_sid_line_six "\r\n1234=sid_9"
-#define bad_sid_line_seven "1234=sid_9"
-#define bad_sid_line_eight "1234=\r\n"
-#define bad_sid_line_nine "1234="
-#define bad_sid_line_ten "1234"
+#define bad_nonce_line_one   "1234 =nonce_9\r\n"
+#define bad_nonce_line_two   " 1234=nonce_9\r\n"
+#define bad_nonce_line_three  "=nonce_9\r\n"
+#define bad_nonce_line_four  "1234=nonce_9\n"
+#define bad_nonce_line_five   "1234=nonce_9\r"
+#define bad_nonce_line_six "\r\n1234=nonce_9"
+#define bad_nonce_line_seven "1234=nonce_9"
+#define bad_nonce_line_eight "1234=\r\n"
+#define bad_nonce_line_nine "1234="
+#define bad_nonce_line_ten "1234"
 
 #define GOOD_PAYLOAD \
 	dr_1_str \
@@ -73,75 +73,75 @@ static uint8_t dgst_3_val[dgst_len] = { 0x11, 0xaa, 0x22, 0xbb };
 #define BAD_PAYLOAD_ONE \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_one
+	bad_nonce_line_one
 
 #define BAD_PAYLOAD_TWO \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_two
+	bad_nonce_line_two
 
 #define BAD_PAYLOAD_THREE \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_three
+	bad_nonce_line_three
 
 #define BAD_PAYLOAD_FOUR \
 	dr_1_str \
-	bad_sid_line_four \
+	bad_nonce_line_four \
 	dr_2_str
 
 #define BAD_PAYLOAD_FIVE \
 	dr_1_str \
-	bad_sid_line_five \
+	bad_nonce_line_five \
 	dr_2_str
 
 #define BAD_PAYLOAD_SIX \
 	dr_1_str \
 	dr_3_str \
-	bad_sid_line_six
+	bad_nonce_line_six
 
 #define BAD_PAYLOAD_SEVEN \
 	dr_1_str \
-	bad_sid_line_seven \
+	bad_nonce_line_seven \
 	dr_3_str
 
 #define BAD_PAYLOAD_SEVEN_A \
 	dr_1_str \
 	dr_3_str \
-	bad_sid_line_seven
+	bad_nonce_line_seven
 
 #define BAD_PAYLOAD_EIGHT \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_eight
+	bad_nonce_line_eight
 
 #define BAD_PAYLOAD_EIGHT_A \
 	dr_1_str \
 	dr_2_str \
 	dr_3_str \
-	bad_sid_line_eight
+	bad_nonce_line_eight
 
 #define BAD_PAYLOAD_NINE \
 	dr_1_str \
-	bad_sid_line_nine \
+	bad_nonce_line_nine \
 	dr_3_str
 
 #define BAD_PAYLOAD_NINE_A \
 	dr_1_str \
 	dr_2_str \
 	dr_3_str \
-	bad_sid_line_nine
+	bad_nonce_line_nine
 
 #define BAD_PAYLOAD_TEN \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_ten
+	bad_nonce_line_ten
 
 #define BAD_PAYLOAD_TEN_A \
 	dr_1_str \
 	dr_2_str \
 	dr_3_str \
-	bad_sid_line_ten
+	bad_nonce_line_ten
 
 #define BAD_PAYLOAD_ELEVEN \
 	"\0"
@@ -266,7 +266,7 @@ void test_process_dgst_works_with_good_input()
 	assert_true(axl_list_cursor_has_item(cursor));
 	di = (struct jaln_digest_info*) axl_list_cursor_get(cursor);
 	assert_not_equals((void*) NULL, di);
-	assert_string_equals(sid_1_str, di->serial_id);
+	assert_string_equals(nonce_1_str, di->nonce);
 	assert_equals(dgst_len, di->digest_len);
 	assert_equals(0, memcmp(dgst_1_val, di->digest, di->digest_len));
 
@@ -274,7 +274,7 @@ void test_process_dgst_works_with_good_input()
 	assert_true(axl_list_cursor_has_item(cursor));
 	di = (struct jaln_digest_info*) axl_list_cursor_get(cursor);
 	assert_not_equals((void*) NULL, di);
-	assert_string_equals(sid_2_str, di->serial_id);
+	assert_string_equals(nonce_2_str, di->nonce);
 	assert_equals(dgst_len, di->digest_len);
 	assert_equals(0, memcmp(dgst_2_val, di->digest, di->digest_len));
 
@@ -282,7 +282,7 @@ void test_process_dgst_works_with_good_input()
 	assert_true(axl_list_cursor_has_item(cursor));
 	di = (struct jaln_digest_info*) axl_list_cursor_get(cursor);
 	assert_not_equals((void*) NULL, di);
-	assert_string_equals(sid_3_str, di->serial_id);
+	assert_string_equals(nonce_3_str, di->nonce);
 	assert_equals(dgst_len, di->digest_len);
 	assert_equals(0, memcmp(dgst_3_val, di->digest, di->digest_len));
 

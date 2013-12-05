@@ -37,13 +37,13 @@
 #include "jaln_digest_info.h"
 #include "jaln_sub_dgst_channel.h"
 
-#define SID "sid_1234"
+#define NONCE "nonce_1234"
 
 static jaln_session *sess = NULL;
 static struct jaln_pub_data *pub_data = NULL;
 static struct jaln_sub_data *sub_data = NULL;
 static struct jaln_payload_feeder zeroed_feeder;
-static char *sid = NULL;
+static char *nonce = NULL;
 static uint8_t *dgst_buf = NULL;
 static uint64_t dgst_len;
 static axl_bool cond_signal_called;
@@ -130,7 +130,7 @@ void setup()
 	pub_data = jaln_pub_data_create();
 	sub_data = jaln_sub_data_create();
 	memset(&zeroed_feeder, 0, sizeof(zeroed_feeder));
-	sid = jal_strdup(SID);
+	nonce = jal_strdup(NONCE);
 	dgst_len = 4;
 	dgst_buf = (uint8_t*) jal_malloc(dgst_len);
 	dgst_buf[0] = 0xa;
@@ -150,7 +150,7 @@ void teardown()
 	jaln_session_destroy(&sess);
 	jaln_pub_data_destroy(&pub_data);
 	jaln_sub_data_destroy(&sub_data);
-	free(sid);
+	free(nonce);
 	free(dgst_buf);
 	restore_function(vortex_thread_create);
 	restore_function(vortex_channel_get_connection);
@@ -262,7 +262,7 @@ void test_pub_data_create()
 	assert_equals(0, memcmp(&pub_data->journal_feeder, &zeroed_feeder, sizeof(zeroed_feeder)));
 	assert_equals(0, pub_data->vortex_feeder_sz);
 	assert_equals(-1, pub_data->msg_no);
-	assert_equals((void*)NULL, pub_data->serial_id);
+	assert_equals((void*)NULL, pub_data->nonce);
 	assert_equals((void*)NULL, pub_data->headers);
 	assert_equals((void*)NULL, pub_data->sys_meta);
 	assert_equals((void*)NULL, pub_data->app_meta);
@@ -548,11 +548,11 @@ void test_on_close_channel_does_nothing_with_bad_channel()
 void test_add_to_dgst_list_works()
 {
 	assert_equals(0, axl_list_length(sess->dgst_list));
-	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, dgst_len));
+	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, nonce, dgst_buf, dgst_len));
 	assert_equals(1, axl_list_length(sess->dgst_list));
 	struct jaln_digest_info *di = axl_list_get_first(sess->dgst_list);
 	assert_not_equals((void*) NULL, di);
-	assert_equals(0, memcmp(di->serial_id, sid, strlen(sid) + 1));
+	assert_equals(0, memcmp(di->nonce, nonce, strlen(nonce) + 1));
 	assert_equals(dgst_len, di->digest_len);
 	assert_equals(0, memcmp(di->digest, dgst_buf, dgst_len));
 }
@@ -563,7 +563,7 @@ void test_add_to_dgst_list_signals_for_subscriber()
 	assert_equals(0, axl_list_length(sess->dgst_list));
 	sess->dgst_list_max = 1;
 	sess->role = JALN_ROLE_SUBSCRIBER;
-	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, dgst_len));
+	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, nonce, dgst_buf, dgst_len));
 	assert_true(cond_signal_called);
 }
 
@@ -573,20 +573,20 @@ void test_add_to_dgst_list_does_not_signal_for_publisher()
 	assert_equals(0, axl_list_length(sess->dgst_list));
 	sess->dgst_list_max = 1;
 	sess->role = JALN_ROLE_PUBLISHER;
-	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, dgst_len));
+	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, nonce, dgst_buf, dgst_len));
 	assert_false(cond_signal_called);
 }
 
 void test_add_to_dgst_fails_with_bad_input()
 {
 	assert_equals(0, axl_list_length(sess->dgst_list));
-	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(NULL, sid, dgst_buf, dgst_len));
+	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(NULL, nonce, dgst_buf, dgst_len));
 	assert_equals(0, axl_list_length(sess->dgst_list));
 	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, NULL, dgst_buf, dgst_len));
 	assert_equals(0, axl_list_length(sess->dgst_list));
-	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, sid, NULL, dgst_len));
+	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, nonce, NULL, dgst_len));
 	assert_equals(0, axl_list_length(sess->dgst_list));
-	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, sid, dgst_buf, 0));
+	assert_equals(JAL_E_INVAL, jaln_session_add_to_dgst_list(sess, nonce, dgst_buf, 0));
 	assert_equals(0, axl_list_length(sess->dgst_list));
 }
 

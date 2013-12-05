@@ -44,23 +44,23 @@
 #include "jaln_record_info.h"
 #include "jaln_strings.h"
 
-enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
+enum jal_status jaln_create_journal_resume_msg(const char *nonce,
 		uint64_t offset, char **msg_out, uint64_t *msg_out_len)
 {
 	static const char * const preamble = JALN_MIME_PREAMBLE JALN_MSG_JOURNAL_RESUME JALN_CRLF \
-		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE;
+		JALN_HDRS_NONCE JALN_COLON_SPACE;
 
 	enum jal_status ret = JAL_E_INVAL;
 	char *offset_str = NULL;
 	if (!msg_out || *msg_out || !msg_out_len) {
 		return JAL_E_INVAL;
 	}
-	if (!serial_id || (offset == 0)) {
+	if (!nonce || (offset == 0)) {
 		return JAL_E_INVAL;
 	}
 	jal_asprintf(&offset_str, "%"PRIu64, offset);
 	uint64_t cnt = strlen(preamble) + 1;
-	uint64_t tmp = strlen(serial_id) + strlen(JALN_CRLF);
+	uint64_t tmp = strlen(nonce) + strlen(JALN_CRLF);
 	if (cnt > (SIZE_MAX - tmp)) {
 		goto out;
 	}
@@ -79,7 +79,7 @@ enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
 	char *msg = (char*) jal_malloc(cnt);
 	msg[0] = '\0';
 	strcat(msg, preamble);
-	strcat(msg, serial_id);
+	strcat(msg, nonce);
 	strcat(msg, JALN_CRLF);
 	strcat(msg, JALN_HDRS_JOURNAL_OFFSET JALN_COLON_SPACE);
 	strcat(msg, offset_str);
@@ -93,18 +93,18 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg_out, uint64_t *msg_len)
+enum jal_status jaln_create_sync_msg(const char *nonce, char **msg_out, uint64_t *msg_len)
 {
 #define SYNC_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_SYNC JALN_CRLF \
-		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF
+		JALN_HDRS_NONCE JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF
 
-	if (!serial_id || !msg_out || *msg_out || !msg_len) {
+	if (!nonce || !msg_out || *msg_out || !msg_len) {
 		return JAL_E_INVAL;
 	}
 	enum jal_status ret = JAL_E_INVAL;
 	char *msg = NULL;
 
-	int len = jal_asprintf(&msg, SYNC_MSG_HDRS, serial_id);
+	int len = jal_asprintf(&msg, SYNC_MSG_HDRS, nonce);
 	if (len <= 0) {
 		goto err_out;
 	}
@@ -171,16 +171,16 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
 {
 	// output for each line should be:
-	// <dgst_as_hex>=<serial_id>CRLF
-	if (!di || !di->serial_id || !di->digest || 0 == di->digest_len) {
+	// <dgst_as_hex>=<nonce>CRLF
+	if (!di || !di->nonce || !di->digest || 0 == di->digest_len) {
 		return 0;
 	}
-	if (0 == strlen(di->serial_id)) {
+	if (0 == strlen(di->nonce)) {
 		return 0;
 	}
 	// start with cnt == 3 ('=' CR LF)
 	uint64_t cnt = 3;
-	uint64_t tmp = strlen(di->serial_id);
+	uint64_t tmp = strlen(di->nonce);
 	if (cnt > (SIZE_MAX - tmp)) {
 		cnt = 0;
 		goto out;
@@ -205,7 +205,7 @@ out:
 char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di)
 {
 	// output for each line should be:
-	// <dgst_as_hex>=<serial_id>CRLF
+	// <dgst_as_hex>=<nonce>CRLF
 	// start with cnt == 4 ('=' CR LF and NULL terminator)
 	if (!dst || 0 == jaln_digest_info_strlen(di)) {
 		return NULL;
@@ -216,7 +216,7 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di)
 	for (i = 0; i < di->digest_len; i++) {
 		sprintf(dst + (i * 2), "%02x", di->digest[i]);
 	}
-	sprintf(dst + (i * 2), "=%s" JALN_CRLF, di->serial_id);
+	sprintf(dst + (i * 2), "=%s" JALN_CRLF, di->nonce);
 	return orig;
 }
 
@@ -484,7 +484,7 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
 	}
 
 #define REC_FORMAT_STR JALN_MIME_PREAMBLE "%s" JALN_CRLF \
-		JALN_HDRS_SERIAL_ID JALN_COLON_SPACE "%s" JALN_CRLF \
+		JALN_HDRS_NONCE JALN_COLON_SPACE "%s" JALN_CRLF \
 		JALN_HDRS_SYS_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		JALN_HDRS_APP_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		"%s" JALN_COLON_SPACE "%" PRIu64 JALN_CRLF JALN_CRLF
@@ -517,16 +517,16 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
 uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di)
 {
 	// output for each line should be:
-	// <dgst_as_hex>=<serial_id>CRLF
-	if (!di || !di->serial_id) {
+	// <dgst_as_hex>=<nonce>CRLF
+	if (!di || !di->nonce) {
 		return 0;
 	}
-	if (0 == strlen(di->serial_id)) {
+	if (0 == strlen(di->nonce)) {
 		return 0;
 	}
 	// start with cnt == 2 (CR LF)
 	uint64_t cnt = 2;
-	if (!jaln_safe_add_size(&cnt, strlen(di->serial_id))) {
+	if (!jaln_safe_add_size(&cnt, strlen(di->nonce))) {
 		cnt = 0;
 		goto out;
 	}
@@ -557,7 +557,7 @@ out:
 char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info *di)
 {
 	// output for each line should be:
-	// <dgst_status>=<serial_id>CRLF
+	// <dgst_status>=<nonce>CRLF
 	// start with cnt == 4 ('=' CR LF and NULL terminator)
 	if (!dst || 0 == jaln_digest_resp_info_strlen(di)) {
 		return NULL;
@@ -577,7 +577,7 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
 		return NULL;
 	}
 	strcat(dst, status_str);
-	strcat(dst, di->serial_id);
+	strcat(dst, di->nonce);
 	strcat(dst, JALN_CRLF);
 	return dst;
 }

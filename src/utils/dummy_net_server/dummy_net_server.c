@@ -51,7 +51,7 @@
 
 struct thread_data {
 	jaln_session *sess;
-	char *sid;
+	char *nonce;
 };
 
 uint8_t *m_sys_meta_buf = NULL;
@@ -120,12 +120,12 @@ enum jal_status pub_on_journal_resume(
 	return JAL_E_INVAL;
 }
 
-enum jal_status __send_record(jaln_session *sess, char *sid, uint8_t *buf, uint64_t buf_len, 
+enum jal_status __send_record(jaln_session *sess, char *nonce, uint8_t *buf, uint64_t buf_len, 
 			enum jal_status (*send)(jaln_session *, void *, char *,
 						uint8_t *, uint64_t, uint8_t *,
 						uint64_t, uint8_t *, uint64_t))
 {
-	enum jal_status ret = send(sess, NULL, sid, m_sys_meta_buf, m_sys_meta_buf_len,
+	enum jal_status ret = send(sess, NULL, nonce, m_sys_meta_buf, m_sys_meta_buf_len,
 				m_app_meta_buf, m_app_meta_buf_len, buf, buf_len);
 
 	return ret;
@@ -141,11 +141,11 @@ __attribute__((noreturn))
 void *send_audit(void *args) {
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
-	char *sid = data->sid;
+	char *nonce = data->nonce;
 	enum jal_status ret = JAL_E_INVAL;
 
 	while (1) {
-		ret = __send_record(sess, sid, m_audit_buf, m_audit_buf_len, &jaln_send_audit);
+		ret = __send_record(sess, nonce, m_audit_buf, m_audit_buf_len, &jaln_send_audit);
 		if (JAL_OK != ret) {
 			DEBUG_LOG("Failed to send audit record");
 			goto out;
@@ -161,11 +161,11 @@ __attribute__((noreturn))
 void *send_log(void *args) {
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
-	char *sid = data->sid;
+	char *nonce = data->nonce;
 	enum jal_status ret = JAL_E_INVAL;
 
 	while (1) {
-		ret = __send_record(sess, sid, m_journal_buf, m_journal_buf_len, &jaln_send_audit);
+		ret = __send_record(sess, nonce, m_journal_buf, m_journal_buf_len, &jaln_send_audit);
 		if (JAL_OK != ret) {
 			DEBUG_LOG("Failed to send audit record");
 			goto out;
@@ -186,7 +186,7 @@ enum jal_status pub_on_subscribe(
 		void *user_data)
 {
 	// remote is sending a subscribe message for the particular type
-	// indicate they wish to begin receiving records at serial_id
+	// indicate they wish to begin receiving records at nonce
 	user_data = user_data;
 	DEBUG_LOG("ch_info: %p", ch_info);
 	DEBUG_LOG("record_type: %d", type);
@@ -259,10 +259,10 @@ enum jal_status pub_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) char *nonce,
 		__attribute__((unused)) void *user_data)
 {
-	DEBUG_LOG("sid: %s", serial_id);
+	DEBUG_LOG("nonce: %s", nonce);
 	return JAL_OK;
 }
 
@@ -271,24 +271,24 @@ void pub_sync(
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) enum jaln_publish_mode mode,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
-	DEBUG_LOG("sid: %s", serial_id);
+	DEBUG_LOG("nonce: %s", nonce);
 }
 
 void pub_notify_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *digest,
 		__attribute__((unused)) const uint32_t size,
 		__attribute__((unused)) void *user_data)
 {
-	DEBUG_LOG("ch info:%p type:%d serial_id:%s dgst:%p, len:%d, ud:%p\n",
-		ch_info, type, serial_id, digest, size, user_data);
+	DEBUG_LOG("ch info:%p type:%d nonce:%s dgst:%p, len:%d, ud:%p\n",
+		ch_info, type, nonce, digest, size, user_data);
 	char *b64 = jal_base64_enc(digest, size);
 	DEBUG_LOG("dgst: %s\n", b64);
 }
@@ -297,15 +297,15 @@ void pub_peer_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *local_digest,
 		__attribute__((unused)) const uint32_t local_size,
 		__attribute__((unused)) const uint8_t *peer_digest,
 		__attribute__((unused)) const uint32_t peer_size,
 		__attribute__((unused)) void *user_data)
 {
-	DEBUG_LOG("ch info:%p type:%d serial_id:%s ldgst:%p, llen:%d, pdgst:%p, plen:%d, ud:%p\n",
-		ch_info, type, serial_id, local_digest, local_size, peer_digest, peer_size, user_data);
+	DEBUG_LOG("ch info:%p type:%d nonce:%s ldgst:%p, llen:%d, pdgst:%p, plen:%d, ud:%p\n",
+		ch_info, type, nonce, local_digest, local_size, peer_digest, peer_size, user_data);
 	char *b64 = jal_base64_enc(local_digest, local_size);
 	DEBUG_LOG("dgst: %s\n", b64);
 	free(b64);
@@ -318,11 +318,11 @@ int sub_get_subscribe_request(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		char **serial_id,
+		char **nonce,
 		__attribute__((unused)) uint64_t *offset)
 {
 	DEBUG_LOG(" ");
-	*serial_id = strdup("0");
+	*nonce = strdup("0");
 	return JAL_OK;
 }
 
@@ -359,28 +359,28 @@ int sub_on_record_info(
 int sub_on_audit(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
 		void *user_data)
 {
-	DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%d ud:%p\n",
-		ch_info, serial_id, buffer, cnt, user_data);
+	DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
+		ch_info, nonce, buffer, cnt, user_data);
 	return 0;
 }
 
 int sub_on_log(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
 		void *user_data)
 {
-	DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%d ud:%p\n",
-		ch_info, serial_id, buffer, cnt, user_data);
+	DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
+		ch_info, nonce, buffer, cnt, user_data);
 
-	DEBUG_LOG("(%s)app_meta[%"PRIu32"/%zu] '%s'", serial_id,
+	DEBUG_LOG("(%s)app_meta[%"PRIu32"/%zu] '%s'", nonce,
 			cnt,
 			strlen((char*) buffer),
 			(char*) buffer);
@@ -390,15 +390,15 @@ int sub_on_log(
 int sub_on_journal(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
 		const uint64_t offset,
 		const int more,
 		void *user_data)
 {
-	DEBUG_LOG("ch info:%p serial_id:%s buf: %p cnt:%"PRIu32" offset:%"PRIu64", more:%d, ud:%p\n",
-		ch_info, serial_id, buffer, cnt, offset, more, user_data);
+	DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%"PRIu32" offset:%"PRIu64", more:%d, ud:%p\n",
+		ch_info, nonce, buffer, cnt, offset, more, user_data);
 	return 0;
 }
 
@@ -406,13 +406,13 @@ int sub_notify_digest(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		char *serial_id,
+		char *nonce,
 		const uint8_t *digest,
 		const uint32_t len,
 		const void *user_data)
 {
-	DEBUG_LOG("ch info:%p type:%d serial_id:%s dgst:%p, len:%d, ud:%p\n",
-		ch_info, type, serial_id, digest, len, user_data);
+	DEBUG_LOG("ch info:%p type:%d nonce:%s dgst:%p, len:%d, ud:%p\n",
+		ch_info, type, nonce, digest, len, user_data);
 	char *b64 = jal_base64_enc(digest, len);
 	DEBUG_LOG("dgst: %s\n", b64);
 	return 0;
@@ -422,7 +422,7 @@ int sub_on_digest_response(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		const char *serial_id,
+		const char *nonce,
 		const enum jaln_digest_status status,
 		const void *user_data)
 {
@@ -441,8 +441,8 @@ int sub_on_digest_response(
 		status_str = "illegal";
 	}
 
-	DEBUG_LOG("ch info:%p type:%d serial_id:%s status: %s, ds:%d, ud:%p\n",
-		ch_info, type, serial_id, status_str, status, user_data);
+	DEBUG_LOG("ch info:%p type:%d nonce:%s status: %s, ds:%d, ud:%p\n",
+		ch_info, type, nonce, status_str, status, user_data);
 	return 0;
 }
 
@@ -459,24 +459,24 @@ void sub_message_complete(
 int sub_acquire_journal_feeder(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		struct jaln_payload_feeder *feeder,
 		void *user_data)
 {
        user_data = user_data;
-       DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n", ch_info, serial_id, feeder);
+       DEBUG_LOG("ch_info: %p, nonce:%s, feeder:%p\n", ch_info, nonce, feeder);
        return 0;
 }
 
 void sub_release_journal_feeder(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		const char *serial_id,
+		const char *nonce,
 		struct jaln_payload_feeder *feeder,
 		void *user_data)
 {
        user_data = user_data;
-       DEBUG_LOG("ch_info: %p, sid:%s, feeder:%p\n", ch_info, serial_id, feeder);
+       DEBUG_LOG("ch_info: %p, nonce:%s, feeder:%p\n", ch_info, nonce, feeder);
 }
 
 int main()

@@ -38,7 +38,7 @@ int dummy_get_subscribe_request(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char **serial_id,
+		__attribute__((unused)) char **nonce,
 		__attribute__((unused)) uint64_t *offset)
 {
 	return 0;
@@ -62,7 +62,7 @@ int dummy_on_record_info(
 int dummy_on_audit(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *buffer,
 		__attribute__((unused)) const uint32_t cnt,
 		__attribute__((unused)) void *user_data)
@@ -73,7 +73,7 @@ int dummy_on_audit(
 int dummy_on_log(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *buffer,
 		__attribute__((unused)) const uint32_t cnt,
 		__attribute__((unused)) void *user_data)
@@ -84,7 +84,7 @@ int dummy_on_log(
 int dummy_on_journal(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *buffer,
 		__attribute__((unused)) const uint32_t cnt,
 		__attribute__((unused)) const uint64_t offset,
@@ -98,7 +98,7 @@ int dummy_notify_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) char *nonce,
 		__attribute__((unused)) const uint8_t *digest,
 		__attribute__((unused)) const uint32_t len,
 		__attribute__((unused)) const void *user_data)
@@ -110,7 +110,7 @@ int dummy_on_digest_response(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const enum jaln_digest_status status,
 		__attribute__((unused)) const void *user_data)
 {
@@ -128,7 +128,7 @@ void dummy_message_complete(
 int dummy_acquire_journal_feeder(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
@@ -138,7 +138,7 @@ int dummy_acquire_journal_feeder(
 void dummy_release_journal_feeder(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {

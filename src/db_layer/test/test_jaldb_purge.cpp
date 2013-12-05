@@ -63,7 +63,7 @@ using namespace std;
 #define JOURNAL_ROOT "/journal/"
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
-#define FAKE_SID "12341234"
+#define FAKE_NONCE "12341234"
 #define AUDIT_TEST_XML_DOC "./test-input/domwriter_audit.xml"
 #define LOG_SYS_TEST_XML_DOC "./test-input/system-metadata.xml"
 #define LOG_APP_TEST_XML_DOC "./test-input/domwriter_log_app.xml"
@@ -85,9 +85,9 @@ void clear_docs( list<jaldb_doc_info> &docs)
 	list<jaldb_doc_info>::iterator cur = docs.begin();
 	while(cur != docs.end())
 	{
-		if(cur->sid) {
-			free(cur->sid);
-			cur->sid = NULL;
+		if(cur->nonce) {
+			free(cur->nonce);
+			cur->nonce = NULL;
 		}
 		if(cur->uuid) {
 			free(cur->uuid);
@@ -107,10 +107,10 @@ void print_out_docs(list<jaldb_doc_info> docs)
 	{	
 		cout << "i " << i << endl;
 		i++;
-		if (cur->sid)
-			cout << "sid: " << cur->sid;
+		if (cur->nonce)
+			cout << "nonce: " << cur->nonce;
 		else
-			cout << "sid: NULL";
+			cout << "nonce: NULL";
 		if (cur->uuid)
 			cout << " uuid: " << cur->uuid << endl;
 		else

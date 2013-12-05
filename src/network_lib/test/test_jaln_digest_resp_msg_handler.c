@@ -42,26 +42,26 @@
 #include <string.h>
 #include <ctype.h>
 
-#define sid_1_str "sid_1"
-#define sid_2_str "sid_2"
-#define sid_3_str "sid_3"
+#define nonce_1_str "nonce_1"
+#define nonce_2_str "nonce_2"
+#define nonce_3_str "nonce_3"
 
-#define dr_1_str "confirmed=sid_1\r\n"
-#define dr_2_str "invalid=sid_2\r\n"
-#define dr_3_str "unknown=sid_3\r\n"
+#define dr_1_str "confirmed=nonce_1\r\n"
+#define dr_2_str "invalid=nonce_2\r\n"
+#define dr_3_str "unknown=nonce_3\r\n"
 
-#define bad_sid_line_one   "unknown =sid_9\r\n"
-#define bad_sid_line_two   " unknown=sid_9\r\n"
-#define bad_sid_line_three "unkown=sid_9\r\n"
-#define bad_sid_line_four  "=sid_9\r\n"
-#define bad_sid_line_five  "unknown=sid_9\n"
-#define bad_sid_line_six   "unknown=sid_9\r"
-#define bad_sid_line_seven "\r\nunknown=sid_9"
-#define bad_sid_line_eight "unknown=sid_9"
-#define bad_sid_line_nine "unknown=\r\n"
-#define bad_sid_line_ten "unknown="
-#define bad_sid_line_eleven "unknown"
-#define bad_sid_line_twelve "unknow"
+#define bad_nonce_line_one   "unknown =nonce_9\r\n"
+#define bad_nonce_line_two   " unknown=nonce_9\r\n"
+#define bad_nonce_line_three "unkown=nonce_9\r\n"
+#define bad_nonce_line_four  "=nonce_9\r\n"
+#define bad_nonce_line_five  "unknown=nonce_9\n"
+#define bad_nonce_line_six   "unknown=nonce_9\r"
+#define bad_nonce_line_seven "\r\nunknown=nonce_9"
+#define bad_nonce_line_eight "unknown=nonce_9"
+#define bad_nonce_line_nine "unknown=\r\n"
+#define bad_nonce_line_ten "unknown="
+#define bad_nonce_line_eleven "unknown"
+#define bad_nonce_line_twelve "unknow"
 
 #define GOOD_PAYLOAD \
 	dr_1_str \
@@ -71,90 +71,90 @@
 #define BAD_PAYLOAD_ONE \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_one
+	bad_nonce_line_one
 
 #define BAD_PAYLOAD_TWO \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_two
+	bad_nonce_line_two
 
 #define BAD_PAYLOAD_THREE \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_three
+	bad_nonce_line_three
 
 #define BAD_PAYLOAD_FOUR \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_four
+	bad_nonce_line_four
 
 #define BAD_PAYLOAD_FIVE \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_five
+	bad_nonce_line_five
 
 #define BAD_PAYLOAD_SIX_A \
 	dr_1_str \
 	dr_3_str \
-	bad_sid_line_six
+	bad_nonce_line_six
 
 #define BAD_PAYLOAD_SIX \
 	dr_1_str \
-	bad_sid_line_six \
+	bad_nonce_line_six \
 	dr_3_str
 
 #define BAD_PAYLOAD_SEVEN \
 	dr_1_str \
-	bad_sid_line_seven \
+	bad_nonce_line_seven \
 	dr_3_str
 
 #define BAD_PAYLOAD_EIGHT \
 	dr_1_str \
-	bad_sid_line_eight \
+	bad_nonce_line_eight \
 	dr_3_str
 
 #define BAD_PAYLOAD_EIGHT_A \
 	dr_1_str \
 	dr_3_str \
-	bad_sid_line_eight
+	bad_nonce_line_eight
 
 #define BAD_PAYLOAD_NINE \
 	dr_1_str \
-	bad_sid_line_nine \
+	bad_nonce_line_nine \
 	dr_3_str
 
 #define BAD_PAYLOAD_TEN \
 	dr_1_str \
 	dr_2_str \
 	dr_3_str \
-	bad_sid_line_ten
+	bad_nonce_line_ten
 
 #define BAD_PAYLOAD_TEN_A \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_ten
+	bad_nonce_line_ten
 
 #define BAD_PAYLOAD_ELEVEN \
 	dr_1_str \
 	dr_2_str \
 	dr_3_str \
-	bad_sid_line_eleven
+	bad_nonce_line_eleven
 
 #define BAD_PAYLOAD_ELEVEN_A \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_eleven
+	bad_nonce_line_eleven
 
 #define BAD_PAYLOAD_TWELVE \
 	dr_1_str \
 	dr_2_str \
 	dr_3_str \
-	bad_sid_line_twelve
+	bad_nonce_line_twelve
 
 #define BAD_PAYLOAD_TWELVE_A \
 	dr_1_str \
 	dr_2_str \
-	bad_sid_line_twelve
+	bad_nonce_line_twelve
 
 #define BAD_PAYLOAD_THIRTEEN \
 	dr_1_str \
@@ -339,21 +339,21 @@ void test_process_dgst_resp_works_with_good_input()
 	assert_true(axl_list_cursor_has_item(cursor));
 	dr = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
 	assert_not_equals((void*) NULL, dr);
-	assert_string_equals(sid_1_str, dr->serial_id);
+	assert_string_equals(nonce_1_str, dr->nonce);
 	assert_equals(JALN_DIGEST_STATUS_CONFIRMED, dr->status);
 
 	axl_list_cursor_next(cursor);
 	assert_true(axl_list_cursor_has_item(cursor));
 	dr = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
 	assert_not_equals((void*) NULL, dr);
-	assert_string_equals(sid_2_str, dr->serial_id);
+	assert_string_equals(nonce_2_str, dr->nonce);
 	assert_equals(JALN_DIGEST_STATUS_INVALID, dr->status);
 
 	axl_list_cursor_next(cursor);
 	assert_true(axl_list_cursor_has_item(cursor));
 	dr = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
 	assert_not_equals((void*) NULL, dr);
-	assert_string_equals(sid_3_str, dr->serial_id);
+	assert_string_equals(nonce_3_str, dr->nonce);
 	assert_equals(JALN_DIGEST_STATUS_UNKNOWN, dr->status);
 	axl_list_cursor_free(cursor);
 }

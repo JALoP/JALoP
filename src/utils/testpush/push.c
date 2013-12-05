@@ -47,7 +47,7 @@
 
 struct thread_data {
 	jaln_session *sess;
-	char *sid;
+	char *nonce;
 };
 
 enum jaln_connect_error on_connect_request(const struct jaln_connect_request *req,
@@ -98,7 +98,7 @@ enum jal_status on_journal_resume(
 	DEBUG_LOG("headers: %p", headers);
 	return JAL_E_INVAL;
 }
-enum jal_status __send_record(jaln_session *sess, char *sid, 
+enum jal_status __send_record(jaln_session *sess, char *nonce, 
 			enum jal_status (*send)(jaln_session *, void *, char *,
 						uint8_t *, uint64_t, uint8_t *,
 						uint64_t, uint8_t *, uint64_t))
@@ -117,7 +117,7 @@ enum jal_status __send_record(jaln_session *sess, char *sid,
 	payload_buf = (uint8_t*) strdup("payload_buffer");
 	payload_len = strlen("payload_buffer");
 
-	enum jal_status ret = send(sess, NULL, sid, sys_meta_buf, sys_meta_len,
+	enum jal_status ret = send(sess, NULL, nonce, sys_meta_buf, sys_meta_len,
 				app_meta_buf, app_meta_len, payload_buf, payload_len);
 
 	free(sys_meta_buf);
@@ -134,11 +134,11 @@ __attribute__((noreturn))
 void *send_record(void *args) {
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
-	char *sid = data->sid;
+	char *nonce = data->nonce;
 	enum jal_status ret = JAL_E_INVAL;
 
 	while (1) {
-		ret = __send_record(sess, sid, &jaln_send_audit);\
+		ret = __send_record(sess, nonce, &jaln_send_audit);\
 		if (JAL_OK != ret) {
 			DEBUG_LOG("Failed to send audit record");
 			goto out;
@@ -159,7 +159,7 @@ enum jal_status on_subscribe(
 		void *user_data)
 {
 	// remote is sending a subscribe message for the particular type
-	// indicate they wish to begin receiving records at serial_id
+	// indicate they wish to begin receiving records at nonce
 	user_data = user_data;
 	DEBUG_LOG("ch_info: %p", ch_info);
 	DEBUG_LOG("record_type: %d", type);
@@ -233,14 +233,14 @@ enum jal_status on_record_complete(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		char *serial_id,
+		char *nonce,
 		void *user_data)
 {
 	// notification that the record was sent
 	user_data = user_data;
 	DEBUG_LOG("ch_info: %p", ch_info);
 	DEBUG_LOG("record_type: %d", type);
-	DEBUG_LOG("sid: %p", serial_id);
+	DEBUG_LOG("nonce: %p", nonce);
 	return JAL_OK;
 }
 void on_sync(
@@ -248,7 +248,7 @@ void on_sync(
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		enum jaln_publish_mode mode,
-		const char *serial_id,
+		const char *nonce,
 		struct jaln_mime_header *headers,
 		void *user_data)
 {
@@ -257,21 +257,21 @@ void on_sync(
 	DEBUG_LOG("ch_info: %p", ch_info);
 	DEBUG_LOG("record_type: %d", type);
 	DEBUG_LOG("mode: %d", mode);
-	DEBUG_LOG("sid: %p", serial_id);
+	DEBUG_LOG("nonce: %p", nonce);
 	DEBUG_LOG("headers: %p", headers);
 }
 void notify_digest(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *digest,
 		const uint32_t size,
 		void *user_data)
 {
 	// notification of the digest calculated by the network library
-	DEBUG_LOG("ch info:%p type:%d serial_id:%s dgst:%p, len:%d, ud:%p\n",
-		ch_info, type, serial_id, digest, size, user_data);
+	DEBUG_LOG("ch info:%p type:%d nonce:%s dgst:%p, len:%d, ud:%p\n",
+		ch_info, type, nonce, digest, size, user_data);
 	char *b64 = jal_base64_enc(digest, size);
 	DEBUG_LOG("dgst: %s\n", b64);
 
@@ -280,7 +280,7 @@ void notify_peer_digest(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		const char *serial_id,
+		const char *nonce,
 		const uint8_t *local_digest,
 		const uint32_t local_size,
 		const uint8_t *peer_digest,
@@ -288,8 +288,8 @@ void notify_peer_digest(
 		void *user_data)
 {
 	// notification of the digest calculated by the remote network store
-	DEBUG_LOG("ch info:%p type:%d serial_id:%s ldgst:%p, llen:%d, pdgst:%p, plen:%d, ud:%p\n",
-		ch_info, type, serial_id, local_digest, local_size, peer_digest, peer_size, user_data);
+	DEBUG_LOG("ch info:%p type:%d nonce:%s ldgst:%p, llen:%d, pdgst:%p, plen:%d, ud:%p\n",
+		ch_info, type, nonce, local_digest, local_size, peer_digest, peer_size, user_data);
 	char *b64 = jal_base64_enc(local_digest, local_size);
 	DEBUG_LOG("dgst: %s\n", b64);
 	free(b64);

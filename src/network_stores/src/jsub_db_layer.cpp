@@ -80,16 +80,16 @@ int jsub_insert_audit(
 		size_t app_len,
 		uint8_t *audit,
 		size_t audit_len,
-		char *sid_in,
+		char *nonce_in,
 		int debug)
 {
 	int ret = JAL_E_INVAL;
 	struct jaldb_record *rec;
 
 	// Must have sys_meta and audit_doc
-	if (!sys_meta || !audit || !sid_in || !db_ctx) {
+	if (!sys_meta || !audit || !nonce_in || !db_ctx) {
 		if (debug) {
-			DEBUG_LOG("sys_meta, payload, sid or db_ctx was NULL!\n");
+			DEBUG_LOG("sys_meta, payload, nonce or db_ctx was NULL!\n");
 		}
 		ret = JAL_E_INVAL_PARAM;
 		goto out;
@@ -118,7 +118,7 @@ int jsub_insert_audit(
 		rec->payload->on_disk = 0;
 	}
 
-	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, sid_in);
+	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert audit into temp!\n");
 	}
@@ -136,7 +136,7 @@ int jsub_insert_log(
 		size_t app_len,
 		uint8_t *log,
 		size_t log_len,
-		char *sid_in,
+		char *nonce_in,
 		int debug)
 {
 	int ret = JALDB_E_UNKNOWN;
@@ -174,7 +174,7 @@ int jsub_insert_log(
 		rec->payload->on_disk = 0;
 	}
 
-	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, sid_in);
+	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
 
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert log into temp!\n");
@@ -238,7 +238,7 @@ int jsub_insert_journal_metadata(
 		size_t app_len,
 		char *db_payload_path,
 		uint64_t payload_len,
-		char *sid_in,
+		char *nonce_in,
 		int debug)
 {
 	int ret = JAL_E_INVAL;
@@ -273,7 +273,7 @@ int jsub_insert_journal_metadata(
 	rec->payload->length = payload_len;
 	rec->payload->on_disk = 1;
 
-	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, sid_in);
+	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
 	if ((JALDB_OK != ret) && debug) {
 		printf("DEBUG_LOG to insert journal metadata into temp!\n");
 	}

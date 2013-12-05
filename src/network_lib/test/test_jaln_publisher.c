@@ -58,7 +58,7 @@ void peer_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 			__attribute__((unused)) enum jaln_record_type type,
-			__attribute__((unused)) const char *serial_id,
+			__attribute__((unused)) const char *nonce,
 			__attribute__((unused)) const uint8_t *local_digest,
 			__attribute__((unused)) const uint32_t local_size,
 			__attribute__((unused)) const uint8_t *peer_digest,
@@ -73,20 +73,20 @@ void on_sync(
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) enum jaln_publish_mode mode,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
 	sync_cnt++;
 }
-enum jal_status process_sync_fails(__attribute__((unused)) VortexFrame *frame, __attribute__((unused)) char **serial_id)
+enum jal_status process_sync_fails(__attribute__((unused)) VortexFrame *frame, __attribute__((unused)) char **nonce)
 {
 	return JAL_E_INVAL;
 }
 
-enum jal_status process_sync_success(__attribute__((unused)) VortexFrame *frame, char **serial_id)
+enum jal_status process_sync_success(__attribute__((unused)) VortexFrame *frame, char **nonce)
 {
-	*serial_id = jal_strdup("sync_sid");
+	*nonce = jal_strdup("sync_nonce");
 	return JAL_OK;
 }
 
@@ -276,21 +276,21 @@ void setup()
 	ctx->pub_callbacks->sync = on_sync;
 
 	int dgst_val = 0xf001;
-	axl_list_append(calc_dgsts, jaln_digest_info_create("sid1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf002;
-	axl_list_append(calc_dgsts, jaln_digest_info_create("sid2", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce2", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf002;
-	axl_list_append(calc_dgsts, jaln_digest_info_create("sid3", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce3", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf004;
-	axl_list_append(calc_dgsts, jaln_digest_info_create("sid4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 
-	axl_list_append(peer_dgsts, jaln_digest_info_create("sid4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf003;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("sid3", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce3", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf002;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("sid2", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce2", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf001;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("sid1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 
 	peer_digest_call_cnt = 0;
 	sync_cnt = 0;
@@ -348,7 +348,7 @@ void test_pub_notify_digests_works_when_peer_has_extra_dgts()
 {
 	axlList *dgst_resp_infos = NULL;
 	int dgst_val = 0xf005;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("sid5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
 	assert_not_equals((void*) NULL, dgst_resp_infos);
 	assert_equals(5, peer_digest_call_cnt);
@@ -361,7 +361,7 @@ void test_pub_notify_digests_works_when_peer_has_missing_dgst()
 {
 	axlList *dgst_resp_infos = NULL;
 	int dgst_val = 0xf005;
-	axl_list_append(calc_dgsts, jaln_digest_info_create("sid5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
 	assert_not_equals((void*) NULL, dgst_resp_infos);
 	assert_equals(4, peer_digest_call_cnt);

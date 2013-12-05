@@ -94,7 +94,7 @@ static int iter_call_cnt;
 
 struct jaldb_record *records[4] = { NULL, NULL, NULL, NULL };
 
-extern "C" enum jaldb_iter_status iter_cb(const char *hex_sid, struct jaldb_record *rec, void *up)
+extern "C" enum jaldb_iter_status iter_cb(const char *hex_nonce, struct jaldb_record *rec, void *up)
 {
 	char *failure = (char*)up;
 	enum jaldb_iter_status ret = JALDB_ITER_CONT;
@@ -107,7 +107,7 @@ extern "C" enum jaldb_iter_status iter_cb(const char *hex_sid, struct jaldb_reco
 		goto fail;
 	}
 
-	BN_hex2bn(&actual, hex_sid);
+	BN_hex2bn(&actual, hex_nonce);
 	if (0 != BN_cmp(actual, expected)) {
 		goto fail;
 	}
@@ -226,11 +226,11 @@ extern "C" void teardown()
 	xmlSchemaCleanupTypes();
 }
 
-extern "C" void test_iterate_by_sid_works_with_nulls_for_range()
+extern "C" void test_iterate_by_nonce_works_with_nulls_for_range()
 {
 	enum jaldb_status ret;
 	current = 1;
-	ret = jaldb_iterate_by_sid_range(context, JALDB_RTYPE_LOG, NULL, NULL, iter_cb, &fail_up);
+	ret = jaldb_iterate_by_nonce_range(context, JALDB_RTYPE_LOG, NULL, NULL, iter_cb, &fail_up);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, fail_up);
 	assert_equals(ITEMS_IN_DB, iter_call_cnt);
@@ -240,7 +240,7 @@ extern "C" void test_iterate_by_works_with_end_point()
 {
 	enum jaldb_status ret;
 	current = 1;
-	ret = jaldb_iterate_by_sid_range(context, JALDB_RTYPE_LOG, NULL, END_HEX, iter_cb, &fail_up);
+	ret = jaldb_iterate_by_nonce_range(context, JALDB_RTYPE_LOG, NULL, END_HEX, iter_cb, &fail_up);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, fail_up);
 	assert_equals(ITEMS_IN_DB, iter_call_cnt);
@@ -250,7 +250,7 @@ extern "C" void test_iterate_by_works_with_start_point()
 {
 	enum jaldb_status ret;
 	current = 1;
-	ret = jaldb_iterate_by_sid_range(context, JALDB_RTYPE_LOG, START_HEX, NULL, iter_cb, &fail_up);
+	ret = jaldb_iterate_by_nonce_range(context, JALDB_RTYPE_LOG, START_HEX, NULL, iter_cb, &fail_up);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, fail_up);
 	assert_equals(ITEMS_IN_DB, iter_call_cnt);
@@ -260,7 +260,7 @@ extern "C" void test_iterate_by_works_with_start_and_end()
 {
 	enum jaldb_status ret;
 	current = 1;
-	ret = jaldb_iterate_by_sid_range(context, JALDB_RTYPE_LOG, START_HEX, END_HEX, iter_cb, &fail_up);
+	ret = jaldb_iterate_by_nonce_range(context, JALDB_RTYPE_LOG, START_HEX, END_HEX, iter_cb, &fail_up);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, fail_up);
 	assert_equals(ITEMS_IN_DB, iter_call_cnt);
@@ -270,14 +270,14 @@ extern "C" void test_iterate_by_works_with_limits()
 {
 	enum jaldb_status ret;
 	current = 2;
-	ret = jaldb_iterate_by_sid_range(context, JALDB_RTYPE_LOG, "2", "3", iter_cb, &fail_up);
+	ret = jaldb_iterate_by_nonce_range(context, JALDB_RTYPE_LOG, "2", "3", iter_cb, &fail_up);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, fail_up);
 	// should only get call for records 1 & 3
 	assert_equals(2, iter_call_cnt);
 }
 
-extern "C" enum jaldb_iter_status iter_cb_for_gap_test(const char *hex_sid, struct jaldb_record *rec, void *up)
+extern "C" enum jaldb_iter_status iter_cb_for_gap_test(const char *hex_nonce, struct jaldb_record *rec, void *up)
 {
 	char *failure = (char*)up;
 	enum jaldb_iter_status ret = JALDB_ITER_CONT;
@@ -289,7 +289,7 @@ extern "C" enum jaldb_iter_status iter_cb_for_gap_test(const char *hex_sid, stru
 	}
 	BN_set_word(expected, current);
 
-	BN_hex2bn(&actual, hex_sid);
+	BN_hex2bn(&actual, hex_nonce);
 	if (0 != BN_cmp(actual, expected)) {
 		goto fail;
 	}
@@ -320,14 +320,14 @@ extern "C" void test_iterate_by_works_with_limits_and_gaps()
 	current = 2;
 	ret = jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"3");
 	assert_equals(JALDB_OK, ret);
-	ret = jaldb_iterate_by_sid_range(context, JALDB_RTYPE_LOG, "2", "4", iter_cb_for_gap_test, &fail_up);
+	ret = jaldb_iterate_by_nonce_range(context, JALDB_RTYPE_LOG, "2", "4", iter_cb_for_gap_test, &fail_up);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, fail_up);
 	// should only get call for records 2 & 4
 	assert_equals(2, iter_call_cnt);
 }
 
-extern "C" enum jaldb_iter_status iter_cb_delete(const char *hex_sid, struct jaldb_record *rec, void *up)
+extern "C" enum jaldb_iter_status iter_cb_delete(const char *hex_nonce, struct jaldb_record *rec, void *up)
 {
 	char *failure = (char*)up;
 	enum jaldb_iter_status ret = JALDB_ITER_CONT;
@@ -340,7 +340,7 @@ extern "C" enum jaldb_iter_status iter_cb_delete(const char *hex_sid, struct jal
 
 	BN_set_word(expected, current);
 
-	BN_hex2bn(&actual, hex_sid);
+	BN_hex2bn(&actual, hex_nonce);
 	if (0 != BN_cmp(actual, expected)) {
 		goto fail;
 	}
@@ -369,7 +369,7 @@ extern "C" void test_with_deletion_works()
 	struct jaldb_record *rec = NULL;
 	enum jaldb_status ret;
 	current = 1;
-	ret = jaldb_iterate_by_sid_range(context, JALDB_RTYPE_LOG, NULL, "3", iter_cb_delete, &fail_up);
+	ret = jaldb_iterate_by_nonce_range(context, JALDB_RTYPE_LOG, NULL, "3", iter_cb_delete, &fail_up);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, fail_up);
 	// should get called for 1, 2, 3

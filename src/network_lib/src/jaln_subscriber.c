@@ -303,26 +303,26 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 			!session->ch_info || !session->rec_chan) {
 		goto err_out;
 	}
-	char *serial_id = NULL;
+	char *nonce = NULL;
 	uint64_t offset = 0;
 	enum jal_status ret = session->jaln_ctx->sub_callbacks->get_subscribe_request(
 			session,
 			session->ch_info,
 			session->ch_info->type,
-			&serial_id,
+			&nonce,
 			&offset);
 	if ((JAL_OK != ret) ||
-		(!serial_id)) {
+		(!nonce)) {
 		goto err_out;
 	}
-	axl_stream_trim(serial_id);
-	if (0 == strlen(serial_id)) {
+	axl_stream_trim(nonce);
+	if (0 == strlen(nonce)) {
 		goto err_out;
 	}
 
 	uint64_t msg_len = 0;
 	if ((JALN_RTYPE_JOURNAL == session->ch_info->type) && (0 < offset)) {
-		if (JAL_OK != jaln_create_journal_resume_msg(serial_id, offset, &msg, &msg_len)) {
+		if (JAL_OK != jaln_create_journal_resume_msg(nonce, offset, &msg, &msg_len)) {
 			goto err_out;
 		}
 	} else {

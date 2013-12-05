@@ -68,7 +68,7 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 	if (0 == expected_cnt) {
 		goto err_out;
 	}
-	dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_serial_id, jaln_axl_destroy_digest_info);
+	dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 	if (!dgst_list) {
 		goto err_out;
 	}
@@ -84,7 +84,7 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 	int last_tok_idx = 0;
 	int idx;
 	for (idx = 0; idx < payload_sz; idx++) {
-		axl_bool looking_for_sid = axl_false;
+		axl_bool looking_for_nonce = axl_false;
 		if ('=' == payload[idx]) {
 			uint64_t len = idx - last_tok_idx;
 			dgst_str = jal_malloc(len);
@@ -98,8 +98,8 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 			dgst_str = NULL;
 
 			idx++;
-			int sid_start = idx;
-			looking_for_sid = axl_true;
+			int nonce_start = idx;
+			looking_for_nonce = axl_true;
 			for (; idx <= payload_sz - 1; idx++) {
 				if ('\r' != payload[idx]) {
 					continue;
@@ -107,26 +107,26 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 				if ('\n' != payload[idx + 1]) {
 					goto err_out;
 				}
-				len = idx - sid_start + 1;
+				len = idx - nonce_start + 1;
 				if (1 >= len) {
 					goto err_out;
 				}
-				char *sid_str = jal_malloc(len);
-				memcpy(sid_str, payload + sid_start, len - 1);
-				sid_str[len-1] = '\0';
+				char *nonce_str = jal_malloc(len);
+				memcpy(nonce_str, payload + nonce_start, len - 1);
+				nonce_str[len-1] = '\0';
 				// extra ++ to skip the '\n'
 				idx++;
-				axl_list_append(dgst_list, jaln_digest_info_create(sid_str, dgst_val, dgst_len));
+				axl_list_append(dgst_list, jaln_digest_info_create(nonce_str, dgst_val, dgst_len));
 				free(dgst_val);
 				dgst_val = NULL;
-				free(sid_str);
+				free(nonce_str);
 				last_tok_idx = idx + 1;
 				// need to break out of the inner loop...
 				//bad_parse = axl_false;
-				looking_for_sid = axl_false;
+				looking_for_nonce = axl_false;
 				break;
 			}
-			if (looking_for_sid) {
+			if (looking_for_nonce) {
 				goto err_out;
 			}
 		}

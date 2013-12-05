@@ -31,7 +31,7 @@
 #include "jal_alloc.h"
 #include "jaln_record_info.h"
 
-#define SERIAL_ID "1234"
+#define NONCE "1234"
 
 static struct jaln_record_info *rec_info;
 
@@ -39,7 +39,7 @@ void setup()
 {
 	rec_info = jaln_record_info_create();
 	rec_info->type = JALN_RTYPE_LOG;
-	rec_info->nonce = jal_strdup(SERIAL_ID);
+	rec_info->nonce = jal_strdup(NONCE);
 
 	rec_info->sys_meta_len = 10;
 	rec_info->app_meta_len = 20;

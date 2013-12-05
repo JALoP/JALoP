@@ -45,7 +45,7 @@ extern "C" {
  * side correctly received a set of records. The functions tries to match each
  * jaln_digest_info from \p peer_dgsts to one contained in \p calc_dgsts. For
  * each jaln_digest_info in \p peer_dgsts, it creates a corresponding
- * jaln_digest_resp_info and adds it to a list. As serial IDs are matched in \p
+ * jaln_digest_resp_info and adds it to a list. As nonces are matched in \p
  * calc_dgsts, they are removed from the list.
  *
  * @param[in] sess The session related to the digests.
@@ -54,7 +54,7 @@ extern "C" {
  * @param[in] peer_dgsts An axlList of jaln_digest_info structures. These are
  * the digests calculated by the remote side and sent in a 'digest' message.
  * @param[out] dgst_resp_infos This will be a list of jaln_digest_resp_info
- * structures. It will contain an entry for each serial-ID indicated in \p
+ * structures. It will contain an entry for each nonce indicated in \p
  * peer_dgsts.
  */
 void jaln_pub_notify_digests_and_create_digest_response(

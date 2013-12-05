@@ -67,8 +67,8 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 	if (!msg || 0 != strcasecmp(msg, session->sub_data->sm->expected_msg)) {
 		goto err_out;
 	}
-	const char *sid = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_SERIAL_ID));
-	if (!sid) {
+	const char *nonce = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_NONCE));
+	if (!nonce) {
 		goto err_out;
 	}
 	const char *app_meta_sz_str = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_APP_META_LEN));
@@ -84,7 +84,7 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 		goto err_out;
 	}
 
-	session->sub_data->sm->serial_id = jal_strdup(sid);
+	session->sub_data->sm->nonce = jal_strdup(nonce);
 
 	uint64_t sys_meta_size;
 	int err = jaln_ascii_to_uint64(sys_meta_sz_str, &sys_meta_size);
@@ -248,7 +248,7 @@ axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *f
 		goto err_out;
 	}
 
-	session->jaln_ctx->sub_callbacks->on_journal(session, session->ch_info, session->sub_data->sm->serial_id,
+	session->jaln_ctx->sub_callbacks->on_journal(session, session->ch_info, session->sub_data->sm->nonce,
 			payload + frame_off,
 			bytes_to_send,
 			session->sub_data->sm->payload_off,
@@ -339,7 +339,7 @@ axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *fram
 		goto err_out;
 	}
 	size_t dgst_len = session->dgst->len;
-	session->jaln_ctx->sub_callbacks->on_audit(session, session->ch_info, session->sub_data->sm->serial_id,
+	session->jaln_ctx->sub_callbacks->on_audit(session, session->ch_info, session->sub_data->sm->nonce,
 			session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz, session->jaln_ctx->user_data);
 
 	if (JAL_OK != session->dgst->update(session->sub_data->sm->dgst_inst, session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz)) {
@@ -351,8 +351,8 @@ axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *fram
 	}
 
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type,
-			session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
-	jaln_session_add_to_dgst_list(session, session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len);
+			session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
+	jaln_session_add_to_dgst_list(session, session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len);
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
@@ -373,7 +373,7 @@ axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame,
 		goto err_out;
 	}
 	size_t dgst_len = session->dgst->len;
-	session->jaln_ctx->sub_callbacks->on_log(session, session->ch_info, session->sub_data->sm->serial_id, session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz, session->jaln_ctx->user_data);
+	session->jaln_ctx->sub_callbacks->on_log(session, session->ch_info, session->sub_data->sm->nonce, session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz, session->jaln_ctx->user_data);
 	if (JAL_OK != session->dgst->update(session->sub_data->sm->dgst_inst, session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz)) {
 		goto err_out;
 	}
@@ -383,8 +383,8 @@ axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame,
 	}
 
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type,
-			session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
-	jaln_session_add_to_dgst_list(session, session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len);
+			session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
+	jaln_session_add_to_dgst_list(session, session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len);
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
@@ -403,13 +403,13 @@ axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *fr
 	}
 
 	size_t dgst_len = session->dgst->len;
-	session->jaln_ctx->sub_callbacks->on_journal(session, session->ch_info, session->sub_data->sm->serial_id, NULL, 0, 0, 0, session->jaln_ctx->user_data);
+	session->jaln_ctx->sub_callbacks->on_journal(session, session->ch_info, session->sub_data->sm->nonce, NULL, 0, 0, 0, session->jaln_ctx->user_data);
 	if (JAL_OK != session->dgst->final(session->sub_data->sm->dgst_inst, session->sub_data->sm->dgst, &dgst_len)) {
 		goto err_out;
 	}
-	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type, session->sub_data->sm->serial_id,
+	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type, session->sub_data->sm->nonce,
 			session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
-	jaln_session_add_to_dgst_list(session, session->sub_data->sm->serial_id, session->sub_data->sm->dgst, dgst_len);
+	jaln_session_add_to_dgst_list(session, session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len);
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
@@ -468,7 +468,7 @@ axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *fr
 			struct jaln_record_info *info = jaln_record_info_create();
 
 			info->type = session->ch_info->type;
-			info->nonce = jal_strdup(session->sub_data->sm->serial_id);
+			info->nonce = jal_strdup(session->sub_data->sm->nonce);
 			info->sys_meta_len = session->sub_data->sm->sys_meta_sz;
 			info->app_meta_len = session->sub_data->sm->app_meta_sz;
 			info->payload_len = session->sub_data->sm->payload_sz;
@@ -521,8 +521,8 @@ void jaln_sub_state_reset(jaln_session *session)
 		return;
 	}
 	struct jaln_sub_state_machine *sm = session->sub_data->sm;
-	free(sm->serial_id);
-	sm->serial_id = NULL;
+	free(sm->nonce);
+	sm->nonce = NULL;
 	free(sm->sys_meta_buf);
 	sm->sys_meta_buf = NULL;
 	sm->sys_meta_sz = 0;
@@ -640,7 +640,7 @@ void jaln_sub_state_machine_destroy(struct jaln_sub_state_machine **psm)
 	struct jaln_sub_state_machine *sm = *psm;
 	free(sm->expected_msg);
 	free(sm->payload_len_hdr);
-	free(sm->serial_id);
+	free(sm->nonce);
 	free(sm->sys_meta_buf);
 	free(sm->app_meta_buf);
 	free(sm->payload_buf);

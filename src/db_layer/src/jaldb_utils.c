@@ -50,10 +50,10 @@
 
 #define UUID_STR_LEN 37
 
-enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote_host,
-		const char *sid, int *db_err_out)
+enum jaldb_status jaldb_store_confed_nonce(DB *db, DB_TXN *txn, const char *remote_host,
+		const char *nonce, int *db_err_out)
 {
-	if (!db || !txn || !remote_host || !sid || !db_err_out) {
+	if (!db || !txn || !remote_host || !nonce || !db_err_out) {
 		return JALDB_E_INVAL;
 	}
 	enum jaldb_status ret = JALDB_E_DB;
@@ -71,8 +71,8 @@ enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote
 	key.size = strlen(remote_host);
 	key.flags = DB_DBT_USERMEM;
 
-	new_val.data = jal_strdup(sid);
-	new_val.size = strlen(sid) + 1;
+	new_val.data = jal_strdup(nonce);
+	new_val.size = strlen(nonce) + 1;
 
 	old_val.flags = DB_DBT_MALLOC;
 	err = db->get(db, txn, &key, &old_val, DB_RMW);
@@ -82,7 +82,7 @@ enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote
 	}
 	int update = 1;
 	if (err == 0 &&
-		jaldb_sid_cmp(new_val.data, new_val.size,
+		jaldb_nonce_cmp(new_val.data, new_val.size,
 			old_val.data, old_val.size) <= 0) {
 		update = 0;
 	}
@@ -104,7 +104,7 @@ out:
 	return ret;
 }
 
-int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_len)
+int jaldb_nonce_cmp(const char *nonce1, size_t s1_len, const char* nonce2, size_t s2_len)
 {
 	if (s1_len < s2_len) {
 		return -1;
@@ -112,7 +112,7 @@ int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_l
 	if (s1_len > s2_len) {
 		return 1;
 	}
-	return strcmp(sid1, sid2);
+	return strcmp(nonce1, nonce2);
 }
 
 enum jaldb_status jaldb_create_file(

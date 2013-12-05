@@ -105,8 +105,8 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 
 }
 
-enum jaldb_status jaldb_purge_log_by_sid(jaldb_context *ctx,
-					const char *sid,
+enum jaldb_status jaldb_purge_log_by_nonce(jaldb_context *ctx,
+					const char *nonce,
 					list<jaldb_doc_info> &docs,
 					int force,
 					int del)
@@ -123,8 +123,8 @@ enum jaldb_status jaldb_purge_log_by_uuid(jaldb_context *ctx,
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_purge_audit_by_sid(jaldb_context *ctx,
-					const char *sid,
+enum jaldb_status jaldb_purge_audit_by_nonce(jaldb_context *ctx,
+					const char *nonce,
 					list<jaldb_doc_info> &docs,
 					int force,
 					int del)
@@ -141,8 +141,8 @@ enum jaldb_status jaldb_purge_audit_by_uuid(jaldb_context *ctx,
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_purge_journal_by_sid(jaldb_context *ctx,
-					const char *sid,
+enum jaldb_status jaldb_purge_journal_by_nonce(jaldb_context *ctx,
+					const char *nonce,
 					list<jaldb_doc_info> &docs,
 					int force,
 					int del)

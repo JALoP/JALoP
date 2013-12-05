@@ -39,15 +39,15 @@ extern "C" {
 #endif // __cplusplus
 
 /**
- * Helper utility that processes a 'sync' message and extracts the serial ID.
+ * Helper utility that processes a 'sync' message and extracts the nonce.
  *
  * @param[in] frame The Vortex frame to operate on.
- * @param[out] serial_id This will get set to the serial ID indicated in the
+ * @param[out] nonce This will get set to the nonce indicated in the
  * sync message. The caller is responsible for freeing this.
  *
  * @return JAL_OK on success, or JAL_E_INVAL.
  */
-enum jal_status jaln_process_sync(VortexFrame *frame, char **serial_id);
+enum jal_status jaln_process_sync(VortexFrame *frame, char **nonce);
 
 #ifdef __cplusplus
 }

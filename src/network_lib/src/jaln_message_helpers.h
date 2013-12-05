@@ -41,7 +41,7 @@
 /**
  * Helper function to create a journal_resume_msg
  *
- * @param[in] serial_id The serial ID to resume
+ * @param[in] nonce The nonce to resume
  * @param[in] offset The offset in the journal record to resume data from.
  * @param[out] msg_out This will contain the contents of the initialize message.
  * @param[out] msg_len_out The length of the initialize message
@@ -50,23 +50,23 @@
  * JAL_OK on success
  *
  */
-enum jal_status jaln_create_journal_resume_msg(const char *serial_id,
+enum jal_status jaln_create_journal_resume_msg(const char *nonce,
 		uint64_t offset, char **msg_out, uint64_t *msg_out_len);
 
 /**
  * Helper function to create a sync msg
  *
- * @param[in] serial_id The serial ID to sync
+ * @param[in] nonce The nonce to sync
  * @param[out] msg The full message to send to the remote.
  * @param[out] msg_len The length of the resulting message (including the NULL
  * terminator
  */
-enum jal_status jaln_create_sync_msg(const char *serial_id, char **msg, uint64_t *msg_len);
+enum jal_status jaln_create_sync_msg(const char *nonce, char **msg, uint64_t *msg_len);
 
 /**
  * Helper function to create a 'subscribe' message
  *
- * @param[in] serial_id The last serial_id to send
+ * @param[in] nonce The last nonce to send
  * @param[out] msg_out This will contain the contents of the initialize message.
  * @param[out] msg_len_out The length of the initialize message
  *
@@ -98,9 +98,9 @@ uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
 
 /**
  * Helper function to append a jaln_digest_info as line for a digest message.
- * This works similar to strcat, and appends the string 'dgst=sid\r\n', i.e.
+ * This works similar to strcat, and appends the string 'dgst=nonce\r\n', i.e.
  * the digest value (as a hex string with no leading 0x) followed by the equals
- * symbol ('=') followed by the serial ID, and finished with a carriage return
+ * symbol ('=') followed by the nonce, and finished with a carriage return
  * and line feed.
  * The string \p dst must contain enough space for the entire message and the
  * trailing NULL terminator.
@@ -142,9 +142,9 @@ uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di);
 
 /**
  * Helper function to append a jaln_digest_resp_info as line for a digest message.
- * This works similar to strcat, and appends the string '<status>=sid\r\n', i.e.
+ * This works similar to strcat, and appends the string '<status>=nonce\r\n', i.e.
  * the status (confirmed, invalid, or unknown) followed by the equals
- * symbol ('=') followed by the serial ID, and finished with a carriage return
+ * symbol ('=') followed by the nonce, and finished with a carriage return
  * and line feed.
  * The string \p must contain enough space for the entire message and the
  * trailing NULL terminator.

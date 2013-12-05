@@ -48,7 +48,7 @@
 #define FAKE_PORT "8888"
 
 #define CHAN_NUM 3
-#define SERIAL_ID "some_id"
+#define NONCE "some_id"
 #define OFFSET 5
 #define HOST "some_host"
 
@@ -279,10 +279,10 @@ int fake_get_subscribe_request_success(
 	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
 	__attribute__((unused)) enum jaln_record_type type,
-	__attribute__((unused)) char **serial_id,
+	__attribute__((unused)) char **nonce,
 	__attribute__((unused)) uint64_t *offset)
 {
-	*serial_id = strdup(SERIAL_ID);
+	*nonce = strdup(NONCE);
 	*offset = OFFSET;
 	return JAL_OK;
 }
@@ -291,22 +291,22 @@ int fake_get_subscribe_request_success_zero_offset(
 	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info,
 	__attribute__((unused)) enum jaln_record_type type,
-	__attribute__((unused)) char **serial_id,
+	__attribute__((unused)) char **nonce,
 	__attribute__((unused)) uint64_t *offset)
 {
-	*serial_id = strdup(SERIAL_ID);
+	*nonce = strdup(NONCE);
 	*offset = 0;
 	return JAL_OK;
 }
 
-int fake_get_subscribe_request_null_serial_id(
+int fake_get_subscribe_request_null_nonce(
 	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info,
 	__attribute__((unused)) enum jaln_record_type type,
-	__attribute__((unused)) char **serial_id,
+	__attribute__((unused)) char **nonce,
 	__attribute__((unused)) uint64_t *offset)
 {
-	*serial_id = NULL;
+	*nonce = NULL;
 	*offset = OFFSET;
 	return JAL_OK;
 }
@@ -315,20 +315,20 @@ int fake_get_subscribe_request_fail(
 	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
 	__attribute__((unused)) enum jaln_record_type type,
-	__attribute__((unused)) char **serial_id,
+	__attribute__((unused)) char **nonce,
 	__attribute__((unused)) uint64_t *offset)
 {
 	return JAL_E_INVAL;
 }
 
-int fake_get_subscribe_request_bad_serial_id(
+int fake_get_subscribe_request_bad_nonce(
 	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
 	__attribute__((unused)) enum jaln_record_type type,
-	__attribute__((unused)) char **serial_id,
+	__attribute__((unused)) char **nonce,
 	__attribute__((unused)) uint64_t *offset)
 {
-	*serial_id = strdup(" ");
+	*nonce = strdup(" ");
 	return JAL_OK;
 }
 
@@ -465,12 +465,12 @@ void test_jaln_subscriber_send_subscribe_request_fails_internal()
 	assert_equals(0, isMsgSent);
 
 	session->jaln_ctx->sub_callbacks->get_subscribe_request =
-		fake_get_subscribe_request_null_serial_id;
+		fake_get_subscribe_request_null_nonce;
 	jaln_subscriber_send_subscribe_request(session);
 	assert_equals(0, isMsgSent);
 	
 	session->jaln_ctx->sub_callbacks->get_subscribe_request =
-		fake_get_subscribe_request_bad_serial_id;
+		fake_get_subscribe_request_bad_nonce;
 	jaln_subscriber_send_subscribe_request(session);
 	assert_equals(0, isMsgSent);
 }

@@ -54,7 +54,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 	if (0 == strcasecmp(header_name, "jal-message")) {
 		return (VortexMimeHeader*) "subscribe";
 	} else if (0 == strcasecmp(header_name, "jal-serial-id")) {
-		return (VortexMimeHeader*) "the_sid_string";
+		return (VortexMimeHeader*) "the_nonce_string";
 	}
 	return NULL;
 }

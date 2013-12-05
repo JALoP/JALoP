@@ -49,7 +49,7 @@
 #define JALN_HDRS_LOG_LEN "JAL-Log-Length"
 #define JALN_HDRS_MESSAGE "JAL-Message"
 #define JALN_HDRS_MODE "JAL-Mode"
-#define JALN_HDRS_SERIAL_ID "JAL-Serial-Id"
+#define JALN_HDRS_NONCE "JAL-Serial-Id"
 #define JALN_HDRS_SYS_META_LEN "JAL-System-Metadata-Length"
 #define JALN_HDRS_UNAUTHORIZED_MODE "JAL-Unauthorized-Mode"
 #define JALN_HDRS_UNSUPPORTED_MODE "JAL-Unsupported-Mode"

@@ -1,7 +1,7 @@
 /**
  * @file jaln_digest_info.h This file contains functions related to a
  * jaln_digest_info structure. The jaln_digest_info structure is used
- * to store the calculated/receive digest value and serial ID for a
+ * to store the calculated/receive digest value and nonce for a
  * record.
  *
  * @section LICENSE
@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 struct jaln_digest_info {
-	char *serial_id;
+	char *nonce;
 	uint8_t *digest;
 	uint64_t digest_len;
 };
@@ -46,13 +46,13 @@ struct jaln_digest_info {
  *
  * This makes a copy of all the input parameters.
  *
- * @param[in] serial_id the serial id of the record.
+ * @param[in] nonce the nonce of the record.
  * @param[in] dgst_buf A byte buffer containing the digest of the record
  * @param[in] dgst_len The length (in bytes) of \p dgst_buf.
  *
  * @return A new jaln_digest_info structure with the contents filled out.
  */
-struct jaln_digest_info *jaln_digest_info_create(const char *serial_id,
+struct jaln_digest_info *jaln_digest_info_create(const char *nonce,
 		const uint8_t *dgst_buf,
 		const uint64_t dgst_len);
 
@@ -77,14 +77,14 @@ void jaln_axl_destroy_digest_info(axlPointer ptr);
  * @param[in] a The first jaln_digest_info object to compare
  * @param[in] b The second jaln_digest_info object ot compare
  *
- * For this case, only the serial_id member is checked for equality
+ * For this case, only the nonce member is checked for equality
  */
-int jaln_axl_equals_func_digest_info_serial_id(axlPointer a, axlPointer b);
+int jaln_axl_equals_func_digest_info_nonce(axlPointer a, axlPointer b);
 
 /**
  * Simple function to compare the digest values for 2 jaln_digest_info
  * structures.
- * This function only compares the digest values, it ignores the serial_ids.
+ * This function only compares the digest values, it ignores the nonces.
  * Two digests are considered equal IFF the digests have the same length AND
  * every byte is equals. If either input is NULL, or has a NULL digest, or
  * length of 0, then the digests are considered unequal.

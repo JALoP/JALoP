@@ -68,8 +68,6 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 
 	enum jaldb_status db_err;
 	uint8_t *digest = NULL;
-	std::string source;
-	std::string sid;
 
 	//get the log
 	struct iovec iov[1];

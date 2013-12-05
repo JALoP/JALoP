@@ -643,7 +643,7 @@ static void print_uuids(jaldb_context *ctx, char type)
 		printf("%d\n", db_ret);
 		goto err_out;
 	}
-	doc_list->remove(JALDB_SERIAL_ID_DOC_NAME);
+	doc_list->remove(JALDB_NONCE_DOC_NAME);
 	print_list_stdout(*doc_list);
 	print_list_file(*doc_list, print_list_filename.c_str());
 	delete(doc_list);

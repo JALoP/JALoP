@@ -62,7 +62,7 @@ extern "C" {
  * @param[in] db The database to update
  * @param[in] txn A transaction to associate with the update
  * @param[in] remote_host The remote host to associate with
- * @param[in] sid The latest conf'ed serial ID
+ * @param[in] nonce The latest conf'ed serial ID
  * @param[out] db_err_out The internal error from Berkeley DB (if any). This is only valid
  * when the function returns JALDB_E_DB.
  * @return
@@ -70,22 +70,22 @@ extern "C" {
  *  - JALDB_E_INVAL when when of the parameters is bad.
  *  - JALDB_E_DB if there was an error pertaining to Berkeley DB.
  *  - JALDB_E_ALREADY_CONFED if the current mapping in the database is
- *    the same as \p sid or sequentially later.
+ *    the same as \p nonce or sequentially later.
  */
-enum jaldb_status jaldb_store_confed_sid(DB *db, DB_TXN *txn, const char *remote_host,
-		const char *sid, int *db_err_out);
+enum jaldb_status jaldb_store_confed_nonce(DB *db, DB_TXN *txn, const char *remote_host,
+		const char *nonce, int *db_err_out);
 
 /**
  * Helper utility to compare to serial IDs.
- * @param[in] sid1 The first string to compare
+ * @param[in] nonce1 The first string to compare
  * @param[in] s1_len The length of the first string
- * @param[in] sid2 The second string to compare
+ * @param[in] nonce2 The second string to compare
  * @param[in] s2_len The length of the second string
  *
- * @return This function returns less than 0 if sid1 comes before sid2, 0 if
- * the serial IDs are equal, and > 0 if sid1 comes after sid2.
+ * @return This function returns less than 0 if nonce1 comes before nonce2, 0 if
+ * the serial IDs are equal, and > 0 if nonce1 comes after nonce2.
  */
-int jaldb_sid_cmp(const char *sid1, size_t s1_len, const char* sid2, size_t s2_len);
+int jaldb_nonce_cmp(const char *nonce1, size_t s1_len, const char* nonce2, size_t s2_len);
 
 /**
  * Helper function to create a file in the databse.

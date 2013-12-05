@@ -1,7 +1,7 @@
 /**
  * @file jaln_digest_resp_info.c This file contains functions related to a
  * jaln_digest_resp_info structure. The jaln_digest_resp_info structure is used
- * to store the calculated/receive digest value and serial ID for a
+ * to store the calculated/receive digest value and nonce for a
  * record.
  *
  * @section LICENSE
@@ -35,15 +35,15 @@
 #include "jal_error_callback_internal.h"
 #include "jaln_digest_resp_info.h"
 
-struct jaln_digest_resp_info *jaln_digest_resp_info_create(const char *serial_id,
+struct jaln_digest_resp_info *jaln_digest_resp_info_create(const char *nonce,
 		enum jaln_digest_status status)
 {
-	if (!serial_id) {
+	if (!nonce) {
 		return NULL;
 	}
 
 	struct jaln_digest_resp_info *dgst_resp_info = jal_malloc(sizeof(*dgst_resp_info));
-	dgst_resp_info->serial_id = jal_strdup(serial_id);
+	dgst_resp_info->nonce = jal_strdup(nonce);
 	dgst_resp_info->status = status;
 	return dgst_resp_info;
 }
@@ -53,7 +53,7 @@ void jaln_digest_resp_info_destroy(struct jaln_digest_resp_info **dgst_resp_info
 	if (!dgst_resp_info || !*dgst_resp_info) {
 		return;
 	}
-	free((*dgst_resp_info)->serial_id);
+	free((*dgst_resp_info)->nonce);
 	free(*dgst_resp_info);
 	*dgst_resp_info = NULL;
 }
@@ -64,22 +64,22 @@ void jaln_axl_destroy_digest_resp_info(axlPointer ptr)
 	jaln_digest_resp_info_destroy(&di);
 }
 
-int jaln_axl_equals_func_digest_resp_info_serial_id(axlPointer a, axlPointer b)
+int jaln_axl_equals_func_digest_resp_info_nonce(axlPointer a, axlPointer b)
 {
 	struct jaln_digest_resp_info *di_a = (struct jaln_digest_resp_info*) a;
 	struct jaln_digest_resp_info *di_b = (struct jaln_digest_resp_info*) b;
-	if (!di_a || !di_a->serial_id) {
+	if (!di_a || !di_a->nonce) {
 		return -1;
 	}
-	if (!di_b || !di_b->serial_id) {
+	if (!di_b || !di_b->nonce) {
 		return 1;
 	}
-	return strcmp(di_a->serial_id, di_b->serial_id);
+	return strcmp(di_a->nonce, di_b->nonce);
 }
 
 axlList *jaln_digest_resp_list_create()
 {
-	axlList *resps = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id,
+	axlList *resps = axl_list_new(jaln_axl_equals_func_digest_resp_info_nonce,
 			jaln_axl_destroy_digest_resp_info);
 	if (!resps) {
 		jal_error_handler(JAL_E_NO_MEM);

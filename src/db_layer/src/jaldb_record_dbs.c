@@ -35,7 +35,7 @@
 #include "jaldb_datetime.h"
 #include "jaldb_record_dbs.h"
 #include "jaldb_record_extract.h"
-#include "jaldb_serial_id.h"
+#include "jaldb_nonce.h"
 #include "jaldb_utils.h"
 
 struct jaldb_record_dbs *jaldb_create_record_dbs()
@@ -71,8 +71,8 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	if (rdbs->record_sent_db) {
 		rdbs->record_sent_db->close(rdbs->record_sent_db, 0);
 	}
-	if (rdbs->sid_db) {
-		rdbs->sid_db->close(rdbs->sid_db, 0);
+	if (rdbs->nonce_db) {
+		rdbs->nonce_db->close(rdbs->nonce_db, 0);
 	}
 	if (rdbs->primary_db) {
 		rdbs->primary_db->close(rdbs->primary_db, 0);
@@ -103,7 +103,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	char *nonce_timestamp_name = NULL;
 	char *record_uuid_name = NULL;
 	char *record_sent_name = NULL;
-	char *sid_name = NULL;
+	char *nonce_name = NULL;
 
 	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
 
@@ -114,7 +114,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		jal_asprintf(&nonce_timestamp_name, "%s_nonce_timestamp.db", prefix);
 		jal_asprintf(&record_uuid_name, "%s_record_uuid_idx.db", prefix);
 		jal_asprintf(&record_sent_name, "%s_record_sent.db", prefix);
-		jal_asprintf(&sid_name, "%s_sid.db", prefix);
+		jal_asprintf(&nonce_name, "%s_nonce.db", prefix);
 	}
 
 	// Open the Primary DB. The Primary DB keys are serial IDs
@@ -286,16 +286,16 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
-	db_ret = db_create(&(rdbs->sid_db), env, 0);
+	db_ret = db_create(&(rdbs->nonce_db), env, 0);
 	if (db_ret != 0) {
 		ret = JALDB_E_DB;
 		goto err_out;
 	}
 
-	db_ret = rdbs->sid_db->open(rdbs->sid_db, txn,
-			sid_name, NULL, DB_BTREE, db_flags, 0);
+	db_ret = rdbs->nonce_db->open(rdbs->nonce_db, txn,
+			nonce_name, NULL, DB_BTREE, db_flags, 0);
 	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->sid_db), db_ret);
+		JALDB_DB_ERR((rdbs->nonce_db), db_ret);
 		ret = JALDB_E_DB;
 		goto err_out;
 	}
@@ -351,7 +351,7 @@ out:
 	free(timestamp_tz_name);
 	free(timestamp_no_tz_name);
 	free(record_uuid_name);
-	free(sid_name);
+	free(nonce_name);
 	return ret;
 }
 

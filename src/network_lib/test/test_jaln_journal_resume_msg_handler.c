@@ -55,7 +55,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 	if (0 == strcasecmp(header_name, "jal-message")) {
 		return (VortexMimeHeader*) "journal-resume";
 	} else if (0 == strcasecmp(header_name, "jal-serial-id")) {
-		return (VortexMimeHeader*) "the_sid_string";
+		return (VortexMimeHeader*) "the_nonce_string";
 	} else if (0 == strcasecmp(header_name, "jal-journal-offset")) {
 		return (VortexMimeHeader*) "1234567";
 	}
@@ -76,7 +76,7 @@ static VortexMimeHeader * func_name (VortexFrame *frame, const char *header_name
 
 DECL_MIME_HANDLER(fake_get_mime_header_missing_msg, "jal-message", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_bad_msg, "jal-message", "jal-sync")
-DECL_MIME_HANDLER(fake_get_mime_header_missing_sid, "jal-serial-id", NULL);
+DECL_MIME_HANDLER(fake_get_mime_header_missing_nonce, "jal-serial-id", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_missing_offset, "jal-journal-offset", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_bad_offset, "jal-journal-offset", "123b123");
 
@@ -90,10 +90,10 @@ static axl_bool ct_and_enc_always_fail(__attribute__((unused)) VortexFrame *fram
 	return axl_false;
 }
 
-static char *sid;
+static char *nonce;
 void setup()
 {
-	sid = NULL;
+	nonce = NULL;
 	replace_function(vortex_frame_get_mime_header, fake_get_mime_header);
 	replace_function(vortex_frame_mime_header_content, fake_get_mime_content);
 	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, ct_and_enc_always_succeed);
@@ -101,7 +101,7 @@ void setup()
 
 void teardown()
 {
-	free(sid);
+	free(nonce);
 	restore_function(vortex_frame_get_mime_header);
 	restore_function(vortex_frame_mime_header_content);
 	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
@@ -110,9 +110,9 @@ void teardown()
 void test_process_journal_resume_works_with_good_input()
 {
 	uint64_t offset = 0;
-	assert_equals(JAL_OK, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
-	assert_not_equals((void*) NULL, sid);
-	assert_string_equals("the_sid_string", sid);
+	assert_equals(JAL_OK, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
+	assert_not_equals((void*) NULL, nonce);
+	assert_string_equals("the_nonce_string", nonce);
 	assert_equals(EXPECTED_OFFSET, offset);
 }
 
@@ -120,54 +120,54 @@ void test_process_journal_resume_fails_when_ct_and_xfr_check_fails()
 {
 	uint64_t offset = 0;
 	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, ct_and_enc_always_fail);
-	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
+	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
 }
 
 void test_process_journal_resume_fails_with_missing_offset()
 {
 	uint64_t offset = 0;
 	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_missing_offset);
-	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
+	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
 }
 
 void test_process_journal_resume_fails_with_bad_offset()
 {
 	uint64_t offset = 0;
 	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_bad_offset);
-	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
+	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
 }
 
 void test_process_journal_resume_fails_with_wrong_message()
 {
 	uint64_t offset = 0;
 	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_bad_msg);
-	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
+	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
 }
 
 void test_process_journal_resume_fails_with_missing_message()
 {
 	uint64_t offset = 0;
 	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_missing_msg);
-	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
+	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
 }
 
-void test_process_journal_resume_fails_with_missing_serial_id()
+void test_process_journal_resume_fails_with_missing_nonce()
 {
 	uint64_t offset = 0;
-	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_missing_sid);
-	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
+	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_missing_nonce);
+	assert_equals(JAL_E_INVAL, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
 }
 
 void test_process_journal_resume_fails_with_bad_inputs()
 {
 	uint64_t offset = 0;
-	assert_not_equals(JAL_OK, jaln_process_journal_resume(NULL, &sid, &offset));
+	assert_not_equals(JAL_OK, jaln_process_journal_resume(NULL, &nonce, &offset));
 	assert_not_equals(JAL_OK, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, NULL, &offset));
 
-	sid = (char*)0xbadf00d;
-	assert_not_equals(JAL_OK, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, &offset));
-	sid = NULL;
+	nonce = (char*)0xbadf00d;
+	assert_not_equals(JAL_OK, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, &offset));
+	nonce = NULL;
 
-	assert_not_equals(JAL_OK, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &sid, NULL));
+	assert_not_equals(JAL_OK, jaln_process_journal_resume((VortexFrame*) 0xbadf00d, &nonce, NULL));
 }
 

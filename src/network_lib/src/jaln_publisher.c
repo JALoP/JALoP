@@ -74,7 +74,7 @@ void jaln_pub_notify_digests_and_create_digest_response(
 		axl_list_cursor_first(calc_cursor);
 		while(axl_list_cursor_has_item(calc_cursor)) {
 			struct jaln_digest_info *tmp = (struct jaln_digest_info*) axl_list_cursor_get(calc_cursor);
-			if (tmp && (0 == strcmp(peer_di->serial_id, tmp->serial_id))) {
+			if (tmp && (0 == strcmp(peer_di->nonce, tmp->nonce))) {
 				calc_di = tmp;
 				axl_list_cursor_unlink(calc_cursor);
 				break;
@@ -87,23 +87,23 @@ void jaln_pub_notify_digests_and_create_digest_response(
 			sess->jaln_ctx->pub_callbacks->peer_digest(sess,
 					sess->ch_info,
 					sess->ch_info->type,
-					peer_di->serial_id,
+					peer_di->nonce,
 					NULL, 0,
 					peer_di->digest, peer_di->digest_len,
 					sess->jaln_ctx->user_data);
 
-			resp_info = jaln_digest_resp_info_create(peer_di->serial_id, JALN_DIGEST_STATUS_UNKNOWN);
+			resp_info = jaln_digest_resp_info_create(peer_di->nonce, JALN_DIGEST_STATUS_UNKNOWN);
 		} else {
 			if (jaln_digests_are_equal(peer_di, calc_di)) {
-				resp_info = jaln_digest_resp_info_create(peer_di->serial_id, JALN_DIGEST_STATUS_CONFIRMED);
+				resp_info = jaln_digest_resp_info_create(peer_di->nonce, JALN_DIGEST_STATUS_CONFIRMED);
 			} else {
-				resp_info = jaln_digest_resp_info_create(peer_di->serial_id, JALN_DIGEST_STATUS_INVALID);
+				resp_info = jaln_digest_resp_info_create(peer_di->nonce, JALN_DIGEST_STATUS_INVALID);
 			}
 
 			sess->jaln_ctx->pub_callbacks->peer_digest(sess,
 					sess->ch_info,
 					sess->ch_info->type,
-					peer_di->serial_id,
+					peer_di->nonce,
 					calc_di->digest, calc_di->digest_len,
 					peer_di->digest, peer_di->digest_len,
 					sess->jaln_ctx->user_data);
@@ -125,18 +125,18 @@ enum jal_status jaln_publisher_handle_sync(jaln_session *sess,
 		int msg_no)
 {
 	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(chan, msg_no);
-	char *serial_id = NULL;
+	char *nonce = NULL;
 	enum jal_status ret = JAL_E_INVAL;
 	if (!sess || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks || 
 			!sess->jaln_ctx->pub_callbacks->sync || !sess->ch_info) {
 		goto out;
 	}
-	ret = jaln_process_sync(frame, &serial_id);
+	ret = jaln_process_sync(frame, &nonce);
 	if (ret != JAL_OK) {
 		goto out;
 	}
-	sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, sess->mode, serial_id, NULL, sess->jaln_ctx->user_data);
-	free(serial_id);
+	sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, sess->mode, nonce, NULL, sess->jaln_ctx->user_data);
+	free(nonce);
 out:
 	if (!ans_rpy_sent) {
 		ret = JAL_E_COMM;
@@ -272,9 +272,9 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
 	struct jaln_pub_data *pd = sess->pub_data;
 	void *ud = sess->jaln_ctx->user_data;
-	char *sid = NULL;
+	char *nonce = NULL;
 	uint64_t offset;
-	ret = jaln_process_journal_resume(frame, &sid, &offset);
+	ret = jaln_process_journal_resume(frame, &nonce, &offset);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
@@ -283,7 +283,7 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	struct jaln_record_info rec_info;
 	memset(&rec_info, 0, sizeof(rec_info));
 	rec_info.type = type;
-	rec_info.nonce = jal_strdup(sid);
+	rec_info.nonce = jal_strdup(nonce);
 
 	ret = cbs->on_journal_resume(sess, ch_info, &rec_info, offset, &pd->sys_meta, &pd->app_meta, NULL, ud);
 	if (JAL_OK != ret) {
@@ -291,7 +291,7 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	}
 
 	sess->pub_data->msg_no = msg_no;
-	sess->pub_data->serial_id = jal_strdup(sid);
+	sess->pub_data->nonce = jal_strdup(nonce);
 
 	goto out;
 
@@ -299,7 +299,7 @@ err_out:
 	vortex_channel_finalize_ans_rpy(chan, msg_no);
 	jaln_session_set_errored(sess);
 out:
-	free(sid);
+	free(nonce);
 	return ret;
 }
 

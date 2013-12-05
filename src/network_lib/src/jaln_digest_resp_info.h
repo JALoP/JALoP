@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 struct jaln_digest_resp_info {
-	char *serial_id;
+	char *nonce;
 	enum jaln_digest_status status;
 };
 
@@ -45,13 +45,13 @@ struct jaln_digest_resp_info {
  * result of comparing the locally calculated digest for a record to the digest
  * calculated by the peer.
  *
- * @param[in] serial_id The serial ID of the record. This makes a copy of
- * serial_id.
+ * @param[in] nonce The nonce of the record. This makes a copy of
+ * nonce.
  * @param[in] status The status of the comparison
  *
  * @return a new jaln_digest_resp_info structure
  */
-struct jaln_digest_resp_info *jaln_digest_resp_info_create(const char *serial_id,
+struct jaln_digest_resp_info *jaln_digest_resp_info_create(const char *nonce,
 		enum jaln_digest_status status);
 
 /**
@@ -74,9 +74,9 @@ void jaln_axl_destroy_digest_resp_info(axlPointer ptr);
  * @param[in] a The first jaln_digest_resp_info object to compare
  * @param[in] b The second jaln_digest_resp_info object to compare
  *
- * For this case, only the serial_id member is checked for equality
+ * For this case, only the nonce member is checked for equality
  */
-int jaln_axl_equals_func_digest_resp_info_serial_id(axlPointer a, axlPointer b);
+int jaln_axl_equals_func_digest_resp_info_nonce(axlPointer a, axlPointer b);
 
 /**
  * Function to create an axlList that can hold jaln_digest_resp_info objects.

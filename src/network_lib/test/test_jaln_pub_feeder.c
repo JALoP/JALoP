@@ -43,7 +43,7 @@
 #include "jaln_message_helpers.h"
 #include "jaln_session.h"
 
-#define SID "sid_1234"
+#define NONCE "nonce_1234"
 #define HEADERS "some headers"
 #define SYS_META "system meta"
 #define APP_META "app meta"
@@ -98,7 +98,7 @@ axl_bool fake_send_ans_rpy_from_feeder(
 
 enum jal_status fake_add_to_dgst_list(
 		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) char *nonce,
 		__attribute__((unused)) uint8_t *dgst_buf,
 		__attribute__((unused)) uint64_t dgst_len)
 {
@@ -149,7 +149,7 @@ enum jal_status my_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) char *nonce,
 		__attribute__((unused)) void *user_data)
 {
 	return JAL_OK;
@@ -160,7 +160,7 @@ void my_sync(
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) enum jaln_publish_mode mode,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
@@ -171,7 +171,7 @@ void my_notify_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *digest,
 		__attribute__((unused)) const uint32_t size,
 		__attribute__((unused)) void *user_data)
@@ -183,7 +183,7 @@ void my_peer_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *local_digest,
 		__attribute__((unused)) const uint32_t local_size,
 		__attribute__((unused)) const uint8_t *peer_digest,

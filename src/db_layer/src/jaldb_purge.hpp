@@ -33,7 +33,7 @@
 #include "jaldb_context.hpp"
 
 struct jaldb_doc_info {
-	char *sid;
+	char *nonce;
 	char *uuid;
 };
 
@@ -54,14 +54,14 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		enum jaldb_rec_type rtype);
 
 /**
- * Purge all log records up to and including the specified sid.
+ * Purge all log records up to and including the specified nonce.
  * By default, this creates a list of document info objects that contain
- * the sids and uuids of all specified documents that would be removed.
+ * the nonces and uuids of all specified documents that would be removed.
  * If the del flag is set, this removes all records that have been synced and sent,
  * unless the force flag is specified, in which case all specified records are removed.
  *
  * @param[in] ctx The context to use.
- * @param[in] sid The max sid to remove.
+ * @param[in] nonce The max nonce to remove.
  * @param[out] doc_list The list of jaldb_doc_info objects that contain info on each document
  * 			to be removed.
  * @param[in] force The force flag.
@@ -69,9 +69,9 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
  *
  * @return JALDB_OK on success, or an error.
  */
-enum jaldb_status jaldb_purge_log_by_sid(
+enum jaldb_status jaldb_purge_log_by_nonce(
 		jaldb_context *ctx,
-		const char *sid,
+		const char *nonce,
 		std::list<jaldb_doc_info> &doc_list,
 		int force,
 		int del);
@@ -81,12 +81,12 @@ enum jaldb_status jaldb_purge_log_by_sid(
  * If multiple documents contain the same uuid, it will list/remove those and
  * all preceeding documents.
  * By default, this creates a list of document info objects that contain
- * the sids and uuids of all specified documents that would be removed.
+ * the nonces and uuids of all specified documents that would be removed.
  * If the del flag is set, this removes all records that have been synced and sent,
  * unless the force flag is specified, in which case all specified records are removed.
  *
  * @param[in] ctx The context to use.
- * @param[in] sid The max sid to remove.
+ * @param[in] nonce The max nonce to remove.
  * @param[out] doc_list The list of jaldb_doc_info objects that contain info on each document
  * 			to be removed.
  * @param[in] force The force flag.
@@ -96,20 +96,20 @@ enum jaldb_status jaldb_purge_log_by_sid(
  */
 enum jaldb_status jaldb_purge_log_by_uuid(
 		jaldb_context *ctx,
-		const char *sid,
+		const char *nonce,
 		std::list<jaldb_doc_info> &doc_list,
 		int force,
 		int del);
 
 /**
- * Purge all audit records up to and including the specified sid.
+ * Purge all audit records up to and including the specified nonce.
  * By default, this creates a list of document info objects that contain
- * the sids and uuids of all specified documents that would be removed.
+ * the nonces and uuids of all specified documents that would be removed.
  * If the del flag is set, this removes all records that have been synced and sent,
  * unless the force flag is specified, in which case all specified records are removed.
  *
  * @param[in] ctx The context to use.
- * @param[in] sid The max sid to remove.
+ * @param[in] nonce The max nonce to remove.
  * @param[out] doc_list The list of jaldb_doc_info objects that contain info on each document
  * 			to be removed.
  * @param[in] force The force flag.
@@ -117,9 +117,9 @@ enum jaldb_status jaldb_purge_log_by_uuid(
  *
  * @return JALDB_OK on success, or an error.
  */
-enum jaldb_status jaldb_purge_audit_by_sid(
+enum jaldb_status jaldb_purge_audit_by_nonce(
 		jaldb_context *ctx,
-		const char *sid,
+		const char *nonce,
 		std::list<jaldb_doc_info> &doc_list,
 		int force,
 		int del);
@@ -129,12 +129,12 @@ enum jaldb_status jaldb_purge_audit_by_sid(
  * If multiple documents contain the same uuid, it will list/remove those and
  * all preceeding documents.
  * By default, this creates a list of document info objects that contain
- * the sids and uuids of all specified documents that would be removed.
+ * the nonces and uuids of all specified documents that would be removed.
  * If the del flag is set, this removes all records that have been synced and sent,
  * unless the force flag is specified, in which case all specified records are removed.
  *
  * @param[in] ctx The context to use.
- * @param[in] sid The max sid to remove.
+ * @param[in] nonce The max nonce to remove.
  * @param[out] doc_list The list of jaldb_doc_info objects that contain info on each document
  * 			to be removed.
  * @param[in] force The force flag.
@@ -144,21 +144,21 @@ enum jaldb_status jaldb_purge_audit_by_sid(
  */
 enum jaldb_status jaldb_purge_audit_by_uuid(
 		jaldb_context *ctx,
-		const char *sid,
+		const char *nonce,
 		std::list<jaldb_doc_info> &doc_list,
 		int force,
 		int del);
 
 /**
- * Purge all journal records up to and including the specified sid.  This also
+ * Purge all journal records up to and including the specified nonce.  This also
  * removes the journal file from the system, if it exists.
  * By default, this creates a list of document info objects that contain
- * the sids and uuids of all specified documents that would be removed.
+ * the nonces and uuids of all specified documents that would be removed.
  * If the del flag is set, this removes all records that have been synced and sent,
  * unless the force flag is specified, in which case all specified records are removed.
  *
  * @param[in] ctx The context to use.
- * @param[in] sid The max sid to remove.
+ * @param[in] nonce The max nonce to remove.
  * @param[out] doc_list The list of jaldb_doc_info objects that contain info on each document
  * 			to be removed.
  * @param[in] force The force flag.
@@ -166,9 +166,9 @@ enum jaldb_status jaldb_purge_audit_by_uuid(
  *
  * @return JALDB_OK on success, or an error.
  */
-enum jaldb_status jaldb_purge_journal_by_sid(
+enum jaldb_status jaldb_purge_journal_by_nonce(
 		jaldb_context *ctx,
-		const char *sid,
+		const char *nonce,
 		std::list<jaldb_doc_info> &doc_list,
 		int force,
 		int del);
@@ -179,12 +179,12 @@ enum jaldb_status jaldb_purge_journal_by_sid(
  * If multiple documents contain the same uuid, it will list/remove those and
  * all preceeding documents.
  * By default, this creates a list of document info objects that contain
- * the sids and uuids of all specified documents that would be removed.
+ * the nonces and uuids of all specified documents that would be removed.
  * If the del flag is set, this removes all records that have been synced and sent,
  * unless the force flag is specified, in which case all specified records are removed.
  *
  * @param[in] ctx The context to use.
- * @param[in] sid The max sid to remove.
+ * @param[in] nonce The max nonce to remove.
  * @param[out] doc_list The list of jaldb_doc_info objects that contain info on each document
  * 			to be removed.
  * @param[in] force The force flag.
@@ -194,7 +194,7 @@ enum jaldb_status jaldb_purge_journal_by_sid(
  */
 enum jaldb_status jaldb_purge_journal_by_uuid(
 		jaldb_context *ctx,
-		const char *sid,
+		const char *nonce,
 		std::list<jaldb_doc_info> &doc_list,
 		int force,
 		int del);

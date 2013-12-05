@@ -36,9 +36,9 @@
 
 #include "jal_alloc.h"
 
-enum jal_status jaln_process_sync(VortexFrame *frame, char **serial_id)
+enum jal_status jaln_process_sync(VortexFrame *frame, char **nonce)
 {
-	if (!frame || !serial_id || *serial_id) {
+	if (!frame || !nonce || *nonce) {
 		return JAL_E_INVAL;
 	}
 
@@ -53,12 +53,12 @@ enum jal_status jaln_process_sync(VortexFrame *frame, char **serial_id)
 	if (0 != strcasecmp(msg, JALN_MSG_SYNC)) {
 		return JAL_E_INVAL;
 	}
-	const char *sid = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_SERIAL_ID);
-	if (!sid) {
+	const char *id = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_NONCE);
+	if (!id) {
 		return JAL_E_INVAL;
 	}
-	*serial_id = jal_strdup(sid);
-	axl_stream_trim(*serial_id);
+	*nonce = jal_strdup(id);
+	axl_stream_trim(*nonce);
 	return JAL_OK;
 }
 

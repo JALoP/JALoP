@@ -53,7 +53,7 @@ struct jaln_subscriber_callbacks {
 	 * application downloaded and received a 'digest-conf' for. The JNL
 	 * will send a 'subscribe' message indicating that this was the last
 	 * record received.  Applications should use the special strings 
-	 * JALN_SERIAL_ID_EPOCH and JALN_SERIAL_ID_NOW to specify transfer should 
+	 * JALN_NONCE_EPOCH and JALN_NONCE_NOW to specify transfer should 
 	 * start with the oldest records, or only receive new records.
 	 *
 	 * For journal records, the Application must specify the offset. When

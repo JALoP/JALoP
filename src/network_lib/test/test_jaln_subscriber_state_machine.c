@@ -48,7 +48,7 @@ int dummy_get_subscribe_request(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char **serial_id,
+		__attribute__((unused)) char **nonce,
 		__attribute__((unused)) uint64_t *offset)
 {
 	return 0;
@@ -83,7 +83,7 @@ int dummy_on_record_info(
 int dummy_on_audit(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *buffer,
 		__attribute__((unused)) const uint32_t cnt,
 		__attribute__((unused)) void *user_data)
@@ -94,7 +94,7 @@ int dummy_on_audit(
 int dummy_on_log(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *buffer,
 		__attribute__((unused)) const uint32_t cnt,
 		__attribute__((unused)) void *user_data)
@@ -105,7 +105,7 @@ int dummy_on_log(
 int dummy_on_journal(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *buffer,
 		__attribute__((unused)) const uint32_t cnt,
 		__attribute__((unused)) const uint64_t offset,
@@ -124,7 +124,7 @@ int dummy_notify_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) char *nonce,
 		__attribute__((unused)) const uint8_t *digest,
 		__attribute__((unused)) const uint32_t len,
 		__attribute__((unused)) const void *user_data)
@@ -136,7 +136,7 @@ int dummy_on_digest_response(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const enum jaln_digest_status status,
 		__attribute__((unused)) const void *user_data)
 {
@@ -154,7 +154,7 @@ void dummy_message_complete(
 int dummy_acquire_journal_feeder(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
@@ -164,7 +164,7 @@ int dummy_acquire_journal_feeder(
 void dummy_release_journal_feeder(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
@@ -184,7 +184,7 @@ void fake_frame_free(VortexFrame *frame)
 }
 enum jal_status fake_jaln_add_to_dgst_list(
 		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) char *serial_id,
+		__attribute__((unused)) char *nonce,
 		__attribute__((unused)) uint8_t *dgst_buf,
 		__attribute__((unused)) uint64_t dgst_len)
 {
@@ -205,7 +205,7 @@ static int should_have_cached_frame;
 static uint64_t frame_off;
 struct jaln_sub_state fake_state;
 
-#define EXPECTED_SID "sid:1234blah"
+#define EXPECTED_NONCE "nonce:1234blah"
 #define EXPECTED_SYS_META "some arbitray system metadata"
 #define EXPECTED_SYS_META_SZ (strlen(EXPECTED_SYS_META))
 #define EXPECTED_APP_META "some arbitray application metadata"
@@ -219,7 +219,7 @@ struct jaln_sub_state fake_state;
 #define LOG_MSG_TYPE "log-record"
 #define AUDIT_MSG_TYPE "audit-record"
 #define JOURNAL_MSG_TYPE "journal-record"
-#define MSG_SID_HDR "jal-serial-id"
+#define MSG_NONCE_HDR "jal-serial-id"
 #define APP_META_LEN_HDR "jal-application-metadata-length"
 #define SYS_META_LEN_HDR "jal-system-metadata-length"
 #define LOG_LEN_HDR "jal-log-length"
@@ -395,8 +395,8 @@ static VortexMimeHeader *stubbed_frame_get_mime_header(__attribute__((unused)) V
 	if (0 == strcasecmp(MSG_TYPE_HDR, mime_header)) {
 		return (VortexMimeHeader*) expected_type;
 	}
-	if (0 == strcasecmp(MSG_SID_HDR, mime_header)) {
-		return (VortexMimeHeader*) EXPECTED_SID;
+	if (0 == strcasecmp(MSG_NONCE_HDR, mime_header)) {
+		return (VortexMimeHeader*) EXPECTED_NONCE;
 	}
 	if (0 == strcasecmp(APP_META_LEN_HDR, mime_header)) {
 		return (VortexMimeHeader*) app_meta_sz_str;
@@ -446,7 +446,7 @@ void test_wait_for_mime_success_when_mime_data_spans_exactly_one_frame()
 	// should have filled in the meta data appropriately
 	struct jaln_sub_state_machine *sm = session->sub_data->sm;
 
-	assert_equals(0, strcmp(EXPECTED_SID, sm->serial_id));
+	assert_equals(0, strcmp(EXPECTED_NONCE, sm->nonce));
 
 	assert_equals(EXPECTED_SYS_META_SZ, sm->sys_meta_sz);
 	assert_not_equals((void*) NULL, sm->sys_meta_buf);
@@ -491,7 +491,7 @@ void test_wait_for_mime_success_when_mime_data_spans_multiple_frames()
 
 	// should have filled in the meta data appropriately
 
-	assert_equals(0, strcmp(EXPECTED_SID, sm->serial_id));
+	assert_equals(0, strcmp(EXPECTED_NONCE, sm->nonce));
 
 	assert_equals(EXPECTED_SYS_META_SZ, sm->sys_meta_sz);
 	assert_not_equals((void*) NULL, sm->sys_meta_buf);
@@ -938,7 +938,7 @@ void test_create_common_initializes_machine_correctly()
 	assert_string_equals("expected_msg", sm->expected_msg);
 	assert_string_equals("expected_payload_len", sm->payload_len_hdr);
 
-	assert_equals((void*) NULL, sm->serial_id);
+	assert_equals((void*) NULL, sm->nonce);
 
 	assert_equals((void*) NULL, sm->sys_meta_buf);
 	assert_equals(0, sm->sys_meta_sz);

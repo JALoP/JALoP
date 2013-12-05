@@ -273,7 +273,7 @@ enum jal_status pub_on_journal_resume(
 	size_t app_meta_len = 0;
 	size_t payload_len = 0;
 	// TODO: Fix this to work for journal resume, needs updates to the DB.
-	//jaldb_ret = jaldb_lookup_journal_record(db_ctx, record_info->serial_id, system_metadata_buffer, &sys_meta_len,
+	//jaldb_ret = jaldb_lookup_journal_record(db_ctx, record_info->nonce, system_metadata_buffer, &sys_meta_len,
 				//application_metadata_buffer, &app_meta_len,
 				//&(ctx->journal_fd), &payload_len);
 	if (JALDB_OK != jaldb_ret) {
@@ -787,10 +787,10 @@ enum jal_status pub_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		char *serial_id,
+		char *nonce,
 		__attribute__((unused)) void *user_data)
 {
-	DEBUG_LOG_SUB_SESSION(ch_info, "On record complete: %s", serial_id);
+	DEBUG_LOG_SUB_SESSION(ch_info, "On record complete: %s", nonce);
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
 
@@ -829,11 +829,11 @@ void pub_sync(
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		enum jaln_publish_mode mode,
-		const char *serial_id,
+		const char *nonce,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
-	DEBUG_LOG_SUB_SESSION(ch_info, "sync: %s", serial_id);
+	DEBUG_LOG_SUB_SESSION(ch_info, "sync: %s", nonce);
 
 	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
@@ -860,12 +860,12 @@ void pub_sync(
 
 	if (mode == JALN_ARCHIVE_MODE) {
 		pthread_mutex_lock(sub_lock);
-		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, serial_id);
+		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, nonce);
 		pthread_mutex_unlock(sub_lock);
 		if (JALDB_OK != jaldb_ret) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced", serial_id);
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced", nonce);
 		} else {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as synced", serial_id);
+			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as synced", nonce);
 		}
 	}	
 }
@@ -874,13 +874,13 @@ void pub_notify_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const uint8_t *digest,
 		__attribute__((unused)) const uint32_t size,
 		__attribute__((unused)) void *user_data)
 {
 	char *b64 = jal_base64_enc(digest, size);
-	DEBUG_LOG_SUB_SESSION(ch_info, "Digest for %s: %s", serial_id, b64);
+	DEBUG_LOG_SUB_SESSION(ch_info, "Digest for %s: %s", nonce, b64);
 	free(b64);
 }
 
@@ -888,7 +888,7 @@ void pub_peer_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		const uint8_t *local_digest,
 		const uint32_t local_size,
 		const uint8_t *peer_digest,

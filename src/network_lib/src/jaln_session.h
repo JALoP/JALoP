@@ -99,7 +99,7 @@ struct jaln_pub_data {
 	int vortex_feeder_sz;                       //!< The size (as reported to the Vortex engine) of this message.
 	int msg_no;                                 //!< The message number we are replying to
 
-	char *serial_id;                            //!< The serial ID of the last record sent.
+	char *nonce;                            //!< The nonce of the last record sent.
 
 	char *headers;                              //!< A buffer to hold the MIME headers for the current record.
 	uint8_t *sys_meta;                          //!< A buffer to hold the system metadata for the current record.
@@ -206,13 +206,13 @@ void jaln_pub_data_destroy(struct jaln_pub_data **pub_data);
  * Cache the calculations of a digest to be sent at a later time.
  *
  * @param[in] session The session that the digests are associated with.
- * @param[in] serial_id The serial_id of the record
+ * @param[in] nonce The nonce of the record
  * @param[in] dgst_len The length of the digest (in bytes).
  *
  * @return JAL_OK on success or an error.
  */
 enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess,
-		char *serial_id,
+		char *nonce,
 		uint8_t *dgst_buf,
 		uint64_t dgst_len);
 

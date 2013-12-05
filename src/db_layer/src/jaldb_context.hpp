@@ -61,10 +61,10 @@ struct jaldb_context_t {
 };
 
 /**
-* Store a confirmed serial_id in the journal temp container.
+* Store a confirmed nonce in the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
+* @param[in] nonce The serial ID of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -74,17 +74,17 @@ struct jaldb_context_t {
 *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
-enum jaldb_status jaldb_store_confed_journal_sid_tmp(
+enum jaldb_status jaldb_store_confed_journal_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		const char *sid,
+		const char *nonce,
 		int *db_err_out);
 
 /**
-* Store a confirmed serial_id in the audit temp container.
+* Store a confirmed nonce in the audit temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
+* @param[in] nonce The serial ID of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -94,17 +94,17 @@ enum jaldb_status jaldb_store_confed_journal_sid_tmp(
 *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
-enum jaldb_status jaldb_store_confed_audit_sid_tmp(
+enum jaldb_status jaldb_store_confed_audit_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		const char *sid,
+		const char *nonce,
 		int *db_err_out);
 
 /**
-* Store a confirmed serial_id in the log temp container.
+* Store a confirmed nonce in the log temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
+* @param[in] nonce The serial ID of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -114,32 +114,32 @@ enum jaldb_status jaldb_store_confed_audit_sid_tmp(
 *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
-enum jaldb_status jaldb_store_confed_log_sid_tmp(
+enum jaldb_status jaldb_store_confed_log_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		const char *sid,
+		const char *nonce,
 		int *db_err_out);
 
 /**
-* Retrieve the last confirmed serial_id from the given source.
+* Retrieve the last confirmed nonce from the given source.
 * @param[in] ctx the jaldb_context
 * @param[in] type The type of record (journal, audit, log).
-* @param[in] source the host to find the last serial id from
-* @param[out] sid the last confirmed serial id
+* @param[in] source the host to find the last nonce from
+* @param[out] nonce the last confirmed nonce
 *
 * @return JALDB_OK on success, or a different JALDB error code on failure.
 */
-enum jaldb_status jaldb_get_last_confed_sid_temp(
+enum jaldb_status jaldb_get_last_confed_nonce_temp(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char *source,
-		char **sid);
+		char **nonce);
 
 /**
-* Retrieve a confirmed serial_id from the journal temp container.
+* Retrieve a confirmed nonce from the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
+* @param[in] nonce The serial ID of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -149,17 +149,17 @@ enum jaldb_status jaldb_get_last_confed_sid_temp(
 *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
-enum jaldb_status jaldb_get_last_confed_journal_sid_tmp(
+enum jaldb_status jaldb_get_last_confed_journal_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		std::string &sid,
+		std::string &nonce,
 		int *db_err_out);
 
 /**
-* Retrieve a confirmed serial_id from the audit temp container.
+* Retrieve a confirmed nonce from the audit temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
+* @param[in] nonce The serial ID of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -169,17 +169,17 @@ enum jaldb_status jaldb_get_last_confed_journal_sid_tmp(
 *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
-enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
+enum jaldb_status jaldb_get_last_confed_audit_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		std::string &sid,
+		std::string &nonce,
 		int *db_err_out);
 
 /**
-* Retrieve a confirmed serial_id from the log temp container.
+* Retrieve a confirmed nonce from the log temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] sid The serial ID of the confirmed record
+* @param[in] nonce The serial ID of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -189,10 +189,10 @@ enum jaldb_status jaldb_get_last_confed_audit_sid_tmp(
 *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
 * @throw XmlException
 */
-enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
+enum jaldb_status jaldb_get_last_confed_log_nonce_tmp(
 		jaldb_context *ctx,
 		const char *remote_host,
-		std::string &sid,
+		std::string &nonce,
 		int *db_err_out);
 
 /**
@@ -200,8 +200,8 @@ enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
  * permanent container.
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
- * @param[in] sid The serial ID of the record to be transferred
- * @param[out] next_sid The new serial ID of the record transferred to
+ * @param[in] nonce The serial ID of the record to be transferred
+ * @param[out] next_nonce The new serial ID of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -214,16 +214,16 @@ enum jaldb_status jaldb_get_last_confed_log_sid_tmp(
 enum jaldb_status jaldb_xfer_audit(
 	jaldb_context *ctx,
 	std::string &source,
-	const std::string &sid,
-	std::string &next_sid);
+	const std::string &nonce,
+	std::string &next_nonce);
 
 /**
  * Transfer log records from the temporary db container to the
  * permanent container.
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
- * @param[in] sid The serial ID of the record to be transferred
- * @param[out] next_sid The new serial ID of the record transferred to
+ * @param[in] nonce The serial ID of the record to be transferred
+ * @param[out] next_nonce The new serial ID of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -240,16 +240,16 @@ enum jaldb_status jaldb_xfer_audit(
 enum jaldb_status jaldb_xfer_log(
 	jaldb_context *ctx,
 	std::string &source,
-	const std::string &sid,
-	std::string &next_sid);
+	const std::string &nonce,
+	std::string &next_nonce);
 
 /**
  * Transfer journal records from the temporary db container to the 
  * permanent container.
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
- * @param[in] sid The serial ID of the record to be transferred
- * @param[out] next_sid The new serial ID of the record transferred to
+ * @param[in] nonce The serial ID of the record to be transferred
+ * @param[out] next_nonce The new serial ID of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -262,29 +262,29 @@ enum jaldb_status jaldb_xfer_log(
 enum jaldb_status jaldb_xfer_journal(
 	jaldb_context *ctx,
 	const std::string &source,
-	const std::string &sid,
-	std::string &next_sid);
+	const std::string &nonce,
+	std::string &next_nonce);
 
 /**
-* Store the last confirmed serial_id from the given source.
+* Store the last confirmed nonce from the given source.
 * @param[in] ctx the jaldb_context
 * @param[in] type The type of record (journal, audit, log).
-* @param[in] source the host the last serial id is from
-* @param[in] sid the last confirmed serial id
+* @param[in] source the host the last nonce is from
+* @param[in] nonce the last confirmed nonce
 *
 * @return JALDB_OK on success, or a different JALDB error code on failure.
 */
-enum jaldb_status jaldb_store_confed_sid_temp(
+enum jaldb_status jaldb_store_confed_nonce_temp(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
 	char* source,
-	char* sid);
+	char* nonce);
 
 /**
  * Store the most recently confirmed journal record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
- * @param[in] sid The serial ID that was 'confirmed'
+ * @param[in] nonce The serial ID that was 'confirmed'
  * @param[out] db_err_out The error code (if any) returned by Berkeley DB
  * @return
  *  - JALDB_OK on success
@@ -299,14 +299,14 @@ enum jaldb_status jaldb_store_confed_sid_temp(
  *  for more info.
  * @throw XmlException
  */
-enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
-		const char *remote_host, const char *sid, int *db_err_out);
+enum jaldb_status jaldb_store_confed_journal_nonce(jaldb_context *ctx,
+		const char *remote_host, const char *nonce, int *db_err_out);
 
 /**
  * Store the most recently confirmed audit record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
- * @param[in] sid The serial ID that was 'confirmed'
+ * @param[in] nonce The serial ID that was 'confirmed'
  * @param[out] db_err_out The error code (if any) returned by Berkeley DB
  * @return
  *  - JALDB_OK on success
@@ -321,14 +321,14 @@ enum jaldb_status jaldb_store_confed_journal_sid(jaldb_context *ctx,
  *  for more info.
  * @throw XmlException
  */
-enum jaldb_status jaldb_store_confed_audit_sid(jaldb_context *ctx,
-		const char *remote_host, const char *sid, int *db_err_out);
+enum jaldb_status jaldb_store_confed_audit_nonce(jaldb_context *ctx,
+		const char *remote_host, const char *nonce, int *db_err_out);
 
 /**
  * Store the most recently confirmed log record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
- * @param[in] sid The serial ID that was 'confirmed'
+ * @param[in] nonce The serial ID that was 'confirmed'
  * @param[out] db_err_out The error code (if any) returned by Berkeley DB
  * @return
  *  - JALDB_OK on success
@@ -343,8 +343,8 @@ enum jaldb_status jaldb_store_confed_audit_sid(jaldb_context *ctx,
  *  for more info.
  * @throw XmlException
  */
-enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
-		const char *remote_host, const char *sid, int *db_err_out);
+enum jaldb_status jaldb_store_confed_log_nonce(jaldb_context *ctx,
+		const char *remote_host, const char *nonce, int *db_err_out);
 
 /**
  * Insert an audit record into a temporary database. This caches the record
@@ -357,7 +357,7 @@ enum jaldb_status jaldb_store_confed_log_sid(jaldb_context *ctx,
  * @param[in] app_doc The application metadata document, this may be NULL
  * @param[in] auditdoc The audit document metadata document, this may not be
  * NULL.
- * @param[in] sid The serial ID as identified by the remote network store.
+ * @param[in] nonce The serial ID as identified by the remote network store.
  *
  * @return JALDB_OK on success
  * JALDB_E_INVAL if any of the parameters are invalid.
@@ -368,7 +368,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	const void *sys_doc,
 	const void *app_doc,
 	const void *audit_doc,
-	const std::string &sid);
+	const std::string &nonce);
 
 /**
  * Helper utility to generate a name for a temporary database used by the
@@ -391,7 +391,7 @@ std::string jaldb_make_temp_db_name(const std::string &id, const std::string &su
  * @param[in] app_meta_doc The application  metadata document
  * @param[in] log_buf A buffer containing the audit data.
  * @param[in] log_len The size (in bytes) of audit data.
- * @param[out] sid The serial ID for the record.
+ * @param[out] nonce The serial ID for the record.
  * @param[out] db_err Set to the Berkeley DB error when this function returns
  * JALDB_E_DB
  *
@@ -406,7 +406,7 @@ enum jaldb_status jaldb_insert_log_record_into_temp(
 	const void *app_meta_doc,
 	uint8_t *log_buf,
 	const size_t log_len,
-	const std::string &sid,
+	const std::string &nonce,
 	int *db_err);
 
 /**
@@ -440,7 +440,7 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_n
  * @param[in] app_meta_doc a document that contains the app metadata (if any).
  * @param[in] path the path to the journal file (should be obtained using to
  *                 jaldb_create_file).
- * @param[in] sid the serial ID as identified by the remote peer.
+ * @param[in] nonce the serial ID as identified by the remote peer.
  */
 enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	jaldb_context *ctx,
@@ -448,7 +448,7 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	const void *sys_meta_doc,
 	const void *app_meta_doc,
 	const std::string &path,
-	const std::string &sid);
+	const std::string &nonce);
 
 /**
  * Store journal_resume data in the journal temporary system container.

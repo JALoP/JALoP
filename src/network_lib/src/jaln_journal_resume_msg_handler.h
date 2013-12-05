@@ -36,12 +36,12 @@
  * Helper to process the contents of an 'initialize' message
  *
  * @param[in] frame The frame to inspect
- * @param[out] sid The serial ID indicated in the journal_resume message.
+ * @param[out] nonce The nonce indicated in the journal_resume message.
  * @param[out] offset The offset into the journal record to begin transferring
  * data from.
  *
  * @return JAL_OK on success, or JAL_E_INVAL if there was an error.
  */
-enum jal_status jaln_process_journal_resume(VortexFrame *frame, char **sid, uint64_t *offset);
+enum jal_status jaln_process_journal_resume(VortexFrame *frame, char **nonce, uint64_t *offset);
 
 #endif // JALN_JOURNAL_RESUME_MSG_HANDLER

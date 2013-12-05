@@ -44,7 +44,7 @@ int on_digest_response(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *serial_id,
+		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const enum jaln_digest_status status,
 		__attribute__((unused)) const void *user_data)
 {
@@ -98,13 +98,13 @@ enum jal_status fake_jaln_process_digest_resp(__attribute__((unused)) VortexFram
 						axlList **dgst_resp_list_out)
 {
 
-	*dgst_resp_list_out = axl_list_new(jaln_axl_equals_func_digest_resp_info_serial_id, jaln_axl_destroy_digest_resp_info);
+	*dgst_resp_list_out = axl_list_new(jaln_axl_equals_func_digest_resp_info_nonce, jaln_axl_destroy_digest_resp_info);
 
-	axl_list_append(*dgst_resp_list_out, jaln_digest_resp_info_create("sid1", JALN_DIGEST_STATUS_CONFIRMED));
+	axl_list_append(*dgst_resp_list_out, jaln_digest_resp_info_create("nonce1", JALN_DIGEST_STATUS_CONFIRMED));
 
-	axl_list_append(*dgst_resp_list_out, jaln_digest_resp_info_create("sid2", JALN_DIGEST_STATUS_CONFIRMED));
+	axl_list_append(*dgst_resp_list_out, jaln_digest_resp_info_create("nonce2", JALN_DIGEST_STATUS_CONFIRMED));
 
-	axl_list_append(*dgst_resp_list_out, jaln_digest_resp_info_create("sid3", JALN_DIGEST_STATUS_CONFIRMED));
+	axl_list_append(*dgst_resp_list_out, jaln_digest_resp_info_create("nonce3", JALN_DIGEST_STATUS_CONFIRMED));
 
 	return JAL_OK;
 }
@@ -122,11 +122,11 @@ void setup()
 	sess->dgst_chan = (VortexChannel *)0xdeadbeef;
 
 	dgst_val = 0xf001;
-	axl_list_append(dgst_list, jaln_digest_info_create("sid1", (uint8_t *)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(dgst_list, jaln_digest_info_create("nonce1", (uint8_t *)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf002;
-	axl_list_append(dgst_list, jaln_digest_info_create("sid2", (uint8_t *)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(dgst_list, jaln_digest_info_create("nonce2", (uint8_t *)&dgst_val, sizeof(dgst_val)));
 	dgst_val = 0xf003;
-	axl_list_append(dgst_list, jaln_digest_info_create("sid3", (uint8_t *)&dgst_val, sizeof(dgst_val)));
+	axl_list_append(dgst_list, jaln_digest_info_create("nonce3", (uint8_t *)&dgst_val, sizeof(dgst_val)));
 }
 
 void teardown()

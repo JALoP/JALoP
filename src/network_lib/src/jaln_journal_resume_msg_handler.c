@@ -37,12 +37,12 @@
 #include "jaln_strings.h"
 #include "jaln_string_utils.h"
 
-enum jal_status jaln_process_journal_resume(VortexFrame *frame, char **sid_out, uint64_t *offset_out)
+enum jal_status jaln_process_journal_resume(VortexFrame *frame, char **nonce_out, uint64_t *offset_out)
 {
 	enum jal_status ret = JAL_E_INVAL;
-	char *sid = NULL;
+	char *nonce = NULL;
 
-	if (!frame || !sid_out || *sid_out || !offset_out) {
+	if (!frame || !nonce_out || *nonce_out || !offset_out) {
 		goto err_out;
 	}
 
@@ -58,13 +58,13 @@ enum jal_status jaln_process_journal_resume(VortexFrame *frame, char **sid_out, 
 		goto err_out;
 	}
 
-	const char *sid_from_frame = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_SERIAL_ID);
-	if (!sid_from_frame) {
+	const char *nonce_from_frame = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_NONCE);
+	if (!nonce_from_frame) {
 		goto err_out;
 	}
-	sid = jal_strdup(sid_from_frame);
-	axl_stream_trim(sid);
-	if (0 == strlen(sid)) {
+	nonce = jal_strdup(nonce_from_frame);
+	axl_stream_trim(nonce);
+	if (0 == strlen(nonce)) {
 		goto err_out;
 	}
 
@@ -77,12 +77,12 @@ enum jal_status jaln_process_journal_resume(VortexFrame *frame, char **sid_out, 
 	}
 
 	ret = JAL_OK;
-	*sid_out = sid;
+	*nonce_out = nonce;
 
 	goto out;
 
 err_out:
-	free(sid);
+	free(nonce);
 out:
 	return ret;
 }
