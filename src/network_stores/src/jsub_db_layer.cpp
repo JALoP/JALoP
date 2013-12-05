@@ -237,6 +237,7 @@ int jsub_insert_journal_metadata(
 		uint8_t *app_meta,
 		size_t app_len,
 		char *db_payload_path,
+		uint64_t payload_len,
 		char *sid_in,
 		int debug)
 {
@@ -269,6 +270,7 @@ int jsub_insert_journal_metadata(
 
 	rec->payload = jaldb_create_segment();
 	rec->payload->payload = (uint8_t*)db_payload_path;
+	rec->payload->length = payload_len;
 	rec->payload->on_disk = 1;
 
 	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, sid_in);

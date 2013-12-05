@@ -127,6 +127,7 @@ int jsub_insert_log(
  * @param[in] app_meta The application metadata to insert.
  * @param[in] app_len The length of \p app_meta.
  * @param[in] db_payload_path The path to the journal payload on disk.
+ * @param[in] payload_len The length of the journal payload.
  * @param[in] sid_in The serial ID to use for inserting the record.
  * @param[in] debug A flag to denote if debugging information should be
  *			printed to stderr.
@@ -143,6 +144,7 @@ int jsub_insert_journal_metadata(
 		uint8_t *app_meta,
 		size_t app_len,
 		char *db_payload_path,
+		uint64_t payload_len,
 		char *sid_in,
 		int debug);
 

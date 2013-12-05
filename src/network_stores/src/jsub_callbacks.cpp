@@ -55,6 +55,7 @@ static uint8_t *journal_sys_meta_buf = NULL;
 static uint32_t journal_sys_meta_size = 0;
 static uint8_t *journal_app_meta_buf = NULL;
 static uint32_t journal_app_meta_size = 0;
+static uint64_t journal_payload_size = 0;
 
 // Audit buffers
 static uint8_t *audit_sys_meta_buf = NULL;
@@ -333,6 +334,7 @@ int jsub_on_journal(
 	if (0 == more) {
 		// No more data
 		if (buffer) {
+			journal_payload_size += cnt;
 			int ret = jsub_write_journal(
 					jsub_db_ctx,
 					&db_payload_path,
@@ -352,11 +354,13 @@ int jsub_on_journal(
 					journal_app_meta_buf,
 					journal_app_meta_size,
 					db_payload_path,
+					journal_payload_size,
 					(char *)serial_id,
 					jsub_debug);
 	} else {
 		// There will be more data, append what we've
 		//	received to file on disk.
+		journal_payload_size += cnt;
 		return jsub_write_journal(
 					jsub_db_ctx,
 					&db_payload_path,

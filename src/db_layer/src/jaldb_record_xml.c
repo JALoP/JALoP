@@ -381,11 +381,13 @@ void jaldb_end_element(void *user_data,
 		sp_user_data->sys_meta->pid = pid;
 	} else if (0 == strcmp((char *)sp_user_data->tag_name,"User")) {
 		errno=0;
-		uint64_t uid = (uint64_t)strtoul((const char *)sp_user_data->chars,NULL,0);
-		if (errno != 0) {
-			sp_user_data->ret = JALDB_E_INVAL;
+		if (sp_user_data->chars != NULL) {
+			uint64_t uid = (uint64_t)strtoul((const char *)sp_user_data->chars,NULL,0);
+			if (errno != 0) {
+				sp_user_data->ret = JALDB_E_INVAL;
+			}
+			sp_user_data->sys_meta->uid = uid;
 		}
-		sp_user_data->sys_meta->uid = uid;
 	} else if (0 == strcmp((char *)sp_user_data->tag_name,"SecurityLabel")) {
 		sp_user_data->sys_meta->sec_lbl = (char*)jal_calloc(sp_user_data->chars_len+1,sizeof(char));
 		strncpy((char *)sp_user_data->sys_meta->sec_lbl,(const char *)sp_user_data->chars,sp_user_data->chars_len);
