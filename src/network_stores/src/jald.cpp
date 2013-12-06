@@ -318,7 +318,7 @@ enum jaldb_status pub_get_next_record(
 			ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
 		} else {
 			// Live mode
-			DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Live Mode");
+			DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Live Mode, timestamp: %s",*timestamp);
 			ret = jaldb_next_chronological_record(db_ctx,
 							     db_type,
 							     nonce,
@@ -627,7 +627,15 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 	axlHash *hash = gs_journal_subs;
 	pthread_mutex_t *sub_lock = &gs_journal_sub_lock;
 
+	char *journal_timestamp = NULL;
+
+	if (data->timestamp) {
+		journal_timestamp = jal_strdup(data->timestamp);
+	}
+
 	*ret = pub_send_records_feeder(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_journal);
+
+	free(journal_timestamp);
 
 	pthread_exit((void*)ret);
 }
@@ -647,7 +655,16 @@ void *pub_send_audit(void *args)
 	axlHash *hash = gs_audit_subs;
 	pthread_mutex_t *sub_lock = &gs_audit_sub_lock;
 
-	*ret = pub_send_records(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_audit);
+	char *audit_timestamp = NULL;
+
+	if (data->timestamp) {
+		audit_timestamp = jal_strdup(data->timestamp);
+	}
+
+	*ret = pub_send_records(sess, ch_info, &audit_timestamp, hash, sub_lock, &jaln_send_audit);
+
+	free(audit_timestamp);
+
 	pthread_exit((void*)ret);
 }
 
@@ -666,7 +683,16 @@ void *pub_send_log(void *args)
 	axlHash *hash = gs_log_subs;
 	pthread_mutex_t *sub_lock = &gs_log_sub_lock;
 
-	*ret = pub_send_records(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_log);
+	char *log_timestamp = NULL;
+
+	if (data->timestamp) {
+		log_timestamp = jal_strdup(data->timestamp);
+	}
+
+	*ret = pub_send_records(sess, ch_info, &log_timestamp, hash, sub_lock, &jaln_send_log);
+
+	free(log_timestamp);
+
 	pthread_exit((void*)ret);
 }
 

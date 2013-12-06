@@ -226,7 +226,9 @@ enum jaldb_status jaldb_context_init(
 	ctx->audit_temp_dbs = new string_to_rdbs_map;
 	ctx->log_temp_dbs = new string_to_rdbs_map;
 
-	ctx->seen_records = new std::set<string>();
+	ctx->seen_journal_records = new std::set<string>();
+	ctx->seen_audit_records = new std::set<string>();
+	ctx->seen_log_records = new std::set<string>();
 
 	return JALDB_OK;
 }
@@ -261,7 +263,9 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	jaldb_destroy_string_to_rdbs_map(ctxp->audit_temp_dbs);
 	jaldb_destroy_string_to_rdbs_map(ctxp->log_temp_dbs);
 
-	delete ctxp->seen_records;
+	delete ctxp->seen_journal_records;
+	delete ctxp->seen_audit_records;
+	delete ctxp->seen_log_records;
 
 	if (ctxp->env) {
 		ctxp->env->close(ctxp->env, 0);
@@ -1859,6 +1863,7 @@ enum jaldb_status jaldb_next_chronological_record(
 	int byte_swap;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
+	std::set <std::string> *seen_records = NULL;
 	std::string nonce_string;
 	DBT key;
 	DBT pkey;
@@ -1890,12 +1895,15 @@ enum jaldb_status jaldb_next_chronological_record(
 	switch(type) {
 	case JALDB_RTYPE_JOURNAL:
 		rdbs = ctx->journal_dbs;
+		seen_records = ctx->seen_journal_records;
 		break;
 	case JALDB_RTYPE_AUDIT:
 		rdbs = ctx->audit_dbs;
+		seen_records = ctx->seen_audit_records;
 		break;
 	case JALDB_RTYPE_LOG:
 		rdbs = ctx->log_dbs;
+		seen_records = ctx->seen_log_records;
 		break;
 	default:
 		ret = JALDB_E_INVAL;
@@ -1949,9 +1957,9 @@ enum jaldb_status jaldb_next_chronological_record(
 	while (difftime(mktime(&search_time), mktime(&current_time)) == 0 &&
 			search_microseconds == cur_microseconds) {
 		// Check to see if we already got a record at this time
-		if (ctx->seen_records->count(nonce_string) == 0) {
+		if (seen_records->count(nonce_string) == 0) {
 			//Haven't seen it
-			ctx->seen_records->insert(nonce_string);
+			seen_records->insert(nonce_string);
 			break;
 		} else {
 			db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_NEXT);
@@ -1965,7 +1973,12 @@ enum jaldb_status jaldb_next_chronological_record(
 			}
 			nonce_string = (char *)pkey.data;
 		}
-		if (!strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time)) {
+		end_timestamp = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
+		if (!end_timestamp) {
+			ret = JALDB_E_INVAL;
+			goto out;
+		}
+		if (!sscanf(end_timestamp,".%d-%*d:%*d",&cur_microseconds)) {
 			ret = JALDB_E_INVAL;
 			goto out;
 		}
@@ -1975,8 +1988,8 @@ enum jaldb_status jaldb_next_chronological_record(
 			search_microseconds != cur_microseconds) {
 		free(*timestamp);
 		*timestamp = jal_strdup((char*)key.data);
-		ctx->seen_records->clear();
-		ctx->seen_records->insert(nonce_string);
+		seen_records->clear();
+		seen_records->insert(nonce_string);
 	}
 
 	ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);

@@ -42,20 +42,22 @@ typedef std::map<std::string, jaldb_record_dbs*> string_to_rdbs_map;
 struct jaldb_record_dbs;
 
 struct jaldb_context_t {
-	char *journal_root; 			//!< The journal record root path.
-	char *schemas_root; 			//!< The schemas root path.
-	DB_ENV *env; 				//!< The Berkeley DB Environment.
-	struct jaldb_record_dbs *log_dbs; 	//!< The DBs associated with log records
-	struct jaldb_record_dbs *audit_dbs; 	//!< The DBs associated with audit records
-	struct jaldb_record_dbs *journal_dbs; 	//!< The DBs associated with journal records
-	DB *journal_conf_db; 			//!< The database for conf'ed journal records
-	DB *audit_conf_db; 			//!< The database for conf'ed audit records
-	DB *log_conf_db; 			//!< The database for conf'ed log records
-	string_to_rdbs_map *journal_temp_dbs;	//!< The string map for the journal db
-	string_to_rdbs_map *audit_temp_dbs;	//!< The string map for the audit db
-	string_to_rdbs_map *log_temp_dbs;	//!< The string map for the log db
-	int db_read_only; 			//!< Whether or not to open the databases read only
-	std::set<std::string> *seen_records;	//<! Records already seen in live mode
+	char *journal_root; 				//!< The journal record root path.
+	char *schemas_root; 				//!< The schemas root path.
+	DB_ENV *env; 					//!< The Berkeley DB Environment.
+	struct jaldb_record_dbs *log_dbs; 		//!< The DBs associated with log records
+	struct jaldb_record_dbs *audit_dbs; 		//!< The DBs associated with audit records
+	struct jaldb_record_dbs *journal_dbs; 		//!< The DBs associated with journal records
+	DB *journal_conf_db; 				//!< The database for conf'ed journal records
+	DB *audit_conf_db; 				//!< The database for conf'ed audit records
+	DB *log_conf_db; 				//!< The database for conf'ed log records
+	string_to_rdbs_map *journal_temp_dbs;		//!< The string map for the journal db
+	string_to_rdbs_map *audit_temp_dbs;		//!< The string map for the audit db
+	string_to_rdbs_map *log_temp_dbs;		//!< The string map for the log db
+	int db_read_only; 				//!< Whether or not to open the databases read only
+	std::set<std::string> *seen_journal_records;	//<! Journal records already seen in live mode
+	std::set<std::string> *seen_audit_records;	//<! Audit records already seen in live mode
+	std::set<std::string> *seen_log_records;	//<! Log records already seen in live mode
 };
 
 /**
