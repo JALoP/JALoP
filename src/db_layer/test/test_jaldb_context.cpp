@@ -635,49 +635,49 @@ extern "C" void test_db_destroy_sets_ctx_to_null()
 extern "C" void test_store_confed_journal_nonce_fails_with_invalid_input()
 {
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id = jal_strdup("1234");
+	char *nonce = jal_strdup("1234");
 	int db_error_out = 0;
 	enum jaldb_status ret =
-		jaldb_store_confed_journal_nonce(NULL, rhost, ser_id, &db_error_out);
+		jaldb_store_confed_journal_nonce(NULL, rhost, nonce, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_journal_nonce(context, rhost, ser_id, &db_error_out);
+	ret = jaldb_store_confed_journal_nonce(context, rhost, nonce, &db_error_out);
 	free(rhost);
-	free(ser_id);
+	free(nonce);
 	rhost = NULL;
-	ser_id = NULL;
+	nonce = NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
 extern "C" void test_store_confed_audit_nonce_fails_with_invalid_input()
 {
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id = jal_strdup("1234");
+	char *nonce = jal_strdup("1234");
 	int db_error_out = 0;
 	enum jaldb_status ret =
-		jaldb_store_confed_audit_nonce(NULL, rhost, ser_id, &db_error_out);
+		jaldb_store_confed_audit_nonce(NULL, rhost, nonce, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	free(rhost);
-	free(ser_id);
+	free(nonce);
 	rhost = NULL;
-	ser_id = NULL;
+	nonce = NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
 extern "C" void test_store_confed_log_nonce_fails_with_invalid_input()
 {
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id = jal_strdup("1234");
+	char *nonce = jal_strdup("1234");
 	int db_error_out = 0;
 	enum jaldb_status ret =
-		jaldb_store_confed_log_nonce(NULL, rhost, ser_id, &db_error_out);
+		jaldb_store_confed_log_nonce(NULL, rhost, nonce, &db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	free(rhost);
-	free(ser_id);
+	free(nonce);
 	rhost = NULL;
-	ser_id = NULL;
+	nonce = NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 
@@ -762,7 +762,7 @@ extern "C" void test_read_only_flag_prevents_writing_to_db()
 	assert_equals(JALDB_OK, ret);
 
 	std::string src = "foo";
-	std::string ser_id = "1";
+	std::string nonce = "1";
 
 	assert_true(0);
 	jaldb_context_destroy(&ctx);
@@ -936,11 +936,11 @@ extern "C" void test_jaldb_next_log_record_fails_on_invalid_input()
 	char *next_nonce;
 	std::string src = "";
 	audit_app_meta_doc = NULL;
-	std::string ser_id = "3";
+	std::string nonce = "3";
 	jaldb_status ret;
 
 	ret = jaldb_insert_log_record(
-			context, src, log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, ser_id, &db_err);
+			context, src, log_sys_meta_doc, log_app_meta_doc, logbuf, loglen, nonce, &db_err);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, db_err);
 
@@ -953,7 +953,7 @@ extern "C" void test_jaldb_next_log_record_fails_on_invalid_input()
 	uint8_t *bad_pointer = (uint8_t*)0xDEADBEEF;
 	size_t log_len = 0;
 
-	ret = jaldb_next_log_record(NULL, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(NULL, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
@@ -961,53 +961,53 @@ extern "C" void test_jaldb_next_log_record_fails_on_invalid_input()
 		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), NULL, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), NULL, &sys_meta_buf, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	next_nonce = (char*) 0xbadf00d;
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf,
 			&sys_meta_len, &app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 	next_nonce = NULL;
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, NULL, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, NULL, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &bad_pointer, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &bad_pointer, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, NULL,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, NULL,
 		&app_meta_buf, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		NULL, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		&bad_pointer, &app_meta_len, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		&app_meta_buf, NULL, &log_buf, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, NULL, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, &bad_pointer, &log_len, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, &log_buf, NULL, &db_err);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_next_log_record(context, ser_id.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
+	ret = jaldb_next_log_record(context, nonce.c_str(), &next_nonce, &sys_meta_buf, &sys_meta_len,
 		&app_meta_buf, &app_meta_len, &log_buf, &log_len, NULL);
 	assert_equals(JALDB_E_INVAL, ret);
 }

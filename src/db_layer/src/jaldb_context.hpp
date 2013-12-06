@@ -64,7 +64,7 @@ struct jaldb_context_t {
 * Store a confirmed nonce in the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The serial ID of the confirmed record
+* @param[in] nonce The nonce of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -84,7 +84,7 @@ enum jaldb_status jaldb_store_confed_journal_nonce_tmp(
 * Store a confirmed nonce in the audit temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The serial ID of the confirmed record
+* @param[in] nonce The nonce of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -104,7 +104,7 @@ enum jaldb_status jaldb_store_confed_audit_nonce_tmp(
 * Store a confirmed nonce in the log temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The serial ID of the confirmed record
+* @param[in] nonce The nonce of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -139,7 +139,7 @@ enum jaldb_status jaldb_get_last_confed_nonce_temp(
 * Retrieve a confirmed nonce from the journal temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The serial ID of the confirmed record
+* @param[in] nonce The nonce of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -159,7 +159,7 @@ enum jaldb_status jaldb_get_last_confed_journal_nonce_tmp(
 * Retrieve a confirmed nonce from the audit temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The serial ID of the confirmed record
+* @param[in] nonce The nonce of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -179,7 +179,7 @@ enum jaldb_status jaldb_get_last_confed_audit_nonce_tmp(
 * Retrieve a confirmed nonce from the log temp container.
 * @param[in] ctx The jaldb_context to use.
 * @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The serial ID of the confirmed record
+* @param[in] nonce The nonce of the confirmed record
 * @param[out] db_err_out A flag indicating a specific DB error.
 * @return
 *  - JALDB_OK on success
@@ -200,8 +200,8 @@ enum jaldb_status jaldb_get_last_confed_log_nonce_tmp(
  * permanent container.
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
- * @param[in] nonce The serial ID of the record to be transferred
- * @param[out] next_nonce The new serial ID of the record transferred to
+ * @param[in] nonce The nonce of the record to be transferred
+ * @param[out] next_nonce The new nonce of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -222,8 +222,8 @@ enum jaldb_status jaldb_xfer_audit(
  * permanent container.
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
- * @param[in] nonce The serial ID of the record to be transferred
- * @param[out] next_nonce The new serial ID of the record transferred to
+ * @param[in] nonce The nonce of the record to be transferred
+ * @param[out] next_nonce The new nonce of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -248,8 +248,8 @@ enum jaldb_status jaldb_xfer_log(
  * permanent container.
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
- * @param[in] nonce The serial ID of the record to be transferred
- * @param[out] next_nonce The new serial ID of the record transferred to
+ * @param[in] nonce The nonce of the record to be transferred
+ * @param[out] next_nonce The new nonce of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -284,7 +284,7 @@ enum jaldb_status jaldb_store_confed_nonce_temp(
  * Store the most recently confirmed journal record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
- * @param[in] nonce The serial ID that was 'confirmed'
+ * @param[in] nonce The nonce that was 'confirmed'
  * @param[out] db_err_out The error code (if any) returned by Berkeley DB
  * @return
  *  - JALDB_OK on success
@@ -293,7 +293,7 @@ enum jaldb_status jaldb_store_confed_nonce_temp(
  *  Nonce ID
  *  - JALDB_E_ALREADY_CONFED if the current mapping in the database is
  *    the same as \p nonce or sequentially later.
- *  - JALDB_E_CORRUPTED is the latest serial ID cannot be found. This
+ *  - JALDB_E_CORRUPTED is the latest nonce cannot be found. This
  *  indicates an internal problem with the database.
  *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
  *  for more info.
@@ -306,7 +306,7 @@ enum jaldb_status jaldb_store_confed_journal_nonce(jaldb_context *ctx,
  * Store the most recently confirmed audit record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
- * @param[in] nonce The serial ID that was 'confirmed'
+ * @param[in] nonce The nonce that was 'confirmed'
  * @param[out] db_err_out The error code (if any) returned by Berkeley DB
  * @return
  *  - JALDB_OK on success
@@ -315,7 +315,7 @@ enum jaldb_status jaldb_store_confed_journal_nonce(jaldb_context *ctx,
  *    the same as \p nonce or sequentially later.
  *  - JALDB_E_NONCE if the Nonce is sequentially after the next available
  *  Nonce ID
- *  - JALDB_E_CORRUPTED is the latest serial ID cannot be found. This
+ *  - JALDB_E_CORRUPTED is the latest nonce cannot be found. This
  *  indicates an internal problem with the database.
  *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
  *  for more info.
@@ -328,7 +328,7 @@ enum jaldb_status jaldb_store_confed_audit_nonce(jaldb_context *ctx,
  * Store the most recently confirmed log record for a particular host.
  * @param[in] ctx The jaldb_context to use
  * @param[in] remote_host The host that we received a digest conf for
- * @param[in] nonce The serial ID that was 'confirmed'
+ * @param[in] nonce The nonce that was 'confirmed'
  * @param[out] db_err_out The error code (if any) returned by Berkeley DB
  * @return
  *  - JALDB_OK on success
@@ -337,7 +337,7 @@ enum jaldb_status jaldb_store_confed_audit_nonce(jaldb_context *ctx,
  *    the same as \p nonce or sequentially later.
  *  - JALDB_E_NONCE if the Nonce is sequentially after the next available
  *  Nonce ID
- *  - JALDB_E_CORRUPTED is the latest serial ID cannot be found. This
+ *  - JALDB_E_CORRUPTED is the latest nonce cannot be found. This
  *  indicates an internal problem with the database.
  *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
  *  for more info.
@@ -357,7 +357,7 @@ enum jaldb_status jaldb_store_confed_log_nonce(jaldb_context *ctx,
  * @param[in] app_doc The application metadata document, this may be NULL
  * @param[in] auditdoc The audit document metadata document, this may not be
  * NULL.
- * @param[in] nonce The serial ID as identified by the remote network store.
+ * @param[in] nonce The nonce as identified by the remote network store.
  *
  * @return JALDB_OK on success
  * JALDB_E_INVAL if any of the parameters are invalid.
@@ -391,7 +391,7 @@ std::string jaldb_make_temp_db_name(const std::string &id, const std::string &su
  * @param[in] app_meta_doc The application  metadata document
  * @param[in] log_buf A buffer containing the audit data.
  * @param[in] log_len The size (in bytes) of audit data.
- * @param[out] nonce The serial ID for the record.
+ * @param[out] nonce The nonce for the record.
  * @param[out] db_err Set to the Berkeley DB error when this function returns
  * JALDB_E_DB
  *
@@ -440,7 +440,7 @@ enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_n
  * @param[in] app_meta_doc a document that contains the app metadata (if any).
  * @param[in] path the path to the journal file (should be obtained using to
  *                 jaldb_create_file).
- * @param[in] nonce the serial ID as identified by the remote peer.
+ * @param[in] nonce the nonce as identified by the remote peer.
  */
 enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 	jaldb_context *ctx,

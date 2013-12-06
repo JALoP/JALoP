@@ -101,10 +101,10 @@ void test_store_confed_nonce_returns_ok_with_valid_input()
 	db_error = db_create(&dbase, env, 0);
 	db_error = dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id = jal_strdup("1234");
+	char *nonce = jal_strdup("1234");
 	int err = 0;
 	int *db_error_out = &err;
-	int ret = jaldb_store_confed_nonce(dbase, transaction, rhost, ser_id, db_error_out);
+	int ret = jaldb_store_confed_nonce(dbase, transaction, rhost, nonce, db_error_out);
 	transaction->commit(transaction, 0);
 	DBT key;
 	DBT data;
@@ -120,11 +120,11 @@ void test_store_confed_nonce_returns_ok_with_valid_input()
 	result = strncmp("1234", data.data, strlen("1234"));
 	assert_equals(0, result);
 	free(rhost);
-	free(ser_id);
+	free(nonce);
 	free(data.data);
 	free(key.data);
 	rhost = NULL;
-	ser_id = NULL;
+	nonce = NULL;
 	data.data = NULL;
 
 	assert_equals(JALDB_OK, ret);
@@ -137,21 +137,21 @@ void test_store_confed_nonce_returns_error_when_trying_to_insert_nonce_twice()
 	db_error = db_create(&dbase, env, 0);
 	db_error = dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id = jal_strdup("1234");
+	char *nonce = jal_strdup("1234");
 	int err = 0;
 	int *db_error_out = &err;
-	int ret = jaldb_store_confed_nonce(dbase, transaction, rhost, ser_id, db_error_out);
+	int ret = jaldb_store_confed_nonce(dbase, transaction, rhost, nonce, db_error_out);
 	assert_equals(JALDB_OK, ret);
 
-	char *serid = jal_strdup("1234");
-	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, serid, db_error_out);
+	char *nonce2 = jal_strdup("1234");
+	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, nonce2, db_error_out);
 	transaction->commit(transaction, 0);
 	free(rhost);
-	free(ser_id);
-	free(serid);
+	free(nonce);
+	free(nonce2);
 	rhost = NULL;
-	ser_id = NULL;
-	serid = NULL;
+	nonce = NULL;
+	nonce2 = NULL;
 	assert_equals(JALDB_E_ALREADY_CONFED, ret);
 }
 
@@ -162,27 +162,27 @@ void test_store_confed_nonce_returns_error_with_invalid_input()
 	db_error = db_create(&dbase, env, 0);
 	db_error = dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
 	char *rhost = jal_strdup("remote_host");
-	char *ser_id = jal_strdup("1234");
+	char *nonce = jal_strdup("1234");
 	int err = 0;
 	int *db_error_out = &err;
-	int ret = jaldb_store_confed_nonce(NULL, transaction, rhost, ser_id, db_error_out);
+	int ret = jaldb_store_confed_nonce(NULL, transaction, rhost, nonce, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_nonce(dbase, NULL, rhost, ser_id, db_error_out);
+	ret = jaldb_store_confed_nonce(dbase, NULL, rhost, nonce, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_nonce(dbase, transaction, NULL, ser_id, db_error_out);
+	ret = jaldb_store_confed_nonce(dbase, transaction, NULL, nonce, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
 	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, NULL, db_error_out);
 	assert_equals(JALDB_E_INVAL, ret);
 
-	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, ser_id, NULL);
+	ret = jaldb_store_confed_nonce(dbase, transaction, rhost, nonce, NULL);
 	transaction->commit(transaction, 0);
 	free(rhost);
-	free(ser_id);
+	free(nonce);
 	rhost = NULL;
-	ser_id= NULL;
+	nonce= NULL;
 	assert_equals(JALDB_E_INVAL, ret);
 }
 

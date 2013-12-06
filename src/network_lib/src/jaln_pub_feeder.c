@@ -215,7 +215,7 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 
 	free(pd->nonce);
 
-	pd->nonce = 0;
+	pd->nonce = NULL;
 	pd->vortex_feeder_sz = 0;
 	pd->headers_off = 0;
 	pd->sys_meta_off = 0;

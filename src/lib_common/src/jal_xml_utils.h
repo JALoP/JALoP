@@ -163,34 +163,6 @@ enum jal_status jal_digest_xml_data(
  * @return xmlChar pointer to the decimal representation of the BIGNUM.  This needs
  * to be free'd with xmlFree.
  */
-xmlChar *jal_BN2decXMLCh(xmlSecBnPtr bn);
-
-/**
- * Convert a certificate name to a xmlChar pointer.
- *
- * @param[in] nm Certificate subject.
- *
- * @return Certificate subject name as a xmlChar pointer.
- */
-xmlChar *jal_get_xml_x509_name(X509_NAME *nm);
-
-/**
- * Convert a certificate serial number to a xmlChar pointer.
- *
- * @param[in] i ASN1_INTEGER certificate serial number.
- *
- * @return Certificate serial number as a xmlChar pointer.
- */
-xmlChar *jal_get_xml_x509_serial(ASN1_INTEGER *i);
-
-/**
- * Convert a base64-encoded certificate to a xmlChar pointer.
- *
- * @param[in] x509 The certificate.
- *
- * @return Certificate as a xmlChar pointer in DER format.
- */
-xmlChar *jal_get_xml_x509_cert(X509 *x509);
 
 /**
  * Get the first non-text element child.

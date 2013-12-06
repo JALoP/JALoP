@@ -53,16 +53,16 @@ extern "C" {
 	} while (0)
 
 /**
- * Inserts maps a host to their most recently conf'ed serial ID.
- * The mapping is only updated when the new (passed in) serial ID is
- * sequentially greater than the existing serial ID. Regardless of the return
+ * Inserts maps a host to their most recently conf'ed nonce.
+ * The mapping is only updated when the new (passed in) nonce is
+ * sequentially greater than the existing nonce. Regardless of the return
  * value, it is the caller's responsibility to either commit, or abort the
  * transaction.
  *
  * @param[in] db The database to update
  * @param[in] txn A transaction to associate with the update
  * @param[in] remote_host The remote host to associate with
- * @param[in] nonce The latest conf'ed serial ID
+ * @param[in] nonce The latest conf'ed nonce
  * @param[out] db_err_out The internal error from Berkeley DB (if any). This is only valid
  * when the function returns JALDB_E_DB.
  * @return
@@ -76,14 +76,14 @@ enum jaldb_status jaldb_store_confed_nonce(DB *db, DB_TXN *txn, const char *remo
 		const char *nonce, int *db_err_out);
 
 /**
- * Helper utility to compare to serial IDs.
+ * Helper utility to compare to nonces.
  * @param[in] nonce1 The first string to compare
  * @param[in] s1_len The length of the first string
  * @param[in] nonce2 The second string to compare
  * @param[in] s2_len The length of the second string
  *
  * @return This function returns less than 0 if nonce1 comes before nonce2, 0 if
- * the serial IDs are equal, and > 0 if nonce1 comes after nonce2.
+ * the nonces are equal, and > 0 if nonce1 comes after nonce2.
  */
 int jaldb_nonce_cmp(const char *nonce1, size_t s1_len, const char* nonce2, size_t s2_len);
 

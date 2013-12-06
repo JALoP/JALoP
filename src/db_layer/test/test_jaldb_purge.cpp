@@ -63,7 +63,6 @@ using namespace std;
 #define JOURNAL_ROOT "/journal/"
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
-#define FAKE_NONCE "12341234"
 #define AUDIT_TEST_XML_DOC "./test-input/domwriter_audit.xml"
 #define LOG_SYS_TEST_XML_DOC "./test-input/system-metadata.xml"
 #define LOG_APP_TEST_XML_DOC "./test-input/domwriter_log_app.xml"

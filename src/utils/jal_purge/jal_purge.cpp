@@ -252,7 +252,7 @@ __attribute__((noreturn)) static void usage()
 				be specified\n\
 	-u, --uuid=U		Remove all records up to and including the\n\
 				record with UUID 'U'.  By default, this checks\n\
-				the serial ID to determine what records came\n\
+				the nonce to determine what records came\n\
 				before.  '-t' must also be specified.\n\
 	-t, --type=T		Specify the type of JAL record.  'T' may be 'j',\n\
 				'a', or 'l' for journal, audit, or logging, respectively.\n\

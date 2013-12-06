@@ -302,7 +302,7 @@ void test_compare_encoding_case_insensitive_lookup_where_null_vs_null()
 	char *valA = NULL;
 	char *valB = NULL;
 	
-	// NULL and NULL are connonceered the same, therefore expect a true result.
+	// NULL and NULL are considered the same, therefore expect a true result.
 	assert_equals(axl_true, jaln_string_list_case_insensitive_lookup_func(valA,valB));
 }
 

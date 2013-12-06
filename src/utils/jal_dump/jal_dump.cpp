@@ -523,7 +523,7 @@ static void print_usage()
 	-h, --home=H	Specify the root of the JALoP database, defaults to /var/lib/jalop/db. The entered path\n\
 			must immediately follow the option. '~' expansion will only work with --home <~path>\n\
 			and not with --home=<~path>\n\
-	-w, --write	Signals for a list of serial IDs in the JALoP database to be written\n\
+	-w, --write	Signals for a list of nonces in the JALoP database to be written\n\
 			to a file for each record type.\n\
 	-v, --version	Outputs the version and exits.\n\
 \n\
@@ -610,7 +610,7 @@ static void ensure_capacity(char ***arr, int *max_elms, int elm_count)
 		*arr = tmp;
 		return;
 	}
-	printf("Failed to alloc memory for serial IDs");
+	printf("Failed to alloc memory for nonces");
 	exit(-1);
 }
 
@@ -667,7 +667,7 @@ static void print_list_stdout(const list<string> &p_list)
 static void print_list_file(const list<string> &p_list, const char *p_file_name)
 {
 	if (0 == p_list.size()) {
-		printf("Write serial IDs failed! No documents were found!\n");
+		printf("Write nonces failed! No documents were found!\n");
 	}
 	else {
 		ofstream fout;
@@ -680,11 +680,11 @@ static void print_list_file(const list<string> &p_list, const char *p_file_name)
 				fout << name << "\n";
 			}
 			fout.close();
-			printf("\nWrite serial IDs success! Check your directory for %s\n\n",
+			printf("\nWrite nonces success! Check your directory for %s\n\n",
 			p_file_name);
 		}
 		else {
-			printf("\nWrite serial IDs failed! Unable to open file: %s\n\n",
+			printf("\nWrite nonces failed! Unable to open file: %s\n\n",
 			p_file_name);
 		}
 	}

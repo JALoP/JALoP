@@ -67,7 +67,7 @@ void jsub_teardown_db_layer(jaldb_context **db_ctx);
  * @param[in] app_len The length of \p app_meta.
  * @param[in] audit The audit data to insert.
  * @param[in] audit_len The length of \p audit.
- * @param[in] nonce_in The serial ID to use for inserting the record.
+ * @param[in] nonce_in The nonce to use for inserting the record.
  * @param[in] debug A flag to denote if debugging information should be
  *			printed to stderr.
  *
@@ -97,7 +97,7 @@ int jsub_insert_audit(
  * @param[in] app_len The length of \p app_meta.
  * @param[in] log The log data to insert.
  * @param[in] log_len The length of \p log.
- * @param[in] nonce_in The serial ID to use for inserting the record.
+ * @param[in] nonce_in The nonce to use for inserting the record.
  * @param[in] debug A flag to denote if debugging information should be
  *			printed to stderr.
  *
@@ -128,7 +128,7 @@ int jsub_insert_log(
  * @param[in] app_len The length of \p app_meta.
  * @param[in] db_payload_path The path to the journal payload on disk.
  * @param[in] payload_len The length of the journal payload.
- * @param[in] nonce_in The serial ID to use for inserting the record.
+ * @param[in] nonce_in The nonce to use for inserting the record.
  * @param[in] debug A flag to denote if debugging information should be
  *			printed to stderr.
  *
@@ -153,9 +153,9 @@ int jsub_insert_journal_metadata(
  * container to the permanent container.
  * @param[in] db_ctx The database context.
  * @param[in] c_source The name of the source of the record.
- * @param[in] tmp_nonce The serial ID of the record located
+ * @param[in] tmp_nonce The nonce of the record located
  * 		      in the temporary container.
- * @param[out] perm_nonce The serial ID of the record saved
+ * @param[out] perm_nonce The nonce of the record saved
  *		       to the permanent container.
  *
  * @return
@@ -173,9 +173,9 @@ int jsub_transfer_audit(
  * container to the permanent container.
  * @param[in] db_ctx The database context.
  * @param[in] c_source The name of the source of the record.
- * @param[in] tmp_nonce The serial ID of the record located
+ * @param[in] tmp_nonce The nonce of the record located
  * 		      in the temporary container.
- * @param[out] perm_nonce The serial ID of the record saved
+ * @param[out] perm_nonce The nonce of the record saved
  *		       to the permanent container.
  *
  * @return
@@ -193,9 +193,9 @@ int jsub_transfer_log(
  * container to the permanent container.
  * @param[in] db_ctx The database context.
  * @param[in] c_source The name of the source of the record.
- * @param[in] tmp_nonce The serial ID of the record located
+ * @param[in] tmp_nonce The nonce of the record located
  * 	in the temporary container.
- * @param[out] perm_nonce The serial ID of the record saved
+ * @param[out] perm_nonce The nonce of the record saved
  *	to the permanent container.
  *
  * @return
@@ -235,7 +235,7 @@ int jsub_write_journal(
  * Stores the last confirmed nonce for a record type to
  * the temp database.
  * @param[in] db_ctx The database context.
- * @param[in] nonce The serial ID of the record.
+ * @param[in] nonce The nonce of the record.
  * @param[in] type The record type. (Journal, Audit or Log)
  * @param[in] source The hostname or IP as a string.
  *
@@ -253,7 +253,7 @@ int jsub_store_confed_nonce(
  * Retrieves the last confirmed nonce for a record type
  * from the temp database.
  * @param[in] db_ctx The database context.
- * @param[in] nonce The serial ID of the record.
+ * @param[in] nonce The nonce of the record.
  * @param[in] type The record type. (Journal, Audit or Log)
  * @param[in] source The hostname or IP as a string.
  *

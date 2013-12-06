@@ -55,7 +55,7 @@ enum jaldb_iter_status {
  * In most instances, the \p rec should not be modified (or at least, any
  * modifications are not written to the DB).
  *
- * @param[in] nonce The serial ID as a hex string (starting with '0x')
+ * @param[in] nonce The nonce as a hex string (starting with '0x')
  * @param[in] rec The current record
  * @param[in] up This is the same pointer that is passed to the traversal
  *               function, it can be used to store some state information,

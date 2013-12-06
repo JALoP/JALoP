@@ -117,7 +117,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		jal_asprintf(&nonce_name, "%s_nonce.db", prefix);
 	}
 
-	// Open the Primary DB. The Primary DB keys are serial IDs
+	// Open the Primary DB. The Primary DB keys are nonces
 	db_ret = db_create(&(rdbs->primary_db), env, 0);
 	if (db_ret != 0) {
 		ret = JALDB_E_DB;

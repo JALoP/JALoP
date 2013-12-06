@@ -320,68 +320,6 @@ out:
 	return ret;
 }
 
-xmlChar *jal_get_xml_x509_cert(X509 *x509)
-{
-	unsigned char *buff = NULL;
-	char *b64_buff = NULL;
-	int len;
-
-	// Returns cert in DER format!!!
-	len = i2d_X509(x509, &buff);
-	if (len <= 0) {
-		return NULL;
-	}
-
-	b64_buff = jal_base64_enc(buff, len);
-	xmlChar *xml_cert = xmlCharStrdup(b64_buff);
-
-	free(b64_buff);
-	OPENSSL_free(buff);
-
-	return xml_cert;
-}
-
-xmlChar *jal_BN2dec_xmlChar(BIGNUM *bn)
-{
-	char *buff = NULL;
-	buff = BN_bn2dec(bn);
-	xmlChar *xml_serial = (xmlChar *)buff;
-
-	return xml_serial;
-}
-
-xmlChar *jal_get_xml_x509_name(X509_NAME *nm)
-{
-	BIO *bmem  = BIO_new(BIO_s_mem());
-	BUF_MEM *bptr;
-	char *buff = NULL;
-
-	X509_NAME_print_ex(bmem, nm, 0, 0);
-	BIO_get_mem_ptr(bmem, &bptr);
-
-	size_t malloc_amount = bptr->length;
-	buff = (char *) jal_malloc(malloc_amount + 1);
-	memcpy(buff, bptr->data, bptr->length);
-	buff[bptr->length] = 0;
-
-	xmlChar *xml_subject = (xmlChar *)buff;
-
-	BIO_free(bmem);
-
-	return xml_subject;
-}
-
-xmlChar *jal_get_xml_x509_serial(ASN1_INTEGER *i)
-{
-	BIGNUM *bn_buff = NULL;
-
-	bn_buff = ASN1_INTEGER_to_BN(i, NULL);
-	xmlChar *xml_serial = jal_BN2dec_xmlChar(bn_buff);
-
-	BN_free(bn_buff);
-	return xml_serial;
-}
-
 xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 {
 	if (!elem) {

@@ -104,7 +104,7 @@ enum jaldb_status jaldb_insert_audit_record_into_temp(
 	const size_t audit_len);
 
 /**
- * Retrieves a record by serial ID.
+ * Retrieves a record by nonce.
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
@@ -123,11 +123,11 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		struct jaldb_record **rec);
 
 /**
- * Retrieves a temporary record by serial ID and source.
+ * Retrieves a temporary record by nonce and source.
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
- * @param[in] nonce The serial ID (hex string) of the record being retrieved.
+ * @param[in] nonce The nonce (hex string) of the record being retrieved.
  * @param[in] source The source of the record
  * @param[out] rec This will be filled in as a jaldb_record object if the
  * record is found. Note that any segments located on disk will not be opened
@@ -278,7 +278,7 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
  * Remove a record (by nonce) from the database
  *
  * @param[in] ctx The context.
- * @param[in] nonce The serial ID of the record being retrieved.
+ * @param[in] nonce The nonce of the record being retrieved.
  *
  * @return JALDB_OK if the function succeeds or an error code.
  */
@@ -292,7 +292,7 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
  * @param[in] source The source of the record.
- * @param[in] nonce The serial ID of the record being removed.
+ * @param[in] nonce The nonce of the record being removed.
  *
  * @return JALDB_OK if the function succeeds or an error code.
  */

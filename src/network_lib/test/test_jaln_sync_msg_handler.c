@@ -53,7 +53,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 	}
 	if (0 == strcasecmp(header_name, "jal-message")) {
 		return (VortexMimeHeader*) "sync";
-	} else if (0 == strcasecmp(header_name, "jal-serial-id")) {
+	} else if (0 == strcasecmp(header_name, "jal-nonce")) {
 		return (VortexMimeHeader*) "the_nonce_string";
 	}
 	return NULL;
@@ -72,7 +72,7 @@ static VortexMimeHeader * func_name (VortexFrame *frame, const char *header_name
 }
 
 DECL_MIME_HANDLER(fake_get_mime_header_missing_msg, "jal-message", NULL);
-DECL_MIME_HANDLER(fake_get_mime_header_missing_nonce, "jal-serial-id", NULL);
+DECL_MIME_HANDLER(fake_get_mime_header_missing_nonce, "jal-nonce", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_bad_msg, "jal-message", "jal-subscribe")
 
 static axl_bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
