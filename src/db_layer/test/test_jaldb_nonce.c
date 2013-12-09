@@ -28,7 +28,6 @@
  */
 
 #include <db.h>
-#include <openssl/bn.h>
 
 #include <test-dept.h>
 
@@ -40,16 +39,10 @@
 
 #include "jaldb_nonce.h"
 static DB *nonce_db;
-static BIGNUM *bn_one;
-static BIGNUM *bn_two;
-static DBT dbt_one;
-static DBT dbt_two;
 static DBT nonce_dbt1;
 static DBT nonce_dbt2;
 static DBT nonce_dbt3;
 static DBT nonce_dbt4;
-static uint8_t one;
-static uint8_t two;
 
 #define NONCE1 "9b5754ef-ce82-4dd2-af61-d329cc526203_2013-11-20T09:12:34.12345_1234_12345"
 #define NONCE2 "9b5754ef-ce82-4dd2-af61-d329cc526203_2013-11-20T09:12:34.12345_1234_1234567"
@@ -63,18 +56,6 @@ void setup()
 	assert_not_equals((void*) NULL, nonce_db);
 	err = nonce_db->open(nonce_db, NULL, NULL, NULL, DB_BTREE, DB_CREATE, 0600);
 	assert_equals(0, err);
-
-	one = 1;
-	bn_one = BN_bin2bn(&one, sizeof(one), NULL);
-	assert_not_equals((void*) NULL, bn_one);
-	dbt_one.data = &one;
-	dbt_one.size = sizeof(one);
-
-	two = 2;
-	bn_two = BN_bin2bn(&two, sizeof(two), NULL);
-	assert_not_equals((void*) NULL, bn_two);
-	dbt_two.data = &two;
-	dbt_two.size = sizeof(two);
 
 	memset(&nonce_dbt1, 0, sizeof(DBT));
 	nonce_dbt1.data = NONCE1;
@@ -96,54 +77,6 @@ void setup()
 void teardown()
 {
 	nonce_db->close(nonce_db, 0);
-	BN_free(bn_one);
-	BN_free(bn_two);
-}
-
-
-void test_nonce_compare()
-{
-#define BN_MAX_BYTES 64
-	DBT dbt1, dbt2;
-	BIGNUM *bn1p = NULL;
-	BIGNUM *bn2p = NULL;
-	//BN_init(bn1p);
-	//BN_init(bn2p);
-	unsigned char bn1bytes[BN_MAX_BYTES];
-	unsigned char bn2bytes[BN_MAX_BYTES];
-	int err;
-	int bn1size;
-	int bn2size;
-	err = BN_dec2bn(&bn1p, "123456789012343567890123456789012345678901234567890");
-	assert_not_equals(0, err);
-	err = BN_dec2bn(&bn2p, "123456789012343567890123456789012345678901234567891");
-	assert_not_equals(0, err);
-
-	bn1size = BN_num_bytes(bn1p);
-	assert_true((bn1size <= BN_MAX_BYTES));
-	BN_bn2bin(bn1p, bn1bytes);
-	dbt1.data = bn1bytes;
-	dbt1.size = bn1size;
-
-	bn2size = BN_num_bytes(bn2p);
-	assert_true((bn2size <= BN_MAX_BYTES));
-	BN_bn2bin(bn2p, bn2bytes);
-	dbt2.data = bn2bytes;
-	dbt2.size = bn2size;
-
-	err = jaldb_nonce_compare(NULL, &dbt1, &dbt2);
-	assert_true((err < 0));
-
-	err = jaldb_nonce_compare(NULL, &dbt2, &dbt1);
-	assert_true((err > 0));
-
-	err = jaldb_nonce_compare(NULL, &dbt1, &dbt1);
-	assert_equals(0, err);
-
-	BN_free(bn1p);
-	BN_free(bn2p);
-
-#undef BN_MAX_BYTES
 }
 
 // Sanity check that the comparison function matches the Berkeley DB signature.

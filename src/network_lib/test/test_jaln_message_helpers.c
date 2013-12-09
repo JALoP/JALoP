@@ -50,7 +50,7 @@
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n" \
 	"JAL-Message: sync\r\n" \
-	"JAL-Nonce: " nonce_1_str "\r\n\r\n"
+	"JAL-Id: " nonce_1_str "\r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_VERSION \
 	"Content-Type: application/beep+jalop\r\n" \
@@ -249,7 +249,7 @@ static char *output_str;
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: journal-record\r\n" \
-	"JAL-Nonce: " nonce_1_str "\r\n" \
+	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Journal-Length: 30\r\n\r\n"
@@ -258,7 +258,7 @@ static char *output_str;
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: audit-record\r\n" \
-	"JAL-Nonce: " nonce_1_str "\r\n" \
+	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Audit-Length: 30\r\n\r\n"
@@ -267,7 +267,7 @@ static char *output_str;
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
 	"JAL-Message: log-record\r\n" \
-	"JAL-Nonce: " nonce_1_str "\r\n" \
+	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
 	"JAL-Application-Metadata-Length: 20\r\n" \
 	"JAL-Log-Length: 30\r\n\r\n"
@@ -371,7 +371,7 @@ void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly
 {
 	enum jal_status ret = JAL_OK;
 
-	char *correct_msg = "Content-Type: application/beep+jalop\r\nContent-Transfer-Encoding: binary\r\nJAL-Message: journal-resume\r\nJAL-Nonce: 1234562\r\nJAL-Journal-Offset: 47996\r\n\r\n";
+	char *correct_msg = "Content-Type: application/beep+jalop\r\nContent-Transfer-Encoding: binary\r\nJAL-Message: journal-resume\r\nJAL-Id: 1234562\r\nJAL-Journal-Offset: 47996\r\n\r\n";
 
 	char *nonce = "1234562";
 	uint64_t offset = 47996;

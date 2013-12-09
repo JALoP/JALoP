@@ -58,7 +58,7 @@ enum jal_status jaln_process_journal_resume(VortexFrame *frame, char **nonce_out
 		goto err_out;
 	}
 
-	const char *nonce_from_frame = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_NONCE);
+	const char *nonce_from_frame = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_ID);
 	if (!nonce_from_frame) {
 		goto err_out;
 	}

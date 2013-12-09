@@ -27,7 +27,6 @@
  * limitations under the License.
 */
 
-#include <openssl/bn.h>
 #include <db.h>
 #include <string.h>
 

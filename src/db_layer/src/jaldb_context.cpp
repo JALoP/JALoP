@@ -33,7 +33,6 @@
 #include <jalop/jal_status.h>
 #include <inttypes.h> // For PRIu64
 #include <list>
-#include <openssl/bn.h>
 #include <sstream>
 #include <string.h>
 #include <sys/stat.h>
@@ -278,7 +277,7 @@ enum jaldb_status jaldb_xfer_audit(
 	jaldb_context *ctx,
 	std::string &source,
 	const std::string &nonce,
-	std::string &next_nonce)
+	std::string &perm_nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }
@@ -298,7 +297,7 @@ enum jaldb_status jaldb_xfer_log(
 	jaldb_context *ctx,
 	std::string &source,
 	const std::string &nonce,
-	std::string &next_nonce)
+	std::string &perm_nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }
@@ -320,7 +319,7 @@ enum jaldb_status jaldb_xfer_journal(
 	jaldb_context *ctx,
 	const std::string &source,
 	const std::string &nonce,
-	std::string &next_nonce)
+	std::string &perm_nonce)
 {
 	return JALDB_E_NOT_IMPL;
 }

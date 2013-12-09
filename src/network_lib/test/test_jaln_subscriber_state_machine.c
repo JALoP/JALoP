@@ -219,7 +219,7 @@ struct jaln_sub_state fake_state;
 #define LOG_MSG_TYPE "log-record"
 #define AUDIT_MSG_TYPE "audit-record"
 #define JOURNAL_MSG_TYPE "journal-record"
-#define MSG_NONCE_HDR "jal-nonce"
+#define MSG_NONCE_HDR "jal-id"
 #define APP_META_LEN_HDR "jal-application-metadata-length"
 #define SYS_META_LEN_HDR "jal-system-metadata-length"
 #define LOG_LEN_HDR "jal-log-length"

@@ -28,7 +28,6 @@
 
 #include <errno.h>
 #include <jalop/jal_status.h>
-#include <openssl/bn.h>
 #include <string.h>
 
 #include "jal_alloc.h"
@@ -36,8 +35,6 @@
 
 #include "jaldb_nonce.h"
 #include "jaldb_strings.h"
-
-#define NONCE_KEY "next_sid"
 
 int jaldb_nonce_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
 {

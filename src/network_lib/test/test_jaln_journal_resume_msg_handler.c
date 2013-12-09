@@ -54,7 +54,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 	}
 	if (0 == strcasecmp(header_name, "jal-message")) {
 		return (VortexMimeHeader*) "journal-resume";
-	} else if (0 == strcasecmp(header_name, "jal-nonce")) {
+	} else if (0 == strcasecmp(header_name, "jal-id")) {
 		return (VortexMimeHeader*) "the_nonce_string";
 	} else if (0 == strcasecmp(header_name, "jal-journal-offset")) {
 		return (VortexMimeHeader*) "1234567";
@@ -76,7 +76,7 @@ static VortexMimeHeader * func_name (VortexFrame *frame, const char *header_name
 
 DECL_MIME_HANDLER(fake_get_mime_header_missing_msg, "jal-message", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_bad_msg, "jal-message", "jal-sync")
-DECL_MIME_HANDLER(fake_get_mime_header_missing_nonce, "jal-nonce", NULL);
+DECL_MIME_HANDLER(fake_get_mime_header_missing_nonce, "jal-id", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_missing_offset, "jal-journal-offset", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_bad_offset, "jal-journal-offset", "123b123");
 

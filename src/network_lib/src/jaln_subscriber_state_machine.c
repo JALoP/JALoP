@@ -67,7 +67,7 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 	if (!msg || 0 != strcasecmp(msg, session->sub_data->sm->expected_msg)) {
 		goto err_out;
 	}
-	const char *nonce = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_NONCE));
+	const char *nonce = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_ID));
 	if (!nonce) {
 		goto err_out;
 	}

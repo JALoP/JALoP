@@ -54,10 +54,8 @@ extern "C" {
 
 /**
  * Inserts maps a host to their most recently conf'ed nonce.
- * The mapping is only updated when the new (passed in) nonce is
- * sequentially greater than the existing nonce. Regardless of the return
- * value, it is the caller's responsibility to either commit, or abort the
- * transaction.
+ * Regardless of the return value, it is the caller's responsibility
+ * to either commit, or abort the transaction.
  *
  * @param[in] db The database to update
  * @param[in] txn A transaction to associate with the update

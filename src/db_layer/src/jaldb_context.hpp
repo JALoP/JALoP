@@ -201,7 +201,7 @@ enum jaldb_status jaldb_get_last_confed_log_nonce_tmp(
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
  * @param[in] nonce The nonce of the record to be transferred
- * @param[out] next_nonce The new nonce of the record transferred to
+ * @param[out] perm_nonce The new nonce of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -215,7 +215,7 @@ enum jaldb_status jaldb_xfer_audit(
 	jaldb_context *ctx,
 	std::string &source,
 	const std::string &nonce,
-	std::string &next_nonce);
+	std::string &perm_nonce);
 
 /**
  * Transfer log records from the temporary db container to the
@@ -223,7 +223,7 @@ enum jaldb_status jaldb_xfer_audit(
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
  * @param[in] nonce The nonce of the record to be transferred
- * @param[out] next_nonce The new nonce of the record transferred to
+ * @param[out] perm_nonce The new nonce of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -241,7 +241,7 @@ enum jaldb_status jaldb_xfer_log(
 	jaldb_context *ctx,
 	std::string &source,
 	const std::string &nonce,
-	std::string &next_nonce);
+	std::string &perm_nonce);
 
 /**
  * Transfer journal records from the temporary db container to the 
@@ -249,7 +249,7 @@ enum jaldb_status jaldb_xfer_log(
  * @param[in] ctx The jaldb_context to use
  * @param[in] source The host that we received the record from
  * @param[in] nonce The nonce of the record to be transferred
- * @param[out] next_nonce The new nonce of the record transferred to
+ * @param[out] perm_nonce The new nonce of the record transferred to
  * the permanent container.
  * @return
  *  - JALDB_OK on success
@@ -263,7 +263,7 @@ enum jaldb_status jaldb_xfer_journal(
 	jaldb_context *ctx,
 	const std::string &source,
 	const std::string &nonce,
-	std::string &next_nonce);
+	std::string &perm_nonce);
 
 /**
 * Store the last confirmed nonce from the given source.

@@ -48,7 +48,7 @@ enum jal_status jaln_create_journal_resume_msg(const char *nonce,
 		uint64_t offset, char **msg_out, uint64_t *msg_out_len)
 {
 	static const char * const preamble = JALN_MIME_PREAMBLE JALN_MSG_JOURNAL_RESUME JALN_CRLF \
-		JALN_HDRS_NONCE JALN_COLON_SPACE;
+		JALN_HDRS_ID JALN_COLON_SPACE;
 
 	enum jal_status ret = JAL_E_INVAL;
 	char *offset_str = NULL;
@@ -96,7 +96,7 @@ out:
 enum jal_status jaln_create_sync_msg(const char *nonce, char **msg_out, uint64_t *msg_len)
 {
 #define SYNC_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_SYNC JALN_CRLF \
-		JALN_HDRS_NONCE JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF
+		JALN_HDRS_ID JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF
 
 	if (!nonce || !msg_out || *msg_out || !msg_len) {
 		return JAL_E_INVAL;
@@ -484,7 +484,7 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
 	}
 
 #define REC_FORMAT_STR JALN_MIME_PREAMBLE "%s" JALN_CRLF \
-		JALN_HDRS_NONCE JALN_COLON_SPACE "%s" JALN_CRLF \
+		JALN_HDRS_ID JALN_COLON_SPACE "%s" JALN_CRLF \
 		JALN_HDRS_SYS_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		JALN_HDRS_APP_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		"%s" JALN_COLON_SPACE "%" PRIu64 JALN_CRLF JALN_CRLF

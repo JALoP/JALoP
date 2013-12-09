@@ -53,7 +53,7 @@ enum jal_status jaln_process_sync(VortexFrame *frame, char **nonce)
 	if (0 != strcasecmp(msg, JALN_MSG_SYNC)) {
 		return JAL_E_INVAL;
 	}
-	const char *id = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_NONCE);
+	const char *id = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_ID);
 	if (!id) {
 		return JAL_E_INVAL;
 	}

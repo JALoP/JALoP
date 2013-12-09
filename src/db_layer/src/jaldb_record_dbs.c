@@ -71,9 +71,6 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	if (rdbs->record_sent_db) {
 		rdbs->record_sent_db->close(rdbs->record_sent_db, 0);
 	}
-	if (rdbs->nonce_db) {
-		rdbs->nonce_db->close(rdbs->nonce_db, 0);
-	}
 	if (rdbs->primary_db) {
 		rdbs->primary_db->close(rdbs->primary_db, 0);
 	}
@@ -282,20 +279,6 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 			record_sent_name, NULL, DB_BTREE, db_flags, 0);
 	if (db_ret != 0) {
 		JALDB_DB_ERR((rdbs->record_sent_db), db_ret);
-		ret = JALDB_E_DB;
-		goto err_out;
-	}
-
-	db_ret = db_create(&(rdbs->nonce_db), env, 0);
-	if (db_ret != 0) {
-		ret = JALDB_E_DB;
-		goto err_out;
-	}
-
-	db_ret = rdbs->nonce_db->open(rdbs->nonce_db, txn,
-			nonce_name, NULL, DB_BTREE, db_flags, 0);
-	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->nonce_db), db_ret);
 		ret = JALDB_E_DB;
 		goto err_out;
 	}

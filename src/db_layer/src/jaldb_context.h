@@ -127,7 +127,7 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
  *
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, log).
- * @param[in] nonce The nonce (hex string) of the record being retrieved.
+ * @param[in] nonce The nonce of the record being retrieved.
  * @param[in] source The source of the record
  * @param[out] rec This will be filled in as a jaldb_record object if the
  * record is found. Note that any segments located on disk will not be opened
