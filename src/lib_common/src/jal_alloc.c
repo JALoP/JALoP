@@ -87,13 +87,21 @@ char *jal_strndup(const char *str, size_t size)
 	if (0 == size || !str) {
 		return NULL;
 	}
-	char *tmp = malloc(size + 1); 
+
+	char *tmp;
+	size_t len = strlen(str);
+	if (size < len) {
+		len = size;
+	}
+
+	tmp = malloc(len + 1); 
 	if (!tmp) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
+
 	/* binary copy of requested size and null terminate string */
-	memcpy(tmp, str, size);
-	tmp[size+1] = '\0';
+	memcpy(tmp, str, len);
+	tmp[len] = '\0';
 	return(tmp);
 }
 
