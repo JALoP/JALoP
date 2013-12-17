@@ -296,6 +296,11 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	sess->pub_data->msg_no = msg_no;
 	sess->pub_data->nonce = jal_strdup(nonce);
 
+	ret = cbs->on_subscribe(sess, ch_info, type, sess->mode, NULL, ud);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+
 	goto out;
 
 err_out:

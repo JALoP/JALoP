@@ -306,20 +306,29 @@ enum jaldb_status pub_get_next_record(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session");
 		goto out;
 	}
-	while (JALDB_E_NOT_FOUND == ret) {
-		if (!*timestamp) {
-			// Archive mode
-			DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Archive Mode");
-			ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
-		} else {
-			// Live mode
-			DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Live Mode, timestamp: %s",*timestamp);
-			ret = jaldb_next_chronological_record(db_ctx,
-							     db_type,
-							     nonce,
-							     &(ctx->rec),
-							     timestamp);
+	if (ctx->rec) {
+		/* Journal resume, so we already have a record */
+		*nonce = jal_strdup(ctx->rec->network_nonce);
+		if (!*nonce) {
+			ret = JALDB_E_NO_MEM;
+			goto out;
 		}
+		ret = JALDB_OK;
+	} else {
+		while (JALDB_E_NOT_FOUND == ret) {
+			if (!*timestamp) {
+				// Archive mode
+				DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Archive Mode");
+				ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
+			} else {
+				// Live mode
+				DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Live Mode, timestamp: %s",*timestamp);
+				ret = jaldb_next_chronological_record(db_ctx,
+								     db_type,
+								     nonce,
+								     &(ctx->rec),
+								     timestamp);
+			}
 
 		if (JALDB_E_NOT_FOUND == ret) {
 			sleep(global_config.poll_time);
@@ -392,8 +401,7 @@ enum jal_status pub_send_records_feeder(
 			pthread_mutex_t *sub_lock,
 			enum jal_status (*send)(jaln_session *, void *, char *,
 						uint8_t *, uint64_t, uint8_t *,
-						uint64_t, uint64_t, uint64_t,
-						struct jaln_payload_feeder *))
+						uint64_t, uint64_t, struct jaln_payload_feeder *))
 {
 	enum jal_status ret = JAL_E_INVAL;
 	enum jaldb_status db_ret = JALDB_E_INVAL;
@@ -420,25 +428,26 @@ enum jal_status pub_send_records_feeder(
 	pthread_mutex_lock(sub_lock);
 
 	ctx = (struct session_ctx_t *) axl_hash_get(hash, ch_info->hostname);
-	if (ctx) {
+	/*if (ctx) {
 		// The library should prevent this from happening, but just in case.
 		DEBUG_LOG_SUB_SESSION(ch_info, "Subscribe exists, rejecting subscribe request");
 		pthread_mutex_unlock(sub_lock);
 		ret = JAL_E_INVAL;
 		goto out;
-	}
+	}*/
 
-	ctx = (struct session_ctx_t*) calloc(1, sizeof(*ctx));
 	if (!ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to allocate context");
-		pthread_mutex_unlock(sub_lock);
-		ret = JAL_E_NO_MEM;
-		goto out;
+		ctx = (struct session_ctx_t*) calloc(1, sizeof(*ctx));
+		if (!ctx) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to allocate context");
+			pthread_mutex_unlock(sub_lock);
+			ret = JAL_E_NO_MEM;
+			goto out;
+		}
+		DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
+
+		axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 	}
-
-	DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
-
-	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 
 	pthread_mutex_unlock(sub_lock);
 
@@ -473,7 +482,7 @@ enum jal_status pub_send_records_feeder(
 			goto out;
 		}
 		ret = send(sess, NULL, nonce, sys_meta_buf, sys_meta_len,
-				app_meta_buf, app_meta_len, payload_len, 0, &feeder);
+				app_meta_buf, app_meta_len, payload_len, &feeder);
 		if (JAL_OK != ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
@@ -484,7 +493,7 @@ enum jal_status pub_send_records_feeder(
 			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
-				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
+				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent: %d", nonce, db_ret);
 			} else {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
 			}
@@ -876,7 +885,7 @@ void pub_sync(
 		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, nonce);
 		pthread_mutex_unlock(sub_lock);
 		if (JALDB_OK != jaldb_ret) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced", nonce);
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced: %d", nonce, jaldb_ret);
 		} else {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as synced", nonce);
 		}

@@ -63,7 +63,7 @@ enum jal_status jaln_send_record_init(
 
 	memset(rec_info, 0, sizeof(*rec_info));
 	rec_info->type = sess->ch_info->type;
-	rec_info->nonce = seq_id;
+	rec_info->nonce = jal_strdup(seq_id);
 	rec_info->sys_meta_len = sys_meta_len;
 	rec_info->app_meta_len = app_meta_len;
 
@@ -241,7 +241,6 @@ enum jal_status jaln_send_journal(
 			__attribute__((unused)) uint8_t *app_meta_buf,
 			__attribute__((unused)) uint64_t app_meta_len,
 			__attribute__((unused)) uint64_t payload_len,
-			__attribute__((unused)) uint64_t offset,
 			__attribute__((unused)) struct jaln_payload_feeder *feeder)
 {
 	if (NULL == sess || NULL == sess->ch_info || JALN_RTYPE_JOURNAL != sess->ch_info->type) {
@@ -256,7 +255,7 @@ enum jal_status jaln_send_journal(
 					app_meta_buf,
 					app_meta_len,
 					payload_len,
-					offset,
+					sess->pub_data->payload_off,
 					feeder);
 
 }
