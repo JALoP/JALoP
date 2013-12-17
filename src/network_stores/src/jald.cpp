@@ -268,21 +268,16 @@ enum jal_status pub_on_journal_resume(
 	axl_hash_insert_full(gs_journal_subs, strdup(ch_info->hostname), free, ctx, free);
 	pthread_mutex_unlock(&gs_journal_sub_lock);
 	ctx->rec = NULL;
-	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
-	size_t sys_meta_len = 0;
-	size_t app_meta_len = 0;
-	size_t payload_len = 0;
-	// TODO: Fix this to work for journal resume, needs updates to the DB.
-	//jaldb_ret = jaldb_lookup_journal_record(db_ctx, record_info->nonce, system_metadata_buffer, &sys_meta_len,
-				//application_metadata_buffer, &app_meta_len,
-				//&(ctx->journal_fd), &payload_len);
-	if (JALDB_OK != jaldb_ret) {
+	enum jaldb_status db_ret = JALDB_E_INVAL;
+	
+	db_ret = jaldb_get_record(db_ctx, JALDB_RTYPE_JOURNAL, record_info->nonce, &(ctx->rec));
+	if (JALDB_OK != db_ret) {
 		return JAL_E_INVAL;
 	}
-	return JAL_E_INVAL;
-	record_info->app_meta_len = (uint64_t) app_meta_len;
-	record_info->sys_meta_len = (uint64_t) sys_meta_len;
-	record_info->payload_len = (uint64_t) payload_len;
+
+	*system_metadata_buffer = ctx->rec->sys_meta->payload;
+	*application_metadata_buffer = ctx->rec->app_meta->payload;
+
 	return JAL_OK;
 }
 

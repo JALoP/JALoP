@@ -26,14 +26,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 #include <inttypes.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "jsub_callbacks.hpp"
 #include "jsub_db_layer.hpp"
 #include "jal_alloc.h"
+#include "jal_asprintf_internal.h"
 #include "jal_base64_internal.h"
 
 #define DEBUG_LOG(args...) \
@@ -95,6 +99,9 @@ void jsub_on_channel_close(
 		DEBUG_LOG("ON_CHANNEL_CLOSED");
 		DEBUG_LOG("channel_info: %p", channel_info);
 	}
+	/* Commenting out for now, may bring back if we can get
+	 * subscribe to always clean up properly and vortex always
+	 * calls its callbacks
 	if ((-1 != db_payload_fd) &&
 		(JALN_RTYPE_JOURNAL == channel_info->type)) {
 		// Valid file descriptor
@@ -111,7 +118,7 @@ void jsub_on_channel_close(
 			DEBUG_LOG("store journal resume succeeded for host: %s",
 				  channel_info->hostname);
 		}
-	}
+	} */
 }
 
 void jsub_on_connection_close(
@@ -183,33 +190,27 @@ int jsub_get_subscribe_request(
 			rec_type = JALDB_RTYPE_UNKNOWN;
 			break;
 	}
-	// Going to need to store the last confed nonce to the
-	// 	temp container so that it can be retrieved here.
+
 	std::string nonce_out;
-
-	db_err = jaldb_get_last_confed_nonce_temp(jsub_db_ctx, rec_type, ch_info->hostname, nonce);
-	if (JALDB_OK != db_err) {
-		if (jsub_debug) {
-			DEBUG_LOG("last confed nonce not found, defaulting to 0.");
-		}
-		nonce_out = JSUB_INITIAL_NONCE;
-		*nonce = jal_strdup((char *)JSUB_INITIAL_NONCE);
-	}
-	if (jsub_debug) {
-		DEBUG_LOG("record_type: %d nonce: %s",
-			  type, nonce_out.c_str());
-	}
-	ret = JAL_OK;
-
 	if (type == JALN_RTYPE_JOURNAL) {
 		// Retrieve offset if it exists
+		char *full_payload_path = NULL;
 		ret = jsub_get_journal_resume(jsub_db_ctx,
 					ch_info->hostname,
+					nonce,
 					&db_payload_path, *offset);
 		if (0 != ret) {
 			// Default
 			*offset = 0;
 			db_payload_path = NULL;
+		} else {
+			jal_asprintf(&full_payload_path, "%s/%s", jsub_db_ctx->journal_root, db_payload_path);
+			nonce_out = *nonce;
+			db_payload_fd = open(full_payload_path, O_WRONLY | O_APPEND);
+			if (0 > db_payload_fd) {
+				DEBUG_LOG("Failed to open journal payload for resume: %s", strerror(errno));
+			}
+			DEBUG_LOG("Opened payload resume file: %d\n", db_payload_fd);
 		}
 		if ((0 != ret) && jsub_debug) {
 			DEBUG_LOG("failed to retrieve a journal resume for host: %s",
@@ -221,6 +222,28 @@ int jsub_get_subscribe_request(
 		}
 		ret = 0;
 	}
+
+	/* Did not get journal resume, use last confed nonce */
+	if (!*nonce) {
+		// Going to need to store the last confed nonce to the
+		// 	temp container so that it can be retrieved here.
+
+		db_err = jaldb_get_last_confed_nonce_temp(jsub_db_ctx, rec_type, ch_info->hostname, nonce);
+		if (JALDB_OK != db_err) {
+			if (jsub_debug) {
+				DEBUG_LOG("last confed nonce not found, defaulting to 0.");
+			}
+			nonce_out = JSUB_INITIAL_NONCE;
+			*nonce = jal_strdup((char *)JSUB_INITIAL_NONCE);
+		}
+		ret = JAL_OK;
+	}
+
+	if (jsub_debug) {
+		DEBUG_LOG("record_type: %d nonce: %s",
+			  type, nonce_out.c_str());
+	}
+
 	return ret;
 }
 
@@ -341,6 +364,9 @@ int jsub_on_journal(
 					&db_payload_fd,
 					(uint8_t *)buffer,
 					cnt,
+					journal_payload_size,
+					ch_info->hostname,
+					nonce,
 					jsub_debug);
 			if (0 != ret) {
 				return ret;
@@ -367,6 +393,9 @@ int jsub_on_journal(
 					&db_payload_fd,
 					(uint8_t *)buffer,
 					cnt,
+					journal_payload_size,
+					ch_info->hostname,
+					nonce,
 					jsub_debug);
 	}
 	return JAL_OK;

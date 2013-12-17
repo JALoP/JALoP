@@ -456,6 +456,7 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
  *
  * @param[in] ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
+ * @param[in] nonce the nonce of the record being stored.
  * @param[in] path the path to the journal file (should be obtained using to
  *                 jaldb_create_file).
  * @param[in] offset the file offset.
@@ -465,6 +466,7 @@ enum jaldb_status jaldb_insert_journal_metadata_into_temp(
 enum jaldb_status jaldb_store_journal_resume(
 		jaldb_context *ctx,
 		const char *remote_host,
+		const char *nonce,
 		const char *path,
 		uint64_t offset);
 
@@ -475,6 +477,7 @@ enum jaldb_status jaldb_store_journal_resume(
  *
  * @param[in] ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
+ * @param[out] nonce the nonce to the journal record being resumed.
  * @param[out] path the path to the journal file (should be obtained using to
  *                 jaldb_create_file).
  * @param[out] offset the file offset.
@@ -484,6 +487,7 @@ enum jaldb_status jaldb_store_journal_resume(
 enum jaldb_status jaldb_get_journal_resume(
 		jaldb_context *ctx,
 		const char *remote_host,
+		char **nonce,
 		char **path,
 		uint64_t &offset);
 

@@ -214,8 +214,12 @@ int jsub_transfer_journal(
  * @param[in,out] db_payload_path The name of the source of the record.
  * @param[in,out] db_payload_fd The file descriptor used to create/write
  *	to the file.
- * @param[in] payload The buffer data to write to file.
- * @param[in] payload_len The length/size of \p payload.
+ * @param[in] buffer The \pbuffer data of the journal payload to write to file.
+ * @param[in] buffer_len The length/size of \p buffer.
+ * @param[in] processed_len The length/size of the data processed for the 
+ * \p payload so far.
+ * @param[in] hostname The \p hostname we are receiving the journal from.
+ * @param[in] nonce The \p nonce of the record we are receiving.
  * @param[in] debug A flag indicating whether or not debug
  *	information is written to stdout. 0 False, 1 True.
  *
@@ -227,8 +231,11 @@ int jsub_write_journal(
 		jaldb_context *db_ctx,
 		char **db_payload_path,
 		int *db_payload_fd,
-		uint8_t *payload,
-		size_t payload_len,
+		uint8_t *buffer,
+		size_t buffer_len,
+		size_t proccessed_len,
+		const char *hostname,
+		const char *nonce,
 		int debug);
 
 /**
@@ -273,6 +280,7 @@ int jsub_get_last_confed_nonce(
  *
  * @param[in] db_ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
+ * @param[in] nonce the nonce of the record.
  * @param[in] path the path to the journal file (should be obtained using to
  *                 jaldb_create_file).
  * @param[in] offset the file offset.
@@ -282,6 +290,7 @@ int jsub_get_last_confed_nonce(
 int jsub_store_journal_resume(
 		jaldb_context *db_ctx,
 		const char *remote_host,
+		const char *nonce,
 		const char *path,
 		uint64_t offset);
 
@@ -292,6 +301,7 @@ int jsub_store_journal_resume(
  *
  * @param[in] db_ctx the context to use
  * @param[in] remote_host a string to identify where the record came from.
+ * @param[out] nonce the nonce to the journal record.
  * @param[out] path the path to the journal file (should be obtained using to
  *                 jaldb_create_file).
  * @param[out] offset the file offset.
@@ -301,6 +311,7 @@ int jsub_store_journal_resume(
 int jsub_get_journal_resume(
 		jaldb_context *db_ctx,
 		const char *remote_host,
+		char **nonce,
 		char **path,
 		uint64_t &offset);
 

@@ -112,7 +112,6 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 		(session->ch_info->type == JALN_RTYPE_AUDIT)) {
 		session->sub_data->sm->payload_buf = jal_malloc(session->sub_data->sm->payload_sz);
 	}
-	session->sub_data->sm->payload_off = 0;
 
 	memset(session->sub_data->sm->break_buf, 0, session->sub_data->sm->break_sz);
 	session->sub_data->sm->break_off = 0;

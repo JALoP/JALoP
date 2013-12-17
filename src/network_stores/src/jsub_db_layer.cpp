@@ -187,13 +187,16 @@ int jsub_write_journal(
 		jaldb_context *db_ctx,
 		char **db_payload_path,
 		int *db_payload_fd,
-		uint8_t *payload,
-		size_t payload_len,
+		uint8_t *buffer,
+		size_t buffer_len,
+		size_t processed_len,
+		const char *hostname,
+		const char *nonce,
 		int debug)
 {
 	int ret = JAL_OK;
 	int bytes_written;
-	if (!db_payload_path || !payload || !db_ctx){
+	if (!db_payload_path || !buffer || !db_ctx){
 		if (debug) {
 			DEBUG_LOG("Payload, payload_path or db_ctx was NULL!\n");
 		}
@@ -217,12 +220,17 @@ int jsub_write_journal(
 			goto out;
 		}
 	}
-	bytes_written = write(*db_payload_fd, payload, payload_len);
+	bytes_written = write(*db_payload_fd, buffer, buffer_len);
 	if (0 > bytes_written) {
 		if (debug) {
 			DEBUG_LOG("An error occurred while writing journal data to file.\n");
+			perror("write()");
 		}
 		ret = JAL_E_FILE_IO;
+	}
+
+	if (JAL_OK == ret) {
+		ret = jsub_store_journal_resume(db_ctx, hostname, nonce, *db_payload_path, processed_len);
 	}
 out:
 	return ret;
@@ -284,20 +292,22 @@ out:
 int jsub_store_journal_resume(
 		jaldb_context *db_ctx,
 		const char *remote_host,
+		const char *nonce,
 		const char *path,
 		uint64_t offset)
 {
-	return jaldb_store_journal_resume(db_ctx, remote_host,
+	return jaldb_store_journal_resume(db_ctx, remote_host, nonce,
 					  path, offset);
 }
 
 int jsub_get_journal_resume(
 		jaldb_context *db_ctx,
 		const char *remote_host,
+		char **nonce,
 		char **path,
 		uint64_t &offset)
 {
-	return jaldb_get_journal_resume(db_ctx, remote_host,
+	return jaldb_get_journal_resume(db_ctx, remote_host, nonce,
 					path, offset);
 }
 

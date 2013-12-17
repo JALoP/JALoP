@@ -44,6 +44,7 @@
 #define JALDB_NS "jalop:localstore/metadata"
 #define JALDB_NONCE_NAME "nonce"
 #define JALDB_LAST_CONFED_NONCE_NAME "last_confed_nonce"
+#define JALDB_RESUME_NONCE_NAME "resume_nonce"
 #define JALDB_NONCE_DOC_NAME "__next_nonce"
 #define JALDB_CONNECTION_METADATA_DOC_NAME "__connection_metadata"
 #define JALDB_OFFSET_NAME "offsetName"

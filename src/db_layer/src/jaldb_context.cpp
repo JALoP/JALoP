@@ -606,7 +606,7 @@ enum jaldb_status jaldb_store_confed_nonce_temp(
 
 	key.flags = DB_DBT_REALLOC;
 	key.data = jal_strdup(JALDB_LAST_CONFED_NONCE_NAME);
-	key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME);
+	key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME) + 1;
 
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
@@ -696,7 +696,7 @@ enum jaldb_status jaldb_get_last_confed_nonce_temp(
 
 	key.flags = DB_DBT_REALLOC;
 	key.data = jal_strdup(JALDB_LAST_CONFED_NONCE_NAME);
-	key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME);
+	key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME) + 1;
 
 	db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
 	if (0 != db_ret) {
@@ -770,19 +770,199 @@ enum jaldb_status jaldb_get_last_confed_log_nonce_tmp(
 enum jaldb_status jaldb_store_journal_resume(
 		jaldb_context *ctx,
 		const char *remote_host,
+		const char *nonce,
 		const char *path,
 		uint64_t offset)
 {
-	return JALDB_E_NOT_IMPL;
+	int byte_swap;
+	enum jaldb_status ret = JALDB_OK;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	DBT key;
+	DBT offset_val;
+	DBT path_val;
+	DBT nonce_val;
+	DB_TXN *txn;
+
+	if (!ctx || !remote_host || !path) {
+		return JALDB_E_INVAL;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&offset_val, 0, sizeof(offset_val));
+	memset(&path_val, 0, sizeof(path_val));
+	memset(&nonce_val, 0, sizeof(nonce_val));
+	char *offset_buf = (char *)jal_malloc(21);
+	snprintf(offset_buf, 21, "%" PRIu64, offset);
+
+	db_ret = jaldb_get_dbs(ctx, jal_strdup(remote_host), JALDB_RTYPE_JOURNAL, &rdbs);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	offset_val.size = strlen(offset_buf) + 1;
+	offset_val.data = offset_buf;
+
+	key.flags = DB_DBT_REALLOC;
+	key.data = jal_strdup(JALDB_OFFSET_NAME);
+	key.size = strlen(JALDB_OFFSET_NAME) + 1;
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_INVAL;
+			break;
+		}
+
+		db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &offset_val, 0);
+
+		if (0 == db_ret) {
+			path_val.size = strlen(path) + 1;
+			path_val.data = jal_strdup(path);
+
+			key.data = jal_strdup(JALDB_JOURNAL_PATH);
+			key.size = strlen(JALDB_JOURNAL_PATH) + 1;
+			db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &path_val, 0);
+		}
+
+		if (0 == db_ret) {
+			nonce_val.size = strlen(nonce) + 1;
+			nonce_val.data = jal_strdup(nonce);
+
+			key.data = jal_strdup(JALDB_RESUME_NONCE_NAME);
+			key.size = strlen(JALDB_RESUME_NONCE_NAME) + 1;
+			db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &nonce_val, 0);
+		}
+
+		if (0 == db_ret) {
+			db_ret = txn->commit(txn, 0);
+		} else {
+			ret = JALDB_E_DB;
+			txn->abort(txn);
+		}
+		if (0 == db_ret) {
+			break;
+		}
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else {
+			ret = JALDB_E_DB;
+			break;
+		}
+	}
+
+out:
+	free(key.data);
+	free(offset_val.data);
+	free(path_val.data);
+	free(nonce_val.data);
+	return ret;
 }
 
 enum jaldb_status jaldb_get_journal_resume(
 		jaldb_context *ctx,
 		const char *remote_host,
+		char **nonce,
 		char **path,
 		uint64_t &offset)
 {
-	return JALDB_E_NOT_IMPL;
+	int byte_swap;
+	enum jaldb_status ret = JALDB_OK;
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret;
+	DB_TXN *txn = NULL;
+	DBT key;
+	DBT offset_val;
+	DBT path_val;
+	DBT nonce_val;
+
+	if (!ctx || !remote_host) {
+		return JALDB_E_INVAL;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&offset_val, 0, sizeof(offset_val));
+	memset(&path_val, 0, sizeof(path_val));
+	memset(&nonce_val, 0, sizeof(nonce_val));
+
+	db_ret = jaldb_get_dbs(ctx, jal_strdup(remote_host), JALDB_RTYPE_JOURNAL, &rdbs);
+	if (0 != db_ret || !rdbs || !rdbs->metadata_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	key.flags = DB_DBT_REALLOC;
+	key.data = jal_strdup(JALDB_OFFSET_NAME);
+	key.size = strlen(JALDB_OFFSET_NAME) + 1;
+
+	db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	offset_val.flags = DB_DBT_REALLOC;
+	path_val.flags = DB_DBT_REALLOC;
+	nonce_val.flags = DB_DBT_REALLOC;
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		db_ret = rdbs->metadata_db->get(rdbs->metadata_db, txn, &key, &offset_val, DB_DEGREE_2);
+
+		if (0 == db_ret) {
+			key.data = jal_strdup(JALDB_JOURNAL_PATH);
+			key.size = strlen(JALDB_JOURNAL_PATH) + 1;
+			db_ret =  rdbs->metadata_db->get(rdbs->metadata_db, txn, &key, &path_val, DB_DEGREE_2);
+		}
+
+		if (0 == db_ret) {
+			key.data = jal_strdup(JALDB_RESUME_NONCE_NAME);
+			key.size = strlen(JALDB_RESUME_NONCE_NAME) + 1;
+			db_ret =  rdbs->metadata_db->get(rdbs->metadata_db, txn, &key, &nonce_val, DB_DEGREE_2);
+		}
+
+		if (0 == db_ret) {
+			txn->commit(txn, 0);
+			break;
+		}
+
+		txn->abort(txn);
+
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else if (DB_NOTFOUND == db_ret) {
+			ret = JALDB_E_NOT_FOUND;
+			goto out;
+		}
+		// some other error
+		ret = JALDB_E_DB;
+		goto out;
+	}
+
+	if(0 > sscanf(jal_strdup((char*)offset_val.data), "%" PRIu64, &offset)) {
+		ret = JALDB_E_CORRUPTED;
+	}
+	*path = jal_strdup((char*)path_val.data);
+	*nonce = jal_strdup((char*)nonce_val.data);
+
+out:
+	free(key.data);
+	free(offset_val.data);
+	free(path_val.data);
+	free(nonce_val.data);
+	return ret;
 }
 
 enum jaldb_status jaldb_get_journal_document_list(

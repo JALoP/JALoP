@@ -161,7 +161,7 @@ void jaln_session_destroy(jaln_session **psession) {
 		axl_list_free(sess->dgst_list);
 	}
 	jaln_channel_info_destroy(&sess->ch_info);
-	jaln_ctx_remove_session(sess->jaln_ctx, sess);
+	jaln_ctx_remove_session_no_lock(sess->jaln_ctx, sess);
 	jaln_ctx_unref(sess->jaln_ctx);
 	free(sess);
 	*psession = NULL;

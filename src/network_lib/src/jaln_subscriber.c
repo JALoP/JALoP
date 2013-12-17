@@ -320,6 +320,7 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 	if (0 == strlen(nonce)) {
 		goto err_out;
 	}
+	session->sub_data->sm->payload_off = offset;
 
 	uint64_t msg_len = 0;
 	/* msg allocated with this call */
