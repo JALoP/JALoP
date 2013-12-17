@@ -340,6 +340,7 @@ void jaln_pub_feeder_on_finished(__attribute__((unused)) VortexChannel *chan,
 	struct jaln_publisher_callbacks *pub_cbs = sess->jaln_ctx->pub_callbacks;
 
 	pub_cbs->on_record_complete(sess, ch_info, type, pd->nonce, sess->jaln_ctx->user_data);
+	pd->payload_off = 0;
 
 	if (!sess->errored) {
 		if (sess->closing) {

@@ -202,7 +202,7 @@ enum jal_status jaln_send_record_feeder(
 
 #define BUF_SIZE (4*1024)
 	uint8_t buf[BUF_SIZE];
-	uint64_t left_to_process = offset;
+	uint64_t left_to_process = (offset < payload_len) ? offset : 0;
 	offset = 0;
 
 	while (left_to_process != 0) {
