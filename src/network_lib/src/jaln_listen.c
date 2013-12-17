@@ -91,6 +91,9 @@ axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 	session->jaln_ctx = ctx;
 	session->ch_info->hostname = jal_strdup(server_name);
 	if (JAL_OK != jaln_ctx_add_session_no_lock(ctx, session)) {
+		// We're holding the ctx lock, so we need to release it so jaln_session_unref can get it
+
+		vortex_mutex_unlock(&ctx->lock);
 		jaln_session_unref(session);
 		return axl_false;
 	}

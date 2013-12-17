@@ -251,6 +251,12 @@ VortexChannel *fake_vortex_channel_new(
 	return (VortexChannel*) 0xbadf00d;
 }
 
+VortexConnection *fake_vortex_channel_get_connection(
+		__attribute__((unused)) VortexChannel *channel)
+{
+	return (VortexConnection*)0xbadf00d;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
@@ -261,6 +267,7 @@ void setup()
 	replace_function(vortex_channel_new, fake_vortex_channel_new);
 	replace_function(vortex_connection_new, fake_vortex_connection_new);
 	replace_function(vortex_connection_is_ok, fake_vortex_connection_is_ok);
+	replace_function(vortex_channel_get_connection, fake_vortex_channel_get_connection);
 	replace_function(jaln_publisher_callbacks_is_valid, fake_publisher_callbacks_is_valid);
 	replace_function(jaln_connection_callbacks_is_valid, fake_connection_callbacks_is_valid);
 	calc_dgsts = jaln_digest_info_list_create();
@@ -452,12 +459,15 @@ void test_configure_pub_session_works()
 {
 	enum jal_status ret;
 
+	replace_function(vortex_connection_set_on_close_full, fake_vortex_connection_set_on_close_full);
 	ret = jaln_configure_pub_session((VortexChannel *)0xbadf00d, sess);
 	assert_equals(JAL_OK, ret);
 	assert_pointer_equals((void*) 0xbadf00d, sess->rec_chan);
 	assert_equals(FAKE_CHAN_NUM, sess->rec_chan_num);
 	assert_equals(JALN_ROLE_PUBLISHER, sess->role);
 	assert_not_equals((void*) NULL, sess->pub_data);
+
+	restore_function(vortex_connection_set_on_close_full);
 }
 
 void test_jaln_publisher_init_reply_frame_handler_fails_with_invalid_frame()

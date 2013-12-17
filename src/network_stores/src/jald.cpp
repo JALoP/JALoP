@@ -327,11 +327,12 @@ enum jaldb_status pub_get_next_record(
 		}
 
 		if (JALDB_E_NOT_FOUND == ret) {
+			sleep(global_config.poll_time);
+
 			if (JAL_OK != jaln_session_is_ok(sess)) {
-				ret = JALDB_E_INVAL;
+				ret = JALDB_E_NETWORK_DISCONNECTED;
 				goto out;
 			}
-			sleep(global_config.poll_time);
 		}
 	}
 
@@ -468,6 +469,10 @@ enum jal_status pub_send_records_feeder(
 				ret = JAL_OK;
 				goto out;
 			}
+			if (JALDB_E_NETWORK_DISCONNECTED == db_ret) {
+				ret = JAL_E_NOT_CONNECTED;
+				goto out;
+			}
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record (%d)", db_ret);
 			ret = JAL_E_INVAL;
 			goto out;
@@ -574,6 +579,10 @@ enum jal_status pub_send_records(
 		if (JALDB_OK != db_ret) {
 			if (JALDB_E_NOT_FOUND == db_ret) {
 				ret = JAL_OK;
+				goto out;
+			}
+			if (JALDB_E_NETWORK_DISCONNECTED == db_ret) {
+				ret = JAL_E_NOT_CONNECTED;
 				goto out;
 			}
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record (%d)", db_ret);
@@ -734,7 +743,10 @@ enum jal_status pub_on_subscribe(
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
-		pthread_create(&journal_thread, &attr, pub_send_journal, &data);
+		if(0 != pthread_create(&journal_thread, &attr, pub_send_journal, &data)) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
+			return JAL_E_INVAL;
+		}
 
 		pthread_attr_destroy(&attr);
 
@@ -746,7 +758,10 @@ enum jal_status pub_on_subscribe(
 		}
 		break;
 	case JALN_RTYPE_AUDIT:
-		pthread_create(&audit_thread, &attr, pub_send_audit, &data);
+		if(0 != pthread_create(&audit_thread, &attr, pub_send_audit, &data)) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
+			return JAL_E_INVAL;
+		}
 
 		pthread_attr_destroy(&attr);
 
@@ -758,7 +773,10 @@ enum jal_status pub_on_subscribe(
 		}
 		break;
 	case JALN_RTYPE_LOG:
-		pthread_create(&log_thread, &attr, pub_send_log, &data);
+		if (0 != pthread_create(&log_thread, &attr, pub_send_log, &data)) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
+			return JAL_E_INVAL;
+		}
 
 		pthread_attr_destroy(&attr);
 
@@ -776,7 +794,7 @@ enum jal_status pub_on_subscribe(
 
 	ret = *((enum jal_status *) status);
 	free(status);
-	if (JAL_OK != ret) {
+	if (JAL_OK != ret && JAL_E_NOT_CONNECTED != ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed while sending records to subscriber");
 	}
 

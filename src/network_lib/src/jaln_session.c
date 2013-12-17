@@ -395,7 +395,8 @@ enum jal_status jaln_session_is_ok(jaln_session *sess)
 	if (!sess->rec_chan) {
 		return JAL_E_NOT_CONNECTED;
 	}
-	if (!vortex_connection_is_ok(vortex_channel_get_connection(sess->rec_chan), axl_false)) {
+	VortexConnection *conn = vortex_channel_get_connection(sess->rec_chan);
+	if (!vortex_connection_is_ok(conn, axl_false)) {
 		return JAL_E_NOT_CONNECTED;
 	}
 	return JAL_OK;

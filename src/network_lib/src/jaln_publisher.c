@@ -232,6 +232,8 @@ void jaln_pub_channel_frame_handler(
 		VortexFrame *frame,
 		axlPointer user_data)
 {
+	enum jal_status ret = JAL_E_INVAL;
+
 	jaln_session *sess = (jaln_session*) user_data;
 	if (!sess || !sess->ch_info) {
 		goto err_out;
@@ -242,7 +244,8 @@ void jaln_pub_channel_frame_handler(
 	int msg_no = vortex_frame_get_msgno(frame);
 	const char *msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
 	if (0 == strcasecmp(msg, JALN_MSG_SUBSCRIBE)) {
-		if (JAL_OK != jaln_pub_handle_subscribe(sess, chan, frame, msg_no)) {
+		ret = jaln_pub_handle_subscribe(sess, chan, frame, msg_no);
+		if (JAL_OK != ret && JAL_E_NOT_CONNECTED != ret) {
 			goto err_out;
 		}
 	} else if (0 == strcasecmp(msg, JALN_MSG_JOURNAL_RESUME) && (JALN_RTYPE_JOURNAL == sess->ch_info->type)) {
@@ -324,7 +327,7 @@ enum jal_status jaln_pub_handle_subscribe(jaln_session *sess, VortexChannel *cha
 
 	pd->msg_no = msg_no;
 	ret = cbs->on_subscribe(sess, ch_info, type, sess->mode, NULL, user_data);
-	if (JAL_OK != ret) {
+	if (JAL_OK != ret && JAL_E_NOT_CONNECTED != ret) {
 		goto err_out;
 	}
 
@@ -337,6 +340,35 @@ out:
 	return ret;
 }
 
+axl_bool jaln_finish_session_helper(__attribute__((unused)) axlPointer key,
+				    axlPointer data,
+				    axlPointer user_data)
+{
+	axlList *sessions = (axlList *) data;
+	jaln_context *ctx = user_data;
+	int i;
+	jaln_session *sess = NULL;
+
+	int sess_list_length = axl_list_length(sessions);
+
+	for (i = 0; i < sess_list_length; i++) {
+		sess = (jaln_session *) axl_list_get_nth(sessions, i);
+
+		vortex_mutex_lock(&sess->lock);
+		if (!sess || !sess->pub_data) {
+			continue;
+		}
+
+		vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
+		jaln_session_set_errored_no_lock(sess);
+
+		jaln_ctx_remove_session(ctx,sess);
+		vortex_mutex_unlock(&sess->lock);
+	}
+
+	return axl_false;
+}
+
 void jaln_publisher_on_connection_close(__attribute__((unused)) VortexConnection *conn,
 					axlPointer data)
 {
@@ -347,6 +379,9 @@ void jaln_publisher_on_connection_close(__attribute__((unused)) VortexConnection
 	}
 
 	jaln_context *ctx = jal_conn->jaln_ctx;
+
+	axl_hash_foreach(ctx->sessions_by_conn, jaln_finish_session_helper, ctx);
+	vortex_connection_shutdown(conn);
 
 	vortex_mutex_lock(&ctx->lock);
 	ctx->conn_callbacks->on_connection_close(jal_conn, ctx->user_data);
@@ -543,6 +578,14 @@ enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, jaln_ses
 	session->role = JALN_ROLE_PUBLISHER;
 	session->pub_data = jaln_pub_data_create();
 	vortex_channel_set_received_handler(chan, jaln_pub_channel_frame_handler, session);
+
+	VortexConnection *v_conn = vortex_channel_get_connection(chan);
+
+	struct jaln_connection *jconn = jaln_connection_create();
+	jconn->jaln_ctx = session->jaln_ctx;
+	jconn->v_conn = v_conn;
+
+	vortex_connection_set_on_close_full(v_conn, jaln_publisher_on_connection_close, jconn);
 	return JAL_OK;
 }
 
