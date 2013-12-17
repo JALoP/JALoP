@@ -180,7 +180,6 @@ int jsub_insert_log(
 		DEBUG_LOG("Failed to insert log into temp!\n");
 	}
 out:
-
 	return ret;
 }
 

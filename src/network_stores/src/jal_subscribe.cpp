@@ -639,6 +639,7 @@ err:
 		}
 	}
 	jaln_context_destroy(&net_ctx);
+	free(conn);
 	if (global_args.debug_flag) {
 		printf("Subscribe thread exited!");
 	}

@@ -262,7 +262,7 @@ static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp)
 				iter++) {
 			jaldb_destroy_record_dbs(&(iter->second));
 		}
-		free(temp);
+		delete temp;
 	}
 }
 
@@ -382,7 +382,6 @@ enum jaldb_status jaldb_mark_sent(
 
 	key.flags = DB_DBT_REALLOC;
 	key.size = strlen(nonce)+1;
-	key.data = jal_malloc(key.size);
 	key.data = jal_strdup(nonce);
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
@@ -497,7 +496,6 @@ enum jaldb_status jaldb_mark_synced(
 
 	key.flags = DB_DBT_REALLOC;
 	key.size = strlen(nonce)+1;
-	key.data = jal_malloc(key.size);
 	key.data = jal_strdup(nonce);
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
@@ -1613,7 +1611,6 @@ enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx,
 	memset(&key, 0, sizeof(key));
 
 	key.flags = DB_DBT_REALLOC;
-	key.data = jal_malloc(strlen(nonce)+1);
 	key.size = strlen(nonce)+1;
 	key.data = jal_strdup(nonce);
 

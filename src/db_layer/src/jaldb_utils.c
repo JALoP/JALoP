@@ -280,7 +280,10 @@ char *jaldb_gen_timestamp()
 	tz_offset[3] = ':';
 
 	strcat(ftime, tz_offset);
+
 	free(tz_offset);
+	free(tm);
+	free(tv);
 
 	return ftime;
 }

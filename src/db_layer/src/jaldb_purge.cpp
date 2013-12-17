@@ -101,6 +101,7 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		return JALDB_E_INVAL;
 	}
 
+	free(filename);
 	return JALDB_OK;
 
 }

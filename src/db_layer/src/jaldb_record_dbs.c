@@ -334,6 +334,8 @@ out:
 	free(timestamp_tz_name);
 	free(timestamp_no_tz_name);
 	free(record_uuid_name);
+	free(nonce_timestamp_name);
+	free(record_sent_name);
 	free(nonce_name);
 	return ret;
 }

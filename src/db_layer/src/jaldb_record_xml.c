@@ -429,5 +429,8 @@ enum jal_status jaldb_xml_to_sys_metadata(uint8_t *xml, size_t xml_len, struct j
 
 	xmlSAXUserParseMemory(&sys_meta_handler,sp_user_data,(char*)xml,(int)xml_len);
 
-	return sp_user_data->ret;
+	enum jal_status ret;
+	ret = sp_user_data->ret;
+	free(sp_user_data);
+	return ret;
 }

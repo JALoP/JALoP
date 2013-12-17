@@ -298,13 +298,14 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, jaln_ses
 void jaln_subscriber_send_subscribe_request(jaln_session *session)
 {
 	char *msg = NULL;
+	char *nonce = NULL;
 
 	if (!session || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks ||
 			!session->ch_info || !session->rec_chan) {
 		goto err_out;
 	}
-	char *nonce = NULL;
 	uint64_t offset = 0;
+	/* nonce allocated with this call */
 	enum jal_status ret = session->jaln_ctx->sub_callbacks->get_subscribe_request(
 			session,
 			session->ch_info,
@@ -321,6 +322,7 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 	}
 
 	uint64_t msg_len = 0;
+	/* msg allocated with this call */
 	if ((JALN_RTYPE_JOURNAL == session->ch_info->type) && (0 < offset)) {
 		if (JAL_OK != jaln_create_journal_resume_msg(nonce, offset, &msg, &msg_len)) {
 			goto err_out;
@@ -342,6 +344,7 @@ err_out:
 		vortex_channel_close_full(session->rec_chan, jaln_session_notify_close, session);
 	}
 out:
+	free(nonce);
 	free(msg);
 	return;
 }
