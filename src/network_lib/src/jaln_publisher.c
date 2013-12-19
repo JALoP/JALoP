@@ -360,6 +360,7 @@ axl_bool jaln_finish_session_helper(__attribute__((unused)) axlPointer key,
 		}
 
 		vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
+		vortex_cond_signal(&sess->wait);
 		jaln_session_set_errored_no_lock(sess);
 
 		jaln_ctx_remove_session(ctx,sess);
