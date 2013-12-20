@@ -61,6 +61,7 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 			sess->dgst_list =
 				axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 			jaln_send_digest_and_sync_no_lock(sess, dgst_list);
+			axl_list_free(dgst_list);
 		}
 	}
 	return NULL;
