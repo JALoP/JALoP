@@ -316,14 +316,7 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 
 	vortex_channel_send_ans_rpy_from_feeder(sess->rec_chan, feeder, pd->msg_no);
 
-	//vortex_cond_wait(&sess->wait, &sess->wait_lock);
-	while (!vortex_payload_feeder_is_finished(feeder)) {
-	       ret = jaln_session_is_ok(sess);
-	       if (JAL_OK != ret) {
-		       break;
-	       }
-	       sleep(1);
-	}
+	vortex_cond_wait(&sess->wait, &sess->wait_lock);
 	vortex_mutex_unlock(&sess->wait_lock);
 out:
 	return ret;

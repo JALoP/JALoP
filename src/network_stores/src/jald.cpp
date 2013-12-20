@@ -306,7 +306,7 @@ enum jaldb_status pub_get_next_record(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session");
 		goto out;
 	}
-	if (ctx->rec) {
+	if ((ctx->rec) && (JALDB_RTYPE_JOURNAL == db_type)) {
 		/* Journal resume, so we already have a record */
 		*nonce = jal_strdup(ctx->rec->network_nonce);
 		if (!*nonce) {
@@ -330,12 +330,13 @@ enum jaldb_status pub_get_next_record(
 								     timestamp);
 			}
 
-		if (JALDB_E_NOT_FOUND == ret) {
-			sleep(global_config.poll_time);
+			if (JALDB_E_NOT_FOUND == ret) {
+				sleep(global_config.poll_time);
 
-			if (JAL_OK != jaln_session_is_ok(sess)) {
-				ret = JALDB_E_NETWORK_DISCONNECTED;
-				goto out;
+				if (JAL_OK != jaln_session_is_ok(sess)) {
+					ret = JALDB_E_NETWORK_DISCONNECTED;
+					goto out;
+				}
 			}
 		}
 	}
