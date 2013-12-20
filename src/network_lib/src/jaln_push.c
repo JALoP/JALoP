@@ -40,8 +40,7 @@
  */
 enum jal_status jaln_send_record_init(
 			jaln_session *sess,
-			__attribute__((unused)) void *nonce,
-			char *seq_id,
+			void *nonce,
 			uint8_t *sys_meta_buf,
 			uint64_t sys_meta_len, 
 			uint8_t *app_meta_buf,
@@ -55,7 +54,7 @@ enum jal_status jaln_send_record_init(
 
 	pub_data = sess->pub_data;
 
-	pub_data->nonce = jal_strdup(seq_id);
+	pub_data->nonce = nonce;
 	pub_data->sys_meta = sys_meta_buf;
 	pub_data->sys_meta_sz = sys_meta_len;
 	pub_data->app_meta = app_meta_buf;
@@ -63,7 +62,7 @@ enum jal_status jaln_send_record_init(
 
 	memset(rec_info, 0, sizeof(*rec_info));
 	rec_info->type = sess->ch_info->type;
-	rec_info->nonce = jal_strdup(seq_id);
+	rec_info->nonce = jal_strdup(nonce);
 	rec_info->sys_meta_len = sys_meta_len;
 	rec_info->app_meta_len = app_meta_len;
 
@@ -91,8 +90,7 @@ out:
  */
 enum jal_status jaln_send_record(
 			jaln_session *sess,
-			__attribute__((unused)) void *nonce,
-			char *seq_id,
+			char *nonce,
 			uint8_t *sys_meta_buf,
 			uint64_t sys_meta_len, 
 			uint8_t *app_meta_buf,
@@ -100,7 +98,7 @@ enum jal_status jaln_send_record(
 			uint8_t *payload_buf,
 			uint64_t payload_len)
 {
-	if (!sess || !seq_id || !sys_meta_buf || ((payload_len != 0) && !payload_buf)) {
+	if (!sess || !nonce || !sys_meta_buf || ((payload_len != 0) && !payload_buf)) {
 		return JAL_E_INVAL;
 	}
 
@@ -118,7 +116,6 @@ enum jal_status jaln_send_record(
 
 	ret = jaln_send_record_init(sess,
 				nonce,
-				seq_id,
 				sys_meta_buf,
 				sys_meta_len,
 				app_meta_buf,
@@ -158,8 +155,7 @@ out:
  */
 enum jal_status jaln_send_record_feeder(
 			jaln_session *sess,
-			void *nonce,
-			char *seq_id,
+			char *nonce,
 			uint8_t *sys_meta_buf,
 			uint64_t sys_meta_len, 
 			uint8_t *app_meta_buf,
@@ -168,7 +164,7 @@ enum jal_status jaln_send_record_feeder(
 			uint64_t offset,
 			struct jaln_payload_feeder *feeder)
 {
-	if (!sess || !seq_id || !sys_meta_buf || !app_meta_buf || !feeder) {
+	if (!sess || !nonce || !sys_meta_buf || !app_meta_buf || !feeder) {
 		return JAL_E_INVAL_PARAM;
 	}
 
@@ -186,7 +182,6 @@ enum jal_status jaln_send_record_feeder(
 
 	ret = jaln_send_record_init(sess,
 				nonce,
-				seq_id,
 				sys_meta_buf,
 				sys_meta_len,
 				app_meta_buf,
@@ -234,8 +229,7 @@ out:
 
 enum jal_status jaln_send_journal(
 			jaln_session *sess,
-			__attribute__((unused)) void *nonce,
-			__attribute__((unused)) char *seq_id,
+			__attribute__((unused)) char *nonce,
 			__attribute__((unused)) uint8_t *sys_meta_buf,
 			__attribute__((unused)) uint64_t sys_meta_len, 
 			__attribute__((unused)) uint8_t *app_meta_buf,
@@ -249,7 +243,6 @@ enum jal_status jaln_send_journal(
 
 	return jaln_send_record_feeder(sess,
 					nonce,
-					seq_id,
 					sys_meta_buf,
 					sys_meta_len, 
 					app_meta_buf,
@@ -262,8 +255,7 @@ enum jal_status jaln_send_journal(
 
 enum jal_status jaln_send_audit(
 			jaln_session *sess,
-			__attribute__((unused)) void *nonce,
-			__attribute__((unused)) char *seq_id,
+			__attribute__((unused)) char *nonce,
 			__attribute__((unused)) uint8_t *sys_meta_buf,
 			__attribute__((unused)) uint64_t sys_meta_len, 
 			__attribute__((unused)) uint8_t *app_meta_buf,
@@ -277,7 +269,6 @@ enum jal_status jaln_send_audit(
 
 	return jaln_send_record(sess,
 				nonce,
-				seq_id,
 				sys_meta_buf,
 				sys_meta_len,
 				app_meta_buf,
@@ -288,8 +279,7 @@ enum jal_status jaln_send_audit(
 
 enum jal_status jaln_send_log(
 			jaln_session *sess,
-			__attribute__((unused)) void *nonce,
-			__attribute__((unused)) char *seq_id,
+			__attribute__((unused)) char *nonce,
 			__attribute__((unused)) uint8_t *sys_meta_buf,
 			__attribute__((unused)) uint64_t sys_meta_len, 
 			__attribute__((unused)) uint8_t *app_meta_buf,
@@ -303,7 +293,6 @@ enum jal_status jaln_send_log(
 
 	return jaln_send_record(sess,
 				nonce,
-				seq_id,
 				sys_meta_buf,
 				sys_meta_len,
 				app_meta_buf,

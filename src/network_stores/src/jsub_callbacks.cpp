@@ -99,26 +99,6 @@ void jsub_on_channel_close(
 		DEBUG_LOG("ON_CHANNEL_CLOSED");
 		DEBUG_LOG("channel_info: %p", channel_info);
 	}
-	/* Commenting out for now, may bring back if we can get
-	 * subscribe to always clean up properly and vortex always
-	 * calls its callbacks
-	if ((-1 != db_payload_fd) &&
-		(JALN_RTYPE_JOURNAL == channel_info->type)) {
-		// Valid file descriptor
-		uint64_t offset = jsub_get_offset(db_payload_fd);
-		int rc = jsub_store_journal_resume(
-					jsub_db_ctx,
-					channel_info->hostname,
-					db_payload_path, offset);
-		if ((0 != rc)  && jsub_debug) {
-			DEBUG_LOG("store journal resume failed for host: %s",
-				  channel_info->hostname);
-		}
-		if ((0 == rc)  && jsub_debug) {
-			DEBUG_LOG("store journal resume succeeded for host: %s",
-				  channel_info->hostname);
-		}
-	} */
 }
 
 void jsub_on_connection_close(

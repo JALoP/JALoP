@@ -795,7 +795,7 @@ enum jaldb_status jaldb_store_journal_resume(
 	char *offset_buf = (char *)jal_malloc(21);
 	snprintf(offset_buf, 21, "%" PRIu64, offset);
 
-	db_ret = jaldb_get_dbs(ctx, jal_strdup(remote_host), JALDB_RTYPE_JOURNAL, &rdbs);
+	db_ret = jaldb_get_dbs(ctx, remote_host, JALDB_RTYPE_JOURNAL, &rdbs);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
@@ -892,7 +892,7 @@ enum jaldb_status jaldb_get_journal_resume(
 	memset(&path_val, 0, sizeof(path_val));
 	memset(&nonce_val, 0, sizeof(nonce_val));
 
-	db_ret = jaldb_get_dbs(ctx, jal_strdup(remote_host), JALDB_RTYPE_JOURNAL, &rdbs);
+	db_ret = jaldb_get_dbs(ctx, remote_host, JALDB_RTYPE_JOURNAL, &rdbs);
 	if (0 != db_ret || !rdbs || !rdbs->metadata_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
@@ -951,7 +951,7 @@ enum jaldb_status jaldb_get_journal_resume(
 		goto out;
 	}
 
-	if(0 > sscanf(jal_strdup((char*)offset_val.data), "%" PRIu64, &offset)) {
+	if(0 > sscanf((char*)offset_val.data, "%" PRIu64, &offset)) {
 		ret = JALDB_E_CORRUPTED;
 	}
 	*path = jal_strdup((char*)path_val.data);

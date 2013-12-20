@@ -121,11 +121,11 @@ enum jal_status pub_on_journal_resume(
 }
 
 enum jal_status __send_record(jaln_session *sess, char *nonce, uint8_t *buf, uint64_t buf_len, 
-			enum jal_status (*send)(jaln_session *, void *, char *,
-						uint8_t *, uint64_t, uint8_t *,
-						uint64_t, uint8_t *, uint64_t))
+			enum jal_status (*send)(jaln_session *, char *, uint8_t *,
+						uint64_t, uint8_t *, uint64_t,
+						uint8_t *, uint64_t))
 {
-	enum jal_status ret = send(sess, NULL, nonce, m_sys_meta_buf, m_sys_meta_buf_len,
+	enum jal_status ret = send(sess, nonce, m_sys_meta_buf, m_sys_meta_buf_len,
 				m_app_meta_buf, m_app_meta_buf_len, buf, buf_len);
 
 	return ret;

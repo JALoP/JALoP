@@ -306,8 +306,7 @@ enum jal_status jaln_session_is_ok(jaln_session *sess);
  * is in charge of freeing the allocated resources.
  *
  * @param[in] sess The session containg the connection and subscriber information
- * @param[in] nonce Used to construct a mapping to the current sequence id
- * @param[in] seq_id The current record sequence id
+ * @param[in] nonce The current record sequence id
  * @param[in] sys_meta_buf The buffer containing the system metadata
  * @param[in] sys_meta_len The length of the system metadata buffer
  * @param[in] app_meta_buf The buffer containing the application metadata
@@ -319,8 +318,7 @@ enum jal_status jaln_session_is_ok(jaln_session *sess);
  */
 enum jal_status jaln_send_journal(
 			jaln_session *sess,
-			void *nonce,
-			char *seq_id,
+			char *nonce,
 			uint8_t *sys_meta_buf,
 			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
@@ -337,8 +335,7 @@ enum jal_status jaln_send_journal(
  * is in charge of freeing the allocated resources.
  *
  * @param[in] sess The session containg the connection and subscriber information
- * @param[in] nonce Used to construct a mapping to the current sequence id
- * @param[in] seq_id The current record sequence id
+ * @param[in] nonce The current record sequence id
  * @param[in] sys_meta_buf The buffer containing the system metadata
  * @param[in] sys_meta_len The length of the system metadata buffer
  * @param[in] app_meta_buf The buffer containing the application metadata
@@ -350,8 +347,7 @@ enum jal_status jaln_send_journal(
  */
 enum jal_status jaln_send_audit(
 			jaln_session *sess,
-			void *nonce,
-			char *seq_id,
+			char *nonce,
 			uint8_t *sys_meta_buf,
 			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
@@ -368,8 +364,7 @@ enum jal_status jaln_send_audit(
  * is in charge of freeing the allocated resources.
  *
  * @param[in] sess The session containing the connection and subscriber information
- * @param[in] nonce Used to construct a mapping to the current sequence id
- * @param[in] seq_id The current record sequence id
+ * @param[in] nonce The current record sequence id
  * @param[in] sys_meta_buf The buffer containing the system metadata
  * @param[in] sys_meta_len The length of the system metadata buffer
  * @param[in] app_meta_buf The buffer containing the application metadata
@@ -381,8 +376,7 @@ enum jal_status jaln_send_audit(
  */
 enum jal_status jaln_send_log(
 			jaln_session *sess,
-			void *nonce,
-			char *seq_id,
+			char *nonce,
 			uint8_t *sys_meta_buf,
 			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,

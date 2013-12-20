@@ -99,9 +99,9 @@ enum jal_status on_journal_resume(
 	return JAL_E_INVAL;
 }
 enum jal_status __send_record(jaln_session *sess, char *nonce, 
-			enum jal_status (*send)(jaln_session *, void *, char *,
-						uint8_t *, uint64_t, uint8_t *,
-						uint64_t, uint8_t *, uint64_t))
+			enum jal_status (*send)(jaln_session *, char *, uint8_t *,
+						uint64_t, uint8_t *,uint64_t,
+						uint8_t *, uint64_t))
 {
 	uint8_t *sys_meta_buf = NULL;
 	uint64_t sys_meta_len = 0;
@@ -117,7 +117,7 @@ enum jal_status __send_record(jaln_session *sess, char *nonce,
 	payload_buf = (uint8_t*) strdup("payload_buffer");
 	payload_len = strlen("payload_buffer");
 
-	enum jal_status ret = send(sess, NULL, nonce, sys_meta_buf, sys_meta_len,
+	enum jal_status ret = send(sess, nonce, sys_meta_buf, sys_meta_len,
 				app_meta_buf, app_meta_len, payload_buf, payload_len);
 
 	free(sys_meta_buf);

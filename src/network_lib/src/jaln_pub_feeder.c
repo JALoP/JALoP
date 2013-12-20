@@ -29,7 +29,6 @@
  */
 
 #include <limits.h>
-#include <unistd.h>
 
 #include "jal_alloc.h"
 #include "jaln_pub_feeder.h"
