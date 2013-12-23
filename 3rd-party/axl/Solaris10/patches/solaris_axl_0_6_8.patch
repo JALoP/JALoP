@@ -1,0 +1,18 @@
+diff axl-0.6.8.b5097.g5163/src//axl_config.h orig/axl-0.6.8.b5097.g5163/src//axl_config.h
+27c27
+< #define INT_TO_PTR(integer)   ((axlPointer)  ((int)integer))
+---
+> #define INT_TO_PTR(integer)   ((axlPointer) (long) ((int)integer))
+40c40
+< #define PTR_TO_INT(ptr) ((int)  (ptr))
+---
+> #define PTR_TO_INT(ptr) ((int) (long) (ptr))
+diff axl-0.6.8.b5097.g5163/src//axl_log.c orig/axl-0.6.8.b5097.g5163/src//axl_log.c
+177c177
+< 		printf ("\e[1;36m(proc %ld)\e[0m: ", getpid ());
+---
+> 		printf ("\e[1;36m(proc %d)\e[0m: ", getpid ());
+179c179
+< 		printf ("(proc %ld): ", getpid ());
+---
+> 		printf ("(proc %d): ", getpid ());

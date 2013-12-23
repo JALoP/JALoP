@@ -1,0 +1,25 @@
+diff vortex-1.1.13.b5215.g5215/src/vortex.c orig/vortex-1.1.13.b5215.g5215/src//vortex.c
+756c756
+< 				fprintf (stdout, "\e[1;36m(%d.%d proc %ld)\e[0m: (\e[1;32mdebug\e[0m) %s:%d %s\n", 
+---
+> 				fprintf (stdout, "\e[1;36m(%d.%d proc %d)\e[0m: (\e[1;32mdebug\e[0m) %s:%d %s\n", 
+760c760
+< 				fprintf (stdout, "\e[1;36m(%d.%d proc %ld)\e[0m: (\e[1;33mwarning\e[0m) %s:%d %s\n", 
+---
+> 				fprintf (stdout, "\e[1;36m(%d.%d proc %d)\e[0m: (\e[1;33mwarning\e[0m) %s:%d %s\n", 
+764c764
+< 				fprintf (stdout, "\e[1;36m(%d.%d proc %ld)\e[0m: (\e[1;31mcritical\e[0m) %s:%d %s\n", 
+---
+> 				fprintf (stdout, "\e[1;36m(%d.%d proc %d)\e[0m: (\e[1;31mcritical\e[0m) %s:%d %s\n", 
+772c772
+< 				fprintf (stdout, "(%d.%d proc %ld): (debug) %s:%d %s\n", 
+---
+> 				fprintf (stdout, "(%d.%d proc %d): (debug) %s:%d %s\n", 
+776c776
+< 				fprintf (stdout, "(%d.%d proc %ld): (warning) %s:%d %s\n", 
+---
+> 				fprintf (stdout, "(%d.%d proc %d): (warning) %s:%d %s\n", 
+780c780
+< 				fprintf (stdout, "(%d.%d proc %ld): (critical) %s:%d %s\n", 
+---
+> 				fprintf (stdout, "(%d.%d proc %d): (critical) %s:%d %s\n", 

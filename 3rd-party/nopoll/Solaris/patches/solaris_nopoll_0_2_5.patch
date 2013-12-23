@@ -1,0 +1,18 @@
+diff nopoll-0.2.5.b122/src//nopoll_config.h orig/nopoll-0.2.5.b122/src/nopoll_config.h
+28c28
+< #define INT_TO_PTR(integer)   ((noPollPtr)  ((int)integer))
+---
+> #define INT_TO_PTR(integer)   ((noPollPtr) (long) ((int)integer))
+43c43
+< #define PTR_TO_INT(ptr) ((int)  (ptr))
+---
+> #define PTR_TO_INT(ptr) ((int) (long) (ptr))
+diff nopoll-0.2.5.b122/src//nopoll_log.c orig/nopoll-0.2.5.b122/src/nopoll_log.c
+196c196
+< 		printf ("\e[1;36m(proc %ld)\e[0m: ", getpid ());
+---
+> 		printf ("\e[1;36m(proc %d)\e[0m: ", getpid ());
+198c198
+< 		printf ("(proc %ld): ", getpid ());
+---
+> 		printf ("(proc %d): ", getpid ());

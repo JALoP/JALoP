@@ -36,17 +36,26 @@ source packages.
     A number of applications require gcc 3.4.6.
 
     axl:
-        http://sourceforge.net/projects/vortexlibrary/files/
+        http://code.google.com/p/vortexlibrary/downloads/list
 
 	In src/axl_log.c, getpid() must be casted as an int.  A patch has been
 	supplied.
 
-	$ ./configure CFLAGS="__EXTENSIONS__ -L/usr/local/lib -R/usr/local/lib"
+	$ ./configure CFLAGS="-D__EXTENSIONS__ -L/usr/local/lib -R/usr/local/lib"
+	$ gmake
+	$ gmake install
+
+    nopoll:
+	http://code.google.com/p/no-poll/downloads/list
+	
+	Patch the source files with the supplied patch
+
+	$ ./configure CFLAGS="-D__EXTENSIONS__ -L/usr/local/lib -R/usr/local/lib"
 	$ gmake
 	$ gmake install
 
     vortex:
-        http://sourceforge.net/projects/vortexlibrary/files/
+        http://code.google.com/p/vortexlibrary/downloads/list
 
 	getpid() must be cast as int in the following files:
 		- src/vortex.c
@@ -55,6 +64,7 @@ source packages.
 		- test/vortex-omr-server.c
 		- test/vortex-regression-listener.c
 		- test/vortex-file-transfer-server.c	
+	A patch has been supplied
 
 	export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
         $ ./configure CFLAGS="-lncurses -lsocket -D__EXTENSIONS__ -I/usr/local/ssl/include \
