@@ -524,12 +524,6 @@ enum jaldb_status jaldb_mark_synced(
 				txn->abort(txn);
 				ret = JALDB_E_INVAL;
 				goto out;
-
-			} else if (!(header_ptr->flags & JALDB_RFLAGS_SENT)) {
-				txn->abort(txn);
-				ret = JALDB_E_INVAL;
-				goto out;
-
 			} else if (header_ptr->flags & JALDB_RFLAGS_SYNCED) {
 				txn->abort(txn);
 				goto out;

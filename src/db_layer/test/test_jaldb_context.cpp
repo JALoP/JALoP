@@ -209,11 +209,11 @@ extern "C" void test_remove_by_nonce_returns_error_when_not_found()
 	nonce = NULL;
 }
 
-extern "C" void test_mark_record_synced_fails_if_not_marked_sent()
+extern "C" void test_mark_record_synced_succeeds_if_not_marked_sent()
 {
 	char *nonce = NULL;
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
-	assert_equals(JALDB_E_INVAL, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 	free(nonce);
 	nonce = NULL;
 }
