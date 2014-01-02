@@ -292,14 +292,11 @@ int main(void)
  *
  * If the remote sends a 'subscribe' message, the JNL will execute the
  * jaln_publisher_callbacks::subscribe callback to inform the application of
- * the details of the subscribe message, and then will execute the
- * jaln_publisher_callbacks::jaln_get_next_record_info_and_metadata callbacks.
- * In the jaln_publisher_callbacks::jaln_get_next_record_info_and_metadata, the
- * application must provide buffers to the system and application metadata for
- * the next record that should be sent. The JNL informs the application of the
- * previous record sent via the \p last_serial_id argument. The application
- * will be able to free this buffers later when the JNL executes the
- * jaln_publisher_callbacks::release_metadata_buffers callback.
+ * the details of the subscribe message, then the publisher may execute
+ * jaln_send_journal, jaln_send_audit, or jaln_send_log, when it is ready to send
+ * data.  The application must provide buffers to the system and application metadata for
+ * the next record that should be sent. The application will be able to free these
+ * buffers as soon as the function returns.
  *
  * After that, the JNL will call either
  * jaln_publisher_callbacks::acquire_log_data, jaln_publisher_callbacks::acquire_audit_data,
