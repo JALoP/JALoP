@@ -123,13 +123,14 @@ int main(int argc, char **argv)
 #endif
 			dbret = jaldb_get_record_by_uuid(ctx, type, uuid, &nonce, &rec);
 			if (dbret != 0) {
-				printf("Error getting record %s\n", uuid);
+				printf("Error getting record %s\n", iter->c_str());
+				goto out;
 			}
 
 			if (global_args.del && (rec->synced || global_args.force)) {
 				dbret = jaldb_remove_record(ctx, type, nonce);
 				if (dbret != 0) {
-					printf("Error removing record\n");
+					printf("Error removing record: %s\n", iter->c_str());
 				}
 			}
 
