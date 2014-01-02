@@ -126,9 +126,11 @@ int main(int argc, char **argv)
 				printf("Error getting record %s\n", uuid);
 			}
 
-			dbret = jaldb_remove_record(ctx, type, nonce);
-			if (dbret != 0) {
-				printf("Error removing record\n");
+			if (global_args.del && (rec->synced || global_args.force)) {
+				dbret = jaldb_remove_record(ctx, type, nonce);
+				if (dbret != 0) {
+					printf("Error removing record\n");
+				}
 			}
 
 			jaldb_destroy_record(&rec);
