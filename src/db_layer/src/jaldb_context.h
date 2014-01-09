@@ -138,8 +138,8 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
  */
 enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *nonce,
-		char *source,
+		const char *nonce,
+		const char *source,
 		struct jaldb_record **rec);
 
 /**
@@ -260,7 +260,7 @@ enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb
  *
  * @return JALDB_OK on success, or an error code.
  */
- enum jaldb_status jaldb_xfer(jaldb_context *ctx, enum jaldb_rec_type type, char* source, char* nonce_in, char** nonce_out);
+ enum jaldb_status jaldb_xfer(jaldb_context *ctx, enum jaldb_rec_type type, const char* source, const char* nonce_in, char** nonce_out);
 
 
 /**
@@ -299,8 +299,8 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 enum jaldb_status jaldb_remove_record_from_temp(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *source,
-		char *nonce);
+		const char *source,
+		const char *nonce);
 
 /**
  * Utility function to remove all the segments store on disk for a specific

@@ -466,9 +466,9 @@ int jsub_on_digest_response(
 			break;
 	}
 	if (willXfer) {
-		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(nonce_str.c_str()), &tmp_nonce);
+		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, source.c_str(), nonce_str.c_str(), &tmp_nonce);
 		if(JALDB_OK == db_err) {
-			db_err = jaldb_store_confed_nonce_temp(jsub_db_ctx, jaldb_type, jal_strdup(source.c_str()), jal_strdup(nonce_str.c_str()));
+			db_err = jaldb_store_confed_nonce_temp(jsub_db_ctx, jaldb_type, source.c_str(), nonce_str.c_str());
 			if (jsub_debug) {
 				if (JALDB_OK == db_err) {
 					ret = JAL_OK;

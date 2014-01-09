@@ -58,7 +58,7 @@ using namespace std;
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 
 static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp);
-static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, char *nonce);
+static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, const char *nonce);
 
 jaldb_context *jaldb_context_create()
 {
@@ -565,8 +565,8 @@ out:
 enum jaldb_status jaldb_store_confed_nonce_temp(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char* source,
-		char* nonce)
+		const char* source,
+		const char* nonce)
 {
 	int byte_swap;
 	enum jaldb_status ret = JALDB_OK;
@@ -1504,8 +1504,8 @@ out:
 
 enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *nonce,
-		char *source,
+		const char *nonce,
+		const char *source,
 		struct jaldb_record **recpp)
 {
 	struct jaldb_record *rec = NULL;
@@ -1750,8 +1750,8 @@ out:
 
 enum jaldb_status jaldb_remove_record_from_temp(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *source,
-		char *nonce)
+		const char *source,
+		const char *nonce)
 {
 	enum jaldb_status ret;
 	int db_ret;
@@ -1771,7 +1771,7 @@ out:
 
 enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx,
 		jaldb_record_dbs *rdbs,
-		char *nonce)
+		const char *nonce)
 {
 	enum jaldb_status ret;
 	int db_ret;
@@ -2350,8 +2350,8 @@ out:
 
 enum jaldb_status jaldb_xfer(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *source,
-		char *nonce_in,
+		const char *source,
+		const char *nonce_in,
 		char **nonce_out)
 {
 	enum jaldb_status ret = JALDB_OK;

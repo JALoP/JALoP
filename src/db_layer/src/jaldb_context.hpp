@@ -277,8 +277,8 @@ enum jaldb_status jaldb_xfer_journal(
 enum jaldb_status jaldb_store_confed_nonce_temp(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	char* source,
-	char* nonce);
+	const char* source,
+	const char* nonce);
 
 /**
  * Store the most recently confirmed journal record for a particular host.
