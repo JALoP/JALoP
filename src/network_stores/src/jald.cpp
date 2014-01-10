@@ -491,7 +491,11 @@ enum jal_status pub_send_records_feeder(
 				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
 			}
 		}
+		free(nonce);
 		nonce = NULL;
+		free(sys_meta_buf);
+		free(app_meta_buf);
+		free(payload_buf);
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
@@ -604,7 +608,11 @@ enum jal_status pub_send_records(
 				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
 			}
 		}
+		free(nonce);
 		nonce = NULL;
+		free(sys_meta_buf);
+		free(app_meta_buf);
+		free(payload_buf);
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
