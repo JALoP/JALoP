@@ -183,10 +183,14 @@ enum jal_status jaln_publisher_handle_digest(jaln_session *sess, VortexChannel *
 	tmp_list = NULL;
 	calc_dgsts = NULL;
 
+	axl_list_free(dgst_from_remote);
+	dgst_from_remote = NULL;
+
 	ret = jaln_create_digest_response_msg(resps, &msg, &len);
 	axl_list_free(resps);
 	resps = NULL;
 	vortex_channel_send_rpy(chan, msg, len, msg_no);
+	free(msg);
 	goto out;
 err_out:
 	vortex_channel_close_full(chan, jaln_session_notify_close, sess);
