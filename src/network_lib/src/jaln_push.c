@@ -62,7 +62,7 @@ enum jal_status jaln_send_record_init(
 
 	memset(rec_info, 0, sizeof(*rec_info));
 	rec_info->type = sess->ch_info->type;
-	rec_info->nonce = jal_strdup(nonce);
+	rec_info->nonce = nonce;
 	rec_info->sys_meta_len = sys_meta_len;
 	rec_info->app_meta_len = app_meta_len;
 
