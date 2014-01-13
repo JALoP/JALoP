@@ -54,7 +54,7 @@ enum jal_status jaln_send_record_init(
 
 	pub_data = sess->pub_data;
 
-	pub_data->nonce = nonce;
+	pub_data->nonce = jal_strdup(nonce);
 	pub_data->sys_meta = sys_meta_buf;
 	pub_data->sys_meta_sz = sys_meta_len;
 	pub_data->app_meta = app_meta_buf;
