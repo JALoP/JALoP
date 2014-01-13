@@ -249,14 +249,10 @@ static void global_args_free()
 __attribute__((noreturn)) static void usage()
 {
 	static const char *usage =
-	"Usage:\n\
+	"Usage: jal_purge <options> <uuid(s)>\n\
 	-n, --nonce=N		Remove all records up to and including the\n\
 				record with nonce 'N'. '-t' must also\n\
 				be specified\n\
-	-u, --uuid=U		Remove all records up to and including the\n\
-				record with UUID 'U'.  By default, this checks\n\
-				the nonce to determine what records came\n\
-				before.  '-t' must also be specified.\n\
 	-t, --type=T		Specify the type of JAL record.  'T' may be 'j',\n\
 				'a', or 'l' for journal, audit, or logging, respectively.\n\
 				When used with the '-u' or '--uuid' options, checks\n\
