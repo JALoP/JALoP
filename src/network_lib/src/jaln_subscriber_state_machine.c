@@ -116,6 +116,10 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 	memset(session->sub_data->sm->break_buf, 0, session->sub_data->sm->break_sz);
 	session->sub_data->sm->break_off = 0;
 
+	if (session->sub_data->sm->dgst_inst) {
+		session->dgst->destroy(session->sub_data->sm->dgst_inst);
+	}
+
 	session->sub_data->sm->dgst_inst = session->dgst->create();
 	if (session->sub_data->sm->dgst_inst == NULL) {
 		goto err_out;
