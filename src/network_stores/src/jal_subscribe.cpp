@@ -629,6 +629,7 @@ void *subscriber_do_work(void *ptr)
 			}
 			break;
 		}
+		sleep(1);
 	}
 err:
 	timer_keep_going = false;
