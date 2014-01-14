@@ -612,7 +612,6 @@ enum jal_status pub_send_records(
 		nonce = NULL;
 		free(sys_meta_buf);
 		free(app_meta_buf);
-		free(payload_buf);
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
