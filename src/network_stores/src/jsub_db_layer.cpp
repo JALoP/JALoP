@@ -172,7 +172,9 @@ int jsub_insert_log(
 	if (log_len > 0) {
 		rec->payload = jaldb_create_segment();
 		rec->payload->length = log_len;
-		rec->payload->payload = (uint8_t *) jal_strdup((const char*) log);
+		uint8_t *payload = (uint8_t *)jal_malloc(log_len);
+		memcpy(payload, log, log_len);
+		rec->payload->payload = payload;
 		rec->payload->on_disk = 0;
 	}
 
