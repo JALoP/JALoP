@@ -35,6 +35,7 @@
 #include "jsub_db_layer.hpp"
 #include "jaldb_utils.h"
 #include "jaldb_record_xml.h"
+#include "jal_alloc.h"
 #include "jaldb_segment.h"
 
 #define stringify( name ) # name
@@ -107,18 +108,19 @@ int jsub_insert_audit(
 	if (app_len) {
 		rec->app_meta = jaldb_create_segment();
 		rec->app_meta->length = app_len;
-		rec->app_meta->payload = app_meta;
+		rec->app_meta->payload = (uint8_t *) jal_strdup((const char*) app_meta);
 		rec->app_meta->on_disk = 0;
 	}
 
 	if (audit_len > 0) {
 		rec->payload = jaldb_create_segment();
 		rec->payload->length = audit_len;
-		rec->payload->payload = audit;
+		rec->payload->payload = (uint8_t *) jal_strdup((const char*) audit);
 		rec->payload->on_disk = 0;
 	}
 
 	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
+	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert audit into temp!\n");
 	}
@@ -163,19 +165,19 @@ int jsub_insert_log(
 	if (app_len) {
 		rec->app_meta = jaldb_create_segment();
 		rec->app_meta->length = app_len;
-		rec->app_meta->payload = app_meta;
+		rec->app_meta->payload = (uint8_t *) jal_strdup((const char*) app_meta);
 		rec->app_meta->on_disk = 0;
 	}
 
 	if (log_len > 0) {
 		rec->payload = jaldb_create_segment();
 		rec->payload->length = log_len;
-		rec->payload->payload = log;
+		rec->payload->payload = (uint8_t *) jal_strdup((const char*) log);
 		rec->payload->on_disk = 0;
 	}
 
 	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
-
+	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert log into temp!\n");
 	}
@@ -271,16 +273,17 @@ int jsub_insert_journal_metadata(
 	if (app_len) {
 		rec->app_meta = jaldb_create_segment();
 		rec->app_meta->length = app_len;
-		rec->app_meta->payload = app_meta;
+		rec->app_meta->payload = (uint8_t *) jal_strdup((const char*) app_meta);
 		rec->app_meta->on_disk = 0;
 	}
 
 	rec->payload = jaldb_create_segment();
-	rec->payload->payload = (uint8_t*)db_payload_path;
+	rec->payload->payload = (uint8_t*) jal_strdup(db_payload_path);
 	rec->payload->length = payload_len;
 	rec->payload->on_disk = 1;
 
 	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
+	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		printf("DEBUG_LOG to insert journal metadata into temp!\n");
 	}
