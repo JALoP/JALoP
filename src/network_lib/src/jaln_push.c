@@ -164,7 +164,7 @@ enum jal_status jaln_send_record_feeder(
 			uint64_t offset,
 			struct jaln_payload_feeder *feeder)
 {
-	if (!sess || !nonce || !sys_meta_buf || !app_meta_buf || !feeder) {
+	if (!sess || !nonce || !sys_meta_buf || ((app_meta_len != 0) && !app_meta_buf) || !feeder) {
 		return JAL_E_INVAL_PARAM;
 	}
 
