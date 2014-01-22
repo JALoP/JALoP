@@ -125,6 +125,7 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 		goto out;
 	}
 out:
+	vortex_frame_unref(frame);
 	free(msg);
 	if (cursor) {
 		axl_list_cursor_free(cursor);

@@ -109,6 +109,11 @@ enum jal_status fake_jaln_process_digest_resp(__attribute__((unused)) VortexFram
 	return JAL_OK;
 }
 
+void fake_vortex_frame_unref(__attribute__((unused)) VortexFrame *frame)
+{
+	return;
+}
+
 void setup()
 {
 	int dgst_val;
@@ -141,6 +146,7 @@ void test_jaln_send_digest_and_sync_no_lock_does_not_crash_with_bad_input()
 	replace_function(vortex_channel_send_msg_and_wait, vortex_channel_send_msg_and_wait_always_succeeds);
 	replace_function(vortex_channel_send_msg, vortex_channel_send_msg_always_succeeds);
 	replace_function(jaln_process_digest_resp, jaln_process_digest_resp_always_succeeds);
+	replace_function(vortex_frame_unref, fake_vortex_frame_unref);
 
 	jaln_send_digest_and_sync_no_lock(NULL, dgst_list);
 	jaln_send_digest_and_sync_no_lock(sess, NULL);
@@ -171,6 +177,7 @@ void test_jaln_send_digest_and_sync_no_lock_succeeds()
 	replace_function(vortex_channel_send_msg_and_wait, vortex_channel_send_msg_and_wait_always_succeeds);
 	replace_function(vortex_channel_send_msg, vortex_channel_send_msg_always_succeeds);
 	replace_function(jaln_process_digest_resp, fake_jaln_process_digest_resp);
+	replace_function(vortex_frame_unref, fake_vortex_frame_unref);
 
 	jaln_send_digest_and_sync_no_lock(sess, dgst_list);
 }
