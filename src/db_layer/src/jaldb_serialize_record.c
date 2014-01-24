@@ -505,7 +505,7 @@ enum jaldb_status jaldb_deserialize_string(uint8_t **buffer, size_t *size, char*
 }
 
 enum jaldb_status jaldb_deserialize_segment(char on_disk,
-		size_t segment_length,
+		uint64_t segment_length,
 		uint8_t **buffer,
 		size_t *bsize,
 		struct jaldb_segment **segment)
