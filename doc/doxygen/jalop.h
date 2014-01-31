@@ -7,7 +7,8 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011-2012 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2011-2014 Tresys Technology LLC, Columbia, 
+ * Maryland, USA 
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -25,7 +26,7 @@
  * limitations under the License.
  */
 
-/** \mainpage JALoP Reference Implmentation
+/** \mainpage JALoP Reference Implementation
  *
  * \section intro_sec Introduction
  *
@@ -59,19 +60,27 @@
  * \subsection net_stores JALoP Network Stores
  * The JALoP Network Stores provide the ability to listen for incoming
  * JALoP/BEEP connections, or initiate a JALoP/BEEP connections.
- * connections. The \p jald program is a daemon that listens for connections.
- * The \p jal_subscribe program is a process that will connect to a remote
- * JALoP Network Store (like \p jald) and subscribe (fetch) JALoP records from
- * the remote. The \p jal_publish program is a process that will connect to a
- * remote JALoP Network Store (like \p jald) and publish (send) JALoP records.
+ * connections.
+ *  - \p jald: This program is a daemon that listens for
+ * connections.
+ *  - \p jal_subscribe: This program is a process that will
+ * connect to a remote JALoP Network Store (like \p jald) and
+ * subscribe (fetch) JALoP records from the remote. The \p
+ * jal_publish program is a process that will connect to a
+ * remote JALoP Network Store (like \p jald) and publish (send)
+ * JALoP records.
  *
  * \subsection utils Utilities
  * The reference implementation comes with a number of utilities for inspecting
  * the database and sending records to the JALoP Local Store.
  *  - \p jalp_test: This is a development tool that can send journal, audit, or
  *  log data to a local store. It is primarily used to test the JPL.
- *  - \p jal_dump: This utility can be used to retrieve records from the database
- *  using the serial ID
+ *  - \p jal_dump: This is a tool used to retrieve
+ *     specific sections of one or more JAL records. 
+ *  - \p jal_purge: This utility can be used to remove records
+ *  from the database.
+ *  - \p jaldb_tail: The  jaldb_tail  tool is similar to the
+ *     UNIX tail utility.
  *
  *  With the exception of \p jalp_test (since this is really a development tool),
  *  *NIX man pages are provided for the various utilities and configuration files.
