@@ -46,11 +46,11 @@ struct jaln_publisher_callbacks {
 	 * 'journal-resume' message.
 	 *
 	 * @param[in] session The jaln_session.
-	 * @param[in] nonce The nonce of the record that is being resumed.
-	 * @param[in] offset The offset into the record the peer would like to
-	 * begin transferring from.
+	 * @param[in] ch_info Information about the connection
 	 * @param[in,out] record_info The JNL will fill in the nonce,
 	 * applications must fill in the rest of this structure.
+	 * @param[in] offset The offset into the record the peer would like to
+	 * begin transferring from.
 	 * @param[out] system_metadata_buffer a user allocated buffer that contains the bytes
 	 * of the system metadata. The \p sys_meta_len field of \p record_info
 	 * indicates the size of this buffer.
@@ -78,6 +78,7 @@ struct jaln_publisher_callbacks {
 	 * 'subscribe' message. This callback is purely informational.
 	 *
 	 * @param[in] session The jaln_session.
+	 * @param[in] ch_info Information about the connection
 	 * @param[in] type The type of records the remote is subscribing 
 	 * to (journal, audit, or log).
 	 * @param[in] mode The mode with which to publish record (archive or live)
