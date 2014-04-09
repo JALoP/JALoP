@@ -197,6 +197,7 @@ void jaln_pub_data_destroy(struct jaln_pub_data **ppub_data) {
 		return;
 	}
 	struct jaln_pub_data *pub_data = *ppub_data;
+	free(pub_data->nonce);
 	free(pub_data->dgst);
 	free(pub_data);
 	*ppub_data = NULL;

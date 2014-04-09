@@ -624,7 +624,10 @@ enum jal_status jsub_init_subscriber_callbacks(jaln_context *context)
 	sub_cbs->message_complete = jsub_message_complete;
 	sub_cbs->acquire_journal_feeder = jsub_acquire_journal_feeder;
 	sub_cbs->release_journal_feeder = jsub_release_journal_feeder;
-	return jaln_register_subscriber_callbacks(context, sub_cbs);
+	enum jal_status ret = jaln_register_subscriber_callbacks(context, sub_cbs);
+
+	jaln_subscriber_callbacks_destroy(&sub_cbs);
+	return ret;
 }
 
 enum jal_status jsub_init_connection_callbacks(jaln_context *context)

@@ -1128,6 +1128,7 @@ out:
 	pthread_mutex_destroy(&gs_audit_sub_lock);
 	pthread_mutex_destroy(&gs_log_sub_lock);
 	jaln_context_destroy(&jctx);
+	jaln_publisher_callbacks_destroy(&pub_cbs);
 	config_destroy(&config);
 
 	return rc;

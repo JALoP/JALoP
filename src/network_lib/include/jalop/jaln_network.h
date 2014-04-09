@@ -101,7 +101,9 @@ enum jal_status jaln_register_encoding(jaln_context *jaln_ctx,
 
 /**
  * Register a callbacks that the JNL executes when channels are created and
- * closed.
+ * closed.  The network library assumes ownership of the jaln_connection_callbacks
+ * struct and will free it when jaln_destroy_ctx() is called
+ *
  * @param jaln_ctx The context object
  * @param connection_callbacks The connection callbacks.
  *
@@ -111,7 +113,10 @@ enum jal_status jaln_register_connection_callbacks(jaln_context *jaln_ctx,
 		struct jaln_connection_callbacks *connection_callbacks);
 
 /**
- * Register the callbacks required to act as a subscriber.
+ * Register the callbacks required to act as a subscriber.  The network library
+ * will create a copy of the jaln_subscriber_callbacks_struct.  The calling process
+ * should free the original struct with jaln_subscriber_callbacks_destroy().
+ *
  * @param jaln_ctx The context object
  * @param subscriber_callbacks The structure containing all the callbacks.
  *
@@ -121,7 +126,9 @@ enum jal_status jaln_register_subscriber_callbacks(jaln_context *jaln_ctx,
 				    struct jaln_subscriber_callbacks *subscriber_callbacks);
 
 /**
- * Register the callbacks required to act as a publisher.
+ * Register the callbacks required to act as a publisher.  The network library
+ * will create a copy of the jaln_publisher_callbacks_struct.  The calling process
+ * should free the original struct with jaln_publisher_callbacks_destroy().
  * @param[in] jaln_ctx The context object
  * @param[in] publisher_callbacks The structure containing all the callbacks.
  *

@@ -395,6 +395,7 @@ void jaln_publisher_on_connection_close(__attribute__((unused)) VortexConnection
 
 	vortex_mutex_lock(&ctx->lock);
 	ctx->conn_callbacks->on_connection_close(jal_conn, ctx->user_data);
+	jaln_connection_destroy(&jal_conn);
 	vortex_mutex_unlock(&ctx->lock);
 }
 
