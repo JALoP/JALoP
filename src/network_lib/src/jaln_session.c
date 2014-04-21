@@ -148,6 +148,9 @@ void jaln_session_destroy(jaln_session **psession) {
 	}
 	jaln_session *sess = *psession;
 	if (JALN_ROLE_SUBSCRIBER == sess->role ) {
+		if (sess->dgst && sess->sub_data->sm->dgst_inst) {
+			sess->dgst->destroy(sess->sub_data->sm->dgst_inst);
+		}
 		jaln_sub_data_destroy(&sess->sub_data);
 	} else {
 		if (sess->pub_data && sess->pub_data->dgst_inst) {

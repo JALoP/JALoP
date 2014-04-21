@@ -648,6 +648,8 @@ void jaln_sub_state_machine_destroy(struct jaln_sub_state_machine **psm)
 	free(sm->app_meta_buf);
 	free(sm->payload_buf);
 	free(sm->break_buf);
+	free(sm->dgst);
+
 	vortex_frame_unref(sm->cached_frame);
 
 	jaln_sub_state_destroy(&sm->wait_for_mime);
