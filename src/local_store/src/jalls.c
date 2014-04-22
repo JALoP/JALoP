@@ -265,6 +265,7 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "Failed to create pthread: %s\n", strerror(my_errno));
 			}
 		} else {
+			free(thread_ctx);
 			if (debug) {
 				fprintf(stderr, "Failed to accept: %s\n", strerror(my_errno));
 			}

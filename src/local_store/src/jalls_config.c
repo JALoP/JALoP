@@ -154,6 +154,7 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	}
 
 	config_destroy(&jalls_config);
+	free(system_uuid_str);
 	return 0;
 
 err_out:
