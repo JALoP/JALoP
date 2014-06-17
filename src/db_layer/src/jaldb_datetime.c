@@ -82,8 +82,7 @@ int jaldb_xml_datetime_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
 enum jaldb_status jaldb_extract_datetime_key_common(
 		const uint8_t* buffer,
 		char **dtString,
-		size_t *dtLen,
-		char *has_tz)
+		size_t *dtLen)
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
 	struct jaldb_serialize_record_headers *headers = NULL;
@@ -91,7 +90,7 @@ enum jaldb_status jaldb_extract_datetime_key_common(
 	size_t slen;
 	int xml_ret;
 
-	if (!buffer || !dtString || *dtString || !dtLen || !has_tz) {
+	if (!buffer || !dtString || *dtString || !dtLen) {
 		return JALDB_E_INVAL;
 	}
 
@@ -121,26 +120,6 @@ enum jaldb_status jaldb_extract_datetime_key_common(
 		goto out;
 	}
 
-	// Check for timezone...
-	*has_tz = 0;
-	if (toupper(stmp[slen - 1] == 'Z')) {
-		*has_tz = 1;
-	} else {
-		size_t tz_len = strlen("+00:00");
-		if (tz_len >= slen) {
-			// This should never happen since a valid datetime
-			// string should be well over 6 characters long.
-			ret = JALDB_E_INVAL;
-			goto out;
-		}
-		char *tz = stmp + (slen - tz_len);
-		if (('-' == tz[0]) || ('+' == tz[0])) {
-			if (isdigit(tz[1]) && isdigit(tz[2]) && (':' == tz[3]) &&
-				isdigit(tz[4]) && isdigit(tz[5])) {
-				*has_tz = 1;
-			}
-		}
-	}
 	ret = JALDB_OK;
 	*dtString = stmp;
 	*dtLen = slen;
@@ -151,44 +130,21 @@ out:
 	return ret;
 }
 
-int jaldb_extract_datetime_w_tz_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+
+int jaldb_extract_datetime_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
 {
 	enum jaldb_status ret;
 	char *dtString = NULL;
 	size_t dtLen = 0;
-	char has_tz = 0;
 
-	ret = jaldb_extract_datetime_key_common(data->data, &dtString, &dtLen, &has_tz);
+	ret = jaldb_extract_datetime_key_common(data->data, &dtString, &dtLen);
 	if (ret != JALDB_OK) {
 		return -1;
 	}
-	if (has_tz) {
-		result->data = jal_strdup(dtString);
-		result->size = dtLen + 1; // keep the null terminator
-		result->flags = DB_DBT_APPMALLOC;
-		return 0;
-	}
-	return DB_DONOTINDEX;
-}
-
-int jaldb_extract_datetime_wo_tz_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
-{
-	enum jaldb_status ret;
-	char *dtString = NULL;
-	size_t dtLen = 0;
-	char has_tz = 0;
-
-	ret = jaldb_extract_datetime_key_common(data->data, &dtString, &dtLen, &has_tz);
-	if (ret != JALDB_OK) {
-		return -1;
-	}
-	if (!has_tz) {
-		result->data = jal_strdup(dtString);
-		result->size = dtLen + 1; // keep the null terminator
-		result->flags = DB_DBT_APPMALLOC;
-		return 0;
-	}
-	return DB_DONOTINDEX;
+	result->data = jal_strdup(dtString);
+	result->size = dtLen + 1; // keep the null terminator
+	result->flags = DB_DBT_APPMALLOC;
+	return 0;
 }
 
 int jaldb_extract_nonce_timestamp_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)

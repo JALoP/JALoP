@@ -45,7 +45,7 @@
 #define DT6 "2012-12-12T09:00:00.00000-08:00"
 #define DT7 "2012-12-12T09:00:00.00001-08:00"
 
-#define DT1_NO_TZ "2012-12-12T09:00:00.00001"
+#define DT8 "2012-12-12T09:00:00.00001"
 
 #define BAD_DATETIME "Not a DateTime"
 
@@ -54,7 +54,7 @@ static DBT dbt2;
 static DBT dbt5;
 static DBT dbt6;
 static DBT dbt7;
-static DBT dbt1_no_tz;
+static DBT dbt8;
 
 static DBT dbt_record;
 
@@ -102,9 +102,9 @@ void setup()
 	dbt7.data = DT7;
 	dbt7.size = strlen(DT7) + 1;
 
-	memset(&dbt1_no_tz, 0, sizeof(dbt1_no_tz));
-	dbt1_no_tz.data = DT1_NO_TZ;
-	dbt1_no_tz.size = strlen(DT1_NO_TZ) + 1;
+	memset(&dbt8, 0, sizeof(dbt8));
+	dbt8.data = DT8;
+	dbt8.size = strlen(DT8) + 1;
 
 	error_handler_called = 0;
 
@@ -116,6 +116,7 @@ void setup()
 	dbt_record.data = buffer;
 	dbt_record.size = BUFFER_SIZE;
 }
+
 
 void teardown()
 {
@@ -158,7 +159,7 @@ void test_xml_datetime_calls_error_handler_on_indeterminates()
 {
 	replace_function(jal_error_handler, mock_error_handler);
 
-	jaldb_xml_datetime_compare(NULL, &dbt1, &dbt1_no_tz);
+	jaldb_xml_datetime_compare(NULL, &dbt1, &dbt8);
 	assert_true(error_handler_called);
 }
 
@@ -179,11 +180,10 @@ void test_extract_datetime_common_calls_error_handler_on_bad_parse()
 	enum jaldb_status ret;
 	char *dtString = NULL;
 	size_t dtLen = 0;
-	char has_tz = 0;
 
 	strcpy(datetime_in_buffer, BAD_DATETIME);
 
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, &has_tz);
+	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen);
 	assert_not_equals(JALDB_OK, ret);
 }
 
@@ -193,10 +193,9 @@ void test_extract_datetime_fails_with_bad_schema_type()
 
 	enum jaldb_status ret;
 	char *dtString = NULL;
-	size_t dtLen = 0;;
-	char has_tz = 0;
+	size_t dtLen = 0;
 
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, &has_tz);
+	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen);
 	assert_not_equals(JALDB_OK, ret);
 
 }
@@ -206,138 +205,47 @@ void test_extract_datetime_fails_for_bad_input()
 	enum jaldb_status ret;
 	char *dtString = NULL;
 	size_t dtLen = 0;
-	char has_tz = 0;
 
-	ret = jaldb_extract_datetime_key_common(NULL, &dtString, &dtLen, &has_tz);
+	ret = jaldb_extract_datetime_key_common(NULL, &dtString, &dtLen);
 	assert_not_equals(JALDB_OK, ret);
 
-	ret = jaldb_extract_datetime_key_common(buffer, NULL, &dtLen, &has_tz);
+	ret = jaldb_extract_datetime_key_common(buffer, NULL, &dtLen);
 	assert_not_equals(JALDB_OK, ret);
 
 	dtString = (char*) 0xdeadbeef;
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, &has_tz);
+	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen);
 	assert_not_equals(JALDB_OK, ret);
 	dtString = NULL;
 
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, NULL, &has_tz);
-	assert_not_equals(JALDB_OK, ret);
-
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, NULL);
+	ret = jaldb_extract_datetime_key_common(buffer, &dtString, NULL);
 	assert_not_equals(JALDB_OK, ret);
 }
 
-void test_extract_datetime_works_with_timezone()
+void test_extract_datetime_works()
 {
 	enum jaldb_status ret;
 	char *dtString = NULL;
 	size_t dtLen = 0;
-	char has_tz = 0;
 
-	strcpy(datetime_in_buffer, DT1);
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, &has_tz);
+	strcpy(datetime_in_buffer, DT8);
+	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(datetime_in_buffer, dtString);
 	assert_equals(strlen(datetime_in_buffer), dtLen);
-	assert_equals(1, has_tz);
 }
 
-void test_extract_datetime_works_with_postive_offset()
-{
-	enum jaldb_status ret;
-	char *dtString = NULL;
-	size_t dtLen = 0;
-	char has_tz = 0;
-
-	strcpy(datetime_in_buffer, DT3);
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, &has_tz);
-	assert_equals(JALDB_OK, ret);
-	assert_equals(datetime_in_buffer, dtString);
-	assert_equals(strlen(datetime_in_buffer), dtLen);
-	assert_equals(1, has_tz);
-}
-
-void test_extract_datetime_works_with_negative_offset()
-{
-	enum jaldb_status ret;
-	char *dtString = NULL;
-	size_t dtLen = 0;
-	char has_tz = 0;
-
-	strcpy(datetime_in_buffer, DT4);
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, &has_tz);
-	assert_equals(JALDB_OK, ret);
-	assert_equals(datetime_in_buffer, dtString);
-	assert_equals(strlen(datetime_in_buffer), dtLen);
-	assert_equals(1, has_tz);
-}
-
-void test_extract_datetime_works_without_timezone()
-{
-	enum jaldb_status ret;
-	char *dtString = NULL;
-	size_t dtLen = 0;
-	char has_tz = 1;
-
-	strcpy(datetime_in_buffer, DT1_NO_TZ);
-	ret = jaldb_extract_datetime_key_common(buffer, &dtString, &dtLen, &has_tz);
-	assert_equals(JALDB_OK, ret);
-	assert_equals(datetime_in_buffer, dtString);
-	assert_equals(strlen(datetime_in_buffer), dtLen);
-	assert_equals(0, has_tz);
-}
-
-void test_extract_datetime_w_tz_key_works()
+void test_extract_datetime_key_works()
 {
 	int ret;
 	DBT result;
 	memset(&result, 0, sizeof(result));
 
-	strcpy(datetime_in_buffer, DT4);
-	ret = jaldb_extract_datetime_w_tz_key(NULL, NULL, &dbt_record, &result);
+	strcpy(datetime_in_buffer, DT8);
+	ret = jaldb_extract_datetime_key(NULL, NULL, &dbt_record, &result);
 
 	assert_equals(0, ret);
 	assert_not_equals((void*) NULL, result.data);
-	assert_equals(strlen(DT4) + 1, result.size);
-	assert_equals(0, strcmp(result.data, DT4));
+	assert_equals(strlen(DT8) + 1, result.size);
+	assert_equals(0, strcmp(result.data, DT8));
 	free(result.data);
-}
-
-void test_extract_datetime_w_tz_key_returns_no_index_with_no_tz()
-{
-	int ret;
-	DBT result;
-	memset(&result, 0, sizeof(result));
-
-	strcpy(datetime_in_buffer, DT1_NO_TZ);
-	ret = jaldb_extract_datetime_w_tz_key(NULL, NULL, &dbt_record, &result);
-
-	assert_equals(DB_DONOTINDEX, ret);
-}
-
-void test_extract_datetime_wo_tz_key_works()
-{
-	int ret;
-	DBT result;
-	memset(&result, 0, sizeof(result));
-
-	strcpy(datetime_in_buffer, DT1_NO_TZ);
-	ret = jaldb_extract_datetime_wo_tz_key(NULL, NULL, &dbt_record, &result);
-
-	assert_equals(0, ret);
-	assert_not_equals((void*) NULL, result.data);
-	assert_equals(strlen(DT1_NO_TZ) + 1, result.size);
-	assert_equals(0, strcmp(result.data, DT1_NO_TZ));
-	free(result.data);
-}
-
-void test_extract_datetime_wo_tz_key_returns_no_index_with_tz()
-{
-	int ret;
-	DBT result;
-	memset(&result, 0, sizeof(result));
-
-	strcpy(datetime_in_buffer, DT1);
-	ret = jaldb_extract_datetime_wo_tz_key(NULL, NULL, &dbt_record, &result);
-
-	assert_equals(DB_DONOTINDEX, ret);
 }

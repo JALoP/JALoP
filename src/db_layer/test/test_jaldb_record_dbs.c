@@ -51,8 +51,7 @@ memset(&m, 0, sizeof(m)); \
 rdbs->m = &m; \
 rdbs->m->close = mock_ ## m ## _close;
 
-DEF_MOCK_CLOSE(timestamp_tz_idx_db)
-DEF_MOCK_CLOSE(timestamp_no_tz_idx_db)
+DEF_MOCK_CLOSE(timestamp_idx_db)
 DEF_MOCK_CLOSE(record_id_idx_db)
 
 static void silent_errcall(const DB_ENV *dbenv, const char *errpfx, const char *msg)
@@ -66,7 +65,7 @@ char secondaries_closed_before_primary;
 
 static int mock_primary_db_close(DB *db, u_int32_t flags)
 {
-	if (!timestamp_no_tz_idx_db_closed || !timestamp_tz_idx_db_closed || !record_id_idx_db_closed) {
+	if (!timestamp_idx_db_closed || !record_id_idx_db_closed) {
 		secondaries_closed_before_primary = 0;
 		return 1;
 	}
@@ -174,9 +173,6 @@ MAKE_REC(2)
 MAKE_REC(3)
 MAKE_REC(4)
 MAKE_REC(5)
-MAKE_REC(6)
-MAKE_REC(7)
-MAKE_REC(8)
 
 #define INIT_REC(recn, ts) \
 do { \
@@ -198,16 +194,12 @@ rec ## recn ## _uuid_key.data = (void*) rec ## recn ## _uuid; \
 rec ## recn ## _uuid_key.size = sizeof(rec ## recn ## _uuid); \
 } while (0)
 
-#define R1_DATETIME_TZ "2012-12-12T09:00:00Z"
-#define R2_DATETIME_TZ "2012-12-12T09:00:00Z"
-#define R3_DATETIME_TZ "2012-12-12T09:00:00+00:00"
-#define R4_DATETIME_TZ "2012-12-12T09:00:01+00:00"
+#define R1_DATETIME "2012-12-12T09:00:00"
+#define R2_DATETIME "2012-12-12T09:00:00"
+#define R3_DATETIME "2012-12-12T09:00:00"
+#define R4_DATETIME "2012-12-12T09:00:01"
 
-#define R5_DATETIME_NO_TZ "2012-12-12T09:00:00"
-#define R6_DATETIME_NO_TZ "2012-12-12T09:00:00"
-#define R7_DATETIME_NO_TZ "2012-12-12T09:00:01"
-
-#define R8_DATETIME_BAD "2012-12-12T09:00:0"
+#define R5_DATETIME_BAD "2012-12-12T09:00:0"
 
 void setup()
 {
@@ -217,19 +209,15 @@ void setup()
 	associate_fail_at = 0;
 	open_fail_at = 0;
 	primary_db_closed = 0;
-	timestamp_no_tz_idx_db_closed = 0;
-	timestamp_tz_idx_db_closed = 0;
+	timestamp_idx_db_closed = 0;
 	record_id_idx_db_closed = 0;
 	secondaries_closed_before_primary = 1;
 	rdbs = NULL;
-	INIT_REC(1, R1_DATETIME_TZ);
-	INIT_REC(2, R2_DATETIME_TZ);
-	INIT_REC(3, R3_DATETIME_TZ);
-	INIT_REC(4, R4_DATETIME_TZ);
-	INIT_REC(5, R5_DATETIME_NO_TZ);
-	INIT_REC(6, R6_DATETIME_NO_TZ);
-	INIT_REC(7, R7_DATETIME_NO_TZ);
-	INIT_REC(8, R8_DATETIME_BAD);
+	INIT_REC(1, R1_DATETIME);
+	INIT_REC(2, R2_DATETIME);
+	INIT_REC(3, R3_DATETIME);
+	INIT_REC(4, R4_DATETIME);
+	INIT_REC(5, R5_DATETIME_BAD);
 }
 
 #define REMOVE_DB(db) \
@@ -258,8 +246,7 @@ void setup()
 void teardown()
 {
 	//if (rdbs) {
-		//REMOVE_DB(rdbs->timestamp_tz_idx_db);
-		//REMOVE_DB(rdbs->timestamp_no_tz_idx_db);
+		//REMOVE_DB(rdbs->timestamp_idx_db);
 		//REMOVE_DB(rdbs->record_id_idx_db);
 		//REMOVE_DB(rdbs->primary_db);
 	//}
@@ -289,49 +276,30 @@ void test_destroy_record_dbs_works()
 	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
-	MOCK_DB(rdbs, timestamp_tz_idx_db);
-	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
+	MOCK_DB(rdbs, timestamp_idx_db);
 	MOCK_DB(rdbs, record_id_idx_db);
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
-	assert_true(timestamp_tz_idx_db_closed);
-	assert_true(timestamp_no_tz_idx_db_closed);
+	assert_true(timestamp_idx_db_closed);
 	assert_true(record_id_idx_db_closed);
 
 }
 
-void test_destroy_record_dbs_works_without_tz_timestamp()
+void test_destroy_record_dbs_works_without_timestamps()
 {
 	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
-	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
+	MOCK_DB(rdbs, timestamp_idx_db);
 	MOCK_DB(rdbs, record_id_idx_db);
 
-	timestamp_tz_idx_db_closed = 1;
+	timestamp_idx_db_closed = 1;
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
 	assert_true(record_id_idx_db_closed);
-	assert_true(timestamp_tz_idx_db_closed);
-
-}
-
-void test_destroy_record_dbs_works_without_no_tz_timestamp()
-{
-	rdbs = jaldb_create_record_dbs();
-
-	MOCK_DB(rdbs, primary_db);
-	MOCK_DB(rdbs, timestamp_tz_idx_db);
-	MOCK_DB(rdbs, record_id_idx_db);
-
-	timestamp_no_tz_idx_db_closed = 1;
-
-	jaldb_destroy_record_dbs(&rdbs);
-	assert_true(primary_db_closed);
-	assert_true(record_id_idx_db_closed);
-	assert_true(timestamp_tz_idx_db_closed);
+	assert_true(timestamp_idx_db_closed);
 
 }
 
@@ -340,16 +308,14 @@ void test_destroy_record_dbs_works_without_record_id_db()
 	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
-	MOCK_DB(rdbs, timestamp_tz_idx_db);
-	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
+	MOCK_DB(rdbs, timestamp_idx_db);
 
 	// pretend it was closed for mocked function
 	record_id_idx_db_closed = 1;
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
-	assert_true(timestamp_tz_idx_db_closed);
-	assert_true(timestamp_no_tz_idx_db_closed);
+	assert_true(timestamp_idx_db_closed);
 
 }
 
@@ -358,14 +324,12 @@ void test_destroy_record_dbs_works_without_nonce()
 	rdbs = jaldb_create_record_dbs();
 
 	MOCK_DB(rdbs, primary_db);
-	MOCK_DB(rdbs, timestamp_tz_idx_db);
-	MOCK_DB(rdbs, timestamp_no_tz_idx_db);
+	MOCK_DB(rdbs, timestamp_idx_db);
 	MOCK_DB(rdbs, record_id_idx_db);
 
 	jaldb_destroy_record_dbs(&rdbs);
 	assert_true(primary_db_closed);
-	assert_true(timestamp_tz_idx_db_closed);
-	assert_true(timestamp_no_tz_idx_db_closed);
+	assert_true(timestamp_idx_db_closed);
 	assert_true(record_id_idx_db_closed);
 }
 
@@ -384,41 +348,31 @@ void test_create_primary_dbs_w_indices_works()
 	assert_equals(0, db_err);
 	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec4_key, &rec4_data, DB_NOOVERWRITE);
 	assert_equals(0, db_err);
-	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec5_key, &rec5_data, DB_NOOVERWRITE);
-	assert_equals(0, db_err);
-	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec6_key, &rec6_data, DB_NOOVERWRITE);
-	assert_equals(0, db_err);
-	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec7_key, &rec7_data, DB_NOOVERWRITE);
-	assert_equals(0, db_err);
 
-	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec8_key, &rec8_data, DB_NOOVERWRITE);
+	db_err = rdbs->primary_db->put(rdbs->primary_db, NULL, &rec5_key, &rec5_data, DB_NOOVERWRITE);
 	assert_not_equals(0, db_err);
 
 	// make sure records showed up in the correct indexes & order
 	DBT key;
 	DBT pkey;
 	DBT val;
-	DBC *ts_tz_c = NULL;
-	DBC *ts_no_tz_c = NULL;
+	DBC *ts_c = NULL;
 	DBC *r_uuid_c = NULL;
 
 	memset(&key, 0, sizeof(key));
 	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
 
-	db_err = rdbs->timestamp_tz_idx_db->cursor(rdbs->timestamp_tz_idx_db, NULL, &ts_tz_c, 0);
-	assert_equals(0, db_err);
-	db_err = rdbs->timestamp_no_tz_idx_db->cursor(rdbs->timestamp_no_tz_idx_db, NULL, &ts_no_tz_c, 0);
+	db_err = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &ts_c, 0);
 	assert_equals(0, db_err);
 	db_err = rdbs->record_id_idx_db->cursor(rdbs->record_id_idx_db, NULL, &r_uuid_c, 0);
 	assert_equals(0, db_err);
 
-	// the index for timezones should have r1, r2, r3, and r4. r1, r2, and
-	// r3 all have the same value for the timestamp...
+	// the index for timestamps should have r1, r2, r3, and r4
 	memset(&key, 0, sizeof(key));
 	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
-	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT);
+	db_err = ts_c->c_pget(ts_c, &key, &pkey, &val, DB_NEXT);
 	assert_equals(0, db_err);
 	assert_equals(1, *((uint8_t*)pkey.data));
 	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
@@ -434,7 +388,7 @@ void test_create_primary_dbs_w_indices_works()
 	memset(&key, 0, sizeof(key));
 	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
-	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	db_err = ts_c->c_pget(ts_c, &key, &pkey, &val, DB_NEXT_DUP);
 	assert_equals(0, db_err);
 	assert_equals(2, *((uint8_t*)pkey.data));
 	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
@@ -450,7 +404,7 @@ void test_create_primary_dbs_w_indices_works()
 	memset(&key, 0, sizeof(key));
 	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
-	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	db_err = ts_c->c_pget(ts_c, &key, &pkey, &val, DB_NEXT_DUP);
 	assert_equals(0, db_err);
 	assert_equals(3, *((uint8_t*)pkey.data));
 	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
@@ -463,13 +417,13 @@ void test_create_primary_dbs_w_indices_works()
 		free(val.data);
 	}
 
-	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
+	db_err = ts_c->c_pget(ts_c, &key, &pkey, &val, DB_NEXT_DUP);
 	assert_equals(DB_NOTFOUND, db_err); // only the first three records have the same TS
 
 	memset(&key, 0, sizeof(key));
 	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
-	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT_NODUP);
+	db_err = ts_c->c_pget(ts_c, &key, &pkey, &val, DB_NEXT_NODUP);
 	assert_equals(0, db_err);
 	assert_equals(4, *((uint8_t*)pkey.data));
 	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
@@ -482,69 +436,11 @@ void test_create_primary_dbs_w_indices_works()
 		free(val.data);
 	}
 
-	db_err = ts_tz_c->c_pget(ts_tz_c, &key, &pkey, &val, DB_NEXT);
+	db_err = ts_c->c_pget(ts_c, &key, &pkey, &val, DB_NEXT);
 	assert_equals(DB_NOTFOUND, db_err); // Shouldn't be any more records in the DB.
-	ts_tz_c->c_close(ts_tz_c);
-	ts_tz_c = NULL;
-
-	// Now check the index for dattimes without timezones...
-	// the index for no timezones should have r5, r6, and r7. r5, and r6 have the same value for the timestamp...
-	memset(&key, 0, sizeof(key));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
-	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT);
-	assert_equals(0, db_err);
-	assert_equals(5, *((uint8_t*)pkey.data));
-	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(key.data);
-	}
-	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(pkey.data);
-	}
-	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(val.data);
-	}
-
-	memset(&key, 0, sizeof(key));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
-	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
-	assert_equals(0, db_err);
-	assert_equals(6, *((uint8_t*)pkey.data));
-	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(key.data);
-	}
-	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(pkey.data);
-	}
-	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(val.data);
-	}
-
-	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT_DUP);
-	assert_equals(DB_NOTFOUND, db_err); // only the first two records have the same TS
-
-	memset(&key, 0, sizeof(key));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
-	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT_NODUP);
-	assert_equals(0, db_err);
-	assert_equals(7, *((uint8_t*)pkey.data));
-	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(key.data);
-	}
-	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(pkey.data);
-	}
-	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(val.data);
-	}
-
-	db_err = ts_no_tz_c->c_pget(ts_no_tz_c, &key, &pkey, &val, DB_NEXT);
-	assert_equals(DB_NOTFOUND, db_err); // Shouldn't be any more records in the DB.
-	ts_no_tz_c->c_close(ts_no_tz_c);
-	ts_no_tz_c = NULL;
-
+	ts_c->c_close(ts_c);
+	ts_c = NULL;
+	
 	// Lastly, check the UUID index, everything should make it in here...
 	memset(&key, 0, sizeof(key));
 	memset(&pkey, 0, sizeof(pkey));
@@ -599,54 +495,6 @@ void test_create_primary_dbs_w_indices_works()
 	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
 	assert_equals(0, db_err);
 	assert_equals(4, *((uint8_t*)pkey.data));
-	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(key.data);
-	}
-	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(pkey.data);
-	}
-	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(val.data);
-	}
-
-	memset(&key, 0, sizeof(key));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
-	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
-	assert_equals(0, db_err);
-	assert_equals(5, *((uint8_t*)pkey.data));
-	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(key.data);
-	}
-	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(pkey.data);
-	}
-	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(val.data);
-	}
-
-	memset(&key, 0, sizeof(key));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
-	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
-	assert_equals(0, db_err);
-	assert_equals(6, *((uint8_t*)pkey.data));
-	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(key.data);
-	}
-	if (pkey.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(pkey.data);
-	}
-	if (val.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
-		free(val.data);
-	}
-
-	memset(&key, 0, sizeof(key));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
-	db_err = r_uuid_c->c_pget(r_uuid_c, &key, &pkey, &val, DB_NEXT_NODUP);
-	assert_equals(0, db_err);
-	assert_equals(7, *((uint8_t*)pkey.data));
 	if (key.flags & (DB_DBT_MALLOC | DB_DBT_REALLOC)) {
 		free(key.data);
 	}

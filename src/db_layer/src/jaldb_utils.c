@@ -254,7 +254,6 @@ out:
 char *jaldb_gen_timestamp()
 {
 	char *ftime = (char*)jal_malloc(34);
-	char *tz_offset = (char*)jal_malloc(7);
 	struct tm *tm = (struct tm*)jal_malloc(sizeof(struct tm));
 
 	struct timeval *tv = jal_malloc(sizeof(struct timeval));
@@ -263,7 +262,7 @@ char *jaldb_gen_timestamp()
 		return NULL;
 	}
 
-	if (!localtime_r(&tv->tv_sec, tm)) {
+	if (!gmtime_r(&tv->tv_sec, tm)) {
 		return NULL;
 	}
 
@@ -271,17 +270,6 @@ char *jaldb_gen_timestamp()
 
 	snprintf(ftime+bytes,7,".%06ld",tv->tv_usec);
 
-	/* Timezone
-	 * Inserts ':' into [+-]HHMM for [+-]HH:MM */
-	strftime(tz_offset, 7, "%z", tm);
-	tz_offset[6] = '\0';
-	tz_offset[5] = tz_offset[4];
-	tz_offset[4] = tz_offset[3];
-	tz_offset[3] = ':';
-
-	strcat(ftime, tz_offset);
-
-	free(tz_offset);
 	free(tm);
 	free(tv);
 

@@ -133,21 +133,13 @@ enum jal_status jal_create_base64_element(
 char *jal_get_timestamp()
 {
 	char *ftime = (char*)jal_malloc(26);
-	char *tz_offset = (char*)jal_malloc(7);
 	time_t rawtime;
 	struct tm *tm;
 	time(&rawtime);
-	tm = localtime(&rawtime);
+	tm = gmtime(&rawtime);
+
 	strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
-	/* Timezone
-	 * Inserts ':' into [+-]HHMM for [+-]HH:MM */
-	strftime(tz_offset, 7, "%z", tm);
-	tz_offset[6] = '\0';
-	tz_offset[5] = tz_offset[4];
-	tz_offset[4] = tz_offset[3];
-	tz_offset[3] = ':';
-	strcat(ftime, tz_offset);
-	free(tz_offset);
+
 	return ftime;
 
 }

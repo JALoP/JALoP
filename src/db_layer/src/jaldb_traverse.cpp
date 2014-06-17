@@ -98,15 +98,15 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		goto out;
 	}
 
-	db_ret = rdbs->timestamp_tz_idx_db->get_byteswapped(rdbs->timestamp_tz_idx_db, &byte_swap);
+	db_ret = rdbs->timestamp_idx_db->get_byteswapped(rdbs->timestamp_idx_db, &byte_swap);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	db_ret = rdbs->timestamp_tz_idx_db->cursor(rdbs->timestamp_tz_idx_db, NULL, &cursor, DB_DEGREE_2);
+	db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
 	if (0 != db_ret) {
-		JALDB_DB_ERR(rdbs->timestamp_tz_idx_db, db_ret);
+		JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
 		goto out;
 	}
 
@@ -116,7 +116,7 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 			if (DB_NOTFOUND == db_ret) {
 				ret = JALDB_OK;
 			} else {
-				JALDB_DB_ERR(rdbs->timestamp_tz_idx_db, db_ret);
+				JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
 			}
 			goto out;
 		}
@@ -165,9 +165,9 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 				goto out;
 			}
 
-			db_ret = rdbs->timestamp_tz_idx_db->cursor(rdbs->timestamp_tz_idx_db, NULL, &cursor, DB_DEGREE_2);
+			db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
 			if (0 != db_ret) {
-				JALDB_DB_ERR(rdbs->timestamp_tz_idx_db, db_ret);
+				JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
 				goto out;
 			}
 			break;

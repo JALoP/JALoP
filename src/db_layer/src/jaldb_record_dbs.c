@@ -56,11 +56,8 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	// before the primary. Any new indices must be closed before the
 	// primary_db is closed.
 
-	if (rdbs->timestamp_tz_idx_db) {
-		rdbs->timestamp_tz_idx_db->close(rdbs->timestamp_tz_idx_db, 0);
-	}
-	if (rdbs->timestamp_no_tz_idx_db) {
-		rdbs->timestamp_no_tz_idx_db->close(rdbs->timestamp_no_tz_idx_db, 0);
+	if (rdbs->timestamp_idx_db) {
+		rdbs->timestamp_idx_db->close(rdbs->timestamp_idx_db, 0);
 	}
 	if (rdbs->nonce_timestamp_db) {
 		rdbs->nonce_timestamp_db->close(rdbs->nonce_timestamp_db, 0);
@@ -95,8 +92,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	int db_ret;
 	enum jaldb_status ret;
 	char *primary_name =  NULL;
-	char *timestamp_tz_name = NULL;
-	char *timestamp_no_tz_name = NULL;
+	char *timestamp_name = NULL;
 	char *nonce_timestamp_name = NULL;
 	char *record_uuid_name = NULL;
 	char *record_sent_name = NULL;
@@ -106,8 +102,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 
 	if (prefix) {
 		jal_asprintf(&primary_name, "%s_records.db", prefix);
-		jal_asprintf(&timestamp_tz_name, "%s_timestamp_tz_idx.db", prefix);
-		jal_asprintf(&timestamp_no_tz_name, "%s_timestamp_no_tz_idx.db", prefix);
+		jal_asprintf(&timestamp_name, "%s_timestamp_idx.db", prefix);
 		jal_asprintf(&nonce_timestamp_name, "%s_nonce_timestamp.db", prefix);
 		jal_asprintf(&record_uuid_name, "%s_record_uuid_idx.db", prefix);
 		jal_asprintf(&record_sent_name, "%s_record_sent.db", prefix);
@@ -136,68 +131,35 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
-	// Open the 'Timestamp (w/timezone)' DB. The Primary DB keys are XML DateTime
+	// Open the 'Timestamp' DB. The Primary DB keys are XML DateTime
 	// strings. The timestamp DB is is used as a secondary index for the
 	// primary DB.
 
-	db_ret = db_create(&(rdbs->timestamp_tz_idx_db), env, 0);
+	db_ret = db_create(&(rdbs->timestamp_idx_db), env, 0);
 	if (db_ret != 0) {
 		ret = JALDB_E_DB;
 		goto err_out;
 	}
 
-	db_ret = rdbs->timestamp_tz_idx_db->set_flags(rdbs->timestamp_tz_idx_db, DB_DUP | DB_DUPSORT);
+	db_ret = rdbs->timestamp_idx_db->set_flags(rdbs->timestamp_idx_db, DB_DUP | DB_DUPSORT);
 	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->timestamp_tz_idx_db), db_ret);
+		JALDB_DB_ERR((rdbs->timestamp_idx_db), db_ret);
 		ret = JALDB_E_DB;
 		goto err_out;
 	}
 
-	db_ret = rdbs->timestamp_tz_idx_db->set_bt_compare(rdbs->timestamp_tz_idx_db,
+	db_ret = rdbs->timestamp_idx_db->set_bt_compare(rdbs->timestamp_idx_db,
 			jaldb_xml_datetime_compare);
 	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->timestamp_tz_idx_db), db_ret);
+		JALDB_DB_ERR((rdbs->timestamp_idx_db), db_ret);
 		ret = JALDB_E_DB;
 		goto err_out;
 	}
 
-	db_ret = rdbs->timestamp_tz_idx_db->open(rdbs->timestamp_tz_idx_db, txn,
-			timestamp_tz_name, NULL, DB_BTREE, db_flags, 0);
+	db_ret = rdbs->timestamp_idx_db->open(rdbs->timestamp_idx_db, txn,
+			timestamp_name, NULL, DB_BTREE, db_flags, 0);
 	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->timestamp_tz_idx_db), db_ret);
-		ret = JALDB_E_DB;
-		goto err_out;
-	}
-
-	// Open the 'Timestamp (wo/timezone)' DB. The Primary DB keys are XML DateTime
-	// strings. The timestamp DB is is used as a secondary index for the
-	// primary DB.
-
-	db_ret = db_create(&(rdbs->timestamp_no_tz_idx_db), env, 0);
-	if (db_ret != 0) {
-		ret = JALDB_E_DB;
-		goto err_out;
-	}
-
-	db_ret = rdbs->timestamp_no_tz_idx_db->set_flags(rdbs->timestamp_no_tz_idx_db, DB_DUP | DB_DUPSORT);
-	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->timestamp_no_tz_idx_db), db_ret);
-		ret = JALDB_E_DB;
-		goto err_out;
-	}
-
-	db_ret = rdbs->timestamp_no_tz_idx_db->set_bt_compare(rdbs->timestamp_no_tz_idx_db,
-			jaldb_xml_datetime_compare);
-	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->timestamp_no_tz_idx_db), db_ret);
-		ret = JALDB_E_DB;
-		goto err_out;
-	}
-
-	db_ret = rdbs->timestamp_no_tz_idx_db->open(rdbs->timestamp_no_tz_idx_db, txn,
-			timestamp_no_tz_name, NULL, DB_BTREE, db_flags, 0);
-	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->timestamp_no_tz_idx_db), db_ret);
+		JALDB_DB_ERR((rdbs->timestamp_idx_db), db_ret);
 		ret = JALDB_E_DB;
 		goto err_out;
 	}
@@ -284,16 +246,8 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	}
 
 	// Associate the databases for secondary keys.
-	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->timestamp_tz_idx_db,
-			jaldb_extract_datetime_w_tz_key, 0);
-	if (db_ret != 0) {
-		JALDB_DB_ERR((rdbs->primary_db), db_ret);
-		ret = JALDB_E_DB;
-		goto err_out;
-	}
-
-	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->timestamp_no_tz_idx_db,
-			jaldb_extract_datetime_wo_tz_key, 0);
+	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->timestamp_idx_db,
+			jaldb_extract_datetime_key, 0);
 	if (db_ret != 0) {
 		JALDB_DB_ERR((rdbs->primary_db), db_ret);
 		ret = JALDB_E_DB;
@@ -331,8 +285,7 @@ err_out:
 	jaldb_destroy_record_dbs(&rdbs);
 out:
 	free(primary_name);
-	free(timestamp_tz_name);
-	free(timestamp_no_tz_name);
+	free(timestamp_name);
 	free(record_uuid_name);
 	free(nonce_timestamp_name);
 	free(record_sent_name);

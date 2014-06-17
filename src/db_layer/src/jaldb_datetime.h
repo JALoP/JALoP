@@ -59,26 +59,6 @@ extern "C" {
  */
 int jaldb_xml_datetime_compare(DB *db, const DBT *dbt1, const DBT *dbt2);
 
-/**
- * Function to extract the Timestamp as a secondary key if it has a timezone
- * component.
- *
- * This function extracts the XML DateTime timestamp from JALoP Record, creates
- * a copy, and stores it in \p result for use as a secondary index. If the
- * timestamp doesn't contain a timezone, this function returns DB_DONOTINDEX to
- * prevent indexing on the timestamp.
- *
- * @see jaldb_xml_datetime_compare
- *
- * @param[in] secondary Pointer to the secondary DB that is getting modified,
- * this is only checked to see if the record is byte-swapped.
- * @param[in] key The key for the data in the primary DB
- * @param[in] data The data for the record
- * @param[out] result the DBT object to fill in for the datetime secondary key.
- *
- * @return -1 if <tt>(db1 < dbt2)</tt>, 0 if <tt>(dbt1 == dbt1)</tt>, 1 if <tt>(dbt1 > dbt2)</tt>
- */
-int jaldb_extract_datetime_w_tz_key(DB *secondary, const DBT *key, const DBT *data, DBT *result);
 
 /**
  * Function to extract the Timestamp as a secondary key if it does NOT have a
@@ -99,7 +79,7 @@ int jaldb_extract_datetime_w_tz_key(DB *secondary, const DBT *key, const DBT *da
  *
  * @return -1 if <tt>(db1 < dbt2)</tt>, 0 if <tt>(dbt1 == dbt1)</tt>, 1 if <tt>(dbt1 > dbt2)</tt>
  */
-int jaldb_extract_datetime_wo_tz_key(DB *secondary, const DBT *key, const DBT *data, DBT *result);
+int jaldb_extract_datetime_key(DB *secondary, const DBT *key, const DBT *data, DBT *result);
 
 
 /**
@@ -114,16 +94,13 @@ int jaldb_extract_datetime_wo_tz_key(DB *secondary, const DBT *key, const DBT *d
  * Note that the pointer value returned will be a pointer into the contents of
  * \p buffer and must NOT be modified, nor should the caller call free().
  * @param [out] dtLen The length of \p dtString
- * @param [out] has_tz This will be set to 0 if there is no timezone, or 1 if
- * there is a timezone component to the timestamp.
  *
  * @return JALDB_OK on success, or an error code.
  */
 enum jaldb_status jaldb_extract_datetime_key_common(
 		const uint8_t* buffer,
 		char **dtString,
-		size_t *dtLen,
-		char *has_tz);
+		size_t *dtLen);
 
 /**
  * Function to extract the nonce timestamp as a secondary key.

@@ -46,12 +46,11 @@ extern "C" {
  */
 struct jaldb_record_dbs {
 	DB *primary_db;             //<! The database to store actual records in.
-	DB *timestamp_tz_idx_db;    //<! The secondary database to use for timestamps (with timezones) indices.
-	DB *timestamp_no_tz_idx_db; //<! The secondary database to use for timestamps (without timezones) indices.
+	DB *timestamp_idx_db;       //<! The secondary database to use for timestamps indices.
 	DB *nonce_timestamp_db;     //<! The timestamp associated with the nonce at insertion time
 	DB *record_id_idx_db;       //<! The database to use for record UUID indices
 	DB *record_sent_db;         //<! The database to use for record sent flag indices
-	DB *metadata_db;               //<! The database to use for storing metadata about unconfirmed records
+	DB *metadata_db;            //<! The database to use for storing metadata about unconfirmed records
 };
 
 /**
