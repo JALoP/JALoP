@@ -325,43 +325,39 @@ off_t jsub_get_offset(int file_descriptor)
 	return lseek(file_descriptor, 0, SEEK_CUR);
 }
 
-char* jsub_db_status_to_string(jaldb_status db_status)
+const char* jsub_db_status_to_string(jaldb_status db_status)
 {
-	std::string err_str;
 	switch (db_status){
 		case JALDB_E_INVAL:
-			err_str = "JALDB_E_INVAL";
+			return "JALDB_E_INVAL";
 			break;
 		case JALDB_E_READ_ONLY:
-			err_str = "JALDB_E_READ_ONLY";
+			return "JALDB_E_READ_ONLY";
 			break;
 		case JALDB_OK:
-			err_str = "NONE";
+			return "NONE";
 			break;
 		case JALDB_E_NOT_FOUND:
-			err_str = "JALDB_E_NOT_FOUND";
+			return "JALDB_E_NOT_FOUND";
 			break;
 		case JALDB_E_CORRUPTED:
-			err_str = "JALDB_E_CORRUPTED";
+			return "JALDB_E_CORRUPTED";
 			break;
 		case JALDB_E_DB:
-			err_str = "JALDB_E_DB";
+			return "JALDB_E_DB";
 			break;
 		default:
-			err_str = "UNEXPECTED_ERROR";
+			return "UNEXPECTED_ERROR";
 			break;
 	}
-	return (char *) err_str.c_str();
 }
 
 void jsub_write_to_stderr_db_status(
 	jaldb_status db_status,
 	char *err_msg)
 {
-	char *error_name = NULL;
-	error_name = jsub_db_status_to_string(db_status);
+	const char *error_name = jsub_db_status_to_string(db_status);
 	fprintf(stderr, "%s\t%s\n", error_name, err_msg);
-	free(error_name);
 }
 
 void jsub_flush_stale_data(jaldb_context *db_ctx, const char *host, int data_classes, int debug)

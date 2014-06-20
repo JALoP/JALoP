@@ -332,7 +332,7 @@ off_t jsub_get_offset(int file_descriptor);
  *  - JALDB_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
-char* jsub_db_status_to_string(jaldb_status db_status);
+const char* jsub_db_status_to_string(jaldb_status db_status);
 
 /**
 * Writes jaldb_status and an error message to stderr.
