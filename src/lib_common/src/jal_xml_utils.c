@@ -270,6 +270,7 @@ enum jal_status jal_digest_xml_data(
 	void *instance = dgst_ctx->create();
 	if (instance == NULL) {
 		free(dval);
+		dval = NULL;
 		jal_error_handler(JAL_E_NO_MEM);
 	}
 	enum jal_status ret = (enum jal_status) dgst_ctx->init(instance);
@@ -305,6 +306,8 @@ enum jal_status jal_digest_xml_data(
 error_out:
 	free(dval);
 	dval = NULL;
+	dgst_ctx->destroy(instance);
+	return ret;
 out:
 	*digest_out = dval;
 	*digest_len = dlen;
