@@ -23,11 +23,6 @@ tests.append(testEnv.TestDeptTest('test_jal_digest.c', other_sources=[errorCallb
 tests.append(testEnv.TestDeptTest('test_jal_base64.c',
 	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 
-tests.append(testEnv.TestDeptTest('test_jal_error_callback.c', other_sources=[], useProxies=True)[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jal_alloc.c', other_sources=[errorCallbackObj], useProxies=True)[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jal_digest.c', other_sources=[errorCallbackObj, allocObj], useProxies=True)[0].abspath)
-tests.append(testEnv.TestDeptTest('test_jal_base64.c',
-	other_sources=[allocObj, errorCallbackObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_xml_utils.c',
 	other_sources=[test_utils, errorCallbackObj, allocObj, base64Obj, digestObj])[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_fs_utils.c',

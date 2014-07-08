@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <test-dept.h>
+#include <errno.h>
 
 #include "jal_alloc.h"
 #include "jal_error_callback_internal.h"
@@ -182,4 +183,158 @@ void test_jal_strdup_success()
 	char *string = jal_strdup("test");
 	assert_not_equals((char *) NULL, string);
 	free(string);
+}
+
+/* ----------------- */
+/* jal_strndup tests */
+/* ----------------- */
+void test_jal_strndup_success_full()
+{
+	/* Create a string with the full character set - less \0 */
+	int i=0;
+	char source[256];
+	for (i = 0; i < 255; i++) {
+		source[i] = i+1; 
+	}
+	source[i] = '\0';
+
+	char *ptr = jal_strndup(source, 256);
+
+	/* Check for no errors */ 
+	assert_not_equals(NULL, ptr);
+	assert_not_equals(ENOMEM, errno);
+
+	/* Check for content and length */
+	assert_equals(0, strcmp(ptr, source));
+	assert_equals(255, strlen(ptr));
+
+	free(ptr);
+}
+
+void test_jal_strndup_success_buffer_bigger()
+{
+	char *source = "Howdy";
+	char *ptr = jal_strndup(source, 6);
+
+	/* Check for no errors */ 
+	assert_not_equals(NULL, ptr);
+	assert_not_equals(ENOMEM, errno);
+
+	/* Check for content and length */
+	assert_equals(0, strcmp(ptr, source));
+	assert_equals(5, strlen(ptr));
+
+	free(ptr);
+}
+
+void test_jal_strndup_success_buffer_exact()
+{
+	char *source = "Howdy";
+	char *ptr = jal_strndup(source, 5); 
+
+	/* Check for no errors */ 
+	assert_not_equals(NULL, ptr);
+	assert_not_equals(ENOMEM, errno);
+
+	/* Check for content and length */
+	assert_equals(0, strcmp(ptr, source));
+	assert_equals(5, strlen(ptr));
+
+	free(ptr);
+}
+
+void test_jal_strndup_success_buffer_short()
+{
+	char *source = "Howdy";
+	char *ptr = jal_strndup(source, 4); 
+
+	/* Check for no errors */ 
+	assert_not_equals(NULL, ptr);
+	assert_not_equals(ENOMEM, errno);
+
+	/* Check for content and length */
+	assert_equals(0, strcmp(ptr, "Howd"));
+	assert_equals(4, strlen(ptr));
+
+	free(ptr);
+}
+
+void test_jal_strndup_source_null()
+{
+	char *ptr = jal_strndup(NULL, 100);
+	assert_equals(NULL, ptr);
+}
+
+void test_jal_strndup_size_zero()
+{
+	char *ptr = jal_strndup("Test string....", 0);
+	assert_equals(NULL, ptr);
+}
+
+/* ---------------- */
+/* jal_memdup tests */
+/* ---------------- */
+void test_jal_memdup_success_full()
+{
+	/* Create a string with the full character set, including \0 */
+	int i=0;
+	char source[256];
+	for (i = 0; i <= 255; i++) {
+		source[i] = i; 
+	}
+
+	char *ptr = jal_memdup(source, 256);
+
+	/* Check for no errors */ 
+	assert_not_equals(NULL, ptr);
+	assert_not_equals(ENOMEM, errno);
+
+	/* Check for content and length */
+	assert_equals(0, memcmp(ptr, source, 256));
+
+	free(ptr);
+}
+
+/* Can't test the buffer bigger than source as we expect the calling function to pass the length to us. */
+
+void test_jal_memdup_success_buffer_exact()
+{
+	char *source = "Howdy";
+	char *ptr = jal_memdup(source, 5); 
+
+	/* Check for no errors */ 
+	assert_not_equals(NULL, ptr);
+	assert_not_equals(ENOMEM, errno);
+
+	/* Check for content and length */
+	assert_equals(0, memcmp(ptr, source, 5));
+
+	free(ptr);
+}
+
+void test_jal_memdup_success_buffer_short()
+{
+	char *source = "Howdy";
+	char *ptr = jal_memdup(source, 4); 
+
+	/* Check for no errors */ 
+	assert_not_equals(NULL, ptr);
+	assert_not_equals(ENOMEM, errno);
+
+	/* Check for content and length */
+	assert_equals(0, memcmp(ptr, source, 4));
+
+	free(ptr);
+}
+
+void test_jal_memdup_source_null()
+{
+	char *ptr = jal_memdup(NULL, 100);
+	assert_equals(NULL, ptr);
+}
+
+void test_jal_memdup_size_zero()
+{
+	char *ptr = jal_memdup("Test string....", 0);
+	assert_equals(NULL, ptr);
 }

@@ -113,6 +113,18 @@ char *jal_strdup(const char *str);
  */
 char *jal_strndup(const char *str, size_t size);
 
+/**
+ * Allocates a buffer based on size, and uses memcpy to copy the buffer pointer to by str. 
+ * If malloc returns with no issues, returns a pointer to the new duplicate string. Otherwise, calls jal_error_handler.
+ * 
+ * @param[in] buf pointer to buffer to be duplicated. 
+ * @param[in] size number of bytes to copy. 
+ *
+ * @return a char pointer to the duplicate buffer, to be freed with free()
+ *
+ */
+char *jal_memdup(const char *buf, size_t size);
+
 #ifdef __cplusplus
 }
 #endif

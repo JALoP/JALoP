@@ -108,14 +108,14 @@ int jsub_insert_audit(
 	if (app_len) {
 		rec->app_meta = jaldb_create_segment();
 		rec->app_meta->length = app_len;
-		rec->app_meta->payload = (uint8_t *) jal_strdup((const char*) app_meta);
+		rec->app_meta->payload = (uint8_t *) jal_memdup((const char*) app_meta, app_len);
 		rec->app_meta->on_disk = 0;
 	}
 
 	if (audit_len > 0) {
 		rec->payload = jaldb_create_segment();
 		rec->payload->length = audit_len;
-		rec->payload->payload = (uint8_t *) jal_strdup((const char*) audit);
+		rec->payload->payload = (uint8_t *) jal_memdup((const char*) audit, audit_len);
 		rec->payload->on_disk = 0;
 	}
 
@@ -165,15 +165,14 @@ int jsub_insert_log(
 	if (app_len) {
 		rec->app_meta = jaldb_create_segment();
 		rec->app_meta->length = app_len;
-		rec->app_meta->payload = (uint8_t *) jal_strdup((const char*) app_meta);
+		rec->app_meta->payload = (uint8_t *) jal_memdup((const char*) app_meta, app_len);
 		rec->app_meta->on_disk = 0;
 	}
 
 	if (log_len > 0) {
 		rec->payload = jaldb_create_segment();
 		rec->payload->length = log_len;
-		uint8_t *payload = (uint8_t *)jal_malloc(log_len);
-		memcpy(payload, log, log_len);
+		uint8_t *payload = (uint8_t *)jal_memdup((const char*)log, log_len);
 		rec->payload->payload = payload;
 		rec->payload->on_disk = 0;
 	}
@@ -275,7 +274,7 @@ int jsub_insert_journal_metadata(
 	if (app_len) {
 		rec->app_meta = jaldb_create_segment();
 		rec->app_meta->length = app_len;
-		rec->app_meta->payload = (uint8_t *) jal_strdup((const char*) app_meta);
+		rec->app_meta->payload = (uint8_t *) jal_memdup((const char*) app_meta, app_len);
 		rec->app_meta->on_disk = 0;
 	}
 
