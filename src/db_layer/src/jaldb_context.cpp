@@ -895,21 +895,29 @@ enum jaldb_status jaldb_get_journal_resume(
 		char **path,
 		uint64_t &offset)
 {
-	int byte_swap;
 	enum jaldb_status ret = JALDB_OK;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
 	DB_TXN *txn = NULL;
-	DBT key;
+	DBT offset_key;
+	DBT path_key;
+	DBT nonce_key;
 	DBT offset_val;
 	DBT path_val;
 	DBT nonce_val;
 
-	if (!ctx || !remote_host) {
+	if (!ctx || !remote_host || !path || !nonce) {
 		return JALDB_E_INVAL;
 	}
 
-	memset(&key, 0, sizeof(key));
+	/* Berkeley DB stores the data as Key, Value pairs */
+
+	/* Initialze the keys */
+	memset(&offset_key, 0, sizeof(offset_key));
+	memset(&path_key, 0, sizeof(path_key));
+	memset(&nonce_key, 0, sizeof(nonce_key));
+
+	/* Initialize the values */
 	memset(&offset_val, 0, sizeof(offset_val));
 	memset(&path_val, 0, sizeof(path_val));
 	memset(&nonce_val, 0, sizeof(nonce_val));
@@ -920,19 +928,23 @@ enum jaldb_status jaldb_get_journal_resume(
 		goto out;
 	}
 
-	key.flags = DB_DBT_REALLOC;
-	key.data = jal_strdup(JALDB_OFFSET_NAME);
-	key.size = strlen(JALDB_OFFSET_NAME) + 1;
-
-	db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
-	if (0 != db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
 	offset_val.flags = DB_DBT_REALLOC;
 	path_val.flags = DB_DBT_REALLOC;
 	nonce_val.flags = DB_DBT_REALLOC;
+
+	/* Create the three key strings (and sizes) for the DB calls. Free at end of this function */
+	/* BDB can resize with realloc. */
+	offset_key.data = jal_strdup(JALDB_OFFSET_NAME);
+	offset_key.size = strlen(JALDB_OFFSET_NAME) + 1;
+	offset_key.flags = DB_DBT_REALLOC;
+
+	path_key.data = jal_strdup(JALDB_JOURNAL_PATH);
+	path_key.size = strlen(JALDB_JOURNAL_PATH) + 1;
+	path_key.flags = DB_DBT_REALLOC;
+
+	nonce_key.data = jal_strdup(JALDB_RESUME_NONCE_NAME);
+	nonce_key.size = strlen(JALDB_RESUME_NONCE_NAME) + 1;
+	nonce_key.flags = DB_DBT_REALLOC;
 
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
@@ -941,46 +953,68 @@ enum jaldb_status jaldb_get_journal_resume(
 			goto out;
 		}
 
-		db_ret = rdbs->metadata_db->get(rdbs->metadata_db, txn, &key, &offset_val, DB_DEGREE_2);
-
-		if (0 == db_ret) {
-			key.data = jal_strdup(JALDB_JOURNAL_PATH);
-			key.size = strlen(JALDB_JOURNAL_PATH) + 1;
-			db_ret =  rdbs->metadata_db->get(rdbs->metadata_db, txn, &key, &path_val, DB_DEGREE_2);
+		/* Get the offset for the record. offset_val.data is allocated by the DB and freed by us */
+		db_ret = rdbs->metadata_db->get(rdbs->metadata_db, txn, &offset_key, &offset_val, DB_DEGREE_2);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			goto out;
 		}
 
-		if (0 == db_ret) {
-			key.data = jal_strdup(JALDB_RESUME_NONCE_NAME);
-			key.size = strlen(JALDB_RESUME_NONCE_NAME) + 1;
-			db_ret =  rdbs->metadata_db->get(rdbs->metadata_db, txn, &key, &nonce_val, DB_DEGREE_2);
+		/* Get the path for the record. path_val.data is allocated by the DB and freed by us */
+		db_ret =  rdbs->metadata_db->get(rdbs->metadata_db, txn, &path_key, &path_val, DB_DEGREE_2);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			goto out;
 		}
 
+		/* Get the nonce for the record. nonce_val.data is allocated by the DB and freed by us */
+		db_ret =  rdbs->metadata_db->get(rdbs->metadata_db, txn, &nonce_key, &nonce_val, DB_DEGREE_2);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		/* Commit the database transactions */
+		/* If DB_TXN->commit encounters an error, the transaction and all child transactions of the transaction are aborted. */
+		db_ret = txn->commit(txn, 0);
 		if (0 == db_ret) {
-			txn->commit(txn, 0);
 			break;
-		}
-
-		txn->abort(txn);
-
-		if (DB_LOCK_DEADLOCK == db_ret) {
+		} else if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
 		} else if (DB_NOTFOUND == db_ret) {
 			ret = JALDB_E_NOT_FOUND;
 			goto out;
+		} else {
+			ret = JALDB_E_DB;
+			goto out;
 		}
-		// some other error
-		ret = JALDB_E_DB;
-		goto out;
 	}
 
+	/* Check for a well formatted offset */
 	if(0 > sscanf((char*)offset_val.data, "%" PRIu64, &offset)) {
 		ret = JALDB_E_CORRUPTED;
 	}
-	*path = jal_strdup((char*)path_val.data);
-	*nonce = jal_strdup((char*)nonce_val.data);
+
+	/* Reuse allocated memory for return value */
+	*nonce = (char *)nonce_val.data;
+	/* Set original ptr to NULL so we can fall through to block of frees below */
+	nonce_val.data = NULL;
+
+	/* Reuse allocated memory for return value */
+	*path = (char *)path_val.data;
+	/* Set original ptr to NULL so we can fall through to block of frees below */
+	path_val.data = NULL;
 
 out:
-	free(key.data);
+	/* Free the memory allocated for the keys */
+	free(offset_key.data);
+	free(path_key.data);
+	free(nonce_key.data);
+
+	/* Free the memory allocated for the values */
 	free(offset_val.data);
 	free(path_val.data);
 	free(nonce_val.data);
