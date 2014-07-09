@@ -768,26 +768,32 @@ enum jaldb_status jaldb_store_journal_resume(
 		const char *path,
 		uint64_t offset)
 {
-	int byte_swap;
 	enum jaldb_status ret = JALDB_OK;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
-	DBT key;
+	DBT offset_key;
+	DBT path_key;
+	DBT nonce_key;
 	DBT offset_val;
 	DBT path_val;
 	DBT nonce_val;
 	DB_TXN *txn;
 
-	if (!ctx || !remote_host || !path) {
+	if (!ctx || !remote_host || !path || !nonce) {
 		return JALDB_E_INVAL;
 	}
 
-	memset(&key, 0, sizeof(key));
+	/* Berkeley DB stores the data as Key, Value pairs */
+
+	/* Initialze the keys */
+	memset(&offset_key, 0, sizeof(offset_key));
+	memset(&path_key, 0, sizeof(path_key));
+	memset(&nonce_key, 0, sizeof(nonce_key));
+
+	/* Initialize the values */
 	memset(&offset_val, 0, sizeof(offset_val));
 	memset(&path_val, 0, sizeof(path_val));
 	memset(&nonce_val, 0, sizeof(nonce_val));
-	char *offset_buf = (char *)jal_malloc(21);
-	snprintf(offset_buf, 21, "%" PRIu64, offset);
 
 	db_ret = jaldb_get_dbs(ctx, remote_host, JALDB_RTYPE_JOURNAL, &rdbs);
 	if (0 != db_ret) {
@@ -795,18 +801,34 @@ enum jaldb_status jaldb_store_journal_resume(
 		goto out;
 	}
 
-	db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
-	if (0 != db_ret) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
+	/* Create the three key strings (and sizes) for the DB calls. Free at end of this function */
+	/* BDB can resize with realloc, although not sure this will happen on a put. */
+	offset_key.data = jal_strdup(JALDB_OFFSET_NAME);
+	offset_key.size = strlen(JALDB_OFFSET_NAME) + 1;
+	offset_key.flags = DB_DBT_REALLOC;
 
-	offset_val.size = strlen(offset_buf) + 1;
-	offset_val.data = offset_buf;
+	path_key.data = jal_strdup(JALDB_JOURNAL_PATH);
+	path_key.size = strlen(JALDB_JOURNAL_PATH) + 1;
+	path_key.flags = DB_DBT_REALLOC;
 
-	key.flags = DB_DBT_REALLOC;
-	key.data = jal_strdup(JALDB_OFFSET_NAME);
-	key.size = strlen(JALDB_OFFSET_NAME) + 1;
+	nonce_key.data = jal_strdup(JALDB_RESUME_NONCE_NAME);
+	nonce_key.size = strlen(JALDB_RESUME_NONCE_NAME) + 1;
+	nonce_key.flags = DB_DBT_REALLOC;
+
+	/* Create the three value strings (and sizes) for the DB calls. Free at end of this function */
+	/* BDB can resize with realloc, although not sure this will happen on a put. */
+	offset_val.data = (char *)jal_malloc(21);
+	snprintf((char *)offset_val.data, 21, "%" PRIu64, offset);
+	offset_val.size = strlen((char *)offset_val.data) + 1;
+	offset_val.flags = DB_DBT_REALLOC;
+
+	path_val.data = jal_strdup(path);
+	path_val.size = strlen(path) + 1;
+	path_val.flags = DB_DBT_REALLOC;
+
+	nonce_val.data = jal_strdup(nonce);
+	nonce_val.size = strlen(nonce) + 1;
+	nonce_val.flags = DB_DBT_REALLOC;
 
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
@@ -815,48 +837,54 @@ enum jaldb_status jaldb_store_journal_resume(
 			break;
 		}
 
-		db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &offset_val, 0);
-
-		if (0 == db_ret) {
-			path_val.size = strlen(path) + 1;
-			path_val.data = jal_strdup(path);
-
-			key.data = jal_strdup(JALDB_JOURNAL_PATH);
-			key.size = strlen(JALDB_JOURNAL_PATH) + 1;
-			db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &path_val, 0);
-		}
-
-		if (0 == db_ret) {
-			nonce_val.size = strlen(nonce) + 1;
-			nonce_val.data = jal_strdup(nonce);
-
-			key.data = jal_strdup(JALDB_RESUME_NONCE_NAME);
-			key.size = strlen(JALDB_RESUME_NONCE_NAME) + 1;
-			db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &nonce_val, 0);
-		}
-
-		if (0 == db_ret) {
-			db_ret = txn->commit(txn, 0);
-		} else {
-			ret = JALDB_E_DB;
+		/* Store the offset for the record */
+		db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &offset_key, &offset_val, 0);
+		if (0 != db_ret) {
 			txn->abort(txn);
-		}
-		if (0 == db_ret) {
+			ret = JALDB_E_DB;
 			break;
 		}
-		if (DB_LOCK_DEADLOCK == db_ret) {
+
+		/* Store the path for the record */
+		db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &path_key, &path_val, 0);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			break;
+		}
+
+		/* Store the nonce for the record */
+		db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &nonce_key, &nonce_val, 0);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			break;
+		}
+
+		/* Commit the database transactions */
+		db_ret = txn->commit(txn, 0);
+		if (0 == db_ret) {
+			break;
+		} else if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
 		} else {
+			/* If DB_TXN->commit encounters an error, the transaction and all child transactions of the transaction are aborted. */
 			ret = JALDB_E_DB;
 			break;
 		}
 	}
 
-out:
-	free(key.data);
+	/* Free the memory allocated for the keys */
+	free(offset_key.data);
+	free(path_key.data);
+	free(nonce_key.data);
+
+	/* Free the memory allocated for the values */
 	free(offset_val.data);
 	free(path_val.data);
 	free(nonce_val.data);
+
+out:
 	return ret;
 }
 
