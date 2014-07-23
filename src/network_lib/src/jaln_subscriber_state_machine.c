@@ -353,8 +353,10 @@ axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *fram
 		goto err_out;;
 	}
 
+	vortex_mutex_lock(&session->lock);
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type,
 			session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
+	vortex_mutex_unlock(&session->lock);
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len);
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
@@ -370,6 +372,7 @@ axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame,
 	if (!session || !session->dgst || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks || !session->sub_data->sm) {
 		goto err_out;
 	}
+
 	// at this point, there should be no more data coming down the pipe...
 	// one last sanity check.
 	if (!jaln_sub_rec_complete_sanity_check(session, frame, frame_off, more)) {
@@ -385,8 +388,10 @@ axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame,
 		goto err_out;
 	}
 
+	vortex_mutex_lock(&session->lock);
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type,
 			session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
+	vortex_mutex_unlock(&session->lock);
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len);
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
@@ -410,8 +415,10 @@ axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *fr
 	if (JAL_OK != session->dgst->final(session->sub_data->sm->dgst_inst, session->sub_data->sm->dgst, &dgst_len)) {
 		goto err_out;
 	}
+	vortex_mutex_lock(&session->lock);
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type, session->sub_data->sm->nonce,
 			session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
+	vortex_mutex_unlock(&session->lock);
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len);
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);

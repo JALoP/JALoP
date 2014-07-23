@@ -97,8 +97,8 @@ void jaln_session_unref(jaln_session *sess)
 	}
 	sess->ref_cnt--;
 	if (0 == sess->ref_cnt) {
-		vortex_mutex_unlock(&sess->lock);
 		jaln_session_destroy(&sess);
+		vortex_mutex_unlock(&sess->lock);
 		return;
 	}
 	vortex_mutex_unlock(&sess->lock);
