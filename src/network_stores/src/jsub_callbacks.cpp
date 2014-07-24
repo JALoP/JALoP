@@ -443,6 +443,7 @@ int jsub_on_digest_response(
 	std::string nonce_str = nonce;
 	std::string rec_type = "";
 	bool willXfer = false;
+	char *rec_nonce = NULL;
 	switch (type)
 	{
 		case JALN_RTYPE_JOURNAL:
@@ -470,9 +471,9 @@ int jsub_on_digest_response(
 			break;
 	}
 	if (willXfer) {
-		db_err = jaldb_xfer(jsub_db_ctx, jaldb_type, source.c_str(), nonce_str.c_str(), &tmp_nonce);
+		db_err = jaldb_mark_confirmed(jsub_db_ctx, jaldb_type, nonce_str.c_str(), &rec_nonce);
 		if(JALDB_OK == db_err) {
-			db_err = jaldb_store_confed_nonce_temp(jsub_db_ctx, jaldb_type, source.c_str(), nonce_str.c_str());
+			db_err = jaldb_store_confed_nonce_temp(jsub_db_ctx, jaldb_type, source.c_str(), rec_nonce);
 			if (jsub_debug) {
 				if (JALDB_OK == db_err) {
 					ret = JAL_OK;
@@ -485,8 +486,8 @@ int jsub_on_digest_response(
 				}
 			}
 		} else {
-			DEBUG_LOG("Failed to transfer record! %s nonce: %s\n",
-				rec_type.c_str(), nonce_str.c_str());
+			DEBUG_LOG("Failed to confirm record! %s nonce: %s error: %d\n",
+				rec_type.c_str(), nonce_str.c_str(), db_err);
 		}
 	}
 	free(tmp_nonce);

@@ -145,7 +145,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		data_buf = NULL;
 	}
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, &nonce);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
 	free(nonce);
 	nonce = NULL;
 	if (JALDB_OK != db_err) {

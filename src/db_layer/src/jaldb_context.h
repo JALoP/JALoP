@@ -72,36 +72,11 @@ enum jaldb_status jaldb_context_init(
 
 /**
  * Destroys a DB context.
- * Release all resources associated with this context. This should remove any
- * temporary databases that were created.
+ * Release all resources associated with this context.
  *
  * @param ctx[in,out] The context to destroy. *ctx will be set to NULL.
  */
 void jaldb_context_destroy(jaldb_context **ctx);
-
-/**
- * Inserts an audit record into a temporary container.
- * @param[in] ctx The context.
- * @param[in] db_name A name to associate with the container.
- * @param[in] sys_meta_buf A buffer containing the system metadata.
- * @param[in] sys_meta_len The size (in bytes) of sys_meta_buf.
- * @param[in] app_meta_buf A buffer containing the application metadata.
- * @param[in] app_meta_len The size (in bytes) of app_meta_buf.
- * @param[in] audit_buf A buffer containing the audit data.
- * @param[in] audit_len The size (in bytes) of audit_buf.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_insert_audit_record_into_temp(
-	jaldb_context *ctx,
-	char *db_name,
-	const uint8_t *sys_meta_buf,
-	const size_t sys_meta_len,
-	const uint8_t *app_meta_buf,
-	const size_t app_meta_buf_len,
-	const uint8_t *audit_buf,
-	const size_t audit_len);
 
 /**
  * Retrieves a record by nonce.
@@ -122,25 +97,6 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		char *nonce,
 		struct jaldb_record **rec);
 
-/**
- * Retrieves a temporary record by nonce and source.
- *
- * @param[in] ctx The context.
- * @param[in] type The type of record (journal, audit, log).
- * @param[in] nonce The nonce of the record being retrieved.
- * @param[in] source The source of the record
- * @param[out] rec This will be filled in as a jaldb_record object if the
- * record is found. Note that any segments located on disk will not be opened
- * automatically.
- *
- * @return JAL_OK if the function succeeds or a JAL error code if the function
- * fails.
- */
-enum jaldb_status jaldb_get_record_from_temp(jaldb_context *ctx,
-		enum jaldb_rec_type type,
-		const char *nonce,
-		const char *source,
-		struct jaldb_record **rec);
 
 /**
  * Retrieves a record by serial UUID.
@@ -193,6 +149,22 @@ enum jaldb_status jaldb_mark_synced(
 		const char *nonce);
 
 /**
+ * Finds a given record and marks it as confirmed by the publisher's digest.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, or log).
+ * @param[in] network_nonce The secondary index network_nonce of the record to mark.
+ * @param[out] nonce_out Will store the nonce of the confirmed record on success.
+ *
+ * @return JALDB_OK on success, or a different JALDB error code on failure.
+ */
+enum jaldb_status jaldb_mark_confirmed(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		const char *network_nonce,
+		char **nonce_out);
+
+/**
  * Retrieves the next un-synced record from the database.
  *
  * @param[in] ctx The context.
@@ -233,35 +205,12 @@ enum jaldb_status jaldb_next_chronological_record(
  * Utility to insert any JALoP record
  * @param[in] ctx the DB context.
  * @param[in] rec The record to insert.
+ * @param[in] confirmed Whether or not to mark this record as confirmed.
  * @param[out] local_nonce The nonce assigned to the record by the DB
  *
  * @return JALDB_OK on success, or an error code.
  */
-enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, char **local_nonce);
-
-/**
- * Utility to insert any JALoP record into a temporary database
- * @param[in] ctx the DB context.
- * @param[in,out] rec The record to insert.
- * @param[in] source The source of the record
- * @param[in] nonce The nonce of the record
- *
- * @return JALDB_OK on success, or an error code.
- */
-enum jaldb_status jaldb_insert_record_into_temp(jaldb_context *ctx, struct jaldb_record *rec, char* source, char* nonce);
-
-/**
- * Utility to transfer a record from a temporary database into the permanent database
- * @param[in] ctx The DB context.
- * @param[in] type The record type
- * @param[in] source The source of the record
- * @param[in] nonce_in The nonce of the record in the temp db
- * @param[out] nonce_out The nonce of the record in the permanent db
- *
- * @return JALDB_OK on success, or an error code.
- */
- enum jaldb_status jaldb_xfer(jaldb_context *ctx, enum jaldb_rec_type type, const char* source, const char* nonce_in, char** nonce_out);
-
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, int confirmed, char **local_nonce);
 
 /**
  * Open a segment on disk for reading.
@@ -285,22 +234,6 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
 enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		char *nonce);
-
-/**
- * Remove a record (by NONCE) from the temporary database
- *
- * @param[in] ctx The context.
- * @param[in] type The type of record (journal, audit, log).
- * @param[in] source The source of the record.
- * @param[in] nonce The nonce of the record being removed.
- *
- * @return JALDB_OK if the function succeeds or an error code.
- */
-enum jaldb_status jaldb_remove_record_from_temp(
-		jaldb_context *ctx,
-		enum jaldb_rec_type type,
-		const char *source,
-		const char *nonce);
 
 /**
  * Utility function to remove all the segments store on disk for a specific
@@ -341,14 +274,14 @@ enum jaldb_status jaldb_get_primary_record_dbs(
  * @param[in] type the type of record
  * @param[out] rdbs the record db found, or NULL if it was not found
  *
- * @return	JALDB_OK - success
- * 		JALDB_E_INVAL - invalid parameter
- */		
+ * @return      JALDB_OK - success
+ *              JALDB_E_INVAL - invalid parameter
+ */             
 enum jaldb_status jaldb_lookup_rdbs_in_map(
-		jaldb_context *ctx, 
-		const char *source, 
-		enum jaldb_rec_type type,
-		struct jaldb_record_dbs **rdbs);
+                jaldb_context *ctx, 
+                const char *source, 
+                enum jaldb_rec_type type,
+                struct jaldb_record_dbs **rdbs);
 
 /**
  * Store record dbs struct in the appropriate temporary map for its source string
@@ -357,14 +290,15 @@ enum jaldb_status jaldb_lookup_rdbs_in_map(
  * @param[in] type the type of record
  * @param[in] rdbs the record db struct to store
  *
- * @return	JALDB_OK - success
- * 		JALDB_E_INVAL - invalid parameter
+ * @return      JALDB_OK - success
+ *              JALDB_E_INVAL - invalid parameter
  */
 enum jaldb_status jaldb_store_rdbs_in_map(
-		jaldb_context *ctx, 
-		const char *source, 
-		enum jaldb_rec_type type,
-		struct jaldb_record_dbs *rdbs);
+                jaldb_context *ctx, 
+                const char *source, 
+                enum jaldb_rec_type type,
+                struct jaldb_record_dbs *rdbs);
+
 
 /**
  * Open dbs for a record_dbs struct to be used for temporary storage of unconfirmed records
@@ -372,15 +306,16 @@ enum jaldb_status jaldb_store_rdbs_in_map(
  * @param[in] rdbs the temporary record dbs struct
  * @param[in] db_flags flags to pass to Berkeley db
  *
- * @return	JALDB_OK - success
- * 		JALDB_E_DB - database error
+ * @return      JALDB_OK - success
+ *              JALDB_E_DB - database error
  */
 enum jaldb_status jaldb_open_dbs_for_temp(
-		jaldb_context *ctx,
-		const char *source,
-		enum jaldb_rec_type rtype,
-		struct jaldb_record_dbs *rdbs,
-		const u_int32_t db_flags);
+                jaldb_context *ctx,
+                const char *source,
+                enum jaldb_rec_type rtype,
+                struct jaldb_record_dbs *rdbs,
+                const u_int32_t db_flags);
+ 
 #ifdef __cplusplus
 }
 #endif

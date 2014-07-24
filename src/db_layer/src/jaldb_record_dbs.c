@@ -77,6 +77,9 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	if (rdbs->network_nonce_idx_db) {
 		rdbs->network_nonce_idx_db->close(rdbs->network_nonce_idx_db, 0);
 	}
+	if (rdbs->record_confirmed_db) {
+		rdbs->record_confirmed_db->close(rdbs->record_confirmed_db, 0);
+	}
 	free(rdbs);
 	*record_dbs = NULL;
 }
@@ -99,6 +102,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	char *nonce_timestamp_name = NULL;
 	char *record_uuid_name = NULL;
 	char *record_sent_name = NULL;
+	char *record_confirmed_name = NULL;
 	char *nonce_name = NULL;
 	char *network_nonce_name = NULL;
 
@@ -110,6 +114,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		jal_asprintf(&nonce_timestamp_name, "%s_nonce_timestamp.db", prefix);
 		jal_asprintf(&record_uuid_name, "%s_record_uuid_idx.db", prefix);
 		jal_asprintf(&record_sent_name, "%s_record_sent.db", prefix);
+		jal_asprintf(&record_confirmed_name, "%s_record_confirmed.db", prefix);
 		jal_asprintf(&nonce_name, "%s_nonce.db", prefix);
 		jal_asprintf(&network_nonce_name, "%s_network_nonce_idx.db", prefix);
 	}
@@ -273,6 +278,29 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
+	// Open the confirmed DB.  This is a secondary index grouping whether records
+	// have yet to be confirmed via digest.
+	db_ret = db_create(&(rdbs->record_confirmed_db), env, 0);
+	if (db_ret != 0) {
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->record_confirmed_db->set_flags(rdbs->record_confirmed_db, DB_DUP | DB_DUPSORT);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->record_confirmed_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
+	db_ret = rdbs->record_confirmed_db->open(rdbs->record_confirmed_db, txn,
+			record_confirmed_name, NULL, DB_BTREE, db_flags, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->record_confirmed_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
 	// Associate the databases for secondary keys.
 	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->timestamp_idx_db,
 			jaldb_extract_datetime_key, 0);
@@ -314,6 +342,15 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
+
+	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->record_confirmed_db,
+			jaldb_extract_record_confirmed_flag, 0);
+	if (db_ret != 0) {
+		JALDB_DB_ERR((rdbs->primary_db), db_ret);
+		ret = JALDB_E_DB;
+		goto err_out;
+	}
+
 	*pprdbs = rdbs;
 	ret = JALDB_OK;
 	goto out;
@@ -326,6 +363,7 @@ out:
 	free(nonce_timestamp_name);
 	free(record_sent_name);
 	free(network_nonce_name);
+	free(record_confirmed_name);
 	free(nonce_name);
 	return ret;
 }

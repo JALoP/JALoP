@@ -78,7 +78,7 @@ void jsub_teardown_db_layer(jaldb_context **db_ctx)
 
 int jsub_insert_audit(
 		jaldb_context *db_ctx,
-		char *c_source,
+		__attribute__((unused)) char *c_source,
 		uint8_t *sys_meta,
 		size_t sys_len,
 		uint8_t *app_meta,
@@ -90,6 +90,7 @@ int jsub_insert_audit(
 {
 	int ret = JAL_E_INVAL;
 	struct jaldb_record *rec;
+	char* local_nonce = NULL;
 
 	// Must have sys_meta and audit_doc
 	if (!sys_meta || !audit || !nonce_in || !db_ctx) {
@@ -123,10 +124,12 @@ int jsub_insert_audit(
 		rec->payload->on_disk = 0;
 	}
 
-	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
+	rec->network_nonce = jal_strdup(nonce_in);
+
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
 	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
-		DEBUG_LOG("Failed to insert audit into temp!\n");
+		DEBUG_LOG("Failed to insert audit into database!\n");
 	}
 out:
 
@@ -135,7 +138,7 @@ out:
 
 int jsub_insert_log(
 		jaldb_context *db_ctx,
-		char *c_source,
+		__attribute__((unused)) char *c_source,
 		uint8_t *sys_meta,
 		size_t sys_len,
 		uint8_t *app_meta,
@@ -147,6 +150,7 @@ int jsub_insert_log(
 {
 	int ret = JALDB_E_UNKNOWN;
 	struct jaldb_record *rec;
+	char* local_nonce = NULL;
 
 	// Only requires sys_meta
 	if (!sys_meta || !db_ctx){
@@ -181,7 +185,9 @@ int jsub_insert_log(
 		rec->payload->on_disk = 0;
 	}
 
-	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
+	rec->network_nonce = jal_strdup(nonce_in);
+
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
 	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert log into temp!\n");
@@ -245,7 +251,7 @@ out:
 
 int jsub_insert_journal_metadata(
 		jaldb_context *db_ctx,
-		char *c_source,
+		__attribute__((unused)) char *c_source,
 		uint8_t *sys_meta,
 		size_t sys_len,
 		uint8_t *app_meta,
@@ -257,6 +263,7 @@ int jsub_insert_journal_metadata(
 {
 	int ret = JAL_E_INVAL;
 	struct jaldb_record *rec;
+	char* local_nonce = NULL;
 
 	if (!sys_meta || !db_ctx){
 		if (debug) {
@@ -287,7 +294,10 @@ int jsub_insert_journal_metadata(
 	rec->payload->length = payload_len;
 	rec->payload->on_disk = 1;
 
-	ret = jaldb_insert_record_into_temp(db_ctx, rec, c_source, nonce_in);
+
+	rec->network_nonce = jal_strdup(nonce_in);
+
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
 	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		printf("DEBUG_LOG to insert journal metadata into temp!\n");

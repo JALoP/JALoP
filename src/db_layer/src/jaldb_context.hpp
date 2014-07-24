@@ -51,9 +51,9 @@ struct jaldb_context_t {
 	DB *journal_conf_db; 				//!< The database for conf'ed journal records
 	DB *audit_conf_db; 				//!< The database for conf'ed audit records
 	DB *log_conf_db; 				//!< The database for conf'ed log records
-	string_to_rdbs_map *journal_temp_dbs;		//!< The string map for the journal db
-	string_to_rdbs_map *audit_temp_dbs;		//!< The string map for the audit db
-	string_to_rdbs_map *log_temp_dbs;		//!< The string map for the log db
+        string_to_rdbs_map *journal_temp_dbs;           //!< The string map for the journal db
+        string_to_rdbs_map *audit_temp_dbs;             //!< The string map for the audit db
+        string_to_rdbs_map *log_temp_dbs;               //!< The string map for the log db
 	int db_read_only; 				//!< Whether or not to open the databases read only
 	std::set<std::string> *seen_journal_records;	//<! Journal records already seen in live mode
 	std::set<std::string> *seen_audit_records;	//<! Audit records already seen in live mode
@@ -61,224 +61,34 @@ struct jaldb_context_t {
 };
 
 /**
-* Store a confirmed nonce in the journal temp container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The nonce of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_store_confed_journal_nonce_tmp(
-		jaldb_context *ctx,
-		const char *remote_host,
-		const char *nonce,
-		int *db_err_out);
-
-/**
-* Store a confirmed nonce in the audit temp container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The nonce of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_store_confed_audit_nonce_tmp(
-		jaldb_context *ctx,
-		const char *remote_host,
-		const char *nonce,
-		int *db_err_out);
-
-/**
-* Store a confirmed nonce in the log temp container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The nonce of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_store_confed_log_nonce_tmp(
-		jaldb_context *ctx,
-		const char *remote_host,
-		const char *nonce,
-		int *db_err_out);
-
-/**
-* Retrieve the last confirmed nonce from the given source.
-* @param[in] ctx the jaldb_context
-* @param[in] type The type of record (journal, audit, log).
-* @param[in] source the host to find the last nonce from
-* @param[out] nonce the last confirmed nonce
-*
-* @return JALDB_OK on success, or a different JALDB error code on failure.
-*/
+ * * Retrieve the last confirmed nonce from the given source.
+ * * @param[in] ctx the jaldb_context
+ * * @param[in] type The type of record (journal, audit, log).
+ * * @param[in] source the host to find the last nonce from
+ * * @param[out] nonce the last confirmed nonce
+ * *
+ * * @return JALDB_OK on success, or a different JALDB error code on failure.
+ * */
 enum jaldb_status jaldb_get_last_confed_nonce_temp(
-		jaldb_context *ctx,
-		enum jaldb_rec_type type,
-		char *source,
-		char **nonce);
+                jaldb_context *ctx,
+                enum jaldb_rec_type type,
+                char *source,
+                char **nonce);
 
 /**
-* Retrieve a confirmed nonce from the journal temp container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The nonce of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_get_last_confed_journal_nonce_tmp(
-		jaldb_context *ctx,
-		const char *remote_host,
-		std::string &nonce,
-		int *db_err_out);
-
-/**
-* Retrieve a confirmed nonce from the audit temp container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The nonce of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_get_last_confed_audit_nonce_tmp(
-		jaldb_context *ctx,
-		const char *remote_host,
-		std::string &nonce,
-		int *db_err_out);
-
-/**
-* Retrieve a confirmed nonce from the log temp container.
-* @param[in] ctx The jaldb_context to use.
-* @param[in] remote_host The host that we received the record from.
-* @param[in] nonce The nonce of the confirmed record
-* @param[out] db_err_out A flag indicating a specific DB error.
-* @return
-*  - JALDB_OK on success
-*  - JALDB_E_INVAL if one of the parameters was invalid.
-*  - JALDB_E_READONLY if the database is read-only.
-*  - JALDB_E_NOT_FOUND if the record was not found.
-*  - JALDB_E_NONCE if their already exists a record with this \p nonce.
-* @throw XmlException
-*/
-enum jaldb_status jaldb_get_last_confed_log_nonce_tmp(
-		jaldb_context *ctx,
-		const char *remote_host,
-		std::string &nonce,
-		int *db_err_out);
-
-/**
- * Transfer audit records from the temporary db container to the
- * permanent container.
- * @param[in] ctx The jaldb_context to use
- * @param[in] source The host that we received the record from
- * @param[in] nonce The nonce of the record to be transferred
- * @param[out] perm_nonce The new nonce of the record transferred to
- * the permanent container.
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_READONLY if the database is read-only.
- *  - JALDB_E_NOT_FOUND if the record was not found.
- *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
- * @throw XmlException
- */
-enum jaldb_status jaldb_xfer_audit(
-	jaldb_context *ctx,
-	std::string &source,
-	const std::string &nonce,
-	std::string &perm_nonce);
-
-/**
- * Transfer log records from the temporary db container to the
- * permanent container.
- * @param[in] ctx The jaldb_context to use
- * @param[in] source The host that we received the record from
- * @param[in] nonce The nonce of the record to be transferred
- * @param[out] perm_nonce The new nonce of the record transferred to
- * the permanent container.
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_READONLY if the database is read-only.
- *  - JALDB_E_NOT_FOUND if the record was not found.
- *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
- *  - JALDB_E_CORRUPTED if the record did not contain 
- *    application or log data.
- *  - JALDB_E_DB if there was an error updating the database, check \p db_err_out
- *  for more info.
- * @throw XmlException
- */
-enum jaldb_status jaldb_xfer_log(
-	jaldb_context *ctx,
-	std::string &source,
-	const std::string &nonce,
-	std::string &perm_nonce);
-
-/**
- * Transfer journal records from the temporary db container to the 
- * permanent container.
- * @param[in] ctx The jaldb_context to use
- * @param[in] source The host that we received the record from
- * @param[in] nonce The nonce of the record to be transferred
- * @param[out] perm_nonce The new nonce of the record transferred to
- * the permanent container.
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if one of the parameters was invalid.
- *  - JALDB_E_READONLY if the database is read-only.
- *  - JALDB_E_NOT_FOUND if the record was not found.
- *  - JALDB_E_NONCE if their already exists a record with this \p nonce.
- * @throw XmlException
- */
-enum jaldb_status jaldb_xfer_journal(
-	jaldb_context *ctx,
-	const std::string &source,
-	const std::string &nonce,
-	std::string &perm_nonce);
-
-/**
-* Store the last confirmed nonce from the given source.
-* @param[in] ctx the jaldb_context
-* @param[in] type The type of record (journal, audit, log).
-* @param[in] source the host the last nonce is from
-* @param[in] nonce the last confirmed nonce
-*
-* @return JALDB_OK on success, or a different JALDB error code on failure.
-*/
+ * * Store the last confirmed nonce from the given source.
+ * * @param[in] ctx the jaldb_context
+ * * @param[in] type The type of record (journal, audit, log).
+ * * @param[in] source the host the last nonce is from
+ * * @param[in] nonce the last confirmed nonce
+ * *
+ * * @return JALDB_OK on success, or a different JALDB error code on failure.
+ * */
 enum jaldb_status jaldb_store_confed_nonce_temp(
-	jaldb_context *ctx,
-	enum jaldb_rec_type type,
-	const char* source,
-	const char* nonce);
+        jaldb_context *ctx,
+        enum jaldb_rec_type type,
+        const char* source,
+        const char* nonce);
 
 /**
  * Store the most recently confirmed journal record for a particular host.
@@ -346,109 +156,7 @@ enum jaldb_status jaldb_store_confed_audit_nonce(jaldb_context *ctx,
 enum jaldb_status jaldb_store_confed_log_nonce(jaldb_context *ctx,
 		const char *remote_host, const char *nonce, int *db_err_out);
 
-/**
- * Insert an audit record into a temporary database. This caches the record
- * for a network store until they receive a digest-conf message back from the
- * remote local store.
- * @param[in] ctx The context that the temporary database should be associated
- * with.
- * @param[in] source Where the record came from
- * @param[in] sys_doc The system metadata document, must not be NULL;
- * @param[in] app_doc The application metadata document, this may be NULL
- * @param[in] auditdoc The audit document metadata document, this may not be
- * NULL.
- * @param[in] nonce The nonce as identified by the remote network store.
- *
- * @return JALDB_OK on success
- * JALDB_E_INVAL if any of the parameters are invalid.
- */
-enum jaldb_status jaldb_insert_audit_record_into_temp(
-	jaldb_context *ctx,
-	std::string &source,
-	const void *sys_doc,
-	const void *app_doc,
-	const void *audit_doc,
-	const std::string &nonce);
 
-/**
- * Helper utility to generate a name for a temporary database used by the
- * network store.
- *
- * @param[in] An identifier for the database
- * @param[suffix] A suffix to use (i.e. '_audit_meta.db')
- *
- * @return a string to use as the database name.
- */
-std::string jaldb_make_temp_db_name(const std::string &id, const std::string &suffix);
-
-/**
- * Inserts a log record into a temporary database for use when communicating
- * with a network store.
- * @param[in] ctx The context.
- * @param[in] source The source of the record. If NULL, then this is set to the
- * string 'localhost'.
- * @param[in] sys_meta_doc The system metadata document
- * @param[in] app_meta_doc The application  metadata document
- * @param[in] log_buf A buffer containing the audit data.
- * @param[in] log_len The size (in bytes) of audit data.
- * @param[out] nonce The nonce for the record.
- * @param[out] db_err Set to the Berkeley DB error when this function returns
- * JALDB_E_DB
- *
- * @return JALDB_OK if the function succeeds or a JAL error code if the function
- * fails.
- * @throw XmlException if there was an error inserting the record.
- */
-enum jaldb_status jaldb_insert_log_record_into_temp(
-	jaldb_context *ctx,
-	std::string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	uint8_t *log_buf,
-	const size_t log_len,
-	const std::string &nonce,
-	int *db_err);
-
-/**
- * Open a temporary database for storing log records while communicating with a network
- * store.
- * The DB is cached within the context for quicker access later.
- * @param[in] ctx the context to associate with
- * @param[in] db_name The name of the database
- * @param[out] db_out Once the database is opened, the new DB is assigned to \p
- * db_out;
- * @param[out] db_err_out set to the Berkeley DB error (if any). This is only
- * valid when the function returns JALDB_E_DB
- * assigned to \p cont.
- *
- * @return
- *  - JALDB_OK on success
- *  - JALDB_E_INVAL if ctx is invalid
- *  - JALDB_E_DB if there was an error create the database, check db_err_out
- *  for more information
- *
- */
-enum jaldb_status jaldb_open_temp_db(jaldb_context *ctx, const std::string& db_name,
-		DB **db_out, int *db_err_out);
-
-/**
- * Store journal metadata information about a record into a temporary database.
- *
- * @param[in] ctx the context to use
- * @param[in] source a string to identify where the record came from.
- * @param[in] sys_meta_doc a document that contains the system metadata.
- * @param[in] app_meta_doc a document that contains the app metadata (if any).
- * @param[in] path the path to the journal file (should be obtained using to
- *                 jaldb_create_file).
- * @param[in] nonce the nonce as identified by the remote peer.
- */
-enum jaldb_status jaldb_insert_journal_metadata_into_temp(
-	jaldb_context *ctx,
-	const std::string &source,
-	const void *sys_meta_doc,
-	const void *app_meta_doc,
-	const std::string &path,
-	const std::string &nonce);
 
 /**
  * Store journal_resume data in the journal temporary system container.

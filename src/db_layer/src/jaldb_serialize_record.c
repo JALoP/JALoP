@@ -364,6 +364,9 @@ enum jaldb_status jaldb_serialize_record(
 		headers.flags |= bs32(JALDB_RFLAGS_SYNCED);
 		headers.flags |= bs32(JALDB_RFLAGS_SENT);
 	}
+	if (record->confirmed) {
+		headers.flags |= bs32(JALDB_RFLAGS_CONFIRMED);
+	}
 	headers.pid = bs64(record->pid);
 	headers.uid = bs64(record->uid);
 	uuid_copy(headers.host_uuid, record->host_uuid);
@@ -444,6 +447,7 @@ enum jaldb_status jaldb_deserialize_record(
 		res->synced = 0; // Record not sent.
 	}
 	res->have_uid = headers->flags & JALDB_RFLAGS_HAVE_UID ? 1 : 0;
+	res->confirmed = headers->flags & JALDB_RFLAGS_CONFIRMED ? 1 : 0;
 	res->pid = bs64(headers->pid);
 	res->uid = bs64(headers->uid);
 	uuid_copy(res->host_uuid, headers->host_uuid);

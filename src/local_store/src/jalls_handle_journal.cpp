@@ -217,7 +217,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	rec->payload->fd = db_payload_fd;
 	db_payload_path = NULL;
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, &nonce);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
 	free(nonce);
 	nonce = NULL;
 

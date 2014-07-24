@@ -147,7 +147,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		data_buf = NULL;
 	}
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, &nonce);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
 	free(nonce);
 	nonce = NULL;
 

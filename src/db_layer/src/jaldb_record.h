@@ -85,6 +85,7 @@ struct jaldb_record {
 	int                  version;         //!< The in-database version of the record, currently always \p 1.
 	enum jaldb_rec_type  type;            //!< The type of the record
 	char                 synced;          //!< Indicates if the record was sent to at least 1 remote.
+	char                 confirmed;       //!< Indicates if the record has been confirmed via digest.
 	char                 have_uid;        //!< Indicates if the uid filed is valid.
 	uuid_t               host_uuid;       //!< The UUID of the machine that created the record.
 	uuid_t               uuid;            //!< The UUID of the record.

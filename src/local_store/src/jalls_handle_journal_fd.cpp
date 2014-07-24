@@ -205,7 +205,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	rec->payload->fd = db_payload_fd;
 	db_payload_path = NULL;
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, &nonce);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
 	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "could not insert journal record into database\n");

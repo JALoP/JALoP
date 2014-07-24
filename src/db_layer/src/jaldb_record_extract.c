@@ -82,7 +82,6 @@ int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *dat
 	return 0;
 }
 
-
 int jaldb_extract_record_network_nonce(DB *secondary, const DBT *key, const DBT *data, DBT *result)
 {
 	char *nnString = NULL;
@@ -109,6 +108,32 @@ int jaldb_extract_record_network_nonce(DB *secondary, const DBT *key, const DBT 
 
 	result->data = jal_strdup(nnString);
 	result->size = nnLen + 1; // keep the null terminator
+
+	result->flags = DB_DBT_APPMALLOC;
+
+	return 0;
+}
+
+int jaldb_extract_record_confirmed_flag(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+{
+	struct jaldb_serialize_record_headers *headers = NULL;
+
+	if (!data || !result || !data->data || (sizeof(headers) > data->size)) {
+		return -1;
+	}
+
+	headers = (struct jaldb_serialize_record_headers*)data->data;
+
+	// TODO: Need BOM for this to work correctly
+	if (headers->version != JALDB_DB_LAYOUT_VERSION) {
+		return -1;
+	}
+
+
+	result->data = jal_malloc(sizeof(uint32_t));
+	*((uint32_t*)(result->data)) = headers->flags & JALDB_RFLAGS_CONFIRMED;
+	result->size = sizeof(uint32_t);
+
 	result->flags = DB_DBT_APPMALLOC;
 
 	return 0;
