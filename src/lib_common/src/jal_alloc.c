@@ -87,11 +87,21 @@ char *jal_strndup(const char *str, size_t size)
 	if (0 == size || !str) {
 		return NULL;
 	}
+	/* Solaris does not have a strndup function, so we have to implement it */
 
-	char *tmp = strndup(str, size);
+	/* Search the memory block for a null termination, and set size or max */
+	const char *end = memchr (str, '\0', size);
+	size_t len = end ? (size_t)(end - str) : size;
+
+	/* Allocate memory for the string + the null termination */
+	char *tmp = malloc(len+1); 
 	if (!tmp) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
+
+	/* binary copy of requested size */
+	memcpy(tmp, str, len);
+	tmp[len] = '\0';
 
 	return(tmp);
 }
