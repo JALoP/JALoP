@@ -29,6 +29,7 @@
 
 #include <uuid/uuid.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "jal_alloc.h"
 
@@ -76,6 +77,38 @@ int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *dat
 	result->data = jal_malloc(sizeof(uint32_t));
 	*((uint32_t*)(result->data)) = headers->flags & JALDB_RFLAGS_SENT;
 	result->size = sizeof(uint32_t);
+	result->flags = DB_DBT_APPMALLOC;
+
+	return 0;
+}
+
+
+int jaldb_extract_record_network_nonce(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+{
+	char *nnString = NULL;
+	size_t nnLen = 0;
+
+	struct jaldb_serialize_record_headers *headers = NULL;
+
+	if (!data || !result || !data->data || (sizeof(headers) > data->size + JALDB_TIMESTAMP_LENGTH + 1)) {
+		return -1;
+	}
+
+	const uint8_t *buffer = data->data;
+	headers = (struct jaldb_serialize_record_headers*) buffer;
+
+	// TODO: Need BOM for this to work correctly
+	if (headers->version != JALDB_DB_LAYOUT_VERSION) {
+		return -1;
+	}
+
+	// Skip the headers and timestamp string (including null terminator).
+	buffer += sizeof(*headers) + JALDB_TIMESTAMP_LENGTH + 1;
+	nnString = (char*)buffer;
+	nnLen = strlen(nnString);
+
+	result->data = jal_strdup(nnString);
+	result->size = nnLen + 1; // keep the null terminator
 	result->flags = DB_DBT_APPMALLOC;
 
 	return 0;

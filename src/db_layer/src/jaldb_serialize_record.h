@@ -51,6 +51,11 @@ extern "C" {
 struct jaldb_record;
 struct jaldb_segment;
 
+/* This is used by the jaldb_extract_record_network_nonce function to
+ * determine the necessary offset into the buffer. This value does not
+ * include the null terminator. */
+#define JALDB_TIMESTAMP_LENGTH 25
+
 /**
  * Internal structure used for serializing/de-serializing JALoP records to/from
  * the DB.

@@ -69,6 +69,23 @@ int jaldb_extract_record_uuid(DB *secondary, const DBT *key, const DBT *data, DB
  */
 int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *data, DBT *result);
 
+/**
+ * Function to extract the network nonce as a secondary key.
+ *
+ * This function extracts the network nonce component of the JALoP record as it is
+ * inserted into the database.
+ *
+ * @param[in] secondary Pointer to the secondary DB that is getting modified,
+ * this is only checked to see if the record is byte-swapped.
+ * @param[in] key The key for the data in the primary DB
+ * @param[in] data The data for the record
+ * @param[out] result the DBT object to fill in for the network nonce secondary key.
+ *
+ * @return 0 to indicate the record should be indexed, -1 to indicate an error
+ * occurred.
+ */
+int jaldb_extract_record_network_nonce(DB *secondary, const DBT *key, const DBT *data, DBT *result);
+
 #ifdef __cplusplus
 }
 #endif

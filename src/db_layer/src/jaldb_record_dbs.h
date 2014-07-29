@@ -51,6 +51,7 @@ struct jaldb_record_dbs {
 	DB *record_id_idx_db;       //<! The database to use for record UUID indices
 	DB *record_sent_db;         //<! The database to use for record sent flag indices
 	DB *metadata_db;            //<! The database to use for storing metadata about unconfirmed records
+	DB *network_nonce_idx_db;   //<! The database to use for network nonce indices
 };
 
 /**

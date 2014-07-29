@@ -39,10 +39,13 @@
 #define PADDING 1024
 #define BUFFER_SIZE (sizeof(*headers) + PADDING)
 
+#define NN1 "9b5754ef-ce82-4dd2-af61-d329cc526203_2013-11-20T09:12:34.12345_1234_12345"
+
 static DBT record_dbt;
 static struct jaldb_serialize_record_headers *headers;
 static uuid_t a_uuid;
 static uint8_t buffer[BUFFER_SIZE];
+char* network_nonce_in_buffer;
 
 void setup()
 {
@@ -53,6 +56,9 @@ void setup()
 	headers->version = JALDB_DB_LAYOUT_VERSION;
 	headers->flags = JALDB_RFLAGS_SENT;
 	uuid_copy(headers->record_uuid, a_uuid);
+
+	network_nonce_in_buffer = (char*)(buffer + sizeof(*headers) + JALDB_TIMESTAMP_LENGTH + 1);
+
 	record_dbt.data = buffer;
 	record_dbt.size = BUFFER_SIZE;
 }
@@ -172,4 +178,27 @@ void test_extract_record_sent_flag_returns_error_for_input()
 	ret = jaldb_extract_record_sent_flag(NULL, NULL, &record_dbt, NULL);
 	assert_not_equals(0, ret);
 }
+void test_extract_record_network_nonce_returns_zero_for_bad_version()
+{
+	DBT result;
+	memset(&result, 0, sizeof(result));
+	headers->version = 1234;
 
+	int ret = jaldb_extract_record_network_nonce(NULL, NULL, &record_dbt, &result);
+	assert_not_equals(0, ret);
+	assert_not_equals(DB_DONOTINDEX, ret);
+}
+
+void test_extract_record_network_nonce_works() {
+	DBT result;
+	memset(&result, 0, sizeof(result));
+
+	strcpy(network_nonce_in_buffer, NN1);
+	int ret = jaldb_extract_record_network_nonce(NULL, NULL, &record_dbt, &result);
+	assert_equals(0, ret);
+	assert_not_equals((void*) NULL, result.data);
+	assert_equals(strlen(NN1) + 1, result.size);
+	assert_equals(0, strcmp(NN1, result.data));
+
+	free(result.data);
+}

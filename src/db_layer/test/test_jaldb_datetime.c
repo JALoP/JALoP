@@ -221,6 +221,17 @@ void test_extract_datetime_fails_for_bad_input()
 	assert_not_equals(JALDB_OK, ret);
 }
 
+void test_if_datetime_length_changed()
+{
+	/* If the timestamp length changes, the network_nonce extract function
+	 * must be changed to accomodate it. That function can be found in
+	 * src/db_layer/src/jaldb_record_extract.c */
+	size_t dtLen = 0;
+	
+	dtLen = strlen(DT8);
+	assert_equals(JALDB_TIMESTAMP_LENGTH, dtLen);
+}
+
 void test_extract_datetime_works()
 {
 	enum jaldb_status ret;
