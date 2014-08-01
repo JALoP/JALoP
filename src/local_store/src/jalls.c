@@ -242,6 +242,10 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (jalls_ctx->debug) {
+		fprintf(stderr, "Ready to accept connections\n");
+	}
+
 	struct sockaddr_un peer_addr;
 	unsigned int peer_addr_size = sizeof(peer_addr);
 	while (!should_exit) {
