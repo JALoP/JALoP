@@ -548,6 +548,7 @@ void jaln_sub_state_reset(jaln_session *session)
 	memset(sm->break_buf, 0, sm->break_sz);
 	sm->break_off = 0;
 	vortex_frame_unref(sm->cached_frame);
+	sm->cached_frame = NULL;
 	if (session->sub_data->sm->dgst_inst) {
 		session->dgst->destroy(sm->dgst_inst);
 	}
