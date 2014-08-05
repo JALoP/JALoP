@@ -98,7 +98,9 @@ void jaln_subscriber_on_connection_close(__attribute__((unused)) VortexConnectio
 	jaln_context *ctx = jal_conn->jaln_ctx;
 
 	vortex_mutex_lock(&ctx->lock);
-	ctx->conn_callbacks->on_connection_close(jal_conn, ctx->user_data);
+	if (jaln_connection_callbacks_is_valid(ctx->conn_callbacks)) {
+		ctx->conn_callbacks->on_connection_close(jal_conn, ctx->user_data);
+	}
 	vortex_mutex_unlock(&ctx->lock);
 }
 
