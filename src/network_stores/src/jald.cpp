@@ -39,6 +39,7 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <time.h>
 
 #include <jalop/jal_version.h>
 
@@ -71,8 +72,12 @@ do { \
 		default: \
 			__rec_type = (const char*)"unknown"; \
 		} \
-		fprintf(stderr, "jald %s[%d][%s:sub:%s]", __FUNCTION__, __LINE__, \
-				ch_info->hostname, __rec_type); \
+		time_t rawtime; \
+		time(&rawtime); \
+		char timestr[26]; \
+		strftime(timestr, 26, "%Y-%m-%dT%H:%M:%S", gmtime(&rawtime)); \
+		fprintf(stderr, "jald %s[%d](%s)[%s:sub:%s]", __FUNCTION__, __LINE__, \
+				timestr, ch_info->hostname, __rec_type); \
 		fprintf(stderr, ##args); \
 		fprintf(stderr, "\n"); \
 	} \
@@ -81,7 +86,12 @@ do { \
 #define DEBUG_LOG(args...) \
 do { \
 	if (global_args.debug_flag) { \
-		fprintf(stderr, "jald %s[%d] ", __FUNCTION__, __LINE__); \
+		time_t rawtime; \
+		time(&rawtime); \
+		char timestr[26]; \
+		strftime(timestr, 26, "%Y-%m-%dT%H:%M:%S", gmtime(&rawtime)); \
+		fprintf(stderr, "jald %s[%d](%s) ", __FUNCTION__, __LINE__, \
+				timestr); \
 		fprintf(stderr, ##args); \
 		fprintf(stderr, "\n"); \
 	} \

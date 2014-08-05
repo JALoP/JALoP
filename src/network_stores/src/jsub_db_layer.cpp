@@ -41,7 +41,11 @@
 #define stringify( name ) # name
 #define DEBUG_LOG(args...) \
 	do { \
-		fprintf(stdout, "(jal_subscribe) %s[%d] ", __FILE__, __LINE__); \
+		time_t rawtime; \
+		time(&rawtime); \
+		char timestr[26]; \
+		strftime(timestr, 26, "%Y-%m-%dT%H:%M:%S", gmtime(&rawtime)); \
+		fprintf(stdout, "(jal_subscribe) %s[%d](%s) ", __FUNCTION__, __LINE__, timestr); \
 		fprintf(stdout, ##args); \
 		fprintf(stdout, "\n"); \
 	} while(0)
