@@ -262,13 +262,15 @@ void test_jal_strndup_success_buffer_short()
 void test_jal_strndup_source_null()
 {
 	char *ptr = jal_strndup(NULL, 100);
-	assert_equals(NULL, ptr);
+	/* Cast of NULL below required for Solaris */
+	assert_equals((char *)NULL, ptr);
 }
 
 void test_jal_strndup_size_zero()
 {
 	char *ptr = jal_strndup("Test string....", 0);
-	assert_equals(NULL, ptr);
+	/* Cast of NULL below required for Solaris */
+	assert_equals((char *)NULL, ptr);
 }
 
 /* ---------------- */
@@ -330,11 +332,13 @@ void test_jal_memdup_success_buffer_short()
 void test_jal_memdup_source_null()
 {
 	char *ptr = jal_memdup(NULL, 100);
-	assert_equals(NULL, ptr);
+	/* Cast of NULL below required for Solaris */
+	assert_equals((char *)NULL, ptr);
 }
 
 void test_jal_memdup_size_zero()
 {
 	char *ptr = jal_memdup("Test string....", 0);
-	assert_equals(NULL, ptr);
+	/* Cast of NULL below required for Solaris */
+	assert_equals((char *)NULL, ptr);
 }
