@@ -81,28 +81,28 @@ using namespace std;
 #define LAST_K_RECORDS_VALUE 20
 
 // record NONCE 1
-#define DT1 "2012-12-12T09:00:00"
+#define DT1 "2012-12-12T09:00:00.00000"
 #define HN1 "somehost"
 #define UN1 "someuser"
 #define S1 "source1"
 #define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 2
-#define DT2 "2012-12-12T02:00:00"
+#define DT2 "2012-12-12T02:00:00.00000"
 #define HN2 "somehost2"
 #define UN2 "someuser2"
 #define S2 "source2"
 #define UUID_2 "21234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 3
-#define DT3 "2012-12-12T03:00:00"
+#define DT3 "2012-12-12T03:00:00.00000"
 #define HN3 "somehost3"
 #define UN3 "someuser3"
 #define S3 "source3"
 #define UUID_3 "31234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 4
-#define DT4 "2012-12-12T04:00:00"
+#define DT4 "2012-12-12T04:00:00.00000"
 #define HN4 "somehost4"
 #define UN4 "someuser4"
 #define S4 "source4"

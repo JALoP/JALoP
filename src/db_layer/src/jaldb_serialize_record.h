@@ -56,6 +56,12 @@ struct jaldb_segment;
  * include the null terminator. */
 #define JALDB_TIMESTAMP_LENGTH 25
 
+/* This is used when serializing and deserializing the network_nonce, and
+ * in the mark_synced function to efficiently update the network nonce by
+ * determining the necessary offset into the buffer. This value does not
+ * include the null terminator. */
+#define JALDB_MAX_NETWORK_NONCE_LENGTH 127
+
 /**
  * Internal structure used for serializing/de-serializing JALoP records to/from
  * the DB.
@@ -97,6 +103,18 @@ void jaldb_serialize_add_string(uint8_t **buf, const char *str);
 void jaldb_serialize_add_segment(uint8_t **buf, const struct jaldb_segment *segment);
 
 /**
+ * Helper utility to append a string with a known max length to the memory buffer.
+ * This function assumes that there is enough space in \p *buf to add the
+ * characters from \p str, including a null terminator. If the string is shorter
+ * than the maximum fixed length, the buffer will be padded with null terminators.
+ * @param[in,out] buf The buffer to append to. The address is alsways advanced by
+ *     \p str_len + 1.
+ * @param[in] str_len The maximum size of the string.
+ * @param[in] str The string to add to the buffer.
+ */
+void jaldb_serialize_add_fixed_string(uint8_t **buf, size_t str_len, const char *str);
+
+/**
  * Helper function to increment a \p size_t variable by the length of a string.
  * This function will increment \p *size to ensure there is enough space to
  * store the contents of \p str. If \p str is NULL, then 1 byte is reserved
@@ -124,6 +142,17 @@ enum jaldb_status jaldb_serialize_inc_by_string(size_t *size, const char *str);
  * @return JALDB_OK on success, or an error code.
  */
 enum jaldb_status jaldb_serialize_inc_by_segment_size(size_t *size, const struct jaldb_segment *segment);
+
+/**
+ * Helper function to increment a \p size_t variable by a string with a known
+ * max length. This function will increment \p *size to ensure there is enough
+ * space to store the contents of \p str, including the null terminator.
+ * @param[in,out] size Address to the variable to increment.
+ * @param[in] str_len Maximum size of the string.
+ *
+ * @return JALDB_OK on success, or an error code.
+ */
+enum jaldb_status jaldb_serialize_inc_by_fixed_string(size_t *size, size_t str_len);
 
 /**
  * Utility to serialize a \p jaldb_record to a memory buffer
@@ -176,6 +205,26 @@ enum jaldb_status jaldb_deserialize_record(
  * @return JALDB_OK on success, or an error.
  */
 enum jaldb_status jaldb_deserialize_string(uint8_t **buffer, size_t *size, char** str);
+
+/**
+ * Extract the next string with a known max length from the memory buffer.
+ * This functions scans \p *buffer for a \p null terminator to construct a
+ * string. The search is limited to bytes in the range \p *buffer -
+ * \p (buffer + *size). If a \p null byte is not found in that range, an error
+ * is returned, and \p *buffer & \p size are unchanged.
+ *
+ * If a \p null byte is found, then a copy of the string is created, it must be
+ * freed with a call to free().
+ *
+ * @param[in,out] buffer the buffer extract a string from. On success \p buffer
+ * will be advanced by str_size + 1;
+ * @param[in,out] buf_size the number of bytes remaining in \p buffer.
+ * @param[in] str_size The maximum length of the string.
+ * @param[out] str on success, a newly allocated copy of the string.
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_deserialize_fixed_string(uint8_t **buffer, size_t *buf_size, size_t str_size, char** str);
 
 /**
  * Extract a jaldb_segment from the buffer.

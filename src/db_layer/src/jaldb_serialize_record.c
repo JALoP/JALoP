@@ -189,6 +189,46 @@ err_out:
 	return ret;
 }
 
+void jaldb_serialize_add_fixed_string(uint8_t **buf, size_t str_len, const char *str)
+{	
+	if (!str) {
+		// String is null, so pad the space with null terminators.
+		memset(*buf, '\0', (str_len + 1));
+		*buf += str_len + 1;
+		return;
+	}
+	size_t len = strlen(str);
+
+	if (len > str_len) {
+		// The actual length of the string is longer than the fixed size.
+		memset(*buf, '\0', (str_len + 1));
+		*buf += str_len + 1;
+		return;
+	}
+
+	// Otherwise, copy in the string, exlcuding the null terminator, the pad
+	// the remaining space with null terminators.
+	memcpy(*buf, str, len);
+	memset((*buf + len), '\0', ((str_len - len) + 1));
+	*buf += str_len + 1;
+}
+
+enum jaldb_status jaldb_serialize_inc_by_fixed_string(size_t *buf_size, size_t str_size)
+{
+	size_t tmp = *buf_size;
+	enum jaldb_status ret;
+
+	// Ensure the buffer size can be increased by the required string size.
+	JALDB_SAFE_INC_OR_GOTO_ERR_OUT(tmp, str_size);
+	JALDB_SAFE_INC_OR_GOTO_ERR_OUT(tmp, (unsigned)1);
+
+	// If it can, bump up the total buffer size accordingly.
+	*buf_size = tmp;
+	ret = JALDB_OK;
+err_out:
+	return ret;
+}
+
 void jaldb_serialize_add_segment(uint8_t **buf, const struct jaldb_segment *segment)
 {
 	if (!segment) {
@@ -267,7 +307,7 @@ enum jaldb_status jaldb_serialize_record(
 	if (JALDB_OK != ret) {
 		goto err_out;
 	}
-	ret = jaldb_serialize_inc_by_string(&size, record->network_nonce);
+	ret = jaldb_serialize_inc_by_fixed_string(&size, JALDB_MAX_NETWORK_NONCE_LENGTH); // record->network_nonce
 	if (JALDB_OK != ret) {
 		goto err_out;
 	}
@@ -333,7 +373,7 @@ enum jaldb_status jaldb_serialize_record(
 	memcpy(buf, &headers, sizeof(headers));
 	uint8_t *tmp = buf + sizeof(headers);
 	jaldb_serialize_add_string(&tmp, record->timestamp);
-	jaldb_serialize_add_string(&tmp, record->network_nonce);
+	jaldb_serialize_add_fixed_string(&tmp, JALDB_MAX_NETWORK_NONCE_LENGTH, record->network_nonce);
 	jaldb_serialize_add_string(&tmp, record->source);
 	jaldb_serialize_add_string(&tmp, record->sec_lbl);
 	jaldb_serialize_add_string(&tmp, record->hostname);
@@ -416,7 +456,7 @@ enum jaldb_status jaldb_deserialize_record(
 	if (ret != JALDB_OK) {
 		goto err_out;
 	}
-	ret = jaldb_deserialize_string(&buffer, &bsize, &res->network_nonce);
+	ret = jaldb_deserialize_fixed_string(&buffer, &bsize, JALDB_MAX_NETWORK_NONCE_LENGTH, &res->network_nonce);
 	if (ret != JALDB_OK) {
 		goto err_out;
 	}
@@ -504,6 +544,43 @@ enum jaldb_status jaldb_deserialize_string(uint8_t **buffer, size_t *size, char*
 	return JALDB_OK;
 }
 
+enum jaldb_status jaldb_deserialize_fixed_string(uint8_t **buffer, size_t *buf_size, size_t str_size, char** str)
+{
+	if (!buffer || !*buffer || !buf_size || !str || *str) {
+		return JALDB_E_INVAL;
+	}
+	if (*buf_size == 0) {
+		return JALDB_E_INVAL;
+	}
+	size_t s_len = strlen((char*)*buffer);
+	if (s_len > str_size) {
+		// provided fixed size is shorter than the actual string.
+		return JALDB_E_INVAL;
+	}
+
+	if (str_size >= *buf_size) {
+		// running off the end of the buffer is bad.
+		return JALDB_E_INVAL;
+	}
+
+	if (0 == s_len) {
+		*str = NULL;
+		*buffer += (str_size + 1);
+		*buf_size -= (str_size + 1);
+		return JALDB_OK;
+	}
+
+	if (s_len >= *buf_size) {
+		// ran off the end, still not good.
+		return JALDB_E_INVAL;
+	}
+
+	*str = jal_strdup((char*)*buffer);
+	*buffer += (str_size + 1);
+	*buf_size -= (str_size + 1);
+	return JALDB_OK;
+}
+
 enum jaldb_status jaldb_deserialize_segment(char on_disk,
 		uint64_t segment_length,
 		uint8_t **buffer,
@@ -544,3 +621,4 @@ err_out:
 out:
 	return ret;
 }
+

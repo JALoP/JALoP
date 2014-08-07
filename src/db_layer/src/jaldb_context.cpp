@@ -463,6 +463,11 @@ enum jaldb_status jaldb_mark_synced(
 
 	struct jaldb_serialize_record_headers *header_ptr = NULL;
 	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
+	
+	uint8_t *buffer;
+	size_t timestamp_bytes;
+	size_t network_nonce_bytes;
+
 	DB_TXN *txn = NULL;
 	DBT key;
 	DBT val;
@@ -494,15 +499,18 @@ enum jaldb_status jaldb_mark_synced(
 		goto out;
 	}
 
+	timestamp_bytes = header_bytes + JALDB_TIMESTAMP_LENGTH + 1;
+	network_nonce_bytes = timestamp_bytes + JALDB_MAX_NETWORK_NONCE_LENGTH + 1;
+
 	key.flags = DB_DBT_REALLOC;
 	key.size = strlen(nonce)+1;
 	key.data = jal_strdup(nonce);
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
-	val.dlen = header_bytes;
-	val.size = header_bytes;
+	val.dlen = network_nonce_bytes;
+	val.size = network_nonce_bytes;
 	val.doff = 0;
-	val.data = jal_malloc(header_bytes);
+	val.data = jal_malloc(network_nonce_bytes);
 
 	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
 	if (0 != db_ret){
@@ -530,6 +538,19 @@ enum jaldb_status jaldb_mark_synced(
 
 			} else {
 				header_ptr->flags |= JALDB_RFLAGS_SYNCED;
+
+				// Update the network nonce.
+				
+				buffer = (uint8_t *) header_ptr;
+				buffer += timestamp_bytes;
+
+				// Don't include the null terminator.
+				memcpy(buffer, nonce, key.size - 1);
+				buffer += key.size;
+
+				// Account for the null terminator now.
+				memset(buffer, '\0', (JALDB_MAX_NETWORK_NONCE_LENGTH - key.size + 1));
+
 				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, 0);
 
 				if (0 == db_ret) {
