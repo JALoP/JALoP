@@ -1060,8 +1060,10 @@ enum jaldb_status jaldb_get_last_k_records(
 	struct jaldb_record_dbs *rdbs = NULL;
 	int byte_swap;
 	DBC *cursor = NULL;
+	DBT pkey;
 	DBT key;
 	DBT val;
+	memset(&pkey, 0, sizeof(key));
 	memset(&key, 0, sizeof(key));
 	memset(&val, 0, sizeof(val));
 	key.flags = DB_DBT_REALLOC;
@@ -1095,38 +1097,37 @@ enum jaldb_status jaldb_get_last_k_records(
 		goto out;
 	}
 
-	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	db_ret = rdbs->timestamp_idx_db->get_byteswapped(rdbs->timestamp_idx_db, &byte_swap);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	db_ret = rdbs->primary_db->cursor(rdbs->primary_db, NULL, &cursor, DB_DEGREE_2);
+	db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
 	if (0 != db_ret) {
-		JALDB_DB_ERR(rdbs->primary_db, db_ret);
+		JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	db_ret = cursor->c_get(cursor, &key, &val, DB_LAST);
+	db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_LAST);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
 	while((count < k || get_all) && (0 == db_ret)) {
-		current_nonce = jal_strdup((const char*)key.data);
+		current_nonce = jal_strdup((const char*)pkey.data);
 		if (NULL == current_nonce) {
 			ret = JALDB_E_NO_MEM;
 			goto out;
 		}
-
 		nonce_list.push_front(current_nonce);
 
 		free(current_nonce);
 		current_nonce = NULL;
 
-		db_ret = cursor->c_get(cursor, &key, &val, DB_PREV);
+		db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_PREV);
 
 		if(0 != db_ret) {
 			break;

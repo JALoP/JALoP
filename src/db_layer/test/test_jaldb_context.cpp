@@ -81,28 +81,28 @@ using namespace std;
 #define LAST_K_RECORDS_VALUE 20
 
 // record NONCE 1
-#define DT1 "2012-12-12T09:00:00Z"
+#define DT1 "2012-12-12T09:00:00"
 #define HN1 "somehost"
 #define UN1 "someuser"
 #define S1 "source1"
 #define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 2
-#define DT2 "2012-12-12T02:00:00Z"
+#define DT2 "2012-12-12T02:00:00"
 #define HN2 "somehost2"
 #define UN2 "someuser2"
 #define S2 "source2"
 #define UUID_2 "21234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 3
-#define DT3 "2012-12-12T03:00:00Z"
+#define DT3 "2012-12-12T03:00:00"
 #define HN3 "somehost3"
 #define UN3 "someuser3"
 #define S3 "source3"
 #define UUID_3 "31234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 4
-#define DT4 "2012-12-12T04:00:00Z"
+#define DT4 "2012-12-12T04:00:00"
 #define HN4 "somehost4"
 #define UN4 "someuser4"
 #define S4 "source4"
@@ -454,28 +454,64 @@ extern "C" void test_jaldb_get_last_k_records_works()
 	enum jaldb_status ret;
 	list<string> nonce_list;
 
-	char *nonce = NULL;
+	char *nonce1 = NULL;
 	char *nonce2 = NULL;
+	char *nonce3 = NULL;
 	char *nonce4 = NULL;
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce));
-	free(nonce);
-	nonce = NULL;
+	// Timestamp index is based on timestamp extract from record. Time order will be nonce 2, 3, 4, 1
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], &nonce1));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], &nonce2));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], &nonce));
-	free(nonce);
-	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], &nonce3));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], &nonce4));
 
-	ret = jaldb_get_last_k_records(context, 3, nonce_list, JALDB_RTYPE_LOG);
+	// Test getting n records, less than current number
+	ret = jaldb_get_last_k_records(context, 3, nonce_list, JALDB_RTYPE_LOG, false);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(3, nonce_list.size());
-	assert_equals(nonce2, nonce_list.front());
-	assert_equals(nonce4, nonce_list.back());
+	assert_equals(nonce3, nonce_list.front());
+	assert_equals(nonce1, nonce_list.back());
+	nonce_list.clear();
 
+	// Test getting n records, equal to current number
+	ret = jaldb_get_last_k_records(context, 4, nonce_list, JALDB_RTYPE_LOG, false);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(4, nonce_list.size());
+	assert_equals(nonce2, nonce_list.front());
+	assert_equals(nonce1, nonce_list.back());
+	nonce_list.clear();
+
+	// Test getting n records, greater than current number
+	ret = jaldb_get_last_k_records(context, 10, nonce_list, JALDB_RTYPE_LOG, false);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(4, nonce_list.size());
+	assert_equals(nonce2, nonce_list.front());
+	assert_equals(nonce1, nonce_list.back());
+	nonce_list.clear();
+
+	// Test getting all records with zero size passed
+	ret = jaldb_get_last_k_records(context, 0, nonce_list, JALDB_RTYPE_LOG, true);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(4, nonce_list.size());
+	assert_equals(nonce2, nonce_list.front());
+	assert_equals(nonce1, nonce_list.back());
+	nonce_list.clear();
+
+	// Test getting all records with less than current number size size passed
+	ret = jaldb_get_last_k_records(context, 2, nonce_list, JALDB_RTYPE_LOG, true);
+	assert_equals(JALDB_OK, ret);
+	assert_equals(4, nonce_list.size());
+	assert_equals(nonce2, nonce_list.front());
+	assert_equals(nonce1, nonce_list.back());
+	nonce_list.clear();
+
+	free(nonce1);
 	free(nonce2);
+	free(nonce3);
 	free(nonce4);
+	nonce1 = NULL;
 	nonce2 = NULL;
+	nonce3 = NULL;
 	nonce4= NULL;
 }
 
