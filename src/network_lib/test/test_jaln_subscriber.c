@@ -278,11 +278,13 @@ void test_jaln_subscriber_record_frame_handler_success()
 int fake_get_subscribe_request_success(
 	__attribute__((unused)) jaln_session *sess,
 	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
-	__attribute__((unused)) enum jaln_record_type type,
-	__attribute__((unused)) char **nonce,
+	enum jaln_record_type type,
+	char **nonce,
 	__attribute__((unused)) uint64_t *offset)
 {
-	*nonce = strdup(NONCE);
+	if (JALN_RTYPE_JOURNAL == type) {
+		*nonce = strdup(NONCE);
+	}
 	*offset = OFFSET;
 	return JAL_OK;
 }
@@ -320,19 +322,6 @@ int fake_get_subscribe_request_fail(
 {
 	return JAL_E_INVAL;
 }
-
-int fake_get_subscribe_request_bad_nonce(
-	__attribute__((unused)) jaln_session *sess,
-	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
-	__attribute__((unused)) enum jaln_record_type type,
-	__attribute__((unused)) char **nonce,
-	__attribute__((unused)) uint64_t *offset)
-{
-	*nonce = strdup(" ");
-	return JAL_OK;
-}
-
-
 
 void test_jaln_configure_sub_session_no_lock_succeeds()
 {	// Pre-conditions
@@ -461,16 +450,6 @@ void test_jaln_subscriber_send_subscribe_request_fails_internal()
 	
 	session->jaln_ctx->sub_callbacks->get_subscribe_request =
 		fake_get_subscribe_request_fail;
-	jaln_subscriber_send_subscribe_request(session);
-	assert_equals(0, isMsgSent);
-
-	session->jaln_ctx->sub_callbacks->get_subscribe_request =
-		fake_get_subscribe_request_null_nonce;
-	jaln_subscriber_send_subscribe_request(session);
-	assert_equals(0, isMsgSent);
-	
-	session->jaln_ctx->sub_callbacks->get_subscribe_request =
-		fake_get_subscribe_request_bad_nonce;
 	jaln_subscriber_send_subscribe_request(session);
 	assert_equals(0, isMsgSent);
 }

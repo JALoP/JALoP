@@ -68,17 +68,17 @@ void jaldb_destroy_record_dbs(struct jaldb_record_dbs **record_dbs)
 	if (rdbs->record_sent_db) {
 		rdbs->record_sent_db->close(rdbs->record_sent_db, 0);
 	}
-	if (rdbs->primary_db) {
-		rdbs->primary_db->close(rdbs->primary_db, 0);
-	}
-	if (rdbs->metadata_db) {
-		rdbs->metadata_db->close(rdbs->metadata_db, 0);
-	}
 	if (rdbs->network_nonce_idx_db) {
 		rdbs->network_nonce_idx_db->close(rdbs->network_nonce_idx_db, 0);
 	}
 	if (rdbs->record_confirmed_db) {
 		rdbs->record_confirmed_db->close(rdbs->record_confirmed_db, 0);
+	}
+	if (rdbs->primary_db) {
+		rdbs->primary_db->close(rdbs->primary_db, 0);
+	}
+	if (rdbs->metadata_db) {
+		rdbs->metadata_db->close(rdbs->metadata_db, 0);
 	}
 	free(rdbs);
 	*record_dbs = NULL;

@@ -33,11 +33,8 @@
 #include <list>
 #include <set>
 #include <string>
-#include <map>
 #include <db.h>
 #include "jaldb_context.h"
-
-typedef std::map<std::string, jaldb_record_dbs*> string_to_rdbs_map;
 
 struct jaldb_record_dbs;
 
@@ -51,44 +48,11 @@ struct jaldb_context_t {
 	DB *journal_conf_db; 				//!< The database for conf'ed journal records
 	DB *audit_conf_db; 				//!< The database for conf'ed audit records
 	DB *log_conf_db; 				//!< The database for conf'ed log records
-        string_to_rdbs_map *journal_temp_dbs;           //!< The string map for the journal db
-        string_to_rdbs_map *audit_temp_dbs;             //!< The string map for the audit db
-        string_to_rdbs_map *log_temp_dbs;               //!< The string map for the log db
 	int db_read_only; 				//!< Whether or not to open the databases read only
 	std::set<std::string> *seen_journal_records;	//<! Journal records already seen in live mode
 	std::set<std::string> *seen_audit_records;	//<! Audit records already seen in live mode
 	std::set<std::string> *seen_log_records;	//<! Log records already seen in live mode
 };
-
-/**
- * * Retrieve the last confirmed nonce from the given source.
- * * @param[in] ctx the jaldb_context
- * * @param[in] type The type of record (journal, audit, log).
- * * @param[in] source the host to find the last nonce from
- * * @param[out] nonce the last confirmed nonce
- * *
- * * @return JALDB_OK on success, or a different JALDB error code on failure.
- * */
-enum jaldb_status jaldb_get_last_confed_nonce_temp(
-                jaldb_context *ctx,
-                enum jaldb_rec_type type,
-                char *source,
-                char **nonce);
-
-/**
- * * Store the last confirmed nonce from the given source.
- * * @param[in] ctx the jaldb_context
- * * @param[in] type The type of record (journal, audit, log).
- * * @param[in] source the host the last nonce is from
- * * @param[in] nonce the last confirmed nonce
- * *
- * * @return JALDB_OK on success, or a different JALDB error code on failure.
- * */
-enum jaldb_status jaldb_store_confed_nonce_temp(
-        jaldb_context *ctx,
-        enum jaldb_rec_type type,
-        const char* source,
-        const char* nonce);
 
 /**
  * Store the most recently confirmed journal record for a particular host.

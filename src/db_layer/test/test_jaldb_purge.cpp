@@ -55,6 +55,7 @@ extern "C" {
 #include "jaldb_strings.h"
 #include "jaldb_utils.h"
 #include "jaldb_purge.hpp"
+#include "jaldb_segment.h"
 
 using namespace std;
 
@@ -71,6 +72,20 @@ using namespace std;
 #define LOG_DATA_X "Log Buffer\nLog Entry 1\n"
 #define LOG_DATA_Y "Log Buffer\nLog Entry 1\nLog Entry 2\n"
 #define PAYLOAD "SoMe_data   is here\nMoreData is Here!\n"
+
+#define DT1 "2012-12-12T09:00:00.00000"
+#define HN1 "somehost"
+#define UN1 "someuser"
+#define S1 "source1"
+#define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
+
+#define DT2 "2012-12-12T09:00:00.00000"
+#define HN2 "somehost"
+#define UN2 "someuser"
+#define S2 "source1"
+#define UUID_2 "21234567-89AB-CDEF-0123-456789ABCDEF"
+
+#define EXPECTED_RECORD_VERSION 1
 
 static void *audit_sys_meta_doc = NULL;
 static void *audit_app_meta_doc = NULL;
@@ -152,10 +167,57 @@ extern "C" void teardown()
 
 extern "C" void test_jaldb_purge_unconfirmed_records()
 {
+	jaldb_record *rec_final = NULL;
+
+	jaldb_record *rec1 = jaldb_create_record();
+	rec1->version = EXPECTED_RECORD_VERSION;
+	rec1->type = JALDB_RTYPE_LOG;	
+	rec1->timestamp = jal_strdup(DT1);
+	rec1->hostname = jal_strdup(HN1);
+	rec1->source = jal_strdup(S1);
+	rec1->username = jal_strdup(UN1);
+	rec1->payload = jaldb_create_segment();
+	assert_equals(0, uuid_parse(UUID_1, rec1->uuid));
+	rec1->network_nonce = jal_strdup("NN");
+
+	jaldb_record *rec2 = jaldb_create_record();
+	rec2->version = EXPECTED_RECORD_VERSION;
+	rec2->type = JALDB_RTYPE_LOG;	
+	rec2->timestamp = jal_strdup(DT2);
+	rec2->hostname = jal_strdup(HN2);
+	rec2->source = jal_strdup(S2);
+	rec2->username = jal_strdup(UN2);
+	rec2->payload = jaldb_create_segment();
+	assert_equals(0, uuid_parse(UUID_2, rec2->uuid));
+	rec2->network_nonce = jal_strdup("NN2");
+	
+	char *nonce = NULL;
+	char *nonce2 = NULL;
+	char *nonce3 = NULL;
+
 	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(context,"localhost",JALDB_RTYPE_JOURNAL));
 	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(context,"1.2.3.4",JALDB_RTYPE_UNKNOWN));
 	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(NULL,"1.2.3.4",JALDB_RTYPE_JOURNAL));
 
-	//TODO: Write additional unit tests.  The functions needed for more unit tests have not yet been implemented.	
+	assert_equals(JALDB_OK, jaldb_insert_record(context, rec1, 0, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, rec2, 0, &nonce2));
+	assert_equals(JALDB_OK, jaldb_mark_confirmed(context, JALDB_RTYPE_LOG, (char*)"NN", &nonce3));
+	assert_string_equals(nonce,nonce3);
+
+	jaldb_purge_unconfirmed_records(context, "1.2.3.4", JALDB_RTYPE_LOG);
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec_final));
+
+	jaldb_destroy_record(&rec_final);
+	rec_final = NULL;
+
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec_final));
+
+	jaldb_destroy_record(&rec_final);
+	jaldb_destroy_record(&rec1);
+	jaldb_destroy_record(&rec2);
+	free(nonce);
+	free(nonce2);
+	free(nonce3);
 
 }

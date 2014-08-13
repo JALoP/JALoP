@@ -46,10 +46,7 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		enum jaldb_rec_type rtype)
 {
 	int db_ret = 0;
-	u_int32_t db_flags = DB_THREAD | DB_CREATE | DB_AUTO_COMMIT;
 	jaldb_record_dbs *rdbs = NULL;
-	char *filename = NULL;
-	DB *temp_handle = NULL;
 
 	if (!ctx || !remote_host ||
 			0 == strcmp(remote_host, "localhost") ||
@@ -57,21 +54,7 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		return JALDB_E_INVAL;
 	}
 
-	switch (rtype) {
-	case JALDB_RTYPE_JOURNAL:
-		jal_asprintf(&filename, "%s_%s", remote_host, "journal");
-		break;
-	case JALDB_RTYPE_AUDIT:
-		jal_asprintf(&filename, "%s_%s", remote_host, "audit");
-		break;
-	case JALDB_RTYPE_LOG:
-		jal_asprintf(&filename, "%s_%s", remote_host, "log");
-		break;
-	default:
-		return JALDB_E_INVAL;
-	}
-
-	db_ret = jaldb_get_dbs(ctx,remote_host,rtype,&rdbs);
+	db_ret = jaldb_get_primary_record_dbs(ctx,rtype,&rdbs);
 	if (0 != db_ret) {
 		return JALDB_E_INVAL;
 	}
@@ -80,28 +63,18 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		return JALDB_E_INVAL;
 	}
 
-	db_ret = rdbs->primary_db->close(rdbs->primary_db, 0);
-	if (0 != db_ret) {
+	DBT key;
+	memset(&key, 0, sizeof(DBT));
+	key.size = sizeof(int);
+	key.data = jal_malloc(sizeof(int));
+	*((int*)key.data) = 0;
+
+	// If a secondary index supports duplicates, one delete will delete all records with that value
+	db_ret = rdbs->record_confirmed_db->del(rdbs->record_confirmed_db, NULL, &key, 0);
+	if (0 != db_ret ){
 		return JALDB_E_DB;
 	}
 
-	/* Need to re-create handle after calling close or remove */
-	db_ret = db_create(&temp_handle, NULL, 0);
-	if (0 != db_ret) {
-		return JALDB_E_INVAL;
-	}
-
-	db_ret = temp_handle->remove(temp_handle, filename, "primary", 0);
-	if ((0 != db_ret) && (2 != db_ret)) {
-		return JALDB_E_DB;
-	}
-
-	db_ret = jaldb_open_dbs_for_temp(ctx, remote_host, rtype, rdbs, db_flags);
-	if (0 != db_ret) {
-		return JALDB_E_INVAL;
-	}
-
-	free(filename);
 	return JALDB_OK;
 
 }

@@ -57,7 +57,6 @@ using namespace std;
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
 #define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 
-static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp);
 static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, const char *nonce);
 
 jaldb_context *jaldb_context_create()
@@ -234,10 +233,6 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	jaldb_destroy_record_dbs(&(ctxp->audit_dbs));
 	jaldb_destroy_record_dbs(&(ctxp->log_dbs));
 
-        jaldb_destroy_string_to_rdbs_map(ctxp->journal_temp_dbs);
-        jaldb_destroy_string_to_rdbs_map(ctxp->audit_temp_dbs);
-        jaldb_destroy_string_to_rdbs_map(ctxp->log_temp_dbs);
-
 	delete ctxp->seen_journal_records;
 	delete ctxp->seen_audit_records;
 	delete ctxp->seen_log_records;
@@ -248,18 +243,6 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	ctxp->env = NULL;
 	free(ctxp);
 	*ctx = NULL;
-}
-
-static void jaldb_destroy_string_to_rdbs_map(string_to_rdbs_map *temp)
-{
-        if (temp) {
-                for (string_to_rdbs_map::iterator iter = temp->begin();
-                                iter != temp->end();
-                                iter++) {
-                        jaldb_destroy_record_dbs(&(iter->second));
-                }
-                delete temp;
-        }
 }
 
 std::string jaldb_make_temp_db_name(const string &id, const string &suffix)
@@ -594,7 +577,7 @@ enum jaldb_status jaldb_mark_confirmed(
 		}
 
 		db_ret = rdbs->network_nonce_idx_db->pget(rdbs->network_nonce_idx_db,
-									txn, &skey, &pkey, &val, DB_DEGREE_2);
+									txn, &skey, &pkey, &val, 0);
 		if (0 == db_ret) {
 			header_ptr = (struct jaldb_serialize_record_headers *)val.data;
 			if (header_ptr->version != JALDB_DB_LAYOUT_VERSION) {
@@ -642,149 +625,6 @@ out:
 	return ret;
 }
 
-enum jaldb_status jaldb_store_confed_nonce_temp(
-                jaldb_context *ctx,
-                enum jaldb_rec_type type,
-                const char* source,
-                const char* nonce)
-{
-        int byte_swap;
-        enum jaldb_status ret = JALDB_OK;
-        struct jaldb_record_dbs *rdbs = NULL;
-        int db_ret;
-        DBT key;
-        DBT val;
-        DB_TXN *txn;
-
-        if (!ctx || !source || !nonce) {
-                return JALDB_E_INVAL;
-        }
-
-        memset(&key, 0, sizeof(key));
-        memset(&val, 0, sizeof(val));
-
-        db_ret = jaldb_get_dbs(ctx, source, type, &rdbs);
-        if (0 != db_ret) {
-                ret = JALDB_E_INVAL;
-                goto out;
-        }
-
-        db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
-        if (0 != db_ret) {
-                ret = JALDB_E_INVAL;
-                goto out;
-        }
-
-        val.size = strlen(nonce) + 1;
-        val.data = jal_strdup(nonce);
-
-        key.flags = DB_DBT_REALLOC;
-        key.data = jal_strdup(JALDB_LAST_CONFED_NONCE_NAME);
-        key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME) + 1;
-
-        while (1) {
-                db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
-                if (0 != db_ret) {
-                        ret = JALDB_E_INVAL;
-                        break;
-                }
-
-                db_ret = rdbs->metadata_db->put(rdbs->metadata_db, txn, &key, &val, 0);
-
-                if (0 == db_ret) {
-                        db_ret = txn->commit(txn, 0);
-                } else {
-                        ret = JALDB_E_DB;
-                        txn->abort(txn);
-                }
-                if (0 == db_ret) {
-                        break;
-		}
-                if (DB_LOCK_DEADLOCK == db_ret) {
-                        continue;
-                } else {
-                        ret = JALDB_E_DB;
-                        break;
-                }
-        }
-
-out:
-        free(key.data);
-        free(val.data);
-        return ret;
-}
-
-enum jaldb_status jaldb_get_last_confed_nonce_temp(
-                jaldb_context *ctx,
-                enum jaldb_rec_type type,
-                char *source,
-                char **nonce)
-{
-        int byte_swap;
-        enum jaldb_status ret = JALDB_OK;
-        struct jaldb_record_dbs *rdbs = NULL;
-        int db_ret;
-        DB_TXN *txn = NULL;
-        DBT key;
-        DBT val;
-
-        if (!ctx || !source) {
-                return JALDB_E_INVAL;
-        }
-
-        memset(&key, 0, sizeof(key));
-        memset(&val, 0, sizeof(val));
-
-        db_ret = jaldb_get_dbs(ctx, source, type, &rdbs);
-        if (0 != db_ret || !rdbs || !rdbs->metadata_db) {
-                ret = JALDB_E_INVAL;
-                goto out;
-        }
-        key.flags = DB_DBT_REALLOC;
-        key.data = jal_strdup(JALDB_LAST_CONFED_NONCE_NAME);
-        key.size = strlen(JALDB_LAST_CONFED_NONCE_NAME) + 1;
-
-        db_ret = rdbs->metadata_db->get_byteswapped(rdbs->metadata_db, &byte_swap);
-        if (0 != db_ret) {
-                ret = JALDB_E_INVAL;
-                goto out;
-        }
-
-        val.flags = DB_DBT_REALLOC;
-
-	while (1) {
-                db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
-                if (0 != db_ret) {
-                        ret = JALDB_E_DB;
-                        goto out;
-                }
-
-                db_ret = rdbs->metadata_db->get(rdbs->metadata_db, txn, &key, &val, DB_DEGREE_2);
-                if (0 == db_ret) {
-                        txn->commit(txn, 0);
-                        break;
-                }
-
-                txn->abort(txn);
-
-                if (DB_LOCK_DEADLOCK == db_ret) {
-                        continue;
-                } else if (DB_NOTFOUND == db_ret) {
-                        ret = JALDB_E_NOT_FOUND;
-                        goto out;
-                }
-                // some other error
-                ret = JALDB_E_DB;
-                goto out;
-	}
-
-        *nonce = jal_strdup((char*)val.data);
-
-out:
-	free(key.data);
-	free(val.data);
-	return ret;
-} 
 enum jaldb_status jaldb_store_journal_resume(
 		jaldb_context *ctx,
 		const char *remote_host,
@@ -819,7 +659,7 @@ enum jaldb_status jaldb_store_journal_resume(
 	memset(&path_val, 0, sizeof(path_val));
 	memset(&nonce_val, 0, sizeof(nonce_val));
 
-	db_ret = jaldb_get_dbs(ctx, remote_host, JALDB_RTYPE_JOURNAL, &rdbs);
+	db_ret = jaldb_get_primary_record_dbs(ctx, JALDB_RTYPE_JOURNAL, &rdbs);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
@@ -946,7 +786,7 @@ enum jaldb_status jaldb_get_journal_resume(
 	memset(&path_val, 0, sizeof(path_val));
 	memset(&nonce_val, 0, sizeof(nonce_val));
 
-	db_ret = jaldb_get_dbs(ctx, remote_host, JALDB_RTYPE_JOURNAL, &rdbs);
+	db_ret = jaldb_get_primary_record_dbs(ctx, JALDB_RTYPE_JOURNAL, &rdbs);
 	if (0 != db_ret || !rdbs || !rdbs->metadata_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
@@ -2100,87 +1940,6 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 		return JALDB_E_INVAL;
 	}
 	return JALDB_OK;
-}
-
-enum jaldb_status jaldb_lookup_rdbs_in_map(
-                jaldb_context *ctx,
-                const char *source,
-                enum jaldb_rec_type type,
-                struct jaldb_record_dbs **rdbs)
-{
-        string_to_rdbs_map::iterator iter;
-        std::string source_str(source);
-
-        if (!ctx || !source) {
-                return JALDB_E_INVAL;
-        }
-        if (ctx->db_read_only) {
-                return JALDB_E_READ_ONLY;
-        }
-        if (!ctx->journal_temp_dbs || !ctx->audit_temp_dbs || !ctx->log_temp_dbs) {
-                return JALDB_E_UNINITIALIZED;
-        }
-        switch (type) {
-        case JALDB_RTYPE_JOURNAL:
-                iter = ctx->journal_temp_dbs->find(source_str);
-                if (iter == ctx->journal_temp_dbs->end()) {
-                        *rdbs = NULL;
-                        return JALDB_OK;
-                }
-                break;
-        case JALDB_RTYPE_AUDIT:
-                iter = ctx->audit_temp_dbs->find(source_str);
-                if (iter == ctx->audit_temp_dbs->end()) {
-                        *rdbs = NULL;
-                        return JALDB_OK;
-                }
-                break;
-        case JALDB_RTYPE_LOG:
-                iter = ctx->log_temp_dbs->find(source_str);
-                if (iter == ctx->log_temp_dbs->end()) {
-                        *rdbs = NULL;
-                        return JALDB_OK;
-                }
-                break;
-        default:
-                return JALDB_E_INVAL;
-        }
-
-        *rdbs = iter->second;
-
-        return JALDB_OK;
-}
-
-enum jaldb_status jaldb_store_rdbs_in_map(
-                jaldb_context *ctx,
-                const char *source,
-                enum jaldb_rec_type type,
-                struct jaldb_record_dbs *rdbs)
-{
-        std::string source_str(source);
-        if (!ctx || !source) {
-                return JALDB_E_INVAL;
-        }
-        if (ctx->db_read_only) {
-                return JALDB_E_READ_ONLY;
-        }
-        if (!ctx->journal_temp_dbs || !ctx->audit_temp_dbs || !ctx->log_temp_dbs) {
-                return JALDB_E_UNINITIALIZED;
-        }
-        switch (type){
-        case JALDB_RTYPE_JOURNAL:
-                (*ctx->journal_temp_dbs)[source_str] = rdbs;
-                break;
-        case JALDB_RTYPE_AUDIT:
-                (*ctx->audit_temp_dbs)[source_str] = rdbs;
-                break;
-        case JALDB_RTYPE_LOG:
-                (*ctx->log_temp_dbs)[source_str] = rdbs;
-                break;
-        default:
-                return JALDB_E_INVAL;
-        }
-        return JALDB_OK;
 }
 
 enum jaldb_status jaldb_open_dbs_for_temp(

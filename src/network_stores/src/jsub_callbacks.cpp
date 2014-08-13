@@ -152,7 +152,6 @@ int jsub_get_subscribe_request(
 		uint64_t *offset)
 {
 	int ret = 0;
-	enum jaldb_status db_err;
 	enum jaldb_rec_type rec_type;
 	if (jsub_debug) {
 		DEBUG_LOG("GET_SUBSCRIBE_REQUEST");
@@ -205,22 +204,6 @@ int jsub_get_subscribe_request(
 				  ch_info->hostname);
 		}
 		ret = 0;
-	}
-
-	/* Did not get journal resume, use last confed nonce */
-	if (!*nonce) {
-		// Going to need to store the last confed nonce to the
-		// 	temp container so that it can be retrieved here.
-
-		db_err = jaldb_get_last_confed_nonce_temp(jsub_db_ctx, rec_type, ch_info->hostname, nonce);
-		if (JALDB_OK != db_err) {
-			if (jsub_debug) {
-				DEBUG_LOG("last confed nonce not found, defaulting to 0.");
-			}
-			nonce_out = JSUB_INITIAL_NONCE;
-			*nonce = jal_strdup((char *)JSUB_INITIAL_NONCE);
-		}
-		ret = JAL_OK;
 	}
 
 	if (jsub_debug) {
@@ -472,22 +455,10 @@ int jsub_on_digest_response(
 	}
 	if (willXfer) {
 		db_err = jaldb_mark_confirmed(jsub_db_ctx, jaldb_type, nonce_str.c_str(), &rec_nonce);
-		if(JALDB_OK == db_err) {
-			db_err = jaldb_store_confed_nonce_temp(jsub_db_ctx, jaldb_type, source.c_str(), rec_nonce);
-			if (jsub_debug) {
-				if (JALDB_OK == db_err) {
-					ret = JAL_OK;
-					DEBUG_LOG("Store confed nonce success! %s nonce: %s\n",
-						rec_type.c_str(), nonce_str.c_str());
-				}
-				else {
-					DEBUG_LOG("Store confed nonce fail! %s nonce: %s\n",
-						  rec_type.c_str(), nonce_str.c_str());
-				}
-			}
-		} else {
+		if(JALDB_OK != db_err) {
 			DEBUG_LOG("Failed to confirm record! %s nonce: %s error: %d\n",
 				rec_type.c_str(), nonce_str.c_str(), db_err);
+				ret = -1;
 		}
 	}
 	free(tmp_nonce);

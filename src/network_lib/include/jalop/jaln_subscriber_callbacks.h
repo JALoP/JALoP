@@ -48,13 +48,14 @@ struct jaln_subscriber_callbacks {
 	 * After a connection is accepted where the local peer is slated as the
 	 * 'subscriber' the JNL calls this function to get the parameters
 	 * needed to send a 'subscribe' or 'journal-resume' message. For
-	 * journal and audit records, the application only needs to set the
+	 * journal records, the application needs to set the
 	 * nonce. The JNL interprets this as the last record the
 	 * application downloaded and received a 'digest-conf' for. The JNL
 	 * will send a 'subscribe' message indicating that this was the last
 	 * record received.  Applications should use the special strings 
 	 * JALN_NONCE_EPOCH and JALN_NONCE_NOW to specify transfer should 
 	 * start with the oldest records, or only receive new records.
+	 * For audit and log records, the nonce should be set to NULL.
 	 *
 	 * For journal records, the Application must specify the offset. When
 	 * the offset is 0, the JNL behaves in the same way as audit and
@@ -67,7 +68,7 @@ struct jaln_subscriber_callbacks {
 	 * @param[in] type The type of JAL record the JNL is getting ready to
 	 * subscribe to.
 	 * @param[out] nonce The last record received, the JNL will release
-	 * this memory by calling free().
+	 * this memory by calling free().  This is only needed for journal.
 	 * @param[out] offset The number of bytes already downloaded.
 	 * @return JAL_OK to continue with the request, anything else to close
 	 * the channel.

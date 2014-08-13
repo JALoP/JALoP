@@ -110,21 +110,6 @@ enum jaldb_status jaldb_create_file(
 char *jaldb_gen_timestamp();
 
 /**
- * Get either the permanent dbs for confirmed records or temporary dbs for unconfired records
- * @param[in] ctx the context to us
- * @param[in] source the source of the record
- * @param[in] type the type of the record
- * @param[out] rdbs the jaldb_record_dbs struct for your source and type
- *
- * @return JALDB_OK on success, or an error code 
- */
-enum jaldb_status jaldb_get_dbs(
-	jaldb_context *ctx,
-	const char *source,
-	enum jaldb_rec_type type,
-	struct jaldb_record_dbs **rdbs);
-
-/**
  * Generate a primary key for use in the database.  The format is:
  * uuid_timestamp_pid_tid
  * @param[in] uuid the uuid to use in the key

@@ -314,12 +314,7 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 			session->ch_info->type,
 			&nonce,
 			&offset);
-	if ((JAL_OK != ret) ||
-		(!nonce)) {
-		goto err_out;
-	}
-	axl_stream_trim(nonce);
-	if (0 == strlen(nonce)) {
+	if (JAL_OK != ret) {
 		goto err_out;
 	}
 	session->sub_data->sm->payload_off = offset;

@@ -276,6 +276,9 @@ char *jaldb_gen_timestamp()
 	return ftime;
 }
 
+// TODO: Remove completely
+// Should be replaced by jaldb_get_primary_record_dbs
+/*
 enum jaldb_status jaldb_get_dbs(
 		jaldb_context *ctx,
 		const char *source,
@@ -304,6 +307,7 @@ enum jaldb_status jaldb_get_dbs(
 	}
 	return ret;
 }
+*/
 
 char *jaldb_gen_primary_key(uuid_t uuid)
 {
