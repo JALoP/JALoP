@@ -27,12 +27,15 @@
  */
 
 #include <jalop/jaln_network.h>
-
-#include "jaln_connection.h"
-#include "jaln_context.h"
-#include "jaln_session.h"
-
 #include <test-dept.h>
+#include <string.h>
+
+#include "jal_alloc.h"
+
+
+#include "jaln_context.h"
+#include "jaln_connection.h"
+#include "jaln_session.h"
 
 static jaln_context *jaln_ctx;
 static jaln_session *sess;

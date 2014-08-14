@@ -57,10 +57,12 @@ struct jaldb_segment;
  * include the null terminator. */
 #define JALDB_TIMESTAMP_LENGTH 25
 
-/* This is used when serializing and deserializing the network_nonce, and
- * in the mark_synced function to efficiently update the network nonce by
- * determining the necessary offset into the buffer. This value does not
- * include the null terminator. */
+/* This must match JALN_MAX_NONCE_LENGTH in jaln_network.h
+ *
+ * In the db_layer, this is used when serializing and deserializing the
+ * network_nonce, and in the mark_synced function to efficiently update
+ * the network nonce by determining the necessary offset into the buffer.
+ * This value does not include the null terminator. */
 #define JALDB_MAX_NETWORK_NONCE_LENGTH 127
 
 /**

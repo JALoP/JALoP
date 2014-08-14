@@ -33,6 +33,7 @@
 #include "jal_alloc.h"
 #include "jaln_session.h"
 #include "jaln_pub_feeder.h"
+#include "jaln_push.h"
 
 /*
  * Helper method used to initialize the record information
@@ -106,6 +107,10 @@ enum jal_status jaln_send_record(
 		return JAL_E_INVAL;
 	}
 
+	if (strlen(nonce) > JALN_MAX_NONCE_LENGTH) {
+		return JAL_E_INVAL_NONCE;
+	}
+
 	if (JAL_OK != jaln_session_is_ok(sess)) {
 		return JAL_E_INVAL;
 	}
@@ -170,6 +175,10 @@ enum jal_status jaln_send_record_feeder(
 
 	if (SIZE_MAX < app_meta_len || SIZE_MAX < sys_meta_len) {
 		return JAL_E_INVAL_PARAM;
+	}
+
+	if (strlen(nonce) > JALN_MAX_NONCE_LENGTH) {
+		return JAL_E_INVAL_NONCE;
 	}
 
 	if (JAL_OK != jaln_session_is_ok(sess)) {

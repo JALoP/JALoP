@@ -503,6 +503,9 @@ static void print_error(enum jal_status error)
 		case JAL_E_INVAL_TIMESTAMP:
 			printf("JAL_E_INVAL_TIMESTAMP");
 			break;
+		case JAL_E_INVAL_NONCE:
+			printf("JAL_E_INVAL_NONCE");
+			break;
 		case JAL_E_NO_MEM:
 			printf("JAL_E_NO_MEM");
 			break;
