@@ -529,14 +529,13 @@ extern "C" void test_jaldb_get_records_since_last_nonce_works()
 	enum jaldb_status ret;
 	list<string> nonce_list;
 
-	char *nonce = NULL;
+	char *nonce1 = NULL;
 	char *nonce2 = NULL;
 	char *nonce3 = NULL;
 	char *nonce4 = NULL;
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
-	free(nonce);
-	nonce = NULL;
+	// Timestamp index is based on timestamp extract from record. Time order will be nonce 2, 3, 4, 1
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce3));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce4));
@@ -544,26 +543,52 @@ extern "C" void test_jaldb_get_records_since_last_nonce_works()
 	ret = jaldb_get_records_since_last_nonce(context, nonce2, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_OK, ret);
 	
-	assert_equals(2, nonce_list.size());
+	assert_equals(3, nonce_list.size());
 	assert_equals(nonce3, nonce_list.front());
-	assert_equals(nonce4, nonce_list.back());
+	assert_equals(nonce1, nonce_list.back());
 
+	free(nonce1);
 	free(nonce2);
 	free(nonce3);
 	free(nonce4);
+	nonce1 = NULL;
 	nonce2 = NULL;
 	nonce3 = NULL;
 	nonce4 = NULL;
 }
 
-extern "C" void test_jaldb_get_records_since_last_nonce_returns_error_with_invalid_last_nonce()
+extern "C" void test_jaldb_get_records_since_last_nonce_returns_error_with_missing_last_nonce()
 {
 	enum jaldb_status ret;
 	list<string> nonce_list;
 
-	char last_nonce[] = "02";
+	char *nonce1 = NULL;
+	char *nonce2 = NULL;
+	char *nonce3 = NULL;
+	char *nonce4 = NULL;
+	char last_nonce[] =  "11111111-AAAA-BBBB-2222-333333CCCCCC";
+
+	// Timestamp index is based on timestamp extract from record. Time order will be nonce 2, 3, 4, 1
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 2, &nonce2));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 2, &nonce3));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 3, &nonce4));
+
+	// If last nonce not found, then check for flag and all records returned
 	ret = jaldb_get_records_since_last_nonce(context, last_nonce, nonce_list, JALDB_RTYPE_LOG);
-	assert_equals(JALDB_E_INVAL, ret);
+	assert_equals(JALDB_E_NOT_FOUND, ret);
+	assert_equals(4, nonce_list.size());
+	assert_equals(nonce2, nonce_list.front());
+	assert_equals(nonce1, nonce_list.back());
+
+	free(nonce1);
+	free(nonce2);
+	free(nonce3);
+	free(nonce4);
+	nonce1 = NULL;
+	nonce2 = NULL;
+	nonce3 = NULL;
+	nonce4 = NULL;
 }
 
 extern "C" void test_jaldb_get_records_since_last_nonce_returns_error_with_no_last_nonce()

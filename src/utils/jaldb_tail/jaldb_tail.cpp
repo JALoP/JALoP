@@ -51,7 +51,7 @@
 #include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 
-#define JALDB_TAIL_THREAD_SLEEP_SECONDS 10
+#define JALDB_TAIL_THREAD_SLEEP_SECONDS 1
 #define JALDB_TAIL_DEFAULT_NUM_RECORDS 20
 #define JALDB_TAIL_DEFAULT_TYPE "l"
 #define JALDB_TAIL_DEFAULT_LAST_UUID "0"
@@ -154,7 +154,7 @@ out:
 
 static void parse_cmdline(int argc, char **argv)
 {
-	static const char *optstring = "fn:t:h:";
+	static const char *optstring = "fn:vt:h:";
 	static const struct option long_options[] = {
 		{"follow", no_argument, NULL, 'f'},
 		{"records", required_argument, NULL, 'n'},
@@ -255,16 +255,13 @@ static void print_usage()
 	static const char *usage =
 	"Usage:\n\
 	-f, --follow		Output additional records as the database grows.\n\
-	-n, --records=K		Output the most recent K records. jaldb_tail uses the nonce\n\
-				of the JAL record that the JALoP Local Store or\n\
-				JALoP Network Store assigns to determine the most recent\n\
-				records. Selecting '0' outputs all records.\n\
-	--version		Output the version information and exit.\n\
-	-t, --type=T		Show only records of a particular type. \n\
-				T may be: \"j\" (journal record), \"a\" (audit record),\n\
-				or \"l\" (log record).\n\
-	-h, --home=H		Specify the root of the JALoP database,\n\
-				defaults to /var/lib/jalop/db.\n\n";
+	-n K, --records=K	Output the most recent K records. Selecting '0' outputs all records.\n\
+	-v, --version		Output the version information and exit.\n\
+	-t T, --type=T		Select JALoP record type to output.\n\
+				T may be: \"j\" (journal record), \"a\" (audit record), or \"l\" (log record).\n\
+				Defaults to log records.\n\
+	-h H, --home=H		Specify the root of the JALoP database,\n\
+				Defaults to /var/lib/jalop/db.\n\n";
 
 	printf("%s\n", usage);
 }
@@ -376,10 +373,15 @@ static void do_work(void *ptr)
 						uuid_list,
 						type);
 
+		if (ret == JALDB_E_NOT_FOUND) {
+			printf("Warning: Last displayed record not found. Displaying all records.\n");
+		} 
+
 		if (0 < uuid_list.size()) {
 			display_records(uuid_list);
 			last_uuid = uuid_list.back();
 		}
+
 		uuid_list.clear();
 		sleep(JALDB_TAIL_THREAD_SLEEP_SECONDS);
 	}

@@ -927,14 +927,14 @@ enum jaldb_status jaldb_get_last_k_records(
 	DBT pkey;
 	DBT key;
 	DBT val;
-	memset(&pkey, 0, sizeof(key));
+	memset(&pkey, 0, sizeof(pkey));
 	memset(&key, 0, sizeof(key));
 	memset(&val, 0, sizeof(val));
+	pkey.flags = DB_DBT_REALLOC;
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.doff = 0;
 	val.dlen = 0; //Only interested in the key at this point
-	char *current_nonce = NULL;
 	int count = 0;
 
 	if (!ctx) {
@@ -981,15 +981,7 @@ enum jaldb_status jaldb_get_last_k_records(
 	}
 
 	while((count < k || get_all) && (0 == db_ret)) {
-		current_nonce = jal_strdup((const char*)pkey.data);
-		if (NULL == current_nonce) {
-			ret = JALDB_E_NO_MEM;
-			goto out;
-		}
-		nonce_list.push_front(current_nonce);
-
-		free(current_nonce);
-		current_nonce = NULL;
+		nonce_list.push_front((const char*)pkey.data);
 
 		db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_PREV);
 
@@ -1005,11 +997,7 @@ out:
 		cursor->c_close(cursor);
 	}
 
-	if (current_nonce) {
-		free(current_nonce);
-		current_nonce = NULL;
-	}
-
+	free(pkey.data);
 	free(key.data);
 	free(val.data);
 	return ret;
@@ -1042,15 +1030,17 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 	struct jaldb_record_dbs *rdbs = NULL;
 	int byte_swap;
 	DBC *cursor = NULL;
+	DBT pkey;
 	DBT key;
 	DBT val;
+	memset(&pkey, 0, sizeof(pkey));
 	memset(&key, 0, sizeof(key));
 	memset(&val, 0, sizeof(val));
+	pkey.flags = DB_DBT_REALLOC;
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.doff = 0;
 	val.dlen = 0; //Only interested in the key at this point
-	char *current_nonce = NULL;
 
 	if (!ctx) {
 		ret = JALDB_E_INVAL;
@@ -1081,45 +1071,43 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 		goto out;
 	}
 
-	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	db_ret = rdbs->timestamp_idx_db->get_byteswapped(rdbs->timestamp_idx_db, &byte_swap);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	key.size = strlen(last_nonce)+1;
-	key.data = jal_strdup(last_nonce);
-
-	db_ret = rdbs->primary_db->cursor(rdbs->primary_db, NULL, &cursor, DB_DEGREE_2);
+	db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
 	if (0 != db_ret) {
-		JALDB_DB_ERR(rdbs->primary_db, db_ret);
+		JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	db_ret = cursor->c_get(cursor, &key, &val, DB_SET_RANGE);
+	// Set the cursor and get the last inserted record
+	db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_LAST);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
-	while(0 == db_ret) {
-		db_ret = cursor->c_get(cursor, &key, &val, DB_NEXT);
+	// Add records to the list until we find a match for the network nonce
+	// If record purged (missing), next loop will get all records.
+	while(strcmp((char *)pkey.data, last_nonce) != 0) {
+		/* Check to see if we've hit the beginning of the DB, which means we did not find the nonce */
+		/* Return a separate error code to indicate this along with the list of nonces */
+		if (db_ret == DB_NOTFOUND ) {
+			ret = JALDB_E_NOT_FOUND;
+			goto out;
 
-		if(0 != db_ret) {
-			break;
-		}
-
-		current_nonce = jal_strdup((const char *)key.data);
-		if (NULL == current_nonce) {
-			ret = JALDB_E_NO_MEM;
+		/* Any other errors return invalid */
+		} else if (db_ret != 0) {
+			ret = JALDB_E_INVAL;
 			goto out;
 		}
 
-		nonce_list.push_back(current_nonce);
-
-		free(current_nonce);
-		current_nonce = NULL;
+		nonce_list.push_front((const char *)pkey.data); 
+		db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_PREV);
 	}
 
 out:
@@ -1127,7 +1115,7 @@ out:
 		cursor->c_close(cursor);
 	}
 
-	free(current_nonce);
+	free(pkey.data);
 	free(key.data);
 	free(val.data);
 	return ret;

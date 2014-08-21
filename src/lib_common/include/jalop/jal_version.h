@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /** Sets the version for JALoP */
-#define JAL_VERSION 0.2
+#define JAL_VERSION 1.0
 
 /** Return a pointer to a string containing the JALoP verion */
 char *jal_version_as_string();
