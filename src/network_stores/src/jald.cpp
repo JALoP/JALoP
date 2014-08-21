@@ -146,10 +146,12 @@ static jaldb_context_t *db_ctx = NULL;
 static pthread_mutex_t gs_journal_sub_lock;
 static pthread_mutex_t gs_audit_sub_lock;
 static pthread_mutex_t gs_log_sub_lock;
+static pthread_mutex_t exit_count_lock;
 static axlHash *gs_journal_subs = NULL;
 static axlHash *gs_audit_subs = NULL;
 static axlHash *gs_log_subs = NULL;
 static int exiting = 0;
+static int threads_to_exit = 0;
 
 static void usage();
 static int process_options(int argc, char **argv);
@@ -343,10 +345,10 @@ enum jaldb_status pub_get_next_record(
 			if (JALDB_E_NOT_FOUND == ret) {
 				sleep(global_config.poll_time);
 
-				if (JAL_OK != jaln_session_is_ok(sess)) {
-					ret = JALDB_E_NETWORK_DISCONNECTED;
-					goto out;
-				}
+			}
+			if (exiting || JAL_OK != jaln_session_is_ok(sess)) {
+				ret = JALDB_E_NETWORK_DISCONNECTED;
+				goto out;
 			}
 		}
 	}
@@ -739,6 +741,10 @@ enum jal_status pub_on_subscribe(
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+	pthread_mutex_lock(&exit_count_lock);
+	threads_to_exit += 1;
+	pthread_mutex_unlock(&exit_count_lock);
+
 	data.sess = sess;
 	data.ch_info = ch_info;
 	data.timestamp = NULL;
@@ -811,6 +817,10 @@ enum jal_status pub_on_subscribe(
 	if (JAL_OK != ret && JAL_E_NOT_CONNECTED != ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed while sending records to subscriber");
 	}
+
+	pthread_mutex_lock(&exit_count_lock);
+	threads_to_exit -= 1;
+	pthread_mutex_unlock(&exit_count_lock);
 
 	return ret;
 }
@@ -1131,12 +1141,16 @@ int main(int argc, char **argv)
 	}
 
 out:
+	while (threads_to_exit > 0) {
+		sleep(1);
+	}
 	free_global_config();
 	free_global_args();
 	teardown_db_layer();
 	pthread_mutex_destroy(&gs_journal_sub_lock);
 	pthread_mutex_destroy(&gs_audit_sub_lock);
 	pthread_mutex_destroy(&gs_log_sub_lock);
+	pthread_mutex_destroy(&exit_count_lock);
 	jaln_context_destroy(&jctx);
 	jaln_publisher_callbacks_destroy(&pub_cbs);
 	config_destroy(&config);

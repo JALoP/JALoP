@@ -121,7 +121,7 @@ axl_bool jaln_handle_initialize_ack(jaln_session *session,
 		if (0 != strcasecmp(digest, JALN_DGST_SHA256)) {
 			goto err_out;
 		}
-		session->dgst = ctx->sha256_digest;
+		session->dgst = jal_sha256_ctx_create();
 	} else {
 		axlPointer ptr = axl_list_lookup(ctx->dgst_algs, jaln_digest_lookup_func, digest);
 		if (!ptr) {
