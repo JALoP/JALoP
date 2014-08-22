@@ -47,6 +47,8 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 {
 	int db_ret = 0;
 	jaldb_record_dbs *rdbs = NULL;
+	DB_TXN *txn = NULL;
+	enum jaldb_status ret = JALDB_E_UNKNOWN;
 
 	if (!ctx || !remote_host ||
 			0 == strcmp(remote_host, "localhost") ||
@@ -69,14 +71,35 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 	key.data = jal_malloc(sizeof(int));
 	*((int*)key.data) = 0;
 
-	// If a secondary index supports duplicates, one delete will delete all records with that value
-	db_ret = rdbs->record_confirmed_db->del(rdbs->record_confirmed_db, NULL, &key, 0);
-	if (0 != db_ret ){
-		return JALDB_E_DB;
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		// If a secondary index supports duplicates, one delete will delete all records with that value
+		db_ret = rdbs->record_confirmed_db->del(rdbs->record_confirmed_db, txn, &key, 0);
+		if (0 == db_ret) {
+			txn->commit(txn,0);
+			break;
+		}
+		txn->abort(txn);
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else if (DB_NOTFOUND == db_ret) {
+			// If there weren't any unconfirmed records, we're good
+			ret = JALDB_OK;
+			goto out;
+		}
+		ret = JALDB_E_DB;
+		goto out;
+		
 	}
-
-	return JALDB_OK;
-
+	ret = JALDB_OK;
+out:
+	free(key.data);
+	return ret;
 }
 
 enum jaldb_status jaldb_purge_log_by_nonce(jaldb_context *ctx,

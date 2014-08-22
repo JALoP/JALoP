@@ -204,7 +204,7 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 	assert_equals(JALDB_OK, jaldb_mark_confirmed(context, JALDB_RTYPE_LOG, (char*)"NN", &nonce3));
 	assert_string_equals(nonce,nonce3);
 
-	jaldb_purge_unconfirmed_records(context, "1.2.3.4", JALDB_RTYPE_LOG);
+	assert_equals(JALDB_OK, jaldb_purge_unconfirmed_records(context, "1.2.3.4", JALDB_RTYPE_LOG));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec_final));
 
