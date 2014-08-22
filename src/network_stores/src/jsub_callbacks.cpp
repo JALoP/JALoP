@@ -398,7 +398,8 @@ int jsub_on_digest_response(
 		__attribute__((unused)) const void *user_data)
 {
 	char *tmp_nonce = NULL;
-	// Once received, perform transfer operation
+	// If the status was CONFIRMED, we should mark it as such.
+	// In any other case, we just return, and it will be remove at the next startup.
 	const char *status_str;
 	switch (status) {
 		case JALN_DIGEST_STATUS_CONFIRMED:
@@ -406,12 +407,15 @@ int jsub_on_digest_response(
 			break;
 		case JALN_DIGEST_STATUS_INVALID:
 			status_str = "Invalid";
+			return JAL_OK;
 			break;
 		case JALN_DIGEST_STATUS_UNKNOWN:
 			status_str = "Unknown";
+			return JAL_OK;
 			break;
 		default:
 			status_str = "illegal";
+			return -1;
 	}
 	if (jsub_debug) {
 		DEBUG_LOG("ON_DIGEST_RESPONSE");
@@ -432,18 +436,21 @@ int jsub_on_digest_response(
 		case JALN_RTYPE_JOURNAL:
 			// xfer journal
 			willXfer = true;
+			ret = JAL_OK;
 			rec_type = "JOURNAL";
 			jaldb_type = JALDB_RTYPE_JOURNAL;
 			break;
 		case JALN_RTYPE_AUDIT:
 			// xfer audit
 			willXfer = true;
+			ret = JAL_OK;
 			rec_type = "AUDIT";
 			jaldb_type = JALDB_RTYPE_AUDIT;
 			break;
 		case JALN_RTYPE_LOG:
 			// xfer log
 			willXfer = true;
+			ret = JAL_OK;
 			rec_type = "LOG";
 			jaldb_type = JALDB_RTYPE_LOG;
 			break;
