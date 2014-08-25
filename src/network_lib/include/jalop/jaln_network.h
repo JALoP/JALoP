@@ -222,6 +222,7 @@ enum jal_status jaln_listener_wait(jaln_context *ctx);
  * @param[in] port The port to connect to.
  * @param[in] data_classes bitmask of JAL record types to publish. Must be
  * comprised of the entries of enum jaln_record_type.
+ * @param[in] mode Indicates if the session should be in archive or live mode.
  * @param[in] user_data An address that will be passed into all the callback
  * methods.
  * @return A connection object that represents the link to the remote peer.
