@@ -209,6 +209,13 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "could not insert journal record into database\n");
+			switch (db_err) {
+				case JALDB_E_REJECT:
+					fprintf(stderr, "record was too large and was rejected\n");
+					break;
+				default:
+					break;
+			}
 		}
 		goto err_out;
 	}

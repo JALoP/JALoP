@@ -261,3 +261,47 @@ void test_jaldb_record_sanity_check_fails_on_missing_fields()
 
 	jaldb_destroy_record(&record);
 }
+
+void test_jaldb_record_sanity_check_fails_for_large_record()
+{
+	enum jaldb_status ret;
+	struct jaldb_record *record = jaldb_create_record();
+
+	record->version = EXPECTED_RECORD_VERSION;
+	record->source = jal_strdup("source");
+	record->hostname = jal_strdup("somehost");
+	record->username = jal_strdup("someuser");
+	record->type = JALDB_RTYPE_LOG;
+
+	ret = jaldb_record_sanity_check(record);
+	assert_not_equals(JALDB_OK, ret);
+
+	record->app_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->sys_meta = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->payload = jaldb_create_segment();
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	record->app_meta->length = 50000000;
+	record->app_meta->payload = (uint8_t*) jal_strdup("app_meta");
+	record->sys_meta->length = 50000000;
+	record->sys_meta->payload = (uint8_t*) jal_strdup("sys_meta");
+	record->payload->length  = 100000001;
+	record->payload->payload = (uint8_t*) jal_strdup("payload");
+
+
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_E_REJECT, ret);
+
+	jaldb_destroy_segment(&record->app_meta);
+	ret = jaldb_record_sanity_check(record);
+	assert_equals(JALDB_OK, ret);
+
+	jaldb_destroy_record(&record);
+}

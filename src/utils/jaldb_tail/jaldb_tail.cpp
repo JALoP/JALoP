@@ -280,6 +280,9 @@ static void print_error(enum jaldb_status error)
 		case JALDB_E_INVAL:
 			printf("JALDB_E_INVAL");
 			break;
+		case JALDB_E_REJECT:
+			printf("JALDB_E_REJECT");
+			break;
 		case JALDB_E_UNKNOWN:
 			printf("JALDB_E_UNKNOWN");
 			break;

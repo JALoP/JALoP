@@ -154,6 +154,13 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "failed to insert log record\n");
+			switch (db_err) {
+				case JALDB_E_REJECT:
+					fprintf(stderr, "record was too large and was rejected\n");
+					break;
+				default:
+					break;
+			}
 		}
 		goto out;
 	}

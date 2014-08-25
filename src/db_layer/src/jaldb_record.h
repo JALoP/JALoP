@@ -41,6 +41,7 @@ extern "C" {
 #endif
 
 #define JALDB_RECORD_VERSION 1
+#define JALDB_MAX_REC_LENGTH 200000000 
 
 struct jaldb_segment;
 

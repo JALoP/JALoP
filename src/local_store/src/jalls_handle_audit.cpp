@@ -151,6 +151,13 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "could not insert audit record into database\n");
+			switch (db_err) {
+				case JALDB_E_REJECT:
+					fprintf(stderr, "record was too large and was rejected\n");
+					break;
+				default:
+					break;
+			}
 		}
 		goto err_out;
 	}

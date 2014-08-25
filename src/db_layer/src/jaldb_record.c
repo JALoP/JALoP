@@ -64,6 +64,7 @@ void jaldb_destroy_record(struct jaldb_record **pprecord)
 
 enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec)
 {
+	uint64_t total_seg_size = 0;
 	enum jaldb_status ret;
 	if (rec == NULL) {
 		return JALDB_E_INVAL;
@@ -98,19 +99,39 @@ enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec)
 		return ret;
 	}
 
+	if (rec->sys_meta) {
+		total_seg_size += rec->sys_meta->length;
+	}
+
+	if (rec->app_meta) {
+		total_seg_size += rec->app_meta->length;
+	}
+
+	if (rec->payload) {
+		total_seg_size += rec->payload->length;
+	}
 	switch (rec->type) {
 	case JALDB_RTYPE_UNKNOWN:
 		return JALDB_E_INVAL;
 	case JALDB_RTYPE_JOURNAL:
-		// fall through
+		if (!rec->payload) {
+			return JALDB_E_INVAL;
+		}
+		break;
 	case JALDB_RTYPE_AUDIT:
 		if (!rec->payload) {
 			return JALDB_E_INVAL;
+		}
+		if (total_seg_size > JALDB_MAX_REC_LENGTH) {
+			return JALDB_E_REJECT;
 		}
 		break;
 	case JALDB_RTYPE_LOG:
 		if (!rec->payload && !rec->app_meta) {
 			return JALDB_E_INVAL;
+		}
+		if (total_seg_size > JALDB_MAX_REC_LENGTH) {
+			return JALDB_E_REJECT;
 		}
 		break;
 	}
