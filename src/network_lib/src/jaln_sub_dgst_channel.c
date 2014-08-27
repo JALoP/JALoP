@@ -113,17 +113,23 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 
 	while (axl_list_cursor_has_item(cursor)) {
 		struct jaln_digest_resp_info *resp_info = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
-		sess->jaln_ctx->sub_callbacks->
-			on_digest_response(sess, sess->ch_info, sess->ch_info->type, resp_info->nonce, resp_info->status, sess->jaln_ctx->user_data);
+		if (JAL_OK != sess->jaln_ctx->sub_callbacks->
+				on_digest_response(sess, sess->ch_info,
+						sess->ch_info->type,
+						resp_info->nonce,
+						resp_info->status,
+						sess->jaln_ctx->user_data)) {
+			goto out;
+		}
+		struct jaln_digest_info *info = axl_list_cursor_get(cursor);
+		jaln_create_sync_msg(info->nonce, &msg, &len);
+		if (!vortex_channel_send_msg(sess->dgst_chan, msg, len, NULL)) {
+			goto out;
+		}
 		axl_list_cursor_next(cursor);
 	}
 
-	struct jaln_digest_info *info = axl_list_get_last(dgst_list);
-	jaln_create_sync_msg(info->nonce, &msg, &len);
-
-	if (!vortex_channel_send_msg(sess->dgst_chan, msg, len, NULL)) {
-		goto out;
-	}
+	
 out:
 	vortex_frame_unref(frame);
 	free(msg);
