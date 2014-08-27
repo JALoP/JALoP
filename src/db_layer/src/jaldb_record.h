@@ -66,6 +66,11 @@ enum jaldb_data_type {
         JALDB_DTYPE_PAYLOAD  = 1 << 6, // Indicates Payload Metadata
 };
 
+enum jaldb_sync_stat {
+	JALDB_NOT_SENT = 0,	//!< Indicates the record has not been sent outbound */
+	JALDB_SENT = 1,		//!< Indicates the record has been sent outbound to at least one remote client */
+	JALDB_SYNCED = 2,	//!< Indicates the record has been synced by at least one outbound remote client */
+};
 
 /**
  * This structure is used to insert/retrieve records from the database.
@@ -84,8 +89,8 @@ struct jaldb_record {
 	char                 *sec_lbl;        //!< The security label of the process that generated the event.
 	int                  version;         //!< The in-database version of the record, currently always \p 1.
 	enum jaldb_rec_type  type;            //!< The type of the record
-	char                 synced;          //!< Indicates if the record was sent to at least 1 remote.
-	char                 confirmed;       //!< Indicates if the record has been confirmed via digest.
+	enum jaldb_sync_stat synced;          //!< Indicates the outbound record status.
+	char                 confirmed;       //!< Indicates whether the inbound record has been confirmed as valid via digest_response from the publisher.
 	char                 have_uid;        //!< Indicates if the uid filed is valid.
 	uuid_t               host_uuid;       //!< The UUID of the machine that created the record.
 	uuid_t               uuid;            //!< The UUID of the record.

@@ -127,7 +127,9 @@ int main(int argc, char **argv)
 				goto out;
 			}
 
-			if (global_args.del && (rec->synced || global_args.force)) {
+			/* Inbound: records should be confirmed. Outbound: records should be synced. */
+			/* Force flag causes sync flag to be ignored. */
+			if (global_args.del && rec->confirmed && (global_args.force || rec->synced == JALDB_SYNCED)) {
 				dbret = jaldb_remove_record(ctx, type, nonce);
 				if (dbret != 0) {
 					printf("Error removing record: %s\n", iter->c_str());
@@ -161,7 +163,9 @@ out:
 extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record *rec, void *)
 {
 
-	if (global_args.force || rec->synced) {
+	/* Inbound: records should be confirmed. Outbound: records should be synced. */
+	/* Force flag causes sync flag to be ignored. */
+	if (rec->confirmed && (global_args.force || (rec->synced == JALDB_SYNCED))) {
 		cout << "NONCE: " << nonce << endl;
 		if (global_args.verbose) {
 			char uuid[37]; // UUID are always 36 characters + the NULL terminator
