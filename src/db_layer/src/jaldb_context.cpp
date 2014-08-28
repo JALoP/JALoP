@@ -1927,64 +1927,7 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 	default:
 		return JALDB_E_INVAL;
 	}
+
 	return JALDB_OK;
-}
-
-enum jaldb_status jaldb_open_dbs_for_temp(
-                jaldb_context *ctx,
-                const char *source,
-                enum jaldb_rec_type rtype,
-                jaldb_record_dbs *rdbs,
-                const u_int32_t db_flags)
-{
-        int db_ret;
-        jaldb_status ret = JALDB_OK;
-        char *filename;
-
-        switch (rtype) {
-        case JALDB_RTYPE_JOURNAL:
-                jal_asprintf(&filename, "%s_%s",source,"journal");
-                break;
-        case JALDB_RTYPE_AUDIT:
-                jal_asprintf(&filename, "%s_%s",source,"audit");
-                break;
-        case JALDB_RTYPE_LOG:
-                jal_asprintf(&filename, "%s_%s",source,"log");
-                break;
-        default:
-                return JALDB_E_INVAL;
-        }
-
-        db_ret = db_create(&(rdbs->primary_db), ctx->env, 0);
-        if (db_ret != 0) {
-                ret = JALDB_E_DB;
-                goto err_out;
-        }
-
-        db_ret = rdbs->primary_db->open(rdbs->primary_db, NULL,
-                        filename, "primary", DB_BTREE, db_flags, 0);
-        if (db_ret != 0) {
-                JALDB_DB_ERR((rdbs->primary_db), db_ret);
-                ret = JALDB_E_DB;
-                goto err_out;
-        }
-        db_ret = db_create(&(rdbs->metadata_db), ctx->env, 0);
-        if (db_ret != 0) {
-                ret = JALDB_E_DB;
-                goto err_out;
-        }
-        db_ret = rdbs->metadata_db->open(rdbs->metadata_db, NULL,
-                        filename, "metadata", DB_BTREE, db_flags, 0);
-        if (db_ret != 0) {
-                JALDB_DB_ERR((rdbs->metadata_db), db_ret);
-                ret = JALDB_E_DB;
-                goto err_out;
-        }
-        goto out;
-err_out:
-        jaldb_destroy_record_dbs(&rdbs);
-out:
-        free(filename);
-        return ret;
 }
 

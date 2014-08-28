@@ -105,6 +105,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	char *record_confirmed_name = NULL;
 	char *nonce_name = NULL;
 	char *network_nonce_name = NULL;
+	char *metadata_name = NULL;
 
 	struct jaldb_record_dbs *rdbs = jaldb_create_record_dbs();
 
@@ -117,6 +118,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		jal_asprintf(&record_confirmed_name, "%s_record_confirmed.db", prefix);
 		jal_asprintf(&nonce_name, "%s_nonce.db", prefix);
 		jal_asprintf(&network_nonce_name, "%s_network_nonce_idx.db", prefix);
+		jal_asprintf(&metadata_name, "%s_metadata.db", prefix);
 	}
 
 	// Open the Primary DB. The Primary DB keys are nonces
@@ -301,6 +303,21 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		goto err_out;
 	}
 
+	// Open the metadata DB. This is for tracking metadata and is *NOT* a
+	// secondary index into the primary db
+        db_ret = db_create(&(rdbs->metadata_db), env, 0);
+        if (db_ret != 0) {
+                ret = JALDB_E_DB;
+                goto err_out;
+        }
+        db_ret = rdbs->metadata_db->open(rdbs->metadata_db, txn,
+                        metadata_name, NULL, DB_BTREE, db_flags, 0);
+        if (db_ret != 0) {
+                JALDB_DB_ERR((rdbs->metadata_db), db_ret);
+                ret = JALDB_E_DB;
+                goto err_out;
+        }
+ 
 	// Associate the databases for secondary keys.
 	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->timestamp_idx_db,
 			jaldb_extract_datetime_key, 0);
@@ -365,6 +382,7 @@ out:
 	free(network_nonce_name);
 	free(record_confirmed_name);
 	free(nonce_name);
+	free(metadata_name);
 	return ret;
 }
 

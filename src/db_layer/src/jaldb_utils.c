@@ -276,39 +276,6 @@ char *jaldb_gen_timestamp()
 	return ftime;
 }
 
-// TODO: Remove completely
-// Should be replaced by jaldb_get_primary_record_dbs
-/*
-enum jaldb_status jaldb_get_dbs(
-		jaldb_context *ctx,
-		const char *source,
-		enum jaldb_rec_type type,
-		struct jaldb_record_dbs **rdbs)
-{
-	enum jaldb_status ret;
-	u_int32_t db_flags;
-	if (!ctx) {
-		return JALDB_E_INVAL;
-	}
-	if (!source || 0 == strcmp(source,"localhost") || 0 == strcmp(source,"127.0.0.1")) {
-		return jaldb_get_primary_record_dbs(ctx,type,rdbs);
-	}
-	ret = jaldb_lookup_rdbs_in_map(ctx,source,type,rdbs);
-	if (ret == JALDB_OK && *rdbs == NULL) {
-		*rdbs = jaldb_create_record_dbs();
-		db_flags = DB_THREAD | DB_CREATE | DB_AUTO_COMMIT;
-		ret = jaldb_open_dbs_for_temp(ctx,source,type,*rdbs,db_flags);
-		if (ret == JALDB_OK) {
-			ret = jaldb_store_rdbs_in_map(ctx,source,type,*rdbs);
-		}
-	}
-	if (ret != JALDB_OK) {
-		*rdbs = NULL;
-	}
-	return ret;
-}
-*/
-
 char *jaldb_gen_primary_key(uuid_t uuid)
 {
 	if (uuid_is_null(uuid)) {

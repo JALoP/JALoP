@@ -267,55 +267,6 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 		enum jaldb_rec_type type,
 		struct jaldb_record_dbs **rdbs);
 
-/**
- * Lookup temporary record dbs in the appropriate map
- * @param[in] ctx the context to use
- * @param[in] source the source string to look for in the map
- * @param[in] type the type of record
- * @param[out] rdbs the record db found, or NULL if it was not found
- *
- * @return      JALDB_OK - success
- *              JALDB_E_INVAL - invalid parameter
- */             
-enum jaldb_status jaldb_lookup_rdbs_in_map(
-                jaldb_context *ctx, 
-                const char *source, 
-                enum jaldb_rec_type type,
-                struct jaldb_record_dbs **rdbs);
-
-/**
- * Store record dbs struct in the appropriate temporary map for its source string
- * @param[in] ctx the context to use
- * @param[in] source the string to use as the key in the map
- * @param[in] type the type of record
- * @param[in] rdbs the record db struct to store
- *
- * @return      JALDB_OK - success
- *              JALDB_E_INVAL - invalid parameter
- */
-enum jaldb_status jaldb_store_rdbs_in_map(
-                jaldb_context *ctx, 
-                const char *source, 
-                enum jaldb_rec_type type,
-                struct jaldb_record_dbs *rdbs);
-
-
-/**
- * Open dbs for a record_dbs struct to be used for temporary storage of unconfirmed records
- * @param[in] ctx the context to use
- * @param[in] rdbs the temporary record dbs struct
- * @param[in] db_flags flags to pass to Berkeley db
- *
- * @return      JALDB_OK - success
- *              JALDB_E_DB - database error
- */
-enum jaldb_status jaldb_open_dbs_for_temp(
-                jaldb_context *ctx,
-                const char *source,
-                enum jaldb_rec_type rtype,
-                struct jaldb_record_dbs *rdbs,
-                const u_int32_t db_flags);
- 
 #ifdef __cplusplus
 }
 #endif
