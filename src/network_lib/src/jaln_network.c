@@ -84,5 +84,12 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn)
 		return JAL_E_INVAL;
 	}
 
+	// Vortex will handle notifying everything to shut down, but we can't return to the
+	// network store until that is complete.  The network store should have one reference
+	// to the context.
+	while (jal_conn->jaln_ctx->ref_cnt > 1) {
+		sleep(1);
+	}
+
 	return JAL_OK;
 }
