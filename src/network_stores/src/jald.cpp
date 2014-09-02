@@ -1144,6 +1144,8 @@ out:
 	while (threads_to_exit > 0) {
 		sleep(1);
 	}
+	jaln_listener_shutdown(jctx);
+	jaln_listener_wait(jctx);
 	free_global_config();
 	free_global_args();
 	teardown_db_layer();
