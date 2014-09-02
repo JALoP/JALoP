@@ -256,7 +256,7 @@ enum jaldb_status jaldb_mark_sent(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
 	const char *nonce,
-	int target_mode)
+	int target_state)
 {
 	enum jaldb_status ret = JALDB_OK;
 	int db_ret;
@@ -329,16 +329,16 @@ enum jaldb_status jaldb_mark_sent(
 				ret = JALDB_E_INVAL;
 				goto out;
 			// Check to see if state matches target - nothing to do if they match
-			} else if (((header_ptr->flags & JALDB_RFLAGS_SENT) ? 1 : 0) == target_mode) {
+			} else if (((header_ptr->flags & JALDB_RFLAGS_SENT) ? 1 : 0) == target_state) {
 				txn->abort(txn);
 				goto out;
 			// Update the state
 			} else {
-				if (1 == target_mode) {
+				if (1 == target_state) {
 					// Set the flag
 					header_ptr->flags |= JALDB_RFLAGS_SENT;
 				}
-				else if (0 == target_mode){
+				else if (0 == target_state){
 					// Clear the flag
 					header_ptr->flags &= ~JALDB_RFLAGS_SENT;
 				} else {
@@ -1637,7 +1637,7 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 	skey.size = sizeof(uint32_t);
 	skey.data = jal_malloc(skey.size);
 	// Set the secondary index we want to get records by
-	*((uint32_t*)(skey.data)) = JALDB_RFLAGS_SENT; // Chcek for Sent (and not Synced)
+	*((uint32_t*)(skey.data)) = JALDB_RFLAGS_SENT; // Check for Sent (and not Synced)
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.dlen = sizeof(*headers);

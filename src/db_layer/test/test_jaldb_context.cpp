@@ -349,7 +349,7 @@ extern "C" void test_next_mark_unsynced_records_unsent_works()
 
 	rec = NULL;
 
-	// Mark 0 and 2 and sent and synced, 2 and 3 as sent but unsynced.
+	// Mark 0 and 1 and sent and synced, 2 and 3 as sent but unsynced.
 	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce0, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce0));
 

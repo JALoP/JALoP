@@ -127,7 +127,7 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
  * @param[in] ctx The context.
  * @param[in] type The type of record (journal, audit, or log).
  * @param[in] nonce The nonce of the record to mark. 
- * @param[in] target_mode The requested state for the Sent flag. 
+ * @param[in] target_state The requested state for the Sent flag. 
  *
  * @return JALDB_OK on success, or a different JALDB error code on failure.
  */
@@ -135,7 +135,7 @@ enum jaldb_status jaldb_mark_sent(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type,
 		const char *nonce,
-		int target_mode);
+		int target_state);
 
 /**
  * Finds a given record and marks it as synced with a remote source.
