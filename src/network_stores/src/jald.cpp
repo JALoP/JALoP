@@ -511,6 +511,8 @@ enum jal_status pub_send_records_feeder(
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent: %d", nonce, db_ret);
+				ret = JAL_E_INVAL_NONCE;
+				goto out;
 			} else {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
 			}
@@ -640,6 +642,8 @@ enum jal_status pub_send_records(
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
+				ret = JAL_E_INVAL_NONCE;
+				goto out;
 			} else {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
 			}
