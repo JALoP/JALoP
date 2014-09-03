@@ -573,7 +573,17 @@ enum jal_status pub_send_records(
 
 	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 
+	DEBUG_LOG_SUB_SESSION(ch_info, "Verifying previously sent records.");
+
+	db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+
 	pthread_mutex_unlock(sub_lock);
+ 
+	if (JALDB_OK != db_ret) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
+		ret = JAL_E_INVAL;
+		goto out;
+	}
 
 	do {
 		db_ret = pub_get_next_record(sess,

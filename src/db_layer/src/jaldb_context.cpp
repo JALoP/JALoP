@@ -1575,6 +1575,208 @@ enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jald
 	return JALDB_OK;
 }
 
+enum jaldb_status jaldb_mark_unsynced_records_unsent(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+
+	int byte_swap;
+	int db_ret;
+
+	int sent_count = 0;
+	int synced_count = 0;
+
+	struct jaldb_serialize_record_headers *headers = NULL;
+	struct jaldb_record_dbs *rdbs = NULL;
+
+	DBC *cursor = NULL;
+
+	DB_TXN *txn = NULL;
+
+	DBT skey;
+	DBT pkey;
+	DBT val;
+
+	if (!ctx) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	memset(&skey, 0, sizeof(skey));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	if (!rdbs || !rdbs->primary_db || !rdbs->record_sent_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+
+	skey.flags = DB_DBT_REALLOC;
+	skey.size = sizeof(uint32_t);
+	skey.data = jal_malloc(skey.size);
+	*((uint32_t*)(skey.data)) = 1; // Sent
+
+	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+	val.dlen = sizeof(*headers);
+	val.size = sizeof(*headers);
+	val.doff = 0;
+	val.data = jal_malloc(val.size);
+
+	pkey.flags = DB_DBT_REALLOC;
+
+	db_ret = rdbs->record_sent_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->record_sent_db->cursor(rdbs->record_sent_db, NULL, &cursor, DB_DEGREE_2);
+	if (0 != db_ret) {
+		JALDB_DB_ERR(rdbs->record_sent_db, db_ret);
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	while (DB_NOTFOUND != db_ret) {
+		fprintf(stderr, "in da loop");
+		// First ensure we didn't hit a deadlock.
+		if (DB_LOCK_DEADLOCK != db_ret) {
+			fprintf(stderr, "getting da record");
+			db_ret = cursor->c_pget(cursor, &skey, &pkey, &val, DB_NEXT | DB_RMW);
+		}
+
+		// If we did hit a deadlock, we need to close the cursor and begin again.
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			
+			fprintf(stderr, "deadlock, restart");
+			cursor->c_close(cursor);
+			cursor = NULL;
+
+			db_ret = rdbs->record_sent_db->cursor(rdbs->record_sent_db, NULL, &cursor, DB_DEGREE_2);
+			if (0 != db_ret) {
+				JALDB_DB_ERR(rdbs->record_sent_db, db_ret);
+				ret = JALDB_E_INVAL;
+				goto out;
+			}
+
+			sent_count = 0;
+			synced_count = 0;
+
+			continue;
+		}
+
+		// No deadlock? Is everything else okay? Then grab the header info.
+		if (0 == db_ret) {
+
+			db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+			if (0 != db_ret) {
+				fprintf(stderr, "txn was bad?");
+				ret = JALDB_E_INVAL;
+				goto out;
+			}
+
+			fprintf(stderr, "no deadlock, check stuff nao");
+			headers = ((struct jaldb_serialize_record_headers *)val.data);
+			if (headers->version != JALDB_DB_LAYOUT_VERSION) {
+
+				ret = JALDB_E_INVAL;
+				txn->abort(txn);
+				goto out;
+			} else if (headers->flags & JALDB_RFLAGS_SYNCED) {
+
+				fprintf(stderr, "is synced");
+				synced_count++;
+				// already synced, so skip
+				txn->abort(txn);
+				continue;
+			} else {
+
+				fprintf(stderr, "is not synced");
+				// Not synced.
+
+				// Check if sent, and mark as unsent.
+				if (headers->flags & JALDB_RFLAGS_SENT) {
+					headers->flags ^= JALDB_RFLAGS_SENT;
+					db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &pkey, &val, DB_AUTO_COMMIT);
+					fprintf(stderr, "putok");
+				} else {
+					fprintf(stderr, "putnotok");
+					txn->abort(txn);
+					continue;
+				}
+
+				// Bail out if we hit any deadlocks.
+				if (DB_LOCK_DEADLOCK == db_ret) {
+					fprintf(stderr, "deadlock on put\n");
+					txn->abort(txn);
+					continue;
+				} else if (0 != db_ret && DB_NOTFOUND != db_ret) {
+
+					// If anything else went wrong...
+					JALDB_DB_ERR(rdbs->primary_db, db_ret);
+					ret = JALDB_E_DB;
+					txn->abort(txn);
+					goto out;
+				} else {
+					fprintf(stderr, "no worries");
+					sent_count++;
+					txn->commit(txn, 0);
+					continue;
+				}
+			}
+		}
+
+		if (db_ret == DB_NOTFOUND) {
+			fprintf(stderr, "didn't find stuff\n");
+			continue;
+		}
+
+		// Something went wrong here...
+		ret = JALDB_E_DB;
+		JALDB_DB_ERR(rdbs->primary_db, db_ret);
+		goto out;
+
+	}
+
+	if (0 != db_ret && DB_NOTFOUND != db_ret) {
+		ret = JALDB_E_DB;
+		goto out;
+	}
+
+	ret = JALDB_OK;
+out:
+
+	if (cursor) {
+		cursor->c_close(cursor);
+	}
+
+	free(skey.data);
+	free(pkey.data);
+	free(val.data);
+
+	
+	fprintf(stderr, "Sent Count: %d\t Synced Count: %d\n", sent_count, synced_count);
+
+	return ret;
+}
+
 enum jaldb_status jaldb_next_unsynced_record(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,

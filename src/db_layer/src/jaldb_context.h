@@ -165,6 +165,18 @@ enum jaldb_status jaldb_mark_confirmed(
 		char **nonce_out);
 
 /**
+ * Marks all records in a db that are unsynced as unsent.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record to mark as unsent.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_mark_unsynced_records_unsent(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type);
+
+/**
  * Retrieves the next un-synced record from the database.
  *
  * @param[in] ctx The context.
