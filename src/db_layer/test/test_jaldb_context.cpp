@@ -469,6 +469,72 @@ extern "C" void test_next_unsynced_works()
 
 }
 
+extern "C" void test_next_unsynced_skips_unconfirmed_records()
+{
+	struct jaldb_record *rec = NULL;
+	char *nonce = NULL;
+	char *nonce1 = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 0, &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 0, &nonce1));
+
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce));
+	free(nonce);
+	nonce = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+	assert_string_equals(S2, rec->source);
+	jaldb_destroy_record(&rec);
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+	assert_string_equals(S4, rec->source);
+	jaldb_destroy_record(&rec);
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	// All confirmed records (S2, S4) are now synced
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+
+	assert_equals(JALDB_OK, jaldb_mark_confirmed(context, JALDB_RTYPE_LOG, nonce1, &nonce));
+
+	free(nonce1);
+	nonce1 = NULL;
+	free(nonce);
+	nonce = NULL;
+
+	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+	assert_string_equals(S3, rec->source);
+	jaldb_destroy_record(&rec);
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	// All confirmed records (S2, S3, S4) are now synced
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_next_unsynced_record(context, JALDB_RTYPE_LOG, &nonce, &rec));
+
+}
+
+
 extern "C" void test_next_chronological_works()
 {
 	struct jaldb_record *rec = NULL;

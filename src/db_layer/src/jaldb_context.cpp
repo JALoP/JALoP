@@ -585,6 +585,7 @@ enum jaldb_status jaldb_mark_confirmed(
 
 			} else if (header_ptr->flags & JALDB_RFLAGS_CONFIRMED) {
 				txn->abort(txn);
+				ret = JALDB_E_INTERNAL_ERROR;
 				goto out;
 
 			} else {
@@ -1637,7 +1638,7 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 	skey.size = sizeof(uint32_t);
 	skey.data = jal_malloc(skey.size);
 	// Set the secondary index we want to get records by
-	*((uint32_t*)(skey.data)) = JALDB_RFLAGS_SENT; // Check for Sent (and not Synced)
+	*((uint32_t*)(skey.data)) = JALDB_RFLAGS_SENT | JALDB_RFLAGS_CONFIRMED; // Check for Sent and Confirmed (and not Synced)
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.dlen = sizeof(*headers);
@@ -1729,7 +1730,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 
 	skey.size = sizeof(uint32_t);
 	skey.data = jal_malloc(skey.size);
-	*((uint32_t*)(skey.data)) = 0; // Not sent and not synced
+	*((uint32_t*)(skey.data)) = JALDB_RFLAGS_CONFIRMED;
 	skey.flags = DB_DBT_REALLOC;
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
@@ -1764,11 +1765,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 		}
 
 		headers = ((struct jaldb_serialize_record_headers *)val.data);
-		if (headers->flags & JALDB_RFLAGS_SYNCED) {
-			// already synced, so skip
-			continue;
-		}
-		// not synced, get the full record.
+
 		val.flags = DB_DBT_REALLOC;
 		val.dlen = 0;
 		db_ret = rdbs->record_sent_db->pget(rdbs->record_sent_db, NULL, &skey, &pkey, &val, 0);

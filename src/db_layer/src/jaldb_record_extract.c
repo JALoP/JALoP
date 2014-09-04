@@ -75,8 +75,10 @@ int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *dat
 	}
 
 	result->data = jal_malloc(sizeof(uint32_t));
-	// Set the extractor to use both sent and sync bits
-	*((uint32_t*)(result->data)) = headers->flags & (JALDB_RFLAGS_SENT|JALDB_RFLAGS_SYNCED);
+	// Set the extractor to use three bits: confirmed, sent, synced
+	// The states are in sequence, so the only valid values should be
+	// conf, conf+sent, conf+sent+sync
+	*((uint32_t*)(result->data)) = headers->flags & (JALDB_RFLAGS_SENT|JALDB_RFLAGS_SYNCED|JALDB_RFLAGS_CONFIRMED);
 	result->size = sizeof(uint32_t);
 	result->flags = DB_DBT_APPMALLOC;
 
