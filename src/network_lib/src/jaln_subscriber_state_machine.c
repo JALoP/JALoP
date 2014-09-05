@@ -568,6 +568,11 @@ struct jaln_sub_state_machine *jaln_sub_state_create_journal_machine()
 	sm->record_complete = jaln_sub_state_create();
 	sm->record_complete->name = jal_strdup("JournalComplete");
 	sm->record_complete->frame_handler = jaln_sub_journal_record_complete;
+
+	sm->payload_buf = NULL;
+	sm->payload_sz = 0;
+	sm->payload_off = 0;
+
 	return sm;
 }
 struct jaln_sub_state_machine *jaln_sub_state_create_audit_machine()

@@ -295,6 +295,19 @@ int jsub_store_journal_resume(
 		uint64_t offset);
 
 /**
+ * Delete journal_resume data in the journal temporary system container.
+ * This should be called between records to clear out the resume data
+ *
+ * @param[in] ctx the context to use
+ * @param[in] remote_host a string to identify where the last record came from.
+ *
+ *@return JALDB_OK - Success, an error on failure.
+ */
+int jsub_clear_journal_resume(
+		jaldb_context *ctx,
+		const char *remote_host);
+
+/**
  * Retrieve journal_resume data from the journal temporary system container.
  * Data retrieved consists of the path to the journal file and the offset.
  * If the journal_resume data is not found, path and offset are not altered.

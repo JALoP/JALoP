@@ -243,7 +243,11 @@ int jsub_write_journal(
 	}
 
 	if (JAL_OK == ret) {
-		ret = jsub_store_journal_resume(db_ctx, hostname, nonce, *db_payload_path, processed_len);
+		if (processed_len) {
+			ret = jsub_store_journal_resume(db_ctx, hostname, nonce, *db_payload_path, processed_len);
+		} else {
+			ret = jsub_clear_journal_resume(db_ctx, hostname);
+		}
 	}
 out:
 	return ret;
@@ -316,6 +320,13 @@ int jsub_store_journal_resume(
 {
 	return jaldb_store_journal_resume(db_ctx, remote_host, nonce,
 					  path, offset);
+}
+
+int jsub_clear_journal_resume(
+		jaldb_context *db_ctx,
+		const char *remote_host)
+{
+	return jaldb_clear_journal_resume(db_ctx, remote_host);
 }
 
 int jsub_get_journal_resume(

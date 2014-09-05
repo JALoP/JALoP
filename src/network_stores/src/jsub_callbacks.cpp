@@ -323,8 +323,8 @@ int jsub_on_journal(
 	// Then write the system/application metadata to DB.
 	if (0 == more) {
 		// No more data
+		journal_payload_size = 0; //Payload size 0 indicates that the journal is complete
 		if (buffer) {
-			journal_payload_size += cnt;
 			int ret = jsub_write_journal(
 					jsub_db_ctx,
 					&db_payload_path,
@@ -338,6 +338,8 @@ int jsub_on_journal(
 			if (0 != ret) {
 				return ret;
 			}
+		} else {
+			jsub_clear_journal_resume(jsub_db_ctx, ch_info->hostname);
 		}
 		return jsub_insert_journal_metadata(
 					jsub_db_ctx,

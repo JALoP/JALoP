@@ -764,6 +764,100 @@ out:
 	return ret;
 }
 
+enum jaldb_status jaldb_clear_journal_resume(
+		jaldb_context *ctx,
+		const char *remote_host)
+{
+	enum jaldb_status ret = JALDB_OK;
+	struct jaldb_record_dbs *rdbs = NULL;
+	DBT offset_key;
+	DBT path_key;
+	DBT nonce_key;
+	int db_ret;
+	DB_TXN *txn;
+
+	if (!ctx || !remote_host) {
+		return JALDB_E_INVAL;
+	}
+
+	/* Initialze the keys */
+	memset(&offset_key, 0, sizeof(offset_key));
+	memset(&path_key, 0, sizeof(path_key));
+	memset(&nonce_key, 0, sizeof(nonce_key));
+
+	db_ret = jaldb_get_primary_record_dbs(ctx, JALDB_RTYPE_JOURNAL, &rdbs);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	/* Create the three key strings (and sizes) for the DB calls. Free at end of this function */
+	/* BDB can resize with realloc, although not sure this will happen on a put. */
+	offset_key.data = jal_strdup(JALDB_OFFSET_NAME);
+	offset_key.size = strlen(JALDB_OFFSET_NAME) + 1;
+	offset_key.flags = DB_DBT_REALLOC;
+
+	path_key.data = jal_strdup(JALDB_JOURNAL_PATH);
+	path_key.size = strlen(JALDB_JOURNAL_PATH) + 1;
+	path_key.flags = DB_DBT_REALLOC;
+
+	nonce_key.data = jal_strdup(JALDB_RESUME_NONCE_NAME);
+	nonce_key.size = strlen(JALDB_RESUME_NONCE_NAME) + 1;
+	nonce_key.flags = DB_DBT_REALLOC;
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_INVAL;
+			break;
+		}
+
+		/* Delete the offset for the record */
+		db_ret = rdbs->metadata_db->del(rdbs->metadata_db, txn, &offset_key, 0);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			break;
+		}
+
+		/* Delete the path for the record */
+		db_ret = rdbs->metadata_db->del(rdbs->metadata_db, txn, &path_key, 0);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			break;
+		}
+
+		/* Delete the nonce for the record */
+		db_ret = rdbs->metadata_db->del(rdbs->metadata_db, txn, &nonce_key, 0);
+		if (0 != db_ret) {
+			txn->abort(txn);
+			ret = JALDB_E_DB;
+			break;
+		}
+
+		/* Commit the database transactions */
+		db_ret = txn->commit(txn, 0);
+		if (0 == db_ret) {
+			break;
+		} else if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		} else {
+			/* If DB_TXN->commit encounters an error, the transaction and all child transactions of the transaction are aborted. */
+			ret = JALDB_E_DB;
+			break;
+		}
+	}
+
+
+out:
+	/* Free the memory allocated for the keys */
+	free(offset_key.data);
+	free(path_key.data);
+	free(nonce_key.data);
+
+	return ret;
+}
 enum jaldb_status jaldb_get_journal_resume(
 		jaldb_context *ctx,
 		const char *remote_host,
