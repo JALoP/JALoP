@@ -122,20 +122,21 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 						sess->jaln_ctx->user_data)) {
 			goto out;
 		}
+		// If the digests match, we'll send a sync.  Otherwise, just move on to the next record
+		// TODO: Currently the publisher portion of the library doesn't resend automatically in this case.
+		if (resp_info->status == JALN_DIGEST_STATUS_CONFIRMED) {
+			/* This will allocate memory for msg. Needs to be freed below after sending to vortex. */
+			if (jaln_create_sync_msg(resp_info->nonce, &msg, &len)) {
+				goto out;
+			}
 
-		/* This will allocated memory for msg. Needs to be freed below after sending to Vortex. */
-		if (jaln_create_sync_msg(resp_info->nonce, &msg, &len)) {
+			if (!vortex_channel_send_msg(sess->dgst_chan, msg, len, NULL)) {
+				goto out;
+			}
+			/* Free the allocated message now that we've sent it to vortex */
 			free(msg);
 			msg = NULL;
-			goto out;
 		}
-
-		if (!vortex_channel_send_msg(sess->dgst_chan, msg, len, NULL)) {
-			goto out;
-		}
-		/* Free the allocated message now that we've sent it to vortex */
-		free(msg);
-		msg = NULL;
 
 		axl_list_cursor_next(cursor);
 	}
