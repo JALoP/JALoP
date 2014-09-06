@@ -105,10 +105,10 @@ static enum jaln_connect_error my_connect_request_handler(
 	return JALN_CE_ACCEPT;
 }
 
-static void fake_subscriber_send_subscribe_request(__attribute__((unused)) jaln_session *session)
+static enum jal_status fake_subscriber_send_subscribe_request(__attribute__((unused)) jaln_session *session)
 {
 	subscribe_sent = axl_true;
-	return;
+	return JAL_OK;
 }
 
 static enum jal_status fake_configure_sub_session_no_lock(

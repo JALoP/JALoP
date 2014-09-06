@@ -26,6 +26,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <vortex_frame_factory.h>
 #include "jal_alloc.h"
 #include "jaln_context.h"
@@ -467,6 +468,52 @@ err_out:
 	return axl_false;
 }
 
+axl_bool jaln_sub_process_journal_beginning(jaln_session *session)
+{
+	axl_bool ret = axl_false;
+	struct jaln_payload_feeder *feeder = jal_malloc(sizeof(struct jaln_payload_feeder));
+	if(JAL_OK != session->jaln_ctx->sub_callbacks->acquire_journal_feeder(session,
+								session->ch_info,
+								session->sub_data->sm->nonce,
+								feeder,
+								session->jaln_ctx->user_data)) {
+		goto err_out;
+	}
+
+#define BUF_SIZE (4*1024)
+	uint64_t pos = 0;
+	uint8_t buffer[BUF_SIZE];
+	uint64_t left_to_process = session->sub_data->sm->payload_off;
+
+	while (left_to_process != 0) {
+		uint64_t to_copy = (BUF_SIZE < left_to_process) ? BUF_SIZE : left_to_process;
+		uint64_t tmp = to_copy;
+		if (JAL_OK != feeder->get_bytes(pos, buffer, &tmp, feeder->feeder_data)) {
+			goto err_out;
+		}
+		if ((0 == tmp) || (tmp > to_copy)) {
+			goto err_out;
+		}
+
+		if (JAL_OK != session->dgst->update(session->sub_data->sm->dgst_inst, buffer, tmp)) {
+			goto err_out;
+		}
+		left_to_process -= tmp;
+		pos += tmp;
+	}
+	ret = axl_true;
+	goto out;
+err_out:
+	ret = axl_false;
+out:
+	session->jaln_ctx->sub_callbacks->release_journal_feeder(session,
+								session->ch_info,
+								session->sub_data->sm->nonce,
+								feeder,
+								session->jaln_ctx->user_data);
+	return ret;
+}
+
 axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
 {
 	if (!session || !session->dgst || !session->ch_info || !session->sub_data->sm || !session->sub_data->sm->dgst_inst) {
@@ -497,6 +544,13 @@ axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *fr
 			if (JAL_OK != session->dgst->update(session->sub_data->sm->dgst_inst, session->sub_data->sm->app_meta_buf, session->sub_data->sm->app_meta_sz)) {
 				goto err_out;
 			}
+			if ((JALN_RTYPE_JOURNAL == session->ch_info->type) && (0 < session->sub_data->sm->payload_off)) {
+				// Journal resume
+				// Calculate digest on the already sent portion of the record
+				if (!jaln_sub_process_journal_beginning(session)) {
+					goto err_out;
+				}
+				}
 			jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_payload);
 			return session->sub_data->sm->curr_state->frame_handler(session, frame, frame_off, more);
 		}

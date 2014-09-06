@@ -202,8 +202,13 @@ void jaln_subscriber_init_reply_frame_handler(jaln_session *session,
 		}
 		jaln_configure_sub_session(chan, session);
 
-		jaln_subscriber_send_subscribe_request(session);
+		enum jal_status ret = jaln_subscriber_send_subscribe_request(session);
 		// create the 'digest' channel
+
+		if (ret != JAL_OK) {
+			vortex_connection_shutdown(conn);
+			goto out;
+		}
 
 		int chan_num = vortex_channel_get_number(chan);
 		if (chan_num == -1) {
@@ -297,10 +302,11 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, jaln_ses
 	return JAL_OK;
 }
 
-void jaln_subscriber_send_subscribe_request(jaln_session *session)
+enum jal_status jaln_subscriber_send_subscribe_request(jaln_session *session)
 {
 	char *msg = NULL;
 	char *nonce = NULL;
+	enum jal_status ret = JAL_E_INVAL;
 
 	if (!session || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks ||
 			!session->ch_info || !session->rec_chan) {
@@ -308,7 +314,7 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 	}
 	uint64_t offset = 0;
 	/* nonce allocated with this call */
-	enum jal_status ret = session->jaln_ctx->sub_callbacks->get_subscribe_request(
+	ret = session->jaln_ctx->sub_callbacks->get_subscribe_request(
 			session,
 			session->ch_info,
 			session->ch_info->type,
@@ -322,11 +328,13 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 	uint64_t msg_len = 0;
 	/* msg allocated with this call */
 	if ((JALN_RTYPE_JOURNAL == session->ch_info->type) && (0 < offset)) {
-		if (JAL_OK != jaln_create_journal_resume_msg(nonce, offset, &msg, &msg_len)) {
+		ret = jaln_create_journal_resume_msg(nonce, offset, &msg, &msg_len);
+		if (JAL_OK != ret) {
 			goto err_out;
 		}
 	} else {
-		if (JAL_OK != jaln_create_subscribe_msg(&msg, &msg_len)) {
+		ret = jaln_create_subscribe_msg(&msg, &msg_len);
+		if (JAL_OK != ret) {
 			goto err_out;
 		}
 	}
@@ -334,8 +342,10 @@ void jaln_subscriber_send_subscribe_request(jaln_session *session)
 	vortex_channel_set_complete_flag(session->rec_chan, axl_false);
 
 	if (!(vortex_channel_send_msg(session->rec_chan, msg, strlen(msg), &msg_no))) {
+		ret = JAL_E_NOT_CONNECTED;
 		goto err_out;
 	}
+	ret = JAL_OK;
 	goto out;
 err_out:
 	if (session && session->rec_chan) {
@@ -344,7 +354,7 @@ err_out:
 out:
 	free(nonce);
 	free(msg);
-	return;
+	return ret;
 }
 
 void jaln_subscriber_on_channel_create(int channel_num,

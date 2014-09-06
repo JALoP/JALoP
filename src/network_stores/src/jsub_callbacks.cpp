@@ -189,7 +189,7 @@ int jsub_get_subscribe_request(
 		} else {
 			jal_asprintf(&full_payload_path, "%s/%s", jsub_db_ctx->journal_root, db_payload_path);
 			nonce_out = *nonce;
-			db_payload_fd = open(full_payload_path, O_WRONLY | O_APPEND);
+			db_payload_fd = open(full_payload_path, O_RDWR | O_APPEND);
 			if (0 > db_payload_fd) {
 				DEBUG_LOG("Failed to open journal payload for resume: %s", strerror(errno));
 			}
@@ -400,8 +400,6 @@ int jsub_on_digest_response(
 		__attribute__((unused)) const void *user_data)
 {
 	char *tmp_nonce = NULL;
-	// If the status was CONFIRMED, we should mark it as such.
-	// In any other case, we just return, and it will be remove at the next startup.
 	const char *status_str;
 	switch (status) {
 		case JALN_DIGEST_STATUS_CONFIRMED:
@@ -409,11 +407,9 @@ int jsub_on_digest_response(
 			break;
 		case JALN_DIGEST_STATUS_INVALID:
 			status_str = "Invalid";
-			return JAL_OK;
 			break;
 		case JALN_DIGEST_STATUS_UNKNOWN:
 			status_str = "Unknown";
-			return JAL_OK;
 			break;
 		default:
 			status_str = "illegal";
@@ -423,6 +419,11 @@ int jsub_on_digest_response(
 		DEBUG_LOG("ON_DIGEST_RESPONSE");
 		DEBUG_LOG("ch info:%p type:%d nonce:%s status: %s, ds:%d, ud:%p\n",
 				ch_info, type, nonce, status_str, status, user_data);
+	}
+	// If the status was CONFIRMED, we should mark it as such.
+	// In any other case, we just return, and it will be removed at the next startup.
+	if (status != JALN_DIGEST_STATUS_CONFIRMED) {
+		return JAL_OK;
 	}
 	enum jaldb_status db_err;
 	int ret = -1;

@@ -133,7 +133,7 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, jaln_ses
  *
  * @param[in] session The jaln_session to send the message on.
  */
-void jaln_subscriber_send_subscribe_request(jaln_session *session);
+enum jal_status jaln_subscriber_send_subscribe_request(jaln_session *session);
 
 /**
  * Callback that needs to get registered when a subscriber initiates a
