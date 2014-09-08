@@ -129,7 +129,6 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 		axl_list_cursor_next(cursor);
 	}
 
-	
 out:
 	vortex_frame_unref(frame);
 	free(msg);

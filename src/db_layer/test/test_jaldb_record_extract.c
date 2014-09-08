@@ -150,7 +150,7 @@ void test_extract_record_sent_flag_works_after_a_record_is_synced()
 	int ret = jaldb_extract_record_sent_flag(NULL, NULL, &record_dbt, &result);
 	assert_equals(0, ret);
 	assert_equals(sizeof(uint32_t), result.size);
-	assert_equals(JALDB_RFLAGS_SENT,*((uint32_t*)result.data));
+	assert_equals(JALDB_RFLAGS_SENT|JALDB_RFLAGS_SYNCED,*((uint32_t*)result.data));
 
 	free(result.data);
 }

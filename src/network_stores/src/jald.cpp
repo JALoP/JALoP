@@ -454,7 +454,19 @@ enum jal_status pub_send_records_feeder(
 		axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 	}
 
+	DEBUG_LOG_SUB_SESSION(ch_info, "Verifying previously sent records.");
+	// Only need to clear send flags for archive mode connection
+	if (!*timestamp) {
+		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+	}
+
 	pthread_mutex_unlock(sub_lock);
+
+	if (JALDB_OK != db_ret) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
+		ret = JAL_E_INVAL;
+		goto out;
+	}
 
 	feeder.feeder_data = ctx;
 	feeder.get_bytes = pub_get_bytes;
@@ -495,7 +507,7 @@ enum jal_status pub_send_records_feeder(
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 1);
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent: %d", nonce, db_ret);
@@ -574,11 +586,13 @@ enum jal_status pub_send_records(
 	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Verifying previously sent records.");
-
-	db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+	// Only need to clear send flags for archive mode connection
+	if (!*timestamp) {
+		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+	}
 
 	pthread_mutex_unlock(sub_lock);
- 
+
 	if (JALDB_OK != db_ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
 		ret = JAL_E_INVAL;
@@ -622,7 +636,7 @@ enum jal_status pub_send_records(
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce);
+			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 1);
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);

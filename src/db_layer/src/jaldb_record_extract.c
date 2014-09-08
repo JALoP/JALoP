@@ -75,7 +75,8 @@ int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *dat
 	}
 
 	result->data = jal_malloc(sizeof(uint32_t));
-	*((uint32_t*)(result->data)) = headers->flags & JALDB_RFLAGS_SENT;
+	// Set the extractor to use both sent and sync bits
+	*((uint32_t*)(result->data)) = headers->flags & (JALDB_RFLAGS_SENT|JALDB_RFLAGS_SYNCED);
 	result->size = sizeof(uint32_t);
 	result->flags = DB_DBT_APPMALLOC;
 

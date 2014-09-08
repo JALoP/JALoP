@@ -238,11 +238,20 @@ extern "C" void test_mark_record_sent()
 	jaldb_destroy_record(&rec);
 	rec = NULL;
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	// Test set flag
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 	assert_equals(1, rec->synced);
 	jaldb_destroy_record(&rec);
+
+	// Test clear flag
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 0));
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+
 	free(nonce);
 }
 
@@ -251,7 +260,7 @@ extern "C" void test_mark_record_sent_and_synced()
 	struct jaldb_record *rec = NULL;
 	char *nonce = NULL;
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
@@ -270,14 +279,14 @@ extern "C" void test_marking_record_synced_doesnt_affect_sent_ordering()
 	char *nonce3 = NULL;
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2));
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce1));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce1, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce1));
 
 	assert_equals(JALDB_OK, jaldb_next_unsynced_record(context,JALDB_RTYPE_LOG, &nonce3, &rec3));
 
 	assert_equals(0, strcmp(nonce2,nonce3));
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce2));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce2, 1));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce1, &rec1));
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec2));
@@ -295,7 +304,7 @@ extern "C" void test_mark_record_sent_returns_error_when_nonce_not_found()
 {
 	char *nonce = NULL;
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
-	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"2"));
+	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"2", 1));
 	free(nonce);
 	nonce = NULL;
 }
@@ -322,7 +331,7 @@ extern "C" void test_next_unsynced_works()
 	assert_string_equals(S1, rec->source);
 	jaldb_destroy_record(&rec);
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 
 	free(nonce);
@@ -342,7 +351,7 @@ extern "C" void test_next_unsynced_works()
 	jaldb_destroy_record(&rec);
 	rec = NULL;
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 
 	free(nonce);
@@ -354,7 +363,7 @@ extern "C" void test_next_unsynced_works()
 	assert_string_equals(S3, rec->source);
 	jaldb_destroy_record(&rec);
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 
 	free(nonce);
@@ -365,7 +374,7 @@ extern "C" void test_next_unsynced_works()
 	assert_string_equals(S4, rec->source);
 	jaldb_destroy_record(&rec);
 
-	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce));
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 
 	free(nonce);

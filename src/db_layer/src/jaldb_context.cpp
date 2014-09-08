@@ -255,7 +255,8 @@ std::string jaldb_make_temp_db_name(const string &id, const string &suffix)
 enum jaldb_status jaldb_mark_sent(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	const char *nonce)
+	const char *nonce,
+	int target_mode)
 {
 	enum jaldb_status ret = JALDB_OK;
 	int db_ret;
@@ -327,15 +328,25 @@ enum jaldb_status jaldb_mark_sent(
 				txn->abort(txn);
 				ret = JALDB_E_INVAL;
 				goto out;
-
-			} else if (header_ptr->flags & JALDB_RFLAGS_SENT) {
+			// Check to see if state matches target - nothing to do if they match
+			} else if (((header_ptr->flags & JALDB_RFLAGS_SENT) ? 1 : 0) == target_mode) {
 				txn->abort(txn);
 				goto out;
-
+			// Update the state
 			} else {
-				header_ptr->flags |= JALDB_RFLAGS_SENT;
-				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, 0);
+				if (1 == target_mode) {
+					// Set the flag
+					header_ptr->flags |= JALDB_RFLAGS_SENT;
+				}
+				else if (0 == target_mode){
+					// Clear the flag
+					header_ptr->flags &= ~JALDB_RFLAGS_SENT;
+				} else {
+					txn->abort(txn);
+					goto out;
+				}
 
+				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, 0);
 				if (0 == db_ret) {
 					db_ret = txn->commit(txn, 0);
 					if (0 == db_ret) {
@@ -1584,15 +1595,10 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 	int byte_swap;
 	int db_ret;
 
-	int sent_count = 0;
-	int synced_count = 0;
-
 	struct jaldb_serialize_record_headers *headers = NULL;
 	struct jaldb_record_dbs *rdbs = NULL;
 
 	DBC *cursor = NULL;
-
-	DB_TXN *txn = NULL;
 
 	DBT skey;
 	DBT pkey;
@@ -1627,11 +1633,11 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 		goto out;
 	}
 
-
 	skey.flags = DB_DBT_REALLOC;
 	skey.size = sizeof(uint32_t);
 	skey.data = jal_malloc(skey.size);
-	*((uint32_t*)(skey.data)) = 1; // Sent
+	// Set the secondary index we want to get records by
+	*((uint32_t*)(skey.data)) = JALDB_RFLAGS_SENT; // Chcek for Sent (and not Synced)
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 	val.dlen = sizeof(*headers);
@@ -1647,122 +1653,25 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 		goto out;
 	}
 
-	db_ret = rdbs->record_sent_db->cursor(rdbs->record_sent_db, NULL, &cursor, DB_DEGREE_2);
-	if (0 != db_ret) {
-		JALDB_DB_ERR(rdbs->record_sent_db, db_ret);
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
+	// pget will continue to return records matching the requested flag until no more found
+	while (1) {
+		val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+		db_ret = rdbs->record_sent_db->pget(rdbs->record_sent_db, NULL, &skey, &pkey, &val, 0);
 
-	while (DB_NOTFOUND != db_ret) {
-		fprintf(stderr, "in da loop");
-		// First ensure we didn't hit a deadlock.
-		if (DB_LOCK_DEADLOCK != db_ret) {
-			fprintf(stderr, "getting da record");
-			db_ret = cursor->c_pget(cursor, &skey, &pkey, &val, DB_NEXT | DB_RMW);
-		}
-
-		// If we did hit a deadlock, we need to close the cursor and begin again.
-		if (DB_LOCK_DEADLOCK == db_ret) {
-			
-			fprintf(stderr, "deadlock, restart");
-			cursor->c_close(cursor);
-			cursor = NULL;
-
-			db_ret = rdbs->record_sent_db->cursor(rdbs->record_sent_db, NULL, &cursor, DB_DEGREE_2);
-			if (0 != db_ret) {
-				JALDB_DB_ERR(rdbs->record_sent_db, db_ret);
-				ret = JALDB_E_INVAL;
-				goto out;
-			}
-
-			sent_count = 0;
-			synced_count = 0;
-
+		if (DB_NOTFOUND == db_ret) {
+			ret = JALDB_OK;
+			goto out;
+		} else if (DB_LOCK_DEADLOCK == db_ret) {
 			continue;
+		} else if (0 != db_ret) {
+			ret = JALDB_E_DB;
+			JALDB_DB_ERR(rdbs->primary_db, db_ret);
+			goto out;
 		}
-
-		// No deadlock? Is everything else okay? Then grab the header info.
-		if (0 == db_ret) {
-
-			db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
-			if (0 != db_ret) {
-				fprintf(stderr, "txn was bad?");
-				ret = JALDB_E_INVAL;
-				goto out;
-			}
-
-			fprintf(stderr, "no deadlock, check stuff nao");
-			headers = ((struct jaldb_serialize_record_headers *)val.data);
-			if (headers->version != JALDB_DB_LAYOUT_VERSION) {
-
-				ret = JALDB_E_INVAL;
-				txn->abort(txn);
-				goto out;
-			} else if (headers->flags & JALDB_RFLAGS_SYNCED) {
-
-				fprintf(stderr, "is synced");
-				synced_count++;
-				// already synced, so skip
-				txn->abort(txn);
-				continue;
-			} else {
-
-				fprintf(stderr, "is not synced");
-				// Not synced.
-
-				// Check if sent, and mark as unsent.
-				if (headers->flags & JALDB_RFLAGS_SENT) {
-					headers->flags ^= JALDB_RFLAGS_SENT;
-					db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &pkey, &val, DB_AUTO_COMMIT);
-					fprintf(stderr, "putok");
-				} else {
-					fprintf(stderr, "putnotok");
-					txn->abort(txn);
-					continue;
-				}
-
-				// Bail out if we hit any deadlocks.
-				if (DB_LOCK_DEADLOCK == db_ret) {
-					fprintf(stderr, "deadlock on put\n");
-					txn->abort(txn);
-					continue;
-				} else if (0 != db_ret && DB_NOTFOUND != db_ret) {
-
-					// If anything else went wrong...
-					JALDB_DB_ERR(rdbs->primary_db, db_ret);
-					ret = JALDB_E_DB;
-					txn->abort(txn);
-					goto out;
-				} else {
-					fprintf(stderr, "no worries");
-					sent_count++;
-					txn->commit(txn, 0);
-					continue;
-				}
-			}
-		}
-
-		if (db_ret == DB_NOTFOUND) {
-			fprintf(stderr, "didn't find stuff\n");
-			continue;
-		}
-
-		// Something went wrong here...
-		ret = JALDB_E_DB;
-		JALDB_DB_ERR(rdbs->primary_db, db_ret);
-		goto out;
-
+		// Use the returned nonce to id the record to be updated
+		db_ret = jaldb_mark_sent(ctx, type, (char *)pkey.data, 0);
 	}
-
-	if (0 != db_ret && DB_NOTFOUND != db_ret) {
-		ret = JALDB_E_DB;
-		goto out;
-	}
-
-	ret = JALDB_OK;
 out:
-
 	if (cursor) {
 		cursor->c_close(cursor);
 	}
@@ -1770,9 +1679,6 @@ out:
 	free(skey.data);
 	free(pkey.data);
 	free(val.data);
-
-	
-	fprintf(stderr, "Sent Count: %d\t Synced Count: %d\n", sent_count, synced_count);
 
 	return ret;
 }
@@ -1823,7 +1729,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 
 	skey.size = sizeof(uint32_t);
 	skey.data = jal_malloc(skey.size);
-	*((uint32_t*)(skey.data)) = 0;// Not sent
+	*((uint32_t*)(skey.data)) = 0; // Not sent and not synced
 	skey.flags = DB_DBT_REALLOC;
 
 	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
