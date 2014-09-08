@@ -309,6 +309,89 @@ extern "C" void test_mark_record_sent_returns_error_when_nonce_not_found()
 	nonce = NULL;
 }
 
+extern "C" void test_next_mark_unsynced_records_unsent_works()
+{
+	struct jaldb_record *rec = NULL;
+	char *nonce0 = NULL;
+	char *nonce1 = NULL;
+	char *nonce2 = NULL;
+	char *nonce3 = NULL;
+
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce0));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce2));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce3));
+
+	// All unsynced
+	assert_equals(JALDB_OK, jaldb_mark_unsynced_records_unsent(context, JALDB_RTYPE_LOG));
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce0, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce1, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce3, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	// Mark 0 and 2 and sent and synced, 2 and 3 as sent but unsynced.
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce0, 1));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce0));
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce1, 1));
+	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce1));
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce2, 1));
+
+	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce3, 1));
+
+	// Test with 2 Unsynced.
+	assert_equals(JALDB_OK, jaldb_mark_unsynced_records_unsent(context, JALDB_RTYPE_LOG));
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce0, &rec));
+	assert_equals(2, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce1, &rec));
+	assert_equals(2, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce3, &rec));
+	assert_equals(0, rec->synced);
+	jaldb_destroy_record(&rec);
+
+	rec = NULL;
+
+	free(nonce0);
+	free(nonce1);
+	free(nonce2);
+	free(nonce3);
+}
 
 extern "C" void test_next_unsynced_works()
 {
