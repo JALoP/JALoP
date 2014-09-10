@@ -6,7 +6,7 @@
 database purge utility
 .SH SYNOPSIS
 .B jal_purge
-[\fIOPTION\fR...]
+[\fIOPTIONS\fR...] [UUID] ... [UUID]
 .SH "DESCRIPTION"
 This manual page describes the
 .BR jal_purge
@@ -16,7 +16,7 @@ The
 .B jal_purge
 utility removes records from a JAL database. Without any options, the
 .B jal_purge
-tool reports the number of records of each type that would be removed,
+tool reports whether the the records in the list of UUIDs of the specified type that would be removed,
 but does not purge any records.
 Only records that have been sent to at least one JALoP Network Store are considered safe for removal.
 
@@ -31,12 +31,6 @@ with no arguments would report that it is prepared to delete records 1, 3, and 5
 leaving records 2 and 4 untouched.
 .SH OPTIONS
 .TP
-\fB\-s\fR, \fB\-\-sid=S\fR
-Remove all records up to and including the record with serial ID \fB'S'\fR. '-t' must also be specified.
-.TP
-\fB\-u\fR, \fB\-\-uuid=U\fR
-Remove all records up to and including the record with UUID \fB'U'\fR.  By default, this checks the serial ID to determine what records came before. '-t' must also be specified.
-.TP
 \fB\-t\fR, \fB\-\-type=T\fR
 Search within the specified type.
 \fBT\fR may be the letter \fIj\fR (for journal records),
@@ -44,7 +38,7 @@ Search within the specified type.
 \fIl\fR (for log records).
 .TP
 \fB\-b\fR, \fB\-\-before=B\fR
-Remove all records with a timestamp before \fBB\fR.
+Remove all records with a timestamp before or equal to \fBB\fR that have been sent to at least one JALoP Network Store.
 The timestamp must be specified as an XML schema date, time or dateTime string.
 The xmlschema-2 document (http://www.w3.org/TR/xmlschema-2/) describes these formats.
 When the time does not include a timezone offset,
@@ -59,18 +53,18 @@ tool does not remove records that the JALoP Network Store has not sent to at lea
 \fB\-f\fR, \fB\-\-force\fR
 When \fB\-\-delete\fR (\fB\-d\fR) is given,
 force the deletion of records even when the JALoP Network Store has not sent them to at least one JALoP Network Store.
-When given without \fB\-\-delete\fR (\fB\-d\fR) this will report the number of records that would be deleted.
-.TP
-\fB\-v\fR, \fB\-\-verbose\fR
-Report more information about the records \fB jal_purge \fR is prepared to delete.
-This reports the serial ID and UUID of each record.
-Records are grouped by type.
+When given without \fB\-\-delete\fR (\fB\-d\fR) this will report the records that would be deleted.
 .TP
 \fB\-h\fR, \fB\-\-home=P\fR
 Specify the root of the JALoP database, defaults to
 .I /var/lib/jalop/db
 .TP
-\fB\-n\fR, \fB\-\-version\fR
+\fB\-V\fR, \fB\-\-verbose\fR
+Report more information about the records \fB jal_purge \fR is reviewing for deletion.
+This reports the action to be taken (Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed), 
+the outbound state (Unsent, Sent, Synced), the local insertion timestamp, and the local nonce for each record.
+.TP
+\fB\-V\fR, \fB\-\-version\fR
 Output the version information and exit.
 .SH "SEE ALSO"
 .BR jald (8),

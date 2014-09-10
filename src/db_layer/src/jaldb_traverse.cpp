@@ -45,13 +45,16 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		jaldb_iter_cb cb, void *up)
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
-	struct tm end_time, current_time;
-	int end_ms, current_ms;
-	char *tmp_time;
+	struct tm target_time, record_time;
+	memset(&target_time, 0, sizeof(target_time));
+	memset(&record_time, 0, sizeof(record_time));
+	int target_ms = 0;
+	int record_ms = 0;
+	char *tmp_time = NULL;
 	struct jaldb_record *rec = NULL;
-	int byte_swap;
+	int byte_swap = 0;
 	struct jaldb_record_dbs *rdbs = NULL;
-	int db_ret;
+	int db_ret = 0;
 	DBT key;
 	DBT pkey;
 	DBT val;
@@ -61,20 +64,25 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 	memset(&val, 0, sizeof(val));
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC;
+	time_t target_secs = 0;
 
-	tmp_time = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &end_time);
+	tmp_time = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &target_time);
 	if (!tmp_time) {
-		ret = JALDB_E_INVAL;
+		fprintf(stderr, "ERROR: Invalid time format specified.\n");
+		ret = JALDB_E_INVAL_TIMESTAMP;
 		goto out;
 	}
 
-	if (!sscanf(tmp_time,".%d-%*d:%*d", &end_ms)) {
-		ret = JALDB_E_INVAL;
+	if (!sscanf(tmp_time,".%d-%*d:%*d", &target_ms)) {
+		fprintf(stderr, "ERROR: Invalid time format specified.\n");
+		ret = JALDB_E_INVAL_TIMESTAMP;
 		goto out;
 	}
+	// Calculate the target time in secs once before we start looping
+	target_secs = mktime(&target_time);
 
 	if (!ctx || !cb) {
-		ret = JALDB_E_INVAL;
+		ret = JALDB_E_UNINITIALIZED;
 		goto out;
 	}
 
@@ -89,15 +97,16 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		rdbs = ctx->log_dbs;
 		break;
 	default:
-		ret = JALDB_E_INVAL;
+		ret = JALDB_E_INVAL_RECORD_TYPE;
 		goto out;
 	}
 
 	if (!rdbs) {
-		ret = JALDB_E_INVAL;
+		ret = JALDB_E_UNINITIALIZED;
 		goto out;
 	}
 
+	// Use the record creation time database
 	db_ret = rdbs->timestamp_idx_db->get_byteswapped(rdbs->timestamp_idx_db, &byte_swap);
 	if (0 != db_ret) {
 		ret = JALDB_E_INVAL;
@@ -107,6 +116,7 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 	db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
 	if (0 != db_ret) {
 		JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
+		ret = JALDB_E_INVAL;
 		goto out;
 	}
 
@@ -117,28 +127,34 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 				ret = JALDB_OK;
 			} else {
 				JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
+				ret = JALDB_E_INVAL;
 			}
 			goto out;
 		}
 
-		tmp_time = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
+		// mktime() like to set things like timezone to system timezone - need to clean out the tm struct before each call
+		memset(&record_time, 0, sizeof(record_time));
+
+		tmp_time = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &record_time);
 		if (!tmp_time) {
-			ret = JALDB_E_INVAL;
+			fprintf(stderr, "ERROR: Cannot get strptime from record\n");
+			ret = JALDB_E_INVAL_TIMESTAMP;
 			goto out;
 		}
 
-		if (!sscanf(tmp_time,".%d-%*d:%*d", &current_ms)) {
-			ret = JALDB_E_INVAL;
+		if (!sscanf(tmp_time,".%d-%*d:%*d", &record_ms)) {
+			ret = JALDB_E_INVAL_TIMESTAMP;
 			goto out;
 		}
 
-		if (difftime(mktime(&end_time), mktime(&current_time)) < 0) {
-			// current_time is > end_time, so break out
-			goto out;
+		double delta = difftime(target_secs,mktime(&record_time));
+		if (delta < 0) {
+			// record_time is > target_time, so break out
+			goto out; 
 		}
 		
-		if (difftime(mktime(&end_time), mktime(&current_time)) == 0) {
-			if (current_ms > end_ms) {
+		if (delta == 0) {
+			if (record_ms > target_ms) {
 				goto out;
 			}
 		}
@@ -168,6 +184,7 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 			db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
 			if (0 != db_ret) {
 				JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
+				ret = JALDB_E_INVAL;
 				goto out;
 			}
 			break;
@@ -176,7 +193,6 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		}
 
 		jaldb_destroy_record(&rec);
-
 	}
 
 out:
