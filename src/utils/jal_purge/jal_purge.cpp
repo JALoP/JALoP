@@ -50,10 +50,15 @@ enum purge_action {
 	JAL_PURGE_FORCE,
 };
 
+const char *send_str[] = { "UNSENT", " SENT ", "SYNCED" };
+const char *recv_str[] = { "UNCONF", " CONF " };
+const char *action_str[] = {"  Keep", "Delete", " Force"};
+
 static struct global_args_t {
 	int del;
 	int force;
 	int verbose;
+	int detail;
 	char *nonce;
 	list<string> uuids;
 	char type;
@@ -86,43 +91,55 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	printf("\nJAL_PURGE\n");
-	printf("============\n");
-	printf("SETTINGS:\n");
 	enum jaldb_rec_type type;
 	switch (global_args.type) {
 	case 'j':
 		type = JALDB_RTYPE_JOURNAL;
-		printf("Journal records\n");
 		break;
 	case 'a':
 		type = JALDB_RTYPE_AUDIT;
-		printf("Audit records\n");
 		break;
 	case 'l':
 		type = JALDB_RTYPE_LOG;
-		printf("Log records\n");
 		break;
 	default:
 		goto out;
 	}
 
-	if (global_args.verbose) {
-		printf("Verbose ON\n");
-	} else {
-		printf("Verbose OFF\n");
-	}
+	if (global_args.detail) {
+		// Output the new detailed format
+		printf("\nJAL_PURGE\n"); 
+		printf("============\n");
+		printf("SETTINGS:\n");
 
-	if (global_args.del) {
-		printf("Delete\n");
-	} else {
-		printf("Preview (no deletion)\n");
-	}
+		if (type == JALDB_RTYPE_JOURNAL ) {
+			printf("Journal records\n");
+		} else if (type == JALDB_RTYPE_AUDIT) {
+			printf("Audit records\n");
+		} else if (type == JALDB_RTYPE_LOG) {
+			printf("Log records\n");
+		}
 
-	if (global_args.force) {
-		printf("Synced + unsynced records\n");
+		if (global_args.del) {
+			printf("Delete\n");
+		} else {
+			printf("Preview (no deletion)\n");
+		}
+
+		if (global_args.force) {
+			printf("Synced + unsynced records\n");
+		} else {
+			printf("Synced records only\n");
+		}
+		printf("\n");
+
 	} else {
-		printf("Synced records only\n");
+		// Otherwise output the old format that works with the test harness
+		if (global_args.del) {
+			cout << "Deleted the following records:" << endl;
+		} else {
+			cout << "Would delete the following records:" << endl;
+		}
 	}
 
 	if (!global_args.uuids.empty()) {
@@ -130,7 +147,6 @@ int main(int argc, char **argv)
 		uuid_t uuid;
 		char *nonce = NULL;
 		list<string>::iterator iter;
-		printf("\n");
 		for(iter = global_args.uuids.begin(); iter != global_args.uuids.end(); iter++) {
 #ifdef sun
 			char * uuid_string = jal_strdup(iter->c_str());
@@ -155,10 +171,6 @@ int main(int argc, char **argv)
 			/* Inbound: records should be confirmed. Outbound: records should be synced. */
 			/* Force flag causes sync flag to be ignored. */
 
-			const char *send_str[] = { "UNSENT", " SENT ", "SYNCED" };
-			const char *recv_str[] = { "UNCONF", " CONF " };
-			const char *action_str[] = {"  Keep", "Delete", " Force"};
-
 			enum purge_action record_action = JAL_PURGE_KEEP;
 
 			if (rec->confirmed && (rec->synced == JALDB_SYNCED)) {
@@ -169,13 +181,12 @@ int main(int argc, char **argv)
 				record_action = JAL_PURGE_KEEP;
 			}
 
-			if (global_args.verbose) {
+			// If the detail flag is set, output the new detailed format, otherwise use the old format to prevent test harness from breaking
+			if (global_args.detail) {
 				// Print status of all records whether to be deleted or not
 				printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
-
-			} else if (record_action != JAL_PURGE_KEEP){
-				// Only print records that are going to be removed.
-				printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
+			} else {
+				printf("UUID: %s\n", iter->c_str());
 			}
 
 			// Remove the record.
@@ -191,7 +202,9 @@ int main(int argc, char **argv)
 			nonce = NULL;
 		}
 	} else if (global_args.before) {
-		printf("Records before: %s\n\n", global_args.before);
+		if (global_args.detail) {
+			printf("Records before: %s\n\n", global_args.before);
+		}
 		dbret = jaldb_iterate_by_timestamp(ctx, type, global_args.before, iter_cb, &global_args);
 		goto out;
 	} else {
@@ -206,7 +219,9 @@ out:
 		fprintf(stderr, "ERROR: Failed to purge records\n");
 	}
 	else {
-		printf("\n");
+		if (global_args.detail) {
+			printf("\n");
+		}
 	}
 
 	global_args_free();
@@ -219,10 +234,6 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 
 	/* Inbound: records should be confirmed. Outbound: records should be synced. */
 	/* Force flag causes sync flag to be ignored. */
-
-	const char *send_str[] = { "UNSENT", " SENT ", "SYNCED" };
-	const char *recv_str[] = { "UNCONF", " CONF " };
-	const char *action_str[] = {"  Keep", "Delete", " Force"};
 
 	enum purge_action record_action = JAL_PURGE_KEEP;
 	enum jaldb_iter_status ret_val = JALDB_ITER_CONT;
@@ -237,15 +248,20 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 		record_action = JAL_PURGE_KEEP;
 		ret_val = JALDB_ITER_CONT;
 	}
-
-	if (global_args.verbose) {
+	// If the detail flag is set, output the new detailed format, otherwise use the old format to prevent test harness from breaking
+	if (global_args.detail) {
 		// Print status of all records whether to be deleted or not
 		printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
+	} else {
+		printf("NONCE: %s\n", nonce);
 
-	} else if (record_action != JAL_PURGE_KEEP){
-		// Only print records that are going to be removed.
-		printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
+		if (global_args.verbose) {
+			char uuid[37]; // UUID are always 36 characters + the NULL terminator
+			uuid_unparse(rec->uuid, uuid);
+			printf("UUID: %s\n", uuid);
+		}
 	}
+
 
 	// If delete flag was not set, force iterator to return continue
 	if (!global_args.del) {
@@ -259,15 +275,16 @@ static void process_options(int argc, char **argv)
 {
 	int opt = 0;
 
-	static const char *opt_string = "s:u:t:b:dfvVh:";
+	static const char *opt_string = "s:u:t:b:dfnvxh:";
 	static const struct option long_options[] = {
 		{"type", required_argument, NULL, 't'},
 		{"before", required_argument, NULL, 'b'},
 		{"delete", no_argument, NULL, 'd'},
 		{"force", no_argument, NULL, 'f'},
 		{"home", required_argument, NULL, 'h'},
-		{"version", no_argument, NULL, 'v'},
-		{"verbose", no_argument, NULL, 'V'},
+		{"version", no_argument, NULL, 'n'},
+		{"verbose", no_argument, NULL, 'v'},
+		{"detail", no_argument, NULL, 'x'},
 		{0, 0, 0, 0}
 	};
 
@@ -289,15 +306,18 @@ static void process_options(int argc, char **argv)
 		case 'f':
 			global_args.force = 1;
 			break;
-		case 'V':
-			global_args.verbose = 1;
-			break;
 		case 'h':
 			global_args.home = strdup(optarg);
 			break;
-		case 'v':
+		case 'n':
 			printf("%s", jal_version_as_string());
 			goto version_out;
+		case 'v':
+			global_args.verbose = 1;
+			break;
+		case 'x':
+			global_args.detail = 1;
+			break;
 		default:
 			goto err_out;
 		}
@@ -348,8 +368,9 @@ __attribute__((noreturn)) static void usage()
 				deleted.\n\
 	-h, --home=H		Specify the root of the JALoP database,\n\
 				defaults to /var/lib/jalop/db\n\
-	-v, --version		Output the version information and exit.\n\
-	-V, --verbose		Report more information about the records jal_purge is\n\
+	-n, --version		Output the version information and exit.\n\
+	-v  --verbose		Output the UUID for each deleted record.\n\
+	-x, --detail		Report detailed information about the records jal_purge is\n\
 				reviewing for deletion. This reports the action to be taken\n\
 				(Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed),\n\
 				the outbound state (Unsent, Sent, Synced), the local insertion timestamp,\n\

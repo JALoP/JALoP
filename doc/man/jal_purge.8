@@ -59,13 +59,16 @@ When given without \fB\-\-delete\fR (\fB\-d\fR) this will report the records tha
 Specify the root of the JALoP database, defaults to
 .I /var/lib/jalop/db
 .TP
-\fB\-V\fR, \fB\-\-verbose\fR
+\fB\-n\fR, \fB\-\-version\fR
+Output the version information and exit.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Output the UUID for each deleted record.
+.TP
+\fB\-x\fR, \fB\-\-detail\fR
 Report more information about the records \fB jal_purge \fR is reviewing for deletion.
 This reports the action to be taken (Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed), 
 the outbound state (Unsent, Sent, Synced), the local insertion timestamp, and the local nonce for each record.
-.TP
-\fB\-V\fR, \fB\-\-version\fR
-Output the version information and exit.
 .SH "SEE ALSO"
 .BR jald (8),
 .BR jal-local-store (5),
