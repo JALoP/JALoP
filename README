@@ -128,10 +128,16 @@ NOTES
 
   Example DB_CONFIG:
 
-  set_lk_max_locks    200000
-  set_lk_max_lockers  200000
-  set_lg_regionmax    200000
-  mutex_set_max       200000
+  set_lk_max_locks    400000
+  set_lk_max_lockers  400000
+  set_lg_regionmax    400000
+  set_tx_max          400000
+  set_cachesize 1 0 4
+
+  # The following two mutex config lines must be commented out for RHEL5, 
+  # or the database context will fail to initialize.
+  mutex_set_max       400000
+  mutex_set_increment 400000
 
   A sample DB_CONFIG file is provided within the test-input directory.
 
