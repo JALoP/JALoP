@@ -965,19 +965,10 @@ void pub_peer_digest(
 		const uint32_t peer_size,
 		__attribute__((unused)) void *user_data)
 {
-	if (!local_digest || !peer_digest) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "missing peer or local digset");
-	}
-	if ((0 == local_size) || (0 == peer_size) || (local_size != peer_size)) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "local digest and peer digest have different lengths");
-		return;
-	}
-	if (0 != memcmp(local_digest, peer_digest, local_size)) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Local digest and peer digest do not match");
-		return;
-	}
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
-	switch(type) {
+	enum jaldb_status db_ret = JALDB_E_INVAL;
+
+	switch (type) {
 	case JALN_RTYPE_JOURNAL:
 		db_type = JALDB_RTYPE_JOURNAL;
 		break;
@@ -989,8 +980,43 @@ void pub_peer_digest(
 		break;
 	default:
 		// shouldn't happen.
+		db_type = JALDB_RTYPE_UNKNOWN;
 		return;
 	}
+
+	// Check for error conditions
+	if (!local_digest || !peer_digest) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Missing peer or local digset.");
+		goto error;
+	}
+	if ((0 == local_size) || (0 == peer_size) || (local_size != peer_size)) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Digests have different lengths for %s. Local[%u] Peer[%u]", nonce, local_size, peer_size);
+		goto error;
+	}
+	if (0 != memcmp(local_digest, peer_digest, local_size)) {
+		char *local_b64 = jal_base64_enc(local_digest, local_size);
+		char *peer_b64 = jal_base64_enc(peer_digest, peer_size);
+		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Digests do not match for %s. Local[%s] Peer[%s]",nonce, local_b64, peer_b64);
+		goto error;
+	}
+	// Digest match
+	DEBUG_LOG_SUB_SESSION(ch_info, "Digest match for %s", nonce);
+	goto out;
+
+error:
+	// The digests do not match. We need to mark the record as unsent so it can be sent again by the publisher.
+	db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 0);
+
+	if (JALDB_OK != db_ret) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Failed to update record as unsent %s. Return code: %d", nonce, db_ret);
+		goto out;
+	} else {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as unsent", nonce);
+	}
+
+out:
+	// No status returned by callback function
+	return;
 }
 
 static void sig_handler(__attribute__((unused)) int sig)
