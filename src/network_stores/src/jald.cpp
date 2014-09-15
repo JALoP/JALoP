@@ -328,6 +328,7 @@ enum jaldb_status pub_get_next_record(
 		ret = JALDB_OK;
 	} else {
 		while (JALDB_E_NOT_FOUND == ret) {
+			// Have to use timestamp since sess->mode is internal to the network library
 			if (!*timestamp) {
 				// Archive mode
 				DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Archive Mode");
@@ -455,18 +456,19 @@ enum jal_status pub_send_records_feeder(
 	}
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Verifying previously sent records.");
-	// Only need to clear send flags for archive mode connection
+	// Only need to clear sent flags for archive mode connection
+	// Have to use timestamp since sess->mode is internal to the network library
 	if (!*timestamp) {
 		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+		if (JALDB_OK != db_ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
+			ret = JAL_E_INVAL;
+			pthread_mutex_unlock(sub_lock);
+			goto out;
+		}
 	}
 
 	pthread_mutex_unlock(sub_lock);
-
-	if (JALDB_OK != db_ret) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
-		ret = JAL_E_INVAL;
-		goto out;
-	}
 
 	feeder.feeder_data = ctx;
 	feeder.get_bytes = pub_get_bytes;
@@ -504,6 +506,7 @@ enum jal_status pub_send_records_feeder(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
+		// Have to use timestamp since sess->mode is internal to the network library
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
@@ -588,18 +591,19 @@ enum jal_status pub_send_records(
 	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Verifying previously sent records.");
-	// Only need to clear send flags for archive mode connection
+	// Only need to clear sent flags for archive mode connection
+	// Have to use timestamp since sess->mode is internal to the network library
 	if (!*timestamp) {
 		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+		if (JALDB_OK != db_ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
+			ret = JAL_E_INVAL;
+			pthread_mutex_unlock(sub_lock);
+			goto out;
+		}
 	}
 
 	pthread_mutex_unlock(sub_lock);
-
-	if (JALDB_OK != db_ret) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
-		ret = JAL_E_INVAL;
-		goto out;
-	}
 
 	do {
 		db_ret = pub_get_next_record(sess,
@@ -635,6 +639,7 @@ enum jal_status pub_send_records(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
+		// Have to use timestamp since sess->mode is internal to the network library
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
