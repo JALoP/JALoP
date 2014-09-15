@@ -323,7 +323,6 @@ int jsub_on_journal(
 	// Then write the system/application metadata to DB.
 	if (0 == more) {
 		// No more data
-		journal_payload_size = 0; //Payload size 0 indicates that the journal is complete
 		if (buffer) {
 			int ret = jsub_write_journal(
 					jsub_db_ctx,
@@ -331,7 +330,7 @@ int jsub_on_journal(
 					&db_payload_fd,
 					(uint8_t *)buffer,
 					cnt,
-					journal_payload_size,
+					0,
 					ch_info->hostname,
 					nonce,
 					jsub_debug);
@@ -341,7 +340,7 @@ int jsub_on_journal(
 		} else {
 			jsub_clear_journal_resume(jsub_db_ctx, ch_info->hostname);
 		}
-		return jsub_insert_journal_metadata(
+		int ret = jsub_insert_journal_metadata(
 					jsub_db_ctx,
 					ch_info->hostname,
 					journal_sys_meta_buf,
@@ -352,6 +351,8 @@ int jsub_on_journal(
 					journal_payload_size,
 					(char *)nonce,
 					jsub_debug);
+		journal_payload_size = 0;
+		return ret;
 	} else {
 		// There will be more data, append what we've
 		//	received to file on disk.

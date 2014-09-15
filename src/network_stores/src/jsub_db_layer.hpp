@@ -217,7 +217,8 @@ int jsub_transfer_journal(
  * @param[in] buffer The \pbuffer data of the journal payload to write to file.
  * @param[in] buffer_len The length/size of \p buffer.
  * @param[in] processed_len The length/size of the data processed for the 
- * \p payload so far.
+ * \p payload so far.  Or 0 if the record is complete and the journal resume
+ * data should be cleared
  * @param[in] hostname The \p hostname we are receiving the journal from.
  * @param[in] nonce The \p nonce of the record we are receiving.
  * @param[in] debug A flag indicating whether or not debug
