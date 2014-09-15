@@ -7,7 +7,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2012-2014 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -52,7 +52,7 @@ enum purge_action {
 
 const char *send_str[] = { "UNSENT", " SENT ", "SYNCED" };
 const char *recv_str[] = { "UNCONF", " CONF " };
-const char *action_str[] = {"  Keep", "Delete", " Force"};
+const char *action_str[] = {"Keep  ", "Delete", "Force "};
 
 static struct global_args_t {
 	int del;
@@ -131,7 +131,6 @@ int main(int argc, char **argv)
 		} else {
 			printf("Synced records only\n");
 		}
-		printf("\n");
 
 	} else {
 		// Otherwise output the old format that works with the test harness
@@ -163,43 +162,48 @@ int main(int argc, char **argv)
 #endif
 			dbret = jaldb_get_record_by_uuid(ctx, type, uuid, &nonce, &rec);
 			if (dbret != 0) {
-				fprintf(stderr,"ERROR: Cannot get record for UUID: %s\n", iter->c_str());
-				goto out;
-			}
-
-
-			/* Inbound: records should be confirmed. Outbound: records should be synced. */
-			/* Force flag causes sync flag to be ignored. */
-
-			enum purge_action record_action = JAL_PURGE_KEEP;
-
-			if (rec->confirmed && (rec->synced == JALDB_SYNCED)) {
-				record_action = JAL_PURGE_DELETE;
-			} else if (rec->confirmed && (rec->synced != JALDB_SYNCED) && global_args.force) {
-				record_action = JAL_PURGE_FORCE;
+				fprintf(stderr,"Cannot get record for UUID: %s\n", iter->c_str());
+				// Treat UUID not found as a non-error condition
+				dbret = 0;
 			} else {
-				record_action = JAL_PURGE_KEEP;
-			}
+				/* Inbound: records should be confirmed. Outbound: records should be synced. */
+				/* Force flag causes sync flag to be ignored. */
 
-			// If the detail flag is set, output the new detailed format, otherwise use the old format to prevent test harness from breaking
-			if (global_args.detail) {
-				// Print status of all records whether to be deleted or not
-				printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
-			} else {
-				printf("UUID: %s\n", iter->c_str());
-			}
+				enum purge_action record_action = JAL_PURGE_KEEP;
 
-			// Remove the record.
-			if (global_args.del && rec->confirmed && (global_args.force || rec->synced == JALDB_SYNCED)) {
-				dbret = jaldb_remove_record(ctx, type, nonce);
-				if (dbret != 0) {
-					fprintf(stderr, "ERROR: Cannot remove record: %s\n", nonce);
+				if (rec->confirmed && (rec->synced == JALDB_SYNCED)) {
+					record_action = JAL_PURGE_DELETE;
+				} else if (rec->confirmed && (rec->synced != JALDB_SYNCED) && global_args.force) {
+					record_action = JAL_PURGE_FORCE;
+				} else {
+					record_action = JAL_PURGE_KEEP;
 				}
-			}
 
-			jaldb_destroy_record(&rec);
-			free(nonce);
-			nonce = NULL;
+				// If the detail flag is set, output the new detailed format, otherwise use the old format to prevent test harness from breaking
+				if (global_args.detail) {
+					// Print status of all records whether to be deleted or not
+					if (global_args.del) {
+						printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce); 
+					}
+					else {
+						printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
+					}
+				} else {
+					printf("UUID: %s\n", iter->c_str());
+				}
+
+				// Remove the record.
+				if (global_args.del && rec->confirmed && (global_args.force || rec->synced == JALDB_SYNCED)) {
+					dbret = jaldb_remove_record(ctx, type, nonce);
+					if (dbret != 0) {
+						fprintf(stderr, "ERROR: Cannot remove record: %s\n", nonce);
+					}
+				}
+
+				jaldb_destroy_record(&rec);
+				free(nonce);
+				nonce = NULL;
+			}
 		}
 	} else if (global_args.before) {
 		if (global_args.detail) {
@@ -215,13 +219,8 @@ int main(int argc, char **argv)
 	}
 
 out:
-	if (JALDB_OK != dbret) {
-		fprintf(stderr, "ERROR: Failed to purge records\n");
-	}
-	else {
-		if (global_args.detail) {
-			printf("\n");
-		}
+	if (global_args.detail) {
+		printf("\n");
 	}
 
 	global_args_free();
@@ -251,7 +250,12 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 	// If the detail flag is set, output the new detailed format, otherwise use the old format to prevent test harness from breaking
 	if (global_args.detail) {
 		// Print status of all records whether to be deleted or not
-		printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
+		if (global_args.del) {
+			printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce); 
+		}
+		else {
+			printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
+		}
 	} else {
 		printf("NONCE: %s\n", nonce);
 
