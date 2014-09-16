@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 			if (dbret != 0) {
 				fprintf(stderr,"Cannot get record for UUID: %s\n", iter->c_str());
 				// Treat UUID not found as a non-error condition
-				dbret = 0;
+				dbret = JALDB_OK;
 			} else {
 				/* Inbound: records should be confirmed. Outbound: records should be synced. */
 				/* Force flag causes sync flag to be ignored. */
