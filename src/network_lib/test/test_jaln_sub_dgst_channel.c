@@ -88,6 +88,17 @@ VortexMimeHeader *fake_vortex_frame_get_mime_header(VortexFrame *frame, const ch
 	return NULL;
 }
 
+void fake_vortex_connection_timeout(__attribute__((unused)) VortexCtx *ctx,
+				    __attribute__((unused)) long int microseconds_to_wait)
+{
+	return;
+}
+
+VortexCtx *fake_vortex_channel_get_ctx(__attribute__((unused)) VortexChannel *channel)
+{
+	return (VortexCtx *)0xdeadbeef;
+}
+
 enum jal_status jaln_process_digest_resp_always_succeeds(__attribute__((unused)) VortexFrame *frame,
 							__attribute__((unused)) axlList **dgst_resp_list_out)
 {
@@ -147,6 +158,8 @@ void test_jaln_send_digest_and_sync_no_lock_does_not_crash_with_bad_input()
 	replace_function(vortex_channel_send_msg, vortex_channel_send_msg_always_succeeds);
 	replace_function(jaln_process_digest_resp, jaln_process_digest_resp_always_succeeds);
 	replace_function(vortex_frame_unref, fake_vortex_frame_unref);
+	replace_function(vortex_connection_timeout, fake_vortex_connection_timeout);
+	replace_function(vortex_channel_get_ctx, fake_vortex_channel_get_ctx);
 
 	jaln_send_digest_and_sync_no_lock(NULL, dgst_list);
 	jaln_send_digest_and_sync_no_lock(sess, NULL);
@@ -178,6 +191,8 @@ void test_jaln_send_digest_and_sync_no_lock_succeeds()
 	replace_function(vortex_channel_send_msg, vortex_channel_send_msg_always_succeeds);
 	replace_function(jaln_process_digest_resp, fake_jaln_process_digest_resp);
 	replace_function(vortex_frame_unref, fake_vortex_frame_unref);
+	replace_function(vortex_connection_timeout, fake_vortex_connection_timeout);
+	replace_function(vortex_channel_get_ctx, fake_vortex_channel_get_ctx);
 
 	jaln_send_digest_and_sync_no_lock(sess, dgst_list);
 }

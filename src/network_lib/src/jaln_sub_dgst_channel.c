@@ -36,6 +36,8 @@
 #include "jaln_digest_resp_info.h"
 #include "jaln_digest_resp_msg_handler.h"
 
+#define JALN_DIGEST_RESPONSE_TIMEOUT_USECS 5*1000000 
+
 axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 	jaln_session *sess = (jaln_session*) user_data;
 
@@ -100,8 +102,14 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	free(msg);
 	msg = NULL;
 
+	// Set a resonable time to wait for a digest response. Other digests will be blocked waiting for this digest response.
+	vortex_connection_timeout(vortex_channel_get_ctx(sess->dgst_chan), JALN_DIGEST_RESPONSE_TIMEOUT_USECS);
+
 	frame = vortex_channel_wait_reply(sess->dgst_chan, msg_no, wait_reply);
 	if (frame == NULL) {
+		// We timed out waiting for a reply. Return from this function so we can continue processing additional digests.
+		// On subscriber reconnection, the publisher will resend these records, since they have not been synced.
+		// TODO: We should never have unacknowledged digests. We should consider closing the connection at this point.
 		goto out;
 	}
 
