@@ -35,7 +35,7 @@
 
 /**
  * Utility function used to destroy jal_digest_ctx objects stored in an
- * axlList. This is a very thin wrapper around jal_digset_ctx_destroy();
+ * axlList. This is a very thin wrapper around jal_digest_ctx_destroy();
  *
  * @param[in] ptr;
  */

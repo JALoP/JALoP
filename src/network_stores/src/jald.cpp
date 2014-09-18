@@ -991,7 +991,7 @@ void pub_peer_digest(
 
 	// Check for error conditions
 	if (!local_digest || !peer_digest) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Missing peer or local digset.");
+		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Missing peer or local digest.");
 		goto error;
 	}
 	if ((0 == local_size) || (0 == peer_size) || (local_size != peer_size)) {

@@ -1,7 +1,7 @@
 /**
  * @file jaln_sub_dgst_channel.h This file contains function
  * declarations for internal library functions related to the 'subscriber'
- * channel that sends 'digset' and 'sync' messages.
+ * channel that sends 'digest' and 'sync' messages.
  *
  * @section LICENSE
  *
