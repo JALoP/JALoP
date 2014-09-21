@@ -38,6 +38,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <jalop/jal_status.h>
+#include <fcntl.h>
 
 #include "jal_alloc.h"
 #include "jaldb_strings.h"
@@ -212,14 +213,14 @@ void test_nonce_cmp_returns_correct_value()
 	assert_equals(0, ret);
 }
 
-int mkstemp_always_fails(__attribute__((unused)) char *template)
+int open_always_fails(__attribute__((unused)) const char *path, __attribute__((unused)) int oflag, ... )
 {
 	return -1;
 }
 
-void test_jaldb_create_file_returns_cleanly_when_mkstemp_fails()
+void test_jaldb_create_file_returns_cleanly_when_open_fails()
 {
-	replace_function(mkstemp, mkstemp_always_fails);
+	replace_function(open, open_always_fails);
 	char *path = NULL;
 	int fd = -1;
 	uuid_t uuid,uuid_orig;
@@ -230,7 +231,7 @@ void test_jaldb_create_file_returns_cleanly_when_mkstemp_fails()
 	assert_pointer_equals((void*) NULL, path);
 	assert_equals(-1, fd);
 	assert_equals(uuid_compare(uuid,uuid_orig),0);
-	restore_function(mkstemp);
+	restore_function(open);
 }
 
 void test_jaldb_create_file_returns_cleanly_when_db_root_is_null()

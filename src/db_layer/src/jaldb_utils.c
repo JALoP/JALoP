@@ -128,23 +128,22 @@ enum jaldb_status jaldb_create_file(
 	}
 
 	#define UUID_STRING_REP_LEN 37
-	#define NUM_UUID_SEGMENTS 8
-	#define CHARS_PER_UUID_SEGMENT 5
-	//includes four hexidecimal characters and a "/"
-	#define TYPE_LEN 17
+
+	// First two hexidecimal characters of UUID as directory + /
+	#define DIRPATH_LEN 3
+
 	//TYPE_LEN is long enough to hold "_journal_sys_meta", which is the longest type name
-	#define FILENAME_PATTERN_LEN 6
+	#define TYPE_LEN 17
 
-	#define FILENAME_LEN FILENAME_PATTERN_LEN + TYPE_LEN + 1
+	#define FILENAME_LEN UUID_STRING_REP_LEN + TYPE_LEN + 1
 
-	#define REL_PATH_LEN NUM_UUID_SEGMENTS * CHARS_PER_UUID_SEGMENT + FILENAME_LEN
+	#define REL_PATH_LEN DIRPATH_LEN + FILENAME_LEN
 
 	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
 	enum jal_status jal_ret = JAL_E_INVAL;
 
 	char *full_path = NULL;
 	char *suffix = NULL;
-	int written = 0;
 	int root_len = -1;
 	int lfd = -1;
 	char *uuid_string = jal_calloc(UUID_STRING_REP_LEN,sizeof(char));
@@ -157,23 +156,11 @@ enum jaldb_status jaldb_create_file(
 	strcpy(full_path,db_root);
 
 	int path_pos = root_len;
-	int uuid_pos = 0;
 
-	for (int i = 0; i < NUM_UUID_SEGMENTS; i++){
-		if (*(uuid_string+uuid_pos) == '-'){
-			uuid_pos += 1;
-		}
-		snprintf(full_path+path_pos,
-			CHARS_PER_UUID_SEGMENT,
-			"%s",
-			uuid_string+uuid_pos);
-		snprintf(full_path+path_pos+CHARS_PER_UUID_SEGMENT-1,
-			2,
-			"/");
-		path_pos += CHARS_PER_UUID_SEGMENT;
-		uuid_pos += CHARS_PER_UUID_SEGMENT -1;
-		written += CHARS_PER_UUID_SEGMENT;
-	}
+	// Grab the first two digits of the uuid for the directory to create
+	full_path[path_pos++] = uuid_string[0];
+	full_path[path_pos++] = uuid_string[1];
+	full_path[path_pos++] = '/';
 
 	suffix = jal_calloc(FILENAME_LEN,sizeof(char));
 
@@ -198,46 +185,41 @@ enum jaldb_status jaldb_create_file(
 
 	if (dtype == JALDB_DTYPE_SYS_META)
 	{
-		strcat(suffix,"_sys_meta_XXXXXX");
+		strcat(suffix,"_sys_meta_");
 	}
 	else if (dtype == JALDB_DTYPE_APP_META)
 	{
-		strcat(suffix,"_app_meta_XXXXXX");
+		strcat(suffix,"_app_meta_");
 	}
 	else if (dtype == JALDB_DTYPE_PAYLOAD)
 	{
-		strcat(suffix,"_payload_XXXXXX");
+		strcat(suffix,"_payload_");
 	}
 	else
 	{
 		ret = JALDB_E_INVAL;
 		goto error_out;
 	}
+	strcat(suffix,uuid_string);
 
-	written += strlen(suffix);
-	strcat(full_path,suffix);
-
-	if (written >= REL_PATH_LEN){
-		// should never happen
-		ret = JALDB_E_INTERNAL_ERROR;
-		goto error_out;
-	}
-
-	jal_ret = jal_create_dirs(full_path);	
+	jal_ret = jal_create_dirs(full_path);
 	if (JAL_OK != jal_ret) {
 		goto error_out;
 	}
-	ret = JALDB_OK;
-	lfd = mkstemp(full_path);
+
+	strcat(full_path,suffix);
+
+	// Create the file as read/write with permission mode set to owner read/write
+	lfd = open(full_path, O_RDWR | O_CREAT, S_IRUSR|S_IWUSR);
 	if (lfd == -1) {
-		ret = JALDB_E_INTERNAL_ERROR;
 		goto error_out;
 	}
 
+	ret = JALDB_OK;
 	*relative_path_out = jal_calloc(REL_PATH_LEN,sizeof(char));
-
 	memcpy(*relative_path_out, full_path + root_len, REL_PATH_LEN);
 	goto out;
+
 error_out:
 	if (lfd > -1) {
 		close(lfd);
