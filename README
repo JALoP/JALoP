@@ -105,12 +105,13 @@ the right version, i.e.:
 $> PATH=/path/to/awk:$PATH scons tests
 
 KNOWN ISSUES
-  We are currently seeing an issue with the Vortex library where the subscriber
-  will appear to leak memory when the producer is able to send data faster than
-  the subscriber can process it.
-  
-  This issue is mostly apparent when the producer is sending very large files
-  that are able to be compressed into very small packets.
+-	If the publisher provides the same unique identifier for multiple different records, the subscriber may lose records.
+-	Journal resume handling in live mode may temporarily result in outdated records being transferred.
+-	Digest queuing controls (pending_digest_max, pending_digest_timeout) in jald.cfg and jal_subscribe.cfg are not implemented and have no effect.
+-	Under high record volume, repeated interruption of the subscriber with Ctrl-C can cause the publisher to no longer accept connections from that client.
+-	When adding log or audits to the local store that greatly exceed the size limit of 200MB, the local store can fail to output a console message that records have been rejected.
+-	If a subscriber tries to connect without TLS, to a publisher using TLS, the subscriber will display a thread exited message, but will not close until it times out, or a ctrl-c is pressed.
+
 
 NOTES
   Due to the method in which the JALoP implementation allocates memory for
@@ -146,3 +147,8 @@ NOTES
   should be placed within it.
 
   http://docs.oracle.com/cd/E17076_02/html/programmer_reference/env_db_config.html
+
+  Berkeley DB tools must be used to periodically checkpoint and archive DB log files, to prevent the database files from filling the available disk space.
+
+  http://docs.oracle.com/cd/E17275_01/html/api_reference/C/db_checkpoint.html
+  http://docs.oracle.com/cd/E17275_01/html/api_reference/C/db_archive.html
