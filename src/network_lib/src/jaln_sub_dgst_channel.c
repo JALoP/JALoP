@@ -36,7 +36,7 @@
 #include "jaln_digest_resp_info.h"
 #include "jaln_digest_resp_msg_handler.h"
 
-#define JALN_DIGEST_RESPONSE_TIMEOUT_USECS 5*1000000 
+#define JALN_DIGEST_RESPONSE_TIMEOUT_USECS 10*1000000 
 
 axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 	jaln_session *sess = (jaln_session*) user_data;
