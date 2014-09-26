@@ -400,7 +400,6 @@ int jsub_on_digest_response(
 		__attribute__((unused)) const enum jaln_digest_status status,
 		__attribute__((unused)) const void *user_data)
 {
-	char *tmp_nonce = NULL;
 	const char *status_str;
 	switch (status) {
 		case JALN_DIGEST_STATUS_CONFIRMED:
@@ -472,7 +471,7 @@ int jsub_on_digest_response(
 				ret = -1;
 		}
 	}
-	free(tmp_nonce);
+	free(rec_nonce);
 	return ret;
 }
 
