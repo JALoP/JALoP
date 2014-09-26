@@ -1569,9 +1569,12 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
 	}
 	jal_asprintf(&path, "%s/%s", ctx->journal_root, (char*)s->payload);
 	fd = open(path, O_RDONLY);
+	free(path);
+	path = NULL;
 	if (-1 == fd) {
 		return JALDB_E_UNKNOWN;
 	}
+
 	s->fd = fd;
 	return JALDB_OK;
 }
