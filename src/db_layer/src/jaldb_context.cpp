@@ -632,6 +632,7 @@ enum jaldb_status jaldb_mark_confirmed(
 	}
 
 out:
+	free(pkey.data);
 	free(skey.data);
 	free(val.data);
 	return ret;
