@@ -127,6 +127,9 @@ int jsub_insert_audit(
 	rec->network_nonce = jal_strdup(nonce_in);
 
 	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	free(local_nonce);
+	local_nonce = NULL;
+
 	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert audit into database!\n");
@@ -188,6 +191,9 @@ int jsub_insert_log(
 	rec->network_nonce = jal_strdup(nonce_in);
 
 	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	free(local_nonce);
+	local_nonce = NULL;
+
 	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		DEBUG_LOG("Failed to insert log into temp!\n");
@@ -302,6 +308,9 @@ int jsub_insert_journal_metadata(
 	rec->network_nonce = jal_strdup(nonce_in);
 
 	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	free(local_nonce);
+	local_nonce = NULL;
+
 	jaldb_destroy_record(&rec);
 	if ((JALDB_OK != ret) && debug) {
 		printf("DEBUG_LOG to insert journal metadata into temp!\n");
