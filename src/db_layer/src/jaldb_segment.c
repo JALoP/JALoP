@@ -48,9 +48,6 @@ void jaldb_destroy_segment(struct jaldb_segment **ppsegment)
 	if (seg->fd >= 0) {
 		close(seg->fd);
 	}
-	if (seg->fd >= 0) {
-		close(seg->fd);
-	}
 	free(seg->payload);
 	free(seg);
 	*ppsegment = NULL;
