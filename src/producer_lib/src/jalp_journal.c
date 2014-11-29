@@ -66,6 +66,9 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 		return JAL_E_BAD_FD;
 	}
 
+	// return to the beginning of the file
+	lseek(fd, 0, SEEK_SET);
+
 	if (app_meta) {
 		doc = xmlNewDoc((xmlChar *)"1.0");
 		status = jalp_app_metadata_to_elem(app_meta, ctx, doc, &app_meta_elem);
