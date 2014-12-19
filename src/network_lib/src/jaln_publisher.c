@@ -161,11 +161,9 @@ enum jal_status jaln_publisher_handle_digest(jaln_session *sess, VortexChannel *
 	vortex_mutex_lock(&sess->lock);
 	calc_dgsts = sess->dgst_list;
 	sess->dgst_list = jaln_digest_info_list_create();
-	vortex_mutex_unlock(&sess->lock);
 
 	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, dgst_from_remote, &resps);
 
-	vortex_mutex_lock(&sess->lock);
 	axlListCursor *cursor = axl_list_cursor_new(sess->dgst_list);
 	axl_list_cursor_first(cursor);
 	while(axl_list_cursor_has_item(cursor)) {

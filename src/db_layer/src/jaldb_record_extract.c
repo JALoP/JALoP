@@ -63,7 +63,7 @@ int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *dat
 {
 	struct jaldb_serialize_record_headers *headers = NULL;
 
-	if (!data || !result || !data->data || (sizeof(headers) > data->size)) {
+	if (!data || !result || !data->data || (sizeof(headers) > data->size + JALDB_TIMESTAMP_LENGTH + 1)) {
 		return -1;
 	}
 
