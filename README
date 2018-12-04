@@ -48,7 +48,7 @@ $ install_<platform>.sh
 Other Options (these steps do not need to be executed in order to use the JALoP libraries)
 To build the library and execute the unit tests, run
 
-$ scons tests
+$ scons --no-release tests
 
 To generate code coverage reports, run
 

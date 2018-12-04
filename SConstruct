@@ -16,6 +16,9 @@ add_install_options()
 AddOption('--no-selinux', dest='DISABLE_SELINUX',
 		action='store_true', default=False,
 		help='Disable support for SE Linux.')
+AddOption('--no-release', dest='DISABLE_RELEASE',
+		action='store_true', default=False,
+		help='Disable optimized release builds.')
 # Update package version here, add actual checks below
 pkg_config_version = '0.21'
 
@@ -58,7 +61,7 @@ packages_at_least = {
 
 # flags are shared by both debug and release builds
 default_ccflags = ' -Wall -W -Wundef -Wshadow -Wmissing-noreturn -Wformat=2 -Wmissing-format-attribute '
-default_ccflags += ' -Wextra -Wno-unreachable-code -Werror -D_FORTIFY_SOURCE=2 -fexceptions '
+default_ccflags += ' -Wextra -Wno-unreachable-code -fexceptions'
 default_ccflags += ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE -DHAVE_VA_COPY '
 default_cflags = ' -std=gnu99 '
 
@@ -74,7 +77,7 @@ profiling_ldflags = profiling_ccflags
 
 stack_protector_ccflags = '-fstack-protector --param=ssp-buffer-size=4'.split()
 
-extra_release_ccflags = '-DNDEBUG -g -O3'.split()
+extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -g -O3'.split()
 debug_env = Environment(ENV=os.environ, tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 		parse_flags= default_ccflags,
 		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
@@ -275,7 +278,8 @@ else:
 debug_env['variant'] = 'debug';
 release_env['variant'] = 'release';
 SConscript('SConscript', variant_dir='debug', duplicate=0, exports={'env':debug_env, 'all_tests':all_tests})
-SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env, 'all_tests':all_tests})
+if not GetOption("DISABLE_RELEASE"):
+	SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env, 'all_tests':all_tests})
 
 if GetOption("clean"):
 	debug_env.Clean('debug_dir', 'debug')

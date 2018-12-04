@@ -1,5 +1,4 @@
 import SCons.Builder
-import SCons.compat._scons_subprocess
 import string
 import os
 import subprocess
