@@ -542,22 +542,26 @@ void test_jal_create_audit_transforms_elem_outputs_correctly()
 void test_jal_xml_output_bad_inputs()
 {
 	xmlChar * buf = NULL;
+	size_t bsize = 0;
 
-	enum jal_status ret = jal_xml_output(NULL, NULL);
+	enum jal_status ret = jal_xml_output(NULL, NULL, NULL);
 	assert_equals(ret, JAL_E_INVAL);
 
-	ret = jal_xml_output(NULL, &buf);
+	ret = jal_xml_output(NULL, &buf, &bsize);
 	assert_equals(ret, JAL_E_INVAL);
 
-	ret = jal_xml_output(doc, NULL);
+	ret = jal_xml_output(doc, NULL, &bsize);
+	assert_equals(ret, JAL_E_INVAL);
+
+	ret = jal_xml_output(doc, &buf, NULL);
 	assert_equals(ret, JAL_E_INVAL);
 
 	xmlDocPtr null_doc = NULL;
-	jal_xml_output(null_doc, &buf);
+	jal_xml_output(null_doc, &buf, &bsize);
 	assert_equals(ret, JAL_E_INVAL);
 
 	buf = xmlStrdup(BAD_CAST "foo");
-	jal_xml_output(doc, &buf);
+	jal_xml_output(doc, &buf, &bsize);
 	assert_equals(ret, JAL_E_INVAL);
 	assert_equals(0, xmlStrcmp(buf, BAD_CAST "foo"));
 
@@ -567,8 +571,10 @@ void test_jal_xml_output_bad_inputs()
 void test_jal_xml_output_good_inputs()
 {
 	xmlChar * buf = NULL;
-	enum jal_status ret = jal_xml_output(doc, &buf);
+	size_t bsize = 0;
+	enum jal_status ret = jal_xml_output(doc, &buf, &bsize);
         assert_equals(ret, JAL_OK);
+	assert_not_equals(0, bsize);
 	assert_not_equals(NULL, buf);
 	xmlFree(buf);
 }

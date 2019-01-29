@@ -13,6 +13,8 @@ env.MergeFlags(env['bdb_cflags'])
 env.MergeFlags(env['bdb_ldflags'])
 env.MergeFlags(env['openssl_cflags'])
 env.MergeFlags(env['openssl_ldflags'])
+env.MergeFlags(env['xmlsec1_cflags'])
+env.MergeFlags(env['xmlsec1_ldflags'])
 
 
 env.MergeFlags(env['libxml2_cflags'])

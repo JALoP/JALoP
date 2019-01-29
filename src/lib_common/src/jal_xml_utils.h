@@ -133,7 +133,8 @@ enum jal_status jal_create_audit_transforms_elem(
  */
 enum jal_status jal_xml_output(
 		xmlDocPtr doc,
-		xmlChar **buffer);
+		xmlChar **buffer,
+		size_t *buffersize);
 
 /**
  * Use the digest context \p dgst_ctx to generate a digest for the document

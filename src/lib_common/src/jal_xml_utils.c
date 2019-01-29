@@ -226,16 +226,16 @@ enum jal_status jal_create_audit_transforms_elem(
 
 enum jal_status jal_xml_output(
 		xmlDocPtr doc,
-		xmlChar **buffer)
+		xmlChar **buffer,
+		size_t *buffersize)
 {
-	if (!doc || !buffer || *buffer) {
+	if (!doc || !buffer || *buffer || !buffersize) {
 		return JAL_E_INVAL;
 	}
 
 	xmlChar *xmlbuff = NULL;
-	int buffersize;
 
-	xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
+	xmlDocDumpFormatMemory(doc, &xmlbuff, buffersize, 1);
 
 	*buffer = xmlbuff;
 

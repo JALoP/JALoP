@@ -31,51 +31,52 @@
 #include <uuid/uuid.h>
 #include <inttypes.h>
 #include <libxml/parser.h>
+#include <libxml/tree.h>
 #include <string.h>
 #include <errno.h>
+#include <jalop/jal_namespaces.h>
 
 #include "jal_alloc.h"
 #include "jaldb_record.h"
 #include "jaldb_record_xml.h"
+#include "jal_xml_utils.h"
 
-#define JALDB_XSI_NS         "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'"
+#define JALDB_XSI_NS         "http://www.w3.org/2001/XMLSchema-instance"
 
-#define JALDB_XML_PREAMBLE   "<?xml version='1.0' encoding='UTF-8' standalone='no'?>"
-#define JALDB_RECORD_START   "<JALRecord xmlns='http://www.dod.mil/jalop-1.0/systemMetadata' JID='UUID-%s' xmlns:ds='http://www.w3.org/2000/09/xmldsig#'>"
-#define JALDB_DATA_TYPE_TAG  "<JALDataType>%s</JALDataType>"
-#define JALDB_RECORD_ID_TAG  "<RecordID>%s</RecordID>"
-#define JALDB_HOSTNAME_TAG   "<Hostname>%s</Hostname>"
-#define JALDB_HOST_UUID_TAG  "<HostUUID>%s</HostUUID>"
-#define JALDB_TIMESTAMP_TAG  "<Timestamp>%s</Timestamp>"
-#define JALDB_PROCESS_ID     "<ProcessID>%"PRIu64"</ProcessID>"
-#define JALDB_USER_W_UID_TAG "<User name='%s'>%"PRIu64"</User>"
-#define JALDB_USER_TAG       "<User " JALDB_XSI_NS " xsi:nil='true' name='%s'/>"
-#define JALDB_SEC_LABEL_TAG  "<SecurityLabel>%s</SecurityLabel>"
+#define JALDB_RECORD_TAG     "JALRecord"
+#define JALDB_DATA_TYPE_TAG  "JALDataType"
+#define JALDB_RECORD_ID_TAG  "RecordID"
+#define JALDB_HOSTNAME_TAG   "Hostname"
+#define JALDB_HOST_UUID_TAG  "HostUUID"
+#define JALDB_TIMESTAMP_TAG  "Timestamp"
+#define JALDB_PROCESS_ID_TAG "ProcessID"
+#define JALDB_USER_TAG       "User"
+#define JALDB_SEC_LABEL_TAG  "SecurityLabel"
 #define JALDB_MANIFEST_START "<ds:Manifest xmlns='http://www.w3.org/2000/09/xmldsig#'>"
 #define JALDB_REF_START      "<ds:Reference URI='jalop:payload'>"
 #define JALDB_DGST_METH_TAG  "<ds:DigestMethod Algorithm='http://www.w3.org/2001/04/xmlenc#sha256'/>"
 #define JALDB_DGST_VAL_TAG   "<ds:DigestValue>%s</DigestValue>"
-#define JALDB_REF_END        "</ds:Reference>"
-#define JALDB_MANIFEST_END   "</ds:Manifest>"
-#define JALDB_RECORD_END     "</JALRecord>"
-
 #define JALDB_JOURNAL "journal"
 #define JALDB_AUDIT "audit"
 #define JALDB_LOG "log"
 
 #define UUID_STR_LEN 37
+// Theoretical max PID on 64 bit Linux is 4194304
+#define PID_STR_MAX_LEN 10
+#define UID_STR_MAX_LEN 22
 
 enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, char **doc, size_t *dsize)
 {
 	enum jaldb_status ret;
 	char uuid_str[UUID_STR_LEN];
+	char uuid_str_with_prefix[UUID_STR_LEN + 5];
 	char host_uuid_str[UUID_STR_LEN];
-	size_t bsize = 0;
-	int left = 1; // start at 1 for the NULL terminator;
-	int wrote;
-	size_t offset = 0;
-	char *res = NULL;
+	char pid_str[PID_STR_MAX_LEN];
+	char uid_str[UID_STR_MAX_LEN];
+	xmlChar *res = NULL;
 	char *type_str;
+	xmlDocPtr xmlDoc = NULL;
+	xmlNodePtr root_node = NULL;
 
 	if (!rec || !doc || *doc) {
 		return JALDB_E_INVAL;
@@ -100,139 +101,55 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, 
 	}
 
 	uuid_unparse(rec->uuid, uuid_str);
+	snprintf(uuid_str_with_prefix, UUID_STR_LEN + 5, "UUID-%s", uuid_str);
 	uuid_unparse(rec->host_uuid, host_uuid_str);
-
-	left += snprintf(NULL, 0, JALDB_XML_PREAMBLE);
-	left += snprintf(NULL, 0, JALDB_RECORD_START, uuid_str);
-	left += snprintf(NULL, 0, JALDB_DATA_TYPE_TAG, type_str);
-	left += snprintf(NULL, 0, JALDB_RECORD_ID_TAG, uuid_str);
-	left += snprintf(NULL, 0, JALDB_HOSTNAME_TAG, rec->hostname);
-	left += snprintf(NULL, 0, JALDB_HOST_UUID_TAG, host_uuid_str);
-	left += snprintf(NULL, 0, JALDB_TIMESTAMP_TAG, rec->timestamp);
-	left += snprintf(NULL, 0, JALDB_PROCESS_ID, rec->pid);
-	if (rec->have_uid) {
-		left += snprintf(NULL, 0, JALDB_USER_W_UID_TAG, rec->username, rec->uid);
-	} else {
-		left += snprintf(NULL, 0, JALDB_USER_TAG, rec->username);
+ 
+	if (PID_STR_MAX_LEN <= snprintf(pid_str, PID_STR_MAX_LEN, "%"PRIu64, rec->pid)) {
+		return JALDB_E_INVAL;
 	}
-	if (rec->sec_lbl) {
-		left += snprintf(NULL, 0, JALDB_SEC_LABEL_TAG, rec->sec_lbl);
-	}
-	left += snprintf(NULL, 0, JALDB_RECORD_END);
-
-	bsize = left;
-	res = jal_malloc(bsize);
-
-	wrote = snprintf(res + offset, left, JALDB_XML_PREAMBLE);
-	if ((-1 == wrote) || (wrote > left)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	offset += wrote;
-	left -= wrote;
-
-
-	wrote = snprintf(res + offset, left, JALDB_RECORD_START, uuid_str);
-	if ((-1 == wrote) || (wrote > left)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	offset += wrote;
-	left -= wrote;
-
-
-	wrote = snprintf(res + offset, left, JALDB_DATA_TYPE_TAG, type_str);
-	if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	left -= wrote;
-	offset += wrote;
-
-	wrote = snprintf(res + offset, left, JALDB_RECORD_ID_TAG, uuid_str);
-	if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	offset += wrote;
-	left -= wrote;
-
-	wrote = snprintf(res + offset, left, JALDB_HOSTNAME_TAG, rec->hostname);
-	if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	offset += wrote;
-	left -= wrote;
-
-	wrote = snprintf(res + offset, left, JALDB_HOST_UUID_TAG, host_uuid_str);
-	if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	offset += wrote;
-	left -= wrote;
-
-	wrote = snprintf(res + offset, left, JALDB_TIMESTAMP_TAG, rec->timestamp);
-	if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	offset += wrote;
-	left -= wrote;
-
-	wrote = snprintf(res + offset, left, JALDB_PROCESS_ID, rec->pid);
-	if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-		// bad calculation somewhere?
-		goto err_out;
-	}
-	offset += wrote;
-	left -= wrote;
 
 	if (rec->have_uid) {
-		wrote = snprintf(res + offset, left, JALDB_USER_W_UID_TAG, rec->username, rec->uid);
-		if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-			// bad calculation somewhere?
-			goto err_out;
+		if (UID_STR_MAX_LEN <= snprintf(uid_str, UID_STR_MAX_LEN, "%"PRIu64, rec->uid)) {
+			return JALDB_E_INVAL;
 		}
-		offset += wrote;
-		left -= wrote;
+	}
+
+	xmlDoc = xmlNewDoc((xmlChar *) "1.0");
+	root_node = xmlNewDocNode(xmlDoc, NULL, (xmlChar *) JALDB_RECORD_TAG, NULL);
+	xmlSetProp(root_node, (xmlChar *) "JID", (xmlChar *) uuid_str_with_prefix);
+
+	xmlNsPtr ns = xmlNewNs(root_node, (xmlChar *) JAL_SYS_META_NAMESPACE_URI, NULL);
+	xmlSetNs(root_node, ns);
+
+	xmlDocSetRootElement(xmlDoc, root_node);
+
+	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_DATA_TYPE_TAG, (xmlChar *) type_str);
+	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_RECORD_ID_TAG, (xmlChar *) uuid_str);
+	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_HOSTNAME_TAG, (xmlChar *) rec->hostname);
+	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_HOST_UUID_TAG, (xmlChar *) host_uuid_str);
+	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_TIMESTAMP_TAG, (xmlChar *) rec->timestamp);
+	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_PROCESS_ID_TAG, (xmlChar *) pid_str);
+	xmlNodePtr user_node = xmlNewChild(root_node, NULL, (xmlChar *) JALDB_USER_TAG, NULL);
+	xmlSetProp(user_node, (xmlChar *) "name", (xmlChar *) rec->username); 
+
+	if (rec->have_uid) {
+		xmlNodeSetContent(user_node, (xmlChar *) uid_str);
 	} else {
-		wrote = snprintf(res + offset, left, JALDB_USER_TAG, rec->username);
-		if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-			// bad calculation somewhere?
-			goto err_out;
-		}
-		offset += wrote;
-		left -= wrote;
+		// TODO
+		ns = xmlNewNs(user_node, (xmlChar *) JALDB_XSI_NS, "xsi");
+		xmlNewNsProp(user_node, ns, (xmlChar *) "nil", (xmlChar *) "true");
 	}
+
 	if (rec->sec_lbl) {
-		wrote = snprintf(res + offset, left, JALDB_SEC_LABEL_TAG, rec->sec_lbl);
-		if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-			// bad calculation somewhere?
-			goto err_out;
-		}
-		offset += wrote;
-		left -= wrote;
+		xmlNewChild(root_node, NULL, (xmlChar *) JALDB_SEC_LABEL_TAG, (xmlChar *) rec->sec_lbl);
 	}
-	wrote = snprintf(res + offset, left, JALDB_RECORD_END);
-	if ((-1 == wrote) || (wrote > left) || (offset + wrote > bsize)) {
-		// bad calculation somewhere?
-		goto err_out;
+
+	ret = jal_xml_output(xmlDoc, &res, dsize);
+	if (ret != JAL_OK) {
+		free(res);
+		return ret;
 	}
-	offset += wrote;
-	left -= wrote;
-	if (left != 1) {
-		goto err_out;
-	}
-	*doc = res;
-	*dsize = bsize - 1; // Report the string length, not buffer length.
-	ret = JALDB_OK;
-	goto out;
-err_out:
-	ret = JALDB_E_UNKNOWN;
-	free(res);
-out:
+	*doc = (char *) res;
 	return ret;
 }
 

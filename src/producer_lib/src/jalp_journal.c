@@ -106,7 +106,8 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 				goto out;
 			}
 		}
-		status = jal_xml_output(doc, &buffer);
+		size_t tmp = 0;
+		status = jal_xml_output(doc, &buffer, &tmp);
 		if (status != JAL_OK) {
 			goto out;
 		}

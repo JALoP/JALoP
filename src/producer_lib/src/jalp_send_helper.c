@@ -102,7 +102,8 @@ enum jal_status jalp_send_buffer_xml(jalp_context *ctx,
 				goto out;
 			}
 		}
-		status = jal_xml_output(doc, &xml_mem_buffer);
+		size_t tmp = 0;
+		status = jal_xml_output(doc, &xml_mem_buffer, &tmp);
 		if (status != JAL_OK) {
 			goto out;
 		}
