@@ -30,8 +30,11 @@
 #ifndef _JALDB_RECORD_XML_H_
 #define _JALDB_RECORD_XML_H_
 
+#include <openssl/pem.h>
+
 #include "jaldb_status.h"
 #include <jalop/jal_status.h>
+#include <jalop/jal_digest.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,6 +49,12 @@ struct jaldb_record;
  * buffer, not including the NULL terminator.
  *
  * @param [in] rec The record to create the document for.
+ * @param [in] signing_key The key to sign the document with. If NULL, the
+ * document will be left unsigned
+ * @param [in] app_meta_dgst The digest of the application metadata. If NULL
+ * the manifest will not include this digest.
+ * @param [in] payload_dgst The digest of the payload. If NULL the manifest
+ * will not include this digest.
  * @param [out] doc Upon successful return, this will be assigned to a memory
  * buffer that contains the XML document.
  * @param [out] dsize Upon successful return, this will be the size of the
@@ -54,6 +63,9 @@ struct jaldb_record;
  * @return JALDB_OK on success, or an error code.
  */
 enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
+		RSA *signing_key,
+		uint8_t *app_meta_dgst,
+		uint8_t *payload_dgst,
 		char **doc,
 		size_t *dsize);
 

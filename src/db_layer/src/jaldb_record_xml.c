@@ -65,7 +65,7 @@
 #define PID_STR_MAX_LEN 10
 #define UID_STR_MAX_LEN 22
 
-enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, char **doc, size_t *dsize)
+enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, RSA* signing_key, uint8_t *app_meta_dgst, uint8_t *payload_dgst, char **doc, size_t *dsize)
 {
 	enum jaldb_status ret;
 	char uuid_str[UUID_STR_LEN];
@@ -123,25 +123,39 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, 
 
 	xmlDocSetRootElement(xmlDoc, root_node);
 
+	xmlAttrPtr attr = xmlHasProp(root_node, (xmlChar *)"JID");
+	if (!attr || !attr->children) {
+		return JALDB_E_INVAL;
+	}
+	xmlAddID(NULL, xmlDoc, (xmlChar *)uuid_str_with_prefix, attr);
+
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_DATA_TYPE_TAG, (xmlChar *) type_str);
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_RECORD_ID_TAG, (xmlChar *) uuid_str);
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_HOSTNAME_TAG, (xmlChar *) rec->hostname);
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_HOST_UUID_TAG, (xmlChar *) host_uuid_str);
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_TIMESTAMP_TAG, (xmlChar *) rec->timestamp);
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_PROCESS_ID_TAG, (xmlChar *) pid_str);
-	xmlNodePtr user_node = xmlNewChild(root_node, NULL, (xmlChar *) JALDB_USER_TAG, NULL);
-	xmlSetProp(user_node, (xmlChar *) "name", (xmlChar *) rec->username); 
+	xmlNodePtr last_node = xmlNewChild(root_node, NULL, (xmlChar *) JALDB_USER_TAG, NULL);
+	xmlSetProp(last_node, (xmlChar *) "name", (xmlChar *) rec->username); 
 
 	if (rec->have_uid) {
-		xmlNodeSetContent(user_node, (xmlChar *) uid_str);
+		xmlNodeSetContent(last_node, (xmlChar *) uid_str);
 	} else {
 		// TODO
-		ns = xmlNewNs(user_node, (xmlChar *) JALDB_XSI_NS, "xsi");
-		xmlNewNsProp(user_node, ns, (xmlChar *) "nil", (xmlChar *) "true");
+		ns = xmlNewNs(last_node, (xmlChar *) JALDB_XSI_NS, (xmlChar*) "xsi");
+		xmlNewNsProp(last_node, ns, (xmlChar *) "nil", (xmlChar *) "true");
 	}
 
 	if (rec->sec_lbl) {
-		xmlNewChild(root_node, NULL, (xmlChar *) JALDB_SEC_LABEL_TAG, (xmlChar *) rec->sec_lbl);
+		last_node = xmlNewChild(root_node, NULL, (xmlChar *) JALDB_SEC_LABEL_TAG, (xmlChar *) rec->sec_lbl);
+	}
+
+	if (signing_key) {
+		ret = jal_add_signature_block(signing_key, NULL, xmlDoc, NULL, uuid_str_with_prefix);
+		if (ret != JAL_OK) {
+			free(res);
+			return ret;
+		}
 	}
 
 	ret = jal_xml_output(xmlDoc, &res, dsize);

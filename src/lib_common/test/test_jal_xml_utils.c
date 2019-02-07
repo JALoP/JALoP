@@ -43,6 +43,7 @@
 #include <xmlsec/openssl/evp.h>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
+#include <openssl/pem.h>
 
 #include "jal_xml_utils.h"
 #include "jal_alloc.h"

@@ -47,6 +47,9 @@
 struct jaldb_record rec;
 struct jaldb_segment app_meta;
 struct jaldb_segment payload;
+RSA *key;
+
+#define TEST_RSA_KEY  TEST_INPUT_ROOT "rsa_key"
 
 #define HOSTNAME "some.host.name.com"
 #define SOURCE "localhost"
@@ -61,6 +64,7 @@ struct jaldb_segment payload;
 #define GOOD_SYS_META "./test-input/system-metadata.xml"
 #define GOOD_SYS_META_CDATA "./test-input/system-metadata-with-cdata.xml"
 #define MALFORMED_SYS_META "./test-input/system-metadata-malformed.xml"
+#define SIGNATURE "tOpBqUbWFLwxN/IEQVv3VOkzGnuNywqZE1F1ahnbO6SE3hNkeEGofQd9xxcj+uy8\nLOh4FIh0WHpZx8Wz5y29TA=="
 
 void setup()
 {
@@ -79,6 +83,16 @@ void setup()
 	rec.payload = jaldb_create_segment();
 	assert_equals(0, uuid_parse(REC_UUID, rec.uuid));
 	assert_equals(0, uuid_parse(HOST_UUID, rec.host_uuid));
+
+	SSL_library_init();
+	xmlSecInit();
+
+	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
+
+	xmlSecCryptoAppInit(NULL);
+	xmlSecCryptoInit();
+
+	key = NULL;
 }
 
 void teardown()
@@ -87,13 +101,13 @@ void teardown()
 	xmlCleanupParser();
 }
 
-#define VERIFY_DOC(rtype, have_sec_lbl, have_uid) \
+#define VERIFY_DOC(rtype, have_sec_lbl, have_uid, have_sig) \
 do { \
 	enum jaldb_status ret; \
 	char* dbuf = NULL; \
 	size_t dbufsz = 0; \
 	xmlDocPtr doc; \
-	ret = jaldb_record_to_system_metadata_doc(&rec, &dbuf, &dbufsz); \
+	ret = jaldb_record_to_system_metadata_doc(&rec, key, NULL, NULL, &dbuf, &dbufsz); \
 	assert_equals(JALDB_OK, ret); \
 	assert_not_equals((void*) NULL, dbuf); \
 	assert_not_equals(0, dbufsz); \
@@ -166,6 +180,12 @@ do { \
 	assert_equals(XPATH_BOOLEAN, obj->type); \
 	assert_equals(have_sec_lbl, obj->boolval); \
 	xmlXPathFreeObject(obj); \
+\
+	obj = xmlXPathEvalExpression(BAD_CAST "//j:JALRecord/d:Signature/d:SignatureValue='"SIGNATURE"'", ctx); \
+	assert_not_equals((void*)NULL, obj); \
+	assert_equals(XPATH_BOOLEAN, obj->type); \
+	assert_equals(have_sig, obj->boolval); \
+	xmlXPathFreeObject(obj); \
 	xmlXPathFreeContext(ctx); \
 	xmlFreeDoc(doc); \
 	free(dbuf); \
@@ -176,7 +196,7 @@ void test_to_system_works_for_journal()
 
 	rec.type = JALDB_RTYPE_JOURNAL;
 
-	VERIFY_DOC(journal, 1, 1);
+	VERIFY_DOC(journal, 1, 1, 0);
 }
 
 void test_to_system_works_for_audit()
@@ -184,7 +204,7 @@ void test_to_system_works_for_audit()
 
 	rec.type = JALDB_RTYPE_AUDIT;
 
-	VERIFY_DOC(audit, 1, 1);
+	VERIFY_DOC(audit, 1, 1, 0);
 }
 
 void test_to_system_works_for_log()
@@ -192,7 +212,7 @@ void test_to_system_works_for_log()
 
 	rec.type = JALDB_RTYPE_LOG;
 
-	VERIFY_DOC(log, 1, 1);
+	VERIFY_DOC(log, 1, 1, 0);
 }
 
 void test_to_system_works_without_sec_label()
@@ -200,7 +220,7 @@ void test_to_system_works_without_sec_label()
 	rec.type = JALDB_RTYPE_LOG;
 	rec.sec_lbl = NULL;
 
-	VERIFY_DOC(log, 0, 1);
+	VERIFY_DOC(log, 0, 1, 0);
 }
 
 void test_to_system_works_without_uid()
@@ -209,7 +229,19 @@ void test_to_system_works_without_uid()
 	rec.type = JALDB_RTYPE_LOG;
 	rec.have_uid = 0;
 
-	VERIFY_DOC(log, 1, 0);
+	VERIFY_DOC(log, 1, 0, 0);
+}
+
+void test_to_system_works_with_signing_key()
+{
+	rec.type = JALDB_RTYPE_LOG;
+
+	FILE *fp = fopen(TEST_RSA_KEY, "r");
+	assert_not_equals(NULL, fp);
+	key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+	fclose(fp);
+
+	VERIFY_DOC(log, 1, 1, 1);
 }
 
 void test_to_system_fails_with_bad_input()
@@ -218,20 +250,20 @@ void test_to_system_fails_with_bad_input()
 	char* dbuf = NULL;
 	size_t dbufsz = 0;
 
-	ret = jaldb_record_to_system_metadata_doc(NULL, &dbuf, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(NULL, NULL, NULL, NULL, &dbuf, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, NULL, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_record_to_system_metadata_doc(&rec, &dbuf, NULL);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, &dbuf, NULL);
 	assert_not_equals(JALDB_OK, ret);
 
 	dbuf = (void*) 0xdeadbeef;
-	ret = jaldb_record_to_system_metadata_doc(&rec, &dbuf, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, &dbuf, &dbufsz);
 	dbuf = NULL;
 	assert_not_equals(JALDB_OK, ret);
 
 	rec.type = JALDB_RTYPE_UNKNOWN;
-	ret = jaldb_record_to_system_metadata_doc(&rec, &dbuf, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, &dbuf, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
 }
 

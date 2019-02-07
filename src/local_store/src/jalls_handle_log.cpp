@@ -40,6 +40,7 @@
 
 #include "jaldb_context.hpp"
 #include "jaldb_record.h"
+#include "jaldb_record_xml.h"
 #include "jaldb_segment.h"
 #include "jaldb_utils.h"
 
@@ -145,6 +146,15 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		rec->payload->payload = data_buf;
 		rec->payload->on_disk = 0;
 		data_buf = NULL;
+	}
+
+	rec->sys_meta = jaldb_create_segment();
+	db_err = jaldb_record_to_system_metadata_doc(rec, thread_ctx->signing_key, NULL, NULL, (char **) &(rec->sys_meta->payload), &(rec->sys_meta->length));
+	if (JALDB_OK != db_err) {
+		if (debug) {
+			fprintf(stderr, "Failed to generate system metadata for record\n");
+		}
+		goto out;
 	}
 
 	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
