@@ -132,6 +132,31 @@ int jal_digest_ctx_is_valid(const struct jal_digest_ctx *ctx);
  */
 struct jal_digest_ctx *jal_sha256_ctx_create();
 
+/**
+ * Create a digest from a byte buffer
+ *
+ * @param[in] digest_ctx The application supplied jal_digest_ctx to use.
+ * @param[in] data A buffer containing bytes to feed into the digest context.
+ * @param[in] len The size of the buffer.
+ * @param[out] digest A pointer to hold the created digest. Should point to NULL.
+ *
+ * @returns JAL_OK on success.
+*/
+enum jal_status jal_digest_buffer(struct jal_digest_ctx *digest_ctx,
+		const uint8_t *data, size_t len, uint8_t **digest);
+
+/**
+ * Create a digest from an open file descriptor
+ *
+ * @param[in] digest_ctx The application supplied jal_digest_ctx to use.
+ * @param[in] fd An open file descriptor to feed into the digest context.
+ * @param[out] digest A pointer to hold the created digest. Should point to NULL.
+ *
+ * @returns JAL_OK on success.
+*/
+enum jal_status jal_digest_fd(struct jal_digest_ctx *digest_ctx,
+		int fd, uint8_t **digest);
+
 #ifdef __cplusplus
 }
 #endif

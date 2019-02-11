@@ -31,7 +31,6 @@ journalMetaObj = producer_env.SharedObject(os.path.join('..', 'src', 'jalp_journ
 loggerMetaObj = producer_env.SharedObject(os.path.join('..', 'src', 'jalp_logger_metadata.c'))
 contextObj = producer_env.SharedObject(os.path.join('..', 'src', 'jalp_context.c'))
 contextCryptoObj = producer_env.SharedObject(os.path.join('..', 'src', 'jalp_context_crypto.c'))
-digestObj = producer_env.SharedObject(os.path.join('..', 'src', 'jalp_digest.c'))
 
 paramXmlObj = producer_env.SharedObject(os.path.join('..', 'src', 'jalp_param_xml.c'))
 structDataXmlObj = producer_env.SharedObject(os.path.join('..', 'src', 'jalp_structured_data_xml.c'))
@@ -78,8 +77,6 @@ tests.append(env.TestDeptTest('test_jalp_app_metadata.c',
 	logSeverityObj, stackFrameObj, paramObj, fileInfoObj, transformObj, contentTypeObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jalp_context_crypto.c',
 	other_sources=[lib_common, jalopInitObj, contextObj])[0].abspath)
-tests.append(env.TestDeptTest('test_jalp_digest.c',
-	other_sources=[lib_common], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jalp_digest_audit_xml.c',
 	other_sources=[lib_common, jalopInitObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jalp_digest_audit_xml.c',
@@ -109,8 +106,7 @@ tests.append(env.TestDeptTest('test_jalp_journal.c',
 		loggerMetaObj, loggerMetaXmlObj,
 		logSeverityObj, sendHelperObj, severityXmlObj,
 		stackFrameObj, stackFrameXmlObj,
-		appMetaObj, appMetaXmlObj,
-		digestObj])[0].abspath)
+		appMetaObj, appMetaXmlObj])[0].abspath)
 
 tests.append(env.TestDeptTest('test_jalp_param_xml.c',
 	other_sources=[paramObj, jalopInitObj, test_utils, lib_common])[0].abspath)

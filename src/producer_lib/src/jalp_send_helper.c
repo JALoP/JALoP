@@ -32,7 +32,6 @@
 
 #include "jal_xml_utils.h"
 #include "jalp_app_metadata_xml.h"
-#include "jalp_digest_internal.h"
 #include "jalp_send_helper_internal.h"
 
 #define JALP_XML_MANIFEST "Manifest"
@@ -71,7 +70,7 @@ enum jal_status jalp_send_buffer_xml(jalp_context *ctx,
 		xmlDocSetRootElement(doc, app_meta_elem);
 
 		if (ctx->digest_ctx) {
-			status = jalp_digest_buffer(ctx->digest_ctx,
+			status = jal_digest_buffer(ctx->digest_ctx,
 					buffer, bsize,
 					&digest);
 			if (status != JAL_OK) {

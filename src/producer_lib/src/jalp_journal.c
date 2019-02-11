@@ -31,11 +31,11 @@
 #include <jalop/jalp_app_metadata.h>
 #include <jalop/jal_namespaces.h>
 #include <jalop/jalp_journal.h>
+#include <jalop/jal_digest.h>
 #include "jalp_context_internal.h"
 #include "jalp_connection_internal.h"
 #include "jalp_app_metadata_xml.h"
 #include "jal_xml_utils.h"
-#include "jalp_digest_internal.h"
 #include "jalp_send_helper_internal.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -77,7 +77,7 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 		}
 		xmlDocSetRootElement(doc, app_meta_elem);
 		if (ctx->digest_ctx) {
-			status = jalp_digest_fd(ctx->digest_ctx, fd, &digest);
+			status = jal_digest_fd(ctx->digest_ctx, fd, &digest);
 			if (status != JAL_OK) {
 				goto out;
 			}

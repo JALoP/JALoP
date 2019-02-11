@@ -1,2 +1,0 @@
-jalp_digest_fd_test_dept_proxy jalp_digest_fd
-jalp_digest_buffer_test_dept_proxy jalp_digest_buffer

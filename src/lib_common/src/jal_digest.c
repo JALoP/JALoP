@@ -27,10 +27,14 @@
  * limitations under the License.
  */
 
+#include <unistd.h>
+#include <errno.h>
 #include <openssl/sha.h>
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
 #include "jal_alloc.h"
+
+#define DIGEST_BUF_SIZE 8192
 
 static const char* JAL_SHA256_ALGORITHM_URI = "http://www.w3.org/2001/04/xmlenc#sha256";
 
@@ -119,4 +123,114 @@ int jal_digest_ctx_is_valid(const struct jal_digest_ctx *ctx)
 {
 	return ctx && ctx->len > 0 && ctx->create && ctx->init && ctx->update &&
 		ctx->final && ctx->destroy && ctx->algorithm_uri;
+}
+
+enum jal_status jal_digest_buffer(struct jal_digest_ctx *digest_ctx,
+		const uint8_t *data, size_t len, uint8_t **digest)
+{
+	if(!data || !digest || *digest) {
+		return JAL_E_INVAL;
+	}
+
+	if (!jal_digest_ctx_is_valid(digest_ctx)) {
+		return JAL_E_INVAL;
+	}
+
+	void *instance = digest_ctx->create();
+	if(!instance) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	*digest = jal_malloc(digest_ctx->len);
+
+	enum jal_status ret = JAL_E_INVAL;
+	ret = digest_ctx->init(instance);
+	if(ret != JAL_OK) {
+		goto err_out;
+	}
+
+	ret = digest_ctx->update(instance, data, len);
+	if(ret != JAL_OK) {
+		goto err_out;
+	}
+
+	size_t digest_length = digest_ctx->len;
+	ret = digest_ctx->final(instance, *digest, &digest_length);
+	if(ret != JAL_OK) {
+		goto err_out;
+	}
+
+	digest_ctx->destroy(instance);
+	return JAL_OK;
+
+err_out:
+	digest_ctx->destroy(instance);
+	free(*digest);
+	*digest = NULL;
+	return ret;
+
+}
+
+enum jal_status jal_digest_fd(struct jal_digest_ctx *digest_ctx,
+                int fd, uint8_t **digest)
+{
+	if(!digest || *digest || fd < 0) {
+		return JAL_E_INVAL;
+	}
+
+	if(!jal_digest_ctx_is_valid(digest_ctx)) {
+		return JAL_E_INVAL;
+	}
+
+	enum jal_status ret;
+	*digest = jal_malloc(digest_ctx->len);
+
+	void *instance = digest_ctx->create();
+	if (!instance) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+
+	void *buf = jal_malloc(DIGEST_BUF_SIZE);
+
+	ret = digest_ctx->init(instance);
+	if(ret != JAL_OK) {
+		goto err_out;
+	}
+
+
+	int bytes_read;
+	int seek_ret = lseek(fd, 0, SEEK_SET);
+	if (seek_ret == -1) {
+		ret = JAL_E_FILE_IO;
+		goto err_out;
+	}
+
+
+	while ((bytes_read = read(fd, buf, DIGEST_BUF_SIZE)) > 0) {
+		ret = digest_ctx->update(instance, buf, bytes_read);
+		if(ret != JAL_OK) {
+			goto err_out;
+		}
+	}
+	if (bytes_read == -1) {
+		ret = JAL_E_FILE_IO;
+		goto err_out;
+	}
+
+	size_t digest_length = digest_ctx->len;
+	ret = digest_ctx->final(instance, *digest, &digest_length);
+	if(ret != JAL_OK) {
+		goto err_out;
+	}
+
+	free(buf);
+	digest_ctx->destroy(instance);
+	return JAL_OK;
+
+err_out:
+	free(buf);
+	digest_ctx->destroy(instance);
+	free(*digest);
+	*digest = NULL;
+	return ret;
+
 }
