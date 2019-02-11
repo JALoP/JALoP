@@ -8,6 +8,8 @@ env.MergeFlags(env['libconfig_cflags'])
 env.MergeFlags(env['libconfig_ldflags'])
 env.MergeFlags(env['openssl_cflags'])
 env.MergeFlags(env['openssl_ldflags'])
+env.MergeFlags(env['xmlsec1_cflags'])
+env.MergeFlags(env['xmlsec1_ldflags'])
 env.MergeFlags({'CXXFLAGS':['-D__STDC_FORMAT_MACROS']})
 env.MergeFlags({'CPPPATH':['#src/jal_utils/src', '#src/db_layer/src',
 	'#src/lib_common/include', '#src/lib_common/src', '#src/producer_lib/include', '.']})

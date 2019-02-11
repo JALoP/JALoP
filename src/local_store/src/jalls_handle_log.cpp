@@ -148,8 +148,20 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		data_buf = NULL;
 	}
 
+	// Needed to generate system metadata
+	rec->source = jal_strdup("localhost");
+
+	digest_ctx = jal_sha256_ctx_create();
+	err = jal_digest_buffer(digest_ctx, rec->payload->payload, rec->payload->length, &digest);
+	if (JAL_OK != err) {
+		if (debug) {
+			fprintf(stderr, "Failed to calculate digest for record payload\n");
+		}
+		goto out;
+	}
+
 	rec->sys_meta = jaldb_create_segment();
-	db_err = jaldb_record_to_system_metadata_doc(rec, thread_ctx->signing_key, NULL, NULL, (char **) &(rec->sys_meta->payload), &(rec->sys_meta->length));
+	db_err = jaldb_record_to_system_metadata_doc(rec, thread_ctx->signing_key, NULL, 0, NULL, digest, digest_ctx->len, digest_ctx->algorithm_uri, (char **) &(rec->sys_meta->payload), &(rec->sys_meta->length));
 	if (JALDB_OK != db_err) {
 		if (debug) {
 			fprintf(stderr, "Failed to generate system metadata for record\n");

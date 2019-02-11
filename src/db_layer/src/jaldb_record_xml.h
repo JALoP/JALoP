@@ -64,8 +64,8 @@ struct jaldb_record;
  */
 enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		RSA *signing_key,
-		uint8_t *app_meta_dgst,
-		uint8_t *payload_dgst,
+		uint8_t *app_meta_dgst, size_t app_meta_dgst_len, const char *app_meta_algorithm_uri,
+		uint8_t *payload_dgst, size_t payload_dgst_len, const char *payload_algorithm_uri,
 		char **doc,
 		size_t *dsize);
 

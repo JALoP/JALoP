@@ -1425,7 +1425,7 @@ enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		rec->sys_meta = jaldb_create_segment();
 		char *doc = NULL;
 		size_t doc_len = 0;
-		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, NULL, &doc, &doc_len);
+		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &doc, &doc_len);
 		if (ret != JALDB_OK) {
 			goto out;
 		}
@@ -1533,7 +1533,7 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 		rec->sys_meta = jaldb_create_segment();
 		char *doc = NULL;
 		size_t doc_len = 0;
-		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, NULL, &doc, &doc_len);
+		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &doc, &doc_len);
 		if (ret != JALDB_OK) {
 			goto out;
 		}
@@ -1894,7 +1894,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 		rec->sys_meta = jaldb_create_segment();
 		char *doc = NULL;
 		size_t doc_len = 0;
-		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, NULL, &doc, &doc_len);
+		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &doc, &doc_len);
 		if (ret != JALDB_OK) {
 			goto out;
 		}
@@ -2075,7 +2075,7 @@ enum jaldb_status jaldb_next_chronological_record(
 		rec->sys_meta = jaldb_create_segment();
 		char *doc = NULL;
 		size_t doc_len = 0;
-		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, NULL, &doc, &doc_len);
+		ret = jaldb_record_to_system_metadata_doc(rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &doc, &doc_len);
 		if (ret != JALDB_OK) {
 			goto out;
 		}

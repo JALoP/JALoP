@@ -31,11 +31,20 @@
 
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
-
+#include <openssl/pem.h>
+#include <xmlsec/xmlsec.h>
+#include <xmlsec/crypto.h>
 
 int jalls_init()
 {
 	SSL_library_init();
+	xmlSecInit();
+	xmlSecCryptoDLLoadLibrary((xmlChar*) "openssl");
+
+	xmlSecCryptoAppInit(NULL);
+	xmlSecCryptoInit();
+
+
 	return 0;
 }
 

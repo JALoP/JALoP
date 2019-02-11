@@ -65,7 +65,11 @@
 #define PID_STR_MAX_LEN 10
 #define UID_STR_MAX_LEN 22
 
-enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, RSA* signing_key, uint8_t *app_meta_dgst, uint8_t *payload_dgst, char **doc, size_t *dsize)
+enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
+						RSA* signing_key,
+						uint8_t *app_meta_dgst, size_t app_meta_dgst_len, const char *app_meta_algorithm_uri,
+						uint8_t *payload_dgst, size_t payload_dgst_len, const char *payload_algorithm_uri,
+						char **doc, size_t *dsize)
 {
 	enum jaldb_status ret;
 	char uuid_str[UUID_STR_LEN];
@@ -150,8 +154,27 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec, 
 		last_node = xmlNewChild(root_node, NULL, (xmlChar *) JALDB_SEC_LABEL_TAG, (xmlChar *) rec->sec_lbl);
 	}
 
+	if (payload_dgst) {
+		xmlNodePtr reference_elem = NULL;
+		ret = jal_create_reference_elem(JAL_PAYLOAD_URI, payload_algorithm_uri, payload_dgst, payload_dgst_len, xmlDoc, &reference_elem);
+		if (ret != JAL_OK) {
+			free(res);
+			return ret;
+		}
+
+		xmlChar *namespace_uri = (xmlChar *)JAL_XMLDSIG_URI;
+		xmlNodePtr manifest = xmlNewDocNode(xmlDoc, NULL, (xmlChar *)"Manifest", NULL);
+		ns = xmlNewNs(manifest, namespace_uri, NULL);
+		xmlSetNs(manifest, ns);
+		xmlAddChild(root_node, manifest);
+		xmlAddChild(manifest, reference_elem);
+		last_node = manifest;
+	} else {
+		last_node = NULL;
+	} 
+
 	if (signing_key) {
-		ret = jal_add_signature_block(signing_key, NULL, xmlDoc, NULL, uuid_str_with_prefix);
+		ret = jal_add_signature_block(signing_key, NULL, xmlDoc, last_node, uuid_str_with_prefix);
 		if (ret != JAL_OK) {
 			free(res);
 			return ret;

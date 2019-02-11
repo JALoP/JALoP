@@ -107,7 +107,7 @@ do { \
 	char* dbuf = NULL; \
 	size_t dbufsz = 0; \
 	xmlDocPtr doc; \
-	ret = jaldb_record_to_system_metadata_doc(&rec, key, NULL, NULL, &dbuf, &dbufsz); \
+	ret = jaldb_record_to_system_metadata_doc(&rec, key, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz); \
 	assert_equals(JALDB_OK, ret); \
 	assert_not_equals((void*) NULL, dbuf); \
 	assert_not_equals(0, dbufsz); \
@@ -250,20 +250,20 @@ void test_to_system_fails_with_bad_input()
 	char* dbuf = NULL;
 	size_t dbufsz = 0;
 
-	ret = jaldb_record_to_system_metadata_doc(NULL, NULL, NULL, NULL, &dbuf, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(NULL, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, NULL, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, &dbuf, NULL);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, NULL);
 	assert_not_equals(JALDB_OK, ret);
 
 	dbuf = (void*) 0xdeadbeef;
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, &dbuf, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
 	dbuf = NULL;
 	assert_not_equals(JALDB_OK, ret);
 
 	rec.type = JALDB_RTYPE_UNKNOWN;
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, NULL, &dbuf, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
 }
 
