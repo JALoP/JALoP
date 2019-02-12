@@ -43,6 +43,8 @@
 #define JALLS_CFG_HOSTNAME "hostname"
 #define JALLS_CFG_DB_ROOT "db_root"
 #define JALLS_CFG_SOCKET "socket"
+#define JALLS_CFG_SIGNATURE "sign_sys_meta"
+#define JALLS_CFG_MANIFEST "manifest_sys_meta"
 #define JALLS_CFG_SCHEMAS_ROOT "schemas_root"
 
 /**

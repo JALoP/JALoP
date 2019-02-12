@@ -59,6 +59,8 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	char **schemas_root = &((*jalls_ctx)->schemas_root);
 	char **db_root = &((*jalls_ctx)->db_root);
 	char **socket = &((*jalls_ctx)->socket);
+	int *sign_sys_meta = &((*jalls_ctx)->sign_sys_meta);
+	int *manifest_sys_meta = &((*jalls_ctx)->manifest_sys_meta);
 
 	config_t jalls_config;
 	config_init(&jalls_config);
@@ -123,6 +125,10 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	if (-1 == ret) {
 		goto err_out;
 	}
+
+	config_setting_lookup_bool(root, JALLS_CFG_SIGNATURE, sign_sys_meta);
+
+	config_setting_lookup_bool(root, JALLS_CFG_MANIFEST, manifest_sys_meta);
 
 	if (*hostname == NULL) {
 		char name[_POSIX_HOST_NAME_MAX+1];

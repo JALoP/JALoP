@@ -48,6 +48,10 @@ extern "C" {
 /** JALoP payload URI string  */
 #define JAL_PAYLOAD_URI "jalop:payload"
 
+/** JALoP Application Metadata URI string  */
+#define JAL_APP_META_URI "jalop:application-metadata"
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -154,20 +154,34 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		last_node = xmlNewChild(root_node, NULL, (xmlChar *) JALDB_SEC_LABEL_TAG, (xmlChar *) rec->sec_lbl);
 	}
 
-	if (payload_dgst) {
-		xmlNodePtr reference_elem = NULL;
-		ret = jal_create_reference_elem(JAL_PAYLOAD_URI, payload_algorithm_uri, payload_dgst, payload_dgst_len, xmlDoc, &reference_elem);
-		if (ret != JAL_OK) {
-			free(res);
-			return ret;
-		}
-
-		xmlChar *namespace_uri = (xmlChar *)JAL_XMLDSIG_URI;
+	if (payload_dgst || app_meta_dgst) {
 		xmlNodePtr manifest = xmlNewDocNode(xmlDoc, NULL, (xmlChar *)"Manifest", NULL);
+		xmlChar *namespace_uri = (xmlChar *)JAL_XMLDSIG_URI;
 		ns = xmlNewNs(manifest, namespace_uri, NULL);
 		xmlSetNs(manifest, ns);
 		xmlAddChild(root_node, manifest);
-		xmlAddChild(manifest, reference_elem);
+
+		xmlNodePtr reference_elem = NULL;
+		if (payload_dgst) {
+			ret = jal_create_reference_elem(JAL_PAYLOAD_URI, payload_algorithm_uri, payload_dgst, payload_dgst_len, xmlDoc, &reference_elem);
+			if (ret != JAL_OK) {
+				free(res);
+				return ret;
+			}
+
+			xmlAddChild(manifest, reference_elem);
+		}
+		if (app_meta_dgst) {
+			reference_elem = NULL;
+			ret = jal_create_reference_elem(JAL_APP_META_URI, app_meta_algorithm_uri, app_meta_dgst, app_meta_dgst_len, xmlDoc, &reference_elem);
+			if (ret != JAL_OK) {
+				free(res);
+				return ret;
+			}
+
+			xmlAddChild(manifest, reference_elem);
+
+		}
 		last_node = manifest;
 	} else {
 		last_node = NULL;
