@@ -173,6 +173,11 @@ int jsub_insert_log(
 		goto out;
 	}
 
+	rec->sys_meta = jaldb_create_segment();
+	rec->sys_meta->length = sys_len;
+	rec->sys_meta->payload = (uint8_t *) jal_memdup((const char*) sys_meta, sys_len);
+	rec->sys_meta->on_disk = 0;
+
 	if (app_len) {
 		rec->app_meta = jaldb_create_segment();
 		rec->app_meta->length = app_len;
