@@ -276,6 +276,8 @@ void jaldb_start_element(void *user_data,
 	} else {
 		sp_user_data->ret = JALDB_E_INVAL;
 	}
+	free(sp_user_data->chars);
+	sp_user_data->chars = NULL;
 }
 
 static void handle_type(struct sax_parse_user_data *sp_user_data,
