@@ -82,7 +82,6 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	int app_meta_digest_len = 0;
 	char *app_meta_alg = NULL;
 
-
 	void *sha256_instance = NULL;
 
 	char *nonce = NULL;
@@ -230,7 +229,6 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	rec->payload->on_disk = 1;
 	rec->payload->fd = db_payload_fd;
 	db_payload_path = NULL;
-
 
 	// Needed to generate system metadata
 	rec->source = jal_strdup("localhost");
