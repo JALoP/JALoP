@@ -43,6 +43,7 @@
 #include "jalls_handle_audit.hpp"
 #include "jalls_handler.h"
 #include "jalls_record_utils.h"
+#include "jaldb_record_xml.h"
 
 extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint64_t data_len, uint64_t meta_len)
 {
@@ -59,6 +60,13 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	uint8_t *app_meta_buf = NULL;
 
 	enum jaldb_status db_err = JALDB_OK;
+	uint8_t *payload_digest = NULL;
+	int payload_digest_len = 0;
+	char *payload_alg = NULL;
+	uint8_t *app_meta_digest = NULL;
+	int app_meta_digest_len = 0;
+	char *app_meta_alg = NULL;
+
 	//get the payload audit
 
 	struct iovec iov[1];
@@ -79,6 +87,12 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 	uint8_t *digest = NULL;
 
 	char *nonce = NULL;
+
+	RSA *signing_key = NULL;
+
+	if (thread_ctx->ctx->sign_sys_meta) {
+		signing_key = thread_ctx->signing_key;
+	}
 
 	bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 	if (bytes_received < 0) {
@@ -144,6 +158,56 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		rec->payload->on_disk = 0;
 		data_buf = NULL;
 	}
+
+	// Needed to generate system metadata
+	rec->source = jal_strdup("localhost");
+
+	if (thread_ctx->ctx->manifest_sys_meta) {
+		digest_ctx = jal_sha256_ctx_create();
+		if (rec->payload) {
+			err = jal_digest_buffer(digest_ctx, rec->payload->payload, rec->payload->length, &payload_digest);
+			if (JAL_OK != err) {
+				if (debug) {
+					fprintf(stderr, "Failed to calculate digest for record payload\n");
+				}
+				goto err_out;
+			}
+			payload_digest_len = digest_ctx->len;
+			payload_alg = jal_strdup(digest_ctx->algorithm_uri); 
+		}
+
+		if (rec->app_meta) {
+			err = jal_digest_buffer(digest_ctx, rec->app_meta->payload, rec->app_meta->length, &app_meta_digest);
+			if (JAL_OK != err) {
+				if (debug) {
+					fprintf(stderr, "Failed to calculate digest for record Application Metadata\n");
+				}
+				goto err_out;
+			}
+			app_meta_digest_len = digest_ctx->len;
+			app_meta_alg = jal_strdup(digest_ctx->algorithm_uri); 
+		}
+
+	}
+
+	rec->sys_meta = jaldb_create_segment();
+	db_err = jaldb_record_to_system_metadata_doc(rec,
+						signing_key,
+						app_meta_digest,
+						app_meta_digest_len,
+						app_meta_alg,
+						payload_digest,
+						payload_digest_len,
+						payload_alg,
+						(char **) &(rec->sys_meta->payload),
+						&(rec->sys_meta->length));
+	if (JALDB_OK != db_err) {
+		if (debug) {
+			fprintf(stderr, "Failed to generate system metadata for record\n");
+		}
+		goto err_out;
+	}
+
 
 	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
 	free(nonce);
