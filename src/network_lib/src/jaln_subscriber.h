@@ -100,7 +100,7 @@ void jaln_subscriber_unexpected_frame_handler(
  */
 void jaln_subscriber_record_frame_handler(jaln_session *session,
 		VortexChannel *chan,
-		__attribute__((unused)) VortexConnection *v_conn,
+		VortexConnection *v_conn,
 		VortexFrame *frame);
 
 /**

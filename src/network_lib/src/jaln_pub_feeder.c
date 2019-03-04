@@ -321,7 +321,7 @@ out:
 	return ret;
 }
 
-void jaln_pub_feeder_on_finished(__attribute__((unused)) VortexChannel *chan,
+void jaln_pub_feeder_on_finished(VortexChannel *chan,
 		__attribute__((unused)) VortexPayloadFeeder *feeder,
 		axlPointer user_data)
 {

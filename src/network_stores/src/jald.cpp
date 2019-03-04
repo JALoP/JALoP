@@ -257,8 +257,8 @@ enum jal_status pub_on_journal_resume(
 		const struct jaln_channel_info *ch_info,
 		struct jaln_record_info *record_info,
 		__attribute__((unused)) uint64_t offset,
-		__attribute__((unused)) uint8_t **system_metadata_buffer,
-		__attribute__((unused)) uint8_t **application_metadata_buffer,
+		uint8_t **system_metadata_buffer,
+		uint8_t **application_metadata_buffer,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
@@ -755,7 +755,7 @@ void *pub_send_log(void *args)
 }
 
 enum jal_status pub_on_subscribe(
-		__attribute__((unused)) jaln_session *sess,
+		jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		enum jaln_publish_mode mode,
@@ -861,7 +861,7 @@ enum jal_status pub_on_subscribe(
 enum jal_status pub_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
+		enum jaln_record_type type,
 		char *nonce,
 		__attribute__((unused)) void *user_data)
 {
@@ -949,9 +949,9 @@ void pub_notify_digest(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) const char *nonce,
-		__attribute__((unused)) const uint8_t *digest,
-		__attribute__((unused)) const uint32_t size,
+		const char *nonce,
+		const uint8_t *digest,
+		const uint32_t size,
 		__attribute__((unused)) void *user_data)
 {
 	char *b64 = jal_base64_enc(digest, size);
@@ -961,9 +961,9 @@ void pub_notify_digest(
 
 void pub_peer_digest(
 		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		__attribute__((unused)) const char *nonce,
+		const char *nonce,
 		const uint8_t *local_digest,
 		const uint32_t local_size,
 		const uint8_t *peer_digest,

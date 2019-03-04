@@ -238,13 +238,13 @@ out:
 
 enum jal_status jaln_send_journal(
 			jaln_session *sess,
-			__attribute__((unused)) char *nonce,
-			__attribute__((unused)) uint8_t *sys_meta_buf,
-			__attribute__((unused)) uint64_t sys_meta_len, 
-			__attribute__((unused)) uint8_t *app_meta_buf,
-			__attribute__((unused)) uint64_t app_meta_len,
-			__attribute__((unused)) uint64_t payload_len,
-			__attribute__((unused)) struct jaln_payload_feeder *feeder)
+			char *nonce,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len,
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint64_t payload_len,
+			struct jaln_payload_feeder *feeder)
 {
 	if (NULL == sess || NULL == sess->ch_info || JALN_RTYPE_JOURNAL != sess->ch_info->type) {
 		return JAL_E_INVAL_PARAM;
@@ -264,13 +264,13 @@ enum jal_status jaln_send_journal(
 
 enum jal_status jaln_send_audit(
 			jaln_session *sess,
-			__attribute__((unused)) char *nonce,
-			__attribute__((unused)) uint8_t *sys_meta_buf,
-			__attribute__((unused)) uint64_t sys_meta_len, 
-			__attribute__((unused)) uint8_t *app_meta_buf,
-			__attribute__((unused)) uint64_t app_meta_len,
-			__attribute__((unused)) uint8_t *payload_buf,
-			__attribute__((unused)) uint64_t payload_len)
+			char *nonce,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len,
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint8_t *payload_buf,
+			uint64_t payload_len)
 {
 	if (NULL == sess || NULL == sess->ch_info || JALN_RTYPE_AUDIT != sess->ch_info->type) {
 		return JAL_E_INVAL_PARAM;
@@ -288,13 +288,13 @@ enum jal_status jaln_send_audit(
 
 enum jal_status jaln_send_log(
 			jaln_session *sess,
-			__attribute__((unused)) char *nonce,
-			__attribute__((unused)) uint8_t *sys_meta_buf,
-			__attribute__((unused)) uint64_t sys_meta_len, 
-			__attribute__((unused)) uint8_t *app_meta_buf,
-			__attribute__((unused)) uint64_t app_meta_len,
-			__attribute__((unused)) uint8_t *payload_buf,
-			__attribute__((unused)) uint64_t payload_len)
+			char *nonce,
+			uint8_t *sys_meta_buf,
+			uint64_t sys_meta_len,
+			uint8_t *app_meta_buf,
+			uint64_t app_meta_len,
+			uint8_t *payload_buf,
+			uint64_t payload_len)
 {
 	if (NULL == sess || NULL == sess->ch_info || JALN_RTYPE_LOG != sess->ch_info->type) {
 		return JAL_E_INVAL_PARAM;

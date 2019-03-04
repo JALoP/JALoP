@@ -508,8 +508,8 @@ struct jaln_connection *jaln_publish(
 	return jconn;
 }
 
-void jaln_publisher_init_reply_frame_handler(__attribute__((unused)) VortexChannel *chan,
-		__attribute__((unused)) VortexConnection *conn,
+void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
+		VortexConnection *conn,
 		VortexFrame *frame,
 		void *user_data)
 {

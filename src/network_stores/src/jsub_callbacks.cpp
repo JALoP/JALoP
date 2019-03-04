@@ -82,9 +82,9 @@ static char *db_payload_path = NULL;
 static int db_payload_fd = -1;
 
 enum jaln_connect_error jsub_connect_request_handler(
-		__attribute__((unused)) const struct jaln_connect_request *req,
-		__attribute__((unused)) int *selected_encoding,
-		__attribute__((unused)) int *selected_digest,
+		const struct jaln_connect_request *req,
+		int *selected_encoding,
+		int *selected_digest,
 		__attribute__((unused)) void *user_data)
 {
 	// Nothing to do here
@@ -106,7 +106,7 @@ void jsub_on_channel_close(
 }
 
 void jsub_on_connection_close(
-		__attribute__((unused)) const struct jaln_connection *jal_conn,
+		const struct jaln_connection *jal_conn,
 		__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
@@ -117,7 +117,7 @@ void jsub_on_connection_close(
 }
 
 void jsub_connect_ack(
-	__attribute__((unused)) const struct jaln_connect_ack *ack,
+	const struct jaln_connect_ack *ack,
 	__attribute__((unused)) void *user_data)
 {
 	// Nothing to do here
@@ -134,7 +134,7 @@ void jsub_connect_ack(
 }
 
 void jsub_connect_nack(
-	__attribute__((unused)) const struct jaln_connect_nack *nack,
+	const struct jaln_connect_nack *nack,
 	__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
@@ -216,15 +216,15 @@ int jsub_get_subscribe_request(
 
 int jsub_on_record_info(
 		__attribute__((unused)) jaln_session *session,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		__attribute__((unused)) const struct jaln_record_info *record_info,
-		__attribute__((unused)) const struct jaln_mime_header *headers,
+		const struct jaln_record_info *record_info,
+		const struct jaln_mime_header *headers,
 		const uint8_t *system_metadata_buffer,
 		const uint32_t system_metadata_size,
 		const uint8_t *application_metadata_buffer,
 		const uint32_t application_metadata_size,
-		__attribute__((unused)) void *user_data)
+		void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ON_RECORD INFO");
@@ -268,7 +268,7 @@ int jsub_on_audit(
 		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
-		__attribute__((unused)) void *user_data)
+		void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ON_AUDIT");
@@ -288,7 +288,7 @@ int jsub_on_log(
 		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
-		__attribute__((unused)) void *user_data)
+		void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ON_LOG");
@@ -311,7 +311,7 @@ int jsub_on_journal(
 		const uint32_t cnt,
 		__attribute__((unused)) const uint64_t offset,
 		const int more,
-		__attribute__((unused)) void *user_data)
+		void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ON_JOURNAL");
@@ -373,12 +373,12 @@ int jsub_on_journal(
 
 int jsub_notify_digest(
 		__attribute__((unused)) jaln_session *session,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) char *nonce,
-		__attribute__((unused)) const uint8_t *digest,
-		__attribute__((unused)) const uint32_t len,
-		__attribute__((unused)) const void *user_data)
+		const struct jaln_channel_info *ch_info,
+		 enum jaln_record_type type,
+		char *nonce,
+		const uint8_t *digest,
+		const uint32_t len,
+		const void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("NOTIFY_DIGEST");
@@ -397,8 +397,8 @@ int jsub_on_digest_response(
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		const char *nonce,
-		__attribute__((unused)) const enum jaln_digest_status status,
-		__attribute__((unused)) const void *user_data)
+		const enum jaln_digest_status status,
+		const void *user_data)
 {
 	const char *status_str;
 	switch (status) {
@@ -479,7 +479,7 @@ void jsub_message_complete(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
-		__attribute__((unused)) void *user_data)
+		void *user_data)
 {
 	int rc = 0;
 	if (jsub_debug) {
@@ -567,10 +567,10 @@ enum jal_status jsub_get_bytes(
 
 int jsub_acquire_journal_feeder(
 		__attribute__((unused)) jaln_session *session,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *nonce,
-		__attribute__((unused)) struct jaln_payload_feeder *feeder,
-		__attribute__((unused)) void *user_data)
+		const struct jaln_channel_info *ch_info,
+		const char *nonce,
+		struct jaln_payload_feeder *feeder,
+		void *user_data)
 {
 	if (jsub_debug) {
 		DEBUG_LOG("ACQUIRE_JOURNAL_FEEDER");
@@ -584,9 +584,9 @@ int jsub_acquire_journal_feeder(
 
 void jsub_release_journal_feeder(
 		__attribute__((unused)) jaln_session *session,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) const char *nonce,
-		__attribute__((unused)) struct jaln_payload_feeder *feeder,
+		const struct jaln_channel_info *ch_info,
+		const char *nonce,
+		struct jaln_payload_feeder *feeder,
 		__attribute__((unused)) void *user_data)
 {
 	if (jsub_debug) {
