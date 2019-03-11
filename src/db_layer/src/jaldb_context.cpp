@@ -609,7 +609,8 @@ enum jaldb_status jaldb_mark_confirmed(
 					db_ret = txn->commit(txn, 0);
 
 					if (0 == db_ret) {
-						*nonce_out = jal_strdup((char*) pkey.data);
+						*nonce_out = (char*) pkey.data;
+						pkey.data = NULL;
 						break;
 					} else {
 						continue;
@@ -1331,8 +1332,7 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	}
 
 out:
-	*local_nonce = jal_strdup((const char *)key.data);
-	free(key.data);
+	*local_nonce = (char *)key.data;
 	free(val.data);
 	return ret;
 }
@@ -1541,7 +1541,8 @@ enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
 		rec->sys_meta->length = doc_len;
 	}
 
-	*nonce = jal_strdup((char*)pkey.data);
+	*nonce = (char*)pkey.data;
+	pkey.data = NULL;
 	if (!nonce) {
 		ret = JALDB_E_NO_MEM;
 		goto out;
@@ -2060,7 +2061,8 @@ enum jaldb_status jaldb_next_chronological_record(
 	if (difftime(mktime(&search_time), mktime(&current_time)) != 0 ||
 			search_microseconds != cur_microseconds) {
 		free(*timestamp);
-		*timestamp = jal_strdup((char*)key.data);
+		*timestamp = (char*)key.data;
+		key.data = NULL;
 		seen_records->clear();
 		seen_records->insert(nonce_string);
 	}
