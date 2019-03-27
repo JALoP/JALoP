@@ -174,6 +174,30 @@ enum jal_status jaln_parse_configure_digest_challenge_header(char *content, size
 enum jal_status jaln_parse_session_id(char *content, size_t len, jaln_session *sess);
 
 /**
+ * Parse a record ID header
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_journal_resume_id_header(char *content, size_t len, jaln_session *sess);
+
+/**
+ * Parse a record offset for Journal Resume
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_journal_resume_offset_header(char *content, size_t len, jaln_session *sess);
+
+/**
  * Helper function to calculate the number of bytes needed to to convert a
  * jaln_digest_info to a string for sending as part of a digest message.
  *

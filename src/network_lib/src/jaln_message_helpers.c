@@ -245,7 +245,22 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_sessi
 		if (JAL_OK == rc) {
 			// TODO: Store that we validated this.
 		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
+		// Journal Resume ID
+		if (sess->mode == JALN_LIVE_MODE) {
+			sess->errored = 1;
+		} else {
+			rc = jaln_parse_journal_resume_id_header(content, len, sess);
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_JOURNAL_OFFSET))) {
+		// Journal Resume offset
+		if (sess->mode == JALN_LIVE_MODE) {
+			sess->errored = 1;
+		} else {
+			rc = jaln_parse_journal_resume_offset_header(content, len, sess);
+		}
 	}
+
 	if (JAL_OK != rc) {
 		sess->errored = 1;
 	}
@@ -323,6 +338,22 @@ enum jal_status jaln_parse_session_id(char *content, size_t len, jaln_session *s
 		return JAL_E_INVAL;
 	}
 	sess->id = jaln_get_header_value(content, len, strlen(JALN_HDRS_SESSION_ID) + 1);
+	return JAL_OK;
+}
+
+enum jal_status jaln_parse_journal_resume_id_header(char *content, size_t len, jaln_session *sess)
+{
+	sess->pub_data->nonce = jaln_get_header_value(content, len, strlen(JALN_HDRS_ID) + 1);
+	return JAL_OK;
+}
+
+enum jal_status jaln_parse_journal_resume_offset_header(char *content, size_t len, jaln_session *sess)
+{
+	char *offset_str = jaln_get_header_value(content, len, strlen(JALN_HDRS_JOURNAL_OFFSET) + 1);
+
+	if (!jaln_ascii_to_uint64(offset_str, &(sess->pub_data->payload_off))) {
+		return JAL_E_INVAL;
+	}
 	return JAL_OK;
 }
 

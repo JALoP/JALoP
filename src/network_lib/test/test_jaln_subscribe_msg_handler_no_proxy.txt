@@ -1,1 +1,2 @@
 jaln_process_subscribe_test_dept_proxy jaln_process_subscribe
+jaln_ascii_to_uint64_test_dept_proxy jaln_ascii_to_uint64

@@ -45,6 +45,7 @@
 #include "jaln_encoding.c"
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
+#include "jaln_session.h"
 
 #define nonce_1_str "nonce_1"
 
@@ -106,6 +107,12 @@
 	"JAL-Message: initialize-ack\r\n" \
 	"JAL-XML-Compression: " SOME_ENCODING "\r\n" \
 	"JAL-Digest: " SOME_DIGEST "\r\n\r\n" \
+
+#define SAMPLE_UUID "abcdabcd-abcd-abcd-abcd-abcdabcdabcd"
+#define SAMPLE_RECORD_ID JALN_HDRS_ID JALN_COLON_SPACE SAMPLE_UUID "\r\n"
+#define SAMPLE_OFFSET_VAL 512
+#define SAMPLE_OFFSET_VAL_STR "512"
+#define SAMPLE_OFFSET JALN_HDRS_JOURNAL_OFFSET JALN_COLON_SPACE SAMPLE_OFFSET_VAL_STR "\r\n"
 
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
 {
@@ -923,6 +930,30 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 
 	headers = (struct curl_slist *) 0xbadf00d;
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, &ctx, &headers));
+}
+
+void test_parse_init_ack_header_record_id()
+{
+	jaln_session *sess = jaln_session_create();
+	sess->pub_data = jaln_pub_data_create();
+	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), sess);
+
+	assert_equals(JAL_OK, rc);
+	assert_not_equals(NULL, sess->pub_data->nonce);
+	assert_string_equals(SAMPLE_UUID, sess->pub_data->nonce);
+	assert_equals(axl_false, sess->errored);
+}
+
+void test_parse_init_ack_header_offset()
+{
+	jaln_session *sess = jaln_session_create();
+	sess->pub_data = jaln_pub_data_create();
+	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), sess);
+
+	assert_equals(JAL_OK, rc);
+	assert_true(sess->pub_data->payload_off > 0);
+	assert_equals(SAMPLE_OFFSET_VAL, sess->pub_data->payload_off);
+	assert_equals(axl_false, sess->errored);
 }
 
 void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()

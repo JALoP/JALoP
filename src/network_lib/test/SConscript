@@ -125,7 +125,12 @@ tests.append(env.TestDeptTest('test_jaln_encoding.c',
 		sync_msg_handler_obj])[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_message_helpers.c',
-	other_sources=[lib_common, dgst_info_obj, dgst_resp_info_obj, rec_info_obj], useProxies=True)[0].abspath)
+	other_sources=[lib_common,
+		ch_info_obj, conn_cb_obj, conn_obj, ctx_obj, dgst_info_obj,
+		dgst_msg_handler_obj, dgst_resp_info_obj, dgst_resp_msg_hndlr_obj,
+		journal_resume_handler_obj, publisher_obj, pub_cb_obj, rec_info_obj,
+		sess_obj, str_utils_obj, sub_cb_obj, sub_dgst_chan_obj, sub_msg_handler_obj,
+		sub_state_mach_obj, sync_msg_handler_obj], useProxies=True)[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_channel_info.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaln_digest_info.c', other_sources=[lib_common])[0].abspath)
@@ -165,12 +170,12 @@ tests.append(env.TestDeptTest('test_jaln_journal_resume_msg_handler.c',
 
 tests.append(env.TestDeptTest('test_jaln_subscribe_msg_handler.c',
 	other_sources=[lib_common,
-		dgst_obj, enc_obj, hlpr_obj, hndl_obj, rec_info_obj],
+		dgst_obj, enc_obj, hlpr_obj, hndl_obj, rec_info_obj, str_utils_obj],
 	useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_init_msg_handler.c',
 	other_sources=[lib_common,
-		dgst_obj, enc_obj, hlpr_obj, hndl_obj, init_info_obj, rec_info_obj],
+		dgst_obj, enc_obj, hlpr_obj, hndl_obj, init_info_obj, rec_info_obj, str_utils_obj],
 	useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_init_info.c',
@@ -178,7 +183,7 @@ tests.append(env.TestDeptTest('test_jaln_init_info.c',
 
 tests.append(env.TestDeptTest('test_jaln_sync_msg_handler.c',
 	other_sources=[lib_common,
-		dgst_obj, enc_obj, hlpr_obj, hndl_obj, rec_info_obj],
+		dgst_obj, enc_obj, hlpr_obj, hndl_obj, rec_info_obj, str_utils_obj],
 	useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_subscriber_state_machine.c',
