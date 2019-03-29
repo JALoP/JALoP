@@ -31,6 +31,7 @@
 #include <jalop/jaln_publisher_callbacks.h>
 
 #include "jal_alloc.h"
+#include "jal_asprintf_internal.h"
 
 #include "jaln_context.h"
 #include "jaln_connection.h"
@@ -397,49 +398,103 @@ void jaln_publisher_on_connection_close(__attribute__((unused)) VortexConnection
 	vortex_mutex_unlock(&ctx->lock);
 }
 
-void jaln_publisher_on_channel_create(int channel_num,
-		VortexChannel *chan, VortexConnection *conn,
-		axlPointer user_data)
+static size_t jaln_noop_write(
+                __attribute__((unused)) char *ptr,
+                __attribute__((unused)) size_t size,
+                size_t nmemb,
+                __attribute__((unused)) void *user_data)
+{
+        return nmemb;
+}
+
+enum jal_status jaln_publisher_send_init(jaln_session *session, CURL *curl)
 {
 	char *init_msg = NULL;
-	uint64_t init_msg_len = 0;
-	jaln_session *session = (jaln_session*)user_data;
-	if (!chan) {
-		// channel creation failed, cleanup the session and bail.
+	struct curl_slist *headers = NULL;
+	enum jal_status ret = JAL_OK;
+	if (!curl) {
+		// libcurl initialization failed
 		jaln_session_unref(session);
-		return;
+		return JAL_E_INVAL;
 	}
 	if (!session || !session->ch_info || !session->jaln_ctx) {
 		// shouldn't ever happen
+		ret = JAL_E_INVAL;
 		goto err_out;
 	}
 
-	vortex_channel_set_serialize(chan, axl_true);
-	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, session);
-	vortex_channel_set_close_handler(chan, jaln_session_on_close_channel, session);
-	vortex_channel_set_automatic_mime(chan, 2);
-	session->rec_chan = chan;
-	session->rec_chan_num = channel_num;
-	session->ch_info->addr = jal_strdup(vortex_connection_get_host(conn));
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
 
-	vortex_channel_set_received_handler(chan, jaln_publisher_init_reply_frame_handler, session);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, jaln_noop_write);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, NULL);
 
-	enum jal_status ret = jaln_create_init_msg(JALN_ROLE_PUBLISHER, session->mode, session->ch_info->type,
-			session->jaln_ctx->dgst_algs, session->jaln_ctx->xml_encodings, &init_msg, &init_msg_len);
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, jaln_publisher_init_reply_frame_handler);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, session);
 
+	const char *pub_id = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"; // TODO: retrieve from context 
+
+	ret = jaln_create_init_msg(pub_id, session->mode, session->ch_info->type,
+			session->jaln_ctx->dgst_algs, session->jaln_ctx->xml_encodings, &headers);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
-	if (!vortex_channel_send_msg(chan, init_msg, init_msg_len, NULL)) {
-		goto err_out;
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+	CURLcode rc = curl_easy_perform(curl);
+	if (rc != CURLE_OK) {
+		fprintf(stderr, "Failed to send initialize: %s\n",
+			curl_easy_strerror(rc));
+		ret = JAL_E_COMM;
 	}
+
+	curl_slist_free_all(headers);
+
 	goto out;
 
 err_out:
-	vortex_channel_close_full(chan, jaln_session_notify_close, session);
+	curl_easy_cleanup(curl);
 out:
 	free(init_msg);
-	return;
+	return ret;
+}
+
+static const char *jaln_rtype_str(const int data_class)
+{
+	switch(data_class) {
+	case JALN_RTYPE_JOURNAL: return JALN_STR_JOURNAL;
+	case JALN_RTYPE_AUDIT: return JALN_STR_AUDIT;
+	case JALN_RTYPE_LOG: return JALN_STR_LOG;
+	default: return NULL;
+	}
+}
+
+// Set the URL and TLS information
+//static void // TODO: store curl context(s) in jaln_session
+static CURL *jaln_setup_session(
+		jaln_session *sess, // does this fit better at the session abstraction?
+		const char *host,
+		const char *port,
+		const int data_class)
+{
+	// TODO: error checks
+	CURL *curl_ctx = curl_easy_init();
+	const char *class_str = jaln_rtype_str(data_class);
+	jaln_context *ctx = sess->jaln_ctx;
+	const int tls = ctx->private_key && ctx->public_cert && ctx->peer_certs;
+	char *url;
+	jal_asprintf(&url, "http%s://%s:%s/%s", tls? "s" : "", host, port, class_str);
+	curl_easy_setopt(curl_ctx, CURLOPT_URL, url);
+	if (tls)
+	{
+		// Disable cert verification for now.
+		// TODO: verify against peer_certs
+		curl_easy_setopt(curl_ctx, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_easy_setopt(curl_ctx, CURLOPT_SSLKEY, ctx->private_key);
+		curl_easy_setopt(curl_ctx, CURLOPT_SSLCERT, ctx->public_cert);
+
+	}
+	return curl_ctx;
 }
 
 struct jaln_connection *jaln_publish(
@@ -454,101 +509,69 @@ struct jaln_connection *jaln_publish(
 		return NULL;
 	}
 
-	vortex_mutex_lock(&ctx->lock);
-	if (!ctx->vortex_ctx ||
-		!jaln_publisher_callbacks_is_valid(ctx->pub_callbacks) ||
+	if (!data_classes || data_classes & ~JALN_RTYPE_ALL) {
+		return NULL;
+	}
+
+	if (mode != JALN_ARCHIVE_MODE && mode != JALN_LIVE_MODE) {
+		return NULL;
+	}
+
+	if (!jaln_publisher_callbacks_is_valid(ctx->pub_callbacks) ||
 		!jaln_connection_callbacks_is_valid(ctx->conn_callbacks) ||
 		ctx->is_connected) {
-		vortex_mutex_unlock(&ctx->lock);
 		return NULL;
 	}
 
 	ctx->is_connected = axl_true;
 	ctx->user_data = user_data;
 
-	if (ctx->private_key && ctx->public_cert && ctx->peer_certs) {
-		// Enable TLS for every connection and do not allow failures.
-		vortex_tls_set_auto_tls(ctx->vortex_ctx, axl_true, axl_false, NULL);
-	}
 
-	vortex_mutex_unlock(&ctx->lock);
-
-	if (!(data_classes & JALN_RTYPE_ALL)) {
-		return NULL;
-	}
-	VortexConnection *v_conn = NULL;
-	VortexCtx *v_ctx = ctx->vortex_ctx;
-	v_conn = vortex_connection_new(v_ctx, host, port, NULL, NULL);
-	if (!vortex_connection_is_ok(v_conn, axl_true)) {
-		return NULL;
-	}
 	struct jaln_connection *jconn = jaln_connection_create();
 	jconn->jaln_ctx = ctx;
-	jconn->v_conn = v_conn;
 
-	vortex_connection_set_on_close_full(v_conn, jaln_publisher_on_connection_close, jconn);
-
+	// TODO: Support multiple sessions per connection so we can connect to multiple endpoints.
+	// According to the doxygen comments in jaln_network.h, one call to publish should set up
+	// session for each type in data_classes, although it did not do this previously.
 	jaln_session *session = NULL;
+	CURL* curl = NULL;
 
 	if (data_classes & JALN_RTYPE_JOURNAL) {
 		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_JOURNAL);
+		session->mode = mode;
+		curl = jaln_setup_session(session, host, port, JALN_RTYPE_JOURNAL);
 	} else if (data_classes & JALN_RTYPE_AUDIT) {
 		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_AUDIT);
-	} else if (data_classes & JALN_RTYPE_LOG) {
+		session->mode = mode;
+		curl = jaln_setup_session(session, host, port, JALN_RTYPE_AUDIT);
+	} else if(data_classes & JALN_RTYPE_LOG) {
 		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_LOG);
-	} else {
-		return NULL;
+		session->mode = mode;
+		curl = jaln_setup_session(session, host, port, JALN_RTYPE_LOG);
 	}
-	session->mode = mode;
-	vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
-			NULL, NULL,
-			NULL, NULL,
-			jaln_publisher_on_channel_create, session);
+
+	if (jaln_publisher_send_init(session, curl) != JAL_OK) {
+		// free jconn and return NULL
+		jaln_connection_destroy(&jconn);
+        }
+	jaln_session_destroy(&session);  // TODO: store session(s) within connection
+	curl_easy_cleanup(curl);
 
 	return jconn;
 }
 
-void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
-		VortexConnection *conn,
-		VortexFrame *frame,
-		void *user_data)
+size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nmemb, void *user_data)
 {
+
 	jaln_session *sess = (jaln_session*) user_data;
-	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
-		vortex_connection_shutdown(conn);
-		goto out;
+	const size_t bytes = size * nmemb;
+	enum jal_status ret = jaln_parse_init_ack_header(ptr, bytes, sess);
+	if (ret != JAL_OK) {
+		return 0;
 	}
-	const char *msg = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_MESSAGE);
-	if (!msg) {
-		vortex_connection_shutdown(conn);
-		goto out;
-	}
-	if (0 == strcasecmp(msg, JALN_MSG_INIT_ACK)) {
-		if (!jaln_handle_initialize_ack(sess, JALN_ROLE_PUBLISHER, frame)) {
-			goto out;
-		}
-		vortex_channel_set_received_handler(chan, jaln_pub_channel_frame_handler, sess);
-
-		int chan_num = vortex_channel_get_number(chan);
-		if (chan_num == -1) {
-			vortex_connection_shutdown(conn);
-			goto out;
-		}
-
-		vortex_channel_new_fullv(conn, 0, NULL, JALN_JALOP_1_0_PROFILE,
-				EncodingNone,
-				NULL, NULL, // close handler, user data,
-				NULL, NULL, // frame handler, user data,
-				jaln_session_on_dgst_channel_create, sess,
-				"digest:%d", chan_num);
-	} else if (0 == strcasecmp(msg, JALN_MSG_INIT_NACK)) {
-		jaln_handle_initialize_nack(sess, frame);
-	} else {
-		vortex_connection_shutdown(conn);
-	}
-out:
-	return;
+	return bytes;
 }
+
 
 jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
 {

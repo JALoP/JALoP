@@ -34,6 +34,7 @@
 #include <string.h>
 #include <test-dept.h>
 #include <vortex.h>
+#include <curl/curl.h>
 
 #include "jal_alloc.h"
 
@@ -46,48 +47,50 @@
 
 #define nonce_1_str "nonce_1"
 
+#define pub_id "92ec4bac-4e98-477e-9f2c-14a7f58f7b4d"
+
 #define EXPECTED_SYNC_MSG \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: sync\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_VERSION \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Version: \r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_ENC \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
-	"JAL-Unsupported-Encoding: \r\n\r\n"
+	"JAL-Unsupported-XML-Compression: \r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_DIGEST \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Digest: \r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_MODE \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Mode: \r\n\r\n"
 
 #define EXPECTED_NACK_UNAUTH_MODE \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unauthorized-Mode: \r\n\r\n"
 
 #define EXPECTED_NACK_ALL_ERRORS \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Version: \r\n" \
-	"JAL-Unsupported-Encoding: \r\n" \
+	"JAL-Unsupported-XML-Compression: \r\n" \
 	"JAL-Unsupported-Digest: \r\n" \
 	"JAL-Unsupported-Mode: \r\n" \
 	"JAL-Unauthorized-Mode: \r\n\r\n"
@@ -95,10 +98,10 @@
 #define SOME_ENCODING "an_encoding"
 #define SOME_DIGEST "a_digest"
 #define EXPECTED_ACK\
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n" \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-ack\r\n" \
-	"JAL-Encoding: " SOME_ENCODING "\r\n" \
+	"JAL-XML-Compression: " SOME_ENCODING "\r\n" \
 	"JAL-Digest: " SOME_DIGEST "\r\n\r\n" \
 
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
@@ -107,7 +110,7 @@ VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char 
 		return NULL;
 	}
 	if (strcasecmp(header_name, "content-type") == 0) {
-		return (VortexMimeHeader*) "application/beep+jalop";
+		return (VortexMimeHeader*) "application/http+jalop";
 	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
 		return (VortexMimeHeader*) "utf-16";
 	}
@@ -133,7 +136,7 @@ VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *header_na
 		return NULL;
 	}
 	if (strcasecmp(header_name, "content-type") == 0) {
-		return (VortexMimeHeader*) "application/beep+jalop";
+		return (VortexMimeHeader*) "application/http+jalop";
 	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
 		return (VortexMimeHeader*) "binary";
 	}
@@ -146,7 +149,7 @@ VortexMimeHeader *only_content_type_get_mime_header(VortexFrame *frame, const ch
 		return NULL;
 	}
 	if (strcasecmp(header_name, "content-type") == 0) {
-		return (VortexMimeHeader*) "application/beep+jalop";
+		return (VortexMimeHeader*) "application/http+jalop";
 	}
 	return NULL;
 }
@@ -185,8 +188,8 @@ static char *output_str;
 #define di_3_str "0e0f1011121314=nonce_3\r\n"
 
 #define EXPECTED_DGST_MSG \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: digest\r\n" \
 	"JAL-Count: 3\r\n\r\n" \
 	di_1_str \
@@ -194,60 +197,56 @@ static char *output_str;
 	di_3_str
 
 #define INIT_PUB_LOG_ARCHIVE \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
+	"JAL-Publisher-Id: " pub_id "\r\n" \
 	"JAL-Mode: publish-archival\r\n" \
 	"JAL-Data-Class: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
-	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
-#define INIT_SUB_LOG_ARCHIVE \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+#define INIT_PUB_JOURNAL_ARCHIVE \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe-archival\r\n" \
-	"JAL-Data-Class: log\r\n" \
-	"JAL-Accept-Digest: sha256, sha512\r\n" \
-	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
-
-#define INIT_SUB_JOURNAL_ARCHIVE \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
-	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe-archival\r\n" \
+	"JAL-Publisher-Id: " pub_id "\r\n" \
+	"JAL-Mode: publish-archival\r\n" \
 	"JAL-Data-Class: journal\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
-	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
-#define INIT_SUB_AUDIT_ARCHIVE \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+#define INIT_PUB_AUDIT_ARCHIVE \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe-archival\r\n" \
+	"JAL-Publisher-Id: " pub_id "\r\n" \
+	"JAL-Mode: publish-archival\r\n" \
 	"JAL-Data-Class: audit\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
-	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
-#define INIT_SUB_LOG_ARCHIVE_NO_ENC \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+#define INIT_PUB_LOG_ARCHIVE_NO_ENC \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe-archival\r\n" \
+	"JAL-Publisher-Id: " pub_id "\r\n" \
+	"JAL-Mode: publish-archival\r\n" \
 	"JAL-Data-Class: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n\r\n" \
 
-#define INIT_SUB_LOG_ARCHIVE_NO_DGST \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+#define INIT_PUB_LOG_ARCHIVE_NO_DGST \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
-	"JAL-Mode: subscribe-archival\r\n" \
+	"JAL-Publisher-Id: " pub_id "\r\n" \
+	"JAL-Mode: publish-archival\r\n" \
 	"JAL-Data-Class: log\r\n" \
-	"JAL-Accept-Encoding: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
 #define EXPECTED_JOURNAL_REC_HDRS \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: journal-record\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
@@ -255,8 +254,8 @@ static char *output_str;
 	"JAL-Journal-Length: 30\r\n\r\n"
 
 #define EXPECTED_AUDIT_REC_HDRS \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: audit-record\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
@@ -264,8 +263,8 @@ static char *output_str;
 	"JAL-Audit-Length: 30\r\n\r\n"
 
 #define EXPECTED_LOG_REC_HDRS \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: log-record\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
@@ -273,8 +272,8 @@ static char *output_str;
 	"JAL-Log-Length: 30\r\n\r\n"
 
 #define EXPECTED_DGST_RESP_MSG \
-	"Content-Type: application/beep+jalop\r\n" \
-	"Content-Transfer-Encoding: binary\r\n"\
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: digest-response\r\n" \
 	"JAL-Count: 3\r\n\r\n" \
 	dr_1_str \
@@ -350,6 +349,32 @@ void teardown()
 	jaln_record_info_destroy(&rec_info);
 }
 
+static char *flatten_headers(struct curl_slist *list)
+{
+	const char *separator = "\r\n";
+	const size_t sep_len = strlen(separator);
+	char *flat = NULL;
+	size_t flat_size = 0, flat_len = 0, new_len;
+	size_t data_len;
+	while (list) {
+		data_len = strlen(list->data);
+		new_len = flat_len + data_len + sep_len;
+		if (new_len >= flat_size) {
+			flat_size = new_len * 2;
+			flat = realloc(flat, flat_size);
+			if (!flat)
+				return NULL;
+		}
+		strcpy(flat + flat_len, list->data);
+		strcpy(flat + flat_len + data_len, separator);
+		flat_len = new_len;
+		list = list->next;
+	}
+	flat = realloc(flat, flat_len + sep_len + 1);
+	strcpy(flat + flat_len, separator);
+	return flat;
+}
+
 void test_create_journal_resume_msg_with_valid_parameters()
 {
 	enum jal_status ret = JAL_OK;
@@ -371,7 +396,7 @@ void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly
 {
 	enum jal_status ret = JAL_OK;
 
-	char *correct_msg = "Content-Type: application/beep+jalop\r\nContent-Transfer-Encoding: binary\r\nJAL-Message: journal-resume\r\nJAL-Id: 1234562\r\nJAL-Journal-Offset: 47996\r\n\r\n";
+	char *correct_msg = "Content-Type: application/http+jalop\r\nJAL-Version: 2.0.0.0\r\nJAL-Message: journal-resume\r\nJAL-Id: 1234562\r\nJAL-Journal-Offset: 47996\r\n\r\n";
 
 	char *nonce = "1234562";
 	uint64_t offset = 47996;
@@ -536,7 +561,7 @@ void test_create_subscribe_msg_with_valid_parameters_is_formatted_correctly()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *correct_msg = "Content-Type: application/beep+jalop\r\nContent-Transfer-Encoding: binary\r\nJAL-Message: subscribe\r\n\r\n";
+	char *correct_msg = "Content-Type: application/http+jalop\r\nJAL-Version: 2.0.0.0\r\nJAL-Message: subscribe\r\n\r\n";
 
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
@@ -750,102 +775,82 @@ void test_safe_add_works()
 	assert_equals(12 + 43, cnt);
 }
 
-void test_create_init_msg_works_for_publish()
-{
-	char *msg_out = NULL;
-	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_PUBLISHER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
-				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_PUB_LOG_ARCHIVE), len);
-	assert_equals(0, memcmp(INIT_PUB_LOG_ARCHIVE, msg_out, len));
-	free(msg_out);
-}
-
 void test_create_init_msg_works_for_log()
 {
-	char *msg_out = NULL;
-	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
-				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG_ARCHIVE), len);
-	assert_equals(0, memcmp(INIT_SUB_LOG_ARCHIVE, msg_out, len));
-	free(msg_out);
+	struct curl_slist *headers = NULL;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
+				dgst_algs, xml_encs, &headers));
+	assert_not_equals(NULL, headers);
+	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE));
+	curl_slist_free_all(headers);
 }
 
 void test_create_init_msg_works_for_audit()
 {
-	char *msg_out = NULL;
-	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_AUDIT,
-				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_AUDIT_ARCHIVE), len);
-	assert_equals(0, memcmp(INIT_SUB_AUDIT_ARCHIVE, msg_out, len));
-	free(msg_out);
+	struct curl_slist *headers = NULL;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_AUDIT,
+				dgst_algs, xml_encs, &headers));
+	assert_not_equals(NULL, headers);
+	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_AUDIT_ARCHIVE));
+	curl_slist_free_all(headers);
 }
 
 void test_create_init_msg_works_for_journal_data()
 {
-	char *msg_out = NULL;
-	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL,
-				dgst_algs, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_JOURNAL_ARCHIVE), len);
-	assert_equals(0, memcmp(INIT_SUB_JOURNAL_ARCHIVE, msg_out, len));
-	free(msg_out);
+	struct curl_slist *headers = NULL;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL,
+				dgst_algs, xml_encs, &headers));
+	assert_not_equals(NULL, headers);
+	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_JOURNAL_ARCHIVE));
+	curl_slist_free_all(headers);
 }
 
 void test_create_init_msg_works_with_no_enc()
 {
 	axlList *empty_list = axl_list_new(jaln_string_list_case_insensitive_func, free);
-	char *msg_out = NULL;
-	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
-				dgst_algs, empty_list, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG_ARCHIVE_NO_ENC), len);
-	assert_equals(0, memcmp(INIT_SUB_LOG_ARCHIVE_NO_ENC, msg_out, len));
+	struct curl_slist *headers = NULL;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
+				dgst_algs, empty_list, &headers));
+	assert_not_equals(NULL, headers);
+	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE_NO_ENC));
 	axl_list_free(empty_list);
-	free(msg_out);
+	curl_slist_free_all(headers);
 }
 
 void test_create_init_msg_works_with_no_digests()
 {
 	axlList *empty_list = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
-	char *msg_out = NULL;
-	uint64_t len;
-	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
-				empty_list, xml_encs, &msg_out, &len));
-	assert_equals(strlen(INIT_SUB_LOG_ARCHIVE_NO_DGST), len);
-	assert_equals(0, memcmp(INIT_SUB_LOG_ARCHIVE_NO_DGST, msg_out, len));
+	struct curl_slist *headers = NULL;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
+				empty_list, xml_encs, &headers));
+	assert_not_equals(NULL, headers);
+	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE_NO_DGST));
 	axl_list_free(empty_list);
-	free(msg_out);
+	curl_slist_free_all(headers);
 }
 
 void test_create_init_msg_does_not_crash_on_bad_input()
 {
-	enum jaln_role role = JALN_ROLE_SUBSCRIBER;
 	enum jaln_record_type type = JALN_RTYPE_JOURNAL;
-	char *msg_out = NULL;
-	uint64_t len;
+	struct curl_slist *headers = NULL;
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(JALN_ROLE_SUBSCRIBER - 1, JALN_ARCHIVE_MODE, type, dgst_algs,
-							xml_encs, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(NULL, JALN_ARCHIVE_MODE, type, dgst_algs,
+							xml_encs, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE - 1, type, dgst_algs,
-							xml_encs, &msg_out, &len));	
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE - 1, type, dgst_algs,
+							xml_encs, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT,
-							dgst_algs, xml_encs, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT,
+							dgst_algs, xml_encs, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, NULL, xml_encs, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, NULL, xml_encs, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, NULL, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, dgst_algs, NULL, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, NULL, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, NULL));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, &msg_out, NULL));
-
-	msg_out = (char*) 0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, &msg_out, &len));
+	headers = (struct curl_slist *) 0xbadf00d;
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, &headers));
 }
 
 void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()

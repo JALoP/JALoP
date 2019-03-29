@@ -33,6 +33,7 @@
 #include <axl.h>
 #include <vortex.h>
 #include <jalop/jaln_network.h>
+#include <curl/curl.h>
 
 #include "jaln_session.h"
 
@@ -168,10 +169,13 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *session,
  * @param[in] frame The frame containing the message
  * @param[in] user_data Expected to be a pointer to a jaln_session
  */
+/*
 void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
 		VortexConnection *v_conn,
 		VortexFrame *frame,
 		void *user_data);
+*/
+size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
 
 /**
  * Vortex handler for when publisher's connection closes
@@ -193,9 +197,12 @@ void jaln_publisher_on_connection_close(VortexConnection *conn,
  * @param[in] conn The vortex connection
  * @param[in] user_data a pointer to a jaln_session.
  */
+/*
 void jaln_publisher_on_channel_create(int channel_num,
 		VortexChannel *chan, VortexConnection *conn,
 		axlPointer user_data);
+*/
+enum jal_status jaln_publisher_send_init(jaln_session *session, CURL *curl);
 
 /**
  * Configure a jaln_session for use as a publisher. Before modifying the

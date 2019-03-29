@@ -62,7 +62,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 		return (VortexMimeHeader*) "journal";
 	} else if (0 == strcasecmp(header_name, "jal-accept-digest")) {
 		return (VortexMimeHeader*) "digest_1, digest_2, digest_3";
-	} else if (0 == strcasecmp(header_name, "jal-accept-encoding")) {
+	} else if (0 == strcasecmp(header_name, "jal-accept-xml-compression")) {
 		return (VortexMimeHeader*) "encoding_1, encoding_2, encoding_3";
 	}
 	return NULL;
@@ -87,7 +87,7 @@ DECL_MIME_HANDLER(fake_get_mime_header_bad_msg, "jal-message", "jal-sync")
 DECL_MIME_HANDLER(fake_get_mime_header_bad_data_class, "jal-data-class", "bad_class")
 DECL_MIME_HANDLER(fake_get_mime_header_bad_mode, "jal-mode", "bad_mode")
 DECL_MIME_HANDLER(fake_get_mime_header_no_dgst_algs, "jal-accept-digest", NULL)
-DECL_MIME_HANDLER(fake_get_mime_header_no_encs, "jal-accept-encoding", NULL)
+DECL_MIME_HANDLER(fake_get_mime_header_no_encs, "jal-accept-xml-compression", NULL)
 DECL_MIME_HANDLER(fake_get_mime_header_no_agent, "jal-agent", NULL)
 DECL_MIME_HANDLER(fake_get_mime_header_audit, "jal-data-class", "audit");
 DECL_MIME_HANDLER(fake_get_mime_header_log, "jal-data-class", "log");
@@ -485,7 +485,7 @@ void test_process_init_works_with_no_encodings()
 	assert_true(axl_list_cursor_has_item(cursor));
 	str = (char *)axl_list_cursor_get(cursor);
 	assert_not_equals((void*) NULL, str);
-	assert_string_equals("xml", str);
+	assert_string_equals("none", str);
 	axl_list_cursor_free(cursor);
 }
 

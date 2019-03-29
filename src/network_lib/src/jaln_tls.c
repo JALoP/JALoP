@@ -93,13 +93,7 @@ enum jal_status jaln_register_tls(jaln_context *ctx,
 				const char *public_cert,
 				const char *peer_certs)
 {
-	if (!ctx) {
-		return JAL_E_INVAL;
-	}
-
-	vortex_mutex_lock(&ctx->lock);
-
-	if (!ctx->vortex_ctx || !private_key || !public_cert || !peer_certs) {
+	if (!ctx || !private_key || !public_cert || !peer_certs) {
 		return JAL_E_INVAL;
 	}
 
@@ -110,15 +104,6 @@ enum jal_status jaln_register_tls(jaln_context *ctx,
 	ctx->private_key = jal_strdup(private_key);
 	ctx->public_cert = jal_strdup(public_cert);
 	ctx->peer_certs = jal_strdup(peer_certs);
-
-	if (!vortex_tls_init(ctx->vortex_ctx)) {
-		return JAL_E_INVAL;
-	}
-
-	vortex_tls_set_default_ctx_creation(ctx->vortex_ctx, jaln_ssl_ctx_creation, ctx);
-	vortex_tls_accept_negotiation(ctx->vortex_ctx, NULL, NULL, NULL);
-
-	vortex_mutex_unlock(&ctx->lock);
 
 	return JAL_OK;
 }

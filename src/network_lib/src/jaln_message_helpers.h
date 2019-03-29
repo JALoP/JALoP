@@ -34,6 +34,7 @@
 #include <jalop/jaln_network_types.h>
 #include <stddef.h>
 #include <vortex.h>
+#include <curl/curl.h>
 
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
@@ -86,6 +87,80 @@ enum jal_status jaln_create_subscribe_msg(char **msg_out, uint64_t *msg_out_len)
  * axl_false otherwise.
  */
 axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
+
+/**
+ * Parse a single header on a JALoP message
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_session *sess);
+
+/**
+ * Parse a content type header
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_content_type_header(char *content, size_t len, jaln_session *sess);
+
+/**
+ * Parse a JAL Message header
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ * @param expect What message type was expected
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_message_header(char *content, size_t len, jaln_session *sess, char *expect);
+
+/**
+ * Parse an xml compression header
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_xml_compression_header(char *content, size_t len, jaln_session *sess);
+
+/**
+ * Parse a digest header
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_digest_header(char *content, size_t len, jaln_session *sess);
+
+/**
+ * Parse a configure digest challenge header
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.  This function will update
+ * it based on the header contents
+ *
+ * @return JAL_OK on success, or an error code
+ */
+enum jal_status jaln_parse_configure_digest_challenge_header(char *content, size_t len, jaln_session *sess);
+
 
 /**
  * Helper function to calculate the number of bytes needed to to convert a
@@ -185,19 +260,18 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
 /*
  * Helper function to create an 'initialize' message
  *
- * @param[in] role The role (publisher or subscriber)
+ * @param[in] pub_id UUID identifying the publisher.
  * @param[in] type The type of data to send over this channel.
  * @param[in] digest_list A list of digest_ctxs that can be used
  * @param[in] xml_encodings A list of XML encodings that that can be used.
- * @param[out] msg_out This will contain the contents of the initialize message.
- * @param[out] msg_len_out The length of the initialize message
+ * @param[out] headers This will contain the libcurl headers for the initialize message.
  *
  * @return JAL_E_INVAL if there is something wrong with the parameters, or
  * JAL_OK on success
  *
  */
-enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_publish_mode mode, enum jaln_record_type type,
-		axlList *dgst_algs, axlList *xml_encodings, char **msg_out, uint64_t *msg_len_out);
+enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode mode, enum jaln_record_type type,
+		axlList *dgst_algs, axlList *xml_encodings, struct curl_slist **headers);
 
 /**
  * Create the headers for a ANS reply to a 'subscribe' message.

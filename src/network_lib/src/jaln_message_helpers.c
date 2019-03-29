@@ -30,18 +30,21 @@
 
 #include <inttypes.h>
 #include <jalop/jal_status.h>
+#include <jalop/jaln_network_types.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
-
 #include "jaln_context.h"
+#include "jaln_digest.h"
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
+#include "jaln_encoding.h"
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
+#include "jaln_session.h"
 #include "jaln_strings.h"
 
 enum jal_status jaln_create_journal_resume_msg(const char *nonce,
@@ -166,6 +169,131 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 		}
 	}
 	return axl_true;
+}
+
+static int jaln_header_name_match(const char *content, const size_t content_len,
+		const char *name, const size_t name_len)
+{
+	if (content_len <= name_len) {
+		return 0;
+	}
+	if (strncasecmp(content, name, name_len)) {
+		return 0;
+	}
+	return (':' == content[name_len]);
+}
+
+static enum jal_status jaln_header_value_match(const char *content, const size_t content_len,
+		const char *value, const size_t value_len)
+{
+	size_t offset = 0;
+	// Skip whitespace
+	for (; offset < content_len && (content[offset] == ' ' || content[offset] == '\t'); ++offset);
+	if (content_len - offset != value_len + strlen("\r\n")) {
+		return JAL_E_INVAL;
+	}
+	return !memcmp(content + offset, value, value_len)? JAL_OK : JAL_E_INVAL;
+}
+
+// There needs to be a struct or masked int to keep track of what has been parsed/validated.
+// That way jaln_publish can see what headers have been received and set defaults/fail if some were not.
+enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_session *sess)
+{
+#define JALN_STR_W_LEN(_str) _str, strlen(_str)
+	enum jal_status rc = JAL_OK; // Allow headers with names that aren't validated.
+	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_CONTENT_TYPE))) {
+		const size_t name_len = strlen(JALN_HDRS_CONTENT_TYPE);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_STR_CT_JALOP));
+		if (JAL_OK == rc) {
+			// TODO: Store that we validated this.
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
+		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_INIT_ACK));
+		if (JAL_OK == rc) {
+			// TODO: Store that we validated this.
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_VERSION))) {
+		const size_t name_len = strlen(JALN_HDRS_VERSION);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_VERSION));
+		if (JAL_OK == rc) {
+			// TODO: Store that we validated this.
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ENCODING))) {
+		rc = jaln_parse_xml_compression_header(content, len, sess);
+		if (JAL_OK == rc) {
+			// TODO: Store that we validated this.
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_DIGEST))) {
+		rc = jaln_parse_digest_header(content, len, sess);
+		if (JAL_OK == rc) {
+			// TODO: Store that we validated this.
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE))) {
+		rc = jaln_parse_configure_digest_challenge_header(content, len, sess);
+		if (JAL_OK == rc) {
+			// TODO: Store that we validated this.
+		}
+	}
+	if (JAL_OK != rc) {
+		sess->errored = 1;
+	}
+	return rc;
+#undef JAL_STR_W_LEN
+}
+
+static char *jaln_get_header_value(const char *content, const size_t len, size_t offset)
+{
+       // Skip whitespace
+       for (; offset < len && (content[offset] == ' ' || content[offset] == '\t'); ++offset);
+       size_t ret_len = len - offset - strlen("\r\n");
+       char *ret = (char *)jal_malloc(ret_len + 1);
+       ret[ret_len] = '\0';
+       memcpy(ret, content + offset, ret_len);
+       return ret;
+}
+
+enum jal_status jaln_parse_xml_compression_header(char *content, size_t len, jaln_session *sess)
+{
+	char *compression  = jaln_get_header_value(content, len, strlen(JALN_HDRS_ENCODING) + 1);
+	axlPointer ptr = axl_list_lookup(sess->jaln_ctx->xml_encodings,
+		jaln_string_list_case_insensitive_lookup_func, compression);
+	if (!ptr) {
+		free(compression);
+		return JAL_E_INVAL;
+	}
+	// TODO: Store the compression scheme somewhere.
+	// 1.0 never did, so there's no place in session for it yet.
+	free(compression);
+	return JAL_OK;
+}
+
+enum jal_status jaln_parse_digest_header(char *content, size_t len, jaln_session *sess)
+{
+	char *digest = jaln_get_header_value(content, len, strlen(JALN_HDRS_DIGEST) + 1);
+	axlPointer ptr = axl_list_lookup(sess->jaln_ctx->dgst_algs, jaln_digest_lookup_func, digest);
+	if (!ptr) {
+		free(digest);
+		return JAL_E_INVAL;
+	}
+	sess->dgst = (struct jal_digest_ctx*) ptr;
+	free(digest);
+	return JAL_OK;
+}
+
+enum jal_status jaln_parse_configure_digest_challenge_header(
+		__attribute__((unused)) char *content,
+		__attribute__((unused)) size_t len,
+		__attribute__((unused)) jaln_session *sess)
+{
+	//TODO: check if this matches the expected value from the context
+	return JAL_OK;
 }
 
 uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
@@ -295,90 +423,70 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 	return axl_true;
 }
 
-enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_publish_mode mode, enum jaln_record_type type,
-		axlList *dgst_list, axlList *enc_list, char **msg_out, uint64_t *msg_len_out)
+enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode mode, enum jaln_record_type type,
+		axlList *dgst_list, axlList *enc_list, struct curl_slist **headers_out)
 {
-	if (!dgst_list || !enc_list ||
-			!msg_out || *msg_out || !msg_len_out) {
+	if (!pub_id || !dgst_list || !enc_list ||
+			!headers_out || *headers_out) {
 		return JAL_E_INVAL;
 	}
-	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT JALN_CRLF \
-			       JALN_HDRS_MODE JALN_COLON_SPACE;
+	// TODO: validate that pub_id is a uuid.
+
+	struct curl_slist *headers = NULL;
+
+	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT;
+
 	axlListCursor *cursor = NULL;
 	enum jal_status ret = JAL_E_INVAL;
 
-	// +1 for the NULL terminator
-	uint64_t char_cnt = strlen(preamble) + 1;
-	char *role_str;
-	switch (role) {
-		case JALN_ROLE_SUBSCRIBER:
-			switch (mode) {
-				case JALN_LIVE_MODE:
-					role_str = JALN_MSG_SUBSCRIBE_LIVE;
-					break;
-				case JALN_ARCHIVE_MODE:
-					role_str = JALN_MSG_SUBSCRIBE_ARCHIVE;
-					break;
-				default:
-					return JAL_E_INVAL;
-			}
+	const char *role_str;
+	switch (mode) {
+		case JALN_LIVE_MODE:
+			role_str = JALN_HDRS_MODE JALN_COLON_SPACE JALN_MSG_PUBLISH_LIVE;
 			break;
-		case JALN_ROLE_PUBLISHER:
-			switch (mode) {
-				case JALN_LIVE_MODE:
-					role_str = JALN_MSG_PUBLISH_LIVE;
-					break;
-				case JALN_ARCHIVE_MODE:
-					role_str = JALN_MSG_PUBLISH_ARCHIVE;
-					break;
-				default:
-					return JAL_E_INVAL;
-			}
+		case JALN_ARCHIVE_MODE:
+			role_str = JALN_HDRS_MODE JALN_COLON_SPACE JALN_MSG_PUBLISH_ARCHIVE;
 			break;
 		default:
 			return JAL_E_INVAL;
 	}
-	if (!jaln_safe_add_size(&char_cnt, strlen(role_str))) {
-		goto out;
-	}
-	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_CRLF))) {
-		goto out;
-	}
-	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_HDRS_DATA_CLASS JALN_COLON_SPACE))) {
-		goto out;
-	}
 
-	char *type_str;
+	const char *type_str;
 	switch (type) {
 		case JALN_RTYPE_JOURNAL:
-			type_str = JALN_STR_JOURNAL;
+			type_str = JALN_HDRS_DATA_CLASS JALN_COLON_SPACE JALN_STR_JOURNAL;
 			break;
 		case JALN_RTYPE_AUDIT:
-			type_str = JALN_STR_AUDIT;
+			type_str = JALN_HDRS_DATA_CLASS JALN_COLON_SPACE JALN_STR_AUDIT;
 			break;
 		case JALN_RTYPE_LOG:
-			type_str = JALN_STR_LOG;
+			type_str = JALN_HDRS_DATA_CLASS JALN_COLON_SPACE JALN_STR_LOG;
 			break;
 		default:
 			return JAL_E_INVAL;
 	}
-	if (!jaln_safe_add_size(&char_cnt, strlen(type_str))) {
-		goto out;
-	}
-	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_CRLF))) {
-		goto out;
-	}
+
+	const size_t prefix_len = strlen(JALN_HDRS_PUBLISHER_ID JALN_COLON_SPACE);
+	const size_t pub_id_len = strlen(pub_id);
+	char *pub_id_str = jal_malloc(prefix_len + pub_id_len + 1);
+	memcpy(pub_id_str, JALN_HDRS_PUBLISHER_ID JALN_COLON_SPACE, prefix_len);
+	memcpy(pub_id_str + prefix_len, pub_id, pub_id_len);
+	pub_id_str[prefix_len + pub_id_len] = '\0';
+	
+	char *dgst_list_str = NULL;
+	char *enc_list_str = NULL;
 
 	if (!axl_list_is_empty(dgst_list)) {
+		uint64_t dgst_list_size = 0;
 		cursor = axl_list_cursor_new(dgst_list);
 		axl_list_cursor_first(cursor);
-		if (!jaln_safe_add_size(&char_cnt, strlen(JALN_HDRS_ACCEPT_DIGEST JALN_COLON_SPACE))) {
+		if (!jaln_safe_add_size(&dgst_list_size, strlen(JALN_HDRS_ACCEPT_DIGEST JALN_COLON_SPACE))) {
 			goto out;
 		}
 		int dgst_cnt = 0;
 		while(axl_list_cursor_has_item(cursor)) {
 			struct jal_digest_ctx *dgst = (struct jal_digest_ctx *)axl_list_cursor_get(cursor);
-			if (!jaln_safe_add_size(&char_cnt, strlen(dgst->algorithm_uri))) {
+			if (!jaln_safe_add_size(&dgst_list_size, strlen(dgst->algorithm_uri))) {
 				goto out;
 			}
 			dgst_cnt += 1;
@@ -386,23 +494,37 @@ enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_publish_mode
 		}
 		// for each dgst in the list (except the last one), need to add
 		// a ", ".
-		if (!jaln_safe_add_size(&char_cnt, 2 * (dgst_cnt - 1) + strlen(JALN_CRLF))) {
+		if (!jaln_safe_add_size(&dgst_list_size, 2 * (dgst_cnt - 1))) {
 			goto out;
+		}
+
+		dgst_list_str = malloc(dgst_list_size + 1);
+		strcpy(dgst_list_str, JALN_HDRS_ACCEPT_DIGEST JALN_COLON_SPACE);
+		axl_list_cursor_first(cursor);
+		while(axl_list_cursor_has_item(cursor)) {
+			struct jal_digest_ctx *dgst =
+				(struct jal_digest_ctx *)axl_list_cursor_get(cursor);
+			strcat(dgst_list_str, dgst->algorithm_uri);
+			axl_list_cursor_next(cursor);
+			if (axl_list_cursor_has_item(cursor)) {
+				strcat(dgst_list_str, ", ");
+			}
 		}
 		axl_list_cursor_free(cursor);
 		cursor = NULL;
 	}
 
 	if (!axl_list_is_empty(enc_list)) {
+		uint64_t enc_list_size = 0;
 		cursor = axl_list_cursor_new(enc_list);
 		axl_list_cursor_first(cursor);
-		if (!jaln_safe_add_size(&char_cnt, strlen(JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE))) {
+		if (!jaln_safe_add_size(&enc_list_size, strlen(JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE))) {
 			goto out;
 		}
 		int enc_cnt = 0;
-		while(axl_list_cursor_has_item(cursor)) {
+		while (axl_list_cursor_has_item(cursor)) {
 			char *enc = (char *)axl_list_cursor_get(cursor);
-			if (!jaln_safe_add_size(&char_cnt, strlen(enc))) {
+			if (!jaln_safe_add_size(&enc_list_size, strlen(enc))) {
 				goto out;
 			}
 			enc_cnt += 1;
@@ -410,67 +532,87 @@ enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_publish_mode
 		}
 		// for each dgst in the list (except the last one), need to add
 		// a ", ".
-		if (!jaln_safe_add_size(&char_cnt, 2 * (enc_cnt - 1) + strlen(JALN_CRLF))) {
+		if (!jaln_safe_add_size(&enc_list_size, 2 * (enc_cnt - 1))) {
 			goto out;
 		}
+
+		enc_list_str = malloc(enc_list_size + 1);
+		strcpy(enc_list_str, JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE);
+		axl_list_cursor_first(cursor);
+		while (axl_list_cursor_has_item(cursor)) {
+			char *enc = (char *)axl_list_cursor_get(cursor);
+			strcat(enc_list_str, enc);
+			axl_list_cursor_next(cursor);
+			if (axl_list_cursor_has_item(cursor)) {
+				strcat(enc_list_str, ", ");
+			}
+		}
 		axl_list_cursor_free(cursor);
 		cursor = NULL;
 	}
 
-	if (!jaln_safe_add_size(&char_cnt, strlen(JALN_CRLF))) {
-		goto out;
-	}
-
-	char *init_msg = (char*) jal_malloc(char_cnt);
-	init_msg[0] = '\0';
-	strcat(init_msg, preamble);
-	strcat(init_msg, role_str);
-	strcat(init_msg, JALN_CRLF JALN_HDRS_DATA_CLASS JALN_COLON_SPACE);
-	strcat(init_msg, type_str);
-	strcat(init_msg, JALN_CRLF);
 
 	if (!axl_list_is_empty(dgst_list)) {
-		strcat(init_msg, JALN_HDRS_ACCEPT_DIGEST JALN_COLON_SPACE);
-		cursor = axl_list_cursor_new(dgst_list);
-		axl_list_cursor_first(cursor);
-		while(axl_list_cursor_has_item(cursor)) {
-			struct jal_digest_ctx *dgst =
-				(struct jal_digest_ctx *)axl_list_cursor_get(cursor);
-			strcat(init_msg, dgst->algorithm_uri);
-			axl_list_cursor_next(cursor);
-			if (axl_list_cursor_has_item(cursor)) {
-				strcat(init_msg, ", ");
-			}
-		}
-		strcat(init_msg, JALN_CRLF);
 		axl_list_cursor_free(cursor);
 		cursor = NULL;
 	}
 
-	if (!axl_list_is_empty(enc_list)) {
-		strcat(init_msg, JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE);
-		cursor = axl_list_cursor_new(enc_list);
-		axl_list_cursor_first(cursor);
-		while(axl_list_cursor_has_item(cursor)) {
-			char *enc = (char *)axl_list_cursor_get(cursor);
-			strcat(init_msg, enc);
-			axl_list_cursor_next(cursor);
-			if (axl_list_cursor_has_item(cursor)) {
-				strcat(init_msg, ", ");
-			}
-		}
-		strcat(init_msg, JALN_CRLF);
-		axl_list_cursor_free(cursor);
-		cursor = NULL;
+	struct curl_slist *tmp;
+	tmp = curl_slist_append(headers, preamble);
+	if (!tmp) {
+		curl_slist_free_all(headers);
+		goto out;
 	}
-	strcat(init_msg, JALN_CRLF);
-	*msg_out = init_msg;
-	*msg_len_out = char_cnt - 1;
+	headers = tmp;
+	tmp = curl_slist_append(headers, pub_id_str);
+	if (!tmp) {
+		curl_slist_free_all(headers);
+		goto out;
+	}
+	headers = tmp;
+	tmp = curl_slist_append(headers, role_str);
+	if (!tmp) {
+		curl_slist_free_all(headers);
+		goto out;
+	}
+	headers = tmp;
+	if (!tmp) {
+		curl_slist_free_all(headers);
+		goto out;
+	}
+	headers = tmp;
+	tmp = curl_slist_append(headers, type_str);
+	if (!tmp) {
+		curl_slist_free_all(headers);
+		goto out;
+	}
+	headers = tmp;
+	if (dgst_list_str) {
+		tmp = curl_slist_append(headers, dgst_list_str);
+		if (!tmp) {
+			curl_slist_free_all(headers);
+			goto out;
+		}
+		headers = tmp;
+	}
+	if (enc_list_str) {
+		tmp = curl_slist_append(headers, enc_list_str);
+		if (!tmp) {
+			curl_slist_free_all(headers);
+			goto out;
+		}
+		headers = tmp;
+	}
+	*headers_out = headers;
+
 	ret = JAL_OK;
+
 out:
 	if (cursor) {
 		axl_list_cursor_free(cursor);
 	}
+	free(dgst_list_str);
+	free(enc_list_str);
 	return ret;
 }
 

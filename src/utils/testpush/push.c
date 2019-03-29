@@ -59,26 +59,31 @@ enum jaln_connect_error on_connect_request(const struct jaln_connect_request *re
 	*selected_digest = 0;
 	return JALN_CE_ACCEPT;
 }
+
 void on_channel_close(const struct jaln_channel_info *channel_info, void *user_data)
 {
 	user_data = user_data;
 	DEBUG_LOG("channel_info: %p", channel_info);
 }
+
 void on_connection_close(const struct jaln_connection *jal_conn, void *user_data)
 {
 	user_data = user_data;
 	DEBUG_LOG("conn_info: %p", jal_conn);
 }
+
 void on_connect_ack(const struct jaln_connect_ack *ack, void *user_data)
 {
 	user_data = user_data;
 	DEBUG_LOG("ack: %p", ack);
 }
+
 void on_connect_nack(const struct jaln_connect_nack *nack, void *user_data)
 {
 	user_data = user_data;
 	DEBUG_LOG("nack: %p", nack);
 }
+
 enum jal_status on_journal_resume(
 		__attribute__((unused)) jaln_session *sess,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
@@ -98,6 +103,7 @@ enum jal_status on_journal_resume(
 	DEBUG_LOG("headers: %p", headers);
 	return JAL_E_INVAL;
 }
+
 enum jal_status __send_record(jaln_session *sess, char *nonce, 
 			enum jal_status (*send)(jaln_session *, char *, uint8_t *,
 						uint64_t, uint8_t *,uint64_t,
@@ -126,10 +132,12 @@ enum jal_status __send_record(jaln_session *sess, char *nonce,
 
 	return ret;
 }
+
 __attribute__((noreturn))
 void *send_journal(__attribute__((unused)) void *args) {
 	pthread_exit(NULL);
 }
+
 __attribute__((noreturn))
 void *send_record(void *args) {
 	struct thread_data *data = (struct thread_data *) args;
@@ -229,6 +237,7 @@ enum jal_status on_subscribe(
 
 	return JAL_OK;
 }
+
 enum jal_status on_record_complete(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
@@ -243,6 +252,7 @@ enum jal_status on_record_complete(
 	DEBUG_LOG("nonce: %p", nonce);
 	return JAL_OK;
 }
+
 void on_sync(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
@@ -260,6 +270,7 @@ void on_sync(
 	DEBUG_LOG("nonce: %p", nonce);
 	DEBUG_LOG("headers: %p", headers);
 }
+
 void notify_digest(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
@@ -276,6 +287,7 @@ void notify_digest(
 	DEBUG_LOG("dgst: %s\n", b64);
 
 }
+
 void notify_peer_digest(
 		__attribute__((unused)) jaln_session *session,
 		const struct jaln_channel_info *ch_info,
@@ -297,11 +309,33 @@ void notify_peer_digest(
 	DEBUG_LOG("dgst: %s\n", b64);
 	free(b64);
 }
-int main() {
+
+int main(int argc, char **argv) {
+	//TODO: parse settings from a configuration file
+	if (argc != 4) {
+		fprintf(stderr, "Usage: %s host:port key cert\n", argv[0]);
+		return 2;
+	}
+	const char *key = argv[2];
+	const char *cert = argv[3];
+	const char *sub_certs = "path/to/subscriber/certs"; // Currently unused
+	const char *host = argv[1];
+	char *separator = strchr(host, ':');
+	if (!separator) {
+		fprintf(stderr, "Invalid host/port: %s\n", host);
+		return 2;
+	}
+	*separator = '\0';
+	const char *port = separator + 1;
+
+	const int classes = JALN_RTYPE_LOG;
+	enum jaln_publish_mode mode = JALN_ARCHIVE_MODE;
+
+	printf("Connecting to %s:%s\nUsing key %s\nUsing cert %s\nPublishing: LOG\nMode: ARCHIVE\n",
+		host, port, key, cert);
+
 	jaln_context *net_ctx = jaln_context_create();
-	//struct jaln_connection_handlers *connect_handlers = jaln_connection_handlers_create();
-	struct jaln_connection_callbacks ch;
-	struct jaln_connection_callbacks *connect_handlers = &ch;
+	struct jaln_connection_callbacks *connect_handlers = jaln_connection_callbacks_create();
 
 	connect_handlers->connect_request_handler = on_connect_request;
 	connect_handlers->on_channel_close = on_channel_close;
@@ -309,9 +343,7 @@ int main() {
 	connect_handlers->connect_ack = on_connect_ack;
 	connect_handlers->connect_nack = on_connect_nack;
 
-	//struct jaln_publisher_callbacks *pub_callbacks = jaln_publisher_callbacks_create();
-	struct jaln_publisher_callbacks pc;
-	struct jaln_publisher_callbacks *pub_callbacks = &pc;
+	struct jaln_publisher_callbacks *pub_callbacks = jaln_publisher_callbacks_create();
 	pub_callbacks->on_journal_resume = on_journal_resume;
 	pub_callbacks->on_subscribe = on_subscribe;
 	pub_callbacks->on_record_complete = on_record_complete;
@@ -319,20 +351,21 @@ int main() {
 	pub_callbacks->notify_digest = notify_digest;
 	pub_callbacks->peer_digest = notify_peer_digest;
 
-	enum jal_status err;
+	enum jal_status err; // TODO: check for and handle errors
 	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
 	jaln_register_digest_algorithm(net_ctx, dc1);
-	err = jaln_register_encoding(net_ctx, "xml");
+	err = jaln_register_encoding(net_ctx, "none");
 
-	//err = jan_register_tls(net_ctx, "priv_key", "pub_cert", "path/to/peer/certs");
-	//err = jan_register_encoding(net_ctx, "some_other_encoding");
+	err = jaln_register_tls(net_ctx, key, cert, sub_certs);
 	err = jaln_register_connection_callbacks(net_ctx, connect_handlers);
 	DEBUG_LOG("register conn cbs: %d\n", err);
 	err = jaln_register_publisher_callbacks(net_ctx, pub_callbacks);
 	DEBUG_LOG("register pub cbs: %d\n", err);
-	struct jaln_connection *conn = jaln_publish(net_ctx, "127.0.0.1", "55555", JALN_RTYPE_LOG, JALN_ARCHIVE_MODE, NULL);
+	struct jaln_connection *conn = jaln_publish(net_ctx, host, port, classes, mode, NULL);
 	DEBUG_LOG("got jal con %p\n", conn);
 	sleep(9999);
+
+	//TODO: shutdown and cleanup
 	//err = jaln_shutdown(conn);
 	//jaln_context_destroy(&net_ctx);
 	return 0;

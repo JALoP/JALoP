@@ -137,26 +137,6 @@ static VortexMimeHeader * mock_vortex_frame_get_mime_header_success(__attribute_
 	return (VortexMimeHeader *) "dummy";
 }
 
-static const char * mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_ACK(__attribute__((unused)) VortexMimeHeader *header)
-{
-	return JALN_MSG_INIT_ACK;
-}
-
-static const char * mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_NACK(__attribute__((unused)) VortexMimeHeader *header)
-{
-	return JALN_MSG_INIT_NACK;
-}
-
-static const char * mock_vortex_frame_mime_header_content_success_bad_message(__attribute__((unused)) VortexMimeHeader *header)
-{
-	return JALN_MSG_INIT;
-}
-
-static const char * mock_vortex_frame_mime_header_content_failure(__attribute__((unused)) VortexMimeHeader *header)
-{
-	return NULL;
-}
-
 int mock_jaln_handle_initialize_ack_success(__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) enum jaln_role role,
 		__attribute__((unused)) VortexFrame *frame)
@@ -257,6 +237,38 @@ VortexConnection *fake_vortex_channel_get_connection(
 	return (VortexConnection*)0xbadf00d;
 }
 
+CURLcode fake_curl_easy_perform(
+		__attribute__((unused)) CURL *easy_handle)
+{
+	return CURLE_OK;
+}
+
+CURLcode fake_curl_easy_setopt(
+		__attribute__((unused)) CURL *handle,
+		__attribute__((unused)) CURLoption option,
+		...)
+{
+	return CURLE_OK;
+}
+
+void fake_curl_easy_cleanup(
+		__attribute__((unused)) CURL *handle)
+{
+	return;
+}
+
+enum jal_status fake_jaln_create_init_msg(
+		__attribute__((unused)) const char *pub_id,
+		__attribute__((unused)) enum jaln_publish_mode mode,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) axlList *dgst_list,
+		__attribute__((unused)) axlList *enc_list,
+		__attribute__((unused)) struct curl_slist **headers_out)
+{
+	return JAL_OK;
+}
+
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
@@ -270,12 +282,16 @@ void setup()
 	replace_function(vortex_channel_get_connection, fake_vortex_channel_get_connection);
 	replace_function(jaln_publisher_callbacks_is_valid, fake_publisher_callbacks_is_valid);
 	replace_function(jaln_connection_callbacks_is_valid, fake_connection_callbacks_is_valid);
+	replace_function(curl_easy_perform, fake_curl_easy_perform);
+	replace_function(curl_easy_setopt, fake_curl_easy_setopt);
+	replace_function(curl_easy_cleanup, fake_curl_easy_cleanup);
 	calc_dgsts = jaln_digest_info_list_create();
 	peer_dgsts = jaln_digest_info_list_create();
 	dgst_resp_infos = NULL;
 	ctx = jaln_context_create();
 	sess = jaln_session_create();
 	sess->jaln_ctx = ctx;
+	sess->ch_info = jaln_channel_info_create();
 	ctx->conn_callbacks = jaln_connection_callbacks_create();
 
 	ctx->pub_callbacks = jaln_publisher_callbacks_create();
@@ -470,118 +486,13 @@ void test_configure_pub_session_works()
 	restore_function(vortex_connection_set_on_close_full);
 }
 
-void test_jaln_publisher_init_reply_frame_handler_fails_with_invalid_frame()
+void test_jaln_publisher_send_init()
 {
-	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_failure);
-	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
-
-	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
-	assert(fail);
-
-	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
-	restore_function(vortex_connection_shutdown);
-}
-
-void test_jaln_publisher_init_reply_frame_handler_fails_with_VORTEX_FRAME_GET_MIME_HEADER_fail()
-{
-	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
-	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
-	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_failure);
-
-	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
-	assert(fail);
-
-	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
-	restore_function(vortex_connection_shutdown);
-	restore_function(vortex_frame_mime_header_content);
-}
-
-void test_jaln_publisher_init_reply_frame_handler_fails_with_bad_msg()
-{
-	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
-	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
-	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_bad_message);
-	replace_function(jaln_handle_initialize_ack, mock_jaln_handle_initialize_ack_success);
-	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
-	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_success);
-	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
-
-	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
-	assert(fail);
-
-	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
-	restore_function(vortex_connection_shutdown);
-	restore_function(vortex_frame_mime_header_content);
-	restore_function(jaln_handle_initialize_ack);
-	restore_function(vortex_channel_set_received_handler);
-	restore_function(vortex_channel_get_number);
-	restore_function(vortex_channel_new_fullv);
-}
-
-void test_jaln_publisher_init_reply_frame_handler_success_with_JALN_MSG_INIT_ACK()
-{
-	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
-	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
-	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_ACK);
-	replace_function(jaln_handle_initialize_ack, mock_jaln_handle_initialize_ack_success);
-	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
-	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_success);
-	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
-
-	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
-	assert(!fail);
-
-	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
-	restore_function(vortex_connection_shutdown);
-	restore_function(vortex_frame_mime_header_content);
-	restore_function(jaln_handle_initialize_ack);
-	restore_function(vortex_channel_set_received_handler);
-	restore_function(vortex_channel_get_number);
-	restore_function(vortex_channel_new_fullv);
-}
-
-void test_jaln_publisher_init_reply_frame_handler_success_with_JALN_MSG_INIT_NACK()
-{
-	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
-	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
-	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_NACK);
-	replace_function(jaln_handle_initialize_nack, mock_jaln_handle_initialize_nack);
-	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
-	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_success);
-	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
-
-	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
-	assert(!fail);
-
-	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
-	restore_function(vortex_connection_shutdown);
-	restore_function(vortex_frame_mime_header_content);
-	restore_function(jaln_handle_initialize_nack);
-	restore_function(vortex_channel_set_received_handler);
-	restore_function(vortex_channel_get_number);
-	restore_function(vortex_channel_new_fullv);
-}
-
-void test_jaln_publisher_init_reply_frame_handler_fails_with_negative_channel_number()
-{
-	replace_function(jaln_check_content_type_and_txfr_encoding_are_valid, mock_jaln_check_content_type_and_txfr_encoding_are_valid_success);
-	replace_function(vortex_connection_shutdown, mock_vortex_connection_shutdown);
-	replace_function(vortex_frame_mime_header_content, mock_vortex_frame_mime_header_content_success_JALN_MSG_INIT_ACK);
-	replace_function(jaln_handle_initialize_ack, mock_jaln_handle_initialize_ack_success);
-	replace_function(vortex_channel_set_received_handler, mock_vortex_channel_set_received_handler);
-	replace_function(vortex_channel_get_number, mock_vortex_channel_get_number_failure);
-	replace_function(vortex_channel_new_fullv, mock_vortex_channel_new_fullv);
-
-	jaln_publisher_init_reply_frame_handler((VortexChannel*) 0xbadf00d, (VortexConnection *) 0xf00, (VortexFrame*) 0xdeadbeef, sess);
-	assert(fail);
-
-	restore_function(jaln_check_content_type_and_txfr_encoding_are_valid);
-	restore_function(vortex_connection_shutdown);
-	restore_function(vortex_frame_mime_header_content);
-	restore_function(jaln_handle_initialize_ack);
-	restore_function(vortex_channel_set_received_handler);
-	restore_function(vortex_channel_get_number);
-	restore_function(vortex_channel_new_fullv);
+	enum jal_status ret;
+	replace_function(jaln_create_init_msg, fake_jaln_create_init_msg)
+	ret = jaln_publisher_send_init(sess, (CURL *)0xbadf00d);
+	assert_equals(JAL_OK, ret);
+	restore_function(jaln_create_init_msg);
 }
 
 void test_publish_fails_with_bad_input()

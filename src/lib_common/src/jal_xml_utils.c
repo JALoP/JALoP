@@ -235,7 +235,9 @@ enum jal_status jal_xml_output(
 
 	xmlChar *xmlbuff = NULL;
 
-	xmlDocDumpFormatMemory(doc, &xmlbuff, buffersize, 1);
+	int tmp_size;
+	xmlDocDumpFormatMemory(doc, &xmlbuff, &tmp_size, 1);
+	*buffersize = (size_t)tmp_size;
 
 	*buffer = xmlbuff;
 

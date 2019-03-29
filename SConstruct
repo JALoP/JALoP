@@ -57,6 +57,7 @@ packages_at_least = {
 	'libxml2'	: ['libxml-2.0', '2.6.26'],
 	'xmlsec1'	: ['xmlsec1', '1.2.9'],
 	'xmlsec1_openssl'	: ['xmlsec1-openssl', '1.2.9'],
+	'libcurl'	: ['libcurl', '4.1.1'],
 	}
 
 # flags are shared by both debug and release builds
