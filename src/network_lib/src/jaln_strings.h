@@ -53,6 +53,7 @@
 #define JALN_HDRS_MODE "JAL-Mode"
 #define JALN_HDRS_PUBLISHER_ID "JAL-Publisher-Id"
 #define JALN_HDRS_ID "JAL-Id"
+#define JALN_HDRS_SESSION_ID "JAL-Session-Id"
 #define JALN_HDRS_SYS_META_LEN "JAL-System-Metadata-Length"
 #define JALN_HDRS_UNAUTHORIZED_MODE "JAL-Unauthorized-Mode"
 #define JALN_HDRS_UNSUPPORTED_MODE "JAL-Unsupported-Mode"

@@ -240,6 +240,11 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_sessi
 		if (JAL_OK == rc) {
 			// TODO: Store that we validated this.
 		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_SESSION_ID))) {
+		rc = jaln_parse_session_id(content, len, sess);
+		if (JAL_OK == rc) {
+			// TODO: Store that we validated this.
+		}
 	}
 	if (JAL_OK != rc) {
 		sess->errored = 1;
@@ -293,6 +298,16 @@ enum jal_status jaln_parse_configure_digest_challenge_header(
 		__attribute__((unused)) jaln_session *sess)
 {
 	//TODO: check if this matches the expected value from the context
+	return JAL_OK;
+}
+
+enum jal_status jaln_parse_session_id(char *content, size_t len, jaln_session *sess)
+{
+	// fail if a JAL-Session-Id header has already been parsed
+	if (sess->id) {
+		return JAL_E_INVAL;
+	}
+	sess->id = jaln_get_header_value(content, len, strlen(JALN_HDRS_SESSION_ID) + 1);
 	return JAL_OK;
 }
 

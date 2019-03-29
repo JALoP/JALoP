@@ -67,6 +67,7 @@ struct jaln_session_t {
 	int rec_chan_num;                    //!< The channel number for the \p rec_chan
 	int dgst_chan_num;                   //!< The channel number for the \p dgst_chan
 	struct jaln_channel_info *ch_info;   //!< Additional information about the channel
+	char *id;                            //!< Session ID added to messages to associate them with this session
 
 	axl_bool closing;                    //!< Flag that indicates this
 	axl_bool errored;                    //!< Flag that indicates an error occurred within the session
