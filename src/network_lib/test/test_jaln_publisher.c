@@ -261,8 +261,7 @@ enum jal_status fake_jaln_create_init_msg(
 		__attribute__((unused)) const char *pub_id,
 		__attribute__((unused)) enum jaln_publish_mode mode,
 		__attribute__((unused)) enum jaln_record_type type,
-		__attribute__((unused)) axlList *dgst_list,
-		__attribute__((unused)) axlList *enc_list,
+		__attribute__((unused)) jaln_context *ctx,
 		__attribute__((unused)) struct curl_slist **headers_out)
 {
 	return JAL_OK;

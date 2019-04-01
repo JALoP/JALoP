@@ -56,6 +56,7 @@ jaln_session *jaln_session_create()
 	}
 	sess->mode = JALN_UNKNOWN_MODE;
 	sess->ref_cnt = 1;
+	sess->dgst_on = axl_true;  // digest challenge enabled by default
 	sess->rec_chan_num = -1;
 	sess->dgst_chan_num = -1; 
 	sess->ch_info = jaln_channel_info_create();

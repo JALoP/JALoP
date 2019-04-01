@@ -163,6 +163,29 @@ enum jal_status jaln_register_digest_algorithm(jaln_context *jal_ctx,
 				struct jal_digest_ctx *digest_ctx);
 
 /**
+ * Register digest challenge configuration.
+ *
+ * @param[in] jal_ctx The jaln_context to associate with the digest challenge
+ *            configuration.
+ * @param[in] dc_configuration Representation
+ *
+ * Based on the initialization message exchange, the JNL will choose a whether
+ * digest challenges will be required for all records sent over a particular
+ * channel. The configuration(s) registered with this function are permitted
+ * for connections made with context \p jal_ctx. Accepted values are "on" or
+ * "off" for \p dc_configuration.
+ *
+ * If a digest challenge configuration has already been associated with this
+ * context, the configuration is the union of \p dc_configuration and the
+ * existing value. Preference is given to the first value registered.
+ *
+ * @returns JAL_OK on success
+ */
+enum jal_status jaln_register_digest_challenge_configuration(
+				jaln_context *jal_ctx,
+				const char *dc_configuration);
+
+/**
  * Register the JALoP profile and start listening for connections. Once this
  * function is called, the \p jaln_ctx cannot be used to with calls to
  * jaln_context_subscribe or jaln_context_publish. \p jaln_context_listen may

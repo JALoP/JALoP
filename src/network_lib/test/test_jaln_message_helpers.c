@@ -38,6 +38,7 @@
 
 #include "jal_alloc.h"
 
+#include "jaln_context.h"
 #include "jaln_digest.c"
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
@@ -48,6 +49,8 @@
 #define nonce_1_str "nonce_1"
 
 #define pub_id "92ec4bac-4e98-477e-9f2c-14a7f58f7b4d"
+
+#define DC_HEADER_PREFIX "JAL-Accept-Configure-Digest-Challenge: "
 
 #define EXPECTED_SYNC_MSG \
 	"Content-Type: application/http+jalop\r\n" \
@@ -290,6 +293,7 @@ axlList *dgst_list;
 axlList *dgst_algs;
 axlList *xml_encs;
 axlList *dgst_resp_list;
+jaln_context ctx;
 
 void setup()
 {
@@ -335,6 +339,8 @@ void setup()
 	axl_list_append(dgst_resp_list, dr_1);
 	axl_list_append(dgst_resp_list, dr_2);
 	axl_list_append(dgst_resp_list, dr_3);
+	ctx.dgst_algs = dgst_algs;
+	ctx.xml_encodings = xml_encs;
 }
 
 void teardown()
@@ -347,6 +353,8 @@ void teardown()
 	axl_list_free(xml_encs);
 	axl_list_free(dgst_resp_list);
 	jaln_record_info_destroy(&rec_info);
+	ctx.dgst_algs = NULL;
+	ctx.xml_encodings = NULL;
 }
 
 static char *flatten_headers(struct curl_slist *list)
@@ -373,6 +381,17 @@ static char *flatten_headers(struct curl_slist *list)
 	flat = realloc(flat, flat_len + sep_len + 1);
 	strcpy(flat + flat_len, separator);
 	return flat;
+}
+
+static int find_in_headers(struct curl_slist *list, const char *header)
+{
+	while (list) {
+		if (!strcmp(list->data, header)) {
+			return 1;
+		}
+		list = list->next;
+	}
+	return 0;
 }
 
 void test_create_journal_resume_msg_with_valid_parameters()
@@ -779,7 +798,7 @@ void test_create_init_msg_works_for_log()
 {
 	struct curl_slist *headers = NULL;
 	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
-				dgst_algs, xml_encs, &headers));
+				&ctx, &headers));
 	assert_not_equals(NULL, headers);
 	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE));
 	curl_slist_free_all(headers);
@@ -789,7 +808,7 @@ void test_create_init_msg_works_for_audit()
 {
 	struct curl_slist *headers = NULL;
 	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_AUDIT,
-				dgst_algs, xml_encs, &headers));
+				&ctx, &headers));
 	assert_not_equals(NULL, headers);
 	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_AUDIT_ARCHIVE));
 	curl_slist_free_all(headers);
@@ -799,7 +818,7 @@ void test_create_init_msg_works_for_journal_data()
 {
 	struct curl_slist *headers = NULL;
 	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL,
-				dgst_algs, xml_encs, &headers));
+				&ctx, &headers));
 	assert_not_equals(NULL, headers);
 	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_JOURNAL_ARCHIVE));
 	curl_slist_free_all(headers);
@@ -809,8 +828,9 @@ void test_create_init_msg_works_with_no_enc()
 {
 	axlList *empty_list = axl_list_new(jaln_string_list_case_insensitive_func, free);
 	struct curl_slist *headers = NULL;
+	ctx.xml_encodings = empty_list;
 	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
-				dgst_algs, empty_list, &headers));
+				&ctx, &headers));
 	assert_not_equals(NULL, headers);
 	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE_NO_ENC));
 	axl_list_free(empty_list);
@@ -821,11 +841,60 @@ void test_create_init_msg_works_with_no_digests()
 {
 	axlList *empty_list = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
 	struct curl_slist *headers = NULL;
+	ctx.dgst_algs = empty_list;
 	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
-				empty_list, xml_encs, &headers));
+				&ctx, &headers));
 	assert_not_equals(NULL, headers);
 	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE_NO_DGST));
 	axl_list_free(empty_list);
+	curl_slist_free_all(headers);
+}
+
+void test_create_init_msg_works_with_challenge_on()
+{
+	struct curl_slist *headers = NULL;
+	const char *dc_str = DC_HEADER_PREFIX "on";
+	ctx.digest_challenge = JALN_DC_ON;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
+				&ctx, &headers));
+	assert_not_equals(NULL, headers);
+	assert_not_equals(0, find_in_headers(headers, dc_str));
+	curl_slist_free_all(headers);
+}
+
+void test_create_init_msg_works_with_challenge_off()
+{
+	struct curl_slist *headers = NULL;
+	const char *dc_str = DC_HEADER_PREFIX "off";
+	ctx.digest_challenge = JALN_DC_OFF;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
+				&ctx, &headers));
+	assert_not_equals(NULL, headers);
+	assert_not_equals(0, find_in_headers(headers, dc_str));
+	curl_slist_free_all(headers);
+}
+
+void test_create_init_msg_works_with_challenge_pref_on()
+{
+	struct curl_slist *headers = NULL;
+	const char *dc_str = DC_HEADER_PREFIX "on, off";
+	ctx.digest_challenge = JALN_DC_PREF_ON;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
+				&ctx, &headers));
+	assert_not_equals(NULL, headers);
+	assert_not_equals(0, find_in_headers(headers, dc_str));
+	curl_slist_free_all(headers);
+}
+
+void test_create_init_msg_works_with_challenge_pref_off()
+{
+	struct curl_slist *headers = NULL;
+	const char *dc_str = DC_HEADER_PREFIX "off, on";
+	ctx.digest_challenge = JALN_DC_PREF_OFF;
+	assert_equals(JAL_OK, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
+				&ctx, &headers));
+	assert_not_equals(NULL, headers);
+	assert_not_equals(0, find_in_headers(headers, dc_str));
 	curl_slist_free_all(headers);
 }
 
@@ -834,23 +903,26 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 	enum jaln_record_type type = JALN_RTYPE_JOURNAL;
 	struct curl_slist *headers = NULL;
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(NULL, JALN_ARCHIVE_MODE, type, dgst_algs,
-							xml_encs, &headers));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(NULL, JALN_ARCHIVE_MODE, type, &ctx, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE - 1, type, dgst_algs,
-							xml_encs, &headers));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE - 1, type, &ctx, &headers));
 
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT,
-							dgst_algs, xml_encs, &headers));
+							&ctx, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, NULL, xml_encs, &headers));
+	jaln_context inval_ctx;
+	inval_ctx.dgst_algs = NULL;
+	inval_ctx.xml_encodings = ctx.xml_encodings;
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, &inval_ctx, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, dgst_algs, NULL, &headers));
+	inval_ctx.dgst_algs = ctx.dgst_algs;
+	inval_ctx.xml_encodings = NULL;
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, &inval_ctx, &headers));
 
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, NULL));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, &ctx, NULL));
 
 	headers = (struct curl_slist *) 0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, dgst_algs, xml_encs, &headers));
+	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, &ctx, &headers));
 }
 
 void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()

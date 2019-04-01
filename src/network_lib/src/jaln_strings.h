@@ -88,6 +88,9 @@
 #define JALN_MSG_SUBSCRIBE_ARCHIVE "subscribe-archival"
 #define JALN_MSG_SYNC "sync"
 
+#define JALN_DIGEST_CHALLENGE_OFF "off"
+#define JALN_DIGEST_CHALLENGE_ON "on"
+
 #define JALN_DGST_SHA256 "sha256"
 
 #define JALN_DGST_CHAN_FORMAT_STR "digest:%d"

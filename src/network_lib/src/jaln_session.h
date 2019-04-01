@@ -62,6 +62,7 @@ struct jaln_session_t {
 
 	jaln_context *jaln_ctx;              //!< The context we belong to.
 	struct jal_digest_ctx *dgst;         //!< A copy of the digest to use.
+	axl_bool dgst_on;                    //!< Whether digest challenging is configured to be on
 	VortexChannel *rec_chan;             //!< The channel used for sending/receiving records
 	VortexChannel *dgst_chan;            //!< The channel used for sending/receiving digests and sync messages.
 	int rec_chan_num;                    //!< The channel number for the \p rec_chan

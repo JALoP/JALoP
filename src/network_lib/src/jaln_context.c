@@ -189,6 +189,27 @@ enum jal_status jaln_register_digest_algorithm(jaln_context *ctx,
 	return JAL_OK;
 }
 
+enum jal_status jaln_register_digest_challenge_configuration(jaln_context *ctx, const char *dc_conf)
+{
+	if (!ctx || !dc_conf) {
+		return JAL_E_INVAL;
+	}
+	if (!strcmp(dc_conf, JALN_DIGEST_CHALLENGE_ON)) {
+		// if this is the first registration, set preference bit
+		if (JALN_DC_UNSET == ctx->digest_challenge) {
+			ctx->digest_challenge = JALN_DC_ON;
+		} else {
+			ctx->digest_challenge |= JALN_DC_ON_BIT;
+		}
+		return JAL_OK;
+	}
+	if (!strcmp(dc_conf, JALN_DIGEST_CHALLENGE_OFF)) {
+		ctx->digest_challenge |= JALN_DC_OFF_BIT;
+		return JAL_OK;
+	}
+	return JAL_E_INVAL;
+}
+
 void jaln_ctx_ref(jaln_context *ctx)
 {
 	if (!ctx) {

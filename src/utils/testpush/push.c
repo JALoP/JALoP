@@ -354,6 +354,7 @@ int main(int argc, char **argv) {
 	enum jal_status err; // TODO: check for and handle errors
 	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
 	jaln_register_digest_algorithm(net_ctx, dc1);
+	err = jaln_register_digest_challenge_configuration(net_ctx, "on");
 	err = jaln_register_encoding(net_ctx, "none");
 
 	err = jaln_register_tls(net_ctx, key, cert, sub_certs);

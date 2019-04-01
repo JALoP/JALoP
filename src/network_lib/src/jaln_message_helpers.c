@@ -195,11 +195,11 @@ static enum jal_status jaln_header_value_match(const char *content, const size_t
 	return !memcmp(content + offset, value, value_len)? JAL_OK : JAL_E_INVAL;
 }
 
+#define JALN_STR_W_LEN(_str) _str, strlen(_str)
 // There needs to be a struct or masked int to keep track of what has been parsed/validated.
 // That way jaln_publish can see what headers have been received and set defaults/fail if some were not.
 enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_session *sess)
 {
-#define JALN_STR_W_LEN(_str) _str, strlen(_str)
 	enum jal_status rc = JAL_OK; // Allow headers with names that aren't validated.
 	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_CONTENT_TYPE))) {
 		const size_t name_len = strlen(JALN_HDRS_CONTENT_TYPE);
@@ -250,7 +250,6 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_sessi
 		sess->errored = 1;
 	}
 	return rc;
-#undef JAL_STR_W_LEN
 }
 
 static char *jaln_get_header_value(const char *content, const size_t len, size_t offset)
@@ -293,13 +292,29 @@ enum jal_status jaln_parse_digest_header(char *content, size_t len, jaln_session
 }
 
 enum jal_status jaln_parse_configure_digest_challenge_header(
-		__attribute__((unused)) char *content,
-		__attribute__((unused)) size_t len,
-		__attribute__((unused)) jaln_session *sess)
+		char *content,
+		size_t len,
+		jaln_session *sess)
 {
-	//TODO: check if this matches the expected value from the context
-	return JAL_OK;
+	const size_t name_len = strlen(JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE);
+	const char *value_start = content + name_len + 1;
+	const size_t value_len = len - name_len - 1;
+	if (JAL_OK == jaln_header_value_match(value_start, value_len,
+			JALN_STR_W_LEN(JALN_DIGEST_CHALLENGE_ON)) &&
+			(sess->jaln_ctx->digest_challenge & JALN_DC_ON_BIT ||
+			JALN_DC_UNSET == sess->jaln_ctx->digest_challenge)) {
+		sess->dgst_on = 1;
+		return JAL_OK;
+
+	} else if (JAL_OK == jaln_header_value_match(value_start, value_len,
+			JALN_STR_W_LEN(JALN_DIGEST_CHALLENGE_OFF)) &&
+			sess->jaln_ctx->digest_challenge & JALN_DC_OFF_BIT) {
+		sess->dgst_on = 0;
+		return JAL_OK;
+	}
+	return JAL_E_INVAL;
 }
+#undef JALN_STR_W_LEN
 
 enum jal_status jaln_parse_session_id(char *content, size_t len, jaln_session *sess)
 {
@@ -439,13 +454,16 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 }
 
 enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode mode, enum jaln_record_type type,
-		axlList *dgst_list, axlList *enc_list, struct curl_slist **headers_out)
+		jaln_context *ctx, struct curl_slist **headers_out)
 {
-	if (!pub_id || !dgst_list || !enc_list ||
+	if (!pub_id || !ctx || !ctx->dgst_algs || !ctx->xml_encodings ||
 			!headers_out || *headers_out) {
 		return JAL_E_INVAL;
 	}
 	// TODO: validate that pub_id is a uuid.
+
+	axlList *dgst_list = ctx->dgst_algs;
+	axlList *enc_list = ctx->xml_encodings;
 
 	struct curl_slist *headers = NULL;
 
@@ -485,11 +503,40 @@ enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode 
 	const size_t pub_id_len = strlen(pub_id);
 	char *pub_id_str = jal_malloc(prefix_len + pub_id_len + 1);
 	memcpy(pub_id_str, JALN_HDRS_PUBLISHER_ID JALN_COLON_SPACE, prefix_len);
-	memcpy(pub_id_str + prefix_len, pub_id, pub_id_len);
-	pub_id_str[prefix_len + pub_id_len] = '\0';
+	memcpy(pub_id_str + prefix_len, pub_id, pub_id_len + 1);
 	
+	char *dc_config_str = NULL;
 	char *dgst_list_str = NULL;
 	char *enc_list_str = NULL;
+
+	if (JALN_DC_UNSET != ctx->digest_challenge) {
+		const char *dc_config_prefix = JALN_HDRS_ACCEPT_CONFIGURE_DIGEST_CHALLENGE JALN_COLON_SPACE;
+		const char *dc_config_val;
+		switch(ctx->digest_challenge) {
+		case JALN_DC_PREF_OFF: {
+			dc_config_val = JALN_DIGEST_CHALLENGE_OFF ", " JALN_DIGEST_CHALLENGE_ON;
+			break;
+		}
+		case JALN_DC_PREF_ON: {
+			dc_config_val = JALN_DIGEST_CHALLENGE_ON ", " JALN_DIGEST_CHALLENGE_OFF;
+			break;
+		}
+		case JALN_DC_ON: {
+			dc_config_val = JALN_DIGEST_CHALLENGE_ON;
+			break;
+		}
+		case JALN_DC_OFF: {
+			dc_config_val = JALN_DIGEST_CHALLENGE_OFF;
+			break;
+		}
+		default : goto out;
+		}
+		const size_t dc_config_prefix_len = strlen(dc_config_prefix);
+		const size_t dc_config_val_len = strlen(dc_config_val);
+		dc_config_str = jal_malloc(dc_config_prefix_len + dc_config_val_len + 1);
+		memcpy(dc_config_str, dc_config_prefix, dc_config_prefix_len);
+		memcpy(dc_config_str + dc_config_prefix_len, dc_config_val, dc_config_val_len + 1);
+	}
 
 	if (!axl_list_is_empty(dgst_list)) {
 		uint64_t dgst_list_size = 0;
@@ -566,12 +613,6 @@ enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode 
 		cursor = NULL;
 	}
 
-
-	if (!axl_list_is_empty(dgst_list)) {
-		axl_list_cursor_free(cursor);
-		cursor = NULL;
-	}
-
 	struct curl_slist *tmp;
 	tmp = curl_slist_append(headers, preamble);
 	if (!tmp) {
@@ -602,6 +643,14 @@ enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode 
 		goto out;
 	}
 	headers = tmp;
+	if (dc_config_str) {
+		tmp = curl_slist_append(headers, dc_config_str);
+		if (!tmp) {
+			curl_slist_free_all(headers);
+			goto out;
+		}
+		headers = tmp;
+	}
 	if (dgst_list_str) {
 		tmp = curl_slist_append(headers, dgst_list_str);
 		if (!tmp) {
@@ -626,6 +675,7 @@ out:
 	if (cursor) {
 		axl_list_cursor_free(cursor);
 	}
+	free(dc_config_str);
 	free(dgst_list_str);
 	free(enc_list_str);
 	return ret;

@@ -273,8 +273,7 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
  *
  * @param[in] pub_id UUID identifying the publisher.
  * @param[in] type The type of data to send over this channel.
- * @param[in] digest_list A list of digest_ctxs that can be used
- * @param[in] xml_encodings A list of XML encodings that that can be used.
+ * @param[in] ctx JALoP network context for this channel.
  * @param[out] headers This will contain the libcurl headers for the initialize message.
  *
  * @return JAL_E_INVAL if there is something wrong with the parameters, or
@@ -282,7 +281,7 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
  *
  */
 enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode mode, enum jaln_record_type type,
-		axlList *dgst_algs, axlList *xml_encodings, struct curl_slist **headers);
+		jaln_context *ctx, struct curl_slist **headers);
 
 /**
  * Create the headers for a ANS reply to a 'subscribe' message.
