@@ -32,6 +32,13 @@
 #include <test-dept.h>
 #include <string.h>
 
+extern void jaln_session_unref(jaln_session **);
+
+void fake_jaln_session_unref(__attribute__((unused))jaln_session **sess)
+{
+	return;
+}
+
 void test_connection_create()
 {
 	struct jaln_connection * conn;
@@ -45,6 +52,7 @@ void test_connection_create()
 
 void test_connection_destroy()
 {
+	replace_function(&jaln_session_unref, &fake_jaln_session_unref);
 	struct jaln_connection * conn;
 	conn = jaln_connection_create();
 	jaln_connection_destroy(&conn);

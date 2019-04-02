@@ -290,6 +290,7 @@ void setup()
 	ctx = jaln_context_create();
 	sess = jaln_session_create();
 	sess->jaln_ctx = ctx;
+	sess->curl_ctx = (CURL *)(0xbadf00d);
 	sess->ch_info = jaln_channel_info_create();
 	ctx->conn_callbacks = jaln_connection_callbacks_create();
 
@@ -489,7 +490,7 @@ void test_jaln_publisher_send_init()
 {
 	enum jal_status ret;
 	replace_function(jaln_create_init_msg, fake_jaln_create_init_msg)
-	ret = jaln_publisher_send_init(sess, (CURL *)0xbadf00d);
+	ret = jaln_publisher_send_init(sess);
 	assert_equals(JAL_OK, ret);
 	restore_function(jaln_create_init_msg);
 }

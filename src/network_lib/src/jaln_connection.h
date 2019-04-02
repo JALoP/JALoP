@@ -35,6 +35,9 @@
 struct jaln_connection {
 	jaln_context *jaln_ctx;
 	VortexConnection *v_conn;
+	jaln_session *journal_sess;
+	jaln_session *audit_sess;
+	jaln_session *log_sess;
 	void *user_data;
 };
 

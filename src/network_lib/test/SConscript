@@ -196,7 +196,13 @@ tests.append(env.TestDeptTest('test_jaln_subscriber_state_machine.c',
 		sync_msg_handler_obj], useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_connection.c',
-	other_sources=[lib_common])[0].abspath)
+	other_sources=[lib_common, sess_obj,
+		ch_info_obj, conn_cb_obj, ctx_obj, dgst_obj, dgst_info_obj,
+		dgst_msg_handler_obj, dgst_resp_info_obj, dgst_resp_msg_hndlr_obj,
+		enc_obj, hlpr_obj, hndl_obj, journal_resume_handler_obj, publisher_obj,
+		pub_cb_obj, pub_feeder_obj, rec_info_obj, str_utils_obj,
+		sub_cb_obj, sub_dgst_chan_obj, sub_msg_handler_obj, sub_state_mach_obj,
+		sync_msg_handler_obj], useProxies=True)[0].abspath)
 
 tests.append(env.TestDeptTest('test_jaln_handle_init_replies.c',
 	other_sources=[lib_common,

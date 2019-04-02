@@ -407,22 +407,19 @@ static size_t jaln_noop_write(
         return nmemb;
 }
 
-enum jal_status jaln_publisher_send_init(jaln_session *session, CURL *curl)
+enum jal_status jaln_publisher_send_init(jaln_session *session)
 {
 	char *init_msg = NULL;
 	struct curl_slist *headers = NULL;
-	enum jal_status ret = JAL_OK;
-	if (!curl) {
-		// libcurl initialization failed
-		jaln_session_unref(session);
-		return JAL_E_INVAL;
-	}
-	if (!session || !session->ch_info || !session->jaln_ctx) {
+	enum jal_status ret = JAL_E_INVAL;
+	CURL *curl = NULL;
+	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx) {
 		// shouldn't ever happen
 		ret = JAL_E_INVAL;
 		goto err_out;
 	}
 
+	curl = session->curl_ctx;
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
 
@@ -449,7 +446,6 @@ enum jal_status jaln_publisher_send_init(jaln_session *session, CURL *curl)
 	}
 
 	curl_slist_free_all(headers);
-
 	goto out;
 
 err_out:
@@ -470,31 +466,59 @@ static const char *jaln_rtype_str(const int data_class)
 }
 
 // Set the URL and TLS information
-//static void // TODO: store curl context(s) in jaln_session
-static CURL *jaln_setup_session(
-		jaln_session *sess, // does this fit better at the session abstraction?
+static enum jal_status jaln_setup_session(
+		jaln_session *sess,
 		const char *host,
 		const char *port,
 		const int data_class)
 {
-	// TODO: error checks
 	CURL *curl_ctx = curl_easy_init();
+	if (!curl_ctx) {
+		return JAL_E_COMM;
+	}
 	const char *class_str = jaln_rtype_str(data_class);
 	jaln_context *ctx = sess->jaln_ctx;
 	const int tls = ctx->private_key && ctx->public_cert && ctx->peer_certs;
 	char *url;
 	jal_asprintf(&url, "http%s://%s:%s/%s", tls? "s" : "", host, port, class_str);
-	curl_easy_setopt(curl_ctx, CURLOPT_URL, url);
+	if (CURLE_OK != curl_easy_setopt(curl_ctx, CURLOPT_URL, url)) {
+		curl_easy_cleanup(curl_ctx);
+		return JAL_E_NO_MEM;
+	}
 	if (tls)
 	{
 		// Disable cert verification for now.
 		// TODO: verify against peer_certs
 		curl_easy_setopt(curl_ctx, CURLOPT_SSL_VERIFYPEER, 0);
-		curl_easy_setopt(curl_ctx, CURLOPT_SSLKEY, ctx->private_key);
-		curl_easy_setopt(curl_ctx, CURLOPT_SSLCERT, ctx->public_cert);
-
+		if (CURLE_OK != curl_easy_setopt(curl_ctx, CURLOPT_SSLKEY, ctx->private_key) ||
+			CURLE_OK != curl_easy_setopt(curl_ctx, CURLOPT_SSLCERT, ctx->public_cert)) {
+			curl_easy_cleanup(curl_ctx);
+			return JAL_E_NO_MEM;
+		}
 	}
-	return curl_ctx;
+	sess->curl_ctx = curl_ctx;
+	return JAL_OK;
+}
+
+enum jal_status jaln_initialize_session(
+		jaln_session **session,
+		jaln_context *ctx,
+		const char *host,
+		const char *port,
+		const enum jaln_publish_mode mode,
+		const int rtype)
+{
+	*session = jaln_publisher_create_session(ctx, host, rtype);
+	if (!*session) {
+		return JAL_E_INVAL;
+	}
+	(*session)->mode = mode;
+	enum jal_status rc;
+	if (JAL_OK != (rc = jaln_setup_session(*session, host, port, rtype)) ||
+		JAL_OK != (rc = jaln_publisher_send_init(*session))) {
+		jaln_session_destroy(session);
+	}
+	return rc;
 }
 
 struct jaln_connection *jaln_publish(
@@ -534,28 +558,28 @@ struct jaln_connection *jaln_publish(
 	// According to the doxygen comments in jaln_network.h, one call to publish should set up
 	// session for each type in data_classes, although it did not do this previously.
 	jaln_session *session = NULL;
-	CURL* curl = NULL;
 
 	if (data_classes & JALN_RTYPE_JOURNAL) {
-		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_JOURNAL);
-		session->mode = mode;
-		curl = jaln_setup_session(session, host, port, JALN_RTYPE_JOURNAL);
-	} else if (data_classes & JALN_RTYPE_AUDIT) {
-		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_AUDIT);
-		session->mode = mode;
-		curl = jaln_setup_session(session, host, port, JALN_RTYPE_AUDIT);
-	} else if(data_classes & JALN_RTYPE_LOG) {
-		session = jaln_publisher_create_session(ctx, host, JALN_RTYPE_LOG);
-		session->mode = mode;
-		curl = jaln_setup_session(session, host, port, JALN_RTYPE_LOG);
+		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_JOURNAL)) {
+			jaln_connection_destroy(&jconn);
+			return NULL;
+		}
+		jconn->journal_sess = session;
 	}
-
-	if (jaln_publisher_send_init(session, curl) != JAL_OK) {
-		// free jconn and return NULL
-		jaln_connection_destroy(&jconn);
-        }
-	jaln_session_destroy(&session);  // TODO: store session(s) within connection
-	curl_easy_cleanup(curl);
+	if (data_classes & JALN_RTYPE_AUDIT) {
+		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_AUDIT)) {
+			jaln_connection_destroy(&jconn);
+			return NULL;
+		}
+		jconn->audit_sess = session;
+	}
+	if(data_classes & JALN_RTYPE_LOG) {
+		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_LOG)) {
+			jaln_connection_destroy(&jconn);
+			return NULL;
+		}
+		jconn->log_sess = session;
+	}
 
 	return jconn;
 }

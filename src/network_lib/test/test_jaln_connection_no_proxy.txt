@@ -1,0 +1,2 @@
+jaln_connection_create_test_dept_proxy jaln_connection_create
+jaln_connection_destroy_test_dept_proxy jaln_connection_destroy

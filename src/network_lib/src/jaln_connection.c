@@ -29,6 +29,7 @@
  */
 #include "jaln_connection.h"
 #include "jal_alloc.h"
+#include "jaln_session.h"
 
 struct jaln_connection *jaln_connection_create()
 {
@@ -41,6 +42,9 @@ void jaln_connection_destroy(struct jaln_connection **conn) {
 	if (!conn || !*conn) {
 		return;
 	}
+	jaln_session_unref((*conn)->journal_sess);
+	jaln_session_unref((*conn)->audit_sess);
+	jaln_session_unref((*conn)->log_sess);
 	free(*conn);
 	*conn = NULL;
 }
