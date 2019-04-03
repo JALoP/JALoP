@@ -91,7 +91,7 @@ DECL_MIME_HANDLER(fake_get_mime_header_no_encs, "jal-accept-xml-compression", NU
 DECL_MIME_HANDLER(fake_get_mime_header_no_agent, "jal-agent", NULL)
 DECL_MIME_HANDLER(fake_get_mime_header_audit, "jal-data-class", "audit");
 DECL_MIME_HANDLER(fake_get_mime_header_log, "jal-data-class", "log");
-DECL_MIME_HANDLER(fake_get_mime_header_publisher, "jal-mode", "publish-live");
+DECL_MIME_HANDLER(fake_get_mime_header_publisher, "jal-mode", "live");
 
 static axl_bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
 {
