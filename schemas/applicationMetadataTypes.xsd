@@ -15,13 +15,13 @@
 				<element ref="jamt:Syslog"/>
 				<element ref="jamt:Logger"/>
 				<element name="Custom" type="anyType">
-					<annotation><documentation>The custom elment is intended for applications that are not satisfied with the restrictions of the syslog and logger elements. It's use is discouraged.</documentation></annotation>
+					<annotation><documentation>The custom element is intended for applications that are not satisfied with the restrictions of the syslog and logger elements. It's use is discouraged.</documentation></annotation>
 				</element>
 			</choice>
 			<element ref="jamt:JournalMetadata" minOccurs="0"/>
 			<element ref="ds:Signature" minOccurs="0">
 				<annotation><documentation>Applications may include a Signature element to sign this document. The Signature is validated against the XML Digital signature schema (http://www.w3.org/2000/09/xmldsig#) and JALoP does not impose any restrictions or limits on what an application may do. However, for greater interoperability, applications are encouraged to follow the scheme that follows.
-	The SignedInfo element must use the CanonicalizationMethod "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments". Because this canonicalization excludes all namespaces by default, applications must include an InclusiveNamespaces elment that lists the prefixes used within the SignedInfo elmenet. Any SignatureMethod, except those using SHA1 digests, may be used. The recommended SignatureMethod is "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256".
+	The SignedInfo element must use the CanonicalizationMethod "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments". Because this canonicalization excludes all namespaces by default, applications must include an InclusiveNamespaces element that lists the prefixes used within the SignedInfo elmenet. Any SignatureMethod, except those using SHA1 digests, may be used. The recommended SignatureMethod is "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256".
 		The SignedInfo must contain a single Reference element. The Reference must have the URI "#xpointer(id('ID'))", where 'ID' is the JAL id of the ApplicationMetadata element. The reference element should have the following 2 transforms:
 	The first transform must use the algorithm "http://www.w3.org/2000/09/xmldsig#enveloped-signature".
 	The second transform must use the algorithm "http://www.w3.org/2001/10/xml-exc-c14n#WithComments". This transform must include an InclusiveNamespaces element with a PrefixList that contains every namespace prefix used in the document.
