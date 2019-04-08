@@ -19,7 +19,7 @@
 				<annotation><documentation>A string describing the machine that generated the JAL data.</documentation></annotation>
 			</element>
 			<element name="HostUUID" type="jsm:uuidType">
-				<annotation><documentation>An UUID associated with this host.  Assignments of UUIDs is handled outside of the JALoP protocol.</documentation></annotation>
+				<annotation><documentation>A UUID associated with the host that produces the JAL records. Generation and assignment of UUIDs are handled outside of the JALoP protocol.</documentation></annotation>
 			</element>
 			<element name="Timestamp" type="dateTime">
 				<annotation><documentation>The timestamp is the time when the JAL Local Store processes the record</documentation></annotation>
@@ -31,20 +31,20 @@
 				<annotation><documentation>Information related to effective userID of the process that generated this JAL data. In some cases (e.g. syslog) this will not be the actual process that generated the data. Instead, it is related to the process that gave the data to the Local JALoP Store.</documentation></annotation>
 			</element>
 			<element minOccurs="0" name="SecurityLabel" type="string">
-				<annotation><documentation>The security label of the process that generated this piece of JAL data. In some cases (e.g. syslog) this will not be the label of the generated the data. Instead, it is the label of the process that gave the data to the Local JALoP store</documentation></annotation>
+				<annotation><documentation>The security label of the process that generated this piece of JAL data. In some cases (e.g. syslog) this will not be the label of the process that generated the data. Instead, it is the label of the process that gave the data to the Local JALoP store</documentation></annotation>
 			</element>
 			<element ref="ds:Signature" minOccurs="0">
-				<annotation><documentation>Applications may include a Signature element to sign this document. The SignedInfo element must use the CanonicalizationMethod "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments".  This canonicalization method excludes all namespaces by defaults, applications must include an InclusiveNamespaces element that lists the prefixes used within the SignedInfo element. Any SignatureMethod, except those using SHA1 digests, may be used. The recommended SignatureMethod is "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256".
-	The SignedInfo must contain a single Reference element. The Reference must have the URI "#xpointer(id('ID'))", where 'ID' is the JID of the SystemMetadata element of this document. The Reference element must have 2 Transform elements.
+				<annotation><documentation>Applications may include a Signature element to sign this document. The SignedInfo element must use the CanonicalizationMethod "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments". This canonicalization method excludes all namespaces by default, applications must include an InclusiveNamespaces element that lists the prefixes used within the SignedInfo element. Any SignatureMethod, except those using SHA1 digests, may be used. The recommended SignatureMethod is "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256".
+	The SignedInfo must contain a single Reference element. The Reference must have the URI "#xpointer(id('ID'))", where 'ID' is the JID of the SystemMetadata element of this document. The Reference element must have two Transform elements.
 	The first transform must use the Algorithm "http://www.w3.org/2000/09/xmldsig#enveloped-signature".
 	The second transform must use the Algorithm "http://www.w3.org/2001/10/xml-exc-c14n#WithComments". This transform must include and InclusiveNamespaces element with a PrefixList that contains every namespace prefix used in the document.
 	Registered namespaces (including their prefixes) may be obtained with the XPath expression "//namespace::*" .
 	Applications are encouraged, but not required to include the Signature element.</documentation></annotation>
 			</element>
 			<element ref="ds:Manifest" minOccurs='0'>
-				<annotation><documentation>The manifest provides a place for the JALoP Local store to record digests of the JAL payload (journal, audit, or log data) and application metadata. The Manifest must contain 2 Reference elmeents, one for the apllication metadata, and a second for the payload (journal, audit, or log data).  The Reference element for the application metadata must use the URI "jalop:application-metadata". The application metadata must have a single transform with the Algorithm "http://www.w3.org/2006/12/xml-c14n11#WithComments". There must not be any other Transformed applied to the application metadata. The JAL local store may use any of the digest algorithms listed at http://www.w3.org/TR/xmldsig-core1/#sec-AlgID except SHA1. SHA256 is recommended.
+				<annotation><documentation>The manifest provides a place for the JALoP Local store to record digests of the JAL payload (journal, audit, or log data) and application metadata. The Manifest must contain two Reference elmeents, one for the apllication metadata, and a second for the payload (journal, audit, or log data). The Reference element for the application metadata must use the URI "jalop:application-metadata". The application metadata must have a single transform with the Algorithm "http://www.w3.org/2006/12/xml-c14n11#WithComments". There must not be any other Transformed applied to the application metadata. The JAL local store may use any of the digest algorithms listed at http://www.w3.org/TR/xmldsig-core1/#sec-AlgID except SHA1. SHA256 is recommended.
 
-	The Reference element for the payload (journal, audit, or log data) must have the URI "jalop:paylod". Applications may use digest method listed at  http://www.w3.org/TR/xmldsig-core1/#sec-AlgID except SHA1.  If the payload is journal or log data, applications must not apply any transforms.  If the payload is audit data, the application must use the conicalization method "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", and must not apply any additional transforms.
+	The Reference element for the payload (journal, audit, or log data) must have the URI "jalop:paylod". Applications may use digest method listed at  http://www.w3.org/TR/xmldsig-core1/#sec-AlgID except SHA1. If the payload is journal or log data, applications must not apply any transforms. If the payload is audit data, the application must use the conicalization method "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", and must not apply any additional transforms.
 
 	JAL network stores are required to include this Manifest and the two Reference elements described above.</documentation></annotation>
 			</element>
