@@ -267,6 +267,11 @@ enum jal_status fake_jaln_create_init_msg(
 	return JAL_OK;
 }
 
+enum jal_status fake_jaln_verify_init_ack_headers(
+		__attribute__((unused)) struct jaln_init_ack_header_info *info)
+{
+	return JAL_OK;
+}
 
 void setup()
 {
@@ -281,6 +286,7 @@ void setup()
 	replace_function(vortex_channel_get_connection, fake_vortex_channel_get_connection);
 	replace_function(jaln_publisher_callbacks_is_valid, fake_publisher_callbacks_is_valid);
 	replace_function(jaln_connection_callbacks_is_valid, fake_connection_callbacks_is_valid);
+	replace_function(jaln_verify_init_ack_headers, fake_jaln_verify_init_ack_headers)
 	replace_function(curl_easy_perform, fake_curl_easy_perform);
 	replace_function(curl_easy_setopt, fake_curl_easy_setopt);
 	replace_function(curl_easy_cleanup, fake_curl_easy_cleanup);

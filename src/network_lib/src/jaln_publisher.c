@@ -412,6 +412,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	char *init_msg = NULL;
 	struct curl_slist *headers = NULL;
 	enum jal_status ret = JAL_E_INVAL;
+	struct jaln_init_ack_header_info *header_info = NULL;
 	CURL *curl = NULL;
 	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx) {
 		// shouldn't ever happen
@@ -420,6 +421,8 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	}
 
 	curl = session->curl_ctx;
+	header_info = jaln_init_ack_header_info_create(session);
+
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
 
@@ -427,7 +430,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, NULL);
 
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, jaln_publisher_init_reply_frame_handler);
-	curl_easy_setopt(curl, CURLOPT_HEADERDATA, session);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, header_info);
 
 	const char *pub_id = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"; // TODO: retrieve from context 
 
@@ -445,12 +448,18 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 		ret = JAL_E_COMM;
 	}
 
+	ret = jaln_verify_init_ack_headers(header_info);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+
 	curl_slist_free_all(headers);
 	goto out;
 
 err_out:
 	curl_easy_cleanup(curl);
 out:
+	jaln_init_ack_header_info_destroy(&header_info);
 	free(init_msg);
 	return ret;
 }

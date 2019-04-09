@@ -932,11 +932,54 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(pub_id, JALN_ARCHIVE_MODE, type, &ctx, &headers));
 }
 
+void test_verify_init_ack_headers()
+{
+	jaln_session *sess = jaln_session_create();
+	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
+	info->sess->ch_info = jaln_channel_info_create();
+
+	enum jal_status rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->content_type_valid = axl_true;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->message_type_valid = axl_true;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->version_valid = axl_true;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->sess->dgst = 0xdeadbeef;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->sess->ch_info->encoding = 0xdeadbeef;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->sess->id = 0xdeadbeef;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_OK, rc);
+
+	info->content_type_valid = axl_false;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	jaln_channel_info_destroy(info->sess->ch_info);
+	jaln_session_destroy(info->sess);
+	jaln_init_ack_header_info_destroy(&info);
+}
+
 void test_parse_init_ack_header_record_id()
 {
 	jaln_session *sess = jaln_session_create();
 	sess->pub_data = jaln_pub_data_create();
-	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), sess);
+	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
+	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
 
 	assert_equals(JAL_OK, rc);
 	assert_not_equals(NULL, sess->pub_data->nonce);
@@ -948,7 +991,9 @@ void test_parse_init_ack_header_offset()
 {
 	jaln_session *sess = jaln_session_create();
 	sess->pub_data = jaln_pub_data_create();
-	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), sess);
+	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
+	info->sess = sess;
+	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
 
 	assert_equals(JAL_OK, rc);
 	assert_true(sess->pub_data->payload_off > 0);

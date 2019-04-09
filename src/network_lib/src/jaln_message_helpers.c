@@ -47,6 +47,20 @@
 #include "jaln_session.h"
 #include "jaln_strings.h"
 
+struct jaln_init_ack_header_info *jaln_init_ack_header_info_create(jaln_session *sess)
+{
+	struct jaln_init_ack_header_info *info = jal_calloc(1, sizeof(struct jaln_init_ack_header_info));
+
+	info->sess = sess;
+	return info;
+}
+
+void jaln_init_ack_header_info_destroy(struct jaln_init_ack_header_info **info)
+{
+	free(*info);
+	*info = NULL;
+}
+
 enum jal_status jaln_create_journal_resume_msg(const char *nonce,
 		uint64_t offset, char **msg_out, uint64_t *msg_out_len)
 {
@@ -171,6 +185,20 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 	return axl_true;
 }
 
+enum jal_status jaln_verify_init_ack_headers(struct jaln_init_ack_header_info *info) {
+
+	if (axl_true == info->content_type_valid
+	    && axl_true == info->message_type_valid
+	    && axl_true == info->version_valid
+	    && NULL != info->sess->dgst
+	    && NULL != info->sess->ch_info->encoding
+	    && NULL != info->sess->id
+	) {
+		return JAL_OK;
+	}
+	return JAL_E_INVAL;
+}
+
 static int jaln_header_name_match(const char *content, const size_t content_len,
 		const char *name, const size_t name_len)
 {
@@ -198,8 +226,10 @@ static enum jal_status jaln_header_value_match(const char *content, const size_t
 #define JALN_STR_W_LEN(_str) _str, strlen(_str)
 // There needs to be a struct or masked int to keep track of what has been parsed/validated.
 // That way jaln_publish can see what headers have been received and set defaults/fail if some were not.
-enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_session *sess)
+enum jal_status jaln_parse_init_ack_header(char *content, size_t len, struct jaln_init_ack_header_info *info)
 {
+	jaln_session *sess = info->sess;
+
 	enum jal_status rc = JAL_OK; // Allow headers with names that aren't validated.
 	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_CONTENT_TYPE))) {
 		const size_t name_len = strlen(JALN_HDRS_CONTENT_TYPE);
@@ -207,7 +237,7 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_sessi
 		const size_t value_len = len - name_len - 1;
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_STR_CT_JALOP));
 		if (JAL_OK == rc) {
-			// TODO: Store that we validated this.
+			info->content_type_valid = axl_true;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
@@ -215,7 +245,7 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_sessi
 		const size_t value_len = len - name_len - 1;
 		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_INIT_ACK));
 		if (JAL_OK == rc) {
-			// TODO: Store that we validated this.
+			info->message_type_valid = axl_true;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_VERSION))) {
 		const size_t name_len = strlen(JALN_HDRS_VERSION);
@@ -223,28 +253,16 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, jaln_sessi
 		const size_t value_len = len - name_len - 1;
 		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_VERSION));
 		if (JAL_OK == rc) {
-			// TODO: Store that we validated this.
+			info->version_valid = axl_true;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ENCODING))) {
 		rc = jaln_parse_xml_compression_header(content, len, sess);
-		if (JAL_OK == rc) {
-			// TODO: Store that we validated this.
-		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_DIGEST))) {
 		rc = jaln_parse_digest_header(content, len, sess);
-		if (JAL_OK == rc) {
-			// TODO: Store that we validated this.
-		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE))) {
 		rc = jaln_parse_configure_digest_challenge_header(content, len, sess);
-		if (JAL_OK == rc) {
-			// TODO: Store that we validated this.
-		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_SESSION_ID))) {
 		rc = jaln_parse_session_id(content, len, sess);
-		if (JAL_OK == rc) {
-			// TODO: Store that we validated this.
-		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
 		// Journal Resume ID
 		if (sess->mode == JALN_LIVE_MODE) {
@@ -287,9 +305,7 @@ enum jal_status jaln_parse_xml_compression_header(char *content, size_t len, jal
 		free(compression);
 		return JAL_E_INVAL;
 	}
-	// TODO: Store the compression scheme somewhere.
-	// 1.0 never did, so there's no place in session for it yet.
-	free(compression);
+	sess->ch_info->encoding = compression;
 	return JAL_OK;
 }
 
