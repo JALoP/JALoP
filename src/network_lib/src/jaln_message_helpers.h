@@ -225,6 +225,17 @@ enum jal_status jaln_parse_journal_resume_id_header(char *content, size_t len, j
 enum jal_status jaln_parse_journal_resume_offset_header(char *content, size_t len, jaln_session *sess);
 
 /**
+ * Parse a journal-missing-response message
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param sess The session associated with this header.
+ *
+ * @return JAL_OK on success or an error code
+ */
+enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, jaln_session *sess);
+
+/**
  * Helper function to calculate the number of bytes needed to to convert a
  * jaln_digest_info to a string for sending as part of a digest message.
  *
@@ -333,6 +344,17 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
  */
 enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode mode, enum jaln_record_type type,
 		jaln_context *ctx, struct curl_slist **headers);
+
+/**
+ * Create the headers for a journal-missing message.
+ *
+ * @param[in] id The session id associated with this session
+ * @param[in] nonce The nonce of the record that was requested and is missing
+ * @param[out] headers The populated headers
+ *
+ * @return JAL_E_NO_MEM if headers could not be allocated or JAL_OK on success
+ */
+enum jal_status jaln_create_journal_missing_msg(const char *id, const char *nonce, struct curl_slist **headers);
 
 /**
  * Create the headers for a ANS reply to a 'subscribe' message.

@@ -79,6 +79,7 @@
 #define JALN_MSG_INIT_NACK "initialize-nack"
 #define JALN_MSG_JOURNAL "journal-record"
 #define JALN_MSG_JOURNAL_RESUME "journal-resume"
+#define JALN_MSG_JOURNAL_MISSING "journal-missing"
 #define JALN_MSG_LOG "log-record"
 #define JALN_MSG_PUBLISH "publish"
 #define JALN_MSG_SUBSCRIBE "subscribe"

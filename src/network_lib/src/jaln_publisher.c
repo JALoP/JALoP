@@ -292,7 +292,9 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	rec_info.nonce = jal_strdup(nonce);
 
 	ret = cbs->on_journal_resume(sess, ch_info, &rec_info, offset, &pd->sys_meta, &pd->app_meta, NULL, ud);
-	if (JAL_OK != ret) {
+	if (JAL_E_JOURNAL_MISSING == ret) {
+		jaln_publisher_send_journal_missing(sess, nonce);
+	} else if (JAL_OK != ret) {
 		goto err_out;
 	}
 
@@ -409,7 +411,6 @@ static size_t jaln_noop_write(
 
 enum jal_status jaln_publisher_send_init(jaln_session *session)
 {
-	char *init_msg = NULL;
 	struct curl_slist *headers = NULL;
 	enum jal_status ret = JAL_E_INVAL;
 	struct jaln_init_ack_header_info *header_info = NULL;
@@ -460,8 +461,54 @@ err_out:
 	curl_easy_cleanup(curl);
 out:
 	jaln_init_ack_header_info_destroy(&header_info);
-	free(init_msg);
 	return ret;
+}
+
+enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char *nonce)
+{
+	struct curl_slist *headers = NULL;
+	enum jal_status ret = JAL_E_INVAL;
+	CURL *curl = NULL;
+	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx) {
+		// shouldn't ever happen
+		ret = JAL_E_INVAL;
+		goto err_out;
+	}
+	curl = session->curl_ctx;
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
+
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, jaln_noop_write);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, NULL);
+
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, jaln_publisher_journal_missing_response_handler);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, session);
+
+	ret = jaln_create_journal_missing_msg(session->id, nonce, &headers);
+	if (JAL_OK != ret) {
+		goto err_out;
+	}
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+	CURLcode rc = curl_easy_perform(curl);
+	if (rc != CURLE_OK) {
+		ret = JAL_E_COMM;
+		goto err_out;
+	}
+
+	if (NULL == session->last_message || 0 != strcmp(session->last_message, JALN_MSG_JOURNAL_MISSING)) {
+		ret = JAL_E_INVAL;
+		goto err_out;
+	}
+
+	curl_slist_free_all(headers);
+	goto out;
+
+err_out:
+	curl_easy_cleanup(curl);
+out:
+	return ret;
+
 }
 
 static const char *jaln_rtype_str(const int data_class)
@@ -605,6 +652,16 @@ size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nm
 	return bytes;
 }
 
+size_t jaln_publisher_journal_missing_response_handler(char *ptr, size_t size, size_t nmemb, void *user_data)
+{
+	jaln_session *sess = (jaln_session*) user_data;
+	const size_t bytes = size * nmemb;
+	enum jal_status ret = jaln_parse_journal_missing_response(ptr, bytes, sess);
+	if (ret != JAL_OK) {
+		return 0;
+	}
+	return bytes;
+}
 
 jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
 {

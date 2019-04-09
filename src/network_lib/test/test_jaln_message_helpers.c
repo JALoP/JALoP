@@ -113,6 +113,8 @@
 #define SAMPLE_OFFSET_VAL 512
 #define SAMPLE_OFFSET_VAL_STR "512"
 #define SAMPLE_OFFSET JALN_HDRS_JOURNAL_OFFSET JALN_COLON_SPACE SAMPLE_OFFSET_VAL_STR "\r\n"
+#define SAMPLE_JOURNAL_MISSING_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_JOURNAL_MISSING "\r\n"
+#define SAMPLE_INIT_ACK_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_INIT_ACK "\r\n"
 
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
 {
@@ -289,6 +291,12 @@ static char *output_str;
 	dr_1_str \
 	dr_2_str \
 	dr_3_str
+
+#define EXPECTED_JOURNAL_MISSING_MSG \
+	"Content-Type: application/http+jalop\r\n" \
+	"JAL-Message: journal-missing\r\n" \
+	"JAL-Session-Id: id\r\n" \
+	"JAL-Id: " nonce_1_str "\r\n\r\n"
 
 #define dr_1_str "confirmed=nonce_1\r\n"
 #define dr_2_str "invalid=nonce_2\r\n"
@@ -974,6 +982,14 @@ void test_verify_init_ack_headers()
 	jaln_init_ack_header_info_destroy(&info);
 }
 
+void test_create_journal_missing_msg()
+{
+	struct curl_slist *headers = NULL;
+	assert_equals(JAL_OK, jaln_create_journal_missing_msg("id", nonce_1_str, &headers));
+	assert_not_equals(NULL, headers);	
+	assert_equals(0, strcmp(flatten_headers(headers), EXPECTED_JOURNAL_MISSING_MSG));
+}
+
 void test_parse_init_ack_header_record_id()
 {
 	jaln_session *sess = jaln_session_create();
@@ -999,6 +1015,28 @@ void test_parse_init_ack_header_offset()
 	assert_true(sess->pub_data->payload_off > 0);
 	assert_equals(SAMPLE_OFFSET_VAL, sess->pub_data->payload_off);
 	assert_equals(axl_false, sess->errored);
+}
+
+void test_parse_journal_missing_response()
+{
+	jaln_session *sess = jaln_session_create();
+	enum jal_status rc = jaln_parse_journal_missing_response(SAMPLE_JOURNAL_MISSING_MSG, strlen(SAMPLE_JOURNAL_MISSING_MSG), sess);
+
+	assert_equals(JAL_OK, rc);
+	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING);
+	assert_equals(axl_false, sess->errored);
+
+	rc = jaln_parse_journal_missing_response(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), sess);
+
+	assert_equals(JAL_OK, rc);
+	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING);
+	assert_equals(axl_false, sess->errored);
+
+	rc = jaln_parse_journal_missing_response(SAMPLE_INIT_ACK_MSG, strlen(SAMPLE_INIT_ACK_MSG), sess);
+
+	assert_equals(JAL_E_INVAL, rc);
+	assert_equals(NULL, sess->last_message);
+	assert_equals(axl_true, sess->errored);
 }
 
 void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()

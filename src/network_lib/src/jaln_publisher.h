@@ -178,6 +178,17 @@ void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
 size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
 
 /**
+ * Curl callback to process the response from a journal-missing message.
+ * This response should always only be a journal-missing-response message
+ *
+ * @param ptr The header info
+ * @param size The size of one section of ptr
+ * @param nmemb The number of items of size size in ptr
+ * @param user_data The data passed to curl (a jaln_session pointer)
+ */
+size_t jaln_publisher_journal_missing_response_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
+
+/**
  * Vortex handler for when publisher's connection closes
  * This calls the user on_connection_close callback
  *
@@ -194,6 +205,15 @@ void jaln_publisher_on_connection_close(VortexConnection *conn,
  * @param[in] session The session to initialize.
  */
 enum jal_status jaln_publisher_send_init(jaln_session *session);
+
+/**
+ * Send journal-missing message to subscriber and parse the returned
+ * journal-missing-response message.
+ *
+ * @param session The session the journal is missing for
+ * @param nonce The nonce of the missing journal
+ */
+enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char *nonce);
 
 /**
  * Configure a jaln_session for use as a publisher. Before modifying the

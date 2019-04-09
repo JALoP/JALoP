@@ -46,6 +46,7 @@
 #include "jaln_record_info.h"
 #include "jaln_session.h"
 #include "jaln_strings.h"
+#include "jaln_string_utils.h"
 
 struct jaln_init_ack_header_info *jaln_init_ack_header_info_create(jaln_session *sess)
 {
@@ -246,6 +247,7 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, struct jal
 		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_INIT_ACK));
 		if (JAL_OK == rc) {
 			info->message_type_valid = axl_true;
+			sess->last_message = JALN_MSG_INIT_ACK;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_VERSION))) {
 		const size_t name_len = strlen(JALN_HDRS_VERSION);
@@ -345,7 +347,6 @@ enum jal_status jaln_parse_configure_digest_challenge_header(
 	}
 	return JAL_E_INVAL;
 }
-#undef JALN_STR_W_LEN
 
 enum jal_status jaln_parse_session_id(char *content, size_t len, jaln_session *sess)
 {
@@ -372,6 +373,25 @@ enum jal_status jaln_parse_journal_resume_offset_header(char *content, size_t le
 	}
 	return JAL_OK;
 }
+
+enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, jaln_session *sess)
+{
+	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
+		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		enum jal_status rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_JOURNAL_MISSING));
+		if (JAL_OK == rc) {
+			sess->last_message = JALN_MSG_JOURNAL_MISSING;
+		} else {
+			sess->last_message = NULL;
+			sess->errored = 1;
+		}
+		return rc;
+	}
+	return JAL_OK;
+}
+#undef JALN_STR_W_LEN
 
 uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
 {
@@ -726,6 +746,50 @@ out:
 	free(dgst_list_str);
 	free(enc_list_str);
 	return ret;
+}
+
+axl_bool add_header(const char *prefix, const char *val, struct curl_slist **headers)
+{
+	axl_bool ret;
+	size_t prefix_len = strlen(prefix);
+	size_t colon_space_len = strlen(JALN_COLON_SPACE);
+	size_t val_len = strlen(val);
+	char *header_str = jal_malloc(prefix_len + colon_space_len + val_len + 1);
+	memcpy(header_str, prefix, prefix_len);
+	memcpy(header_str + prefix_len, JALN_COLON_SPACE, colon_space_len);
+	memcpy(header_str + prefix_len + colon_space_len, val, val_len + 1);
+
+	struct curl_slist *tmp = curl_slist_append(*headers, header_str);
+	if (!tmp) {
+		curl_slist_free_all(*headers);
+		*headers = NULL;
+		ret = axl_false;
+	} else {
+		*headers = tmp;
+		ret = axl_true;
+	}
+	free(header_str);
+	return ret;
+}
+
+enum jal_status jaln_create_journal_missing_msg(const char *id, const char *nonce, struct curl_slist **headers)
+{
+	if (!add_header(JALN_HDRS_CONTENT_TYPE, JALN_STR_CT_JALOP, headers)) {
+		return JAL_E_NO_MEM;
+	}
+
+	if (!add_header(JALN_HDRS_MESSAGE, JALN_MSG_JOURNAL_MISSING, headers)) {
+		return JAL_E_NO_MEM;
+	}
+
+	if (!add_header(JALN_HDRS_SESSION_ID, id, headers)) {
+		return JAL_E_NO_MEM;
+	}
+
+	if (!add_header(JALN_HDRS_ID, nonce, headers)) {
+		return JAL_E_NO_MEM;
+	}
+	return JAL_OK;
 }
 
 enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, uint64_t *headers_len_out)

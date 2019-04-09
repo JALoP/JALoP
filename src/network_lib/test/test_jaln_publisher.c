@@ -501,6 +501,14 @@ void test_jaln_publisher_send_init()
 	restore_function(jaln_create_init_msg);
 }
 
+void test_jaln_publisher_send_journal_missing()
+{
+	enum jal_status ret;
+	sess->id = jal_strdup("abcd");
+	ret = jaln_publisher_send_journal_missing(sess, "abcde");
+	assert_equals(JAL_E_INVAL, ret);
+}
+
 void test_publish_fails_with_bad_input()
 {
 	struct jaln_connection *conn = NULL;

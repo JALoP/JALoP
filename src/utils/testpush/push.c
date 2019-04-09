@@ -101,7 +101,7 @@ enum jal_status on_journal_resume(
 	DEBUG_LOG("ch_info: %p", ch_info);
 	DEBUG_LOG("rec_info: %p", record_info);
 	DEBUG_LOG("headers: %p", headers);
-	return JAL_E_INVAL;
+	return JAL_E_JOURNAL_MISSING;
 }
 
 enum jal_status __send_record(jaln_session *sess, char *nonce, 
