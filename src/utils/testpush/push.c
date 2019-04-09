@@ -72,16 +72,41 @@ void on_connection_close(const struct jaln_connection *jal_conn, void *user_data
 	DEBUG_LOG("conn_info: %p", jal_conn);
 }
 
+#define LOG_STR_FIELD(_s, _f) DEBUG_LOG(#_f": %s", _s->_f? _s->_f : "(nil)")
+#define LOG_INT_FIELD(_s, _f) DEBUG_LOG(#_f": %d", _s->_f)
+#define LOG_PTR_FIELD(_s, _f) DEBUG_LOG(#_f": %p", _s->_f)
 void on_connect_ack(const struct jaln_connect_ack *ack, void *user_data)
 {
-	user_data = user_data;
 	DEBUG_LOG("ack: %p", ack);
+	DEBUG_LOG("user_data: %p", user_data);
+	LOG_STR_FIELD(ack, hostname);
+	LOG_STR_FIELD(ack, addr);
+	LOG_INT_FIELD(ack, jaln_version);
+	LOG_STR_FIELD(ack, jaln_agent);
+	LOG_INT_FIELD(ack, mode);
+	LOG_PTR_FIELD(ack, headers);
+}
+
+void log_errors(char **error_list, const int error_cnt)
+{
+	int i;
+	for (i = 0; i < error_cnt; ++i) {
+		DEBUG_LOG("error[%d]: %s", i, error_list[i]);
+	}
 }
 
 void on_connect_nack(const struct jaln_connect_nack *nack, void *user_data)
 {
-	user_data = user_data;
 	DEBUG_LOG("nack: %p", nack);
+	DEBUG_LOG("user_data: %p", user_data);
+	LOG_STR_FIELD(nack->ch_info, hostname);
+	LOG_STR_FIELD(nack->ch_info, addr);
+	LOG_STR_FIELD(nack->ch_info, encoding);
+	LOG_STR_FIELD(nack->ch_info, digest_method);
+	LOG_INT_FIELD(nack->ch_info, type);
+	LOG_PTR_FIELD(nack, error_list);
+	LOG_INT_FIELD(nack, error_cnt);
+	log_errors(nack->error_list, nack->error_cnt);
 }
 
 enum jal_status on_journal_resume(

@@ -53,6 +53,7 @@ static jaln_context *ctx;
 static int peer_digest_call_cnt;
 static int sync_cnt;
 static bool fail;
+static bool ack_cb;
 
 void peer_digest(
 		__attribute__((unused)) jaln_session *sess,
@@ -273,6 +274,13 @@ enum jal_status fake_jaln_verify_init_ack_headers(
 	return JAL_OK;
 }
 
+void on_connect_ack(
+		__attribute__((unused)) const struct jaln_connect_ack *ack,
+		__attribute__((unused)) void *user_data)
+{
+	ack_cb = true;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
@@ -299,6 +307,7 @@ void setup()
 	sess->curl_ctx = (CURL *)(0xbadf00d);
 	sess->ch_info = jaln_channel_info_create();
 	ctx->conn_callbacks = jaln_connection_callbacks_create();
+	ctx->conn_callbacks->connect_ack = on_connect_ack;
 
 	ctx->pub_callbacks = jaln_publisher_callbacks_create();
 	ctx->pub_callbacks->peer_digest = peer_digest;
@@ -324,6 +333,7 @@ void setup()
 	peer_digest_call_cnt = 0;
 	sync_cnt = 0;
 	fail = false;
+	ack_cb = false;
 	replace_function(vortex_frame_get_mime_header, mock_vortex_frame_get_mime_header_success);
 }
 
@@ -498,6 +508,7 @@ void test_jaln_publisher_send_init()
 	replace_function(jaln_create_init_msg, fake_jaln_create_init_msg)
 	ret = jaln_publisher_send_init(sess);
 	assert_equals(JAL_OK, ret);
+	assert_equals(true, ack_cb);
 	restore_function(jaln_create_init_msg);
 }
 
@@ -566,6 +577,7 @@ void test_publish_success_for_all_types()
 
 	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL);
 	assert_not_equals((void*) NULL, conn);
+	assert_equals(true, ack_cb);
 	jaln_connection_destroy(&conn);
 	restore_function(vortex_connection_set_on_close_full);
 }

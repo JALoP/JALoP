@@ -45,6 +45,7 @@
 #define JALN_HDRS_COUNT "JAL-Count"
 #define JALN_HDRS_DATA_CLASS "JAL-Data-Class"
 #define JALN_HDRS_DIGEST "JAL-Digest"
+#define JALN_HDRS_ERROR_MESSAGE "JAL-Error-Message"
 #define JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE "JAL-Configure-Digest-Challenge"
 #define JALN_HDRS_JOURNAL_LEN "JAL-Journal-Length"
 #define JALN_HDRS_JOURNAL_OFFSET "JAL-Journal-Offset"

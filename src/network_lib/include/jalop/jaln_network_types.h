@@ -39,6 +39,7 @@ extern "C" {
 
 /** Integer version of JALoP network protocol */
 #define JALN_JALOP_VERSION_ONE 1
+#define JALN_JALOP_VERSION_TWO 2
 
 /**
  * Enum used to distinguish between record types

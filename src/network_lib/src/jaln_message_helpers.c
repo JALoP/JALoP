@@ -58,6 +58,11 @@ struct jaln_init_ack_header_info *jaln_init_ack_header_info_create(jaln_session 
 
 void jaln_init_ack_header_info_destroy(struct jaln_init_ack_header_info **info)
 {
+	struct jaln_init_ack_header_info *tmp = *info;
+	if (tmp->error_list) {
+		free(*tmp->error_list); // Error list holds tokens within a single string. Free the string.
+		free(tmp->error_list);
+	}
 	free(*info);
 	*info = NULL;
 }
@@ -194,6 +199,7 @@ enum jal_status jaln_verify_init_ack_headers(struct jaln_init_ack_header_info *i
 	    && NULL != info->sess->dgst
 	    && NULL != info->sess->ch_info->encoding
 	    && NULL != info->sess->id
+	    && 0 == info->error_cnt
 	) {
 		return JAL_OK;
 	}
@@ -227,7 +233,7 @@ static enum jal_status jaln_header_value_match(const char *content, const size_t
 #define JALN_STR_W_LEN(_str) _str, strlen(_str)
 // There needs to be a struct or masked int to keep track of what has been parsed/validated.
 // That way jaln_publish can see what headers have been received and set defaults/fail if some were not.
-enum jal_status jaln_parse_init_ack_header(char *content, size_t len, struct jaln_init_ack_header_info *info)
+void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_init_ack_header_info *info)
 {
 	jaln_session *sess = info->sess;
 
@@ -244,10 +250,14 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, struct jal
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
 		const char *value_start = content + name_len + 1;
 		const size_t value_len = len - name_len - 1;
-		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_INIT_ACK));
-		if (JAL_OK == rc) {
+		if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
+				JALN_STR_W_LEN(JALN_MSG_INIT_ACK)))) {
 			info->message_type_valid = axl_true;
 			sess->last_message = JALN_MSG_INIT_ACK;
+		} else if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
+				JALN_STR_W_LEN(JALN_MSG_INIT_NACK)))) {
+			info->message_type_valid = axl_true;
+			sess->last_message = JALN_MSG_INIT_NACK;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_VERSION))) {
 		const size_t name_len = strlen(JALN_HDRS_VERSION);
@@ -279,12 +289,13 @@ enum jal_status jaln_parse_init_ack_header(char *content, size_t len, struct jal
 		} else {
 			rc = jaln_parse_journal_resume_offset_header(content, len, sess);
 		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ERROR_MESSAGE))) {
+		rc = jaln_parse_error_messages(content, len, info);
 	}
 
 	if (JAL_OK != rc) {
 		sess->errored = 1;
 	}
-	return rc;
 }
 
 static char *jaln_get_header_value(const char *content, const size_t len, size_t offset)
@@ -320,6 +331,7 @@ enum jal_status jaln_parse_digest_header(char *content, size_t len, jaln_session
 		return JAL_E_INVAL;
 	}
 	sess->dgst = (struct jal_digest_ctx*) ptr;
+	sess->ch_info->digest_method = digest;
 	free(digest);
 	return JAL_OK;
 }
@@ -356,6 +368,36 @@ enum jal_status jaln_parse_session_id(char *content, size_t len, jaln_session *s
 	}
 	sess->id = jaln_get_header_value(content, len, strlen(JALN_HDRS_SESSION_ID) + 1);
 	return JAL_OK;
+}
+
+
+// Note: error_list will point to tokens within a single string. Free only error_list[0].
+static void jaln_split_errors(char *errors, int *error_cnt, char ***error_list)
+{
+	char *cur_err;
+	char *saveptr;
+	const char *delim = "|";
+	size_t list_len = 4;  // Initial size of the list. It will grow as needed.
+	int total_errs = 0;
+	char **tmp_list = (char **)malloc(list_len * sizeof(char*));
+	cur_err = strtok_r(errors, delim, &saveptr);
+	while (cur_err){
+		if (total_errs >= (int)list_len) {
+			list_len *= 2;
+			tmp_list = (char **)jal_realloc(tmp_list, list_len * sizeof(char *));
+		}
+		tmp_list[total_errs++] = cur_err;
+		cur_err = strtok_r(NULL, delim, &saveptr);
+	}
+	*error_list = realloc(tmp_list, total_errs * sizeof(char *));
+	*error_cnt = total_errs;
+}
+
+enum jal_status jaln_parse_error_messages(char *content, size_t len, struct jaln_init_ack_header_info *info)
+{
+	char *errors = jaln_get_header_value(content, len, strlen(JALN_HDRS_ERROR_MESSAGE) + 1);
+	jaln_split_errors(errors, &info->error_cnt, &info->error_list);
+	return info->error_cnt >= 1? JAL_OK : JAL_E_INVAL;
 }
 
 enum jal_status jaln_parse_journal_resume_id_header(char *content, size_t len, jaln_session *sess)

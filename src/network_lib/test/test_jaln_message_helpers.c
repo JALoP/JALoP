@@ -995,9 +995,8 @@ void test_parse_init_ack_header_record_id()
 	jaln_session *sess = jaln_session_create();
 	sess->pub_data = jaln_pub_data_create();
 	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
-	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
+	jaln_parse_init_ack_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
 
-	assert_equals(JAL_OK, rc);
 	assert_not_equals(NULL, sess->pub_data->nonce);
 	assert_string_equals(SAMPLE_UUID, sess->pub_data->nonce);
 	assert_equals(axl_false, sess->errored);
@@ -1009,9 +1008,8 @@ void test_parse_init_ack_header_offset()
 	sess->pub_data = jaln_pub_data_create();
 	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
 	info->sess = sess;
-	enum jal_status rc = jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
+	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
 
-	assert_equals(JAL_OK, rc);
 	assert_true(sess->pub_data->payload_off > 0);
 	assert_equals(SAMPLE_OFFSET_VAL, sess->pub_data->payload_off);
 	assert_equals(axl_false, sess->errored);

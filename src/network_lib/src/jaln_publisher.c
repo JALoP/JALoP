@@ -446,20 +446,42 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	if (rc != CURLE_OK) {
 		fprintf(stderr, "Failed to send initialize: %s\n",
 			curl_easy_strerror(rc));
+		// Set a failing return code
 		ret = JAL_E_COMM;
-	}
-
-	ret = jaln_verify_init_ack_headers(header_info);
-	if (JAL_OK != ret) {
 		goto err_out;
 	}
-
-	curl_slist_free_all(headers);
-	goto out;
+	if (session->errored) {
+		ret = JAL_E_INVAL;
+	} else if (header_info->error_cnt) {
+		// connection nack callback
+		struct jaln_connect_nack nack;
+		memset(&nack, 0, sizeof(nack));
+		nack.ch_info = session->ch_info;
+		nack.error_cnt = header_info->error_cnt;
+		nack.error_list = header_info->error_list;
+		// TODO: headers? Never set in 1.x
+		jaln_context *ctx = session->jaln_ctx;
+		ctx->conn_callbacks->connect_nack(&nack, ctx->user_data);
+		// Set a failing return code
+		ret = JAL_E_INVAL;
+	} else {
+		// connection ack callback
+		struct jaln_connect_ack ack;
+		memset(&ack, 0, sizeof(ack));
+		ack.hostname = session->ch_info->hostname;
+		ack.addr = session->ch_info->addr;
+		ack.jaln_version = JALN_JALOP_VERSION_TWO;
+		ack.mode = session->role;
+		// TODO: agent and headers?
+		// Agent unused by subscriber, but was supported in 1.x.
+		// Headers never set in 1.x.
+		jaln_context *ctx = session->jaln_ctx;
+		ctx->conn_callbacks->connect_ack(&ack, ctx->user_data);
+		ret = jaln_verify_init_ack_headers(header_info);
+	}
 
 err_out:
-	curl_easy_cleanup(curl);
-out:
+	curl_slist_free_all(headers);
 	jaln_init_ack_header_info_destroy(&header_info);
 	return ret;
 }
@@ -643,12 +665,8 @@ struct jaln_connection *jaln_publish(
 size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nmemb, void *user_data)
 {
 
-	jaln_session *sess = (jaln_session*) user_data;
 	const size_t bytes = size * nmemb;
-	enum jal_status ret = jaln_parse_init_ack_header(ptr, bytes, sess);
-	if (ret != JAL_OK) {
-		return 0;
-	}
+	jaln_parse_init_ack_header(ptr, bytes, (struct jaln_init_ack_header_info *)user_data);
 	return bytes;
 }
 
