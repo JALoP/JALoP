@@ -312,6 +312,8 @@ axlList *dgst_algs;
 axlList *xml_encs;
 axlList *dgst_resp_list;
 jaln_context ctx;
+jaln_session *sess;
+struct jaln_init_ack_header_info *info;
 
 void setup()
 {
@@ -359,6 +361,10 @@ void setup()
 	axl_list_append(dgst_resp_list, dr_3);
 	ctx.dgst_algs = dgst_algs;
 	ctx.xml_encodings = xml_encs;
+
+	sess = jaln_session_create();
+	sess->jaln_ctx = &ctx;
+	info = jaln_init_ack_header_info_create(sess);
 }
 
 void teardown()
@@ -373,6 +379,9 @@ void teardown()
 	jaln_record_info_destroy(&rec_info);
 	ctx.dgst_algs = NULL;
 	ctx.xml_encodings = NULL;
+	sess->jaln_ctx = NULL;
+	jaln_session_destroy(&sess);
+	jaln_init_ack_header_info_destroy(&info);
 }
 
 static char *flatten_headers(struct curl_slist *list)
@@ -945,10 +954,6 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 
 void test_verify_init_ack_headers()
 {
-	jaln_session *sess = jaln_session_create();
-	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
-	info->sess->ch_info = jaln_channel_info_create();
-
 	enum jal_status rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -984,10 +989,6 @@ void test_verify_init_ack_headers()
 	info->sess->dgst = NULL;
 	info->sess->ch_info->encoding = NULL;
 	info->sess->id = NULL;
-
-	jaln_channel_info_destroy(&info->sess->ch_info);
-	jaln_session_destroy(&info->sess);
-	jaln_init_ack_header_info_destroy(&info);
 }
 
 void test_create_journal_missing_msg()
@@ -1000,33 +1001,164 @@ void test_create_journal_missing_msg()
 
 void test_parse_init_ack_header_record_id()
 {
-	jaln_session *sess = jaln_session_create();
 	sess->pub_data = jaln_pub_data_create();
-	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
 	jaln_parse_init_ack_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
 
 	assert_not_equals(NULL, sess->pub_data->nonce);
 	assert_string_equals(SAMPLE_UUID, sess->pub_data->nonce);
 	assert_equals(axl_false, sess->errored);
-
-	jaln_session_destroy(&info->sess);
-	jaln_init_ack_header_info_destroy(&info);
 }
 
 void test_parse_init_ack_header_offset()
 {
-	jaln_session *sess = jaln_session_create();
 	sess->pub_data = jaln_pub_data_create();
-	struct jaln_init_ack_header_info *info = jaln_init_ack_header_info_create(sess);
 	info->sess = sess;
 	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
 
 	assert_true(sess->pub_data->payload_off > 0);
 	assert_equals(SAMPLE_OFFSET_VAL, sess->pub_data->payload_off);
 	assert_equals(axl_false, sess->errored);
+}
 
-	jaln_session_destroy(&info->sess);
-	jaln_init_ack_header_info_destroy(&info);
+void test_parse_init_ack_header_content_type_valid()
+{
+	char ct_valid[] = "Content-Type: application/http+jalop\r\n";
+	jaln_parse_init_ack_header(ct_valid, strlen(ct_valid), info);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(axl_true, info->content_type_valid);
+}
+
+void test_parse_init_ack_header_content_type_invalid()
+{
+	char ct_invalid[] = "Content-Type: text/json\r\n";
+	jaln_parse_init_ack_header(ct_invalid, strlen(ct_invalid), info);
+	assert_equals(axl_true, sess->errored);
+	assert_equals(axl_false, info->content_type_valid);
+}
+
+void test_parse_init_ack_header_message_ack()
+{
+	char ack[] = "JAL-Message: initialize-ack\r\n";
+	jaln_parse_init_ack_header(ack, strlen(ack), info);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(axl_true, info->message_type_valid);
+}
+
+void test_parse_init_ack_header_message_nack()
+{
+	char nack[] = "JAL-Message: initialize-nack\r\n";
+	jaln_parse_init_ack_header(nack, strlen(nack), info);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(axl_true, info->message_type_valid);
+}
+
+void test_parse_init_ack_header_message_invalid()
+{
+	char invalid[] = "JAL-Message: foo\r\n";
+	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
+	assert_equals(axl_true, sess->errored);
+	assert_equals(axl_false, info->message_type_valid);
+}
+
+void test_parse_init_ack_header_version_valid()
+{
+	char vers[] = "JAL-Version: 2.0.0.0\r\n";
+	jaln_parse_init_ack_header(vers, strlen(vers), info);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(axl_true, info->version_valid);
+}
+
+void test_parse_init_ack_header_version_invalid()
+{
+	char invalid[] = "JAL-Version: 127.0.0.1\r\n";
+	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
+	assert_equals(axl_true, sess->errored);
+	assert_equals(axl_false, info->message_type_valid);
+}
+
+void test_parse_init_ack_header_compression_valid()
+{
+	char comp[] = "JAL-XML-Compression: xml_enc_1\r\n";
+	jaln_parse_init_ack_header(comp, strlen(comp), info);
+	assert_equals(axl_false, sess->errored);
+	assert_string_equals("xml_enc_1", sess->ch_info->encoding);
+}
+
+void test_parse_init_ack_header_compression_invalid()
+{
+	char invalid[] = "JAL-XML-Compression: fake\r\n";
+	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
+	assert_equals(axl_true, sess->errored);
+	assert_pointer_equals(NULL, sess->ch_info->encoding);
+}
+
+void test_parse_init_ack_header_digest_valid()
+{
+	char dgst[] = "JAL-Digest: sha256\r\n";
+	jaln_parse_init_ack_header(dgst, strlen(dgst), info);
+	assert_equals(axl_false, sess->errored);
+	assert_not_equals(NULL, sess->dgst);
+	assert_string_equals("sha256", sess->ch_info->digest_method);
+}
+
+void test_parse_init_ack_header_digest_invalid()
+{
+	char invalid[] = "JAL-Digest: fakehash\r\n";
+	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
+	assert_equals(axl_true, sess->errored);
+	assert_pointer_equals(NULL, sess->dgst);
+	assert_pointer_equals(NULL, sess->ch_info->digest_method);
+}
+
+void test_parse_init_ack_config_dc_on()
+{
+	ctx.digest_challenge = JALN_DC_PREF_ON;
+	char dc[] = "JAL-Configure-Digest-Challenge: on\r\n";
+	jaln_parse_init_ack_header(dc, strlen(dc), info);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(axl_true, sess->dgst_on);
+}
+
+void test_parse_init_ack_config_dc_off()
+{
+	ctx.digest_challenge = JALN_DC_PREF_ON;
+	char dc[] = "JAL-Configure-Digest-Challenge: off\r\n";
+	jaln_parse_init_ack_header(dc, strlen(dc), info);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(axl_false, sess->dgst_on);
+}
+
+void test_parse_init_ack_config_dc_invalid()
+{
+	ctx.digest_challenge = JALN_DC_PREF_ON;
+	char invalid[] = "JAL-Configure-Digest-Challenge: foo\r\n";
+	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
+	assert_equals(axl_true, sess->errored);
+}
+
+void test_parse_init_ack_session_id()
+{
+	char id[] = "JAL-Session-Id: " SAMPLE_UUID "\r\n";
+	jaln_parse_init_ack_header(id, strlen(id), info);
+	assert_equals(axl_false, sess->errored);
+	assert_string_equals(SAMPLE_UUID, sess->id);
+}
+
+void test_parse_init_ack_nack_errors_valid()
+{
+	char errs[] = "JAL-Error-Message: AAA|BBB\r\n";
+	jaln_parse_init_ack_header(errs, strlen(errs), info);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(2, info->error_cnt);
+	assert_string_equals("AAA", info->error_list[0]);
+	assert_string_equals("BBB", info->error_list[1]);
+}
+
+void test_parse_init_ack_nack_errors_invalid()
+{
+        char invalid[] = "JAL-Error-Message: \r\n";
+        jaln_parse_init_ack_header(invalid, strlen(invalid), info);
+        assert_equals(axl_true, sess->errored);
 }
 
 void test_parse_journal_missing_response()

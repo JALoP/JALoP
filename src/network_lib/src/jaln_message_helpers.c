@@ -332,7 +332,6 @@ enum jal_status jaln_parse_digest_header(char *content, size_t len, jaln_session
 	}
 	sess->dgst = (struct jal_digest_ctx*) ptr;
 	sess->ch_info->digest_method = digest;
-	free(digest);
 	return JAL_OK;
 }
 
