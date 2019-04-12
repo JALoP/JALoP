@@ -193,9 +193,9 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 
 enum jal_status jaln_verify_init_ack_headers(struct jaln_init_ack_header_info *info) {
 
-	if (axl_true == info->content_type_valid
+	if (axl_true /*== info->content_type_valid*/ // subscriber not sending //TODO:required?
 	    && axl_true == info->message_type_valid
-	    && axl_true == info->version_valid
+	    && axl_true /*== info->version_valid*/ // subscriber not sending //TODO: required?
 	    && NULL != info->sess->dgst
 	    && NULL != info->sess->ch_info->encoding
 	    && NULL != info->sess->id
