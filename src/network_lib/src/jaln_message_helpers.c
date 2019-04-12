@@ -380,9 +380,9 @@ enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, j
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
 		const char *value_start = content + name_len + 1;
 		const size_t value_len = len - name_len - 1;
-		enum jal_status rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_JOURNAL_MISSING));
+		enum jal_status rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_JOURNAL_MISSING_RESPONSE));
 		if (JAL_OK == rc) {
-			sess->last_message = JALN_MSG_JOURNAL_MISSING;
+			sess->last_message = JALN_MSG_JOURNAL_MISSING_RESPONSE;
 		} else {
 			sess->last_message = NULL;
 			sess->errored = 1;

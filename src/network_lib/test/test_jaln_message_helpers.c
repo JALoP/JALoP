@@ -113,7 +113,7 @@
 #define SAMPLE_OFFSET_VAL 512
 #define SAMPLE_OFFSET_VAL_STR "512"
 #define SAMPLE_OFFSET JALN_HDRS_JOURNAL_OFFSET JALN_COLON_SPACE SAMPLE_OFFSET_VAL_STR "\r\n"
-#define SAMPLE_JOURNAL_MISSING_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_JOURNAL_MISSING "\r\n"
+#define SAMPLE_JOURNAL_MISSING_RESP_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_JOURNAL_MISSING_RESPONSE "\r\n"
 #define SAMPLE_INIT_ACK_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_INIT_ACK "\r\n"
 
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
@@ -986,7 +986,7 @@ void test_create_journal_missing_msg()
 {
 	struct curl_slist *headers = NULL;
 	assert_equals(JAL_OK, jaln_create_journal_missing_msg("id", nonce_1_str, &headers));
-	assert_not_equals(NULL, headers);	
+	assert_not_equals(NULL, headers);
 	assert_equals(0, strcmp(flatten_headers(headers), EXPECTED_JOURNAL_MISSING_MSG));
 }
 
@@ -1020,16 +1020,16 @@ void test_parse_init_ack_header_offset()
 void test_parse_journal_missing_response()
 {
 	jaln_session *sess = jaln_session_create();
-	enum jal_status rc = jaln_parse_journal_missing_response(SAMPLE_JOURNAL_MISSING_MSG, strlen(SAMPLE_JOURNAL_MISSING_MSG), sess);
+	enum jal_status rc = jaln_parse_journal_missing_response(SAMPLE_JOURNAL_MISSING_RESP_MSG, strlen(SAMPLE_JOURNAL_MISSING_RESP_MSG), sess);
 
 	assert_equals(JAL_OK, rc);
-	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING);
+	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING_RESPONSE);
 	assert_equals(axl_false, sess->errored);
 
 	rc = jaln_parse_journal_missing_response(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), sess);
 
 	assert_equals(JAL_OK, rc);
-	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING);
+	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING_RESPONSE);
 	assert_equals(axl_false, sess->errored);
 
 	rc = jaln_parse_journal_missing_response(SAMPLE_INIT_ACK_MSG, strlen(SAMPLE_INIT_ACK_MSG), sess);

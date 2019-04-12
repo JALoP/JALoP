@@ -63,7 +63,7 @@ enum jal_status {
 	JAL_E_BAD_FD,
 	JAL_E_PARSE,
 	JAL_E_COMM,
-	JAL_E_JOURNAL_MISSING,          //!< A record requested by journal-resume does not exist in the network store 
+	JAL_E_JOURNAL_MISSING,          //!< A record requested by journal-resume does not exist in the network store
 	JAL_OK = 0,
 };
 

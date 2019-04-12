@@ -496,7 +496,7 @@ enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char 
 		goto err_out;
 	}
 
-	if (NULL == session->last_message || 0 != strcmp(session->last_message, JALN_MSG_JOURNAL_MISSING)) {
+	if (NULL == session->last_message || 0 != strcmp(session->last_message, JALN_MSG_JOURNAL_MISSING_RESPONSE)) {
 		ret = JAL_E_INVAL;
 		goto err_out;
 	}
