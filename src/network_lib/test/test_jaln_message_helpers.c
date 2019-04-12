@@ -38,6 +38,7 @@
 
 #include "jal_alloc.h"
 
+#include "jaln_channel_info.h"
 #include "jaln_context.h"
 #include "jaln_digest.c"
 #include "jaln_digest_info.h"
@@ -46,6 +47,8 @@
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
 #include "jaln_session.h"
+
+#define BAD_PTR(_t) (_t *)0xdeadbeef
 
 #define nonce_1_str "nonce_1"
 
@@ -961,15 +964,15 @@ void test_verify_init_ack_headers()
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->sess->dgst = 0xdeadbeef;
+	info->sess->dgst = BAD_PTR(struct jal_digest_ctx);
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->sess->ch_info->encoding = 0xdeadbeef;
+	info->sess->ch_info->encoding = BAD_PTR(char);
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->sess->id = 0xdeadbeef;
+	info->sess->id = BAD_PTR(char);
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_OK, rc);
 /*
@@ -977,8 +980,13 @@ void test_verify_init_ack_headers()
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 */ // TODO: is content type required?
-	jaln_channel_info_destroy(info->sess->ch_info);
-	jaln_session_destroy(info->sess);
+
+	info->sess->dgst = NULL;
+	info->sess->ch_info->encoding = NULL;
+	info->sess->id = NULL;
+
+	jaln_channel_info_destroy(&info->sess->ch_info);
+	jaln_session_destroy(&info->sess);
 	jaln_init_ack_header_info_destroy(&info);
 }
 
@@ -1000,6 +1008,9 @@ void test_parse_init_ack_header_record_id()
 	assert_not_equals(NULL, sess->pub_data->nonce);
 	assert_string_equals(SAMPLE_UUID, sess->pub_data->nonce);
 	assert_equals(axl_false, sess->errored);
+
+	jaln_session_destroy(&info->sess);
+	jaln_init_ack_header_info_destroy(&info);
 }
 
 void test_parse_init_ack_header_offset()
@@ -1013,6 +1024,9 @@ void test_parse_init_ack_header_offset()
 	assert_true(sess->pub_data->payload_off > 0);
 	assert_equals(SAMPLE_OFFSET_VAL, sess->pub_data->payload_off);
 	assert_equals(axl_false, sess->errored);
+
+	jaln_session_destroy(&info->sess);
+	jaln_init_ack_header_info_destroy(&info);
 }
 
 void test_parse_journal_missing_response()
@@ -1033,7 +1047,7 @@ void test_parse_journal_missing_response()
 	rc = jaln_parse_journal_missing_response(SAMPLE_INIT_ACK_MSG, strlen(SAMPLE_INIT_ACK_MSG), sess);
 
 	assert_equals(JAL_E_INVAL, rc);
-	assert_equals(NULL, sess->last_message);
+	assert_pointer_equals(NULL, sess->last_message);
 	assert_equals(axl_true, sess->errored);
 }
 
