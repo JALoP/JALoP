@@ -335,10 +335,46 @@ void notify_peer_digest(
 	free(b64);
 }
 
+int parse_rtype(char *types)
+{
+	const char *delim = ",";
+	int rtype = 0;
+	char *type = strtok(types, delim);
+	while (type)
+	{
+		if (!strcmp(type, "journal")) {
+			rtype |= JALN_RTYPE_JOURNAL;
+		} else if (!strcmp(type, "audit")) {
+			rtype |= JALN_RTYPE_AUDIT;
+		} else if (!strcmp(type, "log")) {
+			rtype |= JALN_RTYPE_LOG;
+		} else {
+			fprintf(stderr, "%s is not a valid record type\n", type);
+			exit(2);
+		}
+		type = strtok(NULL, delim);
+	}
+	return rtype;
+}
+
+enum jaln_publish_mode parse_mode(const char *mode)
+{
+	if (!strcmp(mode, "live")) {
+		return JALN_LIVE_MODE;
+	}
+	if (!strcmp(mode, "archive")) {
+		return JALN_ARCHIVE_MODE;
+	}
+	else {
+		fprintf(stderr, "%s is not a valid mode\n", mode);
+		exit(2);
+	}
+}
+
 int main(int argc, char **argv) {
 	//TODO: parse settings from a configuration file
-	if (argc != 4) {
-		fprintf(stderr, "Usage: %s host:port key cert\n", argv[0]);
+	if (argc != 6) {
+		fprintf(stderr, "Usage: %s host:port key cert record_types mode\n", argv[0]);
 		return 2;
 	}
 	const char *key = argv[2];
@@ -353,11 +389,17 @@ int main(int argc, char **argv) {
 	*separator = '\0';
 	const char *port = separator + 1;
 
-	const int classes = JALN_RTYPE_LOG;
-	enum jaln_publish_mode mode = JALN_ARCHIVE_MODE;
+	const int classes = parse_rtype(argv[4]);
+	enum jaln_publish_mode mode = parse_mode(argv[5]);
 
-	printf("Connecting to %s:%s\nUsing key %s\nUsing cert %s\nPublishing: LOG\nMode: ARCHIVE\n",
+	printf("Connecting to %s:%s\nUsing key %s\nUsing cert %s\n",
 		host, port, key, cert);
+
+	printf("Publishing in %s mode:\n\tjournal: %s\n\taudit: %s\n\tlog: %s\n",
+		mode == JALN_LIVE_MODE? "live" : "archive",
+		classes & JALN_RTYPE_JOURNAL? "yes" : "no",
+		classes & JALN_RTYPE_AUDIT? "yes" : "no",
+		classes & JALN_RTYPE_LOG? "yes" : "no");
 
 	jaln_context *net_ctx = jaln_context_create();
 	struct jaln_connection_callbacks *connect_handlers = jaln_connection_callbacks_create();
