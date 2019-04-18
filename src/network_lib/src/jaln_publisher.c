@@ -415,7 +415,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	enum jal_status ret = JAL_E_INVAL;
 	struct jaln_init_ack_header_info *header_info = NULL;
 	CURL *curl = NULL;
-	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx) {
+	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx || !session->pub_data) {
 		// shouldn't ever happen
 		ret = JAL_E_INVAL;
 		goto err_out;
@@ -477,6 +477,34 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 		// Headers never set in 1.x.
 		jaln_context *ctx = session->jaln_ctx;
 		ctx->conn_callbacks->connect_ack(&ack, ctx->user_data);
+		if (session->pub_data->nonce) {
+			// on journal resume callback
+			// this was called before on subscribe in 1.x
+			struct jaln_record_info rec_info;
+			memset(&rec_info, 0, sizeof(rec_info));
+			rec_info.type = session->ch_info->type;
+			rec_info.nonce = jal_strdup(session->pub_data->nonce);
+			ctx->pub_callbacks->on_journal_resume(
+					session,
+					session->ch_info,
+					&rec_info,
+					session->pub_data->payload_off,
+					&session->pub_data->sys_meta,
+					&session->pub_data->app_meta,
+					NULL, // TODO: headers? Never set in 1.x
+					ctx->user_data);
+			session->pub_data->sys_meta_sz = rec_info.sys_meta_len;
+			session->pub_data->app_meta_sz = rec_info.app_meta_len;
+			free(rec_info.nonce);
+		}
+		// on subscribe callback
+		ctx->pub_callbacks->on_subscribe(
+				session,
+				session->ch_info,
+				session->ch_info->type,
+				session->mode,
+				NULL, // TODO: headers? Never set in 1.x
+				ctx->user_data);
 		ret = jaln_verify_init_ack_headers(header_info);
 	}
 

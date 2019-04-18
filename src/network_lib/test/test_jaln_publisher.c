@@ -54,6 +54,7 @@ static int peer_digest_call_cnt;
 static int sync_cnt;
 static bool fail;
 static bool ack_cb;
+static bool subscribe_cb;
 
 void peer_digest(
 		__attribute__((unused)) jaln_session *sess,
@@ -281,6 +282,19 @@ void on_connect_ack(
 	ack_cb = true;
 }
 
+int on_subscribe(
+		__attribute__((unused)) jaln_session *sess,
+		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) enum jaln_publish_mode mode,
+		__attribute__((unused)) struct jaln_mime_header *headers,
+		__attribute__((unused)) void *user_data)
+{
+	subscribe_cb = true;
+	return 0;
+}
+
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
@@ -312,6 +326,7 @@ void setup()
 	ctx->pub_callbacks = jaln_publisher_callbacks_create();
 	ctx->pub_callbacks->peer_digest = peer_digest;
 	ctx->pub_callbacks->sync = on_sync;
+	ctx->pub_callbacks->on_subscribe = on_subscribe;
 
 	int dgst_val = 0xf001;
 	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
@@ -334,6 +349,7 @@ void setup()
 	sync_cnt = 0;
 	fail = false;
 	ack_cb = false;
+	subscribe_cb = false;
 	replace_function(vortex_frame_get_mime_header, mock_vortex_frame_get_mime_header_success);
 }
 
@@ -506,9 +522,11 @@ void test_jaln_publisher_send_init()
 {
 	enum jal_status ret;
 	replace_function(jaln_create_init_msg, fake_jaln_create_init_msg)
+	sess->pub_data = jaln_pub_data_create(); // since we skipped past session setup
 	ret = jaln_publisher_send_init(sess);
 	assert_equals(JAL_OK, ret);
 	assert_equals(true, ack_cb);
+	assert_equals(true, subscribe_cb);
 	restore_function(jaln_create_init_msg);
 }
 
@@ -578,6 +596,7 @@ void test_publish_success_for_all_types()
 	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL);
 	assert_not_equals((void*) NULL, conn);
 	assert_equals(true, ack_cb);
+	assert_equals(true, subscribe_cb);
 	jaln_connection_destroy(&conn);
 	restore_function(vortex_connection_set_on_close_full);
 }
