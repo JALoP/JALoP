@@ -252,8 +252,7 @@ enum jal_status on_subscribe(
 		DEBUG_LOG("Illegal Record Type");
 		return JAL_E_INVAL;
 	}
-
-	ret = *((enum jal_status *) status);
+	ret = status? *((enum jal_status *) status) : JAL_OK;
 	if (JAL_OK != ret) {
 		DEBUG_LOG("Failed to send records to subscriber");
 	}
@@ -373,13 +372,16 @@ enum jaln_publish_mode parse_mode(const char *mode)
 
 int main(int argc, char **argv) {
 	//TODO: parse settings from a configuration file
-	if (argc != 6) {
-		fprintf(stderr, "Usage: %s host:port key cert record_types mode\n", argv[0]);
+	const char *key = NULL;
+	const char *cert = NULL;
+	const char *sub_certs = "path/to/subscriber/certs"; // Currently unused
+	if (argc == 6) {
+		key = argv[4];
+		cert = argv[5];
+	} else if (argc != 4) {
+		fprintf(stderr, "Usage: %s host:port record_types mode [key cert]\n", argv[0]);
 		return 2;
 	}
-	const char *key = argv[2];
-	const char *cert = argv[3];
-	const char *sub_certs = "path/to/subscriber/certs"; // Currently unused
 	const char *host = argv[1];
 	char *separator = strchr(host, ':');
 	if (!separator) {
@@ -389,11 +391,15 @@ int main(int argc, char **argv) {
 	*separator = '\0';
 	const char *port = separator + 1;
 
-	const int classes = parse_rtype(argv[4]);
-	enum jaln_publish_mode mode = parse_mode(argv[5]);
+	const int classes = parse_rtype(argv[2]);
+	enum jaln_publish_mode mode = parse_mode(argv[3]);
 
-	printf("Connecting to %s:%s\nUsing key %s\nUsing cert %s\n",
-		host, port, key, cert);
+	if (key) {
+		printf("Connecting to %s:%s\nUsing key %s\nUsing cert %s\n",
+			host, port, key, cert);
+	} else {
+		printf("Connecting to %s:%s\nTLS disabled\n", host, port);
+	}
 
 	printf("Publishing in %s mode:\n\tjournal: %s\n\taudit: %s\n\tlog: %s\n",
 		mode == JALN_LIVE_MODE? "live" : "archive",
@@ -424,7 +430,9 @@ int main(int argc, char **argv) {
 	err = jaln_register_digest_challenge_configuration(net_ctx, "on");
 	err = jaln_register_encoding(net_ctx, "none");
 
-	err = jaln_register_tls(net_ctx, key, cert, sub_certs);
+	if (key) {
+		err = jaln_register_tls(net_ctx, key, cert, sub_certs);
+	}
 	err = jaln_register_connection_callbacks(net_ctx, connect_handlers);
 	DEBUG_LOG("register conn cbs: %d\n", err);
 	err = jaln_register_publisher_callbacks(net_ctx, pub_callbacks);
