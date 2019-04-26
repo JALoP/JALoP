@@ -125,6 +125,10 @@ struct global_config_t {
 	long long int pending_digest_max;
 	long long int pending_digest_timeout;
 	long long int poll_time;
+	const char *dc_config[2];
+	const char *pub_id;
+	enum jaln_record_type record_types;
+	enum jaln_publish_mode mode;
 } global_config;
 
 struct global_args_t {
@@ -1063,6 +1067,7 @@ int main(int argc, char **argv)
 	struct jaln_connection_callbacks *conn_cbs = NULL;
 	struct jaln_publisher_callbacks *pub_cbs = NULL;
 	struct jal_digest_ctx *dctx = NULL;
+	struct jaln_connection *jal_conn = NULL;
 	enum jal_status jaln_ret;
 	int rc = 0;
 	config_t config;
@@ -1130,7 +1135,7 @@ int main(int argc, char **argv)
 		rc = -1;
 		goto out;
 	}
-	if (JAL_OK != jaln_register_encoding(jctx, "xml")) {
+	if (JAL_OK != jaln_register_encoding(jctx, "none")) {
 		DEBUG_LOG("Failed to register default encoding");
 		rc = -1;
 		goto out;
@@ -1146,6 +1151,15 @@ int main(int argc, char **argv)
 	// The jaln_context owns the digest algorithm, so don't keep a
 	// reference to it.
 	dctx = NULL;
+	if ((global_config.dc_config[0] && JAL_OK != jaln_register_digest_challenge_configuration(
+			jctx, global_config.dc_config[0])) ||
+		(global_config.dc_config[1] && JAL_OK != jaln_register_digest_challenge_configuration(
+			jctx, global_config.dc_config[1]))) {
+		DEBUG_LOG("Failed to register digest challenge configuration");
+		rc = -1;
+		goto out;
+	}
+	// TODO: set publisher ID
 	if (global_args.enable_tls) {
 		jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
 				global_config.remote_cert_dir);
@@ -1188,9 +1202,10 @@ int main(int argc, char **argv)
 	gs_journal_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	gs_audit_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	gs_log_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
-	jaln_ret = jaln_listen(jctx, global_config.host, ss.str().c_str(), NULL);
-	if (JAL_OK != jaln_ret) {
-		DEBUG_LOG("Failed to start listening");
+	jal_conn = jaln_publish(jctx, global_config.host, ss.str().c_str(), \
+			global_config.record_types, global_config.mode, NULL);
+	if (!jal_conn) {
+		DEBUG_LOG("Failed to connect to subscriber");
 		rc = -1;
 		goto out;
 	}
@@ -1203,8 +1218,9 @@ out:
 	while (threads_to_exit > 0) {
 		sleep(1);
 	}
-	jaln_listener_shutdown(jctx);
-	jaln_listener_wait(jctx);
+	if (JAL_OK != (jaln_ret = jaln_disconnect(jal_conn))) {
+		DEBUG_LOG("Failed to disconnect");
+	}
 	free_global_config();
 	free_global_args();
 	teardown_db_layer();
@@ -1382,9 +1398,91 @@ void print_config(void)
 	printf("POLL TIME:\t%lld\n", global_config.poll_time);
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
+	printf("PUBLISHER ID:\t\t%s\n", global_config.pub_id);
+	printf("DIGEST CHALLENGE\t%s", global_config.dc_config[0]);
+	if (global_config.dc_config[1]) {
+		printf(", %s\n", global_config.dc_config[1]);
+	} else {
+		putchar('\n');
+	}
+	printf("MODE:\t\t\t%s\n", global_config.mode == JALN_ARCHIVE_MODE? "archive" : "live");
+	puts("RECORD TYPES:\t\t");
+	print_record_types(global_config.record_types);
+	putchar('\n');
 	printf("PEERS\n%15s | %18s | %18s", "HOST", "PUBLISH_ALLOW", "SUBSCRIBE_ALLOW");
 	axl_hash_foreach(global_config.peers, print_peer_cfg, NULL);
 	printf("\n===\nEND CONFIG VALUES:\n===\n");
+}
+
+static bool parse_dc_config(config_setting_t *node, const char *dc_config[2])
+{
+	if (!node || !dc_config) {
+		return false;
+	}
+	if (!config_setting_is_list(node)) {
+		if (!(dc_config[0] = config_setting_get_string(node))) {
+			return false;
+		}
+		dc_config[1] = NULL;
+		return true;
+	}
+	int node_len = config_setting_length(node);
+	// can be on, off, or combination of the two
+	if (0 >= node_len || node_len > 2) {
+		return false;
+	}
+	if (!(dc_config[0] = config_setting_get_string_elem(node, 0))) {
+		return false;
+	}
+	if (node_len == 2) {
+		if (!(dc_config[1] = config_setting_get_string_elem(node, 1))) {
+			return false;
+		}
+	} else {
+		dc_config[1] = NULL;
+	}
+	return true;
+}
+
+static int rtype_bit_from_str(const char *type)
+{
+	if (!type) {
+		return 0;
+	}
+	if (!strcasecmp(type, JALNS_JOURNAL)) {
+		return JALN_RTYPE_JOURNAL;
+	}
+	if (!strcasecmp(type, JALNS_AUDIT)) {
+		return JALN_RTYPE_AUDIT;
+	}
+	if (!strcasecmp(type, JALNS_LOG)) {
+		return JALN_RTYPE_LOG;
+	}
+	return 0;
+}
+
+static int parse_record_types(config_setting_t *node)
+{
+	if (!node) {
+		return 0;
+	}
+	if (!config_setting_is_list(node)) {
+		return rtype_bit_from_str(config_setting_get_string(node));
+	}
+	int node_len = config_setting_length(node);
+	// can be journal, audit, log or combination of the three
+	if (0 >= node_len || node_len > 3) {
+		return 0;
+	}
+	int ret = 0;
+	for (int i = 0; i < node_len; ++i) {
+		int rtype = rtype_bit_from_str(config_setting_get_string_elem(node, i));
+		if (!rtype) {
+			return 0;
+		}
+		ret |= rtype;
+	}
+	return ret;
 }
 
 enum jald_status set_global_config(config_t *config)
@@ -1460,6 +1558,40 @@ enum jald_status set_global_config(config_t *config)
 	rc = config_setting_lookup_int64(root, JALNS_POLL_TIME, &global_config.poll_time);
 	if (CONFIG_FALSE == rc || global_config.poll_time <= 0) {
 		CONFIG_ERROR(root, JALNS_POLL_TIME, "expected positive integer value");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	if (!parse_dc_config(config_setting_get_member(root, JALNS_DC_CONFIG), global_config.dc_config)) {
+		CONFIG_ERROR(root, JALNS_DC_CONFIG, "expected string or list of one or two elements");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	rc = config_setting_lookup_string(root, JALNS_PUBLISHER_ID, &global_config.pub_id);
+	if (CONFIG_FALSE == rc) {
+		CONFIG_ERROR(root, JALNS_PUBLISHER_ID, "expected string value");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	rc = parse_record_types(config_setting_get_member(root, JALNS_RECORD_TYPES));
+	if (!rc) {
+		CONFIG_ERROR(root, JALNS_RECORD_TYPES, "expected string or list of \"journal\", \"audit\", and/or \"log\"");
+		return JALD_E_CONFIG_LOAD;
+	}
+	global_config.record_types = (jaln_record_type) rc;
+
+	const char *mode;
+	rc = config_setting_lookup_string(root, JALNS_MODE, &mode);
+	if (CONFIG_TRUE == rc) {
+		if (!strcmp(mode, JALNS_MODE_LIVE)) {
+			global_config.mode = JALN_LIVE_MODE;
+		} else if (!strcmp(mode, JALNS_MODE_ARCHIVE)) {
+			global_config.mode = JALN_ARCHIVE_MODE;
+		} else {
+			CONFIG_ERROR(root, JALNS_DC_CONFIG, "expected \"archive\" or \"live\"");
+			return JALD_E_CONFIG_LOAD;
+		}
+	} else {
+		CONFIG_ERROR(root, JALNS_MODE, "expected string value");
 		return JALD_E_CONFIG_LOAD;
 	}
 
