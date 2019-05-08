@@ -106,29 +106,31 @@ do { \
 } while (0)
 
 struct peer_config_t {
-	enum jaln_record_type pub_allow;
-	enum jaln_record_type sub_allow;
+	const char *host;
+	long long int port;
+	char *cert_dir;
+	const char *dc_config[2];
+	enum jaln_record_type record_types;
+	enum jaln_publish_mode mode;
+	jaln_context *net_ctx;
+	struct jaln_connection *conn;
+	long long int retries;
 };
+
 struct session_ctx_t {
 	struct jaldb_record *rec;
 };
 
 struct global_config_t {
-	axlHash *peers;
 	char *private_key;
 	char *public_cert;
-	char *remote_cert_dir;
 	char *db_root;
 	char *schemas_root;
-	char *host;
-	long long int port;
-	long long int pending_digest_max;
-	long long int pending_digest_timeout;
 	long long int poll_time;
-	const char *dc_config[2];
+	long long int retry_interval;
 	const char *pub_id;
-	enum jaln_record_type record_types;
-	enum jaln_publish_mode mode;
+	int num_peers;
+	struct peer_config_t *peers;
 } global_config;
 
 struct global_args_t {
@@ -162,46 +164,21 @@ static int process_options(int argc, char **argv);
 static enum jald_status config_load(config_t *config, char *config_path);
 static void init_global_config(void);
 static void free_global_config(void);
+static void free_peer_config(peer_config_t *peer);
 static void free_global_args(void);
-static axl_bool print_peer_cfg(axlPointer key, axlPointer data, axlPointer user_data);
 static void print_record_types(enum jaln_record_type rtype);
+static void print_peer_config(peer_config_t *peer);
 static void print_config(void);
 static enum jald_status set_global_config(config_t *config);
-static enum jald_status handle_allow_mask(config_setting_t *parent, config_setting_t *list, const char *cfg_key, enum jaln_record_type *mask);
 static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data);
 
 enum jaln_connect_error on_connect_request(
-		const struct jaln_connect_request *req,
+		__attribute__((unused)) const struct jaln_connect_request *req,
 		__attribute__((unused)) int *selected_encoding,
 		__attribute__((unused)) int *selected_digest,
 		__attribute__((unused)) void *user_data)
 {
-	struct peer_config_t *peer_cfg = (struct peer_config_t*) axl_hash_get(global_config.peers, req->hostname);
-	if (!peer_cfg) {
-		peer_cfg = (struct peer_config_t*) axl_hash_get(global_config.peers, req->addr);
-	}
-	if (!peer_cfg) {
-		return JALN_CE_UNAUTHORIZED_MODE;
-	}
-	if (req->role == JALN_ROLE_PUBLISHER) {
-		// TODO: add support for jald to act as a subscriber.
-		return JALN_CE_UNSUPPORTED_MODE;
-	}
-	enum jaln_record_type mask = (enum jaln_record_type)0;
-	switch (req->role) {
-	case JALN_ROLE_SUBSCRIBER:
-		mask = peer_cfg->sub_allow;
-		break;
-	case JALN_ROLE_PUBLISHER:
-		mask = peer_cfg->pub_allow;
-		break;
-	default:
-		// Shouldn't happen.
-		DEBUG_LOG("[%s] Invalid role in connection request?", req->ch_info->hostname);
-	}
-	if (mask & req->type) {
-		return JALN_CE_ACCEPT;
-	}
+	// Incoming connections are not supported
 	return JALN_CE_UNAUTHORIZED_MODE;
 }
 
@@ -238,23 +215,55 @@ void on_connection_close(
 		__attribute__((unused)) const struct jaln_connection *jal_conn,
 		__attribute__((unused)) void *user_data)
 {
-	// don't need to to anything here.
+	struct peer_config_t *peer = (struct peer_config_t *)user_data;
+	if (!peer) {
+		DEBUG_LOG("User data not set for connection_close callback");
+		return;
+	}
+	if (JAL_OK != jaln_shutdown(peer->conn)) {
+		DEBUG_LOG("Failed to shutdown connection to %s:%llu", peer->host, peer->port);
+	}
+	peer->conn = NULL;
 }
+
+#define LOG_STR_FIELD(_s, _f) DEBUG_LOG(#_f": %s", _s->_f? _s->_f : "(nil)")
+#define LOG_INT_FIELD(_s, _f) DEBUG_LOG(#_f": %d", _s->_f)
+#define LOG_PTR_FIELD(_s, _f) DEBUG_LOG(#_f": %p", _s->_f)
 void on_connect_ack(
-		__attribute__((unused)) const struct jaln_connect_ack *ack,
-		__attribute__((unused)) void *user_data)
+		const struct jaln_connect_ack *ack,
+		__attribute__((unused))void *user_data)
 {
-	// Not applicable for our context since we only act as a listener, and
-	// do not initiate any connections.
+	DEBUG_LOG("initialize-ack received:");
+	DEBUG_LOG("ack: %p", ack);
+	LOG_STR_FIELD(ack, hostname);
+	LOG_STR_FIELD(ack, addr);
+	LOG_INT_FIELD(ack, jaln_version);
+	LOG_STR_FIELD(ack, jaln_agent);
+	LOG_INT_FIELD(ack, mode);
+	LOG_PTR_FIELD(ack, headers);
 }
 
 void on_connect_nack(
-		__attribute__((unused)) const struct jaln_connect_nack *nack,
+		const struct jaln_connect_nack *nack,
 		__attribute__((unused)) void *user_data)
 {
-	// Not applicable for our context since we only act as a listener, and
-	// do not initiate any connections.
+	DEBUG_LOG("initialize-nack received:");
+        DEBUG_LOG("nack: %p", nack);
+        DEBUG_LOG("user_data: %p", user_data);
+        LOG_STR_FIELD(nack->ch_info, hostname);
+        LOG_STR_FIELD(nack->ch_info, addr);
+        LOG_STR_FIELD(nack->ch_info, encoding);
+        LOG_STR_FIELD(nack->ch_info, digest_method);
+        LOG_INT_FIELD(nack->ch_info, type);
+        LOG_PTR_FIELD(nack, error_list);
+        LOG_INT_FIELD(nack, error_cnt);
+	for (int i = 0; i < nack->error_cnt; ++i) {
+		DEBUG_LOG("error[%d]: %s", i, nack->error_list[i]);
+	}
 }
+#undef LOG_STR_FIELD
+#undef LOG_INT_FIELD
+#undef LOG_PTR_FIELD
 
 enum jal_status pub_on_journal_resume(
 		__attribute__((unused)) jaln_session *sess,
@@ -1067,32 +1076,30 @@ int main(int argc, char **argv)
 	struct jaln_connection_callbacks *conn_cbs = NULL;
 	struct jaln_publisher_callbacks *pub_cbs = NULL;
 	struct jal_digest_ctx *dctx = NULL;
-	struct jaln_connection *jal_conn = NULL;
 	enum jal_status jaln_ret;
 	int rc = 0;
 	config_t config;
 	config_init(&config);
-	std::stringstream ss(std::ios_base::out);
 
 	rc = setup_signals();
 	if (0 != rc) {
-		goto out;
+		goto quick_out;
 	}
 
 	if (process_options(argc, argv) == VERSION_CALLED) {
-		goto version_out;
+		goto quick_out;
 	}
 
 	DEBUG_LOG("Config Path: %s\tDebug: %d\n", global_args.config_path, global_args.debug_flag);
 
 	if (!global_args.config_path) {
 		rc = JALD_E_CONFIG_LOAD;
-		goto out;
+		goto quick_out;
 	}
 
 	rc = config_load(&config, global_args.config_path);
 	if (rc != JALD_OK) {
-		goto out;
+		goto quick_out;
 	}
 
 	init_global_config();
@@ -1113,75 +1120,6 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	conn_cbs = jaln_connection_callbacks_create();
-	conn_cbs->connect_request_handler = on_connect_request;
-	conn_cbs->on_channel_close = on_channel_close;
-	conn_cbs->on_connection_close = on_connection_close;
-	conn_cbs->connect_ack = on_connect_ack;
-	conn_cbs->connect_nack = on_connect_nack;
-
-
-	pub_cbs = jaln_publisher_callbacks_create();
-	pub_cbs->on_journal_resume = pub_on_journal_resume;
-	pub_cbs->on_subscribe = pub_on_subscribe;
-	pub_cbs->on_record_complete = pub_on_record_complete;
-	pub_cbs->sync = pub_sync;
-	pub_cbs->notify_digest = pub_notify_digest;
-	pub_cbs->peer_digest = pub_peer_digest;
-
-	jctx = jaln_context_create();
-	if (!jctx) {
-		DEBUG_LOG("Failed to create the jaln_context");
-		rc = -1;
-		goto out;
-	}
-	if (JAL_OK != jaln_register_encoding(jctx, "none")) {
-		DEBUG_LOG("Failed to register default encoding");
-		rc = -1;
-		goto out;
-	}
-	dctx = jal_sha256_ctx_create();
-	if (JAL_OK != jaln_register_digest_algorithm(jctx, dctx)) {
-		DEBUG_LOG("Failed to register sha256 algorithm");
-		jal_digest_ctx_destroy(&dctx);
-		dctx = NULL;
-		rc = -1;
-		goto out;
-	}
-	// The jaln_context owns the digest algorithm, so don't keep a
-	// reference to it.
-	dctx = NULL;
-	if ((global_config.dc_config[0] && JAL_OK != jaln_register_digest_challenge_configuration(
-			jctx, global_config.dc_config[0])) ||
-		(global_config.dc_config[1] && JAL_OK != jaln_register_digest_challenge_configuration(
-			jctx, global_config.dc_config[1]))) {
-		DEBUG_LOG("Failed to register digest challenge configuration");
-		rc = -1;
-		goto out;
-	}
-	// TODO: set publisher ID
-	if (global_args.enable_tls) {
-		jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
-				global_config.remote_cert_dir);
-		if (JAL_OK != jaln_ret) {
-			DEBUG_LOG("Failed to register TLS");
-			rc = -1;
-			goto out;
-		}
-	}
-
-	jaln_ret = jaln_register_connection_callbacks(jctx, conn_cbs);
-	if (JAL_OK != jaln_ret) {
-		DEBUG_LOG("Failed to register connection callbacks");
-		rc = -1;
-		goto out;
-	}
-	jaln_ret = jaln_register_publisher_callbacks(jctx, pub_cbs);
-	if (JAL_OK != jaln_ret) {
-		DEBUG_LOG("Failed to register publisher callbacks");
-		rc = -1;
-		goto out;
-	}
 	if (0 != pthread_mutex_init(&gs_journal_sub_lock, NULL)) {
 		DEBUG_LOG("Failed to initialize journal_sub_lock");
 		rc = -1;
@@ -1197,29 +1135,125 @@ int main(int argc, char **argv)
 		rc = -1;
 		goto out;
 	}
-
-	ss << global_config.port;
 	gs_journal_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	gs_audit_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	gs_log_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
-	jal_conn = jaln_publish(jctx, global_config.host, ss.str().c_str(), \
-			global_config.record_types, global_config.mode, NULL);
-	if (!jal_conn) {
-		DEBUG_LOG("Failed to connect to subscriber");
-		rc = -1;
-		goto out;
+	struct peer_config_t *peer;
+
+	// set up JALoP contexts for each peer
+	for (int i = 0; i < global_config.num_peers; ++i) {
+		peer = global_config.peers + i;
+
+		conn_cbs = jaln_connection_callbacks_create();
+		conn_cbs->connect_request_handler = on_connect_request;
+		conn_cbs->on_channel_close = on_channel_close;
+		conn_cbs->on_connection_close = on_connection_close;
+		conn_cbs->connect_ack = on_connect_ack;
+		conn_cbs->connect_nack = on_connect_nack;
+
+		pub_cbs = jaln_publisher_callbacks_create();
+		pub_cbs->on_journal_resume = pub_on_journal_resume;
+		pub_cbs->on_subscribe = pub_on_subscribe;
+		pub_cbs->on_record_complete = pub_on_record_complete;
+		pub_cbs->sync = pub_sync;
+		pub_cbs->notify_digest = pub_notify_digest;
+		pub_cbs->peer_digest = pub_peer_digest;
+
+		jctx = jaln_context_create();
+		if (!jctx) {
+			DEBUG_LOG("Failed to create the jaln_context");
+			rc = -1;
+			goto out;
+		}
+		if (JAL_OK != jaln_register_encoding(jctx, "none")) {
+			DEBUG_LOG("Failed to register default encoding");
+			rc = -1;
+			goto out;
+		}
+		dctx = jal_sha256_ctx_create();
+		if (JAL_OK != jaln_register_digest_algorithm(jctx, dctx)) {
+			DEBUG_LOG("Failed to register sha256 algorithm");
+			jal_digest_ctx_destroy(&dctx);
+			dctx = NULL;
+			rc = -1;
+			goto out;
+		}
+		// The jaln_context owns the digest algorithm, so don't keep a
+		// reference to it.
+		dctx = NULL;
+		if ((peer->dc_config[0] && JAL_OK != jaln_register_digest_challenge_configuration(
+					jctx, peer->dc_config[0])) ||
+				(peer->dc_config[1] && JAL_OK != jaln_register_digest_challenge_configuration(
+					jctx, peer->dc_config[1]))) {
+			DEBUG_LOG("Failed to register digest challenge configuration");
+			rc = -1;
+			goto out;
+		}
+		// TODO: set publisher ID
+		if (global_args.enable_tls) {
+			jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
+					peer->cert_dir);
+			if (JAL_OK != jaln_ret) {
+				DEBUG_LOG("Failed to register TLS");
+				rc = -1;
+				goto out;
+			}
+		}
+
+		jaln_ret = jaln_register_connection_callbacks(jctx, conn_cbs);
+		if (JAL_OK != jaln_ret) {
+			DEBUG_LOG("Failed to register connection callbacks");
+			rc = -1;
+			goto out;
+		}
+		jaln_ret = jaln_register_publisher_callbacks(jctx, pub_cbs);
+		if (JAL_OK != jaln_ret) {
+			DEBUG_LOG("Failed to register publisher callbacks");
+			rc = -1;
+			goto out;
+		}
+		peer->net_ctx = jctx;
 	}
 
-	while (!exiting) {
-		sleep(60);
-	}
+	// try (and potentially retry) to connect to each peer
+	do {
+		for (int i = 0; i < global_config.num_peers; ++i) {
+			peer = global_config.peers + i;
+			if (peer->conn) {
+				// alreay connected
+				continue;
+			}
+			++peer->retries;
+			std::stringstream ss(std::ios_base::out);
+			ss << peer->port;
+			peer->conn = jaln_publish(peer->net_ctx, peer->host, ss.str().c_str(), \
+					peer->record_types, peer->mode, peer);
+			if (!peer->conn) {
+				DEBUG_LOG("Failed connection attempt %lld to %s:%llu", peer->retries, peer->host, peer->port);
+			} else {
+				peer->retries = 0;
+			}
+		}
+		if (global_config.retry_interval == -1) {
+			// don't retry
+			// wait for a signal and then check if we should be exiting
+			while (!exiting) {
+				pause();
+			}
+			break;
+		}
+		unsigned int remaining = global_config.retry_interval;
+		while ((remaining = sleep(remaining))) {
+			// interrupted by a signal
+			if (exiting) {
+				break;
+			}
+		}
+	} while (!exiting);
 
 out:
 	while (threads_to_exit > 0) {
 		sleep(1);
-	}
-	if (JAL_OK != (jaln_ret = jaln_disconnect(jal_conn))) {
-		DEBUG_LOG("Failed to disconnect");
 	}
 	free_global_config();
 	free_global_args();
@@ -1230,13 +1264,11 @@ out:
 	pthread_mutex_destroy(&exit_count_lock);
 	jaln_context_destroy(&jctx);
 	jaln_publisher_callbacks_destroy(&pub_cbs);
+
+quick_out:
 	config_destroy(&config);
 
 	return rc;
-
-version_out:
-	config_destroy(&config);
-	return 0;
 }
 
 int process_options(int argc, char **argv)
@@ -1332,14 +1364,28 @@ out:
 void init_global_config(void)
 {
 	memset(&global_config, 0, sizeof(global_config));
-	global_config.peers = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 }
 
 void free_global_config(void)
 {
 	// all the other config elements are simply libconfig elements and
 	// should not get freed.
-	axl_hash_free(global_config.peers);
+        free(global_config.private_key);
+        free(global_config.public_cert);
+        free(global_config.db_root);
+        free(global_config.schemas_root);
+	for (int i = 0; i < global_config.num_peers; ++i) {
+		free_peer_config(global_config.peers + i);
+	}
+	free(global_config.peers);
+}
+
+void free_peer_config(peer_config_t *peer)
+{
+	if (peer) {
+		free(peer->cert_dir);
+		jaln_shutdown(peer->conn);
+	}
 }
 
 void free_global_args(void)
@@ -1349,36 +1395,45 @@ void free_global_args(void)
 
 void print_record_types(enum jaln_record_type rtype)
 {
-	const char *str;
+	const size_t j_len = strlen(JALNS_JOURNAL);
+	const size_t a_len = strlen(JALNS_AUDIT);
+	const size_t l_len = strlen(JALNS_LOG);
+	// max size: length of all strings plus 2 spaces and a NUL
+	const int size = j_len + a_len + l_len + 3;
+	char *buffer = (char *)alloca(size);
+	char *head = buffer;
+	memset(head, ' ', size);
 	if (rtype & JALN_RTYPE_JOURNAL) {
-		str = "journal";
-	} else {
-		str = "";
+		memcpy(head, JALNS_JOURNAL, j_len);
+		head += j_len + 1;
 	}
-	printf("%8s", str);
 	if (rtype & JALN_RTYPE_AUDIT) {
-		str = "audit";
-	} else {
-		str = "";
+		memcpy(head, JALNS_AUDIT, a_len);
+		head += a_len + 1;
 	}
-	printf("%6s", str);
 	if (rtype & JALN_RTYPE_LOG) {
-		str = "log";
-	} else {
-		str = "";
+		memcpy(head, JALNS_LOG, l_len);
+		head += l_len + 1;
 	}
-	printf("%4s", str);
+	*head = '\0';
+	printf("%s", buffer);
 }
 
-axl_bool print_peer_cfg(axlPointer key, axlPointer data, __attribute__((unused)) axlPointer user_data)
+void print_peer_config(struct peer_config_t *peer_cfg)
 {
-	char *host = (char *)key;
-	struct peer_config_t *peer_cfg = (struct peer_config_t*) data;
-	printf("\n%15s | ", host);
-	print_record_types(peer_cfg->pub_allow);
-	printf(" | ");
-	print_record_types(peer_cfg->sub_allow);
-	return axl_false;
+	printf("\tHOST:\t\t\t%s\n", peer_cfg->host);
+	printf("\tPORT:\t\t\t%llu\n", peer_cfg->port);
+	printf("\tCERT DIR:\t\t%s\n", peer_cfg->cert_dir);
+	printf("\tDIGEST CHALLENGE:\t%s", peer_cfg->dc_config[0]);
+	if (peer_cfg->dc_config[1]) {
+		printf(", %s\n", peer_cfg->dc_config[1]);
+	} else {
+		putchar('\n');
+	}
+	printf("\tMODE:\t\t\t%s\n", peer_cfg->mode == JALN_ARCHIVE_MODE? "archive" : "live");
+	printf("\tRECORD TYPES:\t\t");
+	print_record_types(peer_cfg->record_types);
+	putchar('\n');
 }
 
 void print_config(void)
@@ -1387,31 +1442,18 @@ void print_config(void)
 	if (global_args.enable_tls) {
 		printf("PRIVATE KEY:\t\t%s\n", global_config.private_key);
 		printf("PUBLIC CERT:\t\t%s\n", global_config.public_cert);
-		printf("REMOTE CERT DIR:\t\t%s\n", global_config.remote_cert_dir);
 	} else {
 		printf("!!!!!!!! TLS DISABLED !!!!!!!!\n");
 	}
-	printf("PORT:\t\t\t%lld\n", global_config.port);
-	printf("HOST:\t\t\t%s\n", global_config.host);
-	printf("PENDING DIGEST MAX:\t%lld\n", global_config.pending_digest_max);
-	printf("PENDING DIGEST TIMEOUT:\t%lld\n", global_config.pending_digest_timeout);
-	printf("POLL TIME:\t%lld\n", global_config.poll_time);
+	printf("POLL TIME:\t\t%lld\n", global_config.poll_time);
+	printf("RETRY INTERNVAL:\t%lld\n", global_config.retry_interval);
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
 	printf("PUBLISHER ID:\t\t%s\n", global_config.pub_id);
-	printf("DIGEST CHALLENGE\t%s", global_config.dc_config[0]);
-	if (global_config.dc_config[1]) {
-		printf(", %s\n", global_config.dc_config[1]);
-	} else {
-		putchar('\n');
+	for (int i = 0; i < global_config.num_peers; ++i) {
+		printf("PEER[%d]:\n", i);
+		print_peer_config(global_config.peers + i);
 	}
-	printf("MODE:\t\t\t%s\n", global_config.mode == JALN_ARCHIVE_MODE? "archive" : "live");
-	puts("RECORD TYPES:\t\t");
-	print_record_types(global_config.record_types);
-	putchar('\n');
-	printf("PEERS\n%15s | %18s | %18s", "HOST", "PUBLISH_ALLOW", "SUBSCRIBE_ALLOW");
-	axl_hash_foreach(global_config.peers, print_peer_cfg, NULL);
-	printf("\n===\nEND CONFIG VALUES:\n===\n");
 }
 
 static bool parse_dc_config(config_setting_t *node, const char *dc_config[2])
@@ -1419,7 +1461,7 @@ static bool parse_dc_config(config_setting_t *node, const char *dc_config[2])
 	if (!node || !dc_config) {
 		return false;
 	}
-	if (!config_setting_is_list(node)) {
+	if (!config_setting_is_array(node)) {
 		if (!(dc_config[0] = config_setting_get_string(node))) {
 			return false;
 		}
@@ -1466,7 +1508,7 @@ static int parse_record_types(config_setting_t *node)
 	if (!node) {
 		return 0;
 	}
-	if (!config_setting_is_list(node)) {
+	if (!config_setting_is_array(node)) {
 		return rtype_bit_from_str(config_setting_get_string(node));
 	}
 	int node_len = config_setting_length(node);
@@ -1485,13 +1527,100 @@ static int parse_record_types(config_setting_t *node)
 	return ret;
 }
 
+static enum jald_status parse_peer_configs(config_setting_t *peers)
+{
+	if (NULL == peers || !config_setting_is_list(peers)) {
+		CONFIG_ERROR(peers, JALNS_PEERS, "expected non-empty list");
+		return JALD_E_CONFIG_LOAD;
+	}
+	int peer_len = config_setting_length(peers);
+	if (!peer_len) {
+		CONFIG_ERROR(peers, JALNS_PEERS, "expected non-empty list");
+		return JALD_E_CONFIG_LOAD;
+	}
+	global_config.num_peers = peer_len;
+	global_config.peers = (struct peer_config_t *)calloc(peer_len, sizeof(struct peer_config_t));
+	if (!global_config.peers) {
+		return JALD_E_NOMEM;
+	}
+	// parse each individual peer configuration
+	for (unsigned i = 0; i < (unsigned) peer_len; i++) {
+		int rc;
+		struct peer_config_t *peer_cfg = global_config.peers + i;
+		config_setting_t *a_peer = config_setting_get_elem(peers, i);
+		if (!config_setting_is_group(a_peer)) {
+			CONFIG_ERROR(a_peer, JALNS_PEERS, " expected group for %s[%u]", JALNS_PEERS, i);
+			return JALD_E_CONFIG_LOAD;
+		}
+
+		rc = config_setting_lookup_string(a_peer, JALNS_HOST, &peer_cfg->host);
+		if (CONFIG_FALSE == rc) {
+			CONFIG_ERROR(a_peer, JALNS_HOST, "expected string value");
+			return JALD_E_CONFIG_LOAD;
+		}
+
+		rc = config_setting_lookup_int64(a_peer, JALNS_PORT, &peer_cfg->port);
+		if (CONFIG_FALSE == rc) {
+			CONFIG_ERROR(a_peer, JALNS_PORT, "expected int64 value");
+			return JALD_E_CONFIG_LOAD;
+		}
+
+		if (!parse_dc_config(config_setting_get_member(a_peer, JALNS_DC_CONFIG), peer_cfg->dc_config)) {
+			CONFIG_ERROR(a_peer, JALNS_DC_CONFIG, "expected string or array of one or two elements");
+			return JALD_E_CONFIG_LOAD;
+		}
+
+		rc = parse_record_types(config_setting_get_member(a_peer, JALNS_RECORD_TYPES));
+		if (!rc) {
+			CONFIG_ERROR(a_peer, JALNS_RECORD_TYPES, "expected string or array of \"" JALNS_JOURNAL \
+					"\", \"" JALNS_AUDIT "\", and/or \"" JALNS_LOG "\"");
+			return JALD_E_CONFIG_LOAD;
+		}
+		peer_cfg->record_types = (jaln_record_type) rc;
+
+		const char *mode;
+		rc = config_setting_lookup_string(a_peer, JALNS_MODE, &mode);
+		if (CONFIG_TRUE == rc) {
+			if (!strcasecmp(mode, JALNS_MODE_LIVE)) {
+				peer_cfg->mode = JALN_LIVE_MODE;
+			} else if (!strcasecmp(mode, JALNS_MODE_ARCHIVE)) {
+				peer_cfg->mode = JALN_ARCHIVE_MODE;
+			} else {
+				CONFIG_ERROR(a_peer, JALNS_DC_CONFIG, "expected \"" JALNS_MODE_LIVE "\" or \"" \
+						JALNS_MODE_ARCHIVE "\"");
+				return JALD_E_CONFIG_LOAD;
+			}
+		} else {
+			CONFIG_ERROR(a_peer, JALNS_MODE, "expected string value");
+			return JALD_E_CONFIG_LOAD;
+		}
+		const char *cert_dir;
+		char abs_cert_dir[PATH_MAX];
+		if (global_args.enable_tls) {
+			rc = config_setting_lookup_string(a_peer, JALNS_CERT_DIR, &cert_dir);
+			if (CONFIG_FALSE == rc) {
+				CONFIG_ERROR(a_peer, JALNS_CERT_DIR, "expected string value");
+				return JALD_E_CONFIG_LOAD;
+			}
+			if (!realpath(cert_dir, abs_cert_dir)) {
+				CONFIG_ERROR(a_peer, JALNS_CERT_DIR, "unable to convert to absolute path");
+				return JALD_E_CONFIG_LOAD;
+			}
+			peer_cfg->cert_dir = strdup(abs_cert_dir);
+			if (!peer_cfg->cert_dir) {
+				return JALD_E_NOMEM;
+			}
+		}
+	}
+	return JALD_OK;
+}
+
 enum jald_status set_global_config(config_t *config)
 {
 	int rc;
 	char *ret = NULL;
 	char absolute_private_key[PATH_MAX];
 	char absolute_public_cert[PATH_MAX];
-	char absolute_remote_cert_dir[PATH_MAX];
 	char absolute_db_root[PATH_MAX];
 	char absolute_schemas_root[PATH_MAX];
 
@@ -1522,37 +1651,6 @@ enum jald_status set_global_config(config_t *config)
 		}
 		free(global_config.public_cert);
 		global_config.public_cert = strdup(absolute_public_cert);
-		rc = jalu_config_lookup_string(root, JALNS_REMOTE_CERT_DIR, &global_config.remote_cert_dir, true);
-		if (0 != rc) {
-			return JALD_E_CONFIG_LOAD;
-		}
-		ret = realpath(global_config.remote_cert_dir, absolute_remote_cert_dir);
-		if (!ret) {
-			printf("Failed to convert path \"%s\" for key \"%s\" to absolute path\n", global_config.remote_cert_dir, JALNS_REMOTE_CERT_DIR);
-		return JALD_E_CONFIG_LOAD;
-		}
-		free(global_config.remote_cert_dir);
-		global_config.remote_cert_dir = strdup(absolute_remote_cert_dir);
-	}
-	rc = config_setting_lookup_int64(root, JALNS_PORT, &global_config.port);
-	if (CONFIG_FALSE == rc) {
-		CONFIG_ERROR(root, JALNS_PORT, "expected int64 value");
-		return JALD_E_CONFIG_LOAD;
-	}
-	rc = jalu_config_lookup_string(root, JALNS_HOST, &global_config.host, true);
-	if (0 != rc) {
-		CONFIG_ERROR(root, JALNS_HOST, "expected string value");
-		return JALD_E_CONFIG_LOAD;
-	}
-	rc = config_setting_lookup_int64(root, JALNS_PENDING_DIGEST_MAX, &global_config.pending_digest_max);
-	if (CONFIG_FALSE == rc) {
-		CONFIG_ERROR(root, JALNS_PENDING_DIGEST_MAX, "expected integer value");
-		return JALD_E_CONFIG_LOAD;
-	}
-	rc = config_setting_lookup_int64(root, JALNS_PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout);
-	if (CONFIG_FALSE == rc) {
-		CONFIG_ERROR(root, JALNS_PENDING_DIGEST_TIMEOUT, "expected integer value");
-		return JALD_E_CONFIG_LOAD;
 	}
 
 	rc = config_setting_lookup_int64(root, JALNS_POLL_TIME, &global_config.poll_time);
@@ -1560,38 +1658,15 @@ enum jald_status set_global_config(config_t *config)
 		CONFIG_ERROR(root, JALNS_POLL_TIME, "expected positive integer value");
 		return JALD_E_CONFIG_LOAD;
 	}
-
-	if (!parse_dc_config(config_setting_get_member(root, JALNS_DC_CONFIG), global_config.dc_config)) {
-		CONFIG_ERROR(root, JALNS_DC_CONFIG, "expected string or list of one or two elements");
+	rc = config_setting_lookup_int64(root, JALNS_RETRY_INTERVAL, &global_config.retry_interval);
+	if (CONFIG_FALSE == rc || global_config.retry_interval < -1) {
+		CONFIG_ERROR(root, JALNS_RETRY_INTERVAL, "expected positive integer value or -1");
 		return JALD_E_CONFIG_LOAD;
 	}
 
 	rc = config_setting_lookup_string(root, JALNS_PUBLISHER_ID, &global_config.pub_id);
 	if (CONFIG_FALSE == rc) {
 		CONFIG_ERROR(root, JALNS_PUBLISHER_ID, "expected string value");
-		return JALD_E_CONFIG_LOAD;
-	}
-
-	rc = parse_record_types(config_setting_get_member(root, JALNS_RECORD_TYPES));
-	if (!rc) {
-		CONFIG_ERROR(root, JALNS_RECORD_TYPES, "expected string or list of \"journal\", \"audit\", and/or \"log\"");
-		return JALD_E_CONFIG_LOAD;
-	}
-	global_config.record_types = (jaln_record_type) rc;
-
-	const char *mode;
-	rc = config_setting_lookup_string(root, JALNS_MODE, &mode);
-	if (CONFIG_TRUE == rc) {
-		if (!strcmp(mode, JALNS_MODE_LIVE)) {
-			global_config.mode = JALN_LIVE_MODE;
-		} else if (!strcmp(mode, JALNS_MODE_ARCHIVE)) {
-			global_config.mode = JALN_ARCHIVE_MODE;
-		} else {
-			CONFIG_ERROR(root, JALNS_DC_CONFIG, "expected \"archive\" or \"live\"");
-			return JALD_E_CONFIG_LOAD;
-		}
-	} else {
-		CONFIG_ERROR(root, JALNS_MODE, "expected string value");
 		return JALD_E_CONFIG_LOAD;
 	}
 
@@ -1620,122 +1695,7 @@ enum jald_status set_global_config(config_t *config)
 	}
 
 	config_setting_t *peers =  config_setting_get_member(root, JALNS_PEERS);
-	if (NULL == peers) {
-		CONFIG_ERROR(root, JALNS_PEERS, "expected non-empty list");
-		return JALD_E_CONFIG_LOAD;
-	}
-	if (!config_setting_is_list(peers)) {
-		CONFIG_ERROR(peers, JALNS_PEERS, "expected non-empty list");
-		return JALD_E_CONFIG_LOAD;
-	}
-	int peer_len = config_setting_length(peers);
-	if (0 >= peer_len) {
-		CONFIG_ERROR(peers, JALNS_PEERS, "expected non-empty list");
-		return JALD_E_CONFIG_LOAD;
-	}
-	for (unsigned i = 0; i < (unsigned) peer_len; i++) {
-		enum jaln_record_type sub_mask = (enum jaln_record_type) 0;
-		enum jaln_record_type pub_mask = (enum jaln_record_type) 0;
-		config_setting_t *a_peer = config_setting_get_elem(peers, i);
-		if (!config_setting_is_group(a_peer)) {
-			CONFIG_ERROR(a_peer, JALNS_PEERS, " expected group for %s[%u]", JALNS_PEERS, i);
-			return JALD_E_CONFIG_LOAD;
-		}
-
-		config_setting_t *list = config_setting_get_member(a_peer, JALNS_PUBLISH_ALLOW);
-		if (JALD_E_CONFIG_LOAD == handle_allow_mask(a_peer, list, JALNS_PUBLISH_ALLOW, &pub_mask)) {
-			return JALD_E_CONFIG_LOAD;
-		}
-
-		list = config_setting_get_member(a_peer, JALNS_SUBSCRIBE_ALLOW);
-		if (JALD_E_CONFIG_LOAD == handle_allow_mask(a_peer, list, JALNS_SUBSCRIBE_ALLOW, &sub_mask)) {
-			return JALD_E_CONFIG_LOAD;
-		}
-
-		list = config_setting_get_member(a_peer, JALNS_HOSTS);
-		if (!list) {
-			CONFIG_ERROR(a_peer, JALNS_HOSTS, "expected non-empty list");
-			return JALD_E_CONFIG_LOAD;
-		}
-		if (!config_setting_is_list(list)) {
-			CONFIG_ERROR(list, JALNS_HOSTS, "expected non-empty list");
-			return JALD_E_CONFIG_LOAD;
-		}
-		int host_len = config_setting_length(list);
-		if (0 >= host_len) {
-			CONFIG_ERROR(list, JALNS_HOSTS, "expected non-empty list");
-			return JALD_E_CONFIG_LOAD;
-		}
-		for (unsigned host_idx = 0; host_idx < (unsigned) host_len; host_idx++) {
-			config_setting_t *cfg_host = config_setting_get_elem(list, host_idx);
-			if (CONFIG_TYPE_STRING != config_setting_type(cfg_host)) {
-				CONFIG_ERROR(list, JALNS_HOSTS, "Expected non-empty string for %s[%u]", JALNS_HOSTS, host_idx);
-				return JALD_E_CONFIG_LOAD;
-			}
-			const char *host_str = config_setting_get_string(cfg_host);
-			if (!host_str) {
-				CONFIG_ERROR(list, JALNS_HOSTS, "Expected non-empty string for %s[%u]", JALNS_HOSTS, host_idx);
-				return JALD_E_CONFIG_LOAD;
-			}
-			char *key = strdup(host_str);
-			struct peer_config_t *peer_cfg = (struct peer_config_t*) axl_hash_get(global_config.peers, key);
-			if (!peer_cfg) {
-				printf("cfg for %s, creating struct\n", host_str);
-				peer_cfg = (struct peer_config_t*) calloc(1, sizeof(*peer_cfg));
-				if (!peer_cfg) {
-					return JALD_E_NOMEM;
-				}
-				if (!key) {
-					free(peer_cfg);
-					return JALD_E_CONFIG_LOAD;
-				}
-				axl_hash_insert_full(global_config.peers, key, free, peer_cfg, free);
-			} else {
-				free(key);
-			}
-			DEBUG_LOG("cfg for %s, adding %d for pub and %d for sub\n", host_str, pub_mask, sub_mask);
-			DEBUG_LOG("cfg for %s, was %d for pub and %d for sub\n", host_str, peer_cfg->pub_allow, peer_cfg->sub_allow);
-			peer_cfg->pub_allow = (enum jaln_record_type) (peer_cfg->pub_allow | pub_mask);
-			peer_cfg->sub_allow = (enum jaln_record_type) (peer_cfg->sub_allow | sub_mask);
-		}
-	}
-	return JALD_OK;
-}
-
-enum jald_status handle_allow_mask(config_setting_t *parent, config_setting_t *list, const char *cfg_key, enum jaln_record_type *mask) {
-	// the allow masks are both optional, so just return OK.
-	if (!list) {
-		return JALD_OK;
-	}
-	if (!config_setting_is_list(list)) {
-		CONFIG_ERROR(parent, cfg_key, "expected non-empty list");
-		return JALD_E_CONFIG_LOAD;
-	}
-	if (!mask) {
-		// this function is internal, so this should never happen.
-		return JALD_E_CONFIG_LOAD;
-	}
-
-	int len = config_setting_length(list);
-	for (unsigned i = 0; i < (unsigned) len; i++) {
-		config_setting_t *item = config_setting_get_elem(list, i);
-		if (CONFIG_TYPE_STRING != config_setting_type(item)) {
-			CONFIG_ERROR(list, cfg_key, "Expected non-empty string for %s[%u]", cfg_key, i);
-			return JALD_E_CONFIG_LOAD;
-		}
-		const char *type = config_setting_get_string(item);
-		if (0 == strcmp(type, JALNS_JOURNAL)) {
-			*mask = (jaln_record_type) (*mask | JALN_RTYPE_JOURNAL);
-		} else if (0 == strcmp(type, JALNS_AUDIT)) {
-			*mask = (jaln_record_type) (*mask | JALN_RTYPE_AUDIT);
-		} else if (0 == strcmp(type, JALNS_LOG)) {
-			*mask = (jaln_record_type) (*mask | JALN_RTYPE_LOG);
-		} else {
-			CONFIG_ERROR(list, cfg_key, "expected one of {'%s', '%s', '%s'}", JALNS_JOURNAL, JALNS_AUDIT, JALNS_LOG);
-			return JALD_E_CONFIG_LOAD;
-		}
-	}
-	return JALD_OK;
+	return parse_peer_configs(peers);
 }
 
 enum jald_status setup_db_layer(void)
@@ -1772,8 +1732,7 @@ static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buff
 	int my_errno = errno;
 	if (-1 == err) {
 		char buf[ERRNO_STR_LEN];
-		strerror_r(my_errno, buf, ERRNO_STR_LEN);
-		DEBUG_LOG("Failed to seek, errno %s\n", buf);
+		DEBUG_LOG("Failed to seek, errno %s\n", strerror_r(my_errno, buf, ERRNO_STR_LEN));
 		return JAL_E_INVAL;
 	}
 	size_t to_read = *size;

@@ -45,17 +45,14 @@ extern "C" {
 #define JALNS_MODE_ARCHIVE "archive"
 #define JALNS_MODE_LIVE "live"
 #define JALNS_PEERS "peers"
-#define JALNS_PENDING_DIGEST_MAX "pending_digest_max"
-#define JALNS_PENDING_DIGEST_TIMEOUT "pending_digest_timeout"
 #define JALNS_POLL_TIME "poll_time"
 #define JALNS_PORT "port"
 #define JALNS_PRIVATE_KEY "private_key"
 #define JALNS_PUBLIC_CERT "public_cert"
-#define JALNS_PUBLISH_ALLOW "publish_allow"
 #define JALNS_PUBLISHER_ID "publisher_id"
 #define JALNS_RECORD_TYPES "record_types"
-#define JALNS_SUBSCRIBE_ALLOW "subscribe_allow"
-#define JALNS_REMOTE_CERT_DIR "remote_cert_dir"
+#define JALNS_RETRY_INTERVAL "retry_interval"
+#define JALNS_CERT_DIR "cert_dir"
 
 #ifdef __cplusplus
 }
