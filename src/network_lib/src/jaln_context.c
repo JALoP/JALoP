@@ -42,11 +42,29 @@
 #include "jaln_strings.h"
 #include "jaln_session.h"
 
+#define THREAD_POOL_INIT_THREADS 4
+#define THREAD_POOL_MAX_THREADS 8
+
 jaln_context *jaln_context_create(void)
 {
 	jaln_context *ctx = jal_calloc(1, sizeof(*ctx));
 
 	if (!vortex_mutex_create(&ctx->lock)) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+
+	if (APR_SUCCESS != apr_initialize()) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+
+	if (APR_SUCCESS != apr_pool_create(&ctx->mem_pool, NULL)) {
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+
+	if (APR_SUCCESS != apr_thread_pool_create(&ctx->threads,
+	                                          THREAD_POOL_INIT_THREADS,
+	                                          THREAD_POOL_MAX_THREADS,
+	                                          ctx->mem_pool)) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
 
@@ -83,6 +101,12 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	if (!jaln_ctx || !(*jaln_ctx)) {
 		return JAL_E_INVAL;
 	}
+
+	apr_thread_pool_destroy((*jaln_ctx)->threads);
+
+	apr_pool_destroy((*jaln_ctx)->mem_pool);
+
+	apr_terminate();
 
 	jaln_publisher_callbacks_destroy(&(*jaln_ctx)->pub_callbacks);
 	jaln_subscriber_callbacks_destroy(&(*jaln_ctx)->sub_callbacks);

@@ -58,6 +58,7 @@ packages_at_least = {
 	'xmlsec1'	: ['xmlsec1', '1.2.9'],
 	'xmlsec1_openssl'	: ['xmlsec1-openssl', '1.2.9'],
 	'libcurl'	: ['libcurl', '4.1.1'],
+	'apr_util'	: ['apr-util-1', '0.3.9'],
 	}
 
 # flags are shared by both debug and release builds

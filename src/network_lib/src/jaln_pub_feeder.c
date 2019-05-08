@@ -46,30 +46,22 @@ axl_bool jaln_pub_feeder_get_size(jaln_session *sess, int *size)
 	return axl_true;
 }
 
-axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
-{
-	uint64_t dst_sz = *size;
+size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *userdata) {
+
+	uint64_t dst_sz = size * nmemb;
 	uint64_t dst_off = 0;
+	jaln_session *sess = (jaln_session *)userdata;
 	struct jaln_pub_data *pd = sess->pub_data;
 	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
 	struct jaln_channel_info *ch_info = sess->ch_info;
 	void *ud = sess->jaln_ctx->user_data;
 	uint8_t *buffer = (uint8_t*)b;
 	enum jal_status ret = JAL_OK;
+	size_t curl_ret = 0;
 
 	if (sess->errored) {
-		return axl_false;
-	}
-
-	if (!pd->finished_headers && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*) pd->headers, pd->headers_sz, &pd->headers_off, axl_true);
-		if (pd->headers_off == pd->headers_sz) {
-			pd->finished_headers = axl_true;
-			free(pd->headers);
-			pd->headers = NULL;
-			pd->headers_sz = 0;
-			pd->headers_off = 0;
-		}
+		curl_ret = CURL_READFUNC_ABORT;
+		goto out;
 	}
 
 	if (!pd->finished_sys_meta && (dst_sz > dst_off)) {
@@ -126,12 +118,14 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 							&bytes_acquired,
 							pd->journal_feeder.feeder_data);
 			if (ret != JAL_OK || (bytes_acquired > left_in_buffer)) {
-				return axl_false;
+				curl_ret = CURL_READFUNC_ABORT;
+				goto out;
 			}
 
 			ret = sess->dgst->update(pd->dgst_inst, buffer + dst_off, bytes_acquired);
 			if (JAL_OK != ret) {
-				return axl_false;
+				curl_ret = CURL_READFUNC_ABORT;
+				goto out;
 			}
 
 			dst_off += bytes_acquired;
@@ -139,13 +133,15 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 			break;
 		}
 		default:
-			return axl_false;
+			curl_ret = CURL_READFUNC_ABORT;
+			goto out;
 		}
 		if (pd->payload_sz == pd->payload_off) {
 			pd->finished_payload = axl_true;
 			size_t dgst_len = sess->dgst->len;
 			if (JAL_OK != sess->dgst->final(pd->dgst_inst, pd->dgst, &dgst_len)) {
-				return axl_false;
+				curl_ret = CURL_READFUNC_ABORT;
+				goto out;
 			}
 
 			jaln_session_add_to_dgst_list(sess, pd->nonce, pd->dgst, dgst_len);
@@ -161,8 +157,13 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 			pd->break_off = 0;
 		}
 	}
-	*size = dst_off;
-	return axl_true;
+	curl_ret = dst_off;
+
+out:
+	if (curl_ret == CURL_READFUNC_ABORT || pd->finished_payload_break == axl_true) {
+		vortex_mutex_unlock(&sess->wait_lock);
+	}
+	return curl_ret;
 }
 
 axl_bool jaln_pub_feeder_is_finished(jaln_session *sess, int *finished)
@@ -171,38 +172,30 @@ axl_bool jaln_pub_feeder_is_finished(jaln_session *sess, int *finished)
 	return *finished;
 }
 
-axl_bool jaln_pub_feeder_handler(
-		__attribute__((unused)) VortexCtx *ctx,
-		VortexPayloadFeederOp op_type,
-		__attribute__((unused)) VortexPayloadFeeder *feeder,
-		axlPointer param1,
-		axlPointer param2,
-		axlPointer user_data)
+void * APR_THREAD_FUNC jaln_pub_feeder_handler(
+		__attribute__((unused)) apr_thread_t *thread,
+		void *user_data)
 {
 	jaln_session *sess = (jaln_session*) user_data;
 
-	int *size = param1;
-	char *buffer = param2;
-
-	switch (op_type) {
-	case PAYLOAD_FEEDER_GET_SIZE:
-		// should return the 'full' size, which may not be storable in
-		// an int...
-		return jaln_pub_feeder_get_size(sess, size);
-		break;
-	case PAYLOAD_FEEDER_GET_CONTENT:
-		return jaln_pub_feeder_fill_buffer(sess, buffer, size);
-		break;
-	case PAYLOAD_FEEDER_IS_FINISHED:
-		return jaln_pub_feeder_is_finished(sess, size);
-		break;
-	case PAYLOAD_FEEDER_RELEASE:
-		// nothing really to do here.
-		return axl_true;
-		break;
+	// race conditions is probably not a concern, since we shouldn't be using the
+	// session's curl ctx at this point anyways, but just in case, since duphandle
+	// isn't thread safe
+	vortex_mutex_lock(&sess->wait_lock);
+	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
+	vortex_mutex_unlock(&sess->wait_lock);
+	if (!ctx) {
+		// Error
+		sess->errored = 1;
+		return NULL;
 	}
-	// unknown OP, is it better to fail now? or just ignore?
-	return axl_false;
+
+	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
+
+	vortex_mutex_lock(&sess->wait_lock);
+	curl_easy_perform(ctx);
+
+	return NULL;
 }
 
 void jaln_pub_feeder_reset_state(jaln_session *sess)
@@ -308,15 +301,15 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 
 	jaln_session_ref(sess);
 
-	VortexPayloadFeeder *feeder = vortex_payload_feeder_new(jaln_pub_feeder_handler, sess);
-	vortex_payload_feeder_set_on_finished(feeder, jaln_pub_feeder_on_finished, sess);
+	if (APR_SUCCESS != apr_thread_pool_push(sess->jaln_ctx->threads,
+	                                        jaln_pub_feeder_handler,
+	                                        (void *) sess,
+	                                        APR_THREAD_TASK_PRIORITY_NORMAL,
+	                                        NULL)) {
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
 
-	vortex_mutex_lock(&sess->wait_lock);
-
-	vortex_channel_send_ans_rpy_from_feeder(sess->rec_chan, feeder, pd->msg_no);
-
-	vortex_cond_wait(&sess->wait, &sess->wait_lock);
-	vortex_mutex_unlock(&sess->wait_lock);
 out:
 	return ret;
 }

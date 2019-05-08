@@ -49,10 +49,12 @@
 #define APP_META "app meta"
 #define PAYLOAD "payload text"
 
-#define VORTEX_SZ (strlen(HEADERS) + strlen(SYS_META) + strlen(APP_META) + \
+#define BUF_SIZE 256
+
+#define VORTEX_SZ (strlen(SYS_META) + strlen(APP_META) + \
 		strlen(PAYLOAD) + (3 * strlen("BREAK")))
 
-#define EXPECTED_MSG HEADERS SYS_META "BREAK" APP_META "BREAK" PAYLOAD "BREAK"
+#define EXPECTED_MSG SYS_META "BREAK" APP_META "BREAK" PAYLOAD "BREAK"
 
 static axl_bool finalized_called;
 
@@ -208,11 +210,17 @@ void setup()
 	sess->ch_info->type = JALN_RTYPE_LOG;
 	sess->dgst = sess->jaln_ctx->sha256_digest;
 	sess->pub_data = jaln_pub_data_create();
+	sess->pub_data->dgst_inst = sess->dgst->create();
+	sess->dgst->init(sess->pub_data->dgst_inst);
 	sess->role = JALN_ROLE_PUBLISHER;
 	sess->pub_data->headers_sz = strlen(HEADERS);
 	sess->pub_data->sys_meta_sz = strlen(SYS_META);
 	sess->pub_data->app_meta_sz = strlen(APP_META);
 	sess->pub_data->payload_sz = strlen(PAYLOAD);
+	sess->pub_data->headers = jal_strdup(HEADERS);
+	sess->pub_data->sys_meta = (uint8_t *) jal_strdup(SYS_META);
+	sess->pub_data->app_meta = (uint8_t *) jal_strdup(APP_META);
+	sess->pub_data->payload = (uint8_t *) jal_strdup(PAYLOAD);
 	struct jaln_publisher_callbacks *pub_cbs = jaln_publisher_callbacks_create();
 
 	pub_cbs->on_journal_resume = my_on_journal_resume;
@@ -230,6 +238,18 @@ void setup()
 void teardown()
 {
 	jaln_session_unref(sess);
+}
+
+void test_pub_feeder_fill_buffer()
+{
+	void *buffer = jal_malloc(BUF_SIZE);
+
+	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
+
+	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, sess);
+
+	assert_string_equals(EXPECTED_MSG, buffer);
+	assert_equals(VORTEX_SZ, ret);
 }
 
 void test_pub_feeder_is_finished_returns_true_if_errored()

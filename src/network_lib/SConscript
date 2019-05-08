@@ -12,6 +12,7 @@ env.MergeFlags(env['vortex_tls_cflags'])
 env.MergeFlags(env['vortex_tls_ldflags'])
 env.MergeFlags(env['libcurl_cflags'])
 env.MergeFlags(env['libcurl_ldflags'])
+env.MergeFlags(env['apr_util_ldflags'])
 # The vortex libraries shadow global variables, so disable the warning here.
 env.MergeFlags({'CCFLAGS': '-Wno-shadow'.split()})
 

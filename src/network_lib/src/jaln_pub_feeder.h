@@ -31,6 +31,8 @@
 #ifndef JALN_PUB_FEEDER
 #define JALN_PUB_FEEDER
 
+#include <apr-1/apr_thread_pool.h>
+
 #include "jaln_session.h"
 
 /**
@@ -48,19 +50,20 @@ axl_bool jaln_pub_feeder_get_size(
 		int *size);
 
 /**
- * function for vortex to fill a buffer to send data.
+ * function for libcurl to fill a buffer to send data.
  *
- * @param[in] sess The session to operate on.
- * @param[in] buffer A buffer to fill.
- * @param[in,out] size The size of the buffer. This will be set to the actual
- * number of bytes copied into the buffer.
+ * @param[out] b A buffer to fill
+ * @param[in] size The size of one section of the buffer
+ * @param[in] nmemb The number of items of size size in the buffer
+ * @param[in] userdata The jaln_session associated with this session
  *
- * @return axl_true on success, axl_false otherwise.
+ * @return the number of bytes written or CURL_READFUNC_ABORT on failure
  */
-axl_bool jaln_pub_feeder_fill_buffer(
-		jaln_session *sess,
-		char *buffer,
-		int *size);
+size_t jaln_pub_feeder_fill_buffer(
+		void *b,
+		size_t size,
+		size_t nmemb,
+		void *userdata);
 
 /**
  * Function used to report to vortex if there is more data available, or if we
@@ -78,26 +81,16 @@ axl_bool jaln_pub_feeder_is_finished(
 		int *finished);
 
 /**
- * Function registered with the vortex payload feeder to handle the various
- * operations.
+ * Function registered with apr to send a record using curl and receive
+ * the response.
  *
- * @see the vortex documentation regarding payload feeders for more
- * information.
- *
- * @param[in] ctx The vortex Context.
- * @param[in] op_type the operation
- * @param[in] param1 The first parameter (the type depends on the op)
- * @param[in] param2 The second parameter (the type depends on the op)
- * @param[in] user_data Expected to be the jaln_session
+ * @param[in] thread The thread we are running in
+ * @param[in] user_data The jaln_session
  *
  * @return axl_true on success, axl_false otherwise.
  */
-axl_bool jaln_pub_feeder_handler(VortexCtx *ctx,
-		VortexPayloadFeederOp op_type,
-		VortexPayloadFeeder *feeder,
-		axlPointer param1,
-		axlPointer param2,
-		axlPointer user_data);
+void * APR_THREAD_FUNC jaln_pub_feeder_handler(__attribute__((unused)) apr_thread_t *thread,
+		void *user_data);
 
 /**
  * Helper function to reset the state of the publisher data. This resets the

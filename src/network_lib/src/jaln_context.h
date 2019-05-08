@@ -36,6 +36,7 @@ extern "C" {
 
 #include <axl.h>
 #include <vortex.h>
+#include <apr-1/apr_thread_pool.h>
 #include <jalop/jaln_network.h>
 
 #include "jaln_strings.h"
@@ -58,6 +59,8 @@ enum jaln_digest_challenge {
 
 struct jaln_context_t {
 	VortexMutex lock;
+	apr_thread_pool_t *threads;
+	apr_pool_t *mem_pool;
 	int ref_cnt;
 	axl_bool is_connected;
 	struct jaln_publisher_callbacks *pub_callbacks;
