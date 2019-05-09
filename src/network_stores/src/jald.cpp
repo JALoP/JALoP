@@ -1351,7 +1351,7 @@ enum jald_status config_load(config_t *config, char *config_path)
 
 	rc = config_read_file(config, config_path);
 	if (rc != CONFIG_TRUE) {
-		printf("Failed to load config file: %s!\n", config_path);
+		printf("Failed to load config file: %s: (%d) %s!\n", config_path, config_error_line(config), config_error_text(config));
 		rc = JALD_E_CONFIG_LOAD;
 		goto out;
 	}
