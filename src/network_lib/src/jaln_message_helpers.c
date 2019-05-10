@@ -833,20 +833,23 @@ enum jal_status jaln_create_journal_missing_msg(const char *id, const char *nonc
 	return JAL_OK;
 }
 
-enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, uint64_t *headers_len_out)
+struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, jaln_session *sess)
 {
-	if (!rec_info || !headers_out || *headers_out || !headers_len_out) {
-		return JAL_E_INVAL;;
+	if (!rec_info || !sess) {
+		return NULL;
 	}
 	if (!jaln_record_info_is_valid(rec_info)) {
 		return JAL_E_INVAL;
 	}
 
 #define REC_FORMAT_STR JALN_MIME_PREAMBLE "%s" JALN_CRLF \
+		JALN_HDRS_SESSION_ID JALN_COLON_SPACE "%s" JALN_CRLF \
 		JALN_HDRS_ID JALN_COLON_SPACE "%s" JALN_CRLF \
 		JALN_HDRS_SYS_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		JALN_HDRS_APP_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		"%s" JALN_COLON_SPACE "%" PRIu64 JALN_CRLF JALN_CRLF
+
+#define AUDIT_FORMAT JALN_HDRS_AUDIT_FORMAT JALN_COLON_SPACE JALN_XML
 
 	const char *length_header = NULL;
 	const char *msg = NULL;
@@ -864,13 +867,18 @@ enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_
 		msg = JALN_MSG_LOG;
 		break;
 	default:
-		return JAL_E_INVAL;
+		return NULL;
 	}
-	*headers_len_out = jal_asprintf(headers_out, REC_FORMAT_STR, msg, rec_info->nonce,
+	char *header_str;
+	jal_asprintf(&header_str, REC_FORMAT_STR, msg, sess->id, rec_info->nonce,
 			rec_info->sys_meta_len, rec_info->app_meta_len,
 			length_header, rec_info->payload_len);
-
-	return JAL_OK;
+	struct curl_slist *headers = curl_slist_append(NULL, header_str);
+	free(header_str);
+	if (headers && rec_info->type == JALN_RTYPE_AUDIT) {
+		headers = curl_slist_append(headers, AUDIT_FORMAT);
+	}
+	return headers;
 }
 
 uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di)

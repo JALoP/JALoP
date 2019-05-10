@@ -373,12 +373,11 @@ enum jal_status jaln_create_journal_missing_msg(const char *id, const char *nonc
  *
  * @param[in] rec_info The record info structure describing the record to be
  * sent.
- * @param[out] headers_out This will contain the full MIME headers, including
- * the pair of CR LF to designate the end of the headers.
- * @param[out] headers_len_out This will be set to the length of the headers
- * (not including the trailing '\0' character.
+ * @param[in] sess The current session.
+ *
+ * @return list containing headers or NULL if an error occurred
  */
-enum jal_status jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, char **headers_out, uint64_t *headers_len_out);
+struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, jaln_session *sess);
 
 /**
  * Create an 'initialize-nack' message.

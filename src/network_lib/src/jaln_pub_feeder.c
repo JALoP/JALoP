@@ -289,12 +289,11 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 		return JAL_E_INVAL;
 	}
 
-	enum jal_status ret = JAL_OK;
 	struct jaln_pub_data *pd = sess->pub_data;
 
-	ret = jaln_create_record_ans_rpy_headers(rec_info, &pd->headers, &pd->headers_sz);
-	if (JAL_OK != ret) {
-		goto out;
+	struct curl_slist *headers = jaln_create_record_ans_rpy_headers(sess, rec_info);
+	if (!headers) {
+		return JAL_E_INVAL;
 	}
 
 	jaln_pub_feeder_calculate_size_for_vortex(sess);
@@ -307,11 +306,12 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 	                                        APR_THREAD_TASK_PRIORITY_NORMAL,
 	                                        NULL)) {
 		ret = JAL_E_NO_MEM;
-		goto out;
+		return JAL_E_NO_MEM;
 	}
 
-out:
-	return ret;
+	vortex_cond_wait(&sess->wait, &sess->wait_lock);
+	vortex_mutex_unlock(&sess->wait_lock);
+	return JAL_OK;
 }
 
 void jaln_pub_feeder_on_finished(VortexChannel *chan,

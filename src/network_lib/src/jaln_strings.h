@@ -38,6 +38,7 @@
 #define JALN_HDRS_ACCEPT_DIGEST "JAL-Accept-Digest"
 #define JALN_HDRS_ACCEPT_ENCODING "JAL-Accept-XML-Compression"
 #define JALN_HDRS_APP_META_LEN "JAL-Application-Metadata-Length"
+#define JALN_HDRS_AUDIT_FORMAT "JAL-Audit-Format"
 #define JALN_HDRS_AUDIT_LEN "JAL-Audit-Length"
 #define JALN_HDRS_AGENT "JAL-Agent"
 #define JALN_HDRS_CONTENT_TXFR_ENCODING "Content-Transfer-Encoding"
@@ -99,6 +100,7 @@
 #define JALN_DGST_CHAN_FORMAT_STR "digest:%d"
 
 #define JALN_ENC_XML "none"
+#define JALN_XML "xml"
 
 #define JALN_STR_AUDIT "audit"
 #define JALN_STR_BINARY "binary"
