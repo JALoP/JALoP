@@ -847,7 +847,8 @@ struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *r
 		JALN_HDRS_ID JALN_COLON_SPACE "%s" JALN_CRLF \
 		JALN_HDRS_SYS_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		JALN_HDRS_APP_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
-		"%s" JALN_COLON_SPACE "%" PRIu64 JALN_CRLF JALN_CRLF
+		"%s" JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
+		"Transfer-Encoding" JALN_COLON_SPACE JALN_STR_BINARY
 
 #define AUDIT_FORMAT JALN_HDRS_AUDIT_FORMAT JALN_COLON_SPACE JALN_XML
 
@@ -874,7 +875,7 @@ struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *r
 			rec_info->sys_meta_len, rec_info->app_meta_len,
 			length_header, rec_info->payload_len);
 	struct curl_slist *headers = curl_slist_append(NULL, header_str);
-	headers = curl_slist_append(headers, "Expect:");
+	//headers = curl_slist_append(headers, "Expect:");
 	free(header_str);
 	if (headers && rec_info->type == JALN_RTYPE_AUDIT) {
 		headers = curl_slist_append(headers, AUDIT_FORMAT);
