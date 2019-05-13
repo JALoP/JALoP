@@ -662,8 +662,8 @@ void test_session_is_ok_fails_when_vortex_connection_ok_fails()
 	assert_not_equals(JAL_OK, jaln_session_is_ok(sess));
 }
 
-void test_session_is_ok_returns_ok_when_vortex_connection_ok_works()
+void test_session_is_ok_returns_ok_when_curl_ctx_is_set()
 {
-	sess->rec_chan = (VortexChannel*) 0xbadf00d;
+	sess->curl_ctx = (CURL*) 0xbadf00d;
 	assert_equals(JAL_OK, jaln_session_is_ok(sess));
 }

@@ -361,6 +361,7 @@ enum jaldb_status pub_get_next_record(
 
 			}
 			if (exiting || JAL_OK != jaln_session_is_ok(sess)) {
+				DEBUG_LOG_SUB_SESSION(ch_info, "The network has disconnected");
 				ret = JALDB_E_NETWORK_DISCONNECTED;
 				goto out;
 			}
@@ -1117,6 +1118,7 @@ int main(int argc, char **argv)
 
 	rc = setup_db_layer();
 	if (rc != JALD_OK) {
+		DEBUG_LOG("Error setting up database");
 		goto out;
 	}
 

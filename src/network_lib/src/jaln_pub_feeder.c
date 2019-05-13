@@ -59,6 +59,13 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	enum jal_status ret = JAL_OK;
 	size_t curl_ret = 0;
 
+	if (pd->finished_payload_break) {
+		// We're done sending
+		curl_ret = 0;
+		goto out;
+	}
+
+
 	if (sess->errored) {
 		curl_ret = CURL_READFUNC_ABORT;
 		goto out;
@@ -160,8 +167,9 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	curl_ret = dst_off;
 
 out:
-	if (curl_ret == CURL_READFUNC_ABORT || pd->finished_payload_break == axl_true) {
+	if (curl_ret == CURL_READFUNC_ABORT || curl_ret == 0) {
 		vortex_mutex_unlock(&sess->wait_lock);
+		jaln_pub_feeder_on_finished(sess);
 	}
 	return curl_ret;
 }
@@ -178,22 +186,31 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 {
 	jaln_session *sess = (jaln_session*) user_data;
 
-	// race conditions is probably not a concern, since we shouldn't be using the
-	// session's curl ctx at this point anyways, but just in case, since duphandle
-	// isn't thread safe
-	vortex_mutex_lock(&sess->wait_lock);
 	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
-	vortex_mutex_unlock(&sess->wait_lock);
 	if (!ctx) {
 		// Error
-		sess->errored = 1;
+		jaln_session_set_errored(sess);;
 		return NULL;
 	}
 
+	curl_easy_setopt(ctx, CURLOPT_POST, 1L);
+	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE, sess->pub_data->vortex_feeder_sz);
+
 	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
+	curl_easy_setopt(ctx, CURLOPT_READDATA, sess);
+
+	// Was used by initialize.  Not needed here
+	curl_easy_setopt(ctx, CURLOPT_HEADERFUNCTION, NULL);
 
 	vortex_mutex_lock(&sess->wait_lock);
-	curl_easy_perform(ctx);
+
+	curl_easy_setopt(ctx, CURLOPT_HTTPHEADER, sess->pub_data->headers);
+
+	CURLcode res = curl_easy_perform(ctx);
+
+	if (res != 0) {
+		printf("curl returned error %d\n", res);
+	}
 
 	return NULL;
 }
@@ -291,10 +308,12 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 
 	struct jaln_pub_data *pd = sess->pub_data;
 
-	struct curl_slist *headers = jaln_create_record_ans_rpy_headers(sess, rec_info);
+	struct curl_slist *headers = jaln_create_record_ans_rpy_headers(rec_info, sess);
 	if (!headers) {
 		return JAL_E_INVAL;
 	}
+
+	pd->headers = headers;
 
 	jaln_pub_feeder_calculate_size_for_vortex(sess);
 
@@ -305,7 +324,6 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 	                                        (void *) sess,
 	                                        APR_THREAD_TASK_PRIORITY_NORMAL,
 	                                        NULL)) {
-		ret = JAL_E_NO_MEM;
 		return JAL_E_NO_MEM;
 	}
 
@@ -314,11 +332,8 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 	return JAL_OK;
 }
 
-void jaln_pub_feeder_on_finished(VortexChannel *chan,
-		__attribute__((unused)) VortexPayloadFeeder *feeder,
-		axlPointer user_data)
+void jaln_pub_feeder_on_finished(jaln_session *sess)
 {
-	jaln_session *sess = (jaln_session*) user_data;
 	struct jaln_channel_info *ch_info = sess->ch_info;
 	enum jaln_record_type type = ch_info->type;
 	struct jaln_pub_data *pd = sess->pub_data;
@@ -336,7 +351,6 @@ void jaln_pub_feeder_on_finished(VortexChannel *chan,
 
 err_out:
 	jaln_session_set_errored(sess);
-	vortex_channel_finalize_ans_rpy(chan, sess->pub_data->msg_no);
 out:
 	vortex_mutex_lock(&sess->wait_lock);
 	vortex_mutex_unlock(&sess->wait_lock);

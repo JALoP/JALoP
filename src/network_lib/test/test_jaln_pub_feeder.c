@@ -73,14 +73,11 @@ static void fake_vortex_payload_feeder_set_on_finished(
 	return;
 }
 
-enum jal_status fake_create_record_ans_rpy_headers(
+struct curl_slist * fake_create_record_ans_rpy_headers(
 		__attribute__((unused)) struct jaln_record_info *rec_info,
-		char **buffer,
-		uint64_t *sz)
+		jaln_session *sess)
 {
-	*buffer = jal_strdup(HEADERS);
-	*sz = strlen(HEADERS);
-	return JAL_OK;
+	return NULL;
 }
 
 axl_bool fake_finalize_ans_rpy(

@@ -106,7 +106,7 @@ struct jaln_pub_data {
 
 	char *nonce;                            //!< The nonce of the last record sent.
 
-	char *headers;                              //!< A buffer to hold the MIME headers for the current record.
+	struct curl_slist *headers;                              //!< A buffer to hold the MIME headers for the current record.
 	uint8_t *sys_meta;                          //!< A buffer to hold the system metadata for the current record.
 	uint8_t *app_meta;                          //!< A buffer to hold the application metadata for the current record.
 	uint8_t *payload;                           //!< A buffer to hold the data for the payload (if this is an audit or log record

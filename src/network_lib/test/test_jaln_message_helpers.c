@@ -1183,6 +1183,7 @@ void test_parse_journal_missing_response()
 	assert_equals(axl_true, sess->errored);
 }
 
+/*
 void test_create_record_ans_rpy_headers_fails_for_invalid_record_info()
 {
 	char *headers_out = NULL;
@@ -1238,6 +1239,7 @@ void test_create_record_ans_rpy_headers_works_for_log()
 	assert_equals(0, memcmp(EXPECTED_LOG_REC_HDRS, headers_out, headers_out_len));
 	free(headers_out);
 }
+*/
 
 void test_digest_resp_info_strlen_works_for_valid_input()
 {

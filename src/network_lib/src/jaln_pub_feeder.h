@@ -129,20 +129,16 @@ void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess);
 axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add);
 
 /**
- * Callback executed by vortex when the payload feeder is finished sending a
+ * Callback executed by when the payload feeder is finished sending a
  * record. This function gets the next record from the user, and gets a new
  * payload feeder primed to send the next record.
  *
  * If the next record cannot be obtained for any reason, then the answer stream
  * is finalized.
  *
- * @param[in] chan The channel used for the feeder.
- * @param[in] feeder The vortex payload feeder.
- * @param[in] user_data This is expected to be a jaln_session pointer.
+ * @param[in] sess The jaln_session sending records.
  */
-void jaln_pub_feeder_on_finished(VortexChannel *chan,
-		VortexPayloadFeeder *feeder,
-		axlPointer user_data);
+void jaln_pub_feeder_on_finished(jaln_session *sess);
 
 /**
  * Helper function to start the next record.

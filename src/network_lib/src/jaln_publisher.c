@@ -472,6 +472,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 		ack.addr = session->ch_info->addr;
 		ack.jaln_version = JALN_JALOP_VERSION_TWO;
 		ack.mode = session->role;
+		session->dgst = jal_sha256_ctx_create();
 		// TODO: agent and headers?
 		// Agent unused by subscriber, but was supported in 1.x.
 		// Headers never set in 1.x.
