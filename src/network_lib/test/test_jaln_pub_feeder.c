@@ -55,6 +55,7 @@
 		strlen(PAYLOAD) + (3 * strlen("BREAK")))
 
 #define EXPECTED_MSG SYS_META "BREAK" APP_META "BREAK" PAYLOAD "BREAK"
+#define EXPECTED_MSG_MAX_OFFSET SYS_META "BREAK" APP_META "BREAKBREAK"
 
 static axl_bool finalized_called;
 
@@ -75,7 +76,7 @@ static void fake_vortex_payload_feeder_set_on_finished(
 
 struct curl_slist * fake_create_record_ans_rpy_headers(
 		__attribute__((unused)) struct jaln_record_info *rec_info,
-		jaln_session *sess)
+		__attribute__((unused)) jaln_session *sess)
 {
 	return NULL;
 }
@@ -214,7 +215,7 @@ void setup()
 	sess->pub_data->sys_meta_sz = strlen(SYS_META);
 	sess->pub_data->app_meta_sz = strlen(APP_META);
 	sess->pub_data->payload_sz = strlen(PAYLOAD);
-	sess->pub_data->headers = jal_strdup(HEADERS);
+	sess->pub_data->headers = (uint8_t *) jal_strdup(HEADERS);
 	sess->pub_data->sys_meta = (uint8_t *) jal_strdup(SYS_META);
 	sess->pub_data->app_meta = (uint8_t *) jal_strdup(APP_META);
 	sess->pub_data->payload = (uint8_t *) jal_strdup(PAYLOAD);
@@ -247,6 +248,22 @@ void test_pub_feeder_fill_buffer()
 
 	assert_string_equals(EXPECTED_MSG, buffer);
 	assert_equals(VORTEX_SZ, ret);
+}
+
+void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
+{
+
+	void *buffer = jal_malloc(BUF_SIZE);
+
+	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
+	sess->pub_data->payload_off = VORTEX_SZ - 5; 
+
+	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, sess);
+
+	assert_string_equals(EXPECTED_MSG_MAX_OFFSET, buffer);
+	assert_equals(strlen(EXPECTED_MSG_MAX_OFFSET), ret);
+
+	free(buffer);
 }
 
 void test_pub_feeder_is_finished_returns_true_if_errored()
