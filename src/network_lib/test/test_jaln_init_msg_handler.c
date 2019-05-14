@@ -58,7 +58,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 		return (VortexMimeHeader*) "subscribe-live";
 	} else if (0 == strcasecmp(header_name, "jal-agent")) {
 		return (VortexMimeHeader*) "some/agent";
-	} else if (0 == strcasecmp(header_name, "jal-data-class")) {
+	} else if (0 == strcasecmp(header_name, "jal-record-type")) {
 		return (VortexMimeHeader*) "journal";
 	} else if (0 == strcasecmp(header_name, "jal-accept-digest")) {
 		return (VortexMimeHeader*) "digest_1, digest_2, digest_3";
@@ -81,16 +81,16 @@ static VortexMimeHeader * func_name (VortexFrame *frame, const char *header_name
 }
 
 DECL_MIME_HANDLER(fake_get_mime_header_missing_msg, "jal-message", NULL);
-DECL_MIME_HANDLER(fake_get_mime_header_missing_data_class, "jal-data-class", NULL);
+DECL_MIME_HANDLER(fake_get_mime_header_missing_record_type, "jal-record-type", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_missing_mode, "jal-mode", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_bad_msg, "jal-message", "jal-sync")
-DECL_MIME_HANDLER(fake_get_mime_header_bad_data_class, "jal-data-class", "bad_class")
+DECL_MIME_HANDLER(fake_get_mime_header_bad_record_type, "jal-record-type", "bad_class")
 DECL_MIME_HANDLER(fake_get_mime_header_bad_mode, "jal-mode", "bad_mode")
 DECL_MIME_HANDLER(fake_get_mime_header_no_dgst_algs, "jal-accept-digest", NULL)
 DECL_MIME_HANDLER(fake_get_mime_header_no_encs, "jal-accept-xml-compression", NULL)
 DECL_MIME_HANDLER(fake_get_mime_header_no_agent, "jal-agent", NULL)
-DECL_MIME_HANDLER(fake_get_mime_header_audit, "jal-data-class", "audit");
-DECL_MIME_HANDLER(fake_get_mime_header_log, "jal-data-class", "log");
+DECL_MIME_HANDLER(fake_get_mime_header_audit, "jal-record-type", "audit");
+DECL_MIME_HANDLER(fake_get_mime_header_log, "jal-record-type", "log");
 DECL_MIME_HANDLER(fake_get_mime_header_publisher, "jal-mode", "live");
 
 static axl_bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
@@ -501,14 +501,14 @@ void test_process_init_fails_with_bad_role()
 	assert_equals(JAL_E_INVAL, jaln_process_init((VortexFrame*) 0xbadf00d, &info));
 }
 
-void test_process_init_fails_with_bad_data_class()
+void test_process_init_fails_with_bad_record_type()
 {
-	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_bad_data_class);
+	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_bad_record_type);
 	assert_equals(JAL_E_INVAL, jaln_process_init((VortexFrame*) 0xbadf00d, &info));
 }
-void test_process_init_fails_with_missing_data_class()
+void test_process_init_fails_with_missing_record_type()
 {
-	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_missing_data_class);
+	replace_function(vortex_frame_get_mime_header, fake_get_mime_header_missing_record_type);
 	assert_equals(JAL_E_INVAL, jaln_process_init((VortexFrame*) 0xbadf00d, &info));
 }
 

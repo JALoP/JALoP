@@ -108,7 +108,7 @@ struct jaln_connection *jaln_subscribe(
 		jaln_context *ctx,
 		const char *host,
 		const char *port,
-		const int data_classes,
+		const int record_types,
 		enum jaln_publish_mode mode,
 		void *user_data)
 {
@@ -136,7 +136,7 @@ struct jaln_connection *jaln_subscribe(
 
 	vortex_mutex_unlock(&ctx->lock);
 
-	if (!(data_classes & JALN_RTYPE_ALL)) {
+	if (!(record_types & JALN_RTYPE_ALL)) {
 		return NULL;
 	}
 	VortexConnection *v_conn = NULL;
@@ -151,7 +151,7 @@ struct jaln_connection *jaln_subscribe(
 
 	vortex_connection_set_on_close_full(v_conn, jaln_subscriber_on_connection_close, jconn);
 
-	if (data_classes & JALN_RTYPE_JOURNAL) {
+	if (record_types & JALN_RTYPE_JOURNAL) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_JOURNAL);
 		session->mode = mode;
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
@@ -159,7 +159,7 @@ struct jaln_connection *jaln_subscribe(
 				jaln_subscriber_on_frame_received, session,
 				jaln_subscriber_on_channel_create, session);
 	}
-	if (data_classes & JALN_RTYPE_AUDIT) {
+	if (record_types & JALN_RTYPE_AUDIT) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_AUDIT);
 		session->mode = mode;
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
@@ -167,7 +167,7 @@ struct jaln_connection *jaln_subscribe(
 				jaln_subscriber_on_frame_received, session,
 				jaln_subscriber_on_channel_create, session);
 	}
-	if (data_classes & JALN_RTYPE_LOG) {
+	if (record_types & JALN_RTYPE_LOG) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_LOG);
 		session->mode = mode;
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,

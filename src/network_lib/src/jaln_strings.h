@@ -44,7 +44,7 @@
 #define JALN_HDRS_CONTENT_TXFR_ENCODING "Content-Transfer-Encoding"
 #define JALN_HDRS_CONTENT_TYPE "Content-Type"
 #define JALN_HDRS_COUNT "JAL-Count"
-#define JALN_HDRS_DATA_CLASS "JAL-Data-Class"
+#define JALN_HDRS_RECORD_TYPE "JAL-Record-Type"
 #define JALN_HDRS_DIGEST "JAL-Digest"
 #define JALN_HDRS_ERROR_MESSAGE "JAL-Error-Message"
 #define JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE "JAL-Configure-Digest-Challenge"

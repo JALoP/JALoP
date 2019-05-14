@@ -239,11 +239,11 @@ enum jal_status jaln_listener_wait(jaln_context *ctx);
  * Connect to a remote peer and indicate a desire to receive JAL records from the
  * remote. Once connected, the JNL will execute the
  * jaln_subscriber_callbacks::get_subscribe_request for each data type
- * identified by data_classes.
+ * identified by record_types.
  * @param[in] ctx The jaln_context to use for the connection.
  * @param[in] host The hostname or IP address of the remote to connect to.
  * @param[in] port The port to connect to.
- * @param[in] data_classes bitmask of JAL record types to publish. Must be
+ * @param[in] record_types bitmask of JAL record types to publish. Must be
  * comprised of the entries of enum jaln_record_type.
  * @param[in] mode Indicates if the session should be in archive or live mode.
  * @param[in] user_data An address that will be passed into all the callback
@@ -254,7 +254,7 @@ struct jaln_connection *jaln_subscribe(
 		jaln_context *ctx,
 		const char *host,
 		const char *port,
-		const int data_classes,
+		const int record_types,
 		enum jaln_publish_mode mode,
 		void *user_data);
 
@@ -265,7 +265,7 @@ struct jaln_connection *jaln_subscribe(
  * @param ctx The context to use for the connection.
  * @param host The host, as and IP address or hostname, to connect to.
  * @param port The port to connect to on the remote peer.
- * @param data_classes bitmask of JAL record types to publish. Must be
+ * @param record_types bitmask of JAL record types to publish. Must be
  * comprised of the entries of enum jaln_record_type.
  * @param mode The mode (archive or live) to publish in.
  * @param[in] user_data An address that will be passed into all the callback
@@ -277,7 +277,7 @@ struct jaln_connection *jaln_publish(
 		jaln_context *ctx,
 		const char *host,
 		const char *port,
-		const int data_classes,
+		const int record_types,
 		enum jaln_publish_mode mode,
 		void *user_data);
 

@@ -48,7 +48,7 @@
 #define PUBLIC_CERT "public_cert"
 #define REMOTE_CERT "remote_cert"
 #define SESSION_TIMEOUT "session_timeout"
-#define DATA_CLASS "data_class"
+#define RECORD_TYPE "record_type"
 #define PORT "port"
 #define HOST "host"
 #define MODE "mode"
@@ -79,16 +79,16 @@ struct global_config_t {
 	const char *public_cert;
 	const char *remote_cert;
 	const char *session_timeout;
-	config_setting_t *data_class;	/* Array */
+	config_setting_t *record_type;	/* Array */
 	long long int port;
 	const char *host;
 	const char *mode;
 	long long int pending_digest_max;
 	long long int pending_digest_timeout;
-	int len_data_class;
+	int len_record_type;
 	const char *db_root;
 	const char *schemas_root;
-	int data_classes;
+	int record_types;
 } global_config;
 
 struct global_args_t {
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 		}
 		goto out;
 	}
-	jsub_flush_stale_data(jsub_db_ctx, global_config.host, global_config.data_classes, global_args.debug_flag);
+	jsub_flush_stale_data(jsub_db_ctx, global_config.host, global_config.record_types, global_args.debug_flag);
 	if (global_args.debug_flag) {
 		DEBUG_LOG("DBLayer Setup Success!");
 	}
@@ -311,12 +311,12 @@ void init_global_config(void)
 	global_config.public_cert = NULL;
 	global_config.remote_cert = NULL;
 	global_config.session_timeout = NULL;
-	global_config.data_class = NULL;
+	global_config.record_type = NULL;
 	global_config.host = NULL;
 	global_config.mode = NULL;
 	global_config.db_root = NULL;
 	global_config.schemas_root = NULL;
-	global_config.data_classes = 0;
+	global_config.record_types = 0;
 }
 
 void free_global_args(void)
@@ -336,8 +336,8 @@ void print_config(void)
 			DEBUG_LOG("!!!!!!!! TLS IS DISABLED !!!!!!!!");
 		}
 		DEBUG_LOG("SESSION TIMEOUT:\t%s", global_config.session_timeout);
-		//DEBUG_LOG("DATA CLASS:\t\t%s\n", global_config.data_class);
-		DEBUG_LOG("DATA CLASS LENGTH:\t%d", global_config.len_data_class);
+		//DEBUG_LOG("RECORD TYPE:\t\t%s\n", global_config.record_type);
+		DEBUG_LOG("RECORD TYPE LENGTH:\t%d", global_config.len_record_type);
 		DEBUG_LOG("PORT:\t\t\t%lld", global_config.port);
 		DEBUG_LOG("HOST:\t\t\t%s", global_config.host);
 		DEBUG_LOG("MODE:\t\t\t%s", global_config.mode);
@@ -427,42 +427,42 @@ int set_global_config(config_t *config)
 		rc = JAL_E_CONFIG_LOAD;
 		goto out;
 	}
-	global_config.data_class = config_lookup(config, DATA_CLASS);	// Array
-	if (!global_config.data_class) {
+	global_config.record_type = config_lookup(config, RECORD_TYPE);	// Array
+	if (!global_config.record_type) {
 		if (global_args.debug_flag) {
-			DEBUG_LOG("Data class was not found in configuration file and is required!");
+			DEBUG_LOG("Record type was not found in configuration file and is required!");
 		}
 		rc = JAL_E_CONFIG_LOAD;
 		goto out;
 	}
-	if (!config_setting_is_array(global_config.data_class)) {
+	if (!config_setting_is_array(global_config.record_type)) {
 		if (global_args.debug_flag) {
-			DEBUG_LOG("Expected data_class to be an array!");
+			DEBUG_LOG("Expected record_type to be an array!");
 		}
 		rc = JAL_E_CONFIG_LOAD;
 		goto out;
 	}
-	global_config.len_data_class = config_setting_length(global_config.data_class);
+	global_config.len_record_type = config_setting_length(global_config.record_type);
 
-	// Iterate through the data classes and create the
+	// Iterate through the record types and create the
 	//	appropriate record_type mask
-	for (int i = 0; i < global_config.len_data_class; i++){
+	for (int i = 0; i < global_config.len_record_type; i++){
 		const char *value = config_setting_get_string_elem(
-						global_config.data_class,
+						global_config.record_type,
 						i);
 		if (0 == strcmp(value, "journal")){
-			global_config.data_classes =
-					global_config.data_classes |
+			global_config.record_types =
+					global_config.record_types |
 					JALN_RTYPE_JOURNAL;
 		}
 		if (0 == strcmp(value, "audit")){
-			global_config.data_classes =
-					global_config.data_classes |
+			global_config.record_types =
+					global_config.record_types |
 					JALN_RTYPE_AUDIT;
 		}
 		if (0 == strcmp(value, "log")){
-			global_config.data_classes =
-					global_config.data_classes |
+			global_config.record_types =
+					global_config.record_types |
 					JALN_RTYPE_LOG;
 		}
 	}
@@ -611,7 +611,7 @@ void *subscriber_do_work(void *ptr)
 				net_ctx,
 				global_config.host,
 				port,
-				global_config.data_classes,
+				global_config.record_types,
 				mode,
 				jsub_db_ctx);
 	if (!conn){

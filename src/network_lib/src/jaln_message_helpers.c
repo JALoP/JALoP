@@ -595,13 +595,13 @@ enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode 
 	const char *type_str;
 	switch (type) {
 		case JALN_RTYPE_JOURNAL:
-			type_str = JALN_HDRS_DATA_CLASS JALN_COLON_SPACE JALN_STR_JOURNAL;
+			type_str = JALN_HDRS_RECORD_TYPE JALN_COLON_SPACE JALN_STR_JOURNAL;
 			break;
 		case JALN_RTYPE_AUDIT:
-			type_str = JALN_HDRS_DATA_CLASS JALN_COLON_SPACE JALN_STR_AUDIT;
+			type_str = JALN_HDRS_RECORD_TYPE JALN_COLON_SPACE JALN_STR_AUDIT;
 			break;
 		case JALN_RTYPE_LOG:
-			type_str = JALN_HDRS_DATA_CLASS JALN_COLON_SPACE JALN_STR_LOG;
+			type_str = JALN_HDRS_RECORD_TYPE JALN_COLON_SPACE JALN_STR_LOG;
 			break;
 		default:
 			return JAL_E_INVAL;

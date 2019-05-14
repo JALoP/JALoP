@@ -562,9 +562,9 @@ out:
 
 }
 
-static const char *jaln_rtype_str(const int data_class)
+static const char *jaln_rtype_str(const int record_type)
 {
-	switch(data_class) {
+	switch(record_type) {
 	case JALN_RTYPE_JOURNAL: return JALN_STR_JOURNAL;
 	case JALN_RTYPE_AUDIT: return JALN_STR_AUDIT;
 	case JALN_RTYPE_LOG: return JALN_STR_LOG;
@@ -577,13 +577,13 @@ static enum jal_status jaln_setup_session(
 		jaln_session *sess,
 		const char *host,
 		const char *port,
-		const int data_class)
+		const int record_type)
 {
 	CURL *curl_ctx = curl_easy_init();
 	if (!curl_ctx) {
 		return JAL_E_COMM;
 	}
-	const char *class_str = jaln_rtype_str(data_class);
+	const char *class_str = jaln_rtype_str(record_type);
 	jaln_context *ctx = sess->jaln_ctx;
 	const int tls = ctx->private_key && ctx->public_cert && ctx->peer_certs;
 	char *url;
@@ -632,7 +632,7 @@ struct jaln_connection *jaln_publish(
 		jaln_context *ctx,
 		const char *host,
 		const char *port,
-		const int data_classes,
+		const int record_types,
 		enum jaln_publish_mode mode,
 		void *user_data)
 {
@@ -640,7 +640,7 @@ struct jaln_connection *jaln_publish(
 		return NULL;
 	}
 
-	if (!data_classes || data_classes & ~JALN_RTYPE_ALL) {
+	if (!record_types || record_types & ~JALN_RTYPE_ALL) {
 		return NULL;
 	}
 
@@ -663,24 +663,24 @@ struct jaln_connection *jaln_publish(
 
 	// TODO: Support multiple sessions per connection so we can connect to multiple endpoints.
 	// According to the doxygen comments in jaln_network.h, one call to publish should set up
-	// session for each type in data_classes, although it did not do this previously.
+	// session for each type in record_types, although it did not do this previously.
 	jaln_session *session = NULL;
 
-	if (data_classes & JALN_RTYPE_JOURNAL) {
+	if (record_types & JALN_RTYPE_JOURNAL) {
 		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_JOURNAL)) {
 			jaln_connection_destroy(&jconn);
 			return NULL;
 		}
 		jconn->journal_sess = session;
 	}
-	if (data_classes & JALN_RTYPE_AUDIT) {
+	if (record_types & JALN_RTYPE_AUDIT) {
 		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_AUDIT)) {
 			jaln_connection_destroy(&jconn);
 			return NULL;
 		}
 		jconn->audit_sess = session;
 	}
-	if(data_classes & JALN_RTYPE_LOG) {
+	if(record_types & JALN_RTYPE_LOG) {
 		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_LOG)) {
 			jaln_connection_destroy(&jconn);
 			return NULL;

@@ -363,10 +363,10 @@ void jsub_write_to_stderr_db_status(jaldb_status db_status, char *err_msg);
  * Flush stale data from the temporary databases
  * @param[in] db_ctx The context to use
  * @param[in] hsot The host to flush
- * @param[in] data_classes The data classes to purge, must be an or'ed
+ * @param[in] record_types The record types to purge, must be an or'ed
  * @param[in] debug_flag Flag to indicate if log messages should be outputted
  * combination of #jaln_record_type
  */
-void jsub_flush_stale_data(jaldb_context *db_ctx, const char *host, int data_classes, int debug_flag);
+void jsub_flush_stale_data(jaldb_context *db_ctx, const char *host, int record_types, int debug_flag);
 
 #endif // _JSUB_DB_LAYER_HPP_

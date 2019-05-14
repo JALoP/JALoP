@@ -77,7 +77,7 @@ enum jal_status jaln_process_init(VortexFrame *frame, struct jaln_init_info **in
 	} else {
 		goto err_out;
 	}
-	const char *type = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_DATA_CLASS);
+	const char *type = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_RECORD_TYPE);
 	if (!type) {
 		goto err_out;
 	}

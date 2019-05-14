@@ -217,7 +217,7 @@ static char *output_str;
 	"JAL-Message: initialize\r\n" \
 	"JAL-Publisher-Id: " pub_id "\r\n" \
 	"JAL-Mode: archival\r\n" \
-	"JAL-Data-Class: log\r\n" \
+	"JAL-Record-Type: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
 	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
@@ -227,7 +227,7 @@ static char *output_str;
 	"JAL-Message: initialize\r\n" \
 	"JAL-Publisher-Id: " pub_id "\r\n" \
 	"JAL-Mode: archival\r\n" \
-	"JAL-Data-Class: journal\r\n" \
+	"JAL-Record-Type: journal\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
 	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
@@ -237,7 +237,7 @@ static char *output_str;
 	"JAL-Message: initialize\r\n" \
 	"JAL-Publisher-Id: " pub_id "\r\n" \
 	"JAL-Mode: archival\r\n" \
-	"JAL-Data-Class: audit\r\n" \
+	"JAL-Record-Type: audit\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
 	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
@@ -247,7 +247,7 @@ static char *output_str;
 	"JAL-Message: initialize\r\n" \
 	"JAL-Publisher-Id: " pub_id "\r\n" \
 	"JAL-Mode: archival\r\n" \
-	"JAL-Data-Class: log\r\n" \
+	"JAL-Record-Type: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n\r\n" \
 
 #define INIT_PUB_LOG_ARCHIVE_NO_DGST \
@@ -256,7 +256,7 @@ static char *output_str;
 	"JAL-Message: initialize\r\n" \
 	"JAL-Publisher-Id: " pub_id "\r\n" \
 	"JAL-Mode: archival\r\n" \
-	"JAL-Data-Class: log\r\n" \
+	"JAL-Record-Type: log\r\n" \
 	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
 
 #define EXPECTED_JOURNAL_REC_HDRS \
