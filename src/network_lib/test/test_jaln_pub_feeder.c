@@ -256,7 +256,7 @@ void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
 	void *buffer = jal_malloc(BUF_SIZE);
 
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
-	sess->pub_data->payload_off = VORTEX_SZ - 5; 
+	sess->pub_data->payload_off = VORTEX_SZ - 5;
 
 	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, sess);
 
