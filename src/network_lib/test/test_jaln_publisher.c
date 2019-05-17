@@ -44,6 +44,7 @@
 #include "jaln_message_helpers.h"
 
 #define FAKE_CHAN_NUM 5
+#define SAMPLE_UUID "e25253a3-4986-40b8-8511-56f416cda9b6"
 
 static axlList *calc_dgsts;
 static axlList *peer_dgsts;
@@ -260,7 +261,6 @@ void fake_curl_easy_cleanup(
 }
 
 enum jal_status fake_jaln_create_init_msg(
-		__attribute__((unused)) const char *pub_id,
 		__attribute__((unused)) enum jaln_publish_mode mode,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) jaln_context *ctx,
@@ -327,6 +327,8 @@ void setup()
 	ctx->pub_callbacks->peer_digest = peer_digest;
 	ctx->pub_callbacks->sync = on_sync;
 	ctx->pub_callbacks->on_subscribe = on_subscribe;
+
+	strcpy(ctx->pub_id,SAMPLE_UUID);
 
 	int dgst_val = 0xf001;
 	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
@@ -575,6 +577,15 @@ void test_publish_fails_when_missing_pub_callbacks()
 	struct jaln_connection *conn = NULL;
 
 	jaln_publisher_callbacks_destroy(&ctx->pub_callbacks);
+	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
+	assert_pointer_equals((void*) NULL, conn);
+}
+
+void test_publish_fails_when_missing_pub_id()
+{
+	struct jaln_connection *conn = NULL;
+
+	memset(ctx->pub_id, '\0', sizeof(ctx->pub_id));
 	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);
 }

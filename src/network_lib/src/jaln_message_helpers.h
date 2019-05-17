@@ -345,7 +345,6 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
 /*
  * Helper function to create an 'initialize' message
  *
- * @param[in] pub_id UUID identifying the publisher.
  * @param[in] type The type of data to send over this channel.
  * @param[in] ctx JALoP network context for this channel.
  * @param[out] headers This will contain the libcurl headers for the initialize message.
@@ -354,7 +353,7 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
  * JAL_OK on success
  *
  */
-enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode mode, enum jaln_record_type type,
+enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_record_type type,
 		jaln_context *ctx, struct curl_slist **headers);
 
 /**

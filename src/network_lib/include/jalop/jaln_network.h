@@ -186,6 +186,25 @@ enum jal_status jaln_register_digest_challenge_configuration(
 				const char *dc_configuration);
 
 /**
+ * Register publisher ID.
+ *
+ * @param[in] jal_ctx The jaln_context to associate with the publisher ID.
+ * @param[in] pub_id The UUID indentifying this publisher.
+ *
+ * The publisher ID registered will be send during initialization to allow the
+ * subcriber to associate any sessions it creates with this publisher. The
+ * publisher ID must be a valid UUID in the canonical 8-4-4-4-12 representation.
+ *
+ * This function will fail if a publisher ID has been previously registered to
+ * this context.
+ *
+ * @returns JAL_OK on success
+ */
+enum jal_status jaln_register_publisher_id(
+				jaln_context *jal_ctx,
+				const char *pub_id);
+
+/**
  * Register the JALoP profile and start listening for connections. Once this
  * function is called, the \p jaln_ctx cannot be used to with calls to
  * jaln_context_subscribe or jaln_context_publish. \p jaln_context_listen may

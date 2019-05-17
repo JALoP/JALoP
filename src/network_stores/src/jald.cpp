@@ -1178,7 +1178,11 @@ int main(int argc, char **argv)
 			rc = -1;
 			goto out;
 		}
-		// TODO: set publisher ID
+		if (JAL_OK != jaln_register_publisher_id(jctx, global_config.pub_id)) {
+			DEBUG_LOG("Failed to register publisher ID");
+			rc = -1;
+			goto out;
+		}
 		if (global_args.enable_tls) {
 			jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
 					peer->cert_dir);

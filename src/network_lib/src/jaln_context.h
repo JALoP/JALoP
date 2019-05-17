@@ -77,6 +77,7 @@ struct jaln_context_t {
 	char *public_cert;
 	char *private_key;
 	void *user_data;
+	char pub_id[37]; // holds textual UUID (32 hex chars, 4 dashes, 1 NUL)
 };
 
 /**

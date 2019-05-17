@@ -387,7 +387,7 @@ void jaln_subscriber_on_channel_create(int channel_num,
 	vortex_channel_set_automatic_mime(chan, 2);
 
 	// This is broken because we haven't set up the subscriber to use HTTP instead of beep
-	enum jal_status ret = jaln_create_init_msg(NULL, sess->mode, sess->ch_info->type,
+	enum jal_status ret = jaln_create_init_msg(sess->mode, sess->ch_info->type,
 			sess->jaln_ctx, NULL);
 	if (ret != JAL_OK) {
 		// something went terribly wrong...

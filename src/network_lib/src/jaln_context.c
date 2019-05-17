@@ -234,6 +234,50 @@ enum jal_status jaln_register_digest_challenge_configuration(jaln_context *ctx, 
 	return JAL_E_INVAL;
 }
 
+static bool validate_uuid(const char *uuid)
+{
+	int i;
+	int group;
+	// one group of 8 hex digits followed by a dash
+	for (i = 0; i < 8; ++i) {
+		if (!isxdigit(uuid[i])) {
+			return false;
+		}
+	}
+	if (uuid[i] != '-') {
+		return false;
+	}
+	uuid += 9;
+	// three groups of 4 hex digits followed by dashes
+	for (group = 0; group < 3; ++group) {
+		for (i = 0; i < 4; ++i) {
+			if (!isxdigit(uuid[i])) {
+				return false;
+			}
+		}
+		if (uuid[i] != '-') {
+			return false;
+		}
+		uuid += 5;
+	}
+	// a final group of 12 hex digits
+	for (i = 0; i < 12; ++i) {
+		if (!isxdigit(uuid[i])) {
+			return false;
+		}
+	}
+	return uuid[i] == '\0';
+}
+
+enum jal_status jaln_register_publisher_id(jaln_context *ctx, const char *pub_id)
+{
+	if (!ctx || !pub_id || *ctx->pub_id || !validate_uuid(pub_id)) {
+		return JAL_E_INVAL;
+	}
+	memcpy(ctx->pub_id, pub_id, sizeof(ctx->pub_id));
+	return JAL_OK;
+}
+
 void jaln_ctx_ref(jaln_context *ctx)
 {
 	if (!ctx) {

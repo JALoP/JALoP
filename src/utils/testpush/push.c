@@ -437,6 +437,8 @@ int main(int argc, char **argv) {
 	DEBUG_LOG("register conn cbs: %d\n", err);
 	err = jaln_register_publisher_callbacks(net_ctx, pub_callbacks);
 	DEBUG_LOG("register pub cbs: %d\n", err);
+	err = jaln_register_publisher_id(net_ctx, "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa");
+	DEBUG_LOG("register pub id: %d\n", err);
 	struct jaln_connection *conn = jaln_publish(net_ctx, host, port, classes, mode, NULL);
 	DEBUG_LOG("got jal con %p\n", conn);
 	sleep(9999);

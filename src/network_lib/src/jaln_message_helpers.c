@@ -561,14 +561,13 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 	return axl_true;
 }
 
-enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode mode, enum jaln_record_type type,
+enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_record_type type,
 		jaln_context *ctx, struct curl_slist **headers_out)
 {
-	if (!pub_id || !ctx || !ctx->dgst_algs || !ctx->xml_encodings ||
+	if (!ctx || !ctx->dgst_algs || !ctx->xml_encodings || !*ctx->pub_id ||
 			!headers_out || *headers_out) {
 		return JAL_E_INVAL;
 	}
-	// TODO: validate that pub_id is a uuid.
 
 	axlList *dgst_list = ctx->dgst_algs;
 	axlList *enc_list = ctx->xml_encodings;
@@ -608,10 +607,10 @@ enum jal_status jaln_create_init_msg(const char *pub_id, enum jaln_publish_mode 
 	}
 
 	const size_t prefix_len = strlen(JALN_HDRS_PUBLISHER_ID JALN_COLON_SPACE);
-	const size_t pub_id_len = strlen(pub_id);
-	char *pub_id_str = jal_malloc(prefix_len + pub_id_len + 1);
+	const size_t pub_id_size = sizeof(ctx->pub_id);
+	char *pub_id_str = jal_malloc(prefix_len + pub_id_size);
 	memcpy(pub_id_str, JALN_HDRS_PUBLISHER_ID JALN_COLON_SPACE, prefix_len);
-	memcpy(pub_id_str + prefix_len, pub_id, pub_id_len + 1);
+	memcpy(pub_id_str + prefix_len, ctx->pub_id, pub_id_size);
 	
 	char *dc_config_str = NULL;
 	char *dgst_list_str = NULL;
@@ -835,11 +834,8 @@ enum jal_status jaln_create_journal_missing_msg(const char *id, const char *nonc
 
 struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *rec_info, jaln_session *sess)
 {
-	if (!rec_info || !sess) {
+	if (!rec_info || !sess || !jaln_record_info_is_valid(rec_info)) {
 		return NULL;
-	}
-	if (!jaln_record_info_is_valid(rec_info)) {
-		return JAL_E_INVAL;
 	}
 
 #define REC_FORMAT_STR JALN_MIME_PREAMBLE "%s" JALN_CRLF \

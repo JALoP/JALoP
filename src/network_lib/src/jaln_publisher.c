@@ -433,9 +433,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, jaln_publisher_init_reply_frame_handler);
 	curl_easy_setopt(curl, CURLOPT_HEADERDATA, header_info);
 
-	const char *pub_id = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"; // TODO: retrieve from context 
-
-	ret = jaln_create_init_msg(pub_id, session->mode, session->ch_info->type,
+	ret = jaln_create_init_msg(session->mode, session->ch_info->type,
 			session->jaln_ctx, &headers);
 	if (JAL_OK != ret) {
 		goto err_out;
