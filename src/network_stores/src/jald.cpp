@@ -705,9 +705,15 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 		journal_timestamp = jal_strdup(data->timestamp);
 	}
 
+	free(data);
+
 	*ret = pub_send_records_feeder(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_journal);
 
 	free(journal_timestamp);
+
+	pthread_mutex_lock(&exit_count_lock);
+	threads_to_exit -= 1;
+	pthread_mutex_unlock(&exit_count_lock);
 
 	pthread_exit((void*)ret);
 }
@@ -733,9 +739,15 @@ void *pub_send_audit(void *args)
 		audit_timestamp = jal_strdup(data->timestamp);
 	}
 
+	free(data);
+
 	*ret = pub_send_records(sess, ch_info, &audit_timestamp, hash, sub_lock, &jaln_send_audit);
 
 	free(audit_timestamp);
+
+	pthread_mutex_lock(&exit_count_lock);
+	threads_to_exit -= 1;
+	pthread_mutex_unlock(&exit_count_lock);
 
 	pthread_exit((void*)ret);
 }
@@ -761,9 +773,15 @@ void *pub_send_log(void *args)
 		log_timestamp = jal_strdup(data->timestamp);
 	}
 
+	free(data);
+
 	*ret = pub_send_records(sess, ch_info, &log_timestamp, hash, sub_lock, &jaln_send_log);
 
 	free(log_timestamp);
+
+	pthread_mutex_lock(&exit_count_lock);
+	threads_to_exit -= 1;
+	pthread_mutex_unlock(&exit_count_lock);
 
 	pthread_exit((void*)ret);
 }
@@ -776,14 +794,11 @@ enum jal_status pub_on_subscribe(
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
-	enum jal_status ret = JAL_E_INVAL;
 	pthread_t journal_thread;
 	pthread_t audit_thread;
 	pthread_t log_thread;
 	pthread_attr_t attr;
-	struct thread_data data;
-	void *status = NULL;
-	int rc = 0;
+	struct thread_data *data = (struct thread_data *) jal_malloc(sizeof(struct thread_data));
 
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -792,13 +807,13 @@ enum jal_status pub_on_subscribe(
 	threads_to_exit += 1;
 	pthread_mutex_unlock(&exit_count_lock);
 
-	data.sess = sess;
-	data.ch_info = ch_info;
-	data.timestamp = NULL;
+	data->sess = sess;
+	data->ch_info = ch_info;
+	data->timestamp = NULL;
 
 	if (JALN_LIVE_MODE == mode) {
-		data.timestamp = jaldb_gen_timestamp();
-		if (!data.timestamp) {
+		data->timestamp = jaldb_gen_timestamp();
+		if (!data->timestamp) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Error: Error generating timestamp");
 			return JAL_E_INVAL_TIMESTAMP;
 		}
@@ -810,66 +825,38 @@ enum jal_status pub_on_subscribe(
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
-		if(0 != pthread_create(&journal_thread, &attr, pub_send_journal, &data)) {
+		if(0 != pthread_create(&journal_thread, &attr, pub_send_journal, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
 			return JAL_E_INVAL;
 		}
 
 		pthread_attr_destroy(&attr);
 
-		rc = pthread_join(journal_thread, &status);
-		if (rc) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: return code from pthread_create() is %d\n", rc);
-			free(status);
-			return JAL_E_INVAL;
-		}
 		break;
 	case JALN_RTYPE_AUDIT:
-		if(0 != pthread_create(&audit_thread, &attr, pub_send_audit, &data)) {
+		if(0 != pthread_create(&audit_thread, &attr, pub_send_audit, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
 			return JAL_E_INVAL;
 		}
 
 		pthread_attr_destroy(&attr);
 
-		rc = pthread_join(audit_thread, &status);
-		if (rc) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Error while joining thread (%d)\n", rc);
-			free(status);
-			return JAL_E_INVAL;
-		}
 		break;
 	case JALN_RTYPE_LOG:
-		if (0 != pthread_create(&log_thread, &attr, pub_send_log, &data)) {
+		if (0 != pthread_create(&log_thread, &attr, pub_send_log, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
 			return JAL_E_INVAL;
 		}
 
 		pthread_attr_destroy(&attr);
 
-		rc = pthread_join(log_thread, &status);
-		if (rc) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Error while joining thread (%d)\n", rc);
-			free(status);
-			return JAL_E_INVAL;
-		}
 		break;
 	default:
 		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
 		return JAL_E_INVAL;
 	}
 
-	ret = *((enum jal_status *) status);
-	free(status);
-	if (JAL_OK != ret && JAL_E_NOT_CONNECTED != ret) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Failed while sending records to subscriber");
-	}
-
-	pthread_mutex_lock(&exit_count_lock);
-	threads_to_exit -= 1;
-	pthread_mutex_unlock(&exit_count_lock);
-
-	return ret;
+	return JAL_OK;
 }
 
 enum jal_status pub_on_record_complete(

@@ -661,31 +661,23 @@ struct jaln_connection *jaln_publish(
 	struct jaln_connection *jconn = jaln_connection_create();
 	jconn->jaln_ctx = ctx;
 
-	// TODO: Support multiple sessions per connection so we can connect to multiple endpoints.
-	// According to the doxygen comments in jaln_network.h, one call to publish should set up
-	// session for each type in record_types, although it did not do this previously.
-	jaln_session *session = NULL;
-
 	if (record_types & JALN_RTYPE_JOURNAL) {
-		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_JOURNAL)) {
+		if (JAL_OK != jaln_initialize_session(&jconn->journal_sess, ctx, host, port, mode, JALN_RTYPE_JOURNAL)) {
 			jaln_connection_destroy(&jconn);
 			return NULL;
 		}
-		jconn->journal_sess = session;
 	}
 	if (record_types & JALN_RTYPE_AUDIT) {
-		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_AUDIT)) {
+		if (JAL_OK != jaln_initialize_session(&jconn->audit_sess, ctx, host, port, mode, JALN_RTYPE_AUDIT)) {
 			jaln_connection_destroy(&jconn);
 			return NULL;
 		}
-		jconn->audit_sess = session;
 	}
 	if(record_types & JALN_RTYPE_LOG) {
-		if (JAL_OK != jaln_initialize_session(&session, ctx, host, port, mode, JALN_RTYPE_LOG)) {
+		if (JAL_OK != jaln_initialize_session(&jconn->log_sess, ctx, host, port, mode, JALN_RTYPE_LOG)) {
 			jaln_connection_destroy(&jconn);
 			return NULL;
 		}
-		jconn->log_sess = session;
 	}
 
 	return jconn;
