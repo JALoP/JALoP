@@ -116,6 +116,8 @@
 #define SAMPLE_OFFSET JALN_HDRS_JOURNAL_OFFSET JALN_COLON_SPACE SAMPLE_OFFSET_VAL_STR "\r\n"
 #define SAMPLE_JOURNAL_MISSING_RESP_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_JOURNAL_MISSING_RESPONSE "\r\n"
 #define SAMPLE_INIT_ACK_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_INIT_ACK "\r\n"
+#define SAMPLE_DGST_CHAL_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_DIGEST_CHALLENGE "\r\n"
+#define SAMPLE_DGST_VAL_MSG JALN_HDRS_DIGEST_VALUE JALN_COLON_SPACE SOME_DIGEST "\r\n"
 
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
 {
@@ -311,7 +313,7 @@ axlList *xml_encs;
 axlList *dgst_resp_list;
 jaln_context ctx;
 jaln_session *sess;
-struct jaln_init_ack_header_info *info;
+struct jaln_response_header_info *info;
 
 void setup()
 {
@@ -363,7 +365,7 @@ void setup()
 
 	sess = jaln_session_create();
 	sess->jaln_ctx = &ctx;
-	info = jaln_init_ack_header_info_create(sess);
+	info = jaln_response_header_info_create(sess);
 }
 
 void teardown()
@@ -380,7 +382,7 @@ void teardown()
 	ctx.xml_encodings = NULL;
 	sess->jaln_ctx = NULL;
 	jaln_session_destroy(&sess);
-	jaln_init_ack_header_info_destroy(&info);
+	jaln_response_header_info_destroy(&info);
 }
 
 static char *flatten_headers(struct curl_slist *list)
@@ -1182,6 +1184,28 @@ void test_parse_journal_missing_response()
 	assert_equals(JAL_E_INVAL, rc);
 	assert_pointer_equals(NULL, sess->last_message);
 	assert_equals(axl_true, sess->errored);
+}
+
+void test_parse_digest_challenge_header()
+{
+	sess->pub_data = jaln_pub_data_create();
+	info->expected_nonce = jal_strdup(SAMPLE_UUID);
+
+	enum jal_status rc = jaln_parse_digest_challenge_header(SAMPLE_DGST_CHAL_MSG, strlen(SAMPLE_DGST_CHAL_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_string_equals(JALN_MSG_DIGEST_CHALLENGE, sess->last_message);
+
+	rc = jaln_parse_digest_challenge_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_equals(info->id_valid, axl_true);
+
+	rc = jaln_parse_digest_challenge_header(SAMPLE_DGST_VAL_MSG, strlen(SAMPLE_DGST_VAL_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_string_equals(info->calc_dgst, SOME_DIGEST);
+	assert_equals(axl_false, sess->errored);
 }
 
 /*

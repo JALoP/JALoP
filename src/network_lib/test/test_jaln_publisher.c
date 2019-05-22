@@ -270,7 +270,7 @@ enum jal_status fake_jaln_create_init_msg(
 }
 
 enum jal_status fake_jaln_verify_init_ack_headers(
-		__attribute__((unused)) struct jaln_init_ack_header_info *info)
+		__attribute__((unused)) struct jaln_response_header_info *info)
 {
 	return JAL_OK;
 }

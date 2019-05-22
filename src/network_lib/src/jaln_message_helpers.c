@@ -48,17 +48,19 @@
 #include "jaln_strings.h"
 #include "jaln_string_utils.h"
 
-struct jaln_init_ack_header_info *jaln_init_ack_header_info_create(jaln_session *sess)
+struct jaln_response_header_info *jaln_response_header_info_create(jaln_session *sess)
 {
-	struct jaln_init_ack_header_info *info = jal_calloc(1, sizeof(struct jaln_init_ack_header_info));
+	struct jaln_response_header_info *info = jal_calloc(1, sizeof(struct jaln_response_header_info));
 
 	info->sess = sess;
 	return info;
 }
 
-void jaln_init_ack_header_info_destroy(struct jaln_init_ack_header_info **info)
+void jaln_response_header_info_destroy(struct jaln_response_header_info **info)
 {
-	struct jaln_init_ack_header_info *tmp = *info;
+	struct jaln_response_header_info *tmp = *info;
+	free(tmp->calc_dgst);
+	free(tmp->expected_nonce);
 	if (tmp->error_list) {
 		free(*tmp->error_list); // Error list holds tokens within a single string. Free the string.
 		free(tmp->error_list);
@@ -191,7 +193,7 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 	return axl_true;
 }
 
-enum jal_status jaln_verify_init_ack_headers(struct jaln_init_ack_header_info *info) {
+enum jal_status jaln_verify_init_ack_headers(struct jaln_response_header_info *info) {
 
 	if (axl_true /*== info->content_type_valid*/ // subscriber not sending //TODO:required?
 	    && axl_true == info->message_type_valid
@@ -204,6 +206,19 @@ enum jal_status jaln_verify_init_ack_headers(struct jaln_init_ack_header_info *i
 		return JAL_OK;
 	}
 	return JAL_E_INVAL;
+}
+
+enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header_info *info) {
+
+	if (axl_true == info->message_type_valid
+	    && axl_true == info->id_valid
+	    && NULL != info->calc_dgst
+	    && 0 == info->error_cnt
+	) {
+		return JAL_OK;
+	}
+	return JAL_E_INVAL;
+
 }
 
 static int jaln_header_name_match(const char *content, const size_t content_len,
@@ -233,7 +248,7 @@ static enum jal_status jaln_header_value_match(const char *content, const size_t
 #define JALN_STR_W_LEN(_str) _str, strlen(_str)
 // There needs to be a struct or masked int to keep track of what has been parsed/validated.
 // That way jaln_publish can see what headers have been received and set defaults/fail if some were not.
-void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_init_ack_header_info *info)
+void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_header_info *info)
 {
 	jaln_session *sess = info->sess;
 
@@ -392,7 +407,7 @@ static void jaln_split_errors(char *errors, int *error_cnt, char ***error_list)
 	*error_cnt = total_errs;
 }
 
-enum jal_status jaln_parse_error_messages(char *content, size_t len, struct jaln_init_ack_header_info *info)
+enum jal_status jaln_parse_error_messages(char *content, size_t len, struct jaln_response_header_info *info)
 {
 	char *errors = jaln_get_header_value(content, len, strlen(JALN_HDRS_ERROR_MESSAGE) + 1);
 	jaln_split_errors(errors, &info->error_cnt, &info->error_list);
@@ -432,6 +447,45 @@ enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, j
 	}
 	return JAL_OK;
 }
+
+enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, struct jaln_response_header_info *header_info)
+{
+	jaln_session *sess = header_info->sess;
+	enum jal_status rc = JAL_OK;
+
+	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
+		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_DIGEST_CHALLENGE));
+		// TODO: Record failure messages
+		if (JAL_OK == rc) {
+			sess->last_message = JALN_MSG_DIGEST_CHALLENGE;
+			header_info->message_type_valid = axl_true;
+		} else {
+			sess->last_message = NULL;
+			jaln_session_set_errored(sess);
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
+		const size_t name_len = strlen(JALN_HDRS_ID);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
+		if (JAL_OK == rc) {
+			header_info->id_valid = axl_true;
+		} else {
+			jaln_session_set_errored(sess);
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_DIGEST_VALUE))) {
+		const size_t name_len = strlen(JALN_HDRS_DIGEST_VALUE);
+		const char *value_start = content + name_len + 2;
+		const size_t value_len = len - name_len - 2;
+		header_info->calc_dgst = jal_strndup(value_start, value_len - 2);
+	}
+
+	return rc; //Extra unmatched headers are ignored
+}
+
 #undef JALN_STR_W_LEN
 
 uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di)

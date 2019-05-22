@@ -189,6 +189,16 @@ size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nm
 size_t jaln_publisher_journal_missing_response_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
 
 /**
+ * Curl callback to process a digest-challege-message
+ *
+ * @param ptr The header info
+ * @param size The size of one section of ptr
+ * @param nmemb The number of items of size size in ptr
+ * @param user_data The data passed to curl (a jaln_session pointer)
+ */
+size_t jaln_publisher_digest_challenge_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
+
+/**
  * Vortex handler for when publisher's connection closes
  * This calls the user on_connection_close callback
  *

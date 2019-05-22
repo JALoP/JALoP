@@ -413,7 +413,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 {
 	struct curl_slist *headers = NULL;
 	enum jal_status ret = JAL_E_INVAL;
-	struct jaln_init_ack_header_info *header_info = NULL;
+	struct jaln_response_header_info *header_info = NULL;
 	CURL *curl = NULL;
 	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx || !session->pub_data) {
 		// shouldn't ever happen
@@ -422,7 +422,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	}
 
 	curl = session->curl_ctx;
-	header_info = jaln_init_ack_header_info_create(session);
+	header_info = jaln_response_header_info_create(session);
 
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
@@ -509,7 +509,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 
 err_out:
 	curl_slist_free_all(headers);
-	jaln_init_ack_header_info_destroy(&header_info);
+	jaln_response_header_info_destroy(&header_info);
 	return ret;
 }
 
@@ -685,7 +685,7 @@ size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nm
 {
 
 	const size_t bytes = size * nmemb;
-	jaln_parse_init_ack_header(ptr, bytes, (struct jaln_init_ack_header_info *)user_data);
+	jaln_parse_init_ack_header(ptr, bytes, (struct jaln_response_header_info *)user_data);
 	return bytes;
 }
 
@@ -694,6 +694,17 @@ size_t jaln_publisher_journal_missing_response_handler(char *ptr, size_t size, s
 	jaln_session *sess = (jaln_session*) user_data;
 	const size_t bytes = size * nmemb;
 	enum jal_status ret = jaln_parse_journal_missing_response(ptr, bytes, sess);
+	if (ret != JAL_OK) {
+		return 0;
+	}
+	return bytes;
+}
+
+size_t jaln_publisher_digest_challenge_handler(char *ptr, size_t size, size_t nmemb, void *user_data)
+{
+	struct jaln_response_header_info *info = (struct jaln_response_header_info *) user_data;
+	const size_t bytes = size * nmemb;
+	enum jal_status ret = jaln_parse_digest_challenge_header(ptr, bytes, info);
 	if (ret != JAL_OK) {
 		return 0;
 	}

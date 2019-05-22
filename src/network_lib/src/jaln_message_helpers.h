@@ -39,26 +39,29 @@
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
 
-struct jaln_init_ack_header_info {
+struct jaln_response_header_info {
 	jaln_session *sess;
 	axl_bool content_type_valid;
 	axl_bool message_type_valid;
 	axl_bool version_valid;
+	axl_bool id_valid;
+	char *calc_dgst;
+	char *expected_nonce;
 	int error_cnt;
 	char **error_list;
 };
 
 /**
- * Create a jaln_init_ack_header_info object
+ * Create a jaln_response_header_info object
  */
-struct jaln_init_ack_header_info *jaln_init_ack_header_info_create(jaln_session *sess);
+struct jaln_response_header_info *jaln_response_header_info_create(jaln_session *sess);
 
 /**
- * Destroy a jaln_init_ack_header_info object.
+ * Destroy a jaln_response_header_info object.
  *
  * @param[in] info The header info object to destroy.
  */
-void jaln_init_ack_header_info_destroy(struct jaln_init_ack_header_info **info);
+void jaln_response_header_info_destroy(struct jaln_response_header_info **info);
 
 /**
  * Helper function to create a journal_resume_msg
@@ -110,13 +113,22 @@ enum jal_status jaln_create_subscribe_msg(char **msg_out, uint64_t *msg_out_len)
 axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
 
 /**
- * Verify that a header_info struct has all the required fields
+ * Verify that a header_info struct has all the required fields for an initialize ack message
  *
  * @param header_info Information from parsing initialize-ack headers
  *
  * @return JAL_OK if all headers were present or an error code
  */
-enum jal_status jaln_verify_init_ack_headers(struct jaln_init_ack_header_info *header_info);
+enum jal_status jaln_verify_init_ack_headers(struct jaln_response_header_info *header_info);
+
+/**
+ * Verify that a header_info struct has all the required fields for a digest challenge message
+ *
+ * @param header_info Information from parsing digest-challenge headers
+ *
+ * @return JAL_OK if all headers were present or an error code
+ */
+enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header_info *header_info);
 
 /**
  * Parse a single header on a JALoP message
@@ -125,7 +137,7 @@ enum jal_status jaln_verify_init_ack_headers(struct jaln_init_ack_header_info *h
  * @param len The length of the data
  * @param info A struct for storing info about the headers parsed
  */
-void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_init_ack_header_info *info);
+void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_header_info *info);
 
 /**
  * Parse a content type header
@@ -236,6 +248,17 @@ enum jal_status jaln_parse_journal_resume_offset_header(char *content, size_t le
 enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, jaln_session *sess);
 
 /**
+ * Parse a digest-challenge message
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param info A struct for storing info about the headers parsed
+ *
+ * @return JAL_OK on success or an error code
+ */
+enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, struct jaln_response_header_info *info);
+
+/**
  * Parse errors
  *
  * @param content The data in the header
@@ -245,7 +268,7 @@ enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, j
  *
  * @return JAL_OK on success, or an error code
  */
-enum jal_status jaln_parse_error_messages(char *content, size_t len, struct jaln_init_ack_header_info *info);
+enum jal_status jaln_parse_error_messages(char *content, size_t len, struct jaln_response_header_info *info);
 
 /**
  * Helper function to calculate the number of bytes needed to to convert a

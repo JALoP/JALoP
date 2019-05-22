@@ -34,6 +34,7 @@
 #include "jaln_pub_feeder.h"
 #include "jaln_context.h"
 #include "jaln_message_helpers.h"
+#include "jaln_publisher.h"
 #include "jaln_strings.h"
 // This is for the 'copy_buffer' function, which should probably get re-factored
 // to a different file.
@@ -186,10 +187,14 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 {
 	jaln_session *sess = (jaln_session*) user_data;
 
+	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
+	info->expected_nonce = jal_strdup(sess->pub_data->nonce);
+
 	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
 	if (!ctx) {
 		// Error
 		jaln_session_set_errored(sess);;
+		jaln_response_header_info_destroy(&info);
 		return NULL;
 	}
 
@@ -199,18 +204,28 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
 	curl_easy_setopt(ctx, CURLOPT_READDATA, sess);
 
-	// Was used by initialize.  Not needed here
-	curl_easy_setopt(ctx, CURLOPT_HEADERFUNCTION, NULL);
+	curl_easy_setopt(ctx, CURLOPT_HEADERFUNCTION, jaln_publisher_digest_challenge_handler);
+	curl_easy_setopt(ctx, CURLOPT_HEADERDATA, info);
 
 	vortex_mutex_lock(&sess->wait_lock);
 
 	curl_easy_setopt(ctx, CURLOPT_HTTPHEADER, sess->pub_data->headers);
 
+	char buf[CURL_ERROR_SIZE];
+
+	curl_easy_setopt(ctx, CURLOPT_ERRORBUFFER, &buf);
+
 	CURLcode res = curl_easy_perform(ctx);
 
-	if (res != 0) {
-		printf("curl returned error %d\n", res);
+	if (res != 0 || JAL_OK != jaln_verify_digest_challenge_headers(info)) {
+		printf("Failed: %d: %s\n", res, buf); // TODO: Printfs in libraries are bad.  Remove me once the library is more stable
+		jaln_session_set_errored(sess);
+		return NULL;
 	}
+
+	// Send digest response
+
+	jaln_response_header_info_destroy(&info);
 
 	return NULL;
 }

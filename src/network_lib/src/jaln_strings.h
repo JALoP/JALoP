@@ -46,6 +46,7 @@
 #define JALN_HDRS_COUNT "JAL-Count"
 #define JALN_HDRS_RECORD_TYPE "JAL-Record-Type"
 #define JALN_HDRS_DIGEST "JAL-Digest"
+#define JALN_HDRS_DIGEST_VALUE "JAL-Digest-Value"
 #define JALN_HDRS_ERROR_MESSAGE "JAL-Error-Message"
 #define JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE "JAL-Configure-Digest-Challenge"
 #define JALN_HDRS_JOURNAL_LEN "JAL-Journal-Length"
@@ -75,6 +76,7 @@
 // defines for the various message JALoP message types
 #define JALN_MSG_AUDIT "audit-record"
 #define JALN_MSG_DIGEST "digest"
+#define JALN_MSG_DIGEST_CHALLENGE "digest-challenge"
 #define JALN_MSG_DIGEST_RESP "digest-response"
 #define JALN_MSG_INIT "initialize"
 #define JALN_MSG_INIT_ACK "initialize-ack"
