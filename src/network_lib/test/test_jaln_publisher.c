@@ -611,3 +611,49 @@ void test_publish_success_for_all_types()
 	jaln_connection_destroy(&conn);
 	restore_function(vortex_connection_set_on_close_full);
 }
+
+void test_register_publisher_id_already_set()
+{
+	const char *other_uuid = "a9c6ee4b-adb1-4f34-9eb7-057e90e6786b";
+	assert_equals(JAL_E_INVAL, jaln_register_publisher_id(ctx, other_uuid));
+	assert_string_equals(SAMPLE_UUID, ctx->pub_id);
+}
+
+void test_register_publisher_id_nulls()
+{
+	memset(ctx->pub_id, '\0', sizeof(ctx->pub_id));
+	assert_equals(JAL_E_INVAL, jaln_register_publisher_id(ctx, NULL));
+	assert_equals(JAL_E_INVAL, jaln_register_publisher_id(NULL, SAMPLE_UUID));
+}
+
+void test_register_publisher_id_not_uuid()
+{
+	memset(ctx->pub_id, '\0', sizeof(ctx->pub_id));
+	assert_equals(JAL_E_INVAL, jaln_register_publisher_id(ctx, "Not a UUID"));
+}
+
+void test_register_publisher_id_bad_uuid()
+{
+	// check that any char being invalid will cause a failure
+	for (unsigned int i = 0; i < strlen(SAMPLE_UUID); ++i) {
+		memset(ctx->pub_id, '\0', sizeof(ctx->pub_id));
+		char bad_id[] = SAMPLE_UUID;
+		bad_id[i] = 'g';
+		assert_equals(JAL_E_INVAL, jaln_register_publisher_id(ctx, bad_id));
+	}
+	// clear the publisher id from the context to stop cascading failure
+	memset(ctx->pub_id, '\0', sizeof(ctx->pub_id));
+	char too_long[] = SAMPLE_UUID "1";
+	assert_equals(JAL_E_INVAL, jaln_register_publisher_id(ctx, too_long));
+	memset(ctx->pub_id, '\0', sizeof(ctx->pub_id));
+	char too_short[] = SAMPLE_UUID;
+	too_short[strlen(too_short) - 1] = '\0';
+	assert_equals(JAL_E_INVAL, jaln_register_publisher_id(ctx, too_short));
+}
+
+void test_register_publisher_id_valid()
+{
+	memset(ctx->pub_id, '\0', sizeof(ctx->pub_id));
+	assert_equals(JAL_OK, jaln_register_publisher_id(ctx, SAMPLE_UUID));
+	assert_string_equals(SAMPLE_UUID, ctx->pub_id);
+}
