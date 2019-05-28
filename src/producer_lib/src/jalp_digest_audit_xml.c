@@ -36,7 +36,7 @@
 #include "jal_asprintf_internal.h"
 #include "jal_xml_utils.h"
 
-#define XML_CEE_SCHEMA "cee-cls-xml-event.xsd"
+#define XML_JAF_SCHEMA "event.xsd" //TODO: what is the canonical name?
 #define JALP_XML_CORE "Core"
 
 enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
@@ -57,13 +57,13 @@ enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
 	xmlSchemaParserCtxtPtr parser_ctx = NULL;
 	xmlSchemaPtr schema = NULL;
 	xmlSchemaValidCtxtPtr valid_ctx = NULL;
-	char *ceeSchema = NULL;
+	char *jafSchema = NULL;
 	
-	jal_asprintf(&ceeSchema, "%s/" XML_CEE_SCHEMA, schema_root);
+	jal_asprintf(&jafSchema, "%s/" XML_JAF_SCHEMA, schema_root);
 
 	parsed_doc = xmlParseMemory((const char *)buffer, buf_len);
 
-	schema_doc = xmlReadFile(ceeSchema, NULL, XML_PARSE_NONET);
+	schema_doc = xmlReadFile(jafSchema, NULL, XML_PARSE_NONET);
 	if (!schema_doc) {
 		ret = JAL_E_XML_SCHEMA;
 		goto out;
@@ -98,7 +98,7 @@ out:
 	xmlSchemaFreeParserCtxt(parser_ctx);
 	xmlFreeDoc(schema_doc);
 	xmlFreeDoc(parsed_doc);
-	free(ceeSchema);
+	free(jafSchema);
 	return ret;
 }
 

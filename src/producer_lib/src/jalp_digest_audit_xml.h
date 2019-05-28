@@ -38,8 +38,8 @@ extern "C" {
 #include <stdint.h>
 #include <unistd.h>
 /**
- * Parse a byte buffer as XML and validate it against the MITRE CEE audit
- * schema.
+ * Parse a byte buffer as XML and validate it against the JALoP Audit Format
+ * (JAF) Event List XML schema.
  *
  */
 enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
