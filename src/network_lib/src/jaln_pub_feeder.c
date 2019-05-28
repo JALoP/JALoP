@@ -217,7 +217,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	CURLcode res = curl_easy_perform(ctx);
 
-	if (res != 0 || JAL_OK != jaln_verify_digest_challenge_headers(info)) {
+	if (res != 0 || sess->errored || JAL_OK != jaln_verify_digest_challenge_headers(info)) {
 		printf("Failed: %d: %s\n", res, buf); // TODO: Printfs in libraries are bad.  Remove me once the library is more stable
 		jaln_session_set_errored(sess);
 		return NULL;

@@ -481,6 +481,10 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 		const char *value_start = content + name_len + 2;
 		const size_t value_len = len - name_len - 2;
 		header_info->calc_dgst = jal_strndup(value_start, value_len - 2);
+		// The digest length is in binary and the calculated digest is ascii hex
+		if (sess->dgst->len * 2 != (int) strlen(header_info->calc_dgst)) {
+			jaln_session_set_errored(sess);
+		}
 	}
 
 	return rc; //Extra unmatched headers are ignored
