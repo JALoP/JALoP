@@ -1,6 +1,6 @@
 /**
  * @file jalp_audit.h This file defines the public API that may interest a
- * program sending CEE audit records to the JAL Local Store.
+ * program sending JALoP Audit Format (JAF) audit records to the Local Store.
  *
  * @section LICENSE
  *
@@ -58,9 +58,9 @@ extern "C" {
  * XML document. The resulting document will conform to the applicationMetadata
  * XML Schema defined in the JALoP-v1.0-Specification.
  * @param[in] audit_buffer An optional byte buffer that contains the full contents of
- * an audit entry. An audit entry must conform to the MITRE CEE XML schema. The
- * Producer Lib will verify that \p audit_buffer conforms to the MITRE CEE XML schema
- * and generates and error if it does not.
+ * an audit entry. An audit entry must conform to the JALoP Audit Format (JAF) Event
+ * List Document schema. The Producer Lib will verify that \p audit_buffer conforms
+ * to the XML schema and generates and error if it does not.
  * @param[in] audit_buffer_size The size (in bytes) of \p audit_buffer.
  *
  * @note It is an error to pass NULL for both \p app_meta and \p audit_buffer.
@@ -70,7 +70,7 @@ extern "C" {
  *         JAL_NOT_CONNECTED if a connection to the JALoP Local Store couldn't
  *         be made
  *         JAL_SCHEMA_VALIDATION_FAILURE if \p audit_buffer does not conform to
- *         the MITRE CEE XML schema.
+ *         the JAF Event List Document XML schema.
  *
  * @note \p ctx will be connected if it isn't already.
  */
