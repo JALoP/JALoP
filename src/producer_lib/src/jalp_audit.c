@@ -121,7 +121,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 	} else {
 		status = jalp_send_buffer(ctx, JALP_AUDIT_MSG,
 			(void *) audit_buffer, audit_buffer_size,
-			NULL, 0, 0);
+			NULL, 0, -1);
 	}
 out:
 	if (buffer) {
