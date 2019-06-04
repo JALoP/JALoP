@@ -366,6 +366,7 @@ void setup()
 	sess = jaln_session_create();
 	sess->jaln_ctx = &ctx;
 	info = jaln_response_header_info_create(sess);
+
 }
 
 void teardown()
@@ -1190,6 +1191,9 @@ void test_parse_digest_challenge_header()
 {
 	sess->pub_data = jaln_pub_data_create();
 	info->expected_nonce = jal_strdup(SAMPLE_UUID);
+
+	sess->dgst = jal_sha256_ctx_create();
+	sess->dgst->len = strlen(SOME_DIGEST)/2;
 
 	enum jal_status rc = jaln_parse_digest_challenge_header(SAMPLE_DGST_CHAL_MSG, strlen(SAMPLE_DGST_CHAL_MSG), info);
 
