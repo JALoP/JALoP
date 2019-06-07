@@ -1,17 +1,21 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<Log xmlns='http://cee.mitre.org'>
-  <Invalid>
-  <Event>
-    <id>123</id>
-    <time>2011-01-01T12:00:00Z</time>
-    <action>login</action>
-    <status>success</status>
-    <p_sys_id>10.0.0.1</p_sys_id>
-    <p_prod_id>proc</p_prod_id>
-    <Field name='acct_name'>
-      <string>bob</string>
-    </Field>
-  </Event>
-  </Invalid>
-</Log>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<EventList JAFSchemaVersion="1.0.1" xmlns="urn:x-cds-tech:logging:jaf:event:1.0#">
+  <Events>
+    <!-- POSIX logon event using attributes to reference the profile and event class -->
+    <Event profUuid="00000000-1234-5678-9abc-000000000000" profVersion="4"
+           eventClassId="logon"
+           recordId="1234" timestamp="2001-12-31T12:01:00">
+      <Fields>
+        <Field name="username">jsmith</Field>
+        <Field name="hostname">foo.dod.mil</Field>
+      </Fields>
+     </Event>
+    <!-- Linux logon event using attributes to reference the profile and event class -->
+    <Farm>
+      <Fields>
+        <Field name="west">Corn</Field>
+        <Field name="east">Rye</Field>
+      </Fields>
+    </Farm>
+  </Events>
+</EventList>
