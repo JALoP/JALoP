@@ -101,7 +101,7 @@
 	"JAL-Unauthorized-Mode: \r\n\r\n"
 
 #define SOME_ENCODING "an_encoding"
-#define SOME_DIGEST "a_digest"
+#define SOME_DIGEST "31c482024fdf8ab7fd3fc1a6bf7fb3989c7fe706eacf8a719e53b18b2d29d9e0"
 #define EXPECTED_ACK\
 	"Content-Type: application/http+jalop\r\n" \
 	"JAL-Version: 2.0.0.0\r\n" \
@@ -290,10 +290,9 @@ static char *output_str;
 	"Content-Type: application/http+jalop\r\n" \
 	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: digest-response\r\n" \
-	"JAL-Count: 3\r\n\r\n" \
-	dr_1_str \
-	dr_2_str \
-	dr_3_str
+	"JAL-Session-Id: " SAMPLE_UUID "\r\n" \
+	"JAL-Id: " nonce_1_str "\r\n" \
+	"JAL-Digest-Status: " dr_1_str \
 
 #define EXPECTED_JOURNAL_MISSING_MSG \
 	"Content-Type: application/http+jalop\r\n" \
@@ -301,9 +300,9 @@ static char *output_str;
 	"JAL-Session-Id: id\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n\r\n"
 
-#define dr_1_str "confirmed=nonce_1\r\n"
-#define dr_2_str "invalid=nonce_2\r\n"
-#define dr_3_str "unknown=nonce_3\r\n"
+#define dr_1_str "confirmed"
+#define dr_2_str "invalid"
+#define dr_3_str "unknown"
 
 static struct jaln_record_info *rec_info;
 
@@ -1208,7 +1207,6 @@ void test_parse_digest_challenge_header()
 	rc = jaln_parse_digest_challenge_header(SAMPLE_DGST_VAL_MSG, strlen(SAMPLE_DGST_VAL_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_string_equals(info->calc_dgst, SOME_DIGEST);
 	assert_equals(axl_false, sess->errored);
 }
 
@@ -1290,14 +1288,6 @@ void test_digest_resp_info_strlen_returns_0_when_missing_nonce()
 	assert_equals(0, len);
 }
 
-void test_digest_resp_info_strlen_returns_0_when_nonce_is_emtpy()
-{
-	free(dr_1->nonce);
-	dr_1->nonce = jal_strdup("");
-	uint64_t len = jaln_digest_resp_info_strlen(dr_1);
-	assert_equals(0, len);
-}
-
 void test_digest_resp_info_strlen_returns_0_with_bad_status()
 {
 	dr_1->status = JALN_DIGEST_STATUS_UNKNOWN + 1;;
@@ -1351,9 +1341,9 @@ void test_create_digest_resp_message_works()
 {
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
-	assert_equals(JAL_OK, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_OK, jaln_create_digest_response_msg(SAMPLE_UUID, dr_1, &msg_out, &msg_out_len));
 
-	assert_equals(0, strcmp(EXPECTED_DGST_RESP_MSG, msg_out));
+	assert_string_equals(EXPECTED_DGST_RESP_MSG, msg_out);
 	assert_equals(strlen(EXPECTED_DGST_RESP_MSG), msg_out_len);
 	free(msg_out);
 }
@@ -1362,35 +1352,17 @@ void test_create_digest_resp_returns_error_with_bad_input()
 {
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(NULL, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(NULL, dr_1, &msg_out, &msg_out_len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, NULL, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(SAMPLE_UUID, NULL, &msg_out, &msg_out_len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, NULL));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(SAMPLE_UUID, dr_1, NULL, &msg_out_len));
+
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(SAMPLE_UUID, dr_1, &msg_out, NULL));
 
 	msg_out = (char*) 0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(SAMPLE_UUID, dr_1, &msg_out, &msg_out_len));
 
-}
-
-void test_create_digest_resp_returns_error_with_bad_digest_list()
-{
-	char *msg_out = NULL;
-	uint64_t msg_out_len = 0;
-
-	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_nonce, jaln_axl_destroy_digest_resp_info);
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(empty_list, &msg_out, &msg_out_len));
-	axl_list_free(empty_list);
-
-}
-
-void test_create_digest_resp_returns_error_with_bad_digest_info()
-{
-	char *msg_out = NULL;
-	uint64_t msg_out_len = 0;
-
-	axl_list_append(dgst_resp_list, NULL);
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
 }
 
 void test_create_init_nack_msg_works_for_unsupported_version()

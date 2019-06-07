@@ -59,7 +59,7 @@ struct jaln_response_header_info *jaln_response_header_info_create(jaln_session 
 void jaln_response_header_info_destroy(struct jaln_response_header_info **info)
 {
 	struct jaln_response_header_info *tmp = *info;
-	free(tmp->calc_dgst);
+	free(tmp->peer_dgst);
 	free(tmp->expected_nonce);
 	if (tmp->error_list) {
 		free(*tmp->error_list); // Error list holds tokens within a single string. Free the string.
@@ -212,7 +212,7 @@ enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header
 
 	if (axl_true == info->message_type_valid
 	    && axl_true == info->id_valid
-	    && NULL != info->calc_dgst
+	    && NULL != info->peer_dgst
 	    && 0 == info->error_cnt
 	) {
 		return JAL_OK;
@@ -239,7 +239,7 @@ static enum jal_status jaln_header_value_match(const char *content, const size_t
 	size_t offset = 0;
 	// Skip whitespace
 	for (; offset < content_len && (content[offset] == ' ' || content[offset] == '\t'); ++offset);
-	if (content_len - offset != value_len + strlen("\r\n")) {
+	if (content_len - offset != value_len) {
 		return JAL_E_INVAL;
 	}
 	return !memcmp(content + offset, value, value_len)? JAL_OK : JAL_E_INVAL;
@@ -256,7 +256,7 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_CONTENT_TYPE))) {
 		const size_t name_len = strlen(JALN_HDRS_CONTENT_TYPE);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_STR_CT_JALOP));
 		if (JAL_OK == rc) {
 			info->content_type_valid = axl_true;
@@ -264,7 +264,7 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
 				JALN_STR_W_LEN(JALN_MSG_INIT_ACK)))) {
 			info->message_type_valid = axl_true;
@@ -277,7 +277,7 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_VERSION))) {
 		const size_t name_len = strlen(JALN_HDRS_VERSION);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_VERSION));
 		if (JAL_OK == rc) {
 			info->version_valid = axl_true;
@@ -357,7 +357,7 @@ enum jal_status jaln_parse_configure_digest_challenge_header(
 {
 	const size_t name_len = strlen(JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE);
 	const char *value_start = content + name_len + 1;
-	const size_t value_len = len - name_len - 1;
+	const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 	if (JAL_OK == jaln_header_value_match(value_start, value_len,
 			JALN_STR_W_LEN(JALN_DIGEST_CHALLENGE_ON)) &&
 			(sess->jaln_ctx->digest_challenge & JALN_DC_ON_BIT ||
@@ -435,7 +435,7 @@ enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, j
 	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		enum jal_status rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_JOURNAL_MISSING_RESPONSE));
 		if (JAL_OK == rc) {
 			sess->last_message = JALN_MSG_JOURNAL_MISSING_RESPONSE;
@@ -456,7 +456,7 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_DIGEST_CHALLENGE));
 		// TODO: Record failure messages
 		if (JAL_OK == rc) {
@@ -469,7 +469,7 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
 		const size_t name_len = strlen(JALN_HDRS_ID);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
 		if (JAL_OK == rc) {
 			header_info->id_valid = axl_true;
@@ -478,12 +478,19 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_DIGEST_VALUE))) {
 		const size_t name_len = strlen(JALN_HDRS_DIGEST_VALUE);
-		const char *value_start = content + name_len + 2;
-		const size_t value_len = len - name_len - 2;
-		header_info->calc_dgst = jal_strndup(value_start, value_len - 2);
-		// The digest length is in binary and the calculated digest is ascii hex
-		if (sess->dgst->len * 2 != (int) strlen(header_info->calc_dgst)) {
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
+		// Skip whitespace
+		int offset = 0;
+		while (value_start[offset] == (char)' ' || value_start[offset] == (char)'\t') { offset++; }
+		rc = jaln_hex_str_to_bin_buf(value_start + offset, (uint64_t) (value_len - offset), &header_info->peer_dgst, &header_info->peer_dgst_len);
+		if (rc != JAL_OK) {
 			jaln_session_set_errored(sess);
+			return rc;
+		}
+		if (sess->dgst->len != (int) header_info->peer_dgst_len) {
+			jaln_session_set_errored(sess);
+			return JAL_E_INVAL;
 		}
 	}
 
@@ -939,30 +946,22 @@ struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *r
 
 uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di)
 {
-	// output for each line should be:
-	// <dgst_as_hex>=<nonce>CRLF
 	if (!di || !di->nonce) {
 		return 0;
 	}
-	if (0 == strlen(di->nonce)) {
-		return 0;
-	}
-	// start with cnt == 2 (CR LF)
-	uint64_t cnt = 2;
-	if (!jaln_safe_add_size(&cnt, strlen(di->nonce))) {
-		cnt = 0;
-		goto out;
-	}
+
+	uint64_t cnt = 0;
+
 	const char *status_str = NULL;
 	switch (di->status) {
 	case (JALN_DIGEST_STATUS_CONFIRMED):
-		status_str = JALN_STR_CONFIRMED_EQUALS;
+		status_str = JALN_STR_CONFIRMED;
 		break;
 	case (JALN_DIGEST_STATUS_INVALID):
-		status_str = JALN_STR_INVALID_EQUALS;
+		status_str = JALN_STR_INVALID;
 		break;
 	case (JALN_DIGEST_STATUS_UNKNOWN):
-		status_str = JALN_STR_UNKNOWN_EQUALS;
+		status_str = JALN_STR_UNKNOWN;
 		break;
 	default:
 		cnt = 0;
@@ -988,73 +987,52 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
 	char *status_str = NULL;
 	switch (di->status) {
 	case (JALN_DIGEST_STATUS_CONFIRMED):
-		status_str = JALN_STR_CONFIRMED_EQUALS;
+		status_str = JALN_STR_CONFIRMED;
 		break;
 	case (JALN_DIGEST_STATUS_INVALID):
-		status_str = JALN_STR_INVALID_EQUALS;
+		status_str = JALN_STR_INVALID;
 		break;
 	case (JALN_DIGEST_STATUS_UNKNOWN):
-		status_str = JALN_STR_UNKNOWN_EQUALS;
+		status_str = JALN_STR_UNKNOWN;
 		break;
 	default:
 		return NULL;
 	}
 	strcat(dst, status_str);
-	strcat(dst, di->nonce);
-	strcat(dst, JALN_CRLF);
 	return dst;
 }
 
-enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, uint64_t *msg_len)
+enum jal_status jaln_create_digest_response_msg(char *session_id, struct jaln_digest_resp_info *dgst_resp, char **msg_out, uint64_t *msg_len)
 {
 #define DGST_RESP_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_DIGEST_RESP JALN_CRLF \
-		JALN_HDRS_COUNT JALN_COLON_SPACE "%d" JALN_CRLF JALN_CRLF
-	if (!dgst_resp_list || !msg_out || *msg_out || !msg_len) {
+		JALN_HDRS_SESSION_ID JALN_COLON_SPACE "%s" JALN_CRLF \
+		JALN_HDRS_ID JALN_COLON_SPACE "%s" JALN_CRLF \
+		JALN_HDRS_DIGEST_STATUS JALN_COLON_SPACE
+
+	if (!session_id || !dgst_resp || !msg_out || *msg_out || !msg_len) {
 		return JAL_E_INVAL;
 	}
 	enum jal_status ret = JAL_E_INVAL;
-	int dgst_cnt = axl_list_length(dgst_resp_list);
 	uint64_t len = 1;
 	uint64_t tmp = 0;
 	char *msg = NULL;
-	axlListCursor *iter = NULL;
 
-	if (0 >= dgst_cnt) {
-		goto err_out;
-	}
-
-	tmp = snprintf(NULL, 0, DGST_RESP_MSG_HDRS, dgst_cnt);
+	tmp = snprintf(NULL, 0, DGST_RESP_MSG_HDRS, session_id, dgst_resp->nonce);
 	if (len > (SIZE_MAX - tmp)) {
 		goto err_out;
 	}
 	len += tmp;
 
-	iter = axl_list_cursor_new(dgst_resp_list);
-	axl_list_cursor_first(iter);
-
-	while(axl_list_cursor_has_item(iter)) {
-		// major assumption that the list here contains valid
-		// digest_info objects;
-		struct jaln_digest_resp_info *di = (struct jaln_digest_resp_info *) axl_list_cursor_get(iter);
-		tmp = jaln_digest_resp_info_strlen(di);
-		if (0 == tmp || len > (SIZE_MAX - tmp)) {
-			goto err_out;
-		}
-		len += tmp;
-		axl_list_cursor_next(iter);
+	tmp = jaln_digest_resp_info_strlen(dgst_resp);
+	if (0 == tmp || len > (SIZE_MAX - tmp)) {
+		goto err_out;
 	}
+	len += tmp;
 
 	msg = jal_malloc(len);
-	sprintf(msg, DGST_RESP_MSG_HDRS, dgst_cnt);
+	sprintf(msg, DGST_RESP_MSG_HDRS, session_id, dgst_resp->nonce);
 
-	axl_list_cursor_first(iter);
-	while(axl_list_cursor_has_item(iter)) {
-		// major assumption that the list here contains valid
-		// digest_info objects;
-		struct jaln_digest_resp_info *di = (struct jaln_digest_resp_info *) axl_list_cursor_get(iter);
-		jaln_digest_resp_info_strcat(msg, di);
-		axl_list_cursor_next(iter);
-	}
+	jaln_digest_resp_info_strcat(msg, dgst_resp);
 
 	*msg_out = msg;
 	*msg_len = len - 1;
@@ -1064,9 +1042,6 @@ enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **
 err_out:
 	free(msg);
 out:
-	if (iter) {
-		axl_list_cursor_free(iter);
-	}
 	return ret;
 }
 

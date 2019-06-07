@@ -190,7 +190,9 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
 	info->expected_nonce = jal_strdup(sess->pub_data->nonce);
 
+	vortex_mutex_lock(&sess->wait_lock);
 	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
+	vortex_mutex_unlock(&sess->wait_lock);
 	if (!ctx) {
 		// Error
 		jaln_session_set_errored(sess);;
@@ -217,7 +219,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	CURLcode res = curl_easy_perform(ctx);
 
-	if (res != 0 || sess->errored || JAL_OK != jaln_verify_digest_challenge_headers(info)) {
+	if (res != CURLE_OK || sess->errored || JAL_OK != jaln_verify_digest_challenge_headers(info)) {
 		printf("Failed: %d: %s\n", res, buf); // TODO: Printfs in libraries are bad.  Remove me once the library is more stable
 		jaln_session_set_errored(sess);
 		return NULL;
@@ -225,6 +227,41 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	// Send digest response
 
+	struct jaln_digest_resp_info *resp_info = NULL;
+
+	struct jaln_digest_info *peer_dgst = jaln_digest_info_create(info->expected_nonce, info->peer_dgst, info->peer_dgst_len);
+	jaln_pub_notify_digests_and_create_digest_response(sess, sess->dgst_list, peer_dgst, &resp_info);
+
+	char *resp_header = NULL;
+	uint64_t resp_header_len = 0;
+	jaln_create_digest_response_msg(sess->id, resp_info, &resp_header, &resp_header_len);
+
+	struct curl_slist *headers = NULL;
+	headers = curl_slist_append(headers, resp_header);
+
+	curl_easy_setopt(ctx, CURLOPT_HTTPHEADER, headers);
+
+	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE, 0L);
+
+	if (JALN_DIGEST_STATUS_CONFIRMED == resp_info->status) {
+		curl_easy_setopt(ctx, CURLOPT_HEADERFUNCTION, jaln_publisher_sync_handler);
+	} else {
+		curl_easy_setopt(ctx, CURLOPT_HEADERFUNCTION, jaln_publisher_failed_digest_handler);
+	}
+	curl_easy_setopt(ctx, CURLOPT_HEADERDATA, info);
+
+	res = curl_easy_perform(ctx);
+
+	if (res != CURLE_OK) {
+		printf("Failed digest resp: %d, %s\n", res, buf); // TODO: Remove
+		jaln_session_set_errored(sess);
+		return NULL;
+	}
+
+	curl_slist_free_all(headers);
+	curl_easy_cleanup(ctx);
+	jaln_digest_resp_info_destroy(&resp_info);
+	jaln_digest_info_destroy(&peer_dgst);
 	jaln_response_header_info_destroy(&info);
 
 	return NULL;

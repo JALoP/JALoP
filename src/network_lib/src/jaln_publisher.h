@@ -36,6 +36,8 @@
 #include <curl/curl.h>
 
 #include "jaln_session.h"
+#include "jaln_digest_resp_info.h"
+#include "jaln_digest_info.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,17 +54,16 @@ extern "C" {
  * @param[in] sess The session related to the digests.
  * @param[in] calc_dgsts An axlList of jlan_digest_info structures. This is the
  * digests calculated locally by the network library.
- * @param[in] peer_dgsts An axlList of jaln_digest_info structures. These are
- * the digests calculated by the remote side and sent in a 'digest' message.
- * @param[out] dgst_resp_infos This will be a list of jaln_digest_resp_info
- * structures. It will contain an entry for each nonce indicated in \p
- * peer_dgsts.
+ * @param[in] peer_dgst A jaln_digest_info structure. This is
+ * the digest calculated by the remote side and sent in a 'digest' message.
+ * @param[out] dgst_resp_info This will be a jaln_digest_resp_info
+ * structure. It will contain an entry for the nonce indicated in the \p peer_dgst
  */
 void jaln_pub_notify_digests_and_create_digest_response(
 		jaln_session *sess,
 		axlList *calc_dgsts,
-		axlList *peer_dgsts,
-		axlList **dgst_resp_infos);
+		struct jaln_digest_info *peer_dgst,
+		struct jaln_digest_resp_info **dgst_resp_info);
 
 /**
  * Helper function for a publisher to process (and reply to) a 'sync' message.
@@ -75,22 +76,6 @@ void jaln_pub_notify_digests_and_create_digest_response(
  */
 enum jal_status jaln_publisher_handle_sync(
 		jaln_session *sess,
-		VortexChannel *chan,
-		VortexFrame *frame,
-		int msg_no);
-
-/**
- * Helper utility to parse and process a 'digest' message.
- *
- * @param[in] sess The session
- * @param[in] chan The vortex channel that received the message.
- * @param[in] frame The frame that contains the message
- * @param[in] msg_no The message number
- *
- * @return JAL_OK if the message successfully parsed and dealt with, or an
- * error code.
- */
-enum jal_status jaln_publisher_handle_digest(jaln_session *sess,
 		VortexChannel *chan,
 		VortexFrame *frame,
 		int msg_no);
@@ -189,7 +174,7 @@ size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nm
 size_t jaln_publisher_journal_missing_response_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
 
 /**
- * Curl callback to process a digest-challege-message
+ * Curl callback to process a digest-challege message
  *
  * @param ptr The header info
  * @param size The size of one section of ptr
@@ -197,6 +182,26 @@ size_t jaln_publisher_journal_missing_response_handler(char *ptr, size_t size, s
  * @param user_data The data passed to curl (a jaln_session pointer)
  */
 size_t jaln_publisher_digest_challenge_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
+
+/**
+ * Curl callback to process a sync message
+ *
+ * @param ptr The header info
+ * @param size The size of one section of ptr
+ * @param nmemb The number of items of size size in ptr
+ * @param user_data The data passed to curl (a jaln_session pointer)
+ */
+size_t jaln_publisher_sync_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
+
+/**
+ * Curl callback to process an expected JAL-Record-Failure JAL-Invalid Digest message
+ *
+ * @param ptr The header info
+ * @param size The size of one section of ptr
+ * @param nmemb The number of items of size size in ptr
+ * @param user_data The data passed to curl (a jaln_session pointer)
+ */
+size_t jaln_publisher_failed_digest_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
 
 /**
  * Vortex handler for when publisher's connection closes

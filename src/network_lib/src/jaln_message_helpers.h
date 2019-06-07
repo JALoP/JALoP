@@ -45,7 +45,8 @@ struct jaln_response_header_info {
 	axl_bool message_type_valid;
 	axl_bool version_valid;
 	axl_bool id_valid;
-	char *calc_dgst;
+	uint8_t *peer_dgst;
+	uint64_t peer_dgst_len;
 	char *expected_nonce;
 	int error_cnt;
 	char **error_list;
@@ -342,7 +343,8 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
  * It is also an error if any of the digest_info objects in the list are not
  * valid.
  *
- * @param[in] dgst_list The list of jaln_digest_resp_info structures to send in the
+ * @param[in] session_id The session id associated with this session
+ * @param[in] dgst_resp The jaln_digest_resp_info structure to send in the
  * message.
  * @param[out] msg_out The resulting message
  * @param[out] msg_len The length of the resulting message
@@ -351,7 +353,7 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
  *  - JAL_OK on success
  *  - JAL_E_INVAL on error
  */
-enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, uint64_t *msg_len);
+enum jal_status jaln_create_digest_response_msg(char *session_id, struct jaln_digest_resp_info *dgst_resp, char **msg_out, uint64_t *msg_len);
 
 /**
  * Helper function to increment a counter when determining the required number of

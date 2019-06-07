@@ -52,72 +52,60 @@
 void jaln_pub_notify_digests_and_create_digest_response(
 		jaln_session *sess,
 		axlList *calc_dgsts,
-		axlList *peer_dgsts,
-		axlList **dgst_resp_infos)
+		struct jaln_digest_info *peer_dgst,
+		struct jaln_digest_resp_info **dgst_resp_info)
 {
 	if (!sess || !sess->jaln_ctx || !sess->ch_info || !sess->jaln_ctx->pub_callbacks ||
 			!sess->jaln_ctx->pub_callbacks->peer_digest ||
-			!calc_dgsts || !peer_dgsts || !dgst_resp_infos ||
-			*dgst_resp_infos) {
+			!calc_dgsts || !peer_dgst || !dgst_resp_info ||
+			*dgst_resp_info) {
 		return;
 	}
 
-	axlList *resps = jaln_digest_resp_list_create();
-
 	axlListCursor *calc_cursor = axl_list_cursor_new(calc_dgsts);
-	axlListCursor *peer_cursor = axl_list_cursor_new(peer_dgsts);
 
-	axl_list_cursor_first(peer_cursor);
-	while(axl_list_cursor_has_item(peer_cursor)) {
-		struct jaln_digest_info *peer_di = (struct jaln_digest_info*) axl_list_cursor_get(peer_cursor);
-		struct jaln_digest_info *calc_di = NULL;
+	struct jaln_digest_info *calc_di = NULL;
 
-		axl_list_cursor_first(calc_cursor);
-		while(axl_list_cursor_has_item(calc_cursor)) {
-			struct jaln_digest_info *tmp = (struct jaln_digest_info*) axl_list_cursor_get(calc_cursor);
-			if (tmp && (0 == strcmp(peer_di->nonce, tmp->nonce))) {
-				calc_di = tmp;
-				axl_list_cursor_unlink(calc_cursor);
-				break;
-			}
-			axl_list_cursor_next(calc_cursor);
+	axl_list_cursor_first(calc_cursor);
+	while(axl_list_cursor_has_item(calc_cursor)) {
+		struct jaln_digest_info *tmp = (struct jaln_digest_info*) axl_list_cursor_get(calc_cursor);
+		if (tmp && (0 == strcmp(peer_dgst->nonce, tmp->nonce))) {
+			calc_di = tmp;
+			axl_list_cursor_unlink(calc_cursor);
+			break;
 		}
-
-		struct jaln_digest_resp_info *resp_info = NULL;
-		if (!calc_di) {
-			sess->jaln_ctx->pub_callbacks->peer_digest(sess,
-					sess->ch_info,
-					sess->ch_info->type,
-					peer_di->nonce,
-					NULL, 0,
-					peer_di->digest, peer_di->digest_len,
-					sess->jaln_ctx->user_data);
-
-			resp_info = jaln_digest_resp_info_create(peer_di->nonce, JALN_DIGEST_STATUS_UNKNOWN);
-		} else {
-			if (jaln_digests_are_equal(peer_di, calc_di)) {
-				resp_info = jaln_digest_resp_info_create(peer_di->nonce, JALN_DIGEST_STATUS_CONFIRMED);
-			} else {
-				resp_info = jaln_digest_resp_info_create(peer_di->nonce, JALN_DIGEST_STATUS_INVALID);
-			}
-
-			sess->jaln_ctx->pub_callbacks->peer_digest(sess,
-					sess->ch_info,
-					sess->ch_info->type,
-					peer_di->nonce,
-					calc_di->digest, calc_di->digest_len,
-					peer_di->digest, peer_di->digest_len,
-					sess->jaln_ctx->user_data);
-		}
-		axl_list_append(resps, resp_info);
-
-		jaln_digest_info_destroy(&calc_di);
-
-		axl_list_cursor_next(peer_cursor);
+		axl_list_cursor_next(calc_cursor);
 	}
-	axl_list_cursor_free(peer_cursor);
+
+	if (!calc_di) {
+		sess->jaln_ctx->pub_callbacks->peer_digest(sess,
+				sess->ch_info,
+				sess->ch_info->type,
+				peer_dgst->nonce,
+				NULL, 0,
+				peer_dgst->digest, peer_dgst->digest_len,
+				sess->jaln_ctx->user_data);
+
+		*dgst_resp_info = jaln_digest_resp_info_create(peer_dgst->nonce, JALN_DIGEST_STATUS_UNKNOWN);
+	} else {
+		if (jaln_digests_are_equal(peer_dgst, calc_di)) {
+			*dgst_resp_info = jaln_digest_resp_info_create(peer_dgst->nonce, JALN_DIGEST_STATUS_CONFIRMED);
+		} else {
+			*dgst_resp_info = jaln_digest_resp_info_create(peer_dgst->nonce, JALN_DIGEST_STATUS_INVALID);
+		}
+
+		sess->jaln_ctx->pub_callbacks->peer_digest(sess,
+				sess->ch_info,
+				sess->ch_info->type,
+				peer_dgst->nonce,
+				calc_di->digest, calc_di->digest_len,
+				peer_dgst->digest, peer_dgst->digest_len,
+				sess->jaln_ctx->user_data);
+	}
+
+	jaln_digest_info_destroy(&calc_di);
+
 	axl_list_cursor_free(calc_cursor);
-	*dgst_resp_infos = resps;
 }
 
 enum jal_status jaln_publisher_handle_sync(jaln_session *sess,
@@ -145,61 +133,10 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_publisher_handle_digest(jaln_session *sess, VortexChannel *chan, VortexFrame *frame, int msg_no)
-{
-	axlList *calc_dgsts = NULL;
-	axlList *dgst_from_remote = NULL;
-	axlList *resps = NULL;
-	char *msg = NULL;
-	uint64_t len = 0;
-
-	enum jal_status ret;
-	ret = jaln_process_digest(frame, &dgst_from_remote);
-	if (JAL_OK != ret) {
-		goto err_out;
-	}
-
-	vortex_mutex_lock(&sess->lock);
-	calc_dgsts = sess->dgst_list;
-	sess->dgst_list = jaln_digest_info_list_create();
-
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, dgst_from_remote, &resps);
-
-	axlListCursor *cursor = axl_list_cursor_new(sess->dgst_list);
-	axl_list_cursor_first(cursor);
-	while(axl_list_cursor_has_item(cursor)) {
-		axlPointer from_sess = axl_list_cursor_get(cursor);
-		axl_list_append(calc_dgsts, from_sess);
-		axl_list_cursor_unlink(cursor);
-		axl_list_cursor_next(cursor);
-	}
-	axl_list_cursor_free(cursor);
-	axlList *tmp_list = sess->dgst_list;
-	sess->dgst_list = calc_dgsts;
-	vortex_mutex_unlock(&sess->lock);
-
-	axl_list_free(tmp_list);
-	tmp_list = NULL;
-	calc_dgsts = NULL;
-
-	axl_list_free(dgst_from_remote);
-	dgst_from_remote = NULL;
-
-	ret = jaln_create_digest_response_msg(resps, &msg, &len);
-	axl_list_free(resps);
-	resps = NULL;
-	vortex_channel_send_rpy(chan, msg, len, msg_no);
-	free(msg);
-	goto out;
-err_out:
-	vortex_channel_close_full(chan, jaln_session_notify_close, sess);
-out:
-	return ret;
-}
-
 void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexConnection *conn,
 		VortexFrame *frame, axlPointer user_data)
 {
+/*
 	jaln_session *sess = (jaln_session*) user_data;
 	int msg_no = -1;
 	if (!jaln_check_content_type_and_txfr_encoding_are_valid(frame)) {
@@ -227,6 +164,7 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexCon
 	return;
 err_out:
 	vortex_connection_shutdown(conn);
+*/
 }
 
 void jaln_pub_channel_frame_handler(
@@ -710,6 +648,25 @@ size_t jaln_publisher_digest_challenge_handler(char *ptr, size_t size, size_t nm
 	}
 	return bytes;
 }
+
+size_t jaln_publisher_sync_handler(char *ptr, size_t size, size_t nmemb, void *user_data)
+{
+	struct jaln_response_header_info *info = (struct jaln_response_header_info *) user_data;
+	const size_t bytes = size * nmemb;
+	printf("In sync handler: %s\n", ptr);
+	// TODO
+	return bytes;
+}
+
+size_t jaln_publisher_failed_digest_handler(char *ptr, size_t size, size_t nmemb, void *user_data)
+{
+	struct jaln_response_header_info *info = (struct jaln_response_header_info *) user_data;
+	const size_t bytes = size * nmemb;
+	printf("In failed digest handler: %s\n", ptr);
+	// TODO
+	return bytes;
+}
+
 
 jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type)
 {

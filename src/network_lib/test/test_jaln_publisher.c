@@ -47,7 +47,7 @@
 #define SAMPLE_UUID "e25253a3-4986-40b8-8511-56f416cda9b6"
 
 static axlList *calc_dgsts;
-static axlList *peer_dgsts;
+static struct jaln_digest_info *peer_dgst;
 static axlList *dgst_resp_infos;
 static jaln_session *sess;
 static jaln_context *ctx;
@@ -313,7 +313,6 @@ void setup()
 	replace_function(curl_easy_setopt, fake_curl_easy_setopt);
 	replace_function(curl_easy_cleanup, fake_curl_easy_cleanup);
 	calc_dgsts = jaln_digest_info_list_create();
-	peer_dgsts = jaln_digest_info_list_create();
 	dgst_resp_infos = NULL;
 	ctx = jaln_context_create();
 	sess = jaln_session_create();
@@ -339,13 +338,7 @@ void setup()
 	dgst_val = 0xf004;
 	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
 
-	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce4", (uint8_t*)&dgst_val, sizeof(dgst_val)));
-	dgst_val = 0xf003;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce3", (uint8_t*)&dgst_val, sizeof(dgst_val)));
-	dgst_val = 0xf002;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce2", (uint8_t*)&dgst_val, sizeof(dgst_val)));
-	dgst_val = 0xf001;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce1", (uint8_t*)&dgst_val, sizeof(dgst_val)));
+	peer_dgst = jaln_digest_info_create("nonce1", (uint8_t*)&dgst_val, sizeof(dgst_val));
 
 	peer_digest_call_cnt = 0;
 	sync_cnt = 0;
@@ -360,71 +353,48 @@ void teardown()
 	jaln_session_unref(sess);
 
 	axl_list_free(calc_dgsts);
-	axl_list_free(peer_dgsts);
 	restore_function(vortex_frame_get_mime_header);
 }
 
 
 void test_pub_does_not_crash_with_bad_input()
 {
-	axlList *dgst_resp_infos = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(NULL, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	jaln_pub_notify_digests_and_create_digest_response(sess, NULL, peer_dgsts, &dgst_resp_infos);
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, NULL, &dgst_resp_infos);
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, NULL);
+	struct jaln_digest_resp_info *dgst_resp_info = NULL;
+	jaln_pub_notify_digests_and_create_digest_response(NULL, calc_dgsts, peer_dgst, &dgst_resp_info);
+	jaln_pub_notify_digests_and_create_digest_response(sess, NULL, peer_dgst, &dgst_resp_info);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, NULL, &dgst_resp_info);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgst, NULL);
 
-	dgst_resp_infos = (axlList*) 0xbadf00d;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	dgst_resp_infos = NULL;
+	dgst_resp_info = (struct jaln_digest_resp_info *) 0xbadf00d;
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgst, &dgst_resp_info);
+	dgst_resp_info = NULL;
 
 	sess->jaln_ctx = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgst, &dgst_resp_info);
 	sess->jaln_ctx = ctx;
 
 	sess->jaln_ctx->pub_callbacks->peer_digest = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgst, &dgst_resp_info);
 	sess->jaln_ctx->pub_callbacks->peer_digest = peer_digest;
 
 	jaln_publisher_callbacks_destroy(&sess->jaln_ctx->pub_callbacks);
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgst, &dgst_resp_info);
 
 }
 
 void test_pub_notify_digests_works()
 {
-	axlList *dgst_resp_infos = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	assert_not_equals((void*) NULL, dgst_resp_infos);
-	assert_equals(4, peer_digest_call_cnt);
-	assert_equals(0, axl_list_length(calc_dgsts));
-	assert_equals(4, axl_list_length(peer_dgsts));
-	axl_list_free(dgst_resp_infos);
-}
+	struct jaln_digest_resp_info *dgst_resp_info = NULL;
 
-void test_pub_notify_digests_works_when_peer_has_extra_dgts()
-{
-	axlList *dgst_resp_infos = NULL;
-	int dgst_val = 0xf005;
-	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	assert_not_equals((void*) NULL, dgst_resp_infos);
-	assert_equals(5, peer_digest_call_cnt);
-	assert_equals(0, axl_list_length(calc_dgsts));
-	assert_equals(5, axl_list_length(peer_dgsts));
-	axl_list_free(dgst_resp_infos);
-}
+	int dgst_val = 0xf001;
+	struct jaln_digest_info *peer_dgst = jaln_digest_info_create("nonce_1", (uint8_t *)&dgst_val, sizeof(dgst_val));
 
-void test_pub_notify_digests_works_when_peer_has_missing_dgst()
-{
-	axlList *dgst_resp_infos = NULL;
-	int dgst_val = 0xf005;
-	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	assert_not_equals((void*) NULL, dgst_resp_infos);
-	assert_equals(4, peer_digest_call_cnt);
-	assert_equals(1, axl_list_length(calc_dgsts));
-	assert_equals(4, axl_list_length(peer_dgsts));
-	axl_list_free(dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgst, &dgst_resp_info);
+	assert_not_equals((void*) NULL, dgst_resp_info);
+	assert_equals(1, peer_digest_call_cnt);
+
+	jaln_digest_info_destroy(&peer_dgst);
+	jaln_digest_resp_info_destroy(&dgst_resp_info);
 }
 
 void test_pub_handle_sync_works()
