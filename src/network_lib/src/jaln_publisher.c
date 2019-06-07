@@ -653,8 +653,10 @@ size_t jaln_publisher_sync_handler(char *ptr, size_t size, size_t nmemb, void *u
 {
 	struct jaln_response_header_info *info = (struct jaln_response_header_info *) user_data;
 	const size_t bytes = size * nmemb;
-	printf("In sync handler: %s\n", ptr);
-	// TODO
+	enum jal_status ret = jaln_parse_sync_header(ptr, bytes, info);
+	if (ret != JAL_OK) {
+		return 0;
+	}
 	return bytes;
 }
 
@@ -662,8 +664,10 @@ size_t jaln_publisher_failed_digest_handler(char *ptr, size_t size, size_t nmemb
 {
 	struct jaln_response_header_info *info = (struct jaln_response_header_info *) user_data;
 	const size_t bytes = size * nmemb;
-	printf("In failed digest handler: %s\n", ptr);
-	// TODO
+	enum jal_status ret = jaln_parse_record_failure_header(ptr, bytes, info);
+	if (ret != JAL_OK) {
+		return 0;
+	}
 	return bytes;
 }
 

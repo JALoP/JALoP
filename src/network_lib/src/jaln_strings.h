@@ -91,9 +91,15 @@
 #define JALN_MSG_SUBSCRIBE "subscribe"
 #define JALN_MSG_PUBLISH_LIVE "live"
 #define JALN_MSG_PUBLISH_ARCHIVE "archival"
+#define JALN_MSG_RECORD_FAILURE "record-failure"
 #define JALN_MSG_SUBSCRIBE_LIVE "subscribe-live"
 #define JALN_MSG_SUBSCRIBE_ARCHIVE "subscribe-archival"
 #define JALN_MSG_SYNC "sync"
+#define JALN_MSG_SYNC_FAILURE "sync-failure"
+
+// strings for error messages
+#define JALN_ERROR_MSG_INVALID_DIGEST "JAL-Invalid-Digest"
+#define JALN_ERROR_MSG_INVALID_DIGEST_STATUS "JAL-Invalid-Digest-Status"
 
 #define JALN_DIGEST_CHALLENGE_OFF "off"
 #define JALN_DIGEST_CHALLENGE_ON "on"

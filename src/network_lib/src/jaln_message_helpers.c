@@ -221,6 +221,44 @@ enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header
 
 }
 
+enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *info) {
+	if (axl_true == info->message_type_valid
+	    && info->last_message
+	    && !strcmp(JALN_MSG_SYNC, info->last_message)
+	    && axl_true == info->id_valid
+	    && 0 == info->error_cnt
+	) {
+		return JAL_OK;
+	}
+	return JAL_E_INVAL;
+}
+
+enum jal_status jaln_verify_sync_failure_headers(struct jaln_response_header_info *info) {
+	if (axl_true == info->message_type_valid
+	    && info->last_message
+	    && !strcmp(JALN_MSG_SYNC_FAILURE, info->last_message)
+	    && axl_true == info->id_valid
+	    && 0 < info->error_cnt // Sync failure is an error condition, so an error message is expected
+	) {
+		return JAL_OK;
+	}
+	return JAL_E_INVAL;
+}
+
+enum jal_status jaln_verify_failed_digest_headers(struct jaln_response_header_info *info) {
+	if (axl_true == info->message_type_valid
+	    && axl_true == info->id_valid
+	    && 0 < info->error_cnt
+	    && info->error_list
+	    && *info->error_list
+	    && (!strcmp(JALN_ERROR_MSG_INVALID_DIGEST, *(info->error_list))
+	    || !strcmp(JALN_ERROR_MSG_INVALID_DIGEST_STATUS, *(info->error_list)))
+	) {
+		return JAL_OK;
+	}
+	return JAL_E_INVAL;
+}
+
 static int jaln_header_name_match(const char *content, const size_t content_len,
 		const char *name, const size_t name_len)
 {
@@ -495,6 +533,82 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 	}
 
 	return rc; //Extra unmatched headers are ignored
+}
+
+enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_response_header_info *header_info)
+{
+	jaln_session *sess = header_info->sess;
+	enum jal_status rc = JAL_OK;
+
+	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
+		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_SYNC));
+		// TODO: Record failure messages
+		if (JAL_OK == rc) {
+			header_info->last_message = JALN_MSG_SYNC;
+			header_info->message_type_valid = axl_true;
+		} else {
+			rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_SYNC_FAILURE));
+			if (JAL_OK == rc) {
+				header_info->last_message = JALN_MSG_SYNC_FAILURE;
+				header_info->message_type_valid = axl_true;
+			} else {
+				header_info->last_message = NULL;
+				jaln_session_set_errored(sess);
+			}
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
+		const size_t name_len = strlen(JALN_HDRS_ID);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
+		if (JAL_OK == rc) {
+			header_info->id_valid = axl_true;
+		} else {
+			jaln_session_set_errored(sess);
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ERROR_MESSAGE))) {
+		// Valid for sync-failure.  Not expected on sync
+		jaln_parse_error_messages(content, len, header_info);
+	}
+
+	return rc;
+}
+
+enum jal_status jaln_parse_record_failure_header(char *content, size_t len, struct jaln_response_header_info *header_info)
+{
+	jaln_session *sess = header_info->sess;
+	enum jal_status rc = JAL_OK;
+
+	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
+		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE));
+		if (JAL_OK == rc) {
+			sess->last_message = JALN_MSG_RECORD_FAILURE;
+			header_info->message_type_valid = axl_true;
+		} else {
+			sess->last_message = NULL;
+			jaln_session_set_errored(sess);
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
+		const size_t name_len = strlen(JALN_HDRS_ID);
+		const char *value_start = content + name_len + 1;
+		const size_t value_len = len - name_len - 1;
+		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
+		if (JAL_OK == rc) {
+			header_info->id_valid = axl_true;
+		} else {
+			jaln_session_set_errored(sess);
+		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ERROR_MESSAGE))) {
+		jaln_parse_error_messages(content, len, header_info);
+	}
+
+	return rc;
 }
 
 #undef JALN_STR_W_LEN

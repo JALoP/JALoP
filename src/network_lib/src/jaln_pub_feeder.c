@@ -252,10 +252,31 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	res = curl_easy_perform(ctx);
 
-	if (res != CURLE_OK) {
+	enum jal_status rc = JAL_OK;
+
+	if (JALN_DIGEST_STATUS_CONFIRMED == resp_info->status) {
+		if (!info->last_message) {
+			rc = JAL_E_INVAL;
+		}
+		else if (!strcmp(info->last_message, JALN_MSG_SYNC)) {
+			rc = jaln_verify_sync_headers(info);
+		} else if (!strcmp(info->last_message, JALN_MSG_SYNC_FAILURE)) {
+			rc = jaln_verify_sync_failure_headers(info);
+		} else {
+			rc = JAL_E_INVAL;
+		}
+	} else {
+		rc = jaln_verify_failed_digest_headers(info);
+	}
+
+	if (res != CURLE_OK || rc != JAL_OK) {
 		printf("Failed digest resp: %d, %s\n", res, buf); // TODO: Remove
 		jaln_session_set_errored(sess);
 		return NULL;
+	}
+
+	if (!strcmp(info->last_message, JALN_MSG_SYNC)) {
+		sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, sess->mode, info->expected_nonce, NULL, sess->jaln_ctx->user_data);
 	}
 
 	curl_slist_free_all(headers);

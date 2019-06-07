@@ -994,6 +994,68 @@ void test_verify_init_ack_headers()
 	info->sess->id = NULL;
 }
 
+void test_verify_sync_headers()
+{
+	enum jal_status rc = jaln_verify_sync_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->message_type_valid = axl_true;
+	rc = jaln_verify_sync_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->last_message = JALN_MSG_SYNC;
+	rc = jaln_verify_sync_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->id_valid = axl_true;
+	rc = jaln_verify_sync_headers(info);
+	assert_equals(JAL_OK, rc);
+
+}
+
+void test_verify_sync_failure_headers()
+{
+	enum jal_status rc = jaln_verify_sync_failure_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->message_type_valid = axl_true;
+	rc = jaln_verify_sync_failure_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->last_message = JALN_MSG_SYNC_FAILURE;
+	rc = jaln_verify_sync_failure_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->id_valid = axl_true;
+	rc = jaln_verify_sync_failure_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->error_cnt = 1;
+	rc = jaln_verify_sync_failure_headers(info);
+	assert_equals(JAL_OK, rc);
+}
+
+void test_verify_failed_digest_headers()
+{
+	enum jal_status rc = jaln_verify_failed_digest_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->message_type_valid = axl_true;
+	rc = jaln_verify_failed_digest_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->id_valid = axl_true;
+	rc = jaln_verify_failed_digest_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->error_cnt = 1;
+	info->error_list = jal_malloc(sizeof(char*));
+	info->error_list[0] = jal_strdup(JALN_ERROR_MSG_INVALID_DIGEST);
+	rc = jaln_verify_failed_digest_headers(info);
+	assert_equals(JAL_OK, rc);
+
+}
+
 void test_create_journal_missing_msg()
 {
 	struct curl_slist *headers = NULL;

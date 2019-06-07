@@ -43,6 +43,7 @@ struct jaln_response_header_info {
 	jaln_session *sess;
 	axl_bool content_type_valid;
 	axl_bool message_type_valid;
+	char *last_message;
 	axl_bool version_valid;
 	axl_bool id_valid;
 	uint8_t *peer_dgst;
@@ -130,6 +131,33 @@ enum jal_status jaln_verify_init_ack_headers(struct jaln_response_header_info *h
  * @return JAL_OK if all headers were present or an error code
  */
 enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header_info *header_info);
+
+/**
+ * Verify that a header_info struct has all the required fields for a sync message
+ *
+ * @param header_info Information from parsing initialize-ack headers
+ *
+ * @return JAL_OK if all headers were present or an error code
+ */
+enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *header_info);
+
+/**
+ * Verify that a header_info struct has all the required fields for a sync-failure message
+ *
+ * @param header_info Information from parsing initialize-ack headers
+ *
+ * @return JAL_OK if all headers were present or an error code
+ */
+enum jal_status jaln_verify_sync_failure_headers(struct jaln_response_header_info *header_info);
+
+/**
+ * Verify that a header_info struct has all the required fields for an record-failure digest-failed message
+ *
+ * @param header_info Information from parsing initialize-ack headers
+ *
+ * @return JAL_OK if all headers were present or an error code
+ */
+enum jal_status jaln_verify_failed_digest_headers(struct jaln_response_header_info *header_info);
 
 /**
  * Parse a single header on a JALoP message
@@ -258,6 +286,28 @@ enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, j
  * @return JAL_OK on success or an error code
  */
 enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, struct jaln_response_header_info *info);
+
+/**
+ * Parse a sync message
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param info A struct for storing info about the headers parsed
+ *
+ * @return JAL_OK on success or an error code
+ */
+enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_response_header_info *info);
+
+/**
+ * Parse a record-failure message
+ *
+ * @param content The data in the header
+ * @param len The length of the data
+ * @param info A struct for storing info about the headers parsed
+ *
+ * @return JAL_OK on success or an error code
+ */
+enum jal_status jaln_parse_record_failure_header(char *content, size_t len, struct jaln_response_header_info *info);
 
 /**
  * Parse errors
