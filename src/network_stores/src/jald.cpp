@@ -707,7 +707,7 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 
 	free(data);
 
-	*ret = pub_send_records_feeder(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_journal);
+	*ret = pub_send_records_feeder(sess, ch_info, &journal_timestamp, hash, sub_lock, &jaln_send_journal);
 
 	free(journal_timestamp);
 
