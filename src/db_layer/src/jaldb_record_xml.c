@@ -130,6 +130,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 
 	xmlAttrPtr attr = xmlHasProp(root_node, (xmlChar *)JALDB_JID);
 	if (!attr || !attr->children) {
+		xmlFreeDoc(xmlDoc);
 		return JALDB_E_INVAL;
 	}
 	xmlAddID(NULL, xmlDoc, (xmlChar *)uuid_str_with_prefix, attr);
@@ -166,6 +167,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		if (payload_dgst) {
 			ret = jal_create_reference_elem(JAL_PAYLOAD_URI, payload_algorithm_uri, payload_dgst, payload_dgst_len, xmlDoc, &reference_elem);
 			if (ret != JAL_OK) {
+				xmlFreeDoc(xmlDoc);
 				return ret;
 			}
 
@@ -175,6 +177,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 			reference_elem = NULL;
 			ret = jal_create_reference_elem(JAL_APP_META_URI, app_meta_algorithm_uri, app_meta_dgst, app_meta_dgst_len, xmlDoc, &reference_elem);
 			if (ret != JAL_OK) {
+				xmlFreeDoc(xmlDoc);
 				return ret;
 			}
 
@@ -189,6 +192,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 	if (signing_key) {
 		ret = jal_add_signature_block(signing_key, NULL, xmlDoc, last_node, uuid_str_with_prefix);
 		if (ret != JAL_OK) {
+			xmlFreeDoc(xmlDoc);
 			return ret;
 		}
 	}
@@ -196,9 +200,11 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 	ret = jal_xml_output(xmlDoc, &res, dsize);
 	if (ret != JAL_OK) {
 		free(res);
+		xmlFreeDoc(xmlDoc);
 		return ret;
 	}
 	*doc = (char *) res;
+	xmlFreeDoc(xmlDoc);
 	return ret;
 }
 
