@@ -46,6 +46,7 @@
 #include <xmlsec/openssl/evp.h>
 #include <xmlsec/x509.h>
 #include <xmlsec/openssl/app.h>
+#include <pthread.h>
 
 #include <openssl/evp.h>
 #include <openssl/pem.h>
@@ -330,6 +331,15 @@ xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 	return child;
 }
 
+/*
+ * xmlSecDSigCtxSign() is not thread safe under load. MT application was calling
+ * jalp_journal_path(), with per-thread jalp_context*, when it crashed down in
+ * the xmlSecDSigCtxSign() call in jal_add_signature_block(). The easiest fix
+ * is to synchronize the sign call with a mutex. This was observed on RHEL 6.9
+ * on 6/4/2019.
+ */
+static pthread_mutex_t xmlsec_sign_lock = PTHREAD_MUTEX_INITIALIZER;
+
 enum jal_status jal_add_signature_block(
 		RSA *rsa,
 		X509 *x509,
@@ -386,7 +396,7 @@ enum jal_status jal_add_signature_block(
 						NULL, // id
 						(xmlChar *)reference_uri, // uri
 						NULL);// type
-	xmlFree(reference_uri);
+	free(reference_uri);
 	if (!refNode) {
 		ret = JAL_E_INVAL;
 		goto done;
@@ -458,9 +468,12 @@ enum jal_status jal_add_signature_block(
 		BIO_free(bio);
 	}
 
+	pthread_mutex_lock(&xmlsec_sign_lock);
 	if (0 > xmlSecDSigCtxSign(dsigCtx, signNode)) {
+		pthread_mutex_unlock(&xmlsec_sign_lock);
 		goto done;
 	}
+	pthread_mutex_unlock(&xmlsec_sign_lock);
 
 	ret = JAL_OK;
 done:
