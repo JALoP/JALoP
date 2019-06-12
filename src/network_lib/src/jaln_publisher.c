@@ -462,7 +462,6 @@ enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char 
 		goto err_out;
 	}
 	curl = session->curl_ctx;
-	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
 
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, jaln_noop_write);

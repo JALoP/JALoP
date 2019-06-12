@@ -543,7 +543,7 @@ enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_re
 	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_SYNC));
 		// TODO: Record failure messages
 		if (JAL_OK == rc) {
@@ -562,7 +562,7 @@ enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_re
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
 		const size_t name_len = strlen(JALN_HDRS_ID);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
 		if (JAL_OK == rc) {
 			header_info->id_valid = axl_true;
@@ -585,7 +585,7 @@ enum jal_status jaln_parse_record_failure_header(char *content, size_t len, stru
 	if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE));
 		if (JAL_OK == rc) {
 			sess->last_message = JALN_MSG_RECORD_FAILURE;
@@ -597,7 +597,7 @@ enum jal_status jaln_parse_record_failure_header(char *content, size_t len, stru
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
 		const size_t name_len = strlen(JALN_HDRS_ID);
 		const char *value_start = content + name_len + 1;
-		const size_t value_len = len - name_len - 1;
+		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
 		if (JAL_OK == rc) {
 			header_info->id_valid = axl_true;
@@ -1050,7 +1050,6 @@ struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *r
 			rec_info->sys_meta_len, rec_info->app_meta_len,
 			length_header, rec_info->payload_len);
 	struct curl_slist *headers = curl_slist_append(NULL, header_str);
-	//headers = curl_slist_append(headers, "Expect:");
 	free(header_str);
 	if (headers && rec_info->type == JALN_RTYPE_AUDIT) {
 		headers = curl_slist_append(headers, AUDIT_FORMAT);

@@ -187,20 +187,18 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 {
 	jaln_session *sess = (jaln_session*) user_data;
 
-	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
-	info->expected_nonce = jal_strdup(sess->pub_data->nonce);
-
 	vortex_mutex_lock(&sess->wait_lock);
 	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
 	vortex_mutex_unlock(&sess->wait_lock);
 	if (!ctx) {
 		// Error
-		jaln_session_set_errored(sess);;
-		jaln_response_header_info_destroy(&info);
+		jaln_session_set_errored(sess);
 		return NULL;
 	}
 
-	curl_easy_setopt(ctx, CURLOPT_POST, 1L);
+	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
+	info->expected_nonce = jal_strdup(sess->pub_data->nonce);
+
 	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE, sess->pub_data->vortex_feeder_sz);
 
 	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
@@ -222,6 +220,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	if (res != CURLE_OK || sess->errored || JAL_OK != jaln_verify_digest_challenge_headers(info)) {
 		printf("Failed: %d: %s\n", res, buf); // TODO: Printfs in libraries are bad.  Remove me once the library is more stable
 		jaln_session_set_errored(sess);
+		jaln_response_header_info_destroy(&info);
 		return NULL;
 	}
 
@@ -238,6 +237,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	struct curl_slist *headers = NULL;
 	headers = curl_slist_append(headers, resp_header);
+	free(resp_header);
 
 	curl_easy_setopt(ctx, CURLOPT_HTTPHEADER, headers);
 
@@ -260,6 +260,10 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 		}
 		else if (!strcmp(info->last_message, JALN_MSG_SYNC)) {
 			rc = jaln_verify_sync_headers(info);
+			if (rc == JAL_OK) {
+				sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type,\
+						sess->mode, info->expected_nonce, NULL, sess->jaln_ctx->user_data);
+			}
 		} else if (!strcmp(info->last_message, JALN_MSG_SYNC_FAILURE)) {
 			rc = jaln_verify_sync_failure_headers(info);
 		} else {
@@ -270,13 +274,8 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	}
 
 	if (res != CURLE_OK || rc != JAL_OK) {
-		printf("Failed digest resp: %d, %s\n", res, buf); // TODO: Remove
+		printf("Failed digest resp: %d, %s\n", res? (int)res : rc, res? buf : "JAL_E_INVAL"); // TODO: Remove
 		jaln_session_set_errored(sess);
-		return NULL;
-	}
-
-	if (!strcmp(info->last_message, JALN_MSG_SYNC)) {
-		sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, sess->mode, info->expected_nonce, NULL, sess->jaln_ctx->user_data);
 	}
 
 	curl_slist_free_all(headers);
@@ -297,6 +296,7 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	struct jaln_pub_data *pd = sess->pub_data;
 
 	free(pd->nonce);
+	curl_slist_free_all(pd->headers);
 
 	pd->nonce = NULL;
 	pd->vortex_feeder_sz = 0;
