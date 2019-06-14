@@ -297,6 +297,7 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 
 	free(pd->nonce);
 	curl_slist_free_all(pd->headers);
+	pd->headers = NULL;
 
 	pd->nonce = NULL;
 	pd->vortex_feeder_sz = 0;

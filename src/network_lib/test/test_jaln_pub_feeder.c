@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <test-dept.h>
 #include <vortex.h>
+#include <curl/curl.h>
 
 #include "jal_alloc.h"
 
@@ -215,7 +216,9 @@ void setup()
 	sess->pub_data->sys_meta_sz = strlen(SYS_META);
 	sess->pub_data->app_meta_sz = strlen(APP_META);
 	sess->pub_data->payload_sz = strlen(PAYLOAD);
-	sess->pub_data->headers = (uint8_t *) jal_strdup(HEADERS);
+	struct curl_slist *headers = NULL;
+	headers = curl_slist_append(headers, HEADERS);
+	sess->pub_data->headers = (uint8_t *) headers;
 	sess->pub_data->sys_meta = (uint8_t *) jal_strdup(SYS_META);
 	sess->pub_data->app_meta = (uint8_t *) jal_strdup(APP_META);
 	sess->pub_data->payload = (uint8_t *) jal_strdup(PAYLOAD);
