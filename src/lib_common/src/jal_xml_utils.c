@@ -334,11 +334,9 @@ xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 }
 
 /*
- * xmlSecDSigCtxSign() is not thread safe under load. MT application was calling
- * jalp_journal_path(), with per-thread jalp_context*, when it crashed down in
- * the xmlSecDSigCtxSign() call in jal_add_signature_block(). The easiest fix
- * is to synchronize the sign call with a mutex. This was observed on RHEL 6.9
- * on 6/4/2019.
+ * xmlSecDSigCtxSign() is not documented as not being threadsafe, but a user
+ * observed it crashing under load.  Wrapping it in a mutex seems to address
+ * this issue.
  */
 static pthread_mutex_t xmlsec_sign_lock = PTHREAD_MUTEX_INITIALIZER;
 
