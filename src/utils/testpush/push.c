@@ -274,6 +274,7 @@ void notify_digest(
 		ch_info, type, nonce, digest, size, user_data);
 	char *b64 = jal_base64_enc(digest, size);
 	DEBUG_LOG("dgst: %s\n", b64);
+	free(b64);
 
 }
 void notify_peer_digest(

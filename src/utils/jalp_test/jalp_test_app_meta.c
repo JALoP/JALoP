@@ -523,6 +523,8 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 	int count = 0;
 	uint8_t *iv_buf = NULL;
 	uint8_t *key_buf = NULL;
+	char *xml = NULL;
+	char *uri = NULL;
 	if (transforms) {
 		count = config_setting_length(transforms);
 	}
@@ -534,11 +536,9 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 		}
 		int enum_transform_type = get_transform_type(transform_type);
 		free(transform_type);
-		char *xml = NULL;
 		if (-1 == jalptest_config_lookup_string(tmp_transform, "xml", &xml, OPTIONAL)) {
 			goto err_transform;
 		}
-		char *uri = NULL;
 		if (-1 == jalptest_config_lookup_string(tmp_transform, "uri", &uri, OPTIONAL)) {
 			goto err_transform;
 		}
@@ -646,7 +646,9 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 			*jalp_transforms = tmp_jalp_transform;
 		}
 		free(xml);
+		xml = NULL;
 		free(uri);
+		uri = NULL;
 	}
 
 	return 0;
@@ -654,6 +656,8 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 err_transform:
 	free(iv_buf);
 	free(key_buf);
+	free(xml);
+	free(uri);
 	return -1;
 }
 

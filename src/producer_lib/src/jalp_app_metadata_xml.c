@@ -142,7 +142,9 @@ enum jal_status jalp_app_metadata_to_elem(
 	xmlSetProp(app_meta_elem, (xmlChar *)JID, xml_jid);
 	xmlAttrPtr attr = xmlHasProp(app_meta_elem, (xmlChar *)JID);
 	if (!attr || !attr->children) {
-		return JAL_E_INVAL;
+		free(ncname_jid);
+		ret = JAL_E_INVAL;
+		goto err_out;
 	}
 	xmlAddID(NULL, doc, (xmlChar *)xml_jid, attr);
 	free(ncname_jid);

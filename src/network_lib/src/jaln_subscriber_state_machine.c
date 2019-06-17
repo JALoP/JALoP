@@ -87,7 +87,7 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 
 	session->sub_data->sm->nonce = jal_strdup(nonce);
 
-	uint64_t sys_meta_size;
+	uint64_t sys_meta_size = 0;
 	int err = jaln_ascii_to_uint64(sys_meta_sz_str, &sys_meta_size);
 	session->sub_data->sm->sys_meta_sz = sys_meta_size;
 

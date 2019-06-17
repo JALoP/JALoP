@@ -291,6 +291,7 @@ void pub_notify_digest(
 		ch_info, type, nonce, digest, size, user_data);
 	char *b64 = jal_base64_enc(digest, size);
 	DEBUG_LOG("dgst: %s\n", b64);
+	free(b64);
 }
 
 void pub_peer_digest(
@@ -529,6 +530,7 @@ int main()
 	DEBUG_LOG("register pub cbs: %d\n", err);
 	err = jaln_listen(net_ctx, "0.0.0.0", "55555", NULL);
 	err = jaln_listener_wait(net_ctx);
+	jaln_context_destroy(&net_ctx);
 	return 0;
 }
 

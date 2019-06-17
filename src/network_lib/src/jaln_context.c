@@ -101,6 +101,11 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	if ((*jaln_ctx)->sessions_by_conn) {
 		axl_hash_free((*jaln_ctx)->sessions_by_conn);
 	}
+
+	free((*jaln_ctx)->peer_certs);
+	free((*jaln_ctx)->public_cert);
+	free((*jaln_ctx)->private_key);
+
 	free(*jaln_ctx);
 	*jaln_ctx = NULL;
 

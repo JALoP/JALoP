@@ -89,6 +89,7 @@ int main(int argc, char **argv)
 	int send_payload = (stdin_payload || (payload_path));
 
 	int ret;
+	int rc = -1;
 	enum jal_status jalp_ret;
 
 	char *hostname = NULL;
@@ -198,13 +199,13 @@ int main(int argc, char **argv)
 			break;
 		default:
 			//control should never reach here
-			exit(-1);
+			goto err_out;
 		}
 	}
 
+	rc = 0;
 
-	/* for testing this util */
-
+err_out:
 	if(payload_buf && !stdin_payload) {
 		munmap(payload_buf, payload_size);
 	}
@@ -212,16 +213,15 @@ int main(int argc, char **argv)
 	jalp_context_destroy(&ctx);
 	jal_digest_ctx_destroy(&digest_ctx);
 	jalp_shutdown();
+	free(hostname);
+	free(app_meta_path);
+	free(appname);
 
 	if(payload_fd != STDIN_FILENO) {
 		close(payload_fd);
 	}
 
-	return 0;
-
-err_out:
-	return -1;
-
+	return rc;
 }
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,

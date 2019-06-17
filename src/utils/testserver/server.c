@@ -438,6 +438,7 @@ int main(int argc, char **argv)
 	my_errno = errno;
 	if (-1 == err) {
 		printf("failed to bind %s: %s\n", sock_path, strerror(my_errno));
+		close(sock);
 		return -1;
 	}
 
@@ -446,6 +447,7 @@ int main(int argc, char **argv)
 
 	if (-1 == err) {
 		printf("failed to listen, %s\n", strerror(my_errno));
+		close(sock);
 		return -1;
 	}
 
@@ -457,6 +459,7 @@ int main(int argc, char **argv)
 		if (-1 != fd) {
 			int child = fork();
 			if (0 == child) { // child process
+				close(sock);
 				return handler(fd);
 			} else { // parent
 				close(fd);

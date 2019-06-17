@@ -240,11 +240,10 @@ char *jaldb_gen_timestamp()
 
 	struct timeval *tv = jal_malloc(sizeof(struct timeval));
 
-	if (gettimeofday(tv,NULL)) {
-		return NULL;
-	}
-
-	if (!gmtime_r(&tv->tv_sec, tm)) {
+	if (gettimeofday(tv,NULL) || !gmtime_r(&tv->tv_sec, tm)) {
+		free(ftime);
+		free(tm);
+		free(tv);
 		return NULL;
 	}
 

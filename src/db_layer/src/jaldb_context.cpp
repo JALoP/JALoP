@@ -1704,14 +1704,14 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 	DBT pkey;
 	DBT val;
 
+	memset(&skey, 0, sizeof(skey));
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&val, 0, sizeof(val));
+
 	if (!ctx) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-
-	memset(&skey, 0, sizeof(skey));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
 
 	switch(type) {
 	case JALDB_RTYPE_JOURNAL:
@@ -1802,7 +1802,7 @@ enum jaldb_status jaldb_next_unsynced_record(
 	memset(&pkey, 0, sizeof(pkey));
 	memset(&val, 0, sizeof(val));
 
-	if (!ctx || !network_nonce || *network_nonce || *rec_out || !rec_out) {
+	if (!ctx || !network_nonce || *network_nonce || !rec_out || *rec_out) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}

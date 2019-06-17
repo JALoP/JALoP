@@ -320,11 +320,8 @@ enum jaldb_status pub_get_next_record(
 	}
 	if ((ctx->rec) && (JALDB_RTYPE_JOURNAL == db_type)) {
 		/* Journal resume, so we already have a record */
+		// Make a copy to match behavior of jaldb_next_*_record functions
 		*nonce = jal_strdup(ctx->rec->network_nonce);
-		if (!*nonce) {
-			ret = JALDB_E_NO_MEM;
-			goto out;
-		}
 		ret = JALDB_OK;
 	} else {
 		while (JALDB_E_NOT_FOUND == ret) {
@@ -367,7 +364,6 @@ enum jaldb_status pub_get_next_record(
 		// TODO: Handle for on disk (once the LS is updated to support it). i.e. memmap the file or whatever
 	} else {
 		*sys_meta_buf = rec->sys_meta->payload;
-		rec->sys_meta->payload = NULL;
 	}
 
 	*app_meta_buf = NULL;
@@ -378,7 +374,6 @@ enum jaldb_status pub_get_next_record(
 			// TODO: Handle this for app meta
 		} else {
 			*app_meta_buf = rec->app_meta->payload;
-			rec->app_meta->payload = NULL;
 		}
 	}
 
@@ -393,10 +388,9 @@ enum jaldb_status pub_get_next_record(
 				goto out;
 			}
 		} else {
-			*payload_buf = ctx->rec->payload->payload;
+			*payload_buf = rec->payload->payload;
 		}
 	}
-	ctx->rec = rec;
 
 	ret = JALDB_OK;
 out:
@@ -474,6 +468,9 @@ enum jal_status pub_send_records_feeder(
 	feeder.get_bytes = pub_get_bytes;
 
 	do {
+		// nonce will be a new copy that the caller must free
+		// The buffers will point to the record stored within the session
+		// The record is cleaned up by pub_on_record_complete
 		db_ret = pub_get_next_record(sess,
 					ch_info,
 					&nonce,
@@ -500,6 +497,7 @@ enum jal_status pub_send_records_feeder(
 			ret = JAL_E_INVAL;
 			goto out;
 		}
+
 		ret = send(sess, nonce, sys_meta_buf, sys_meta_len,
 				app_meta_buf, app_meta_len, payload_len, &feeder);
 		if (JAL_OK != ret) {
@@ -520,15 +518,14 @@ enum jal_status pub_send_records_feeder(
 				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
 			}
 		}
+
 		free(nonce);
 		nonce = NULL;
-		free(sys_meta_buf);
-		free(app_meta_buf);
-		free(payload_buf);
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
 out:
+	free(nonce);
 	return ret;
 }
 
@@ -606,6 +603,9 @@ enum jal_status pub_send_records(
 	pthread_mutex_unlock(sub_lock);
 
 	do {
+		// nonce will be a new copy that the caller must free
+		// The buffers will point to the record stored within the session
+		// The record is cleaned up by pub_on_record_complete
 		db_ret = pub_get_next_record(sess,
 					ch_info,
 					&nonce,
@@ -653,14 +653,14 @@ enum jal_status pub_send_records(
 				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
 			}
 		}
+
 		free(nonce);
 		nonce = NULL;
-		free(sys_meta_buf);
-		free(app_meta_buf);
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
 out:
+	free(nonce);
 	return ret;
 }
 
@@ -1002,6 +1002,8 @@ void pub_peer_digest(
 		char *local_b64 = jal_base64_enc(local_digest, local_size);
 		char *peer_b64 = jal_base64_enc(peer_digest, peer_size);
 		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Digests do not match for %s. Local[%s] Peer[%s]",nonce, local_b64, peer_b64);
+		free(local_b64);
+		free(peer_b64);
 		goto error;
 	}
 	// Digest match

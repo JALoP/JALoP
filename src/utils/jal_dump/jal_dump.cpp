@@ -355,13 +355,13 @@ out:
 	free(sysstr);
 	free(appstr);
 	free(datstr);
-	if ((0 < fd_sys) && (-1 == close(fd_sys))) {
+	if ((0 <= fd_sys) && (-1 == close(fd_sys))) {
 		perror("Error closing system metadata");
 	}
-	if ((0 < fd_app) && (-1 == close(fd_app))) {
+	if ((0 <= fd_app) && (-1 == close(fd_app))) {
 		perror("Error closing system metadata");
 	}
-	if ((0 < fd_dat) && (-1 == close(fd_dat))) {
+	if ((0 <= fd_dat) && (-1 == close(fd_dat))) {
 		perror("Error closing system metadata");
 	}
 
@@ -652,6 +652,7 @@ static void print_uuids(jaldb_context *ctx, char type)
 	return;
 err_out:
 	printf("Failed to retrieve UUIDs from the database");
+	delete(doc_list);
 }
 
 static void print_list_stdout(const list<string> &p_list)
