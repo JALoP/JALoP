@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 	jaldb_context *db_ctx = NULL;
 	struct jalls_context *jalls_ctx = NULL;
 	enum jal_status jal_err = JAL_E_INVAL;
+	int sock = -1;
 
 	if (0 != jalls_init()) {
 		goto err_out;
@@ -180,7 +181,6 @@ int main(int argc, char **argv) {
 
 	//check if the socket file already exists
 	struct stat sock_stat;
-	int sock = -1;
 	struct sockaddr_un sock_addr;
 	memset(&sock_addr, 0, sizeof(sock_addr));
 	size_t socket_path_len = strlen(jalls_ctx->socket);
@@ -220,6 +220,7 @@ int main(int argc, char **argv) {
 	err = bind(sock, (struct sockaddr*) &sock_addr, sizeof(sock_addr));
 	if (-1 == err) {
 		fprintf(stderr, "failed to bind %s: %s\n", jalls_ctx->socket, strerror(errno));
+		close(sock);
 		return -1;
 	}
 
@@ -231,6 +232,7 @@ int main(int argc, char **argv) {
 	err = listen(sock, JALLS_LISTEN_BACKLOG);
 	if (-1 == err) {
 		fprintf(stderr, "failed to listen, %s\n", strerror(errno));
+		close(sock);
 		return -1;
 	}
 
@@ -286,6 +288,7 @@ err_out:
 	jalls_shutdown();
 
 	jaldb_context_destroy(&db_ctx);
+	close(sock);
 
 	exit(-1);
 
@@ -372,6 +375,7 @@ static void delete_socket(const char *p_socket_path, int p_debug)
 			fprintf(stderr,
 				"Error deleting socket file: %s\n",
 				buf);
+			free(buf);
 		}
 	}
 }

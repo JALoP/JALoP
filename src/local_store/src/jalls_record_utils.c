@@ -107,6 +107,7 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 	uuid_copy(rec->host_uuid, thread_ctx->ctx->system_uuid);
 	uuid_generate(rec->uuid);
 	if (rec->username == NULL) {
+		jaldb_destroy_record(&rec);
 		return -1;	
 	}
 

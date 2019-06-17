@@ -337,6 +337,9 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	pd->headers = NULL;
 
 	pd->nonce = NULL;
+	pd->sys_meta = NULL;
+	pd->app_meta = NULL;
+	pd->payload = NULL;
 	pd->vortex_feeder_sz = 0;
 	pd->headers_off = 0;
 	pd->sys_meta_off = 0;
@@ -352,22 +355,22 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	pd->finished_payload = axl_false;
 	pd->finished_payload_break = axl_false;
 
-	if (pd->dgst_inst) {
-		sess->dgst->destroy(pd->dgst_inst);
-	}
-
-	pd->dgst_inst = sess->dgst->create();
-
 	if (!pd->dgst_inst) {
-		goto err_out;
+		pd->dgst_inst = sess->dgst->create();
+		if (!pd->dgst_inst) {
+			goto err_out;
+		}
 	}
 
 	if (JAL_OK != sess->dgst->init(pd->dgst_inst)) {
 		goto err_out;
 	}
 
-	free(pd->dgst);
-	pd->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
+	if (pd->dgst) {
+		memset(pd->dgst, '\0', sess->dgst->len);
+	} else {
+		pd->dgst = (uint8_t*)jal_calloc(1, sess->dgst->len);
+	}
 
 	return;
 err_out:

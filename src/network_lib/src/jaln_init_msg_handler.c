@@ -105,6 +105,8 @@ enum jal_status jaln_process_init(VortexFrame *frame, struct jaln_init_info **in
 				token = strtok_r(NULL, ",", &cookie)) {
 			axl_stream_trim(token);
 			if (0 == strlen(token)) {
+				free(cpy);
+				cpy = NULL;
 				goto err_out;
 			}
 			axl_list_append(info->digest_algs, jal_strdup(token));

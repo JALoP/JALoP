@@ -141,6 +141,7 @@ int sub_notify_digest(
 		ch_info, type, nonce, digest, len, user_data);
 	char *b64 = jal_base64_enc(digest, len);
 	DEBUG_LOG("dgst: %s\n", b64);
+	free(b64);
 	return 0;
 }
 

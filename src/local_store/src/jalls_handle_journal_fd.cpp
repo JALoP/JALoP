@@ -297,5 +297,9 @@ err_out:
 	}
 	free(digest);
 	jaldb_destroy_record(&rec);
+	free(app_meta_digest);
+	free(app_meta_alg);
+	free(payload_digest);
+	free(payload_alg);
 	return ret;
 }

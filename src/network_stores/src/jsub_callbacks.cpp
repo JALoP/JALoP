@@ -194,6 +194,7 @@ int jsub_get_subscribe_request(
 				DEBUG_LOG("Failed to open journal payload for resume: %s", strerror(errno));
 			}
 			DEBUG_LOG("Opened payload resume file: %d\n", db_payload_fd);
+			free(full_payload_path);
 		}
 		if ((0 != ret) && jsub_debug) {
 			DEBUG_LOG("failed to retrieve a journal resume for host: %s",
