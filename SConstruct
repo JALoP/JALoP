@@ -67,7 +67,6 @@ default_ccflags += ' -Wextra -Wno-unreachable-code -fexceptions'
 default_ccflags += ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE -DHAVE_VA_COPY '
 default_cflags = ' -std=gnu99 '
 
-
 # The debug and release flags are applied to the appropriate environments.
 # This script will build both debug and release version at the same time,
 # common flags should get added to the 'flags' variable. Flags sepcific to a
@@ -77,13 +76,15 @@ extra_debug_ccflags = '-DDEBUG -g'.split()
 profiling_ccflags = '-fprofile-arcs -ftest-coverage'.split()
 profiling_ldflags = profiling_ccflags
 
-stack_protector_ccflags = '-fstack-protector --param=ssp-buffer-size=4'.split()
+stack_protector_ccflags = '-fstack-protector-all -Wstack-protector --param=ssp-buffer-size=4'.split()
+rpath = '/usr/lib64:/lib64'
+harden_ldflags = '-pie -Wl,-z,relro,-z,now '
+extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -fPIC -g -O3'.split()
 
-extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -g -O3'.split()
 debug_env = Environment(ENV=os.environ, tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 		parse_flags= default_ccflags,
 		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
-debug_env['JALOP_VERSION_STR'] = '1.0'
+debug_env['JALOP_VERSION_STR'] = '2.0'
 update_env_with_install_paths(debug_env)
 # There is a quirk in scons where it likes to try and normalize the path. Basically, if you use
 # PrependENVPath, it will scan for duplicate path entries, and keep the the first entry, however
@@ -95,6 +96,7 @@ update_env_with_install_paths(debug_env)
 debug_env.PrependENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
 
 debug_env.Append(CFLAGS=default_cflags)
+debug_env.Prepend(RPATH=rpath)
 
 if os.environ.has_key('LD'):
 	debug_env['LINK'] = os.environ['LD']
@@ -185,7 +187,7 @@ if not (GetOption("clean") or GetOption("help")):
 			print 'Disabling SELinux support';
 		elif not conf.CheckSeLinux():
 			print 'Failed to find SELinux headers on Linux. If you are sure \
-this is want you want, this is OK, re-run scons with the \
+this is what you want, this is OK, re-run scons with the \
 --no-selinux options'
 		else:
 			debug_env['HAVE_SELINUX'] = True
@@ -240,7 +242,7 @@ all_tests = debug_env.Alias('tests')
 release_env = debug_env.Clone()
 
 # add appropriate flags for debug/release
-release_env.Prepend(CCFLAGS=extra_release_ccflags)
+release_env.Prepend(CCFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags)
 debug_env.Prepend(CCFLAGS=extra_debug_ccflags)
 
 if debug_env['CC'] == 'gcc':
