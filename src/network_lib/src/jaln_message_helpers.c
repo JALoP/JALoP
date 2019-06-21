@@ -224,7 +224,7 @@ enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header
 enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *info) {
 	if (axl_true == info->message_type_valid
 	    && info->last_message
-	    && !strcmp(JALN_MSG_SYNC, info->last_message)
+	    && !strcasecmp(JALN_MSG_SYNC, info->last_message)
 	    && axl_true == info->id_valid
 	    && 0 == info->error_cnt
 	) {
@@ -236,7 +236,7 @@ enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *info)
 enum jal_status jaln_verify_sync_failure_headers(struct jaln_response_header_info *info) {
 	if (axl_true == info->message_type_valid
 	    && info->last_message
-	    && !strcmp(JALN_MSG_SYNC_FAILURE, info->last_message)
+	    && !strcasecmp(JALN_MSG_SYNC_FAILURE, info->last_message)
 	    && axl_true == info->id_valid
 	    && 0 < info->error_cnt // Sync failure is an error condition, so an error message is expected
 	) {
@@ -251,8 +251,8 @@ enum jal_status jaln_verify_failed_digest_headers(struct jaln_response_header_in
 	    && 0 < info->error_cnt
 	    && info->error_list
 	    && *info->error_list
-	    && (!strcmp(JALN_ERROR_MSG_INVALID_DIGEST, *(info->error_list))
-	    || !strcmp(JALN_ERROR_MSG_INVALID_DIGEST_STATUS, *(info->error_list)))
+	    && (!strcasecmp(JALN_ERROR_MSG_INVALID_DIGEST, *(info->error_list))
+	    || !strcasecmp(JALN_ERROR_MSG_INVALID_DIGEST_STATUS, *(info->error_list)))
 	) {
 		return JAL_OK;
 	}
@@ -280,7 +280,8 @@ static enum jal_status jaln_header_value_match(const char *content, const size_t
 	if (content_len - offset != value_len) {
 		return JAL_E_INVAL;
 	}
-	return !memcmp(content + offset, value, value_len)? JAL_OK : JAL_E_INVAL;
+	// values are case-insensitive to match behavior of BEEP implementation
+	return !strncasecmp(content + offset, value, value_len)? JAL_OK : JAL_E_INVAL;
 }
 
 #define JALN_STR_W_LEN(_str) _str, strlen(_str)
