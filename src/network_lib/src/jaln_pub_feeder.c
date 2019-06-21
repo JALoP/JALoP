@@ -199,7 +199,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
 	info->expected_nonce = jal_strdup(sess->pub_data->nonce);
 
-	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE, sess->pub_data->vortex_feeder_sz);
+	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE_LARGE, sess->pub_data->vortex_feeder_sz);
 
 	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
 	curl_easy_setopt(ctx, CURLOPT_READDATA, sess);
@@ -359,14 +359,14 @@ void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess)
 	jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, 3 * strlen(JALN_STR_BREAK));
 }
 
-axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add)
+axl_bool jaln_pub_feeder_safe_add_size(int64_t *cnt, const uint64_t to_add)
 {
-	if (INT_MAX < to_add) {
-		*cnt = INT_MAX;
+	if (INT64_MAX < to_add) {
+		*cnt = INT64_MAX;
 		return axl_false;
 	}
-	if ((INT_MAX - to_add) < (uint64_t) *cnt) {
-		*cnt = INT_MAX;
+	if ((INT64_MAX - to_add) < (uint64_t) *cnt) {
+		*cnt = INT64_MAX;
 		return axl_false;
 	}
 	*cnt += to_add;

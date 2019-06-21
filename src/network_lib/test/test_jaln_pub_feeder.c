@@ -316,10 +316,10 @@ void test_pub_feeder_calculate_size_works_correctly()
 	assert_equals(10 + 20 + 30 + 40 + (strlen("BREAK") * 3), pd->vortex_feeder_sz);
 }
 
-void test_pub_feeder_calculate_size_returns_int_max_on_overflow()
+void test_pub_feeder_calculate_size_returns_int64_max_on_overflow()
 {
 	struct jaln_pub_data *pd = sess->pub_data;
-	pd->sys_meta_sz = INT_MAX;
+	pd->sys_meta_sz = INT64_MAX;
 	pd->app_meta_sz = 1;
 	pd->payload_sz = 1;
 	pd->headers_sz = 1;
@@ -327,12 +327,12 @@ void test_pub_feeder_calculate_size_returns_int_max_on_overflow()
 	jaln_pub_feeder_calculate_size_for_vortex(sess);
 	// The size is the length of all the data sections, headers, and the
 	// intervening "BREAK" strings
-	assert_equals(INT_MAX, pd->vortex_feeder_sz);
+	assert_equals(INT64_MAX, pd->vortex_feeder_sz);
 }
 
 void test_safe_add_works()
 {
-	int cnt = 0;
+	int64_t cnt = 0;
 	assert_true(jaln_pub_feeder_safe_add_size(&cnt, 1));
 	assert_equals(1, cnt);
 
@@ -342,9 +342,9 @@ void test_safe_add_works()
 
 void test_safe_add_returns_false_on_overflow()
 {
-	int cnt = 1;
-	assert_false(jaln_pub_feeder_safe_add_size(&cnt, INT_MAX));
-	assert_equals(INT_MAX, cnt);
+	int64_t cnt = 1;
+	assert_false(jaln_pub_feeder_safe_add_size(&cnt, INT64_MAX));
+	assert_equals(INT64_MAX, cnt);
 
 }
 

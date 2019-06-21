@@ -126,7 +126,7 @@ void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess);
  *   - axl_true if the addition was performed successfull
  *   - axl_false if the addtion would result in integer overflow.
  */
-axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add);
+axl_bool jaln_pub_feeder_safe_add_size(int64_t *cnt, const uint64_t to_add);
 
 /**
  * Callback executed by when the payload feeder is finished sending a
