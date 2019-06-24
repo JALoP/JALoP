@@ -401,6 +401,10 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 		// Set a failing return code
 		ret = JAL_E_INVAL;
 	} else {
+		ret = jaln_verify_init_ack_headers(header_info);
+		if (JAL_OK != ret) {
+			goto err_out;
+		}
 		// connection ack callback
 		struct jaln_connect_ack ack;
 		memset(&ack, 0, sizeof(ack));
@@ -442,7 +446,6 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 				session->mode,
 				NULL, // TODO: headers? Never set in 1.x
 				ctx->user_data);
-		ret = jaln_verify_init_ack_headers(header_info);
 	}
 
 err_out:
@@ -527,6 +530,7 @@ static enum jal_status jaln_setup_session(
 		curl_easy_cleanup(curl_ctx);
 		return JAL_E_NO_MEM;
 	}
+	curl_easy_setopt(curl_ctx, CURLOPT_FAILONERROR, 1L);
 	if (tls)
 	{
 		// Disable cert verification for now.
