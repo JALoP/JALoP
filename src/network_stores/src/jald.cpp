@@ -934,7 +934,8 @@ void pub_sync(
 		return;
 	}
 
-	if (mode == JALN_ARCHIVE_MODE) {
+	// Only sync the record in the DB in archive mode with digest challenges
+	if (mode == JALN_ARCHIVE_MODE && ch_info->digest_method) {
 		pthread_mutex_lock(sub_lock);
 		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, nonce);
 		pthread_mutex_unlock(sub_lock);

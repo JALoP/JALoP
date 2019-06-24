@@ -405,6 +405,13 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 		if (JAL_OK != ret) {
 			goto err_out;
 		}
+
+		// if digesting is disabled, don't report an algo in callbacks
+		if (!session->dgst_on && session->ch_info->digest_method) {
+			free(session->ch_info->digest_method);
+			session->ch_info->digest_method = NULL;
+		}
+
 		// connection ack callback
 		struct jaln_connect_ack ack;
 		memset(&ack, 0, sizeof(ack));
