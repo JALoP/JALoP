@@ -2136,3 +2136,29 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 	return JALDB_OK;
 }
 
+enum jaldb_status jaldb_remove_db_logs(jaldb_context *ctx)
+{
+	int db_err;
+	char **file_list = NULL;
+
+	db_err = ctx->env->txn_checkpoint(ctx->env, 0, 0, 0);
+	if (0 != db_err) {
+		return JALDB_E_INTERNAL_ERROR;
+	}
+
+	db_err = ctx->env->log_archive(ctx->env, &file_list, DB_ARCH_ABS);
+	if (0 != db_err) {
+		return JALDB_E_INTERNAL_ERROR;
+	}
+	char **cur_file = file_list;
+	while (cur_file) {
+		if (0 != remove(*cur_file)) {
+			free(file_list);
+			return JALDB_E_DB;
+		}
+		cur_file++;
+	}
+	free(file_list);
+
+	return JALDB_OK;
+}

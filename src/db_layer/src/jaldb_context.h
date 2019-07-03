@@ -282,6 +282,16 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 		enum jaldb_rec_type type,
 		struct jaldb_record_dbs **rdbs);
 
+/**
+ * Run a checkpoint and archive to remove db transaction history
+ * to recover disk space
+ * @param[in] ctx the jaldb_context
+ *
+ * @ return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_remove_db_logs(
+		jaldb_context *ctx);
+
 #ifdef __cplusplus
 }
 #endif

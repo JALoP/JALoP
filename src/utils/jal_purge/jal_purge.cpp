@@ -219,6 +219,8 @@ int main(int argc, char **argv)
 	}
 
 out:
+	jaldb_remove_db_logs(ctx);
+
 	if (global_args.detail) {
 		printf("\n");
 	}
