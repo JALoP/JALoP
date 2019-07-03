@@ -96,7 +96,6 @@ update_env_with_install_paths(debug_env)
 debug_env.PrependENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
 
 debug_env.Append(CFLAGS=default_cflags)
-debug_env.Prepend(RPATH=rpath)
 
 if os.environ.has_key('LD'):
 	debug_env['LINK'] = os.environ['LD']
@@ -242,7 +241,7 @@ all_tests = debug_env.Alias('tests')
 release_env = debug_env.Clone()
 
 # add appropriate flags for debug/release
-release_env.Prepend(CCFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags)
+release_env.Prepend(CCFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags, RPATH=rpath)
 debug_env.Prepend(CCFLAGS=extra_debug_ccflags)
 
 if debug_env['CC'] == 'gcc':
