@@ -302,7 +302,11 @@ enum jal_status pub_on_journal_resume(
 	}
 
 	*system_metadata_buffer = ctx->rec->sys_meta->payload;
-	*application_metadata_buffer = ctx->rec->app_meta->payload;
+	if (ctx->rec->app_meta) {
+		*application_metadata_buffer = ctx->rec->app_meta->payload;
+	} else {
+		*application_metadata_buffer = NULL;
+	}
 
 	return JAL_OK;
 }
