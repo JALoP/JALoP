@@ -432,7 +432,7 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 			memset(&rec_info, 0, sizeof(rec_info));
 			rec_info.type = session->ch_info->type;
 			rec_info.nonce = jal_strdup(session->pub_data->nonce);
-			ctx->pub_callbacks->on_journal_resume(
+			ret = ctx->pub_callbacks->on_journal_resume(
 					session,
 					session->ch_info,
 					&rec_info,
@@ -441,12 +441,20 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 					&session->pub_data->app_meta,
 					NULL, // TODO: headers? Never set in 1.x
 					ctx->user_data);
-			session->pub_data->sys_meta_sz = rec_info.sys_meta_len;
-			session->pub_data->app_meta_sz = rec_info.app_meta_len;
+			if (JAL_OK != ret) {
+				if (JAL_E_JOURNAL_MISSING == ret) {
+					jaln_publisher_send_journal_missing(session, rec_info.nonce);
+				} else {
+					goto err_out;
+				}
+			} else {
+				session->pub_data->sys_meta_sz = rec_info.sys_meta_len;
+				session->pub_data->app_meta_sz = rec_info.app_meta_len;
+			}
 			free(rec_info.nonce);
 		}
 		// on subscribe callback
-		ctx->pub_callbacks->on_subscribe(
+		ret = ctx->pub_callbacks->on_subscribe(
 				session,
 				session->ch_info,
 				session->ch_info->type,

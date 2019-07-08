@@ -61,7 +61,8 @@ struct jaln_publisher_callbacks {
 	 * @param[in] user_data A pointer to user data that was passed into
 	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
 	 *
-	 * @return JAL_OK to continue sending records, anything else to stop.
+	 * @return JAL_OK to continue sending the resumed record, JAL_E_JOURNAL_MISSING to send the
+	 * next record, or anything else to stop.
 	 */
 	enum jal_status (*on_journal_resume)(
 			jaln_session *session,

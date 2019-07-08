@@ -297,7 +297,8 @@ enum jal_status pub_on_journal_resume(
 	
 	db_ret = jaldb_get_record(db_ctx, JALDB_RTYPE_JOURNAL, record_info->nonce, &(ctx->rec));
 	if (JALDB_OK != db_ret) {
-		return JAL_E_INVAL;
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to retrieve journal from db");
+		return JALDB_E_NOT_FOUND == db_ret? JAL_E_JOURNAL_MISSING : JAL_E_INVAL;
 	}
 
 	*system_metadata_buffer = ctx->rec->sys_meta->payload;
