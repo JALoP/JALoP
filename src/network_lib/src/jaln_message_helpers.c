@@ -771,7 +771,8 @@ enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_reco
 
 	struct curl_slist *headers = NULL;
 
-	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT;
+	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT JALN_CRLF \
+	JALN_HDRS_VERSION JALN_COLON_SPACE JALN_VERSION;
 
 	axlListCursor *cursor = NULL;
 	enum jal_status ret = JAL_E_INVAL;
@@ -1040,8 +1041,7 @@ struct curl_slist *jaln_create_record_ans_rpy_headers(struct jaln_record_info *r
 		JALN_HDRS_ID JALN_COLON_SPACE "%s" JALN_CRLF \
 		JALN_HDRS_SYS_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
 		JALN_HDRS_APP_META_LEN JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
-		"%s" JALN_COLON_SPACE "%" PRIu64 JALN_CRLF \
-		"Transfer-Encoding" JALN_COLON_SPACE JALN_STR_BINARY
+		"%s" JALN_COLON_SPACE "%" PRIu64
 
 #define AUDIT_FORMAT JALN_HDRS_AUDIT_FORMAT JALN_COLON_SPACE JALN_XML
 

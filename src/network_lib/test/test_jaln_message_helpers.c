@@ -56,43 +56,36 @@
 
 #define EXPECTED_SYNC_MSG \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: sync\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_VERSION \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Version: \r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_ENC \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-XML-Compression: \r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_DIGEST \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Digest: \r\n\r\n"
 
 #define EXPECTED_NACK_UNSUPP_MODE \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Mode: \r\n\r\n"
 
 #define EXPECTED_NACK_UNAUTH_MODE \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unauthorized-Mode: \r\n\r\n"
 
 #define EXPECTED_NACK_ALL_ERRORS \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-nack\r\n" \
 	"JAL-Unsupported-Version: \r\n" \
 	"JAL-Unsupported-XML-Compression: \r\n" \
@@ -104,7 +97,6 @@
 #define SOME_DIGEST "31c482024fdf8ab7fd3fc1a6bf7fb3989c7fe706eacf8a719e53b18b2d29d9e0"
 #define EXPECTED_ACK\
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n" \
 	"JAL-Message: initialize-ack\r\n" \
 	"JAL-XML-Compression: " SOME_ENCODING "\r\n" \
 	"JAL-Digest: " SOME_DIGEST "\r\n\r\n" \
@@ -208,7 +200,6 @@ static char *output_str;
 
 #define EXPECTED_DGST_MSG \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: digest\r\n" \
 	"JAL-Count: 3\r\n\r\n" \
 	di_1_str \
@@ -217,8 +208,8 @@ static char *output_str;
 
 #define INIT_PUB_LOG_ARCHIVE \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Publisher-Id: " SAMPLE_UUID "\r\n" \
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: log\r\n" \
@@ -227,8 +218,8 @@ static char *output_str;
 
 #define INIT_PUB_JOURNAL_ARCHIVE \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Publisher-Id: " SAMPLE_UUID "\r\n" \
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: journal\r\n" \
@@ -237,8 +228,8 @@ static char *output_str;
 
 #define INIT_PUB_AUDIT_ARCHIVE \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Publisher-Id: " SAMPLE_UUID "\r\n" \
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: audit\r\n" \
@@ -247,8 +238,8 @@ static char *output_str;
 
 #define INIT_PUB_LOG_ARCHIVE_NO_ENC \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Publisher-Id: " SAMPLE_UUID "\r\n" \
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: log\r\n" \
@@ -256,8 +247,8 @@ static char *output_str;
 
 #define INIT_PUB_LOG_ARCHIVE_NO_DGST \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: initialize\r\n" \
+	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Publisher-Id: " SAMPLE_UUID "\r\n" \
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: log\r\n" \
@@ -265,7 +256,6 @@ static char *output_str;
 
 #define EXPECTED_JOURNAL_REC_HDRS \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: journal-record\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
@@ -274,7 +264,6 @@ static char *output_str;
 
 #define EXPECTED_AUDIT_REC_HDRS \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: audit-record\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
@@ -283,7 +272,6 @@ static char *output_str;
 
 #define EXPECTED_LOG_REC_HDRS \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: log-record\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n" \
 	"JAL-System-Metadata-Length: 10\r\n" \
@@ -292,7 +280,6 @@ static char *output_str;
 
 #define EXPECTED_DGST_RESP_MSG \
 	"Content-Type: application/http+jalop\r\n" \
-	"JAL-Version: 2.0.0.0\r\n"\
 	"JAL-Message: digest-response\r\n" \
 	"JAL-Session-Id: " SAMPLE_UUID "\r\n" \
 	"JAL-Id: " nonce_1_str "\r\n" \
@@ -447,7 +434,7 @@ void test_create_journal_resume_msg_with_valid_parameters_is_formatted_correctly
 {
 	enum jal_status ret = JAL_OK;
 
-	char *correct_msg = "Content-Type: application/http+jalop\r\nJAL-Version: 2.0.0.0\r\nJAL-Message: journal-resume\r\nJAL-Id: 1234562\r\nJAL-Journal-Offset: 47996\r\n\r\n";
+	char *correct_msg = "Content-Type: application/http+jalop\r\nJAL-Message: journal-resume\r\nJAL-Id: 1234562\r\nJAL-Journal-Offset: 47996\r\n\r\n";
 
 	char *nonce = "1234562";
 	uint64_t offset = 47996;
@@ -612,7 +599,7 @@ void test_create_subscribe_msg_with_valid_parameters_is_formatted_correctly()
 {
 	enum jal_status ret = JAL_OK;
 
-	char *correct_msg = "Content-Type: application/http+jalop\r\nJAL-Version: 2.0.0.0\r\nJAL-Message: subscribe\r\n\r\n";
+	char *correct_msg = "Content-Type: application/http+jalop\r\nJAL-Message: subscribe\r\n\r\n";
 
 	char *msg_out = NULL;
 	uint64_t *msg_out_len = NULL;
