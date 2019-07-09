@@ -84,7 +84,6 @@ extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -fPIC -g -O3'.split()
 debug_env = Environment(ENV=os.environ, tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 		parse_flags= default_ccflags,
 		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
-debug_env['JALOP_VERSION_STR'] = '2.0'
 update_env_with_install_paths(debug_env)
 # There is a quirk in scons where it likes to try and normalize the path. Basically, if you use
 # PrependENVPath, it will scan for duplicate path entries, and keep the the first entry, however

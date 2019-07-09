@@ -98,4 +98,4 @@ def update_env_with_install_paths(env):
 		env[path] = env.GetOption(path)
 	# add some usefull exports...
 	env['JALOP_SCHEMAS_ROOT'] = (env.subst(env['DATAROOTDIR']) +
-			'/jalop-v' + env['JALOP_VERSION_STR'] + '/schemas')
+			'/jalop/schemas')

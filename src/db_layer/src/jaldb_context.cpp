@@ -55,7 +55,7 @@
 using namespace std;
 
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
-#define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
+#define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop/schemas"
 
 static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, const char *nonce);
 
