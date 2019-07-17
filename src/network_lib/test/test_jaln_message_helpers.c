@@ -118,6 +118,10 @@
 #define SAMPLE_INIT_ACK_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_INIT_ACK "\r\n"
 #define SAMPLE_DGST_CHAL_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_DIGEST_CHALLENGE "\r\n"
 #define SAMPLE_DGST_VAL_MSG JALN_HDRS_DIGEST_VALUE JALN_COLON_SPACE SOME_DIGEST "\r\n"
+#define SAMPLE_SYNC_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_SYNC "\r\n"
+#define SAMPLE_REC_FAIL_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_RECORD_FAILURE "\r\n"
+#define SAMPLE_SYNC_FAIL_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_SYNC_FAILURE "\r\n"
+#define SAMPLE_ERROR_MSG JALN_HDRS_ERROR_MESSAGE JALN_COLON_SPACE JALN_ERROR_MSG_INVALID_DIGEST "\r\n"
 
 VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
 {
@@ -1052,6 +1056,10 @@ void test_verify_failed_digest_headers()
 	info->error_list = jal_malloc(sizeof(char*));
 	info->error_list[0] = jal_strdup(JALN_ERROR_MSG_INVALID_DIGEST);
 	rc = jaln_verify_failed_digest_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->last_message = JALN_MSG_RECORD_FAILURE;
+	rc = jaln_verify_failed_digest_headers(info);
 	assert_equals(JAL_OK, rc);
 
 }
@@ -1232,19 +1240,16 @@ void test_parse_journal_missing_response()
 	enum jal_status rc = jaln_parse_journal_missing_response(SAMPLE_JOURNAL_MISSING_RESP_MSG, strlen(SAMPLE_JOURNAL_MISSING_RESP_MSG), sess);
 
 	assert_equals(JAL_OK, rc);
-	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING_RESPONSE);
 	assert_equals(axl_false, sess->errored);
 
 	rc = jaln_parse_journal_missing_response(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), sess);
 
 	assert_equals(JAL_OK, rc);
-	assert_string_equals(sess->last_message, JALN_MSG_JOURNAL_MISSING_RESPONSE);
 	assert_equals(axl_false, sess->errored);
 
 	rc = jaln_parse_journal_missing_response(SAMPLE_INIT_ACK_MSG, strlen(SAMPLE_INIT_ACK_MSG), sess);
 
 	assert_equals(JAL_E_INVAL, rc);
-	assert_pointer_equals(NULL, sess->last_message);
 	assert_equals(axl_true, sess->errored);
 }
 
@@ -1259,7 +1264,7 @@ void test_parse_digest_challenge_header()
 	enum jal_status rc = jaln_parse_digest_challenge_header(SAMPLE_DGST_CHAL_MSG, strlen(SAMPLE_DGST_CHAL_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_string_equals(JALN_MSG_DIGEST_CHALLENGE, sess->last_message);
+	assert_string_equals(JALN_MSG_DIGEST_CHALLENGE, info->last_message);
 
 	rc = jaln_parse_digest_challenge_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
 
@@ -1270,6 +1275,71 @@ void test_parse_digest_challenge_header()
 
 	assert_equals(JAL_OK, rc);
 	assert_equals(axl_false, sess->errored);
+}
+
+void test_parse_digest_challenge_header_rec_fail()
+{
+	// Needs to also handle record failures
+
+	enum jal_status rc = jaln_parse_digest_challenge_header(SAMPLE_REC_FAIL_MSG, strlen(SAMPLE_REC_FAIL_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_equals(axl_false, sess->errored);
+	assert_string_equals(JALN_MSG_RECORD_FAILURE, info->last_message);
+
+	rc = jaln_parse_digest_challenge_header(SAMPLE_ERROR_MSG, strlen(SAMPLE_ERROR_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(1, info->error_cnt);
+	assert_not_equals(NULL, info->error_list);
+	assert_string_equals(JALN_ERROR_MSG_INVALID_DIGEST, info->error_list[0]);
+}
+
+void test_parse_sync_header()
+{
+	sess->pub_data = jaln_pub_data_create();
+	info->expected_nonce = jal_strdup(SAMPLE_UUID);
+
+	enum jal_status rc = jaln_parse_sync_header(SAMPLE_SYNC_MSG, strlen(SAMPLE_SYNC_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_string_equals(JALN_MSG_SYNC, info->last_message);
+
+	rc = jaln_parse_digest_challenge_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_equals(info->id_valid, axl_true);
+}
+
+void test_parse_sync_header_sync_fail()
+{
+	// Needs to also handle sync failures
+
+	enum jal_status rc = jaln_parse_sync_header(SAMPLE_SYNC_FAIL_MSG, strlen(SAMPLE_SYNC_FAIL_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_equals(axl_false, sess->errored);
+	assert_string_equals(JALN_MSG_SYNC_FAILURE, info->last_message);
+}
+
+void test_parse_sync_header_rec_fail()
+{
+	// Needs to also handle record failures
+
+	enum jal_status rc = jaln_parse_sync_header(SAMPLE_REC_FAIL_MSG, strlen(SAMPLE_REC_FAIL_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_equals(axl_false, sess->errored);
+	assert_string_equals(JALN_MSG_RECORD_FAILURE, info->last_message);
+
+	rc = jaln_parse_sync_header(SAMPLE_ERROR_MSG, strlen(SAMPLE_ERROR_MSG), info);
+
+	assert_equals(JAL_OK, rc);
+	assert_equals(axl_false, sess->errored);
+	assert_equals(1, info->error_cnt);
+	assert_not_equals(NULL, info->error_list);
+	assert_string_equals(JALN_ERROR_MSG_INVALID_DIGEST, info->error_list[0]);
 }
 
 /*

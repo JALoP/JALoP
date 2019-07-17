@@ -233,22 +233,30 @@ enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *info)
 	return JAL_E_INVAL;
 }
 
-enum jal_status jaln_verify_sync_failure_headers(struct jaln_response_header_info *info) {
+static enum jal_status jaln_verify_failure_headers(
+		struct jaln_response_header_info *info,
+		const char *msg_type) {
 	if (axl_true == info->message_type_valid
 	    && info->last_message
-	    && !strcasecmp(JALN_MSG_SYNC_FAILURE, info->last_message)
-	    && axl_true == info->id_valid
-	    && 0 < info->error_cnt // Sync failure is an error condition, so an error message is expected
+	    && !strcasecmp(msg_type, info->last_message)
+	    && info->id_valid
+	    && 0 < info->error_cnt // error message(s) are expected for failures
 	) {
 		return JAL_OK;
 	}
 	return JAL_E_INVAL;
 }
 
+enum jal_status jaln_verify_sync_failure_headers(struct jaln_response_header_info *info) {
+	return jaln_verify_failure_headers(info, JALN_MSG_SYNC_FAILURE);
+}
+
+enum jal_status jaln_verify_record_failure_headers(struct jaln_response_header_info *info) {
+	return jaln_verify_failure_headers(info, JALN_MSG_RECORD_FAILURE);
+}
+
 enum jal_status jaln_verify_failed_digest_headers(struct jaln_response_header_info *info) {
-	if (axl_true == info->message_type_valid
-	    && axl_true == info->id_valid
-	    && 0 < info->error_cnt
+	if (JAL_OK == jaln_verify_record_failure_headers(info)
 	    && info->error_list
 	    && *info->error_list
 	    && (!strcasecmp(JALN_ERROR_MSG_INVALID_DIGEST, *(info->error_list))
@@ -307,11 +315,11 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 		if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
 				JALN_STR_W_LEN(JALN_MSG_INIT_ACK)))) {
 			info->message_type_valid = axl_true;
-			sess->last_message = JALN_MSG_INIT_ACK;
+			info->last_message = JALN_MSG_INIT_ACK;
 		} else if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
 				JALN_STR_W_LEN(JALN_MSG_INIT_NACK)))) {
 			info->message_type_valid = axl_true;
-			sess->last_message = JALN_MSG_INIT_NACK;
+			info->last_message = JALN_MSG_INIT_NACK;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_VERSION))) {
 		const size_t name_len = strlen(JALN_HDRS_VERSION);
@@ -476,10 +484,7 @@ enum jal_status jaln_parse_journal_missing_response(char *content, size_t len, j
 		const char *value_start = content + name_len + 1;
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		enum jal_status rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_JOURNAL_MISSING_RESPONSE));
-		if (JAL_OK == rc) {
-			sess->last_message = JALN_MSG_JOURNAL_MISSING_RESPONSE;
-		} else {
-			sess->last_message = NULL;
+		if (JAL_OK != rc) {
 			sess->errored = 1;
 		}
 		return rc;
@@ -497,13 +502,18 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 		const char *value_start = content + name_len + 1;
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_DIGEST_CHALLENGE));
-		// TODO: Record failure messages
 		if (JAL_OK == rc) {
-			sess->last_message = JALN_MSG_DIGEST_CHALLENGE;
+			header_info->last_message = JALN_MSG_DIGEST_CHALLENGE;
 			header_info->message_type_valid = axl_true;
 		} else {
-			sess->last_message = NULL;
-			jaln_session_set_errored(sess);
+			rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE));
+			if (JAL_OK == rc) {
+				header_info->last_message = JALN_MSG_RECORD_FAILURE;
+				header_info->message_type_valid = axl_true;
+			} else {
+				header_info->last_message = NULL;
+				jaln_session_set_errored(sess);
+			}
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
 		const size_t name_len = strlen(JALN_HDRS_ID);
@@ -531,7 +541,11 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 			jaln_session_set_errored(sess);
 			return JAL_E_INVAL;
 		}
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ERROR_MESSAGE))) {
+		// Valid for record-failure.  Not expected on digest challenge
+		jaln_parse_error_messages(content, len, header_info);
 	}
+
 
 	return rc; //Extra unmatched headers are ignored
 }
@@ -546,7 +560,6 @@ enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_re
 		const char *value_start = content + name_len + 1;
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_SYNC));
-		// TODO: Record failure messages
 		if (JAL_OK == rc) {
 			header_info->last_message = JALN_MSG_SYNC;
 			header_info->message_type_valid = axl_true;
@@ -554,6 +567,10 @@ enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_re
 			rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_SYNC_FAILURE));
 			if (JAL_OK == rc) {
 				header_info->last_message = JALN_MSG_SYNC_FAILURE;
+				header_info->message_type_valid = axl_true;
+			} else if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
+					JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE)))) {
+				header_info->last_message = JALN_MSG_RECORD_FAILURE;
 				header_info->message_type_valid = axl_true;
 			} else {
 				header_info->last_message = NULL;
@@ -571,7 +588,7 @@ enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_re
 			jaln_session_set_errored(sess);
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ERROR_MESSAGE))) {
-		// Valid for sync-failure.  Not expected on sync
+		// Valid for sync-failure or record-failure.  Not expected on sync
 		jaln_parse_error_messages(content, len, header_info);
 	}
 
@@ -589,10 +606,10 @@ enum jal_status jaln_parse_record_failure_header(char *content, size_t len, stru
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE));
 		if (JAL_OK == rc) {
-			sess->last_message = JALN_MSG_RECORD_FAILURE;
+			header_info->last_message = JALN_MSG_RECORD_FAILURE;
 			header_info->message_type_valid = axl_true;
 		} else {
-			sess->last_message = NULL;
+			header_info->last_message = NULL;
 			jaln_session_set_errored(sess);
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {

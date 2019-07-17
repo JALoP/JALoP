@@ -71,7 +71,6 @@ struct jaln_session_t {
 	int dgst_chan_num;                   //!< The channel number for the \p dgst_chan
 	struct jaln_channel_info *ch_info;   //!< Additional information about the channel
 	char *id;                            //!< Session ID added to messages to associate them with this session
-	const char *last_message;            //!< The last message received on this channel
 
 	axl_bool closing;                    //!< Flag that indicates this
 	axl_bool errored;                    //!< Flag that indicates an error occurred within the session

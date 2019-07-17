@@ -195,6 +195,8 @@ static enum jal_status jaln_pub_verify_sync(jaln_session *sess, struct jaln_resp
 		}
 	} else if (!strcmp(info->last_message, JALN_MSG_SYNC_FAILURE)) {
 		rc = jaln_verify_sync_failure_headers(info);
+	} else if (!strcmp(info->last_message, JALN_MSG_RECORD_FAILURE)) {
+		rc = jaln_verify_record_failure_headers(info);
 	} else {
 		rc = JAL_E_INVAL;
 	}
@@ -243,13 +245,13 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	CURLcode res = curl_easy_perform(ctx);
 
-	if (res != CURLE_OK || sess->errored ||
-			(sess->dgst_on && JAL_OK != jaln_verify_digest_challenge_headers(info))) {
+	if (res != CURLE_OK || sess->errored) {
 		printf("Failed: %d: %s\n", res, buf); // TODO: Printfs in libraries are bad.  Remove me once the library is more stable
 		jaln_session_set_errored(sess);
 		jaln_response_header_info_destroy(&info);
 		return NULL;
 	}
+
 
 	enum jal_status rc;
 
@@ -257,11 +259,20 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 		// if digest challenges are configured to be disabled, the sync has alreay ocurred
 		rc = jaln_pub_verify_sync(sess, info);
 		curl_easy_cleanup(ctx);
-		jaln_response_header_info_destroy(&info);
-		if (JAL_OK != rc) {
+		if (JAL_OK != rc && JAL_OK != jaln_verify_sync_failure_headers(info)) {
 			perror("Sync verification failed"); // TODO: Remove me once the library is more stable
 			jaln_session_set_errored(sess);
 		}
+		jaln_response_header_info_destroy(&info);
+		return NULL;
+	}
+
+	if (JAL_OK != jaln_verify_digest_challenge_headers(info)) {
+		if (JAL_OK != jaln_verify_record_failure_headers(info)) {
+			perror("Digest challenge verification failed"); // TODO: Remove me once the library is more stable
+			jaln_session_set_errored(sess);
+		}
+		jaln_response_header_info_destroy(&info);
 		return NULL;
 	}
 

@@ -135,7 +135,7 @@ enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header
 /**
  * Verify that a header_info struct has all the required fields for a sync message
  *
- * @param header_info Information from parsing initialize-ack headers
+ * @param header_info Information from parsing sync headers
  *
  * @return JAL_OK if all headers were present or an error code
  */
@@ -144,16 +144,25 @@ enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *heade
 /**
  * Verify that a header_info struct has all the required fields for a sync-failure message
  *
- * @param header_info Information from parsing initialize-ack headers
+ * @param header_info Information from parsing sync-failure headers
  *
  * @return JAL_OK if all headers were present or an error code
  */
 enum jal_status jaln_verify_sync_failure_headers(struct jaln_response_header_info *header_info);
 
 /**
+ * Verify that a header_info struct has all the required fields for a sync-failure message
+ *
+ * @param header_info Information from parsing record-failure headers
+ *
+ * @return JAL_OK if all headers were present or an error code
+ */
+enum jal_status jaln_verify_record_failure_headers(struct jaln_response_header_info *header_info);
+
+/**
  * Verify that a header_info struct has all the required fields for an record-failure digest-failed message
  *
- * @param header_info Information from parsing initialize-ack headers
+ * @param header_info Information from parsing record-failure headers
  *
  * @return JAL_OK if all headers were present or an error code
  */

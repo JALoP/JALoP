@@ -495,17 +495,18 @@ enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char 
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
 	CURLcode rc = curl_easy_perform(curl);
+	curl_slist_free_all(headers);
 	if (rc != CURLE_OK) {
 		ret = JAL_E_COMM;
 		goto err_out;
 	}
 
-	if (NULL == session->last_message || 0 != strcmp(session->last_message, JALN_MSG_JOURNAL_MISSING_RESPONSE)) {
+	if (session->errored)
+	{
 		ret = JAL_E_INVAL;
 		goto err_out;
 	}
 
-	curl_slist_free_all(headers);
 	goto out;
 
 err_out:
