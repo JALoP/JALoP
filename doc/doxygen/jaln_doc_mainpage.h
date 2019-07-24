@@ -7,8 +7,8 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011-2014 Tresys Technology LLC, Columbia, 
- * Maryland, USA 
+ * Copyright (c) 2011-2014 Tresys Technology LLC, Columbia,
+ * Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -33,7 +33,7 @@
  *
  * The JALoP Network Library (JNL) provides an API to send and receive JAL
  * records between 2 JALoP Network Stores using the JALoP Network Protocol
- * (JNP) over BEEP. The document "JALoPv1.0 Specification" describes the
+ * (JNP) over HTTP. The document "JALoP v2.0.0.0 Specification" describes the
  * protocol in detail.
  *
  * The JNL exposes an API that applications may use to listen for
@@ -289,7 +289,7 @@ int main(void)
  * Conversely, if the JALoP session could not be configured, the JNL executes
  * the jaln_connection_callbacks::connect_nack callback. Once the JALoP
  * sessions are established, it is the responsibility of the remote to send a
- * 'subscribe' of 'journal-resume' message as described in "JALoPv1.0 Specification."
+ * 'subscribe' of 'journal-resume' message as described in "JALoP v2.0.0.0 Specification."
  *
  * If the remote sends a 'subscribe' message, the JNL will execute the
  * jaln_publisher_callbacks::subscribe callback to inform the application of
@@ -317,7 +317,7 @@ int main(void)
  * transfered correctly (i.e. the \p local_digest and \p peer_digest do not
  * match) the application may wish to resend the particular record. When the
  * the remote sends a 'sync' message, the JNL will execute the
- * jaln_publisher_callbacks::sync callback. The "JALoPv1.0 Specification" has
+ * jaln_publisher_callbacks::sync callback. The "JALoP v2.0.0.0 Specification" has
  * more details.
  *
  * As with jaln_subscribe(), the callbacks are executed on other threads and
