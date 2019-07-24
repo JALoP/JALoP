@@ -56,7 +56,7 @@ extern "C" {
  * @param[in] ctx The context to send the data over
  * @param[in] app_meta An optional struct that the library will convert into an
  * XML document. The resulting document will conform to the applicationMetadata
- * XML Schema defined in the JALoP-v1.0-Specification.
+ * XML Schema defined in the JALoP-v2.0.0.0 Specification.
  * @param[in] audit_buffer An optional byte buffer that contains the full contents of
  * an audit entry. An audit entry must conform to the JALoP Audit Format (JAF) Event
  * List Document schema. The Producer Lib will verify that \p audit_buffer conforms
