@@ -66,6 +66,7 @@ void jaln_pub_notify_digests_and_create_digest_response(
 
 	struct jaln_digest_info *calc_di = NULL;
 
+	vortex_mutex_lock(&sess->lock);
 	axl_list_cursor_first(calc_cursor);
 	while(axl_list_cursor_has_item(calc_cursor)) {
 		struct jaln_digest_info *tmp = (struct jaln_digest_info*) axl_list_cursor_get(calc_cursor);
@@ -76,6 +77,7 @@ void jaln_pub_notify_digests_and_create_digest_response(
 		}
 		axl_list_cursor_next(calc_cursor);
 	}
+	vortex_mutex_unlock(&sess->lock);
 
 	if (!calc_di) {
 		sess->jaln_ctx->pub_callbacks->peer_digest(sess,

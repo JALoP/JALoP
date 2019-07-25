@@ -209,9 +209,9 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 {
 	jaln_session *sess = (jaln_session*) user_data;
 
-	vortex_mutex_lock(&sess->wait_lock);
+	vortex_mutex_lock(&sess->lock);
 	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
-	vortex_mutex_unlock(&sess->wait_lock);
+	vortex_mutex_unlock(&sess->lock);
 	if (!ctx) {
 		// Error
 		jaln_session_set_errored(sess);
