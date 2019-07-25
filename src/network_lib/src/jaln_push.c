@@ -208,7 +208,7 @@ enum jal_status jaln_send_record_feeder(
 	if (JAL_OK != ret) {
 		goto out;
 	}
-	rec_info.payload_len = payload_len;
+	rec_info.payload_len = payload_len - offset;
 
 	pub_data = sess->pub_data;
 

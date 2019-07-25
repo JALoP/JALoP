@@ -43,7 +43,7 @@
 axl_bool jaln_pub_feeder_get_size(jaln_session *sess, int *size)
 {
 	// expect that the pub_data is already filled out...
-	*size = sess->pub_data->vortex_feeder_sz;
+	*size = sess->pub_data->vortex_feeder_sz - sess->pub_data->payload_off;
 	return axl_true;
 }
 
@@ -221,7 +221,9 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
 	info->expected_nonce = jal_strdup(sess->pub_data->nonce);
 
-	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE_LARGE, sess->pub_data->vortex_feeder_sz);
+	int size;
+	jaln_pub_feeder_get_size(sess, &size);
+	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE_LARGE, size);
 
 	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
 	curl_easy_setopt(ctx, CURLOPT_READDATA, sess);

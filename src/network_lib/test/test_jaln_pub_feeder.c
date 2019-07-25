@@ -298,6 +298,7 @@ void test_pub_feeder_get_size_returns_cached_size()
 	int sz = 0;
 	sess->pub_data->vortex_feeder_sz = 24;
 	sess->pub_data->finished_payload_break = axl_false;
+	sess->pub_data->payload_off = 0;
 	assert_true(jaln_pub_feeder_get_size(sess, &sz));
 	assert_equals(24, sz);
 }
