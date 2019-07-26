@@ -50,6 +50,21 @@ axl_bool jaln_pub_feeder_get_size(
 		uint64_t *size);
 
 /**
+ * Structure passed to jaln_pub_feeder_fill_buffer.
+ *
+ * Struct used as argument to jaln_pub_feeder_fill_buffer, the curl readfunc
+ * callback used to get the underlying data of a record being sent.
+ * If the callback has aborted or the record has been successfully read,
+ * complete will be set true so that the transfer is treated as "finished" twice
+ * the case of a curl failure (eg connection reset by peer).
+ */
+struct jaln_readfunc_info
+{
+        jaln_session *sess;
+        axl_bool complete;
+};
+
+/**
  * function for libcurl to fill a buffer to send data.
  *
  * @param[out] b A buffer to fill

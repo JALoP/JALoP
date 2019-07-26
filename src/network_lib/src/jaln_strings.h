@@ -75,6 +75,7 @@
 
 // defines for the various message JALoP message types
 #define JALN_MSG_AUDIT "audit-record"
+#define JALN_MSG_CLOSE_SESSION "close-session"
 #define JALN_MSG_DIGEST "digest"
 #define JALN_MSG_DIGEST_CHALLENGE "digest-challenge"
 #define JALN_MSG_DIGEST_RESP "digest-response"

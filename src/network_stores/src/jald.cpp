@@ -222,6 +222,8 @@ void on_connection_close(
 	}
 	if (JAL_OK != jaln_shutdown(peer->conn)) {
 		DEBUG_LOG("Failed to shutdown connection to %s:%llu", peer->host, peer->port);
+	} else {
+		DEBUG_LOG("Closed connection to %s:%llu", peer->host, peer->port);
 	}
 	peer->conn = NULL;
 }
@@ -312,7 +314,6 @@ enum jal_status pub_on_journal_resume(
 }
 
 enum jaldb_status pub_get_next_record(
-			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
 			char **nonce,
 			char **timestamp,
@@ -361,11 +362,6 @@ enum jaldb_status pub_get_next_record(
 			if (JALDB_E_NOT_FOUND == ret) {
 				sleep(global_config.poll_time);
 
-			}
-			if (exiting || JAL_OK != jaln_session_is_ok(sess)) {
-				DEBUG_LOG_SUB_SESSION(ch_info, "The network has disconnected");
-				ret = JALDB_E_NETWORK_DISCONNECTED;
-				goto out;
 			}
 		}
 	}
@@ -490,7 +486,7 @@ enum jal_status pub_send_records_feeder(
 		// nonce will be a new copy that the caller must free
 		// The buffers will point to the record stored within the session
 		// The record is cleaned up by pub_on_record_complete
-		db_ret = pub_get_next_record(sess,
+		db_ret = pub_get_next_record(
 					ch_info,
 					&nonce,
 					timestamp,
@@ -625,7 +621,7 @@ enum jal_status pub_send_records(
 		// nonce will be a new copy that the caller must free
 		// The buffers will point to the record stored within the session
 		// The record is cleaned up by pub_on_record_complete
-		db_ret = pub_get_next_record(sess,
+		db_ret = pub_get_next_record(
 					ch_info,
 					&nonce,
 					timestamp,
@@ -1251,6 +1247,14 @@ int main(int argc, char **argv)
 			}
 		}
 	} while (!exiting);
+
+	// try to disconnect from each peer
+	for (int i = 0; i < global_config.num_peers; ++i) {
+		peer = global_config.peers + i;
+		if (peer->conn) {
+			jaln_disconnect(peer->conn);
+		}
+	}
 
 out:
 	while (threads_to_exit > 0) {

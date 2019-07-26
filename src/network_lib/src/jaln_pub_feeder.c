@@ -51,7 +51,8 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 
 	uint64_t dst_sz = size * nmemb;
 	uint64_t dst_off = 0;
-	jaln_session *sess = (jaln_session *)userdata;
+	struct jaln_readfunc_info *info = (struct jaln_readfunc_info *)userdata;
+	jaln_session *sess = info->sess;
 	struct jaln_pub_data *pd = sess->pub_data;
 	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
 	struct jaln_channel_info *ch_info = sess->ch_info;
@@ -65,7 +66,6 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 		curl_ret = 0;
 		goto out;
 	}
-
 
 	if (sess->errored) {
 		curl_ret = CURL_READFUNC_ABORT;
@@ -171,6 +171,7 @@ out:
 	if (curl_ret == CURL_READFUNC_ABORT || curl_ret == 0) {
 		vortex_mutex_unlock(&sess->wait_lock);
 		jaln_pub_feeder_on_finished(sess);
+		info->complete = axl_true;
 	}
 	return curl_ret;
 }
@@ -189,7 +190,7 @@ static enum jal_status jaln_pub_verify_sync(jaln_session *sess, struct jaln_resp
 	}
 	else if (!strcmp(info->last_message, JALN_MSG_SYNC)) {
 		rc = jaln_verify_sync_headers(info);
-		if (rc == JAL_OK) {
+		if (rc == JAL_OK && !sess->errored) {
 			sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type,\
 					sess->mode, info->expected_nonce, NULL, sess->jaln_ctx->user_data);
 		}
@@ -215,7 +216,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	if (!ctx) {
 		// Error
 		jaln_session_set_errored(sess);
-		return NULL;
+		goto out;
 	}
 
 	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
@@ -225,8 +226,9 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	jaln_pub_feeder_get_size(sess, &size);
 	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE_LARGE, size);
 
+	struct jaln_readfunc_info read_info = { sess, axl_false };
 	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
-	curl_easy_setopt(ctx, CURLOPT_READDATA, sess);
+	curl_easy_setopt(ctx, CURLOPT_READDATA, &read_info);
 
 	if (sess->dgst_on) {
 		curl_easy_setopt(ctx, CURLOPT_HEADERFUNCTION, jaln_publisher_digest_challenge_handler);
@@ -250,8 +252,12 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	if (res != CURLE_OK || sess->errored) {
 		printf("Failed: %d: %s\n", res, buf); // TODO: Printfs in libraries are bad.  Remove me once the library is more stable
 		jaln_session_set_errored(sess);
+		if (!read_info.complete) {
+			vortex_mutex_unlock(&sess->wait_lock);
+			vortex_cond_signal(&sess->wait);
+		}
 		jaln_response_header_info_destroy(&info);
-		return NULL;
+		goto out;
 	}
 
 
@@ -266,7 +272,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 			jaln_session_set_errored(sess);
 		}
 		jaln_response_header_info_destroy(&info);
-		return NULL;
+		goto out;
 	}
 
 	if (JAL_OK != jaln_verify_digest_challenge_headers(info)) {
@@ -275,7 +281,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 			jaln_session_set_errored(sess);
 		}
 		jaln_response_header_info_destroy(&info);
-		return NULL;
+		goto out;
 	}
 
 	// Send digest response
@@ -323,6 +329,8 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	jaln_digest_info_destroy(&peer_dgst);
 	jaln_response_header_info_destroy(&info);
 
+out:
+	jaln_session_unref(sess);
 	return NULL;
 }
 
@@ -439,13 +447,13 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 	                                        jaln_pub_feeder_handler,
 	                                        (void *) sess,
 	                                        APR_THREAD_TASK_PRIORITY_NORMAL,
-	                                        NULL)) {
+						(void *) sess)) { // use session as "owner" of the task
 		return JAL_E_NO_MEM;
 	}
 
 	vortex_cond_wait(&sess->wait, &sess->wait_lock);
 	vortex_mutex_unlock(&sess->wait_lock);
-	return JAL_OK;
+	return sess->errored? JAL_E_INVAL : JAL_OK;
 }
 
 void jaln_pub_feeder_on_finished(jaln_session *sess)
@@ -458,19 +466,8 @@ void jaln_pub_feeder_on_finished(jaln_session *sess)
 	pub_cbs->on_record_complete(sess, ch_info, type, pd->nonce, sess->jaln_ctx->user_data);
 	pd->payload_off = 0;
 
-	if (!sess->errored) {
-		if (sess->closing) {
-			goto err_out;
-		}
-	}
-	goto out;
-
-err_out:
-	jaln_session_set_errored(sess);
-out:
 	vortex_mutex_lock(&sess->wait_lock);
 	vortex_mutex_unlock(&sess->wait_lock);
-	jaln_session_unref(sess);
 	vortex_cond_signal(&sess->wait);
 	return;
 }

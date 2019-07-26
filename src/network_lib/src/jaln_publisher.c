@@ -478,8 +478,7 @@ enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char 
 	CURL *curl = NULL;
 	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx) {
 		// shouldn't ever happen
-		ret = JAL_E_INVAL;
-		goto err_out;
+		return JAL_E_INVAL;
 	}
 	curl = session->curl_ctx;
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
@@ -492,30 +491,22 @@ enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char 
 
 	ret = jaln_create_journal_missing_msg(session->id, nonce, &headers);
 	if (JAL_OK != ret) {
-		goto err_out;
+		return ret;
 	}
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
 	CURLcode rc = curl_easy_perform(curl);
 	curl_slist_free_all(headers);
 	if (rc != CURLE_OK) {
-		ret = JAL_E_COMM;
-		goto err_out;
+		return JAL_E_COMM;
 	}
 
 	if (session->errored)
 	{
 		ret = JAL_E_INVAL;
-		goto err_out;
 	}
 
-	goto out;
-
-err_out:
-	curl_easy_cleanup(curl);
-out:
 	return ret;
-
 }
 
 static const char *jaln_rtype_str(const int record_type)
@@ -582,6 +573,9 @@ enum jal_status jaln_initialize_session(
 		JAL_OK != (rc = jaln_publisher_send_init(*session))) {
 		jaln_session_destroy(session);
 	}
+	vortex_mutex_lock(&ctx->lock);
+	++ctx->sess_cnt;
+	vortex_mutex_unlock(&ctx->lock);
 	return rc;
 }
 
@@ -617,6 +611,7 @@ struct jaln_connection *jaln_publish(
 
 	struct jaln_connection *jconn = jaln_connection_create();
 	jconn->jaln_ctx = ctx;
+	ctx->conn = jconn;
 
 	if (record_types & JALN_RTYPE_JOURNAL) {
 		if (JAL_OK != jaln_initialize_session(&jconn->journal_sess, ctx, host, port, mode, JALN_RTYPE_JOURNAL)) {

@@ -99,7 +99,6 @@ void jaln_session_unref(jaln_session *sess)
 	sess->ref_cnt--;
 	if (0 == sess->ref_cnt) {
 		jaln_session_destroy(&sess);
-		vortex_mutex_unlock(&sess->lock);
 		return;
 	}
 	vortex_mutex_unlock(&sess->lock);
@@ -401,6 +400,8 @@ enum jal_status jaln_session_is_ok(jaln_session *sess)
 	if (!sess->curl_ctx) {
 		return JAL_E_NOT_CONNECTED;
 	}
-	// TODO we may want to verify something about the curl connection
+	if (sess->closing || sess->errored) {
+		return JAL_E_INTERNAL_ERROR;
+	}
 	return JAL_OK;
 }

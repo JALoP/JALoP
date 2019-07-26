@@ -36,23 +36,11 @@
 #include "jaln_connection.h"
 #include "jaln_publisher.h"
 
-axl_bool jaln_disconnect_helper(__attribute__((unused)) axlPointer key,
-				axlPointer data,
-				__attribute__((unused)) axlPointer user_data)
+void jaln_mark_closing(jaln_session *sess)
 {
-	axlList *sessions = (axlList *) data;
-	int i;
-
-	for (i = 0; i < axl_list_length(sessions); i++) {
-		jaln_session *sess = NULL;
-		sess = (jaln_session *) axl_list_get_nth(sessions, i);
-
-		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
-		vortex_mutex_unlock(&sess->lock);
-	}
-
-	return axl_false;
+	vortex_mutex_lock(&sess->lock);
+	sess->closing = axl_true;
+	vortex_mutex_unlock(&sess->lock);
 }
 
 enum jal_status jaln_disconnect(struct jaln_connection *jal_conn)
@@ -61,11 +49,15 @@ enum jal_status jaln_disconnect(struct jaln_connection *jal_conn)
 		return JAL_E_INVAL;
 	}
 
-	jaln_context *ctx = jal_conn->jaln_ctx;
-
-	vortex_mutex_lock(&ctx->lock);
-	axl_hash_foreach(ctx->sessions_by_conn, jaln_disconnect_helper, NULL);
-	vortex_mutex_unlock(&ctx->lock);
+	if (jal_conn->journal_sess) {
+		jaln_mark_closing(jal_conn->journal_sess);
+	}
+	if (jal_conn->audit_sess) {
+		jaln_mark_closing(jal_conn->audit_sess);
+	}
+	if (jal_conn->log_sess) {
+		jaln_mark_closing(jal_conn->log_sess);
+	}
 
 	return JAL_OK;
 }

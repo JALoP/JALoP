@@ -71,10 +71,14 @@ void test_jaln_disconnect_works()
 	axl_hash_insert_full(jaln_ctx->sessions_by_conn, key, free, sessions, jaln_axl_list_destroy_wrapper);
 	axl_list_append(sessions, sess);
 	axl_list_append(sessions, sess2);
+	conn->log_sess = sess;
+	jaln_session_ref(sess);
+	conn->audit_sess = sess2;
+	jaln_session_ref(sess2);
 	jaln_disconnect(conn);
 	assert_equals(axl_true, sess->closing);
 	assert_equals(axl_true, sess2->closing);
-	jaln_session_destroy(&sess2);
+	jaln_session_unref(sess2);
 }
 
 void test_jaln_disconnect_fails_cleanly_on_bad_input()

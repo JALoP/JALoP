@@ -1265,3 +1265,23 @@ enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *diges
 			  encoding, digest);
 	return JAL_OK;
 }
+
+void jaln_send_close_session(jaln_session *sess)
+{
+	CURL *curl = sess->curl_ctx;
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
+
+	// Unset header function and ensure header data is set so that headers
+	// are passed to write function
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, sess);
+
+	struct curl_slist *headers = NULL;
+	if (add_header(JALN_HDRS_CONTENT_TYPE, JALN_STR_CT_JALOP, &headers) &&
+	    add_header(JALN_HDRS_MESSAGE, JALN_MSG_CLOSE_SESSION, &headers) &&
+	    add_header(JALN_HDRS_SESSION_ID, sess->id, &headers)) {
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+		(void) curl_easy_perform(curl);
+		curl_slist_free_all(headers);
+	}
+}

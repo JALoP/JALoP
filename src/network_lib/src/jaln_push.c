@@ -31,6 +31,8 @@
 #include <vortex.h>
 
 #include "jal_alloc.h"
+#include "jaln_context.h"
+#include "jaln_message_helpers.h"
 #include "jaln_session.h"
 #include "jaln_pub_feeder.h"
 #include "jaln_push.h"
@@ -111,11 +113,14 @@ enum jal_status jaln_send_record(
 		return JAL_E_INVAL_NONCE;
 	}
 
-	if (JAL_OK != jaln_session_is_ok(sess)) {
-		return JAL_E_INVAL;
+	enum jal_status ret = jaln_session_is_ok(sess);
+	if (JAL_E_INTERNAL_ERROR == ret) {
+		jaln_finish(sess);
+	}
+	if (JAL_OK != ret) {
+		return JAL_E_NOT_CONNECTED;
 	}
 
-	enum jal_status ret = JAL_E_INVAL;
 	struct jaln_pub_data *pub_data = NULL;
 	struct jaln_record_info rec_info;
 
@@ -153,6 +158,9 @@ out:
 	pub_data->sys_meta_sz = 0;
 	pub_data->app_meta_sz = 0;
 	pub_data->payload_sz = 0;
+	if (JAL_OK != ret) {
+		jaln_finish(sess);
+	}
 	return ret;
 }
 
@@ -189,11 +197,14 @@ enum jal_status jaln_send_record_feeder(
 		return JAL_E_INVAL_NONCE;
 	}
 
-	if (JAL_OK != jaln_session_is_ok(sess)) {
+	enum jal_status ret = jaln_session_is_ok(sess);
+	if (JAL_E_INTERNAL_ERROR == ret) {
+		jaln_finish(sess);
+	}
+	if (JAL_OK != ret) {
 		return JAL_E_NOT_CONNECTED;
 	}
 
-	enum jal_status ret = JAL_E_INVAL;
 	struct jaln_pub_data *pub_data = NULL;
 	struct jaln_record_info rec_info;
 
@@ -247,6 +258,9 @@ out:
 	pub_data->app_meta = NULL;
 	pub_data->sys_meta_sz = 0;
 	pub_data->app_meta_sz = 0;
+	if (JAL_OK != ret) {
+		jaln_finish(sess);
+	}
 	return ret;
 }
 
@@ -329,6 +343,19 @@ enum jal_status jaln_finish(jaln_session *sess)
 	if (NULL == sess || NULL == sess->pub_data) {
 		return JAL_E_INVAL_PARAM;
 	}
+	// cancel queued records and wait for any running ones to complete
+	(void) apr_thread_pool_tasks_cancel(sess->jaln_ctx->threads, sess);
+	vortex_cond_signal(&sess->wait);
+	vortex_mutex_lock(&sess->lock);
+	jaln_send_close_session(sess);
+	vortex_mutex_unlock(&sess->lock);
+	jaln_context *ctx = sess->jaln_ctx;
+	vortex_mutex_lock(&ctx->lock);
+	ctx->conn_callbacks->on_channel_close(sess->ch_info, ctx->user_data);
+	if (0 >= --ctx->sess_cnt) {
+		ctx->conn_callbacks->on_connection_close(ctx->conn, ctx->user_data);
+	}
+	vortex_mutex_unlock(&ctx->lock);
 
 	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
 	if (!ans_rpy_sent) {

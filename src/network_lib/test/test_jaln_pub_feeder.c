@@ -247,10 +247,13 @@ void test_pub_feeder_fill_buffer()
 
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
 
-	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, sess);
+	struct jaln_readfunc_info info = { sess, axl_false };
+
+	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, &info);
 
 	assert_string_equals(EXPECTED_MSG, buffer);
 	assert_equals(VORTEX_SZ, ret);
+	assert_equals(axl_false, info.complete);
 }
 
 void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
@@ -261,12 +264,13 @@ void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
 	sess->pub_data->payload_off = VORTEX_SZ - 5;
 
-	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, sess);
+	struct jaln_readfunc_info info = { sess, axl_false };
+
+	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, &info);
 
 	assert_string_equals(EXPECTED_MSG_MAX_OFFSET, buffer);
 	assert_equals(strlen(EXPECTED_MSG_MAX_OFFSET), ret);
-
-	free(buffer);
+	assert_equals(axl_false, info.complete);
 }
 
 void test_pub_feeder_is_finished_returns_true_if_errored()

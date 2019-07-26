@@ -492,4 +492,11 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
  */
 enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, uint64_t *msg_len_out);
 
+/**
+ * Send a close-session message to end the current session.
+ *
+ * @param[in] sess The current session.
+ */
+void jaln_send_close_session(jaln_session *sess);
+
 #endif // _JALN_MESSAGE_HELPERS_H_

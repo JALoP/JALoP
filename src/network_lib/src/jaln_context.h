@@ -62,7 +62,9 @@ struct jaln_context_t {
 	apr_thread_pool_t *threads;
 	apr_pool_t *mem_pool;
 	int ref_cnt;
+	int sess_cnt; // Count of open sessions. Need to know when to call on_connection_close
 	axl_bool is_connected;
+	struct jaln_connection *conn; // Connection to pass to on_connection_close
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_subscriber_callbacks *sub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;
