@@ -295,7 +295,7 @@ void test_pub_feeder_is_finished_returns_false_before_payload_break_is_written()
 
 void test_pub_feeder_get_size_returns_cached_size()
 {
-	int sz = 0;
+	uint64_t sz = 0;
 	sess->pub_data->vortex_feeder_sz = 24;
 	sess->pub_data->finished_payload_break = axl_false;
 	sess->pub_data->payload_off = 0;

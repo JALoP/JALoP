@@ -47,7 +47,7 @@
  */
 axl_bool jaln_pub_feeder_get_size(
 		jaln_session *sess,
-		int *size);
+		uint64_t *size);
 
 /**
  * function for libcurl to fill a buffer to send data.
