@@ -446,6 +446,9 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 			if (JAL_OK != ret) {
 				if (JAL_E_JOURNAL_MISSING == ret) {
 					jaln_publisher_send_journal_missing(session, rec_info.nonce);
+					free(session->pub_data->nonce);
+					session->pub_data->nonce = NULL;
+					session->pub_data->payload_off = 0;
 				} else {
 					goto err_out;
 				}
