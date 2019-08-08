@@ -27,13 +27,17 @@
  */
 #include "jalu_daemonize.h"
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include "jal_asprintf_internal.h"
 
-int jalu_daemonize() {
+int jalu_daemonize(const char *log_dir, const char *pid_file) {
 	pid_t pid, sid;
 	pid = fork();
 	if (pid < 0) {
@@ -56,6 +60,59 @@ int jalu_daemonize() {
 	close(STDIN_FILENO);
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
+
+	if (log_dir != NULL) {
+		int fd = open("/dev/null", O_RDONLY);
+		if (fd != 0) {
+			/* fd 0 stdin */
+			if (fd != -1)
+				close(fd);
+			return -1;
+		}
+
+		char filename[PATH_MAX];
+
+		if (snprintf(filename, sizeof(filename), "%s/stdout.log", log_dir) < 0) {
+			return -1;
+		}
+
+		mode_t mode = 0660; // Let umask decide the group permissions
+		int flags = O_CREAT | O_WRONLY | O_TRUNC;
+
+		fd = open(filename, flags, mode);
+		if ( fd != 1) {
+			/* fd 1 stdout */
+			if (fd != -1)
+				close(fd);
+			return -1;
+		}
+
+		if (snprintf(filename, sizeof(filename), "%s/stderr.log", log_dir) < 0) {
+			return -1;
+		}
+
+		fd = open(filename, flags, mode);
+		if (fd != 2) {
+			/* fd 2 stderr */
+			if (fd != -1)
+				close(fd);
+			return -1;
+		}
+
+		// The stdout stream is buffered. To print immediately, disable buffering on stdout
+		setbuf(stdout, NULL);
+	}
+
+	if (pid_file != NULL) {
+		FILE *fp = fopen(pid_file, "w");
+		if (fp == NULL) {
+			fprintf(stderr, "Failed to open pid file '%s'.\n", pid_file);
+			return -1;
+		}
+
+		fprintf(fp, "%ld\n", (long) getpid());
+		fclose(fp);
+	}
 
 	return 0;
 }

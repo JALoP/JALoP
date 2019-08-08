@@ -46,6 +46,8 @@
 #define JALLS_CFG_SIGNATURE "sign_sys_meta"
 #define JALLS_CFG_MANIFEST "manifest_sys_meta"
 #define JALLS_CFG_SCHEMAS_ROOT "schemas_root"
+#define JALLS_CFG_PID_FILE "pid_file"
+#define JALLS_CFG_LOG_DIR "log_dir"
 
 /**
  * Parses the config file and fills out the jalls_context struct.

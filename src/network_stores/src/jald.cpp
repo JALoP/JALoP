@@ -121,6 +121,8 @@ struct global_config_t {
 	char *db_root;
 	char *schemas_root;
 	char *host;
+	char *pid_file;
+	char *log_dir;
 	long long int port;
 	long long int pending_digest_max;
 	long long int pending_digest_timeout;
@@ -1106,7 +1108,7 @@ int main(int argc, char **argv)
 	print_config();
 
 	if (global_args.daemon) {
-		jalu_daemonize();
+		jalu_daemonize(global_config.log_dir, global_config.pid_file);
 	}
 
 	rc = setup_db_layer();
@@ -1388,6 +1390,12 @@ void print_config(void)
 	printf("POLL TIME:\t%lld\n", global_config.poll_time);
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
+	if (global_config.pid_file) {
+		printf("PID FILE:\t\t%s\n", global_config.pid_file);
+	}
+	if (global_config.log_dir) {
+		printf("LOG DIRECTORY:\t\t%s\n", global_config.log_dir);
+	}
 	printf("PEERS\n%15s | %18s | %18s", "HOST", "PUBLISH_ALLOW", "SUBSCRIBE_ALLOW");
 	axl_hash_foreach(global_config.peers, print_peer_cfg, NULL);
 	printf("\n===\nEND CONFIG VALUES:\n===\n");
@@ -1491,6 +1499,20 @@ enum jald_status set_global_config(config_t *config)
 		}
 		free(global_config.schemas_root);
 		global_config.schemas_root = strdup(absolute_schemas_root);
+	}
+
+	// pid_file is optional
+	rc = jalu_config_lookup_string(root, JALNS_PID_FILE, &global_config.pid_file, false);
+	if (0 != rc) {
+		CONFIG_ERROR(root, JALNS_PID_FILE, "expected string value");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	// log_dir path is optional, kc_mod
+	rc = jalu_config_lookup_string(root, JALNS_LOG_DIR, &global_config.log_dir, false);
+	if (0 != rc) {
+		CONFIG_ERROR(root, JALNS_LOG_DIR, "expected string value");
+		return JALD_E_CONFIG_LOAD;
 	}
 
 	config_setting_t *peers =  config_setting_get_member(root, JALNS_PEERS);

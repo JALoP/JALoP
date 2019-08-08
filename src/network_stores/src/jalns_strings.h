@@ -50,6 +50,8 @@ extern "C" {
 #define JALNS_PUBLISH_ALLOW "publish_allow"
 #define JALNS_SUBSCRIBE_ALLOW "subscribe_allow"
 #define JALNS_REMOTE_CERT_DIR "remote_cert_dir"
+#define JALNS_PID_FILE "pid_file"
+#define JALNS_LOG_DIR "log_dir"
 
 #ifdef __cplusplus
 }

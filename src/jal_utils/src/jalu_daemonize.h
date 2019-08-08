@@ -35,10 +35,13 @@ extern "C" {
 
 /**
  * daemonizes the process.
- *
+ * @param [in] log_dir Directory in which log files for stdout and stderr will
+ *  be created. If NULL, no log files are created.
+ * @param [in] pid_file Absolute path to which the PID will be written. If NULL,
+ *  no file is creatd.
  * @return 0 on success, -1 on failure.
  */
-int jalu_daemonize();
+int jalu_daemonize(const char *log_dir, const char *pid_file);
 
 #ifdef __cplusplus
 }

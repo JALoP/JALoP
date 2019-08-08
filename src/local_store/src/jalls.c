@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (!debug) {
-		err = jalu_daemonize();
+		err = jalu_daemonize(jalls_ctx->log_dir, jalls_ctx->pid_file);
 		if (err < 0) {
 			fprintf(stderr, "failed to create daemon\n");
 			goto err_out;

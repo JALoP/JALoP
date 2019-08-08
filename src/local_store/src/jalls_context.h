@@ -66,6 +66,10 @@ struct jalls_context {
 	int sign_sys_meta;
 	/** A boolean for whether to include manifests in the system metadata for data received from the producer library. */
 	int manifest_sys_meta;
+	/** Absolute path to file where the PID will be written if run as a daemon. */
+	char *pid_file;
+	/** Absolute path to directory where stdout and stderr logs will be written if run as a daemon. */
+	char *log_dir;
 };
 
 struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */
