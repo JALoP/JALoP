@@ -1062,6 +1062,7 @@ void test_create_journal_missing_msg()
 void test_parse_init_ack_header_record_id()
 {
 	sess->pub_data = jaln_pub_data_create();
+	sess->ch_info->type = JALN_RTYPE_JOURNAL;
 	jaln_parse_init_ack_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
 
 	assert_not_equals(NULL, sess->pub_data->nonce);
@@ -1073,11 +1074,37 @@ void test_parse_init_ack_header_offset()
 {
 	sess->pub_data = jaln_pub_data_create();
 	info->sess = sess;
+	sess->ch_info->type = JALN_RTYPE_JOURNAL;
 	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
 
 	assert_true(sess->pub_data->payload_off > 0);
 	assert_equals(SAMPLE_OFFSET_VAL, sess->pub_data->payload_off);
 	assert_equals(axl_false, sess->errored);
+}
+
+void test_parse_init_ack_offset_in_live()
+{
+	sess->pub_data = jaln_pub_data_create();
+	sess->ch_info->type = JALN_RTYPE_JOURNAL;
+	sess->mode = JALN_LIVE_MODE;
+	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
+	assert_equals(axl_true, sess->errored);
+}
+
+void test_parse_init_ack_offset_with_audit()
+{
+	sess->pub_data = jaln_pub_data_create();
+	sess->ch_info->type = JALN_RTYPE_AUDIT;
+	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
+	assert_equals(axl_true, sess->errored);
+}
+
+void test_parse_init_ack_offset_with_log()
+{
+	sess->pub_data = jaln_pub_data_create();
+	sess->ch_info->type = JALN_RTYPE_LOG;
+	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
+	assert_equals(axl_true, sess->errored);
 }
 
 void test_parse_init_ack_header_content_type_valid()

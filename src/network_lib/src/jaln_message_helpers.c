@@ -339,14 +339,14 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 		rc = jaln_parse_session_id(content, len, sess);
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ID))) {
 		// Journal Resume ID
-		if (sess->mode == JALN_LIVE_MODE) {
+		if (sess->mode == JALN_LIVE_MODE || sess->ch_info->type != JALN_RTYPE_JOURNAL) {
 			sess->errored = 1;
 		} else {
 			rc = jaln_parse_journal_resume_id_header(content, len, sess);
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_JOURNAL_OFFSET))) {
 		// Journal Resume offset
-		if (sess->mode == JALN_LIVE_MODE) {
+		if (sess->mode == JALN_LIVE_MODE || sess->ch_info->type != JALN_RTYPE_JOURNAL) {
 			sess->errored = 1;
 		} else {
 			rc = jaln_parse_journal_resume_offset_header(content, len, sess);
