@@ -202,6 +202,7 @@ enum jal_status jaln_verify_init_ack_headers(struct jaln_response_header_info *i
 	    && NULL != info->sess->ch_info->encoding
 	    && NULL != info->sess->id
 	    && 0 == info->error_cnt
+	    && ((info->sess->pub_data->nonce != NULL) == (info->sess->pub_data->payload_off != 0)) // Nonce and offset must both be defined or neither
 	) {
 		return JAL_OK;
 	}

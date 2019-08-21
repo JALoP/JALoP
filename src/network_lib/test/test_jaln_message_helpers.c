@@ -948,6 +948,7 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 
 void test_verify_init_ack_headers()
 {
+	sess->pub_data = jaln_pub_data_create();
 	enum jal_status rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -979,6 +980,18 @@ void test_verify_init_ack_headers()
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 */ // TODO: is content type required?
+
+	info->sess->pub_data->nonce = (char *)0xdeadbeef;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
+
+	info->sess->pub_data->payload_off = 1024;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_OK, rc);
+
+	info->sess->pub_data->nonce = NULL;
+	rc = jaln_verify_init_ack_headers(info);
+	assert_equals(JAL_E_INVAL, rc);
 
 	info->sess->dgst = NULL;
 	info->sess->ch_info->encoding = NULL;
