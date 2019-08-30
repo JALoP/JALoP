@@ -1,4 +1,4 @@
-This is a reference implementation of the Journal, Audit, and Logging Protocol (JALoP).
+This is a beta of a reference implementation of the Journal, Audit, and Logging Protocol (JALoP) updated to use HTTP as the transport layer instead of BEEP.
 
 The implementation is divided into a number of components:
   The JALoP Network Library (JNL)
@@ -10,6 +10,7 @@ This project makes use of the following libraries:
   lcov - http://ltp.sourceforge.net/coverage/lcov.php
   libaxl - http://www.aspl.es/xml
   libconfig - http://freshmeat.net/projects/libconfigduo
+  libcurl
   libuuid - http://e2fsprogs.sourceforge.net/
   libvortex - http://www.aspl.es/fact/files/af-arch/vortex/html/
   libxml2 - http://xmlsoft.org/
