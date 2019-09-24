@@ -1532,15 +1532,15 @@ static int parse_record_types(config_setting_t *node)
 	return ret;
 }
 
-static enum jald_status parse_peer_configs(config_setting_t *peers)
+static enum jald_status parse_peer_configs(config_setting_t *root, config_setting_t *peers)
 {
 	if (NULL == peers || !config_setting_is_list(peers)) {
-		CONFIG_ERROR(peers, JALNS_PEERS, "expected non-empty list");
+		CONFIG_ERROR(root, JALNS_PEERS, "expected non-empty list");
 		return JALD_E_CONFIG_LOAD;
 	}
 	int peer_len = config_setting_length(peers);
 	if (!peer_len) {
-		CONFIG_ERROR(peers, JALNS_PEERS, "expected non-empty list");
+		CONFIG_ERROR(root, JALNS_PEERS, "expected non-empty list");
 		return JALD_E_CONFIG_LOAD;
 	}
 	global_config.num_peers = peer_len;
@@ -1700,7 +1700,7 @@ enum jald_status set_global_config(config_t *config)
 	}
 
 	config_setting_t *peers =  config_setting_get_member(root, JALNS_PEERS);
-	return parse_peer_configs(peers);
+	return parse_peer_configs(root, peers);
 }
 
 enum jald_status setup_db_layer(void)
