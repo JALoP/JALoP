@@ -2162,3 +2162,179 @@ enum jaldb_status jaldb_remove_db_logs(jaldb_context *ctx)
 
 	return JALDB_OK;
 }
+
+enum jaldb_status jaldb_compact_db(jaldb_context *ctx, DB *db)
+{
+	int db_ret;
+	enum jaldb_status ret;
+	DB_TXN *txn = NULL;
+	DB_COMPACT c_data;
+	u_int32_t c_flags = DB_FREE_SPACE; // return free pages to filesystem.
+
+	memset(&c_data, 0, sizeof(c_data));
+
+	c_data.compact_fillpercent = 0;
+	c_data.compact_timeout = 0;
+	c_data.compact_pages = 0;
+
+        while (1) {
+                db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+                if (0 != db_ret) {
+                        ret = JALDB_E_DB;
+                        goto out;
+                }
+
+                db_ret = db->compact(db, txn, NULL, NULL, &c_data, c_flags, NULL);
+                if (0 == db_ret) {
+                        txn->commit(txn, 0);
+                        break;
+                }
+
+                txn->abort(txn);
+                if (DB_LOCK_DEADLOCK == db_ret) {
+                        continue;
+                }
+                // some other error
+                ret = JALDB_E_DB;
+                goto out;
+        }
+
+        // check some compaction stats
+        fprintf(stdout, "Pages examined  : %d\n", c_data.compact_pages_examine);
+        fprintf(stdout, "Pages freed     : %d\n", c_data.compact_pages_free);
+        fprintf(stdout, "Levels Removed  : %d\n", c_data.compact_levels);
+        fprintf(stdout, "Deadlocks       : %d\n", c_data.compact_deadlock);
+        fprintf(stdout, "Pages Truncated : %d\n", c_data.compact_pages_truncated);
+
+        ret = JALDB_OK;
+out:
+        return ret;
+}
+
+enum jaldb_status jaldb_compact_primary_db(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type)
+{
+	int db_ret;
+	enum jaldb_status ret;
+	struct jaldb_record_dbs *rdbs = NULL;
+	string db_name;
+
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_name = "primary_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->primary_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+out:
+	return ret;
+}
+
+enum jaldb_status jaldb_compact_dbs(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type)
+{
+	int db_ret;
+	enum jaldb_status ret = JALDB_OK;
+	struct jaldb_record_dbs *rdbs = NULL;
+	string db_name;
+
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_name = "primary_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->primary_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	db_name = "timestamp_idx_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->timestamp_idx_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	db_name = "nonce_timestamp_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->nonce_timestamp_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	db_name = "record_id_idx_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->record_id_idx_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	db_name = "record_sent_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->record_sent_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	db_name = "metadata_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->metadata_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	db_name = "network_nonce_idx_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->network_nonce_idx_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	db_name = "record_confirmed_db";
+	fprintf(stdout, "Compact %s\n", db_name.c_str());
+	ret = jaldb_compact_db(ctx, rdbs->record_confirmed_db);
+	if (JALDB_OK != ret) {
+		fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+	}
+
+	switch (type) {
+	case JALDB_RTYPE_JOURNAL:
+		db_name = "journal_conf_db";
+		fprintf(stdout, "Compact %s\n", db_name.c_str());
+		ret = jaldb_compact_db(ctx, ctx->journal_conf_db);
+		if (JALDB_OK != ret) {
+				fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+		}
+		break;
+	case JALDB_RTYPE_AUDIT:
+		db_name = "audit_conf_db";
+		fprintf(stdout, "Compact %s\n", db_name.c_str());
+		ret = jaldb_compact_db(ctx, ctx->audit_conf_db);
+		if (JALDB_OK != ret) {
+			fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+		}
+		break;
+	case JALDB_RTYPE_LOG:
+		db_name = "log_conf_db";
+		fprintf(stdout, "Compact %s\n", db_name.c_str());
+		ret = jaldb_compact_db(ctx, ctx->log_conf_db);
+		if (JALDB_OK != ret) {
+			fprintf(stderr, "ERROR: Faild to compact %s\n", db_name.c_str());
+		}
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+	}
+out:
+	return ret;
+}

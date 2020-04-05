@@ -60,6 +60,7 @@ static struct global_args_t {
 	int verbose;
 	int detail;
 	int skip_clean;
+	int compact;
 	char *nonce;
 	list<string> uuids;
 	char type;
@@ -228,6 +229,14 @@ out:
 		printf("\n");
 	}
 
+	if (global_args.compact) {
+		fprintf(stdout, "Running DB->compact\n");
+		dbret = jaldb_compact_dbs(ctx, type);
+		if (dbret != 0) {
+			fprintf(stderr, "ERROR: Compact failed on one or more databases.");
+		}
+	}
+
 	global_args_free();
 	jaldb_context_destroy(&ctx);
 	return dbret;
@@ -284,7 +293,7 @@ static void process_options(int argc, char **argv)
 {
 	int opt = 0;
 
-	static const char *opt_string = "s:u:t:b:dfnvxh:p";
+	static const char *opt_string = "s:u:t:b:dfnvxh:pc";
 	static const struct option long_options[] = {
 		{"type", required_argument, NULL, 't'},
 		{"before", required_argument, NULL, 'b'},
@@ -295,6 +304,7 @@ static void process_options(int argc, char **argv)
 		{"version", no_argument, NULL, 'n'},
 		{"verbose", no_argument, NULL, 'v'},
 		{"detail", no_argument, NULL, 'x'},
+		{"compact", no_argument, NULL, 'c'},
 		{0, 0, 0, 0}
 	};
 
@@ -330,6 +340,9 @@ static void process_options(int argc, char **argv)
 			break;
 		case 'x':
 			global_args.detail = 1;
+			break;
+		case 'c':
+			global_args.compact = 1;
 			break;
 		default:
 			goto err_out;
@@ -379,6 +392,8 @@ __attribute__((noreturn)) static void usage()
 				to at least one JALoP Network Store.  When given\n\
 				without '-d', this will report the records that would be\n\
 				deleted.\n\
+	-c  --compact		Compact the databases associated to the JAL record type (j/a/l)\n\
+				passed via -t and return empty pages to the filesystem.\n\
 	-p, --preserve-history  Don't remove old Berkeley DB log files after purging.  This can\n\
 				be useful if you need to recover from certain error conditions\n\
 				but consumes more disk space\n\
