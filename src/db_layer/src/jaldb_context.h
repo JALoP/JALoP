@@ -282,6 +282,56 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 		enum jaldb_rec_type type,
 		struct jaldb_record_dbs **rdbs);
 
+/**
+ * Run a checkpoint and archive to remove db transaction history
+ * to recover disk space
+ * @param[in] ctx the jaldb_context
+ *
+ * @ return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_remove_db_logs(
+		jaldb_context *ctx);
+
+/**
+ * Run compaction (DB->compact) on the passed DB and return all the empty
+ * pages (in the free list) to the filesystem.
+ *
+ * @param[in] ctx the jaldb_context
+ * @param[in] db Pointer to the DB to run compaction on.
+ *
+ * @return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_compact_db(
+		jaldb_context *ctx,
+		DB *db);
+
+/**
+ * Run compaction (DB->compact) on the primary DB of the given JAL record
+ * type and return all the empty pages (in the free list) to the filesystem.
+ *
+ * @param[in] ctx the jaldb_context
+ * @param[in] type JAL record type.
+ *
+ * @return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_compact_primary_db(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type);
+
+/**
+ * Run compaction (DB->compact) on all the DBs associated to the given JAL
+ * record type (including the primary DB) and return all the empty
+ * pages (in the free list) to the filesystem.
+ *
+ * @param[in] ctx the jaldb_context
+ * @param[in] type JAL record type.
+ *
+ * @return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_compact_dbs(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type);
+
 #ifdef __cplusplus
 }
 #endif
