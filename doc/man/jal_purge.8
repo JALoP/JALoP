@@ -60,6 +60,9 @@ Don't remove old Berkeley DB log files after purging.  This can
 be useful if you need to recover from certain error conditions
 but consumes more disk space
 .TP
+\fB\-c\fR, \fB\-\-compact\fR
+Compact the databases associated to the JAL record type (j/a/l) passed via \fB\-\-type\fR (\fB\-t\fR) and return empty pages to the filesystem.
+.TP
 \fB\-h\fR, \fB\-\-home=P\fR
 Specify the root of the JALoP database, defaults to
 .I /var/lib/jalop/db
