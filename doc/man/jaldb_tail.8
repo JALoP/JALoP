@@ -35,6 +35,9 @@ Select JALoP record type to output.
 or \fIl\fR (for log records).
 The default behavior displays log records.
 .TP
+\fB\-d D\fR, \fB\-\-data=D\fR
+Specifies which section of the data should be outputted, options are \fIa\fR for application metadata, \fIs\fR for system metadata, \fIp\fR for the payload (raw journal, audit, or log data), or \fIi\fR for record ID (UUID-Timestamp) only. The default is to output the record ID only. To retrieve all portions of a record, use "z".
+.TP
 \fB\-h H\fR, \fB\-\-home=H\fR
 Specify the root of the JALoP database, defaults to
 .I /var/lib/jalop/db/
