@@ -225,6 +225,8 @@ void on_connection_close(
 	} else {
 		DEBUG_LOG("Closed connection to %s:%llu", peer->host, peer->port);
 	}
+        jaln_disconnect(peer->conn);
+        free(peer->conn);
 	peer->conn = NULL;
 }
 
@@ -1133,9 +1135,14 @@ int main(int argc, char **argv)
 	gs_log_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	struct peer_config_t *peer;
 
-	// set up JALoP contexts for each peer
-	for (int i = 0; i < global_config.num_peers; ++i) {
+	do {
+	    // set up JALoP contexts for each peer
+	    for (int i = 0; i < global_config.num_peers; ++i) {
 		peer = global_config.peers + i;
+		if (peer->conn) {
+			// alreay connected
+			continue;
+		}
 
 		conn_cbs = jaln_connection_callbacks_create();
 		conn_cbs->connect_request_handler = on_connect_request;
@@ -1152,7 +1159,9 @@ int main(int argc, char **argv)
 		pub_cbs->notify_digest = pub_notify_digest;
 		pub_cbs->peer_digest = pub_peer_digest;
 
+	    	jaln_context_destroy(&jctx);
 		jctx = jaln_context_create();
+
 		if (!jctx) {
 			DEBUG_LOG("Failed to create the jaln_context");
 			rc = -1;
@@ -1210,49 +1219,47 @@ int main(int argc, char **argv)
 			goto out;
 		}
 		peer->net_ctx = jctx;
-	}
 
-	// try (and potentially retry) to connect to each peer
-	do {
-		for (int i = 0; i < global_config.num_peers; ++i) {
-			peer = global_config.peers + i;
-			if (peer->conn) {
-				// alreay connected
-				continue;
-			}
-			++peer->retries;
-			std::stringstream ss(std::ios_base::out);
-			ss << peer->port;
-			peer->conn = jaln_publish(peer->net_ctx, peer->host, ss.str().c_str(), \
-					peer->record_types, peer->mode, peer);
-			if (!peer->conn) {
-				DEBUG_LOG("Failed connection attempt %lld to %s:%llu", peer->retries, peer->host, peer->port);
-			} else {
-				peer->retries = 0;
-			}
+		++peer->retries;
+		std::stringstream ss(std::ios_base::out);
+		ss << peer->port;
+		peer->conn = jaln_publish(peer->net_ctx, peer->host, ss.str().c_str(), \
+				peer->record_types, peer->mode, peer);
+		if (!peer->conn) {
+			DEBUG_LOG("Failed connection attempt %lld to %s:%llu", peer->retries, peer->host, peer->port);
+		} else {
+			peer->retries = 0;
 		}
-		if (global_config.retry_interval == -1) {
-			// don't retry
-			// wait for a signal and then check if we should be exiting
-			while (!exiting) {
-				pause();
-			}
+	    } // for loop over peers
+
+	    if (global_config.retry_interval == -1) {
+		// don't retry
+		// wait for a signal and then check if we should be exiting
+		while (!exiting) {
+			pause();
+		}
+			break;
+	    }
+
+	    unsigned int remaining = global_config.retry_interval;
+	    while ((remaining = sleep(remaining))) {
+		// interrupted by a signal
+		if (exiting) {
 			break;
 		}
-		unsigned int remaining = global_config.retry_interval;
-		while ((remaining = sleep(remaining))) {
-			// interrupted by a signal
-			if (exiting) {
-				break;
-			}
-		}
+	    }
 	} while (!exiting);
 
 	// try to disconnect from each peer
 	for (int i = 0; i < global_config.num_peers; ++i) {
 		peer = global_config.peers + i;
 		if (peer->conn) {
-			jaln_disconnect(peer->conn);
+			jal_status rc = jaln_disconnect(peer->conn);
+			if (JAL_OK == rc) {
+			  DEBUG_LOG("Disconnected sessions with Subscriber");
+			} else {
+			  DEBUG_LOG("Failed to disconnect sessions with Subscriber");
+			}
 		}
 	}
 

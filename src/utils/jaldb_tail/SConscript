@@ -11,6 +11,9 @@ add_project_lib(env, 'db_layer', 'jal-db')
 env.MergeFlags(env['bdb_cflags'])
 env.MergeFlags(env['bdb_ldflags'])
 
+env.MergeFlags(env['libxml2_cflags'])
+env.MergeFlags(env['libxml2_ldflags'])
+
 jaldb_tail_objs = env.SharedObject(source=sources)
 
 jaldb_tail = env.Program(target='jaldb_tail', source=jaldb_tail_objs)
