@@ -1159,6 +1159,7 @@ int main(int argc, char **argv)
 		pub_cbs->notify_digest = pub_notify_digest;
 		pub_cbs->peer_digest = pub_peer_digest;
 
+		jctx = peer->net_ctx;
 	    	jaln_context_destroy(&jctx);
 		jctx = jaln_context_create();
 
