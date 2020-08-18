@@ -981,6 +981,8 @@ out:
 	if (cursor) {
 		axl_list_cursor_free(cursor);
 	}
+
+	free(pub_id_str);
 	free(dc_config_str);
 	free(dgst_list_str);
 	free(enc_list_str);

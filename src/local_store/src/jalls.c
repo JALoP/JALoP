@@ -95,6 +95,7 @@ int main(int argc, char **argv) {
 	struct jalls_context *jalls_ctx = NULL;
 	enum jal_status jal_err = JAL_E_INVAL;
 	int sock = -1;
+	int old_socket_exist = 0;
 
 	if (0 != jalls_init()) {
 		goto err_out;
@@ -194,6 +195,8 @@ int main(int argc, char **argv) {
 	err = stat(jalls_ctx->socket, &sock_stat);
 	if (err != -1) {
 		fprintf(stderr, "failed to create socket: already exists\n");
+		fprintf(stderr, "Exiting ...\n");
+		old_socket_exist = 1;
 		goto err_out;
 	}
 	if (errno != ENOENT) {
@@ -279,7 +282,7 @@ int main(int argc, char **argv) {
 	}
 
 err_out:
-	if (jalls_ctx) {
+	if (jalls_ctx && 0 == old_socket_exist) {
 		delete_socket(jalls_ctx->socket, jalls_ctx->debug);
 	}
 

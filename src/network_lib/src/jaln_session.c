@@ -98,6 +98,7 @@ void jaln_session_unref(jaln_session *sess)
 	}
 	sess->ref_cnt--;
 	if (0 == sess->ref_cnt) {
+		vortex_mutex_unlock(&sess->lock);
 		jaln_session_destroy(&sess);
 		return;
 	}
@@ -146,6 +147,9 @@ void jaln_session_destroy(jaln_session **psession) {
 	if (!psession || !*psession) {
 		return;
 	}
+
+	vortex_mutex_lock(&(*psession)->lock);
+
 	jaln_session *sess = *psession;
 	if (JALN_ROLE_SUBSCRIBER == sess->role ) {
 		if (sess->dgst && sess->sub_data && sess->sub_data->sm && sess->sub_data->sm->dgst_inst) {
@@ -167,6 +171,11 @@ void jaln_session_destroy(jaln_session **psession) {
 	jaln_ctx_remove_session(sess->jaln_ctx, sess);
 	jaln_ctx_unref(sess->jaln_ctx);
 	free(sess->id);
+	if (sess->curl_ctx) {
+		curl_easy_cleanup(sess->curl_ctx);
+	}
+	vortex_mutex_unlock(&(*psession)->lock);
+	vortex_mutex_destroy(&(*psession)->lock);
 	free(sess);
 	*psession = NULL;
 }

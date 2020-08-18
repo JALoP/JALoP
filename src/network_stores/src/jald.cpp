@@ -115,6 +115,7 @@ struct peer_config_t {
 	jaln_context *net_ctx;
 	struct jaln_connection *conn;
 	long long int retries;
+	pthread_mutex_t peer_lock;
 };
 
 struct session_ctx_t {
@@ -144,6 +145,7 @@ enum jald_status {
 	JALD_E_CONFIG_LOAD = -1024,
 	JALD_E_DB_INIT,
 	JALD_E_NOMEM,
+	JALD_E_GEN,
 	JALD_OK = 0,
 };
 
@@ -209,6 +211,15 @@ void on_channel_close(
 	pthread_mutex_lock(sub_lock);
 	axl_hash_remove(hash, ch_info->hostname);
 	pthread_mutex_unlock(sub_lock);
+
+	DEBUG_LOG_SUB_SESSION(ch_info, "Closing other sessions");
+	struct peer_config_t *peer = (struct peer_config_t *)user_data;
+	if (peer) {
+		pthread_mutex_lock(&(peer->peer_lock));
+        	jaln_disconnect(peer->conn); //session->closing=axl_true, for each session.
+		DEBUG_LOG_SUB_SESSION(ch_info, "Closed other sessions");
+		pthread_mutex_unlock(&(peer->peer_lock));
+	}
 }
 
 void on_connection_close(
@@ -225,7 +236,7 @@ void on_connection_close(
 	} else {
 		DEBUG_LOG("Closed connection to %s:%llu", peer->host, peer->port);
 	}
-        jaln_disconnect(peer->conn);
+        jaln_disconnect(peer->conn); // marks session->closing = axl_true, for each session.
         free(peer->conn);
 	peer->conn = NULL;
 }
@@ -316,6 +327,7 @@ enum jal_status pub_on_journal_resume(
 }
 
 enum jaldb_status pub_get_next_record(
+			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
 			char **nonce,
 			char **timestamp,
@@ -359,6 +371,13 @@ enum jaldb_status pub_get_next_record(
 								     nonce,
 								     &(ctx->rec),
 								     timestamp);
+			}
+
+			// Check if jaln_session is fine.
+			if (JAL_OK != jaln_session_is_ok(sess)) {
+				DEBUG_LOG_SUB_SESSION(ch_info, "Session issues detected 1");
+				ret = JALDB_E_NETWORK_DISCONNECTED;
+				goto out;
 			}
 
 			if (JALDB_E_NOT_FOUND == ret) {
@@ -489,6 +508,7 @@ enum jal_status pub_send_records_feeder(
 		// The buffers will point to the record stored within the session
 		// The record is cleaned up by pub_on_record_complete
 		db_ret = pub_get_next_record(
+					sess,
 					ch_info,
 					&nonce,
 					timestamp,
@@ -507,6 +527,13 @@ enum jal_status pub_send_records_feeder(
 				goto out;
 			}
 			if (JALDB_E_NETWORK_DISCONNECTED == db_ret) {
+				// Check if jaln_session is fine.
+				if (JAL_OK != jaln_session_is_ok(sess)) {
+					DEBUG_LOG_SUB_SESSION(ch_info, "Session issues detected 2");
+					DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 2");
+					ret = jaln_finish(sess);
+					goto out;
+				}
 				ret = JAL_E_NOT_CONNECTED;
 				goto out;
 			}
@@ -540,6 +567,7 @@ enum jal_status pub_send_records_feeder(
 		nonce = NULL;
 	} while (JALDB_OK == db_ret);
 
+	DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 3");
 	ret = jaln_finish(sess);
 out:
 	free(nonce);
@@ -624,6 +652,7 @@ enum jal_status pub_send_records(
 		// The buffers will point to the record stored within the session
 		// The record is cleaned up by pub_on_record_complete
 		db_ret = pub_get_next_record(
+					sess,
 					ch_info,
 					&nonce,
 					timestamp,
@@ -642,6 +671,13 @@ enum jal_status pub_send_records(
 				goto out;
 			}
 			if (JALDB_E_NETWORK_DISCONNECTED == db_ret) {
+				// Check if jaln_session is fine.
+				if (JAL_OK != jaln_session_is_ok(sess)) {
+					DEBUG_LOG_SUB_SESSION(ch_info, "Session issues detected 4");
+					DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 4");
+					ret = jaln_finish(sess);
+					goto out;
+				}
 				ret = JAL_E_NOT_CONNECTED;
 				goto out;
 			}
@@ -675,6 +711,7 @@ enum jal_status pub_send_records(
 		nonce = NULL;
 	} while (JALDB_OK == db_ret);
 
+	DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 5");
 	ret = jaln_finish(sess);
 out:
 	free(nonce);
@@ -803,8 +840,17 @@ enum jal_status pub_on_subscribe(
 	pthread_attr_t attr;
 	struct thread_data *data = (struct thread_data *) jal_malloc(sizeof(struct thread_data));
 
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	if (0 != pthread_attr_init(&attr)) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR in pthread_attr_init()");
+		return JAL_E_INVAL;
+	}
+
+	//pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (0 != pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE)) {
+		pthread_attr_destroy(&attr);
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR in pthread_attr_setdetachstate()");
+		return JAL_E_INVAL;
+	}
 
 	pthread_mutex_lock(&exit_count_lock);
 	threads_to_exit += 1;
@@ -828,6 +874,7 @@ enum jal_status pub_on_subscribe(
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
+		DEBUG_LOG_SUB_SESSION(ch_info, "Starting journal thread.");
 		if(0 != pthread_create(&journal_thread, &attr, pub_send_journal, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
 			return JAL_E_INVAL;
@@ -837,6 +884,7 @@ enum jal_status pub_on_subscribe(
 
 		break;
 	case JALN_RTYPE_AUDIT:
+		DEBUG_LOG_SUB_SESSION(ch_info, "Starting audit thread.");
 		if(0 != pthread_create(&audit_thread, &attr, pub_send_audit, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
 			return JAL_E_INVAL;
@@ -846,6 +894,7 @@ enum jal_status pub_on_subscribe(
 
 		break;
 	case JALN_RTYPE_LOG:
+		DEBUG_LOG_SUB_SESSION(ch_info, "Starting log thread.");
 		if (0 != pthread_create(&log_thread, &attr, pub_send_log, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
 			return JAL_E_INVAL;
@@ -1130,6 +1179,11 @@ int main(int argc, char **argv)
 		rc = -1;
 		goto out;
 	}
+	if (0 != pthread_mutex_init(&exit_count_lock, NULL)) {
+		DEBUG_LOG("Failed to initialize exit_count_lock");
+		rc = -1;
+		goto out;
+	}
 	gs_journal_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	gs_audit_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	gs_log_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
@@ -1159,7 +1213,9 @@ int main(int argc, char **argv)
 		pub_cbs->notify_digest = pub_notify_digest;
 		pub_cbs->peer_digest = pub_peer_digest;
 
+		jctx = peer->net_ctx;
 	    	jaln_context_destroy(&jctx);
+		sleep(1);
 		jctx = jaln_context_create();
 
 		if (!jctx) {
@@ -1212,12 +1268,16 @@ int main(int argc, char **argv)
 			rc = -1;
 			goto out;
 		}
+		conn_cbs = NULL;
+
 		jaln_ret = jaln_register_publisher_callbacks(jctx, pub_cbs);
 		if (JAL_OK != jaln_ret) {
 			DEBUG_LOG("Failed to register publisher callbacks");
 			rc = -1;
 			goto out;
 		}
+		pub_cbs = NULL;
+
 		peer->net_ctx = jctx;
 
 		++peer->retries;
@@ -1275,6 +1335,7 @@ out:
 	pthread_mutex_destroy(&gs_log_sub_lock);
 	pthread_mutex_destroy(&exit_count_lock);
 	jaln_context_destroy(&jctx);
+	jaln_connection_callbacks_destroy(&conn_cbs);
 	jaln_publisher_callbacks_destroy(&pub_cbs);
 
 quick_out:
@@ -1396,6 +1457,7 @@ void free_peer_config(peer_config_t *peer)
 {
 	if (peer) {
 		free(peer->cert_dir);
+		pthread_mutex_destroy(&(peer->peer_lock));
 		jaln_shutdown(peer->conn);
 	}
 }
@@ -1622,6 +1684,12 @@ static enum jald_status parse_peer_configs(config_setting_t *root, config_settin
 			if (!peer_cfg->cert_dir) {
 				return JALD_E_NOMEM;
 			}
+		}
+
+		// Initialize pthread mutex peer_lock
+		if (0 != pthread_mutex_init(&(peer_cfg->peer_lock), NULL)) {
+			DEBUG_LOG("Failed to initialize peer_lock");
+			return JALD_E_GEN;
 		}
 	}
 	return JALD_OK;

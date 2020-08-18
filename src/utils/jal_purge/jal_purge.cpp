@@ -137,9 +137,9 @@ int main(int argc, char **argv)
 	} else {
 		// Otherwise output the old format that works with the test harness
 		if (global_args.del) {
-			cout << "Deleted the following records:" << endl;
+			cout << "Processing the following candidate records:" << endl;
 		} else {
-			cout << "Would delete the following records:" << endl;
+			cout << "Would process the following candidate records:" << endl;
 		}
 	}
 
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 						printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
 					}
 				} else {
-					printf("UUID: %s\n", iter->c_str());
+					printf("UUID: %s ", iter->c_str());
 				}
 
 				// Remove the record.
@@ -199,7 +199,11 @@ int main(int argc, char **argv)
 					dbret = jaldb_remove_record(ctx, type, nonce);
 					if (dbret != 0) {
 						fprintf(stderr, "ERROR: Cannot remove record: %s\n", nonce);
+					} else {
+						printf("Deleted\n");
 					}
+				} else {
+					printf("Kept\n");
 				}
 
 				jaldb_destroy_record(&rec);
@@ -211,7 +215,7 @@ int main(int argc, char **argv)
 		if (global_args.detail) {
 			printf("Records before: %s\n\n", global_args.before);
 		}
-		dbret = jaldb_iterate_by_timestamp(ctx, type, global_args.before, iter_cb, &global_args);
+		dbret = jaldb_iterate_by_timestamp2(ctx, type, global_args.before, iter_cb, &global_args);
 		goto out;
 	} else {
 		fprintf(stderr, "ERROR: Purging without a before time or uuid specified is currently not supported.\n");
@@ -229,17 +233,21 @@ out:
 		printf("\n");
 	}
 
+	jaldb_status rc = JALDB_OK;
 	if (global_args.compact) {
 		fprintf(stdout, "Running DB->compact\n");
-		dbret = jaldb_compact_dbs(ctx, type);
-		if (dbret != 0) {
+		rc = jaldb_compact_dbs(ctx, type);
+		if (JALDB_OK != rc) {
 			fprintf(stderr, "ERROR: Compact failed on one or more databases.");
 		}
 	}
 
 	global_args_free();
 	jaldb_context_destroy(&ctx);
-	return dbret;
+
+        if (JALDB_OK != dbret || JALDB_OK != rc) {
+		return -1;
+	}
 }
 
 extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record *rec, void *)
@@ -250,16 +258,20 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 
 	enum purge_action record_action = JAL_PURGE_KEEP;
 	enum jaldb_iter_status ret_val = JALDB_ITER_CONT;
+	char action[8] = {0};
 
 	if (rec->confirmed && (rec->synced == JALDB_SYNCED)) {
 		record_action = JAL_PURGE_DELETE;
 		ret_val = JALDB_ITER_REM;
+		strcpy(action, "Deleted");
 	} else if (rec->confirmed && (rec->synced != JALDB_SYNCED) && global_args.force) {
 		record_action = JAL_PURGE_FORCE;
 		ret_val = JALDB_ITER_REM;
+		strcpy(action, "Deleted");
 	} else {
 		record_action = JAL_PURGE_KEEP;
 		ret_val = JALDB_ITER_CONT;
+		strcpy(action, "Kept");
 	}
 	// If the detail flag is set, output the new detailed format, otherwise use the old format to prevent test harness from breaking
 	if (global_args.detail) {
@@ -270,13 +282,13 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 		else {
 			printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
 		}
-	} else {
-		printf("NONCE: %s\n", nonce);
+	} else if (0 != strcmp(action, "Deleted")) {
+		printf("NONCE: %s %s\n", nonce, action);
 
 		if (global_args.verbose) {
 			char uuid[37]; // UUID are always 36 characters + the NULL terminator
 			uuid_unparse(rec->uuid, uuid);
-			printf("UUID: %s\n", uuid);
+			printf("UUID: %s %s\n", uuid, action);
 		}
 	}
 
