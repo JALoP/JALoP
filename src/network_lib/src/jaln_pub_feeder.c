@@ -443,11 +443,15 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 
 	jaln_session_ref(sess);
 
+	vortex_mutex_lock(&sess->wait_lock);
+
 	if (APR_SUCCESS != apr_thread_pool_push(sess->jaln_ctx->threads,
 	                                        jaln_pub_feeder_handler,
 	                                        (void *) sess,
 	                                        APR_THREAD_TASK_PRIORITY_NORMAL,
 						(void *) sess)) { // use session as "owner" of the task
+		jaln_session_unref(sess);
+		vortex_mutex_unlock(&sess->wait_lock);
 		return JAL_E_NO_MEM;
 	}
 

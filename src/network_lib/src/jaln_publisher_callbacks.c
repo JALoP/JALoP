@@ -65,6 +65,7 @@ int jaln_publisher_callbacks_is_valid(struct jaln_publisher_callbacks *publisher
 	return 1;
 }
 
+#if 0
 enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
 					struct jaln_publisher_callbacks *publisher_callbacks)
 {
@@ -83,4 +84,16 @@ enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
 	jaln_ctx->pub_callbacks = new_callbacks;
 
 	return JAL_OK;
+}
+#endif
+
+enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
+		struct jaln_publisher_callbacks *publisher_callbacks)
+{
+	if (!jaln_ctx || jaln_ctx->pub_callbacks ||
+		!jaln_publisher_callbacks_is_valid(publisher_callbacks)) {
+		return JAL_E_INVAL;
+	}
+        jaln_ctx->pub_callbacks = publisher_callbacks;
+        return JAL_OK;
 }

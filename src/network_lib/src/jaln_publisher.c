@@ -540,6 +540,7 @@ static enum jal_status jaln_setup_session(
 	jal_asprintf(&url, "http%s://%s:%s/%s", tls? "s" : "", host, port, class_str);
 	if (CURLE_OK != curl_easy_setopt(curl_ctx, CURLOPT_URL, url)) {
 		curl_easy_cleanup(curl_ctx);
+		free(url);
 		return JAL_E_NO_MEM;
 	}
 	curl_easy_setopt(curl_ctx, CURLOPT_FAILONERROR, 1L);
@@ -555,6 +556,7 @@ static enum jal_status jaln_setup_session(
 		}
 	}
 	sess->curl_ctx = curl_ctx;
+	free(url);
 	return JAL_OK;
 }
 
@@ -575,6 +577,7 @@ enum jal_status jaln_initialize_session(
 	if (JAL_OK != (rc = jaln_setup_session(*session, host, port, rtype)) ||
 		JAL_OK != (rc = jaln_publisher_send_init(*session))) {
 		jaln_session_destroy(session);
+		return rc;
 	}
 	vortex_mutex_lock(&ctx->lock);
 	++ctx->sess_cnt;

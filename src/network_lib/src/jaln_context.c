@@ -47,6 +47,9 @@
 
 jaln_context *jaln_context_create(void)
 {
+	apr_size_t init_threads = 4;
+	apr_size_t max_threads = 8;
+
 	jaln_context *ctx = jal_calloc(1, sizeof(*ctx));
 
 	if (!vortex_mutex_create(&ctx->lock)) {
@@ -62,9 +65,9 @@ jaln_context *jaln_context_create(void)
 	}
 
 	if (APR_SUCCESS != apr_thread_pool_create(&ctx->threads,
-	                                          THREAD_POOL_INIT_THREADS,
-	                                          THREAD_POOL_MAX_THREADS,
-	                                          ctx->mem_pool)) {
+						init_threads,
+						max_threads,
+	                                        ctx->mem_pool)) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
 
@@ -85,6 +88,8 @@ jaln_context *jaln_context_create(void)
 	if (!ctx->sessions_by_conn) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
+
+	/***
 	ctx->vortex_ctx = vortex_ctx_new();
 	if (!ctx->vortex_ctx) {
 		jal_error_handler(JAL_E_NO_MEM);
@@ -93,6 +98,7 @@ jaln_context *jaln_context_create(void)
 		jaln_context_destroy(&ctx);
 		jal_error_handler(JAL_E_UNINITIALIZED);
 	}
+	***/
 	return ctx;
 }
 
@@ -101,10 +107,15 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	if (!jaln_ctx || !(*jaln_ctx)) {
 		return JAL_E_INVAL;
 	}
+	vortex_mutex_lock(&(*jaln_ctx)->lock);
 
-	apr_thread_pool_destroy((*jaln_ctx)->threads);
+	if ((*jaln_ctx)->threads) {
+		apr_thread_pool_destroy((*jaln_ctx)->threads);
+	}
 
-	apr_pool_destroy((*jaln_ctx)->mem_pool);
+	if ((*jaln_ctx)->mem_pool) {
+		apr_pool_destroy((*jaln_ctx)->mem_pool);
+	}
 
 	apr_terminate();
 
@@ -118,17 +129,24 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	if ((*jaln_ctx)->xml_encodings) {
 		axl_list_free((*jaln_ctx)->xml_encodings);
 	}
+
+	/***
 	vortex_mutex_destroy(&(*jaln_ctx)->lock);
 	if ((*jaln_ctx)->vortex_ctx) {
 		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, axl_true);
 	}
+	***/
+
 	if ((*jaln_ctx)->sessions_by_conn) {
 		axl_hash_free((*jaln_ctx)->sessions_by_conn);
 	}
 
-	free((*jaln_ctx)->peer_certs);
-	free((*jaln_ctx)->public_cert);
-	free((*jaln_ctx)->private_key);
+	if ((*jaln_ctx)->peer_certs)  free((*jaln_ctx)->peer_certs);
+	if ((*jaln_ctx)->public_cert) free((*jaln_ctx)->public_cert);
+	if ((*jaln_ctx)->private_key) free((*jaln_ctx)->private_key);
+
+	vortex_mutex_unlock(&(*jaln_ctx)->lock);
+	vortex_mutex_destroy(&(*jaln_ctx)->lock);
 
 	free(*jaln_ctx);
 	*jaln_ctx = NULL;
