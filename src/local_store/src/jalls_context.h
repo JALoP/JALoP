@@ -66,6 +66,12 @@ struct jalls_context {
 	int sign_sys_meta;
 	/** A boolean for whether to include manifests in the system metadata for data received from the producer library. */
 	int manifest_sys_meta;
+	/** Thread count threshold that shall prompt accept delay. */
+	int accept_delay_thread_count;
+	/** Length of each accept delay increment in microseconds. */
+	int accept_delay_increment;
+	/** Maximum accept delay in microseconds. */
+	int accept_delay_max;
 };
 
 struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */

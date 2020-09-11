@@ -1528,6 +1528,8 @@ void print_config(void)
 		printf("PEER[%d]:\n", i);
 		print_peer_config(global_config.peers + i);
 	}
+	printf("===\nEND CONFIG VALUES:\n===\n\n");
+	(void)fflush(stdout);
 }
 
 static bool parse_dc_config(config_setting_t *node, const char *dc_config[2])
