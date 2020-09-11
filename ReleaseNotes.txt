@@ -1,0 +1,16 @@
+Summary of release 2.0.0.2-beta changes -
+
+    - (jls) Added flow-control (number of simultaneous connections) to jal-local-store.
+    - (jls) Move setup_signals() call to the beginning of main() in jal-local-store for better handling of SIGTERM.
+    - (jald) Added fflush(stdout) to force print out the jald.cpp config items at the launch instead of at the end.
+    - (jal_purge) Fixed jal_purge not exiting gracefully on SIGTERM.
+
+    - (jal_purge) Create a list of records to be purged and then remove them instead of re-initiating the query after removing each record.
+    - (jal-local-store) Do not delete jal.socket created by a previous instance.
+    - (jal_purge) Return non-zero on error.
+    - (jal_purge) Check if db_root exists and is a directory or return error.
+    - (jaln_context) Replaced the defined *INIT* and *MAX* threads passed to APR thread call by apr_size_t variables.
+    - (jald) Added a sleep(1) between jaln_context_destroy() and jaln_context_create().
+    - (jald) Disconnect all sessions for a subscriber when one j/a/l session fails so the peer can reconnect afresh.
+    - (jal_purge) Mark the records as "Deleted' or 'Kept' in the report of 'jal_purge' as appropriate.
+
