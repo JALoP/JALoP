@@ -61,6 +61,9 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	char **socket = &((*jalls_ctx)->socket);
 	int *sign_sys_meta = &((*jalls_ctx)->sign_sys_meta);
 	int *manifest_sys_meta = &((*jalls_ctx)->manifest_sys_meta);
+	int *accept_delay_thread_count = &((*jalls_ctx)->accept_delay_thread_count);
+	int *accept_delay_increment = &((*jalls_ctx)->accept_delay_increment);
+	int *accept_delay_max = &((*jalls_ctx)->accept_delay_max);
 
 	config_t jalls_config;
 	config_init(&jalls_config);
@@ -129,6 +132,32 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	config_setting_lookup_bool(root, JALLS_CFG_SIGNATURE, sign_sys_meta);
 
 	config_setting_lookup_bool(root, JALLS_CFG_MANIFEST, manifest_sys_meta);
+
+	ret = config_setting_lookup_int(root,
+		JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT,
+		accept_delay_thread_count);
+
+	if (CONFIG_FALSE == ret) {
+		*accept_delay_thread_count = JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT_DEFAULT;
+	}
+
+	ret = config_setting_lookup_int(root,
+		JALLS_CFG_ACCEPT_DELAY_INCREMENT,
+		accept_delay_increment);
+
+	if (CONFIG_FALSE == ret || 0 > *accept_delay_increment) {
+		*accept_delay_increment = JALLS_CFG_ACCEPT_DELAY_INCREMENT_DEFAULT;
+	}
+
+	ret = config_setting_lookup_int(root,
+		JALLS_CFG_ACCEPT_DELAY_MAX,
+		accept_delay_max);
+
+	if (CONFIG_FALSE == ret ||
+		0 > *accept_delay_max ||
+		*accept_delay_increment > *accept_delay_max) {
+		*accept_delay_max = JALLS_CFG_ACCEPT_DELAY_MAX_DEFAULT;
+	}
 
 	if (*hostname == NULL) {
 		char name[_POSIX_HOST_NAME_MAX+1];

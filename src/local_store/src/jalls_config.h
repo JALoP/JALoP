@@ -36,6 +36,9 @@
 
 #define JALLS_CFG_DB_DEFAULT "/var/lib/jalop/db"
 #define JALLS_CFG_SOCKET_DEFAULT "/var/run/jalop/jalop.sock"
+#define JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT_DEFAULT 10
+#define JALLS_CFG_ACCEPT_DELAY_INCREMENT_DEFAULT 100
+#define JALLS_CFG_ACCEPT_DELAY_MAX_DEFAULT 10000000
 
 #define JALLS_CFG_PRIVATE_KEY_FILE "private_key_file"
 #define JALLS_CFG_PUBLIC_CERT_FILE "public_cert_file"
@@ -46,6 +49,9 @@
 #define JALLS_CFG_SIGNATURE "sign_sys_meta"
 #define JALLS_CFG_MANIFEST "manifest_sys_meta"
 #define JALLS_CFG_SCHEMAS_ROOT "schemas_root"
+#define JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT "accept_delay_thread_count"
+#define JALLS_CFG_ACCEPT_DELAY_INCREMENT "accept_delay_increment"
+#define JALLS_CFG_ACCEPT_DELAY_MAX "accept_delay_max"
 
 /**
  * Parses the config file and fills out the jalls_context struct.
