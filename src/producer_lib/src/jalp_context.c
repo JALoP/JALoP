@@ -48,7 +48,13 @@
 
 jalp_context *jalp_context_create(void)
 {
-	jalp_context *context = jal_calloc(1, sizeof(*context));
+	jalp_context *context = NULL;
+
+	context = jal_calloc(1, sizeof(*context));
+	if (context == NULL) {
+		return NULL;
+	}
+
 	context->socket = -1;
 	return context;
 }
