@@ -48,10 +48,13 @@
 
 #include <stdio.h>	/** For remove **/
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <sys/types.h>
+#include <sys/unistd.h>
 #include <errno.h>
 #include <pthread.h>
 #include <openssl/pem.h>
@@ -84,6 +87,7 @@ static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug)
 static int setup_signals();
 static void sig_handler(int sig);
 static void delete_socket(const char *socket_path, int debug);
+static int get_thread_count();
 
 int main(int argc, char **argv) {
 
@@ -95,6 +99,12 @@ int main(int argc, char **argv) {
 	struct jalls_context *jalls_ctx = NULL;
 	enum jal_status jal_err = JAL_E_INVAL;
 	int sock = -1;
+	int old_socket_exist = 0;
+
+	// Perform signal hookups
+	if ( 0 != setup_signals()) {
+		goto err_out;
+	}
 
 	if (0 != jalls_init()) {
 		goto err_out;
@@ -194,6 +204,8 @@ int main(int argc, char **argv) {
 	err = stat(jalls_ctx->socket, &sock_stat);
 	if (err != -1) {
 		fprintf(stderr, "failed to create socket: already exists\n");
+		fprintf(stderr, "Exiting ...\n");
+		old_socket_exist = 1;
 		goto err_out;
 	}
 	if (errno != ENOENT) {
@@ -224,11 +236,6 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	// Perform signal hookups
-	if ( 0 != setup_signals()) {
-		goto err_out;
-	}
-
 	err = listen(sock, JALLS_LISTEN_BACKLOG);
 	if (-1 == err) {
 		fprintf(stderr, "failed to listen, %s\n", strerror(errno));
@@ -245,19 +252,67 @@ int main(int argc, char **argv) {
 	}
 
 	if (jalls_ctx->debug) {
+		fprintf(stderr, "Accept delay thread count: %d\n", jalls_ctx->accept_delay_thread_count);
+		fprintf(stderr, "Accept delay increment: %d microSec\n", jalls_ctx->accept_delay_increment);
+		fprintf(stderr, "Accept delay max: %d microSec\n", jalls_ctx->accept_delay_max);
 		fprintf(stderr, "Ready to accept connections\n");
 	}
 
 	struct sockaddr_un peer_addr;
 	unsigned int peer_addr_size = sizeof(peer_addr);
+
+	const int min_thread_count_intervention = jalls_ctx->accept_delay_thread_count;
+	const int max_thread_count_intervention = jalls_ctx->accept_delay_max;
+	const int min_accept_delay = jalls_ctx->accept_delay_increment;
+
 	while (!should_exit) {
 		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(*thread_ctx));
 		if (thread_ctx == NULL) {
 			if (debug) {
 				fprintf(stderr, "Failed to allocate memory\n");
 			}
+			goto err_out;
 		}
+		int thread_count = 0;
+
+		/* Flow control functionality turned off if min_thread_count_intervention
+		* set to zero in the jal-local-store configuration file
+		*/
+		if (0 < min_thread_count_intervention) {
+			thread_count = get_thread_count();
+			if (jalls_ctx->debug) {
+				fprintf(stderr, "Thread_count: %d\n", thread_count);
+			}
+		}
+
+		if (0 < min_thread_count_intervention &&
+			thread_count > min_thread_count_intervention) {
+
+			int delay_count = thread_count - min_thread_count_intervention;
+			int64_t accept_delay = min_accept_delay;
+
+			for (; delay_count > 1; delay_count--) {
+				accept_delay+=accept_delay;
+				if (accept_delay > max_thread_count_intervention) {
+					accept_delay = max_thread_count_intervention;
+					break;
+				}
+			}
+
+			if (jalls_ctx->debug) {
+				fprintf(stderr, "Accept_delay: %ld microSec\n", accept_delay);
+			}
+			usleep((useconds_t)accept_delay);
+		}
+
+		if (should_exit) {
+			break;
+		}
+
 		thread_ctx->fd = accept(sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
+		if (should_exit) {
+			break;
+		}
 		thread_ctx->signing_key = key;
 		thread_ctx->signing_cert = cert;
 		thread_ctx->db_ctx = db_ctx;
@@ -276,10 +331,13 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "Failed to accept: %s\n", strerror(my_errno));
 			}
 		}
+		if (should_exit) {
+			break;
+		}
 	}
 
 err_out:
-	if (jalls_ctx) {
+	if (jalls_ctx && 0 == old_socket_exist) {
 		delete_socket(jalls_ctx->socket, jalls_ctx->debug);
 	}
 
@@ -378,4 +436,98 @@ static void delete_socket(const char *p_socket_path, int p_debug)
 			free(buf);
 		}
 	}
+}
+
+static int get_thread_count()
+{
+	FILE *self_status_file = NULL;
+
+	const char *self_status_file_path = "/proc/self/status";
+	const char *threads_token = "Threads:";
+	size_t thread_token_length = strlen(threads_token);
+	int thread_count = 0;
+	const int line_length = 100;
+	char one_line [line_length];
+	char *fgets_status = NULL;
+	int strncmp_result = 0;
+	static bool file_error_reported = false;
+	
+	/* Determine if a regular file before opening. */
+
+	struct stat stat_buffer;
+	if (-1 == stat(self_status_file_path, &stat_buffer)) {
+		if (!file_error_reported) {
+			file_error_reported = true;
+			fprintf(stderr, "%s(): Stat of file to read thread count failed:\n    ", __func__);
+			perror(self_status_file_path);
+		}
+		return thread_count;
+	}
+
+	if (!S_ISREG(stat_buffer.st_mode)) {
+		if (!file_error_reported) {
+			file_error_reported = true;
+			fprintf(stderr, "%s(): File to read thread count is not a regular file:\n", __func__);
+			fprintf(stderr, "   %s\n" ,self_status_file_path);
+		}
+		return thread_count;
+	}
+
+	self_status_file = fopen(self_status_file_path, "r");
+
+	if (NULL == self_status_file && !file_error_reported) {
+		file_error_reported = true;
+		fprintf(stderr, "%s(): Open of file to read thread count failed:\n    ", __func__);
+		perror(self_status_file_path);
+	}
+
+	/* Find the line starting with 'Threads:' */
+
+	for(int line_number=1;NULL != self_status_file;line_number++)
+	{
+		fgets_status = fgets(one_line, line_length, self_status_file);
+		if (NULL == fgets_status) {
+			if (!file_error_reported) {
+				file_error_reported = true;
+				fprintf(stderr, "%s(): No line found starting with \"%s\";\n",
+					__func__, threads_token);
+				fprintf(stderr, "  attempting to read line number: %d; from: \"%s\"\n",
+					line_number, self_status_file_path);
+				if (0 != ferror(self_status_file)) {
+					perror("    Error reported by read of process self status file");
+				}
+			}
+			break;
+		}
+		/* See if the line starts with 'Threads:' */
+		strncmp_result = strncmp(threads_token, one_line, thread_token_length);
+		if (0 != strncmp_result) {
+			continue;
+		}
+		/* Found the line containing the 'Threads:' token. */
+
+		/* Make sure the location after the token is not zero */
+		fgets_status += thread_token_length;
+		if ( '\0' == *fgets_status ) {
+			break;
+		}
+
+		thread_count = atoi(fgets_status);
+		if (0 > thread_count) {
+			thread_count = 0; // don't allow negative numbers
+		}
+		if (0 == thread_count && !file_error_reported) {
+			file_error_reported = true;
+			fprintf(stderr, "%s(): no integer string was converted after \"%s\" was found;\n",
+				__func__, threads_token);
+			fprintf(stderr, "  looking for a positive integer on line #%d; from: \"%s\"\n",
+				line_number, self_status_file_path);
+		}
+		break;
+	}
+
+	if (NULL != self_status_file) {
+		(void) fclose(self_status_file);
+	}
+	return thread_count;
 }

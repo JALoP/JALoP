@@ -84,6 +84,17 @@ enum jaldb_status jaldb_context_init(
 		db_root = DEFAULT_DB_ROOT;
 	}
 
+	struct stat db_root_stat;
+	int rc = stat(db_root, &db_root_stat);
+	if (0 != rc) {
+		fprintf(stderr, "ERROR: db_root not found.\n");
+		return JALDB_E_INVAL;
+	}
+	if (!S_ISDIR(db_root_stat.st_mode)) {
+		fprintf(stderr, "ERROR: db_root must be directory.\n");
+		return JALDB_E_INVAL;
+	}
+
 	if (!schemas_root) {
 		schemas_root = DEFAULT_SCHEMAS_ROOT;
 	}
@@ -1286,7 +1297,8 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
 		if (0 != db_ret) {
-			break;
+			ret = JALDB_E_INTERNAL_ERROR;
+			goto out;
 		}
 
 		char *primary_key = jaldb_gen_primary_key(rec->uuid);
@@ -2138,6 +2150,10 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 
 enum jaldb_status jaldb_remove_db_logs(jaldb_context *ctx)
 {
+	if (!ctx || !ctx->env) {
+		return JALDB_E_INVAL;
+	}
+
 	int db_err;
 	char **file_list = NULL;
 

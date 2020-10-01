@@ -33,8 +33,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include "jaldb_context.hpp"
+#include "jaldb_record_dbs.h"
+#include "jaldb_serialize_record.h"
+#include "jaldb_utils.h"
 #include "jaldb_traverse.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
@@ -53,6 +57,7 @@ enum purge_action {
 const char *send_str[] = { "UNSENT", " SENT ", "SYNCED" };
 const char *recv_str[] = { "UNCONF", " CONF " };
 const char *action_str[] = {"Keep  ", "Delete", "Force "};
+static int exiting = 0;
 
 static struct global_args_t {
 	int del;
@@ -72,12 +77,24 @@ static void process_options(int argc, char **argv);
 static void global_args_free();
 static void usage();
 
+static int setup_signals();
+static void sig_handler(int sig);
+
 extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record *rec, void *up);
+enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
+                enum jaldb_rec_type type,
+                const char *timestamp,
+                jaldb_iter_cb cb, void *up);
 
 int main(int argc, char **argv)
 {
 	enum jaldb_status dbret = (enum jaldb_status)-1;
 	jaldb_context *ctx = NULL;
+
+	// Perform signal hookups
+	if ( 0 != setup_signals()) {
+		goto out;
+	}
 
 	process_options(argc, argv);
 
@@ -137,9 +154,9 @@ int main(int argc, char **argv)
 	} else {
 		// Otherwise output the old format that works with the test harness
 		if (global_args.del) {
-			cout << "Deleted the following records:" << endl;
+			cout << "Processing the following candidate records:" << endl;
 		} else {
-			cout << "Would delete the following records:" << endl;
+			cout << "Would process the following candidate records:" << endl;
 		}
 	}
 
@@ -191,7 +208,7 @@ int main(int argc, char **argv)
 						printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
 					}
 				} else {
-					printf("UUID: %s\n", iter->c_str());
+					printf("UUID: %s ", iter->c_str());
 				}
 
 				// Remove the record.
@@ -199,19 +216,27 @@ int main(int argc, char **argv)
 					dbret = jaldb_remove_record(ctx, type, nonce);
 					if (dbret != 0) {
 						fprintf(stderr, "ERROR: Cannot remove record: %s\n", nonce);
+					} else {
+						printf("Deleted\n");
 					}
+				} else {
+					printf("Kept\n");
 				}
 
 				jaldb_destroy_record(&rec);
 				free(nonce);
 				nonce = NULL;
 			}
+
+			if (exiting) {
+				break;
+			}
 		}
 	} else if (global_args.before) {
 		if (global_args.detail) {
 			printf("Records before: %s\n\n", global_args.before);
 		}
-		dbret = jaldb_iterate_by_timestamp(ctx, type, global_args.before, iter_cb, &global_args);
+		dbret = iterate_by_timestamp(ctx, type, global_args.before, iter_cb, &global_args);
 		goto out;
 	} else {
 		fprintf(stderr, "ERROR: Purging without a before time or uuid specified is currently not supported.\n");
@@ -229,17 +254,21 @@ out:
 		printf("\n");
 	}
 
+	jaldb_status rc = JALDB_OK;
 	if (global_args.compact) {
 		fprintf(stdout, "Running DB->compact\n");
-		dbret = jaldb_compact_dbs(ctx, type);
-		if (dbret != 0) {
+		rc = jaldb_compact_dbs(ctx, type);
+		if (JALDB_OK != rc) {
 			fprintf(stderr, "ERROR: Compact failed on one or more databases.");
 		}
 	}
 
 	global_args_free();
 	jaldb_context_destroy(&ctx);
-	return dbret;
+
+        if (JALDB_OK != dbret || JALDB_OK != rc) {
+		return -1;
+	}
 }
 
 extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record *rec, void *)
@@ -250,16 +279,20 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 
 	enum purge_action record_action = JAL_PURGE_KEEP;
 	enum jaldb_iter_status ret_val = JALDB_ITER_CONT;
+	char action[8] = {0};
 
 	if (rec->confirmed && (rec->synced == JALDB_SYNCED)) {
 		record_action = JAL_PURGE_DELETE;
 		ret_val = JALDB_ITER_REM;
+		strcpy(action, "Deleted");
 	} else if (rec->confirmed && (rec->synced != JALDB_SYNCED) && global_args.force) {
 		record_action = JAL_PURGE_FORCE;
 		ret_val = JALDB_ITER_REM;
+		strcpy(action, "Deleted");
 	} else {
 		record_action = JAL_PURGE_KEEP;
 		ret_val = JALDB_ITER_CONT;
+		strcpy(action, "Kept");
 	}
 	// If the detail flag is set, output the new detailed format, otherwise use the old format to prevent test harness from breaking
 	if (global_args.detail) {
@@ -270,13 +303,13 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 		else {
 			printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
 		}
-	} else {
-		printf("NONCE: %s\n", nonce);
+	} else if (0 != strcmp(action, "Deleted")) {
+		printf("NONCE: %s %s\n", nonce, action);
 
 		if (global_args.verbose) {
 			char uuid[37]; // UUID are always 36 characters + the NULL terminator
 			uuid_unparse(rec->uuid, uuid);
-			printf("UUID: %s\n", uuid);
+			printf("UUID: %s %s\n", uuid, action);
 		}
 	}
 
@@ -289,6 +322,183 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 	return ret_val;
 }
 
+enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
+                enum jaldb_rec_type type,
+                const char *timestamp,
+                jaldb_iter_cb cb, void *up)
+{
+        enum jaldb_status ret = JALDB_E_INVAL;
+        struct tm target_time, record_time;
+        memset(&target_time, 0, sizeof(target_time));
+        memset(&record_time, 0, sizeof(record_time));
+        int target_ms = 0;
+        int record_ms = 0;
+        char *tmp_time = NULL;
+        struct jaldb_record *rec = NULL;
+        int byte_swap = 0;
+        struct jaldb_record_dbs *rdbs = NULL;
+        int db_ret = 0;
+        DBT key;
+        DBT pkey;
+        DBT val;
+        DBC *cursor = NULL;
+        memset(&key, 0, sizeof(key));
+        memset(&pkey, 0, sizeof(pkey));
+        memset(&val, 0, sizeof(val));
+        key.flags = DB_DBT_REALLOC;
+        val.flags = DB_DBT_REALLOC;
+        time_t target_secs = 0;
+        list<string> purge_nonce_list;
+
+        tmp_time = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &target_time);
+        if (!tmp_time) {
+                fprintf(stderr, "ERROR: Invalid time format specified.\n");
+                ret = JALDB_E_INVAL_TIMESTAMP;
+                goto out;
+        }
+
+        if (!sscanf(tmp_time,".%d-%*d:%*d", &target_ms)) {
+                fprintf(stderr, "ERROR: Invalid time format specified.\n");
+                ret = JALDB_E_INVAL_TIMESTAMP;
+                goto out;
+        }
+        // Calculate the target time in secs once before we start looping
+        target_secs = mktime(&target_time);
+
+        if (!ctx || !cb) {
+                ret = JALDB_E_UNINITIALIZED;
+                goto out;
+        }
+
+        switch(type) {
+        case JALDB_RTYPE_JOURNAL:
+                rdbs = ctx->journal_dbs;
+                break;
+        case JALDB_RTYPE_AUDIT:
+                rdbs = ctx->audit_dbs;
+                break;
+        case JALDB_RTYPE_LOG:
+                rdbs = ctx->log_dbs;
+                break;
+        default:
+                ret = JALDB_E_INVAL_RECORD_TYPE;
+                goto out;
+        }
+
+        if (!rdbs) {
+                ret = JALDB_E_UNINITIALIZED;
+                goto out;
+        }
+
+        // Use the record creation time database
+        db_ret = rdbs->timestamp_idx_db->get_byteswapped(rdbs->timestamp_idx_db, &byte_swap);
+        if (0 != db_ret) {
+                ret = JALDB_E_INVAL;
+                goto out;
+        }
+
+        db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
+        if (0 != db_ret) {
+                JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
+                ret = JALDB_E_INVAL;
+                goto out;
+        }
+
+        while(0 == db_ret) {
+                db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_NEXT);
+                if (0 != db_ret) {
+                        if (DB_NOTFOUND == db_ret) {
+                                ret = JALDB_OK;
+                        } else {
+                                JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
+                                ret = JALDB_E_INVAL;
+                        }
+                        goto out;
+                }
+
+                // mktime() like to set things like timezone to system timezone -
+                // need to clean out the tm struct before each call
+                memset(&record_time, 0, sizeof(record_time));
+
+                tmp_time = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &record_time);
+                if (!tmp_time) {
+                        fprintf(stderr, "ERROR: Cannot get strptime from record\n");
+                        ret = JALDB_E_INVAL_TIMESTAMP;
+                        goto out;
+                }
+
+                if (!sscanf(tmp_time,".%d-%*d:%*d", &record_ms)) {
+                        ret = JALDB_E_INVAL_TIMESTAMP;
+                        goto out;
+                }
+
+                double delta = difftime(target_secs,mktime(&record_time));
+                if (delta < 0) {
+                        // record_time is > target_time, so break out
+                        goto out;
+                }
+
+                if (delta == 0) {
+                        if (record_ms > target_ms) {
+                                goto out;
+                        }
+                }
+
+                ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
+                if (ret != JALDB_OK) {
+                        goto out;
+                }
+
+                switch (cb((char*) pkey.data, rec, up)) {
+                case JALDB_ITER_CONT:
+                        break;
+                case JALDB_ITER_REM:
+                        purge_nonce_list.push_back(string((const char*)(pkey.data)));
+                        break;
+                default:
+                        goto out;
+                }
+
+                jaldb_destroy_record(&rec);
+
+		if (exiting) {
+			break;
+		}
+        }
+
+out:
+        if (cursor) {
+                cursor->c_close(cursor);
+        }
+        cursor = NULL;
+
+        // Remove records that are in the purge_nonce_list.
+        if (!purge_nonce_list.empty()) {
+                list<string>::iterator iter;
+                for (iter = purge_nonce_list.begin(); iter != purge_nonce_list.end(); iter++) {
+			if (exiting) {
+				break;
+			}
+
+                        ret = jaldb_remove_record(ctx, type, (char*)iter->c_str());
+                        if (JALDB_OK == ret) {
+                                fprintf(stdout, "NONCE: %s Deleted\n", iter->c_str());
+                        } else {
+                                fprintf(stderr, "ERROR: failed to remove record: %s\n", iter->c_str());
+                        }
+                }
+        }
+
+        jaldb_destroy_record(&rec);
+
+        free(key.data);
+        free(val.data);
+        purge_nonce_list.clear();
+        return ret;
+}
+
+
+ 
 static void process_options(int argc, char **argv)
 {
 	int opt = 0;
@@ -408,4 +618,35 @@ __attribute__((noreturn)) static void usage()
 				and the local nonce for each record.\n";
 	fprintf(stderr, "%s", usage);
 	exit(-1);
+}
+
+static int setup_signals()
+{
+        struct sigaction action_on_sig;
+        action_on_sig.sa_handler = &sig_handler;
+        sigemptyset(&action_on_sig.sa_mask);
+        action_on_sig.sa_flags = 0;
+
+        if (0 != sigaction(SIGABRT, &action_on_sig, NULL)) {
+                fprintf(stderr, "failed to register SIGABRT.\n");
+                goto err_out;
+        }
+        if (0 != sigaction(SIGTERM, &action_on_sig, NULL)) {
+                fprintf(stderr, "failed to register SIGTERM.\n");
+                goto err_out;
+        }
+        if (0 != sigaction(SIGINT, &action_on_sig, NULL)) {
+                fprintf(stderr, "failed to register SIGINT.\n");
+                goto err_out;
+        }
+        return 0;
+
+err_out:
+        return -1;
+}
+
+static void sig_handler(__attribute__((unused)) int sig)
+{
+	fprintf(stdout, "\nCaught SIGTERM - exiting...\n");
+	exiting = 1;
 }
