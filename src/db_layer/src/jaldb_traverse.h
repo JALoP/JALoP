@@ -94,6 +94,10 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		const char *timestamp,
 		jaldb_iter_cb cb, void *up);
 
+enum jaldb_status jaldb_iterate_by_timestamp2(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		const char *timestamp,
+		jaldb_iter_cb cb, void *up);
 
 #ifdef __cplusplus
 }

@@ -70,6 +70,12 @@ struct jalls_context {
 	char *pid_file;
 	/** Absolute path to directory where stdout and stderr logs will be written if run as a daemon. */
 	char *log_dir;
+	/** Thread count threshold that shall prompt accept delay. */
+	int accept_delay_thread_count;
+	/** Length of each accept delay increment in microseconds. */
+	int accept_delay_increment;
+	/** Maximum accept delay in microseconds. */
+	int accept_delay_max;
 };
 
 struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */

@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/un.h>
+#include <signal.h>
 
 #ifdef SCM_UCRED
 #include <ucred.h>
@@ -229,6 +230,9 @@ void *jalls_handler(void *thread_ctx_p) {
 				goto out;
 		}
 		if (err < 0) {
+			if (JALDB_E_INTERNAL_ERROR == err) {
+				should_exit = 1;
+			}
 			goto out;
 		}
 	}
@@ -236,6 +240,9 @@ void *jalls_handler(void *thread_ctx_p) {
 out:
 	close(thread_ctx->fd);
 	free(thread_ctx);
+	if (should_exit) {
+		kill(getpid(), SIGTERM);
+	}
 	return NULL;
 }
 

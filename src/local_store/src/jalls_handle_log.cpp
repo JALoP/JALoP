@@ -217,6 +217,10 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 				case JALDB_E_REJECT:
 					fprintf(stderr, "record was too large and was rejected\n");
 					break;
+				case JALDB_E_INTERNAL_ERROR:
+					ret = JALDB_E_INTERNAL_ERROR;
+					fprintf(stderr, "Internal database error occurred\n");
+					break;
 				default:
 					break;
 			}

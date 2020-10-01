@@ -208,7 +208,6 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		goto err_out;
 	}
 
-
 	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
 	free(nonce);
 	nonce = NULL;
@@ -218,6 +217,10 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 			switch (db_err) {
 				case JALDB_E_REJECT:
 					fprintf(stderr, "record was too large and was rejected\n");
+					break;
+				case JALDB_E_INTERNAL_ERROR:
+					ret = JALDB_E_INTERNAL_ERROR;
+					fprintf(stderr, "Internal database error occurred.\n");
 					break;
 				default:
 					break;
