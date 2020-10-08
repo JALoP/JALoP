@@ -89,6 +89,8 @@ jaln_context *jaln_context_create(void)
 		jal_error_handler(JAL_E_NO_MEM);
 	}
 
+	ctx->network_timeout = 0L;
+
 	/***
 	ctx->vortex_ctx = vortex_ctx_new();
 	if (!ctx->vortex_ctx) {
@@ -340,3 +342,11 @@ void jaln_axl_list_destroy_wrapper(axlPointer ptr) {
 	axlList *l = (axlList*) ptr;
 	axl_list_free(l);
 }
+
+void setNetworkTimeout(jaln_context *ctx, const long long int timeout) {
+	if (!ctx) {
+		return;
+	}
+	ctx->network_timeout = timeout;
+}
+

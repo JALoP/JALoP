@@ -130,6 +130,7 @@ struct global_config_t {
 	long long int poll_time;
 	long long int retry_interval;
 	const char *pub_id;
+	long long int network_timeout;
 	int num_peers;
 	struct peer_config_t *peers;
 } global_config;
@@ -1278,6 +1279,7 @@ int main(int argc, char **argv)
 		}
 		pub_cbs = NULL;
 
+		setNetworkTimeout(jctx, global_config.network_timeout);
 		peer->net_ctx = jctx;
 
 		++peer->retries;
@@ -1521,6 +1523,7 @@ void print_config(void)
 	}
 	printf("POLL TIME:\t\t%lld\n", global_config.poll_time);
 	printf("RETRY INTERNVAL:\t%lld\n", global_config.retry_interval);
+	printf("NETWORK TIMEOUT:\t%lld\n", global_config.network_timeout);
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
 	printf("PUBLISHER ID:\t\t%s\n", global_config.pub_id);
@@ -1745,7 +1748,11 @@ enum jald_status set_global_config(config_t *config)
 		CONFIG_ERROR(root, JALNS_RETRY_INTERVAL, "expected positive integer value or -1");
 		return JALD_E_CONFIG_LOAD;
 	}
-
+	rc = config_setting_lookup_int64(root, JALNS_NETWORK_TIMEOUT, &global_config.network_timeout);
+	if (CONFIG_FALSE == rc || global_config.network_timeout < 0) {
+		CONFIG_ERROR(root, JALNS_NETWORK_TIMEOUT, "expected positive integer value or 0");
+		return JALD_E_CONFIG_LOAD;
+	}
 	rc = config_setting_lookup_string(root, JALNS_PUBLISHER_ID, &global_config.pub_id);
 	if (CONFIG_FALSE == rc) {
 		CONFIG_ERROR(root, JALNS_PUBLISHER_ID, "expected string value");

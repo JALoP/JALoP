@@ -352,6 +352,7 @@ static size_t jaln_noop_write(
 enum jal_status jaln_publisher_send_init(jaln_session *session)
 {
 	struct curl_slist *headers = NULL;
+	const long curl_timeout_period = session->jaln_ctx->network_timeout * 60L;
 	enum jal_status ret = JAL_E_INVAL;
 	struct jaln_response_header_info *header_info = NULL;
 	CURL *curl = NULL;
@@ -380,11 +381,23 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 	}
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
+	char buf[CURL_ERROR_SIZE];
+
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &buf);
+
+	if (curl_timeout_period > 0) {
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, curl_timeout_period);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+	}
+
 	CURLcode rc = curl_easy_perform(curl);
 	if (rc != CURLE_OK) {
+		fprintf(stderr, "%s(): Failed: %d: %s\n", __func__, rc, buf);
 		fprintf(stderr, "Failed to send initialize: %s\n",
 			curl_easy_strerror(rc));
+		(void)fflush(stderr);
 		// Set a failing return code
+		jaln_session_set_errored(session);
 		ret = JAL_E_COMM;
 		goto err_out;
 	}
@@ -477,6 +490,7 @@ err_out:
 enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char *nonce)
 {
 	struct curl_slist *headers = NULL;
+	const long curl_timeout_period = session->jaln_ctx->network_timeout * 60L;
 	enum jal_status ret = JAL_E_INVAL;
 	CURL *curl = NULL;
 	if (!session || !session->ch_info || !session->jaln_ctx || !session->curl_ctx) {
@@ -498,9 +512,21 @@ enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char 
 	}
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
+	char buf[CURL_ERROR_SIZE];
+
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &buf);
+
+	if (curl_timeout_period > 0) {
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, curl_timeout_period);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+	}
+
 	CURLcode rc = curl_easy_perform(curl);
 	curl_slist_free_all(headers);
 	if (rc != CURLE_OK) {
+		fprintf(stderr, "%s(): Failed: %d: %s\n", __func__, rc, buf);
+		(void)fflush(stderr);
+		jaln_session_set_errored(session);
 		return JAL_E_COMM;
 	}
 
