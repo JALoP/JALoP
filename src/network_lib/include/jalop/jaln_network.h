@@ -448,6 +448,13 @@ enum jal_status jaln_send_log(
  */
 enum jal_status jaln_finish(jaln_session *sess);
 
+/**
+ * Set network timeout value.
+ *
+ * @param[in] timeout Network timeout in minutes.
+ */
+void setNetworkTimeout(jaln_context *ctx, const long long int timeout);
+
 #ifdef __cplusplus
 }
 #endif

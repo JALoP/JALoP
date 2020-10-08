@@ -209,6 +209,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 		void *user_data)
 {
 	jaln_session *sess = (jaln_session*) user_data;
+	const long curl_timeout_period = sess->jaln_ctx->network_timeout * 60L;
 
 	vortex_mutex_lock(&sess->lock);
 	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
@@ -247,10 +248,16 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	curl_easy_setopt(ctx, CURLOPT_ERRORBUFFER, &buf);
 
+	if (curl_timeout_period > 0) {
+		curl_easy_setopt(ctx, CURLOPT_TIMEOUT, curl_timeout_period);
+		curl_easy_setopt(ctx, CURLOPT_NOSIGNAL, 1L);
+	}
+
 	CURLcode res = curl_easy_perform(ctx);
 
 	if (res != CURLE_OK || sess->errored) {
-		printf("Failed: %d: %s\n", res, buf); // TODO: Printfs in libraries are bad.  Remove me once the library is more stable
+		fprintf(stderr, "%s(): Failed: %d: %s\n", __func__, res, buf);
+		(void)fflush(stderr);
 		jaln_session_set_errored(sess);
 		if (!read_info.complete) {
 			vortex_mutex_unlock(&sess->wait_lock);
@@ -310,6 +317,11 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	}
 	curl_easy_setopt(ctx, CURLOPT_HEADERDATA, info);
 
+	if (curl_timeout_period > 0) {
+		curl_easy_setopt(ctx, CURLOPT_TIMEOUT, curl_timeout_period);
+		curl_easy_setopt(ctx, CURLOPT_NOSIGNAL, 1L);
+	}
+
 	res = curl_easy_perform(ctx);
 
 	if (JALN_DIGEST_STATUS_CONFIRMED == resp_info->status) {
@@ -319,7 +331,8 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	}
 
 	if (res != CURLE_OK || rc != JAL_OK) {
-		printf("Failed digest resp: %d, %s\n", res? (int)res : rc, res? buf : "JAL_E_INVAL"); // TODO: Remove
+		fprintf(stderr, "%s(): Failed digest resp: %d, %s\n", __func__, res? (int)res : rc, res? buf : "JAL_E_INVAL"); // TODO: Remove
+		(void)fflush(stderr);
 		jaln_session_set_errored(sess);
 	}
 

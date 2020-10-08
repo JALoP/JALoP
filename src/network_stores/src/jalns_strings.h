@@ -53,6 +53,7 @@ extern "C" {
 #define JALNS_RECORD_TYPES "record_types"
 #define JALNS_RETRY_INTERVAL "retry_interval"
 #define JALNS_CERT_DIR "cert_dir"
+#define JALNS_NETWORK_TIMEOUT "network_timeout"
 
 #ifdef __cplusplus
 }
