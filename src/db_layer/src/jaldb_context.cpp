@@ -1297,7 +1297,8 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	while (1) {
 		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
 		if (0 != db_ret) {
-			break;
+			ret = JALDB_E_INTERNAL_ERROR;
+			goto out;
 		}
 
 		char *primary_key = jaldb_gen_primary_key(rec->uuid);

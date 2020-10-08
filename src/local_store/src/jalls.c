@@ -310,6 +310,9 @@ int main(int argc, char **argv) {
 		}
 
 		thread_ctx->fd = accept(sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
+		if (should_exit) {
+			break;
+		}
 		thread_ctx->signing_key = key;
 		thread_ctx->signing_cert = cert;
 		thread_ctx->db_ctx = db_ctx;
@@ -327,6 +330,9 @@ int main(int argc, char **argv) {
 			if (debug) {
 				fprintf(stderr, "Failed to accept: %s\n", strerror(my_errno));
 			}
+		}
+		if (should_exit) {
+			break;
 		}
 	}
 
