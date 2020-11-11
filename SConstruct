@@ -250,6 +250,13 @@ if debug_env['CC'] == 'gcc':
 	if int(major) >= 4:
 		debug_env.Prepend(CCFLAGS=stack_protector_ccflags)
 
+if release_env['CC'] == 'gcc':
+	release_env.Prepend(CCFLAGS=profiling_ccflags, LINKFLAGS=profiling_ldflags)
+	# Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
+	(major, _, _) = release_env['CCVERSION'].split('.')
+	if int(major) >= 4:
+		release_env.Prepend(CCFLAGS=stack_protector_ccflags)
+
 # coverage target
 lcov_output_dir = "cov"
 lcov_output_file = "app.info"
