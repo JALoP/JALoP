@@ -3,7 +3,7 @@ import string
 import os
 import subprocess
 
-platform = subprocess.Popen(['uname', '-p'], stdout=subprocess.PIPE).communicate()[0].strip()
+platform = subprocess.Popen(['uname', '-m'], stdout=subprocess.PIPE).communicate()[0].strip()
 
 if platform == 'i686' or platform == 'i386':
 	SYMBOLS_TO_ASM = 'sym2asm_i686.awk'
