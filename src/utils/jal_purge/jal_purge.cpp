@@ -463,10 +463,12 @@ enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
 				}
 			}
 			// Insert record nonce and payload path into purge map.
-                        purge_map[string((const char*)(pkey.data))] = string((const char*)(path));
 			if (path) {
+                        	purge_map[string((const char*)(pkey.data))] = string((const char*)(path));
 				free(path);
 				path = NULL;
+			} else {
+                        	purge_map[string((const char*)(pkey.data))] = string("");
 			}
                         break;
                 default:
@@ -487,26 +489,24 @@ out:
         cursor = NULL;
 
         // Remove records that are in the purge_map.
-        if (!purge_map.empty()) {
-                map<string, string>::iterator iter;
-                for (iter = purge_map.begin(); iter != purge_map.end(); iter++) {
-			if (exiting) {
-				break;
-			}
+	map<string, string>::iterator iter;
+	for (iter = purge_map.begin(); iter != purge_map.end(); iter++) {
+		if (exiting) {
+			break;
+		}
 
-                        ret = jaldb_remove_record(ctx, type, (char*)iter->first.c_str());
-                        if (JALDB_OK == ret) {
-				// Remove any on-disk payload file.
-				string path = iter->second;
-				if (!path.empty() && 0 < path.length()) {
-					unlink((char*)path.c_str());
-				}
-                                fprintf(stdout, "NONCE: %s Deleted\n", iter->first.c_str());
-                        } else {
-                                fprintf(stderr, "ERROR: failed to remove record: %s\n", iter->first.c_str());
-                        }
-                }
-        }
+		ret = jaldb_remove_record(ctx, type, (char*)iter->first.c_str());
+		if (JALDB_OK == ret) {
+			// Remove any on-disk payload file.
+			string path = iter->second;
+			if (!path.empty() && 0 < path.length()) {
+				unlink((char*)path.c_str());
+			}
+			fprintf(stdout, "NONCE: %s Deleted\n", iter->first.c_str());
+		} else {
+			fprintf(stderr, "ERROR: failed to remove record: %s\n", iter->first.c_str());
+		}
+	}
 
         jaldb_destroy_record(&rec);
 
