@@ -136,9 +136,10 @@ struct global_config_t {
 } global_config;
 
 struct global_args_t {
-	int daemon;		/* --no_daemon option */
+	int daemon;		/* --no-daemon option */
 	bool debug_flag;	/* --debug option */
 	char *config_path;	/* --config option */
+	char *pid_path;		/* --pid option */
 	bool enable_tls;	/* --disable_tls option */
 } global_args;
 
@@ -1159,6 +1160,13 @@ int main(int argc, char **argv)
 		jalu_daemonize();
 	}
 
+	if (-1 == jalu_pid(global_args.pid_path))
+	{
+		DEBUG_LOG("Failed to write pid file");
+		rc = -1;
+		goto out;
+	}
+
 	rc = setup_db_layer();
 	if (rc != JALD_OK) {
 		DEBUG_LOG("Error setting up database");
@@ -1351,13 +1359,14 @@ int process_options(int argc, char **argv)
 	int opt = 0;
 	int long_index = 0;
 
-	static const char *opt_string = "c:dvs";
+	static const char *opt_string = "c:dvsp:";
 	static const struct option long_options[] = {
 		{"config", required_argument, NULL, 'c'}, /* --config or -c */
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
 		{"no-daemon", no_argument, &global_args.daemon, 0}, /* --no-daemon */
 		{"version", no_argument, NULL, 'v'}, /* --version or -v */
 		{"disable-tls", no_argument, NULL, 's'}, /* --disable-tls or -s */
+		{"pid", required_argument, NULL, 'p'}, /* --pid or -p */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
@@ -1365,6 +1374,7 @@ int process_options(int argc, char **argv)
 	global_args.debug_flag = false;
 	global_args.config_path = NULL;
 	global_args.enable_tls = true;
+	global_args.pid_path = NULL;
 
 	opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
 
@@ -1391,6 +1401,12 @@ int process_options(int argc, char **argv)
 			case 's':
 				// disable TLS
 				global_args.enable_tls = false;
+				break;
+			case 'p':
+				if (global_args.pid_path) {
+					free(global_args.pid_path);
+				}
+				global_args.pid_path = strdup(optarg);
 				break;
 			default:
 				usage();
@@ -1467,6 +1483,7 @@ void free_peer_config(peer_config_t *peer)
 void free_global_args(void)
 {
 	free((void*) global_args.config_path);
+	free((void*) global_args.pid_path);
 }
 
 void print_record_types(enum jaln_record_type rtype)

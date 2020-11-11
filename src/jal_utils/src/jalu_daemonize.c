@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/types.h>
 #include "jal_asprintf_internal.h"
 
 int jalu_daemonize() {
@@ -49,13 +50,24 @@ int jalu_daemonize() {
 		return -1;
 	}
 
-	if ((chdir("/")) < 0) {
-		return -1;
+	(void)daemon(0, 0);
+	return 0;
+}
+
+int jalu_pid(const char* path) {
+	pid_t pid;
+	FILE *pidfile = NULL;
+	pid = getpid();
+
+	if (path) {
+		pidfile = fopen(path, "w");
+		if (NULL == pidfile) {
+			return -1;
+		}
+		fprintf(pidfile, "%d\n", pid);
+		fclose(pidfile);
+		pidfile = NULL;
 	}
 
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-
-	return 0;
+	return pid;
 }

@@ -40,6 +40,13 @@ extern "C" {
  */
 int jalu_daemonize();
 
+/**
+ * gets the pid and write it to a file if path is not null.
+ *
+ * @return pid on success, -1 on failure.
+ */
+int jalu_pid(const char* path);
+
 #ifdef __cplusplus
 }
 #endif

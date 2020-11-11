@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include <stdio.h>	/** For remove **/
+#include <getopt.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -73,17 +74,22 @@
 #include "jal_alloc.h"
 
 #define JALLS_LISTEN_BACKLOG 20
-#define JALLS_USAGE "usage: [--debug] [--version] FILE\n"
+#define JALLS_USAGE "usage: [-d, --debug] [-v, --version] [-p, --pid <pid_path>] -c, --config <config_file>\n"
 #define JALLS_ERRNO_MSG_SIZE 1024
 #define VERSION_CALLED 1
 
-static const char *DEBUG_FLAG = "--debug";
-static const char *VERSION_FLAG = "--version";
+struct global_args_t {
+	int daemon;		/* --no-daemon option */
+	bool debug_flag;	/* --debug option */
+	char *config_path;	/* --config option */
+	char *pid_path;		/* --pid option */
+} global_args;
 
 // Members for deleting socket file
 extern volatile int should_exit;
 
-static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug);
+static void usage();
+static int process_options(int argc, char **argv);
 static int setup_signals();
 static void sig_handler(int sig);
 static void delete_socket(const char *socket_path, int debug);
@@ -91,7 +97,6 @@ static int get_thread_count();
 
 int main(int argc, char **argv) {
 
-	char *config_path;
 	FILE *fp;
 	RSA *key = NULL;
 	X509 *cert = NULL;
@@ -109,19 +114,18 @@ int main(int argc, char **argv) {
 	if (0 != jalls_init()) {
 		goto err_out;
 	}
-	int debug = 0;
-	int err = parse_cmdline(argc, argv, &config_path, &debug);
+	int err = process_options(argc, argv);
 	if (err == VERSION_CALLED) {
 		goto version_out;
 	} else if (err < 0) {
 		goto err_out;
 	}
 
-	err = jalls_parse_config(config_path, &jalls_ctx);
+	err = jalls_parse_config(global_args.config_path, &jalls_ctx);
 	if (err < 0) {
 		goto err_out;
 	}
-	jalls_ctx->debug = debug;
+	jalls_ctx->debug = global_args.debug_flag;
 
 	jal_err = jal_create_dirs(jalls_ctx->db_root);
 	if (JAL_OK != jal_err) {
@@ -182,10 +186,15 @@ int main(int argc, char **argv) {
 
 	//create a jaldb_context to pass to work threads
 	db_ctx = jaldb_context_create();
+	if (!db_ctx) {
+		fprintf(stderr, "Failed to create jaldb context\n");
+		goto err_out;
+	}
+
 	jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root,
 					jalls_ctx->schemas_root, 0);
 	if (jal_err != JAL_OK) {
-		fprintf(stderr, "failed to create the jaldb_context\n");
+		fprintf(stderr, "Failed to initialize jaldb context\n");
 		goto err_out;
 	}
 
@@ -243,12 +252,18 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	if (!debug) {
+	if (global_args.daemon) {
 		err = jalu_daemonize();
 		if (err < 0) {
 			fprintf(stderr, "failed to create daemon\n");
 			goto err_out;
 		}
+	}
+
+	if (-1 == jalu_pid(global_args.pid_path))
+	{
+		fprintf(stderr, "Failed to write pid file\n");
+		return -1;
 	}
 
 	if (jalls_ctx->debug) {
@@ -268,7 +283,7 @@ int main(int argc, char **argv) {
 	while (!should_exit) {
 		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(*thread_ctx));
 		if (thread_ctx == NULL) {
-			if (debug) {
+			if (global_args.debug_flag) {
 				fprintf(stderr, "Failed to allocate memory\n");
 			}
 			goto err_out;
@@ -322,12 +337,12 @@ int main(int argc, char **argv) {
 			pthread_t new_thread;
 			err = pthread_create(&new_thread, NULL, jalls_handler, thread_ctx);
 			my_errno = errno;
-			if (err < -1 && debug) {
+			if (err < -1 && global_args.debug_flag) {
 				fprintf(stderr, "Failed to create pthread: %s\n", strerror(my_errno));
 			}
 		} else {
 			free(thread_ctx);
-			if (debug) {
+			if (global_args.debug_flag) {
 				fprintf(stderr, "Failed to accept: %s\n", strerror(my_errno));
 			}
 		}
@@ -355,37 +370,69 @@ version_out:
 	exit(0);
 }
 
-static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug) {
-	if (argc <= 1) {
-		fprintf(stderr, JALLS_USAGE);
-		return -1;
-	}
-	if (argc == 2) {
-		if (0 == strcmp(argv[1], DEBUG_FLAG)) {
-			fprintf(stderr, JALLS_USAGE);
-			return -1;
-		} else if (0 == strcmp(argv[1], VERSION_FLAG)) {
-			printf("%s\n", jal_version_as_string());
-			return VERSION_CALLED;
+__attribute__((noreturn)) void usage()
+{
+	fprintf(stderr, JALLS_USAGE);
+	exit(1);
+}
+
+static int process_options(int argc, char **argv) {
+	int opt = 0;
+	int long_index = 0;
+
+	static const char *opt_string = "c:dvp:";
+	static const struct option long_options[] = {
+		{"config", required_argument, NULL, 'c'}, /* --config or -c */
+		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
+		{"no-daemon", no_argument, &global_args.daemon, 0}, /* --no-daemon */
+		{"version", no_argument, NULL, 'v'}, /* --version or -v */
+		{"pid", required_argument, NULL, 'p'}, /* --pid or -p */
+		{0, 0, 0, 0} /* terminating -0 item */
+	};
+
+	global_args.daemon = true;
+	global_args.debug_flag = false;
+	global_args.config_path = NULL;
+	global_args.pid_path = NULL;
+
+	opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
+
+	while(opt != -1) {
+		switch (opt) {
+			case 'd':
+				global_args.debug_flag = true;
+				break;
+			case 'c':
+				if (global_args.config_path) {
+					free(global_args.config_path);
+				}
+				global_args.config_path = strdup(optarg);
+				break;
+			case 'v':
+				printf("%s\n", jal_version_as_string());
+				return VERSION_CALLED;
+				break;
+			case 0:
+				// getopt_long returns 0 for long options that
+				// have no equivalent 'short' option, i.e.
+				// --no-daemon in this case.
+				break;
+			case 'p':
+				if (global_args.pid_path) {
+					free(global_args.pid_path);
+				}
+				global_args.pid_path = strdup(optarg);
+				break;
+			default:
+				usage();
 		}
-		*config_path = argv[1];
-		return 0;
+		opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
 	}
-	if (argc == 3) {
-		if (0 != strcmp(argv[1], DEBUG_FLAG)) {
-			fprintf(stderr, JALLS_USAGE);
-			return -1;
-		}
-		*debug = 1;
-		*config_path = argv[2];
-	}
-	else {
-		fprintf(stderr, JALLS_USAGE);
-		return -1;
+	if (!global_args.config_path) {
+		usage();
 	}
 
 	return 0;
-
 }
 
 static int setup_signals()
@@ -435,6 +482,9 @@ static void delete_socket(const char *p_socket_path, int p_debug)
 				buf);
 			free(buf);
 		}
+	}
+	else {
+		printf("Removed jal.sock socket: %s\n", p_socket_path);
 	}
 }
 
