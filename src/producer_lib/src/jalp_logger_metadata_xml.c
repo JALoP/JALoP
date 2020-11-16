@@ -60,7 +60,7 @@
 enum jal_status jalp_logger_metadata_to_elem(
 		const struct jalp_logger_metadata *logmeta,
 		const struct jalp_context_t *ctx,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *new_elem)
 {
 	if (!logmeta || !ctx || !doc || !new_elem || *new_elem) {
@@ -70,12 +70,9 @@ enum jal_status jalp_logger_metadata_to_elem(
 	enum jal_status ret;
 	char *proc_id_str;
 	pid_t pid;
-	xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr logger_metadata_element = xmlNewDocNode(doc, NULL,
-								(xmlChar *)JALP_XML_LOGGER,
-								NULL);
-	xmlNsPtr ns = xmlNewNs(logger_metadata_element, namespace_uri, NULL);
-	xmlSetNs(logger_metadata_element, ns);
+	xmlNodePtr logger_metadata_element = xmlNewChild(doc, NULL,
+							 (xmlChar *)JALP_XML_LOGGER,
+							 NULL);
 
 	if (logmeta->logger_name) {
 		xmlNewChild(logger_metadata_element, NULL,
@@ -84,7 +81,7 @@ enum jal_status jalp_logger_metadata_to_elem(
 	}
 	if (logmeta->severity) {
 		xmlNodePtr tmp = NULL;
-		ret = jalp_log_severity_to_elem(logmeta->severity, doc, &tmp);
+		ret = jalp_log_severity_to_elem(logmeta->severity, logger_metadata_element, &tmp);
 		if (ret != JAL_OK) {
 			goto cleanup;
 		}
@@ -135,12 +132,11 @@ enum jal_status jalp_logger_metadata_to_elem(
 				NULL);
 		while (curr) {
 			xmlNodePtr tmp = NULL;
-			ret = jalp_stack_frame_to_elem(curr, doc, &tmp);
+			ret = jalp_stack_frame_to_elem(curr, loc_element, &tmp);
 			if (ret != JAL_OK) {
 				xmlFreeNode(loc_element);
 				goto cleanup;
 			}
-			xmlAddChild(loc_element, tmp);
 			curr = curr->next;
 		}
 	}
@@ -158,11 +154,10 @@ enum jal_status jalp_logger_metadata_to_elem(
 		struct jalp_structured_data *curr = logmeta->sd;
 		while (curr) {
 			xmlNodePtr tmp = NULL;
-			ret = jalp_structured_data_to_elem(curr, doc, &tmp);
+			ret = jalp_structured_data_to_elem(curr, logger_metadata_element, &tmp);
 			if (ret != JAL_OK) {
 				goto cleanup;
 			}
-			xmlAddChild(logger_metadata_element, tmp);
 			curr = curr->next;
 		}
 	}

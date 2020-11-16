@@ -49,7 +49,7 @@
  */
 enum jal_status jalp_journal_metadata_to_elem(
 		const struct jalp_journal_metadata *journal,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *new_elem);
 
 #endif //_JALP_JOURNAL_METADATA_XML_H_

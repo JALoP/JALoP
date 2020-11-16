@@ -51,7 +51,7 @@ extern "C" {
  */
 enum jal_status jalp_file_info_to_elem(
 		const struct jalp_file_info * file_info,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *elem);
 
 /** @} */

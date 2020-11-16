@@ -49,7 +49,7 @@
  */
 enum jal_status jalp_content_type_to_elem(
 		const struct jalp_content_type * content_type,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *elem);
 
 #endif //_JALP_CONTENT_TYPE_XML_H_

@@ -47,7 +47,7 @@
 
 enum jal_status jalp_file_info_to_elem(
 		const struct jalp_file_info * file_info,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *elem)
 {
 	if (!file_info || !doc || !elem || *elem) {
@@ -62,12 +62,9 @@ enum jal_status jalp_file_info_to_elem(
 	xmlChar *xml_size;
 	xmlChar *xml_file_name;
 
-	xmlChar *jal_ns = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr file_info_elt = xmlNewDocNode(doc, NULL,
+	xmlNodePtr file_info_elt = xmlNewChild(doc, NULL,
 					(xmlChar *)JALP_XML_FILE_INFO,
 					NULL);
-	xmlNsPtr ns = xmlNewNs(file_info_elt, jal_ns, NULL);
-	xmlSetNs(file_info_elt, ns);
 
 	enum jal_status ret = JAL_OK;
 

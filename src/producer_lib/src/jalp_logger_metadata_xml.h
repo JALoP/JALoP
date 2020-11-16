@@ -53,7 +53,7 @@
 enum jal_status jalp_logger_metadata_to_elem(
 		const struct jalp_logger_metadata *logmeta,
 		const struct jalp_context_t *ctx,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *new_elem);
 
 
