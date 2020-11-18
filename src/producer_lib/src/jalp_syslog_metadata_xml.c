@@ -56,19 +56,16 @@
 enum jal_status jalp_syslog_metadata_to_elem(
 		const struct jalp_syslog_metadata *syslog,
 		const struct jalp_context_t *ctx,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *new_elem)
 {
 	if (!syslog || !ctx || !doc || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 	enum jal_status ret;
-	xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr syslog_element = xmlNewDocNode(doc, NULL,
+	xmlNodePtr syslog_element = xmlNewChild(doc, NULL,
 						(xmlChar *)JALP_XML_SYSLOG,
 						NULL);
-	xmlNsPtr ns = xmlNewNs(syslog_element, namespace_uri, NULL);
-	xmlSetNs(syslog_element, ns);
 	char *proc_id_str = NULL;
 	pid_t pid = getpid();
 	jal_asprintf(&proc_id_str, "%" PRIdMAX, (intmax_t)pid);
@@ -117,11 +114,9 @@ enum jal_status jalp_syslog_metadata_to_elem(
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_MESSAGE_ID, xml_message_id);
 	}
 	if (syslog->entry) {
-		xmlNodePtr tmp = xmlNewDocNode(doc, NULL,
+		xmlNodePtr tmp = xmlNewChild(doc, NULL,
 						(xmlChar *)JALP_XML_ENTRY,
 						NULL);
-		xmlNsPtr tmp_ns = xmlNewNs(tmp, namespace_uri, NULL);
-		xmlSetNs(tmp, tmp_ns);
 		xmlAddChild(syslog_element, tmp);
 		xmlChar *xml_entry = (xmlChar *)syslog->entry;
 		xmlNodeAddContent(tmp, xml_entry);
@@ -134,7 +129,6 @@ enum jal_status jalp_syslog_metadata_to_elem(
 			if (ret != JAL_OK) {
 				goto cleanup;
 			}
-			xmlAddChild(syslog_element, tmp);
 			curr = curr->next;
 		}
 	}

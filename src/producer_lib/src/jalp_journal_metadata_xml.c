@@ -42,7 +42,7 @@
 
 enum jal_status jalp_journal_metadata_to_elem(
 		const struct jalp_journal_metadata *journal,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *new_elem)
 {
 	if (!journal || !doc || !new_elem || *new_elem) {
@@ -50,11 +50,8 @@ enum jal_status jalp_journal_metadata_to_elem(
 	}
 
 	enum jal_status ret;
-	xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr jmeta_element = xmlNewDocNode(doc, NULL,
+	xmlNodePtr jmeta_element = xmlNewChild(doc, NULL,
 					(xmlChar *)JALP_XML_JOURNAL_META, NULL);
-	xmlNsPtr ns = xmlNewNs(jmeta_element, namespace_uri, NULL);
-	xmlSetNs(jmeta_element, ns);
 
 	if (journal->file_info) {
 		xmlNodePtr tmp = NULL;

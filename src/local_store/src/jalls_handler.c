@@ -187,6 +187,7 @@ void *jalls_handler(void *thread_ctx_p) {
 			cmsg = CMSG_NXTHDR(&msgh, cmsg);
 		}
 
+#ifdef SO_PEERCRED
 		thread_ctx->peer_pid = *pid;
 		thread_ctx->peer_uid = *uid;
 		if (debug && *pid == -1) {
@@ -195,6 +196,7 @@ void *jalls_handler(void *thread_ctx_p) {
 
 			fprintf(stderr, "Did not receive credentials\n");
 		}
+#endif
 
 		if (protocol_version != 1) {
 			if (debug) {

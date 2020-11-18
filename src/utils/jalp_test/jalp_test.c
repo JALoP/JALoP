@@ -95,6 +95,9 @@ int main(int argc, char **argv)
 	char *hostname = NULL;
 	char *appname = NULL;
 
+	jalp_context *ctx = NULL;
+	struct jal_digest_ctx *digest_ctx = NULL;
+
 	jalp_ret = jalp_init();
 	if (jalp_ret != JAL_OK) {
 		goto err_out;
@@ -116,8 +119,7 @@ int main(int argc, char **argv)
 		goto err_out;
 	}
 
-	jalp_context *ctx = jalp_context_create();
-	struct jal_digest_ctx *digest_ctx = NULL;
+	ctx = jalp_context_create();
 	jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
 	if (jalp_ret != JAL_OK) {
 		goto err_out;

@@ -45,7 +45,7 @@
  */
 enum jal_status jalp_log_severity_to_elem(
 		const struct jalp_log_severity * severity,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *elem);
 
 #endif //_JALP_LOG_SEVERITY_XML_H_

@@ -54,7 +54,7 @@
 
 enum jal_status jalp_content_type_to_elem(
 		const struct jalp_content_type * content_type,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *elem)
 {
 	if ((!doc) || (!content_type) || !elem || *elem) {
@@ -65,16 +65,13 @@ enum jal_status jalp_content_type_to_elem(
 		return JAL_E_INVAL_CONTENT_TYPE;
 	}
 
-	xmlChar *jal_ns = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
 	xmlChar *xml_val_subtype;
 	enum jal_status ret;
 
 	/* Create the content_type element */
-	xmlNodePtr content_type_elt = xmlNewDocNode(doc, NULL,
+	xmlNodePtr content_type_elt = xmlNewChild(doc, NULL,
 						(xmlChar *)JALP_XML_CONTENT_TYPE,
 						NULL);
-	xmlNsPtr ns = xmlNewNs(content_type_elt, jal_ns, NULL);
-	xmlSetNs(content_type_elt, ns);
 
 	/* Append jalp_params */
 	struct jalp_param *param_curr = content_type->params;

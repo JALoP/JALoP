@@ -52,7 +52,7 @@
 enum jal_status jalp_syslog_metadata_to_elem(
 		const struct jalp_syslog_metadata *syslog,
 		const struct jalp_context_t *ctx,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *new_elem);
 
 #endif //_JALP_LOG_SEVERITY_XML_H_

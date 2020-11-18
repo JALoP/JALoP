@@ -37,7 +37,7 @@
 enum jal_status jalp_param_to_elem(const struct jalp_param *param,
 				const xmlChar *elem_name,
 				const xmlChar *attr_name,
-				xmlDocPtr doc,
+				xmlNodePtr doc,
 				xmlNodePtr *elem)
 {
 	if (!param || !elem_name || !attr_name || !doc || !elem || *elem) {
@@ -50,10 +50,8 @@ enum jal_status jalp_param_to_elem(const struct jalp_param *param,
 
 	const xmlChar *xml_attr_val = (xmlChar *) param->key;
 
-	xmlNodePtr new_elem = xmlNewDocNode(doc, NULL, elem_name, NULL);
+	xmlNodePtr new_elem = xmlNewChild(doc, NULL, elem_name, NULL);
 	xmlSetProp(new_elem, attr_name, xml_attr_val);
-	xmlNsPtr ns = xmlNewNs(new_elem, (xmlChar *) JAL_APP_META_TYPES_NAMESPACE_URI, NULL);
-	xmlSetNs(new_elem, ns);
 
 	if (param->value) {
 		xmlChar *xml_elem_val = (xmlChar *)param->value;

@@ -106,10 +106,12 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 	rec->sec_lbl = jalls_get_security_label(thread_ctx->fd);
 	uuid_copy(rec->host_uuid, thread_ctx->ctx->system_uuid);
 	uuid_generate(rec->uuid);
+#ifdef SO_PEERCRED
 	if (rec->username == NULL) {
 		jaldb_destroy_record(&rec);
 		return -1;	
 	}
+#endif
 
 	*prec = rec;
 	return 0;

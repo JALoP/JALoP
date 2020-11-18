@@ -50,7 +50,7 @@
 enum jal_status jalp_param_to_elem(const struct jalp_param *param,
 				const xmlChar *elem_name,
 				const xmlChar *attr_name,
-				xmlDocPtr doc,
+				xmlNodePtr doc,
 				xmlNodePtr *elem);
 
 #endif //_JALP_PARAM_XML_H_

@@ -47,7 +47,7 @@
  * received, and JAL_E_XML_CONVERSION otherwise.
  */
 enum jal_status jalp_structured_data_to_elem(const struct jalp_structured_data *sd,
-						xmlDocPtr doc,
+						xmlNodePtr doc,
 						xmlNodePtr *new_elem);
 
 #endif //_JALP_STRUCTURED_DATA_XML_H_

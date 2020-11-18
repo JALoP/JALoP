@@ -55,7 +55,7 @@
  */
 enum jal_status jalp_stack_frame_to_elem(
 		const struct jalp_stack_frame *stack_frame,
-		xmlDocPtr doc,
+		xmlNodePtr doc,
 		xmlNodePtr *new_elem);
 
 #endif //_JALP_STACK_FRAME_XML_H_
