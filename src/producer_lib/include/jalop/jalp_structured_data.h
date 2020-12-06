@@ -80,6 +80,20 @@ struct jalp_param *jalp_param_append(struct jalp_param *prev,
 				     const char *name,
 				     const char *value);
 /**
+ * Update or append a jalp_param.
+ * If the passed name (key) already exists in the list, its value is overriden
+ * with the passed value; otherwise a new jalp_param is appended to the list.
+ *
+ * @param[in] prev The startng element in a list, or NULL.
+ * @param[in] name The key for the jalp_param.
+ * @param[in] value The value for the jalp_param.
+ *
+ * @return the updated or newly appended param
+ */
+struct jalp_param *jalp_param_update(struct jalp_param *prev,
+				     const char *name,
+				     const char *value);
+/**
  * Free all memory associated with a jalp_param.
  * If the structure has a 'next' element, this will be destroyed as well.
  *
