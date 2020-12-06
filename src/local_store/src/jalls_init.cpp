@@ -40,6 +40,7 @@ int jalls_init()
 	SSL_library_init();
 	xmlSecInit();
 	xmlSecCryptoDLLoadLibrary((xmlChar*) "openssl");
+	(void)xmlIsMainThread();
 
 	xmlSecCryptoAppInit(NULL);
 	xmlSecCryptoInit();
@@ -52,6 +53,9 @@ void jalls_shutdown()
 {
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
+
+	xmlCleanupParser();
+	xmlCleanupGlobals();
 }
 
 

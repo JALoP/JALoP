@@ -55,6 +55,39 @@ struct jalp_param *jalp_param_append(struct jalp_param *prev, const char *name,
 	return new_jalp_param;
 
 }
+
+struct jalp_param *jalp_param_update(struct jalp_param *prev, const char *name,
+							      const char *value)
+{
+	if (!name || !value) {
+		return NULL;
+	}
+	struct jalp_param *cur_param = prev;
+
+	while (cur_param) {
+		if (0 == strcmp(cur_param->key, name)) { /* Key found, update value. */
+			free(cur_param->value);
+			cur_param->value = jal_strdup(value);
+			return cur_param;
+		} else {                             /* Check the next param. */
+			if (cur_param != prev) {
+				prev = cur_param;
+			}
+			cur_param = cur_param->next;
+		}
+	}
+
+	/* No matching param found, create a new one and append. */
+	struct jalp_param *new_param = NULL;
+	new_param = jal_malloc(sizeof(*new_param));
+	new_param->key = jal_strdup(name);
+	new_param->value = jal_strdup(value);
+	new_param->next = NULL;
+	prev->next = new_param;
+
+	return new_param;
+}
+
 void jalp_param_destroy(struct jalp_param **param_list)
 {
 	if (!param_list || !*param_list) {
