@@ -43,6 +43,7 @@ enum jal_status jalp_init()
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
 	xmlSecCryptoAppInit(NULL);
 	xmlSecCryptoInit();
+	(void)xmlIsMainThread();
 
 	return JAL_OK;
 }
@@ -54,4 +55,7 @@ void jalp_shutdown()
 	xmlSecCryptoShutdown();
 	xmlSecCryptoAppShutdown();
 	xmlSecShutdown();
+
+	xmlCleanupParser();
+	xmlCleanupGlobals();
 }
