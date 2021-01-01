@@ -27,7 +27,7 @@
 
 #include <getopt.h>
 #include <iostream>
-#include <list>
+#include <map>
 #include <jalop/jal_version.h>
 #include <string>
 #include <stdio.h>
@@ -43,8 +43,10 @@
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
 #include "jaldb_record.h"
+#include "jaldb_segment.h"
 
 #include "jal_alloc.h"
+#include "jal_asprintf_internal.h"
 
 using namespace std;
 
@@ -348,7 +350,8 @@ enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
         key.flags = DB_DBT_REALLOC;
         val.flags = DB_DBT_REALLOC;
         time_t target_secs = 0;
-        list<string> purge_nonce_list;
+        map<string, string> purge_map;
+        char *path = NULL;
 
         tmp_time = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &target_time);
         if (!tmp_time) {
@@ -453,7 +456,20 @@ enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
                 case JALDB_ITER_CONT:
                         break;
                 case JALDB_ITER_REM:
-                        purge_nonce_list.push_back(string((const char*)(pkey.data)));
+			if (JALDB_RTYPE_JOURNAL == type) {
+				jaldb_segment *segment = rec->payload;
+				if (segment && segment->on_disk) {
+					jal_asprintf(&path, "%s/%s", ctx->journal_root, (char*)segment->payload);
+				}
+			}
+			// Insert record nonce and payload path into purge map.
+			if (path) {
+                        	purge_map[string((const char*)(pkey.data))] = string((const char*)(path));
+				free(path);
+				path = NULL;
+			} else {
+                        	purge_map[string((const char*)(pkey.data))] = string("");
+			}
                         break;
                 default:
                         goto out;
@@ -472,33 +488,34 @@ out:
         }
         cursor = NULL;
 
-        // Remove records that are in the purge_nonce_list.
-        if (!purge_nonce_list.empty()) {
-                list<string>::iterator iter;
-                for (iter = purge_nonce_list.begin(); iter != purge_nonce_list.end(); iter++) {
-			if (exiting) {
-				break;
-			}
+        // Remove records that are in the purge_map.
+	map<string, string>::iterator iter;
+	for (iter = purge_map.begin(); iter != purge_map.end(); iter++) {
+		if (exiting) {
+			break;
+		}
 
-                        ret = jaldb_remove_record(ctx, type, (char*)iter->c_str());
-                        if (JALDB_OK == ret) {
-                                fprintf(stdout, "NONCE: %s Deleted\n", iter->c_str());
-                        } else {
-                                fprintf(stderr, "ERROR: failed to remove record: %s\n", iter->c_str());
-                        }
-                }
-        }
+		ret = jaldb_remove_record(ctx, type, (char*)iter->first.c_str());
+		if (JALDB_OK == ret) {
+			// Remove any on-disk payload file.
+			string path = iter->second;
+			if (!path.empty() && 0 < path.length()) {
+				unlink((char*)path.c_str());
+			}
+			fprintf(stdout, "NONCE: %s Deleted\n", iter->first.c_str());
+		} else {
+			fprintf(stderr, "ERROR: failed to remove record: %s\n", iter->first.c_str());
+		}
+	}
 
         jaldb_destroy_record(&rec);
 
         free(key.data);
         free(val.data);
-        purge_nonce_list.clear();
+        purge_map.clear();
         return ret;
 }
 
-
- 
 static void process_options(int argc, char **argv)
 {
 	int opt = 0;
