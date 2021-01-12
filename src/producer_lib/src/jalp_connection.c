@@ -161,6 +161,8 @@ enum jal_status jalp_send_buffer(jalp_context *ctx, uint16_t message_type,
 {
 	struct jalp_connection_headers *connection_headers = NULL;
 	enum jal_status status;
+	// this declaration is from man 3 cmsg
+	char buffer[CMSG_SPACE(sizeof(fd))];
 
 	struct msghdr msgh;
 	memset(&msgh, 0, sizeof(msgh));
@@ -246,7 +248,6 @@ enum jal_status jalp_send_buffer(jalp_context *ctx, uint16_t message_type,
 	// also send fd if this is a journal fd message
 	if (message_type == JALP_JOURNAL_FD_MSG) {
 		// this code is from man 3 cmsg
-		char buffer[CMSG_SPACE(sizeof(fd))];
 		struct cmsghdr *cmsg;
 		int *fdptr;
 
