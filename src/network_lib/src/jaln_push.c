@@ -152,12 +152,15 @@ enum jal_status jaln_send_record(
 out:
 	// The library does not assume ownership of the buffers.
 	// Make sure there are no lingering pointers to them.
-	pub_data->sys_meta = NULL;
-	pub_data->app_meta = NULL;
-	pub_data->payload = NULL;
-	pub_data->sys_meta_sz = 0;
-	pub_data->app_meta_sz = 0;
-	pub_data->payload_sz = 0;
+	if (!pub_data)
+	{
+		pub_data->sys_meta = NULL;
+		pub_data->app_meta = NULL;
+		pub_data->payload = NULL;
+		pub_data->sys_meta_sz = 0;
+		pub_data->app_meta_sz = 0;
+		pub_data->payload_sz = 0;
+	}
 	if (JAL_OK != ret) {
 		jaln_finish(sess);
 	}
@@ -254,10 +257,13 @@ enum jal_status jaln_send_record_feeder(
 out:
 	// The library does not assume ownership of the buffers.
 	// Make sure there are no lingering pointers to them.
-	pub_data->sys_meta = NULL;
-	pub_data->app_meta = NULL;
-	pub_data->sys_meta_sz = 0;
-	pub_data->app_meta_sz = 0;
+	if (pub_data)
+	{
+		pub_data->sys_meta = NULL;
+		pub_data->app_meta = NULL;
+		pub_data->sys_meta_sz = 0;
+		pub_data->app_meta_sz = 0;
+	}
 	if (JAL_OK != ret) {
 		jaln_finish(sess);
 	}
