@@ -125,7 +125,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 	}
 out:
 	if (buffer) {
-		free(buffer);
+		xmlFree(buffer);
 	}
 	free(digest);
 	if (doc) {
