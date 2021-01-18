@@ -1,4 +1,23 @@
-Summary of release 2.0.0.2-beta changes -
+Summary of release 2.0.0.5-beta changes (Mon Jan 18 2021) -
+
+    - Discarding the release_env gcc version >= 4 check for stack-protector flag.
+    - Fix buffer allocation scope such that when using FD passing, the buffer containing the FD does not fall out of scope before being used.
+    - Fixes freeing of xmlChar* (replaced free() calls with xmlFree()).
+    - Fixes null-ptr dereference in jaln_push.c
+
+Summary of release 2.0.0.4-beta changes (Sat Dec 5 22:52:58 2020 -0500) -
+
+    - Fixes deadlock in the local_store and producer_lib involving multiple threads interacting with the libxml2 library
+    - Added function to update or append jalp_param.
+
+Summary of release 2.0.0.3-beta changes (Tue Nov 17 20:10:43 2020 -0500) -
+
+    - Free xmlDocPtr after use.
+    - Added namespace prefix to produce more compact application metadata by jalp.
+    - Fixes use before initialization of jalp_context in jalp_test.
+    - ifdef out section of code using socket peer credential functionality with SO_PEERCRED
+
+Summary of release 2.0.0.2-beta changes (Thu Sep 10 22:33:44 2020 -0400) -
 
     - (jls) Added flow-control (number of simultaneous connections) to jal-local-store.
     - (jls) Move setup_signals() call to the beginning of main() in jal-local-store for better handling of SIGTERM.
@@ -14,3 +33,14 @@ Summary of release 2.0.0.2-beta changes -
     - (jald) Disconnect all sessions for a subscriber when one j/a/l session fails so the peer can reconnect afresh.
     - (jal_purge) Mark the records as "Deleted' or 'Kept' in the report of 'jal_purge' as appropriate.
 
+Summary of release 2.0.0.1-beta changes (Tue Apr 14 14:55:48 2020 -0400) -
+
+    - Publisher auto-reconnects after a lost Subscriber comes back up.
+
+    - Added --compact (-c) option to jal_purge for actually running a compaction on databases and return empty pages to the file-system. This should reduce the file-system usage growth. Compaction is an expensive operation and should be run when the database is idle or less busy e.g. when the system is in maintenance.
+
+    - Updated jaldb_tail utils and man page. Option --data (-d) was added to display specific parts of the JAL records e.g. "a" for application metadata, "s" for system metadata, "p" for the payload (raw journal, audit, or log data), or "i" for record ID (UUID-Timestamp) only.
+
+Summary of release 2.0.0.0-beta changes (Fri Aug 30 08:24:20 2019 -0400) -
+
+    - Initial release of JALoPv2.x (JALoP over HTTP).
