@@ -117,7 +117,7 @@ enum jal_status jalp_send_buffer_xml(jalp_context *ctx,
 
 out:
 	if (xml_mem_buffer) {
-		free(xml_mem_buffer);
+		xmlFree(xml_mem_buffer);
 	}
 	free(digest);
 	if (doc) {
