@@ -16,6 +16,17 @@ Summary of release 2.0.0.3-beta changes (Tue Nov 17 20:10:43 2020 -0500) -
     - Added namespace prefix to produce more compact application metadata by jalp.
     - Fixes use before initialization of jalp_context in jalp_test.
     - ifdef out section of code using socket peer credential functionality with SO_PEERCRED
+    - Updated uname -p to uname -m to make it more portable in build scripts.
+    - Apply stack-protector only when GCC version is 4.x or later as it was not available in the previous GCC versions.
+    - Added pid file creation functionality.
+    - Create pid file in jal-local-store and jald, via -p/--pid commandline options.
+    - Made jal-local-store consistent in usage and commandline args.
+    - Fixed jal-local-store not terminating upon receiving SIGTERM in non-debug mode.
+    - Fixed passing NULL disk path to string constructor while purginh audit and log records.
+    - Remove journal files from the disk that are purged via jal_purge.
+    - Added Curl timeout option to avoid a j/a/l session wait forever to complete a send/receive when the network is actually down. This allows the Publisher (jald) to return to normal state of trying to reconnect to the Subscriber, listen for SIGTERM, etc.
+    - Shutdown jal-local-store upon issues with database e.g. corrupt database.
+    - Fix NULL deref in jalp_context_create(). If jal_calloc() fails, then a NULL context would be derefenced when setting the value of socket.
 
 Summary of release 2.0.0.2-beta changes (Thu Sep 10 22:33:44 2020 -0400) -
 
