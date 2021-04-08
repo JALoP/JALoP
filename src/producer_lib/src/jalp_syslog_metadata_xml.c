@@ -122,7 +122,7 @@ enum jal_status jalp_syslog_metadata_to_elem(
 		struct jalp_structured_data *curr = syslog->sd_head;
 		while (curr) {
 			xmlNodePtr tmp = NULL;
-			ret = jalp_structured_data_to_elem(curr, doc, &tmp);
+			ret = jalp_structured_data_to_elem(curr, syslog_element, &tmp);
 			if (ret != JAL_OK) {
 				goto cleanup;
 			}
