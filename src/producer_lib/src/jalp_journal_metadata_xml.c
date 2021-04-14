@@ -55,11 +55,10 @@ enum jal_status jalp_journal_metadata_to_elem(
 
 	if (journal->file_info) {
 		xmlNodePtr tmp = NULL;
-		ret = jalp_file_info_to_elem(journal->file_info, doc, &tmp);
+		ret = jalp_file_info_to_elem(journal->file_info, jmeta_element, &tmp);
 		if (ret != JAL_OK) {
 			goto cleanup;
 		}
-		xmlAddChild(jmeta_element, tmp);
 	} else {
 		ret = JAL_E_INVAL_FILE_INFO;
 		goto cleanup;

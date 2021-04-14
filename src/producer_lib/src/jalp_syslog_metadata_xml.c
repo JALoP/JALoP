@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <inttypes.h> /* PRIdMax*/
 #include <unistd.h>
+#include <string.h>
 
 #include <jalop/jalp_context.h>
 #include <jalop/jal_namespaces.h>
@@ -114,18 +115,14 @@ enum jal_status jalp_syslog_metadata_to_elem(
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_MESSAGE_ID, xml_message_id);
 	}
 	if (syslog->entry) {
-		xmlNodePtr tmp = xmlNewChild(doc, NULL,
-						(xmlChar *)JALP_XML_ENTRY,
-						NULL);
-		xmlAddChild(syslog_element, tmp);
-		xmlChar *xml_entry = (xmlChar *)syslog->entry;
-		xmlNodeAddContent(tmp, xml_entry);
+		xmlNodePtr tmp = xmlNewChild(syslog_element, NULL,(xmlChar *)JALP_XML_ENTRY, NULL);
+		xmlAddChild(tmp,xmlNewCDataBlock(NULL, (xmlChar*)syslog->entry, strlen(syslog->entry)));
 	}
 	if (syslog->sd_head) {
 		struct jalp_structured_data *curr = syslog->sd_head;
 		while (curr) {
 			xmlNodePtr tmp = NULL;
-			ret = jalp_structured_data_to_elem(curr, doc, &tmp);
+			ret = jalp_structured_data_to_elem(curr, syslog_element, &tmp);
 			if (ret != JAL_OK) {
 				goto cleanup;
 			}
