@@ -135,8 +135,11 @@ out:
 	return ret;
 }
 
-void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexConnection *conn,
-		VortexFrame *frame, axlPointer user_data)
+void jaln_publisher_digest_and_sync_frame_handler(
+	__attribute__((unused)) VortexChannel *chan, 
+	__attribute__((unused)) VortexConnection *conn,
+	__attribute__((unused)) VortexFrame *frame, 
+	__attribute__((unused)) axlPointer user_data)
 {
 /*
 	jaln_session *sess = (jaln_session*) user_data;

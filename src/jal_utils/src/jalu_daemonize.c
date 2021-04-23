@@ -50,8 +50,8 @@ int jalu_daemonize() {
 		return -1;
 	}
 
-	(void)daemon(0, 0);
-	return 0;
+	int rc = daemon(0, 0);
+	return rc;
 }
 
 int jalu_pid(const char* path) {

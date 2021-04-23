@@ -60,8 +60,8 @@ int jalls_recvmsg_helper(int fd, struct msghdr *msgh, int debug)
 		} else {
 			if(debug) {
 				char err_string[JALLS_STRERROR_BUF_LEN];
-				strerror_r(myerrno, err_string, JALLS_STRERROR_BUF_LEN);
-				fprintf(stderr, "recvmsg returned error, %s\n", err_string);
+				char* err = strerror_r(myerrno, err_string, JALLS_STRERROR_BUF_LEN);
+				fprintf(stderr, "recvmsg returned error, %s\n", err);
 			}
 			return -1;
 		}

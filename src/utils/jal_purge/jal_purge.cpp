@@ -91,6 +91,7 @@ enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
 int main(int argc, char **argv)
 {
 	enum jaldb_status dbret = (enum jaldb_status)-1;
+	enum jaldb_rec_type type = JALDB_RTYPE_UNKNOWN;
 	jaldb_context *ctx = NULL;
 
 	// Perform signal hookups
@@ -112,7 +113,6 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	enum jaldb_rec_type type;
 	switch (global_args.type) {
 	case 'j':
 		type = JALDB_RTYPE_JOURNAL;

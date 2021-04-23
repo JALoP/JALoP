@@ -544,6 +544,12 @@ static void print_error(enum jal_status error)
 		case JAL_E_COMM:
 			printf("JAL_E_COMM");
 			break;
+		case JAL_E_INTERNAL_ERROR:
+			printf("JAL_E_INTERNAL_ERROR");
+			break;
+		case JAL_E_JOURNAL_MISSING:
+			printf("JAL_E_JOURNAL_MISSING");
+			break;
 		case JAL_OK:
 			break;
 	}

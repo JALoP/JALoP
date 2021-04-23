@@ -206,6 +206,10 @@ int main(int argc, char **argv)
 				subscriber_do_work,
 				(void *) &global_config);
 
+	if (0 != rc_timer || 0 != rc_subscriber){
+		goto out;
+	}
+
 	pthread_join(thread_timer, NULL);
 	pthread_join(thread_subscriber, NULL);
 	if (global_args.debug_flag) {

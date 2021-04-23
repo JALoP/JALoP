@@ -31,7 +31,9 @@
 #include "jalls_record_utils.h"
 #include "jaldb_utils.h"
 
+#ifndef XTS
 #include <pwd.h>
+#endif
 #include <string.h>
 #include <unistd.h>
 
@@ -39,6 +41,7 @@
 #include <selinux/selinux.h>
 #endif
 
+#ifndef XTS
 char *jalls_get_user_id_str(uid_t uid)
 {
 	char *ret = NULL;
@@ -63,6 +66,7 @@ cleanup:
 	free(pwd_buf);
 	return ret;
 }
+#endif
 
 char *jalls_get_security_label(int socketFd)
 {
@@ -97,12 +101,16 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 	struct jaldb_record *rec = jaldb_create_record();
 
 	rec->type = rec_type;
+#ifdef SO_PEERCRED
 	rec->pid = thread_ctx->peer_pid;
 	rec->have_uid = 1;
 	rec->uid = thread_ctx->peer_uid;
+#endif
 	rec->hostname = jal_strdup(thread_ctx->ctx->hostname);
 	rec->timestamp = timestamp;
+#ifdef SO_PEERCRED
 	rec->username = jalls_get_user_id_str(thread_ctx->peer_uid);
+#endif
 	rec->sec_lbl = jalls_get_security_label(thread_ctx->fd);
 	uuid_copy(rec->host_uuid, thread_ctx->ctx->system_uuid);
 	uuid_generate(rec->uuid);

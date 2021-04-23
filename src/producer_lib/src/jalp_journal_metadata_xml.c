@@ -64,6 +64,13 @@ enum jal_status jalp_journal_metadata_to_elem(
 		goto cleanup;
 	}
 
+	// Create a tmp xml Doc to avoid compiler warning on
+	// jalp_transform_to_elem(...) call below. It expects a Doc, not Node
+	// in the second parameter.
+	xmlDocPtr tmp_doc = NULL;
+	tmp_doc = xmlNewDoc((xmlChar *)"1.0");
+	xmlDocSetRootElement(tmp_doc, doc);
+
 	if (journal->transforms) {
 		struct jalp_transform *curr = journal->transforms;
 		xmlNodePtr trans_element = xmlNewChild(jmeta_element, NULL,
@@ -71,7 +78,7 @@ enum jal_status jalp_journal_metadata_to_elem(
 				NULL);
 		while (curr) {
 			xmlNodePtr tmp = NULL;
-			ret = jalp_transform_to_elem(curr, doc, &tmp);
+			ret = jalp_transform_to_elem(curr, tmp_doc, &tmp);
 			if (ret != JAL_OK) {
 				xmlFreeNode(trans_element);
 				goto cleanup;
@@ -82,6 +89,11 @@ enum jal_status jalp_journal_metadata_to_elem(
 	}
 
 	*new_elem = jmeta_element;
+
+	// Clean up tmp_doc created above.
+	// First, unlink the 'doc' node from tmp_doc, then free.
+	xmlUnlinkNode(doc);
+	xmlFreeDoc(tmp_doc);
 
 	return JAL_OK;
 

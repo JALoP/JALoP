@@ -166,7 +166,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		xmlNodePtr reference_elem = NULL;
 		if (payload_dgst) {
 			ret = jal_create_reference_elem(JAL_PAYLOAD_URI, payload_algorithm_uri, payload_dgst, payload_dgst_len, xmlDoc, &reference_elem);
-			if (ret != JAL_OK) {
+			if (0 != ret) {
 				xmlFreeDoc(xmlDoc);
 				return ret;
 			}
@@ -176,7 +176,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		if (app_meta_dgst) {
 			reference_elem = NULL;
 			ret = jal_create_reference_elem(JAL_APP_META_URI, app_meta_algorithm_uri, app_meta_dgst, app_meta_dgst_len, xmlDoc, &reference_elem);
-			if (ret != JAL_OK) {
+			if (0 != ret) {
 				xmlFreeDoc(xmlDoc);
 				return ret;
 			}
@@ -191,14 +191,14 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 
 	if (signing_key) {
 		ret = jal_add_signature_block(signing_key, NULL, xmlDoc, last_node, uuid_str_with_prefix);
-		if (ret != JAL_OK) {
+		if (0 != ret) {
 			xmlFreeDoc(xmlDoc);
 			return ret;
 		}
 	}
 
 	ret = jal_xml_output(xmlDoc, &res, dsize);
-	if (ret != JAL_OK) {
+	if (0 != ret) {
 		free(res);
 		xmlFreeDoc(xmlDoc);
 		return ret;
@@ -240,7 +240,7 @@ void jaldb_end_document(void *user_data)
 	   !sp_user_data->sys_meta->uuid) {
 		sp_user_data->ret = JALDB_E_INVAL;
 	}
-	if (sp_user_data->ret != JALDB_OK) {
+	if (sp_user_data->ret != 0) {
 		jaldb_destroy_record(&(sp_user_data->sys_meta));
 	}
 }

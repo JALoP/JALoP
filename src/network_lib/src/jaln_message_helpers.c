@@ -400,7 +400,7 @@ enum jal_status jaln_parse_digest_header(char *content, size_t len, jaln_session
 
 enum jal_status jaln_parse_configure_digest_challenge_header(
 		char *content,
-		size_t len,
+		__attribute__((unused)) size_t len,
 		jaln_session *sess)
 {
 	const size_t name_len = strlen(JALN_HDRS_CONFIGURE_DIGEST_CHALLENGE);

@@ -29,7 +29,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#ifndef XTS
 #include <pwd.h>
+#endif
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
