@@ -61,6 +61,7 @@ struct jalp_content_type *ct = NULL;
 #define VIDEO "video"
 
 xmlDocPtr new_doc;
+xmlNodePtr node = NULL;
 
 void setup()
 {
@@ -74,12 +75,14 @@ void setup()
 	jalp_param_append(tmp_param, P3_NAME, P3_VALUE);
 
 	new_doc = xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 }
 
 void teardown()
 {
 	jalp_content_type_destroy(&ct);
 	xmlFreeDoc(new_doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
@@ -91,17 +94,17 @@ void test_jalp_content_type_to_elem_fails_with_bad_input()
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_content_type_to_elem(ct, new_doc, NULL);
+	ret = jalp_content_type_to_elem(ct, node, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_content_type_to_elem(NULL, new_doc, &new_elem);
+	ret = jalp_content_type_to_elem(NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
 	free(ct->subtype);
 	ct->subtype = NULL;
-	ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -110,12 +113,12 @@ void test_jalp_content_type_to_elem_fails_with_bad_media_type()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = -1;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
 	assert_equals((void*)NULL, new_elem);
 
 	ct->media_type = 8;
-	ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -128,7 +131,7 @@ void test_content_type_to_elem_works_with_no_param()
 
 	assert_equals((void*)NULL, ct->params);
 
-        enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+        enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
@@ -162,7 +165,7 @@ void test_content_type_to_elem_fails_with_bad_param()
 	ct->media_type = JALP_MT_VIDEO;
 	free(ct->params->key);
 	ct->params->key = NULL;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_E_INVAL_PARAM, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -172,7 +175,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_application()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_APPLICATION;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -226,7 +229,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_audio()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_AUDIO;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -280,7 +283,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_example()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_EXAMPLE;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -334,7 +337,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_image()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_IMAGE;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -388,7 +391,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_message()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_MESSAGE;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -442,7 +445,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_model()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_MODEL;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -496,7 +499,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_text()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_TEXT;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -550,7 +553,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_video()
 {
 	xmlNodePtr new_elem = NULL;
 	ct->media_type = JALP_MT_VIDEO;
-	enum jal_status ret = jalp_content_type_to_elem(ct, new_doc, &new_elem);
+	enum jal_status ret = jalp_content_type_to_elem(ct, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	xmlDocSetRootElement(new_doc, new_elem);

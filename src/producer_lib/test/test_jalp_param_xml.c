@@ -50,11 +50,13 @@
 struct jalp_param *param1 = NULL;
 struct jalp_param *param2 = NULL;
 xmlDocPtr doc;
+xmlNodePtr node;
 
 void setup()
 {
 	jalp_init();
 	doc = xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 	param1 = jalp_param_append(NULL, P1_ATTR_VAL, P1_CONTENT);
 	param2 = jalp_param_append(param1, P2_ATTR_VAL, P2_CONTENT);
 }
@@ -63,6 +65,7 @@ void teardown()
 {
 	jalp_param_destroy(&param1);
 	xmlFreeDoc(doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
@@ -72,7 +75,7 @@ void test_param_to_elem_returns_null_with_null_inputs()
 	enum jal_status ret = jalp_param_to_elem(NULL, NULL, NULL, NULL, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 
-	ret = jalp_param_to_elem(param2, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, NULL);
+	ret = jalp_param_to_elem(param2, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
@@ -80,15 +83,15 @@ void test_param_to_elem_returns_null_with_null_inputs()
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_param_to_elem(param2, (xmlChar *)P1_TAG, NULL, doc, &new_elem);
+	ret = jalp_param_to_elem(param2, (xmlChar *)P1_TAG, NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_param_to_elem(param2, NULL, (xmlChar *)P1_ATTR, doc, &new_elem);
+	ret = jalp_param_to_elem(param2, NULL, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_param_to_elem(NULL, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	ret = jalp_param_to_elem(NULL, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -96,24 +99,24 @@ void test_param_to_elem_returns_null_with_null_inputs()
 void test_param_to_elem_fails_does_not_overwrite_existing_elm_pointer()
 {
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr orig = new_elem;
-	ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 }
 void test_param_to_elem_with_bad_inputs_does_not_overwrite_existing_elm_pointer()
 {
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr orig = new_elem;
-	ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 
@@ -121,15 +124,15 @@ void test_param_to_elem_with_bad_inputs_does_not_overwrite_existing_elm_pointer(
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 
-	ret = jalp_param_to_elem(param2, (xmlChar *)P1_TAG, NULL, doc, &new_elem);
+	ret = jalp_param_to_elem(param2, (xmlChar *)P1_TAG, NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 
-	ret = jalp_param_to_elem(param2, NULL, (xmlChar *)P1_ATTR, doc, &new_elem);
+	ret = jalp_param_to_elem(param2, NULL, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 
-	ret = jalp_param_to_elem(NULL, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	ret = jalp_param_to_elem(NULL, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 }
@@ -139,7 +142,7 @@ void test_param_to_elem_fails_with_missing_key()
 	param1->key = NULL;
 
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_E_INVAL_PARAM, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -147,7 +150,7 @@ void test_param_to_elem_works_with_normal_param()
 {
 	// <Field Key="key1"/>val1</Field>
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_attr_equals(P1_ATTR, P1_ATTR_VAL, new_elem);
@@ -160,7 +163,7 @@ void test_param_to_elem_works_with_normal_param_different_values()
 {
 	// <Field Key="key1"/>val1</Field>
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_param_to_elem(param2, (xmlChar *)P2_TAG, (xmlChar *)P2_ATTR, doc, &new_elem);
+	enum jal_status ret = jalp_param_to_elem(param2, (xmlChar *)P2_TAG, (xmlChar *)P2_ATTR, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_attr_equals(P2_ATTR, P2_ATTR_VAL, new_elem);
@@ -177,7 +180,7 @@ void test_param_to_elem_works_with_missing_value()
 	// should create
 	// <Field Key="key1"/>
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, doc, &new_elem);
+	enum jal_status ret = jalp_param_to_elem(param1, (xmlChar *)P1_TAG, (xmlChar *)P1_ATTR, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_attr_equals(P1_ATTR, P1_ATTR_VAL, new_elem);

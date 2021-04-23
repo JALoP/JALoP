@@ -81,6 +81,8 @@ enum jal_status ret;
 #define JALP_TEST_LMXML_MDC_TAG "MappedDiagnosticContext"
 #define JALP_TEST_LMXML_STRUCTUREDDATA_TAG "StructuredData"
 
+xmlNodePtr node = NULL;
+
 void setup()
 {
 	jalp_init();
@@ -103,6 +105,7 @@ void setup()
 	logger_metadata->sd->param_list = jalp_param_append(NULL, JALP_TEST_LMXML_PARAM_NAME, JALP_TEST_LMXML_PARAM_VALUE);
 
 	doc = xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 }
 
 void teardown()
@@ -111,17 +114,18 @@ void teardown()
 	new_elem = NULL;
 	jalp_logger_metadata_destroy(&logger_metadata);
 	xmlFreeDoc(doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
 void test_logger_metadata_to_elem_returns_null_for_null()
 {
 	assert_equals(JAL_E_XML_CONVERSION,
-			jalp_logger_metadata_to_elem(NULL, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(NULL, ctx, node, &new_elem));
 	assert_equals((void*)NULL, new_elem);
 
 	assert_equals(JAL_E_XML_CONVERSION,
-			jalp_logger_metadata_to_elem(logger_metadata, NULL, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, NULL, node, &new_elem));
 	assert_equals((void*)NULL, new_elem);
 
 	assert_equals(JAL_E_XML_CONVERSION,
@@ -129,7 +133,7 @@ void test_logger_metadata_to_elem_returns_null_for_null()
 	assert_equals((void*)NULL, new_elem);
 
 	assert_equals(JAL_E_XML_CONVERSION,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, NULL));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, NULL));
 }
 
 void test_logger_metadata_to_elem_returns_invalid_new_elem_non_null()
@@ -138,7 +142,7 @@ void test_logger_metadata_to_elem_returns_invalid_new_elem_non_null()
 	xmlNodePtr temp = new_elem;
 
 	assert_equals(JAL_E_XML_CONVERSION,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_equals(new_elem, temp);
 
 	free(new_elem);
@@ -148,7 +152,7 @@ void test_logger_metadata_to_elem_returns_valid_element()
 {
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -229,7 +233,7 @@ void test_logger_metadata_to_elem_returns_invalid_bad_sd()
 	logger_metadata->sd->sd_id = NULL;
 
 	assert_equals(JAL_E_INVAL_STRUCTURED_DATA,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_equals((void*)NULL, new_elem);
 }
 
@@ -239,7 +243,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_logger_name()
 	logger_metadata->logger_name = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -308,7 +312,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_severity()
 	logger_metadata->severity = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -389,7 +393,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_timestamp()
 	logger_metadata->timestamp = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -463,7 +467,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_threadId()
 	logger_metadata->threadId = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -532,7 +536,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_message()
 	logger_metadata->message = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -601,7 +605,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_nested_diagnostic_c
 	logger_metadata->nested_diagnostic_context = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -670,7 +674,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_mapped_diagnostic_c
 	logger_metadata->mapped_diagnostic_context = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -739,7 +743,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_stack_frame()
 	logger_metadata->stack = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -805,7 +809,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_sd()
 	logger_metadata->sd = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -874,7 +878,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_hostname()
 	ctx->hostname = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 
@@ -945,7 +949,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_app_name()
 	ctx->app_name = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_logger_metadata_to_elem(logger_metadata, ctx, doc, &new_elem));
+			jalp_logger_metadata_to_elem(logger_metadata, ctx, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);

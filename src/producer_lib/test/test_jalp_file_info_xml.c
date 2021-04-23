@@ -39,6 +39,7 @@
 #include "xml_test_utils2.h"
 
 static xmlDocPtr doc = NULL;
+xmlNodePtr node = NULL;
 
 static struct jalp_file_info *file_info;
 
@@ -53,6 +54,7 @@ void setup()
 	file_info = jalp_file_info_create();
 	// make sure this is a valid file_info
 	file_info->filename = jal_strdup(FILENAME);
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 }
 
 void teardown()
@@ -60,6 +62,7 @@ void teardown()
 	jalp_file_info_destroy(&file_info);
 
 	xmlFreeDoc(doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
@@ -72,7 +75,7 @@ void test_file_info_to_elem_returns_null_with_null_inputs()
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_file_info_to_elem(NULL, doc, &new_elem);
+	ret = jalp_file_info_to_elem(NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
@@ -81,7 +84,7 @@ void test_file_info_to_elem_returns_null_with_null_inputs()
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_file_info_to_elem(file_info, doc, NULL);
+	ret = jalp_file_info_to_elem(file_info, node, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -95,7 +98,7 @@ void test_file_info_to_elem_returns_null_with_no_filename()
 	bad_file_info = jalp_file_info_create();
 
 	// this should fail, because file_info->filename is NULL
-	ret = jalp_file_info_to_elem(bad_file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(bad_file_info, node, &new_elem);
 	assert_equals(JAL_E_INVAL_FILE_INFO, ret);
 	assert_equals((void*)NULL, new_elem);
 
@@ -110,7 +113,7 @@ void test_file_info_to_elem_returns_null_with_bad_content_type()
 	file_info->content_type = jalp_content_type_create();
 
 	// this should fail, because file_info->content_type->subtype is NULL
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_E_INVAL_CONTENT_TYPE, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -122,7 +125,7 @@ void test_file_info_to_elem_returns_null_with_bad_threat_level()
 
 	file_info->threat_level = (enum jalp_threat_level) (JAL_THREAT_UNKNOWN - 1);
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_E_INVAL_FILE_INFO, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -136,7 +139,7 @@ void test_file_info_to_elem_suceeds_with_no_content_type()
 	file_info->size = 1234;
 	file_info->threat_level = JAL_THREAT_SAFE;
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals("FileInfo", new_elem);
@@ -164,7 +167,7 @@ void test_file_info_to_elem_suceeds_with_max_size()
 	char *size_string = NULL;
 	jal_asprintf(&size_string, "%llu", file_info->size);
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals("FileInfo", new_elem);
@@ -193,7 +196,7 @@ void test_file_info_to_elem_suceeds_with_max_original_size()
 	char *original_size_string = NULL;
 	jal_asprintf(&original_size_string, "%llu", file_info->original_size);
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals("FileInfo", new_elem);
@@ -218,7 +221,7 @@ void test_file_info_to_elem_suceeds_with_all_threat_levels()
 
 	file_info->threat_level = JAL_THREAT_SAFE;
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_attr_equals("ThreatLevel", "safe", new_elem);
@@ -228,7 +231,7 @@ void test_file_info_to_elem_suceeds_with_all_threat_levels()
 
 	file_info->threat_level = JAL_THREAT_UNKNOWN;
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_attr_equals("ThreatLevel", "unknown", new_elem);
@@ -238,7 +241,7 @@ void test_file_info_to_elem_suceeds_with_all_threat_levels()
 
 	file_info->threat_level = JAL_THREAT_MALICIOUS;
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_attr_equals("ThreatLevel", "malicious", new_elem);
@@ -256,7 +259,7 @@ void test_file_info_to_elem_suceeds_with_content_type()
 	file_info->content_type = jalp_content_type_create();
 	file_info->content_type->subtype = jal_strdup("subtype");
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals("FileInfo", new_elem);
@@ -283,11 +286,11 @@ void test_file_info_to_elem_does_not_overwrite_existing_elem_pointer()
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
-	ret = jalp_file_info_to_elem(file_info, doc, &new_elem);
+	ret = jalp_file_info_to_elem(file_info, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_not_equals(NULL, new_elem);
 }

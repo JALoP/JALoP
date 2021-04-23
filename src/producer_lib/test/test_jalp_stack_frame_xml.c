@@ -59,6 +59,7 @@
 xmlDocPtr doc = NULL;
 xmlNodePtr new_elem = NULL;
 struct jalp_stack_frame *frame = NULL;
+xmlNodePtr node;
 
 void setup()
 {
@@ -74,6 +75,8 @@ void setup()
 	frame->depth = JALP_TEST_SF_DEPTH;
 
 	doc = xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
+
 }
 
 void teardown()
@@ -81,6 +84,7 @@ void teardown()
 	new_elem = NULL;
 	jalp_stack_frame_destroy(&frame);
 	xmlFreeDoc(doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
@@ -89,17 +93,17 @@ void test_stack_frame_to_elem_returns_error_on_invalid_input()
 	xmlNodePtr new_elem2 = (xmlNodePtr) 0xbadf00d;
 
 	assert_equals(JAL_E_XML_CONVERSION,
-			jalp_stack_frame_to_elem(NULL, doc, &new_elem));
+			jalp_stack_frame_to_elem(NULL, node, &new_elem));
 	assert_equals(JAL_E_XML_CONVERSION,
 			jalp_stack_frame_to_elem(frame, NULL, &new_elem));
 	assert_equals(JAL_E_XML_CONVERSION,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem2));
+			jalp_stack_frame_to_elem(frame, node, &new_elem2));
 }
 
 void test_stack_frame_to_elem_returns_valid_element_with_single_node_list()
 {
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -138,7 +142,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_multiple_node_list()
 	frame2->depth = JALP_TEST_SF2_DEPTH;
 
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -170,7 +174,7 @@ void test_stack_frame_to_elem_correctly_supresses_line_number()
 	frame->line_number = 0;
 
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -200,7 +204,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_caller_name()
 	frame->caller_name = NULL;
 	
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -230,7 +234,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_file_name()
 	frame->file_name = NULL;
 	
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -260,7 +264,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_class_name()
 	frame->class_name = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -290,7 +294,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_method_name()
 	frame->method_name = NULL;
 
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -321,7 +325,7 @@ void test_stack_frame_to_elem_depth_INT_MAX()
 	jal_asprintf(&str_int_max, "%d", INT_MAX);
 
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
@@ -357,7 +361,7 @@ void test_stack_frame_to_elem_line_number_ULONG_MAX()
 	jal_asprintf(&str_uint64_max, "%llu", UINT64_MAX);
 
 	assert_equals(JAL_OK,
-			jalp_stack_frame_to_elem(frame, doc, &new_elem));
+			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);

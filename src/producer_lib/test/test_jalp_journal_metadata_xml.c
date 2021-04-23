@@ -46,6 +46,8 @@ static struct jalp_journal_metadata *jmeta = NULL;
 #define XFORM_ONE_URI "schemaone:foobar"
 #define XFORM_TWO_URI "schematwo:foobar"
 
+xmlNodePtr node = NULL;
+
 void setup()
 {
 	jalp_init();
@@ -60,6 +62,7 @@ void setup()
 	jalp_transform_append_other(jmeta->transforms, XFORM_TWO_URI, NULL);
 
 	doc =  xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 }
 
 void teardown()
@@ -67,6 +70,7 @@ void teardown()
 	jalp_journal_metadata_destroy(&jmeta);
 	new_elem = NULL;
 	xmlFreeDoc(doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
@@ -74,23 +78,23 @@ void test_jalp_journal_metadata_to_elem_returns_error_for_bad_input()
 {
 	xmlNodePtr bad_elem = (xmlNodePtr) 0xbadf00d;
 	enum jal_status ret;
-	ret = jalp_journal_metadata_to_elem(NULL, doc, &new_elem);
+	ret = jalp_journal_metadata_to_elem(NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	ret = jalp_journal_metadata_to_elem(jmeta, NULL, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	ret = jalp_journal_metadata_to_elem(NULL, NULL, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	ret = jalp_journal_metadata_to_elem(jmeta, doc, NULL);
+	ret = jalp_journal_metadata_to_elem(jmeta, node, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	ret = jalp_journal_metadata_to_elem(NULL, doc, NULL);
+	ret = jalp_journal_metadata_to_elem(NULL, node, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	ret = jalp_journal_metadata_to_elem(jmeta, NULL, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	ret = jalp_journal_metadata_to_elem(NULL, NULL, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	ret = jalp_journal_metadata_to_elem(jmeta, doc, &bad_elem);
+	ret = jalp_journal_metadata_to_elem(jmeta, node, &bad_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
-	ret = jalp_journal_metadata_to_elem(NULL, doc, &bad_elem);
+	ret = jalp_journal_metadata_to_elem(NULL, node, &bad_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	ret = jalp_journal_metadata_to_elem(jmeta, NULL, &bad_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
@@ -102,7 +106,7 @@ void test_jalp_journal_metadata_to_elem_returns_error_when_missing_a_file_info_s
 {
 	enum jal_status ret;
 	jalp_file_info_destroy(&jmeta->file_info);
-	ret = jalp_journal_metadata_to_elem(jmeta, doc, &new_elem);
+	ret = jalp_journal_metadata_to_elem(jmeta, node, &new_elem);
 	assert_equals(JAL_E_INVAL_FILE_INFO, ret);
 }
 
@@ -114,13 +118,13 @@ void test_jalp_journal_metadata_to_elem_fails_when_file_info_to_elem_fails()
 	// to fail.
 	free(jmeta->file_info->filename);
 	jmeta->file_info->filename = NULL;
-	ret = jalp_journal_metadata_to_elem(jmeta, doc, &new_elem);
+	ret = jalp_journal_metadata_to_elem(jmeta, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 }
 void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_valid_input()
 {
 	enum jal_status ret;
-	ret = jalp_journal_metadata_to_elem(jmeta, doc, &new_elem);
+	ret = jalp_journal_metadata_to_elem(jmeta, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -152,7 +156,7 @@ void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_no_transforms()
 	jalp_transform_destroy(&jmeta->transforms);
 
 	enum jal_status ret;
-	ret = jalp_journal_metadata_to_elem(jmeta, doc, &new_elem);
+	ret = jalp_journal_metadata_to_elem(jmeta, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 

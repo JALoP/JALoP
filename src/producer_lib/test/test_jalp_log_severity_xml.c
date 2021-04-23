@@ -37,6 +37,7 @@
 
 struct jalp_log_severity *severity = NULL;
 xmlDocPtr new_doc;
+xmlNodePtr node = NULL;
 
 #define LEVEL_NUM 1
 #define LEVEL_NAME "test-level"
@@ -50,19 +51,21 @@ void setup()
 	severity->level_str = jal_strdup(LEVEL_NAME);
 
 	new_doc = xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 }
 
 void teardown()
 {
 	jalp_log_severity_destroy(&severity);
 	xmlFreeDoc(new_doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
 void test_log_severity_to_elem_success()
 {
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_not_equals(NULL, new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -84,7 +87,7 @@ void test_log_severity_to_elem_works_with_no_level_name()
 	xmlNodePtr new_elem = NULL;
 	free(severity->level_str);
 	severity->level_str = NULL;
-	enum jal_status ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_not_equals(NULL, new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -106,7 +109,7 @@ void test_log_severity_to_elem_works_with_empty_level_name()
 	xmlNodePtr new_elem = NULL;
 	free(severity->level_str);
 	severity->level_str = jal_strdup("");;
-	enum jal_status ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_not_equals(NULL, new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -127,7 +130,7 @@ void test_log_severity_to_elem_works_with_negative_levels()
 {
 	severity->level_val = -10;
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_not_equals(NULL, new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -148,7 +151,7 @@ void test_log_severity_to_elem_works_with_int_max()
 {
 	severity->level_val = INT_MAX;
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_not_equals(NULL, new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -172,7 +175,7 @@ void test_log_severity_to_elem_works_with_int_min()
 {
 	severity->level_val = INT_MIN;
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	enum jal_status ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_not_equals(NULL, new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -202,17 +205,17 @@ void test_log_severity_to_elem_fails_with_bad_input()
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(1, new_elem == NULL);
 
-	ret = jalp_log_severity_to_elem(severity, new_doc, NULL);
+	ret = jalp_log_severity_to_elem(severity, node, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 
-	ret = jalp_log_severity_to_elem(NULL, new_doc, &new_elem);
+	ret = jalp_log_severity_to_elem(NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(1, new_elem == NULL);
 
-	ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlNodePtr temp = new_elem;
-	ret = jalp_log_severity_to_elem(severity, new_doc, &new_elem);
+	ret = jalp_log_severity_to_elem(severity, node, &new_elem);
 	assert_equals(temp, new_elem);
         assert_not_equals(JAL_OK, ret);
 }

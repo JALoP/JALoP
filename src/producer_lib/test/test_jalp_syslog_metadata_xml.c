@@ -43,6 +43,7 @@ struct jalp_syslog_metadata *syslog = NULL;
 jalp_context *ctx = NULL;
 xmlDocPtr doc = NULL;
 xmlNodePtr new_elem;
+xmlNodePtr node;
 
 #define FACILITY_ATTR "Facility"
 #define MIN_FACILITY_VAL 0
@@ -104,6 +105,7 @@ void setup()
 	sd_two->param_list = jalp_param_append(NULL, "foo2", "bar2");
 
 	doc = xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 }
 
 void teardown()
@@ -112,6 +114,7 @@ void teardown()
 	jalp_syslog_metadata_destroy(&syslog);
 	jalp_context_destroy(&ctx);
 	xmlFreeDoc(doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 	new_elem = NULL;
 }
@@ -120,11 +123,11 @@ void test_syslog_metadata_to_elem_returns_error_on_bad_input()
 {
 	enum jal_status ret;
 
-	ret = jalp_syslog_metadata_to_elem(NULL, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(NULL, ctx, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jalp_syslog_metadata_to_elem(syslog, NULL, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, NULL, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals((void*)NULL, new_elem);
 
@@ -139,36 +142,36 @@ void test_syslog_metadata_to_elem_returns_error_on_bad_input()
 	assert_equals((void*)NULL, new_elem);
 	assert_not_equals(JAL_OK, ret);
 
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, NULL);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, NULL);
 	assert_equals((void*)NULL, new_elem);
 	assert_not_equals(JAL_OK, ret);
 
 	// errors for invalid elements.
 	syslog->facility = -2;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals((void*)NULL, new_elem);
 
 	syslog->facility = MAX_FACILITY_VAL + 1;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals((void*)NULL, new_elem);
 
 	syslog->facility = FACILITY_VAL;
 	syslog->severity = -2;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals((void*)NULL, new_elem);
 
 	syslog->severity = MAX_SEVERITY_VAL + 1;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals((void*)NULL, new_elem);
 
 	syslog->severity = SEVERITY_VAL;
 	char *ts = syslog->timestamp;
 	syslog->timestamp = strdup(BAD_TIMESTAMP);
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(-1, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
@@ -180,7 +183,7 @@ void test_syslog_metadata_to_elem_returns_error_on_bad_input()
 void test_syslog_metadata_to_elem_returns_valid_element_with_all_fields_filled()
 {
 	enum jal_status ret;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -220,7 +223,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_missing_entry()
 	enum jal_status ret;
 	free(syslog->entry);
 	syslog->entry = NULL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -253,7 +256,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_single_structured_d
 {
 	enum jal_status ret;
 	jalp_structured_data_destroy(&syslog->sd_head->next);
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -286,7 +289,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_strucutred_data(
 {
 	enum jal_status ret;
 	jalp_structured_data_destroy(&syslog->sd_head);
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -315,7 +318,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_missing_timestamp()
 	enum jal_status ret;
 	free(syslog->timestamp);
 	syslog->timestamp = NULL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -355,7 +358,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_facility()
 {
 	enum jal_status ret;
 	syslog->facility = -1;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -393,7 +396,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_max_facility()
 {
 	enum jal_status ret;
 	syslog->facility = MAX_FACILITY_VAL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -432,7 +435,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_min_facility()
 {
 	enum jal_status ret;
 	syslog->facility = MIN_FACILITY_VAL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -471,7 +474,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_severity()
 {
 	enum jal_status ret;
 	syslog->severity = -1;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	
@@ -510,7 +513,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_max_severity()
 {
 	enum jal_status ret;
 	syslog->severity = MAX_SEVERITY_VAL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -549,7 +552,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_min_severity()
 {
 	enum jal_status ret;
 	syslog->severity = MIN_SEVERITY_VAL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -592,7 +595,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_hostname()
 	enum jal_status ret;
 	free(ctx->hostname);
 	ctx->hostname = NULL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
@@ -632,7 +635,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_app_name()
 	enum jal_status ret;
 	free(ctx->app_name);
 	ctx->app_name = NULL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	
@@ -672,7 +675,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_message_id()
 	enum jal_status ret;
 	free(syslog->message_id);
 	syslog->message_id = NULL;
-	ret = jalp_syslog_metadata_to_elem(syslog, ctx, doc, &new_elem);
+	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	

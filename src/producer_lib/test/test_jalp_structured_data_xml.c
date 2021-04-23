@@ -36,6 +36,7 @@
 
 struct jalp_structured_data *sd = NULL;
 xmlDocPtr new_doc = NULL;
+xmlNodePtr node = NULL;
 
 #define SD_ID "test-sd-id"
 #define SD_ID_ATTR_NAME "SD_ID"
@@ -55,19 +56,21 @@ void setup()
 	struct jalp_param *tmp_param = jalp_param_append(sd->param_list, P2_NAME, P2_VALUE);
 	jalp_param_append(tmp_param, P3_NAME, P3_VALUE);
 	new_doc = xmlNewDoc((xmlChar *)"1.0");
+	node = xmlNewChild(NULL, NULL, NULL, NULL);
 }
 
 void teardown()
 {
 	jalp_structured_data_destroy(&sd);
 	xmlFreeDoc(new_doc);
+	xmlFreeNode(node);
 	jalp_shutdown();
 }
 
 void test_jalp_structured_data_to_elem()
 {
 	xmlNodePtr new_elem = NULL;
-	enum jal_status ret = jalp_structured_data_to_elem(sd, new_doc, &new_elem);
+	enum jal_status ret = jalp_structured_data_to_elem(sd, node, &new_elem);
 
 	assert_equals(JAL_OK, ret);
 	assert_equals(1, new_elem != NULL);
@@ -123,7 +126,7 @@ void test_jalp_structured_data_to_elem_fails_with_bad_params()
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jalp_structured_data_to_elem(sd, new_doc, NULL);
+	ret = jalp_structured_data_to_elem(sd, node, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(1, new_doc != NULL);
 
@@ -132,14 +135,14 @@ void test_jalp_structured_data_to_elem_fails_with_bad_params()
 	assert_equals(1, new_elem == NULL);
 	assert_equals(1, new_doc != NULL);
 
-	ret = jalp_structured_data_to_elem(NULL, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(1, new_elem == NULL);
 	assert_equals(1, new_doc != NULL);
 
 	free(sd->sd_id);
 	sd->sd_id = NULL;
-	ret = jalp_structured_data_to_elem(sd, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(sd, node, &new_elem);
 	assert_equals(JAL_E_INVAL_STRUCTURED_DATA, ret);
 	assert_equals(1, new_elem == NULL);
 	assert_equals(1, new_doc != NULL);
@@ -151,7 +154,7 @@ void test_jalp_structured_data_to_elem_fails_with_no_param_list()
 	enum jal_status ret;
 
 	struct jalp_structured_data *bad_sd = jalp_structured_data_append(NULL, SD_ID);
-	ret = jalp_structured_data_to_elem(bad_sd, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(bad_sd, node, &new_elem);
 	assert_equals(JAL_E_INVAL_STRUCTURED_DATA, ret);
 	assert_equals(1, new_doc != NULL);
 	assert_equals(1, new_elem == NULL);
@@ -167,7 +170,7 @@ void test_jalp_structured_data_to_elem_fails_with_bad_param_list()
 
 	free(sd->param_list->next->key);
 	sd->param_list->next->key = NULL;
-	ret = jalp_structured_data_to_elem(sd, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(sd, node, &new_elem);
 	assert_not_equals(JAL_OK, ret);
 	assert_equals(1, new_doc != NULL);
 	assert_equals(1, new_elem == NULL);
@@ -179,13 +182,13 @@ void test_jalp_structured_data_fails_when_new_elem_already_points_somewhere()
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jalp_structured_data_to_elem(sd, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(sd, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_equals(1, new_elem != NULL);
 	xmlDocSetRootElement(new_doc, new_elem);
 
 	xmlNodePtr orig = new_elem;
-	ret = jalp_structured_data_to_elem(sd, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(sd, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 
@@ -196,7 +199,7 @@ void test_jalp_structured_data_fails_doesnt_overwrite_elem_ptr()
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jalp_structured_data_to_elem(sd, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(sd, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_equals(1, new_elem != NULL);
 	xmlDocSetRootElement(new_doc, new_elem);
@@ -208,14 +211,14 @@ void test_jalp_structured_data_fails_doesnt_overwrite_elem_ptr()
 	assert_equals(orig, new_elem);
 	assert_equals(1, new_doc != NULL);
 
-	ret = jalp_structured_data_to_elem(NULL, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(NULL, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 	assert_equals(1, new_doc != NULL);
 
 	free(sd->sd_id);
 	sd->sd_id = NULL;
-	ret = jalp_structured_data_to_elem(sd, new_doc, &new_elem);
+	ret = jalp_structured_data_to_elem(sd, node, &new_elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(orig, new_elem);
 	assert_equals(1, new_doc != NULL);
