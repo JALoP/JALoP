@@ -152,12 +152,13 @@ int jsub_get_subscribe_request(
 		uint64_t *offset)
 {
 	int ret = 0;
-	enum jaldb_rec_type rec_type;
+	// enum jaldb_rec_type rec_type = JALDB_RTYPE_UNKNOWN;
 	if (jsub_debug) {
 		DEBUG_LOG("GET_SUBSCRIBE_REQUEST");
 		DEBUG_LOG("host_name: %s", ch_info->hostname);
 	}
 
+	/***
 	switch (type)
 	{
 		case JALN_RTYPE_JOURNAL:
@@ -173,6 +174,7 @@ int jsub_get_subscribe_request(
 			rec_type = JALDB_RTYPE_UNKNOWN;
 			break;
 	}
+	***/
 
 	std::string nonce_out;
 	if (type == JALN_RTYPE_JOURNAL) {

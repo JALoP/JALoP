@@ -104,6 +104,7 @@ void teardown()
 	jalp_shutdown();
 }
 
+#if 0
 void test_jalp_digest_audit_record_returns_ok_with_valid_input()
 {
 	uint8_t *dgst = NULL;
@@ -119,7 +120,7 @@ void test_jalp_digest_audit_record_returns_ok_with_valid_input()
 	assert_not_equals(0, dgst_len);
 	free(dgst);
 }
-
+#endif
 void test_jalp_digest_auidit_record_returns_error_with_invalid_input()
 {
 	setup_bad();

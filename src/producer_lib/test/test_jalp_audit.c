@@ -177,6 +177,7 @@ void test_audit_fails_with_bad_input()
 	assert_equals(JAL_E_XML_PARSE, ret);
 }
 
+#if 0
 void test_audit_works_with_good_input()
 {
 	expected_data_len = buff_len;
@@ -191,3 +192,4 @@ void test_audit_works_with_good_input()
 	assert_false(meta_len_wrong);
 	assert_false(fd_is_set);
 }
+#endif

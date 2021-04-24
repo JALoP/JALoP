@@ -33,6 +33,7 @@
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
 #include "jal_alloc.h"
+#include "jal_error_callback_internal.h"
 
 #define DIGEST_BUF_SIZE 8192
 

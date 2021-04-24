@@ -1668,8 +1668,7 @@ static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buff
 	int my_errno = errno;
 	if (-1 == err) {
 		char buf[ERRNO_STR_LEN];
-		strerror_r(my_errno, buf, ERRNO_STR_LEN);
-		DEBUG_LOG("Failed to seek, errno %s\n", buf);
+		DEBUG_LOG("Failed to seek, errno %s\n", strerror_r(my_errno, buf, ERRNO_STR_LEN));
 		return JAL_E_INVAL;
 	}
 	size_t to_read = *size;

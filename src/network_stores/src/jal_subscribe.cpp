@@ -200,11 +200,18 @@ int main(int argc, char **argv)
 				NULL,
 				timer_do_work,
 				(void *) global_config.session_timeout);
+	if (0 != rc_timer){
+		goto out;
+	}
+
 	rc_subscriber = pthread_create(
 				&thread_subscriber,
 				NULL,
 				subscriber_do_work,
 				(void *) &global_config);
+	if (0 != rc_subscriber){
+		goto out;
+	}
 
 	pthread_join(thread_timer, NULL);
 	pthread_join(thread_subscriber, NULL);
