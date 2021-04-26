@@ -93,7 +93,7 @@ enum jal_status jal_parse_xml_snippet(
 	else {
 		*ctx_node = xmlDocGetRootElement(doc);
 	}
-	xmlFreeDoc(doc);
+	// xmlFreeDoc(doc);
 	return JAL_OK;
 }
 
