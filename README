@@ -1,4 +1,4 @@
-This is a reference implementation of the Journal, Audit, and Logging Protocol (JALoP).
+This is a reference implementation of the Journal, Audit, and Logging Protocol (JALoP) version 1.x i.e. JALoP over BEEP.
 
 The implementation is divided into a number of components:
   The JALoP Network Library (JNL)
@@ -29,10 +29,14 @@ The following libraries are included in the 3rd-party directory:
 
 Building and Installing
 
-This project uses the scons (www.scons.org) build tool, version 2.0.1, and will
-compile under python 2.4 or 2.6.
+This project uses the scons (www.scons.org) build tool
+Below are the platform-specific versions of python and scons that were used to test JALoPv1.x.
+
+  RHEL 6.x: python 2.6.x, scons 2.0.1
+  RHEL 7.x: python 2.7.x, scons python2-scons-3.1.2
 
 Later versions of Python should work as well, but were not tested.
+
 To build, simply run 'scons' within the top level directory:
 
 $ scons
