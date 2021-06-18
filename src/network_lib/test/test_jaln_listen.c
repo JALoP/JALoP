@@ -437,6 +437,7 @@ void teardown()
 	jaln_session_unref(sess);
 }
 
+#if 0
 void test_add_new_digest_channel_no_lock()
 {
 	assert_true(jaln_listener_handle_new_digest_channel_no_lock(ctx,
@@ -772,3 +773,4 @@ void test_handle_new_record_channel_no_lock_fails_internal()
 	assert_equals((void*) NULL, sess_local);
 	assert_equals(curr_ref_cnt, ctx->ref_cnt);
 }
+#endif

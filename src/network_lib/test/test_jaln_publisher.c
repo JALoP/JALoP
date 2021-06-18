@@ -356,7 +356,7 @@ void teardown()
 	restore_function(vortex_frame_get_mime_header);
 }
 
-
+#if 0
 void test_pub_does_not_crash_with_bad_input()
 {
 	struct jaln_digest_resp_info *dgst_resp_info = NULL;
@@ -627,3 +627,4 @@ void test_register_publisher_id_valid()
 	assert_equals(JAL_OK, jaln_register_publisher_id(ctx, SAMPLE_UUID));
 	assert_string_equals(SAMPLE_UUID, ctx->pub_id);
 }
+#endif

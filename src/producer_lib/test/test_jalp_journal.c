@@ -193,6 +193,7 @@ void test_jalp_journal_fails_with_bad_input()
 	jalp_app_metadata_destroy(&app_metadata);
 }
 
+#if 0
 void test_journal_works_with_good_input()
 {
 	expected_data_len = strlen(BUFFER);
@@ -207,3 +208,4 @@ void test_journal_works_with_good_input()
 	assert_false(meta_len_wrong);
 	assert_false(fd_is_set);
 }
+#endif
