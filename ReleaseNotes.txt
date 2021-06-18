@@ -1,3 +1,11 @@
+Summary of release 2.0.0.5-final changes (Fri Jun 18 2021) -
+
+    - Updated python and scons version information in README file.
+    - Fixed all compiler warnings.
+    - Fixed file info element was being created in journal meta element.
+    - Fixed StructuredData element was being created in the ApplicationMetadata element instead of the Syslog element.
+    - Simplified jald.cfg to have just one subscriber. Added jald_2subs.cfg for 2 subscribers.
+
 Summary of release 2.0.0.5-beta changes (Mon Jan 18 2021) -
 
     - Discarding the release_env gcc version >= 4 check for stack-protector flag.
