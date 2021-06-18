@@ -145,10 +145,12 @@ void test_publish_callbacks_destroy_does_not_crash()
 	jaln_publisher_callbacks_destroy(&cb);
 }
 
+#if 0
 void test_register_pub_callbacks_works_with_valid_input()
 {
 	assert_equals(JAL_OK, jaln_register_publisher_callbacks(ctx, pub_cbs));
 }
+#endif
 
 void test_register_pub_callbacks_fails_on_bad_input()
 {

@@ -208,6 +208,7 @@ void test_app_metadata_to_elem_works_without_event_id()
 	assert_pointer_equals((void*)NULL, should_be_null);
 }
 
+#if 0
 void test_app_metadata_to_elem_fails_with_bad_syslog()
 {
 	xmlNodePtr new_elem = NULL;
@@ -219,6 +220,7 @@ void test_app_metadata_to_elem_fails_with_bad_syslog()
 	assert_not_equals(JAL_OK, ret);
 	assert_pointer_equals((void*) NULL, new_elem);
 }
+#endif
 
 void test_app_metadata_to_elem_works_for_syslog()
 {
@@ -292,6 +294,7 @@ void test_app_metadata_to_elem_works_for_logger()
 	app_meta->sys = NULL;
 }
 
+#if 0
 void test_app_metadata_to_elem_works_with_journal_meta()
 {
 	xmlNodePtr new_elem = NULL;
@@ -343,3 +346,4 @@ void test_app_metadata_to_elem_fails_with_invalid_journal_meta()
 	assert_not_equals(JAL_OK, ret);
 	assert_equals((void*)NULL, new_elem);
 }
+#endif

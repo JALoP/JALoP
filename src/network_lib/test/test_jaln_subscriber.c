@@ -240,6 +240,7 @@ void teardown()
 	restore_function(vortex_channel_send_msg);
 }
 
+#if 0
 void test_jaln_subscriber_record_frame_handler_fails_with_bad_input()
 {
 	replace_function(vortex_frame_get_type, mock_vortex_frame_get_type_success);
@@ -519,3 +520,4 @@ void test_jaln_subscribe_success_for_all_types()
 	jaln_connection_destroy(&conn);
 	restore_function(vortex_connection_set_on_close_full);
 }
+#endif
