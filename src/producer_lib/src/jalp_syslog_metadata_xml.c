@@ -115,7 +115,7 @@ enum jal_status jalp_syslog_metadata_to_elem(
 		xmlSetProp(syslog_element, (xmlChar *)JALP_XML_MESSAGE_ID, xml_message_id);
 	}
 	if (syslog->entry) {
-		xmlNewChild(syslog_element, NULL,(xmlChar *)JALP_XML_ENTRY, NULL);
+		xmlNewChild(syslog_element, NULL, (xmlChar *)JALP_XML_ENTRY, (xmlChar *)syslog->entry);
 	}
 	if (syslog->sd_head) {
 		struct jalp_structured_data *curr = syslog->sd_head;
