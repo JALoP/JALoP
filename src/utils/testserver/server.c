@@ -198,8 +198,8 @@ int handler(int fd)
 		protocol_version, message_type, (long long unsigned)data_len, (long long unsigned)meta_len);
 
 	// make sure protocol version is correct
-	if (protocol_version != 1) {
-		printf("Connection headers received did not equal 1.\n");
+	if (protocol_version != JPP_VERSION) {
+		printf("Connection headers received did not equal %d.\n", JPP_VERSION);
 		retval = -1;
 		goto out;
 	}

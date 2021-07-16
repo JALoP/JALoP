@@ -43,6 +43,7 @@
 #include <ucred.h>
 #endif
 
+#include <jalop/jal_version.h>
 #include "jal_alloc.h"
 #include "jalls_msg.h"
 #include "jalls_handler.h"
@@ -198,9 +199,9 @@ void *jalls_handler(void *thread_ctx_p) {
 		}
 #endif
 
-		if (protocol_version != 1) {
+		if (protocol_version != JPP_VERSION) {
 			if (debug) {
-				fprintf(stderr, "received protocol version != 1\n");
+				fprintf(stderr, "received protocol version != %d\n", JPP_VERSION);
 			}
 			return NULL;
 		}

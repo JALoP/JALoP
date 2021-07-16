@@ -33,6 +33,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <jalop/jal_status.h>
+#include <jalop/jal_version.h>
 #include "jal_alloc.h"
 #include "jalp_connection_internal.h"
 #include "jalp_context_internal.h"
@@ -41,7 +42,7 @@ struct jalp_connection_headers *jalp_connection_headers_create(uint16_t message_
 		uint64_t data_len, uint64_t meta_len)
 {
 	struct jalp_connection_headers *connection_headers = jal_malloc(sizeof(*connection_headers));
-	connection_headers->protocol_version = 1;
+	connection_headers->protocol_version = JPP_VERSION;
 	connection_headers->message_type = message_type;
 	connection_headers->data_len = data_len;
 	connection_headers->meta_len = meta_len;

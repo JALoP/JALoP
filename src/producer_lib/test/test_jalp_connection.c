@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include "jalp_connection_internal.h"
+#include <jalop/jal_version.h>
 #include <stdint.h>
 
 #define DATA "some_data"
@@ -74,7 +75,7 @@ ssize_t fake_sendmsg(__attribute__((unused)) int sockfd, const struct msghdr *ms
 	// now need to make sure everything as it should be...
 	uint8_t *cur = buffer;
 	uint16_t version = *(uint16_t*)cur;
-	if (version != 1) {
+	if (version != JPP_VERSION) {
 		failed_version = 1;
 		goto out;
 	}
