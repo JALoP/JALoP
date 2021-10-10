@@ -68,7 +68,7 @@ axlPointer jaln_ssl_ctx_creation(__attribute__((unused))VortexConnection *connec
 	SSL_CTX *ssl_ctx;
 	jaln_context *jaln_ctx = (jaln_context *)user_data;
 
-	ssl_ctx = SSL_CTX_new(TLSv1_method());
+	ssl_ctx = SSL_CTX_new(TLSv1_2_method());
 
 	if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, jaln_ctx->peer_certs)) {
 		goto out;
