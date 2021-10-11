@@ -1,0 +1,84 @@
+Summary of release 1.0.0.5 changes (Mon Oct 11 2021)
+
+    Upgraded from TLSv1 to TLSv1.2
+    Added JALoPv1 TLS instructions.
+    Updated python and scons version information.
+
+Summary of release 1.0.0.4 changes (Sat May 01 2021)
+
+    Refs #659: Fixed compiler warnings, and couple of broken unit tests caused by #ifdef SO_PEERCRED.
+
+Summary of release 1.0.0.3 changes (Thu Dec 31 2020)
+
+    Fixes use before initialization of jalp_context in jalp_test.
+    Remove journal files from the disk that are purged via jal_purge.
+    Fixes deadlock in the local_store and producer_lib involving multiple threads interacting with the libxm
+l2 library.
+    Fixed jal-local-store not shutting down upon SIGTERM in non-debug mode.
+    Added flow-control configuration items.
+    Shutdown jal-local-store upon issues with database.
+    Added flow control to the jal-local-store by introducing accept delay for the UNIX Domain Socket. The accept delay is dynamically computed based on the current number of socket connections from the producers.
+    Do not delete jal.socket created by a previous instance.
+    Shutdown jal-local-store upon issues with database.
+    Check if db_root exist and is a directory or return error.
+    Added jaldb_iterate_by_timestamp2(*) function that creates a list of records to be purged and then remove them instead of re-initiating the database query after each record purge.
+    Move setup_signal() call to the beginning of main(). Fix jal_purge not exiting gracefully on SIGTERM. 
+    Create a list of records to be purged and then remove them instead of re-initiating the database query.
+    Updated the jal_purge to add --compact (-c) compaction feature.
+    Updated the jal_purge.8 manual page to reflect the new --compact (-c) option
+
+Summary of release 1.0.0.2 changes (Mon Aug 19 2019)
+
+    Adding proper PoC (cds_tech@nsa.gov) to obtain JAF schemas (per Boyd Fletcher).
+    Ticket #616 - Integrate daemonization enhancements from customer patch
+    Ticket #616 - Integrate jaldb_tail enhancements from customer patch
+    Ticket #331 - Add placeholders for relevant JAF schemas
+    Ticket #331 - Transition to JAF from CEE
+    Make db checkpointing/removal configurable
+    Ticket 573: add db_layer function to checkpoint and remove log files for completed transactions and call
+ from jal_purge
+    Ticket #601 - jald handles journal resumes without app metadata
+    Ticket #570 - Fix various bugs exposed in provided patch
+    
+    Fixes memory leaks, fd leaks, potentially uninitialized variable, and
+    incorrect bounds exposed by user-provided patch.
+    Ticket 571: Fix comment
+    Ticket 571: Apply patch for thread safety and memory management in xml utils
+    Ticket #569: Fix memory leaks in Record XML processing
+    
+Summary of release 1.0.0.1 changes (Wed Jun 12 2019)
+
+    Ticket #162 - Removed unnecessary copies from jaldb_context
+    Ticket #162 - Cleaned up jaldb_record_xml
+    
+    Changed calloc and strndup combinations to strdups.
+    Removed a few unecessary string duplications.
+    Fixed a bug in the SAX error handler.
+    Swapped repeated string constants for macros.
+    Ticket #162 - Removed unecessary unused attributes
+    Add signature and manifest calls to journal fd function
+    Set signing and manifests to off by default for performance reasons
+    Address code review issues
+    Save remote system metadata in jal subscribe
+    Fix issue where xml parsing was breaking because of extraneous whitespace in system metadata
+    Enable manifests and signing of system metadata based on local store configuration
+    Include payload manifests in system metadata
+    Move jalp_digest_buffer and jalp_digest_fd functions to lib_common so they can be used outside the produ
+cer lib
+    Add signatures to sys metadata generation
+    Rewrite jaldb_record_to_sys_metadata_doc to use libxml2 rather than snprintf for xml generation
+    
+    Some slight changes were made to the build tooling to allow JALoP to build
+    with GCC 4.8 and Scons 3.
+    
+    New warnings supported by GCC required the removal of -Werror for the build
+    to succeed. _FORTIFY_SOURCE only has an effect when combined with
+    optimizations, so it is now added only defined in the release build.
+    
+    Unit tests were failing because test_dept can't replace functions in some
+    tests when built with optimizations anymore. So, a --no-release option was
+    added to allow unit testing to be done only on the debug build.
+    
+    A forward-compatibility shim used in the test_dept build script is no
+    included in the EL7 python2-scons package and is not needed with Python 2.7.
+    It is no longer imported.
