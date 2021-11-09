@@ -74,7 +74,7 @@ struct jalls_context {
 	int accept_delay_max;
 };
 
-struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */
+struct jalls_thread_context {
 	/** the connection fd for the worker thread to revieve data */
 	int fd;
 	/** pointer to the context loaded from the config.*/
