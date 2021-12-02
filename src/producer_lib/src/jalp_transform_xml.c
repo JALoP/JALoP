@@ -147,6 +147,7 @@ enum jal_status jalp_transform_to_elem_handle_custom(
 		xmlNodePtr *transform_elm,
 		const struct jalp_transform_other_info *other_info)
 {
+	xmlURIPtr uri = NULL;
 	xmlChar *xml_algorithm = NULL;
 	enum jal_status ret = JAL_OK;
 	if (!other_info || !other_info->uri) {
@@ -154,7 +155,9 @@ enum jal_status jalp_transform_to_elem_handle_custom(
 		goto out;
 	}
 	xml_algorithm = (xmlChar *) other_info->uri;
-	if (!xmlParseURI(other_info->uri)) {
+	// parse URI for validity
+	uri = xmlParseURI(other_info->uri);
+	if (!uri) {
 		ret = JAL_E_INVAL_URI;
 		goto out;
 	}
@@ -166,6 +169,7 @@ enum jal_status jalp_transform_to_elem_handle_custom(
 		xmlAddChild(*transform_elm, child_elm);
 	}
 out:
+	xmlFreeURI(uri);
 	return ret;
 }
 

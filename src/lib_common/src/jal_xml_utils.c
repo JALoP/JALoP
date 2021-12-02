@@ -87,13 +87,15 @@ enum jal_status jal_parse_xml_snippet(
 	if (!doc) {
 		return JAL_E_XML_PARSE;
 	}
+	xmlNodePtr rootNode = xmlDocGetRootElement(doc);
+	xmlUnlinkNode(rootNode);
 	if (*ctx_node) {
-		xmlAddChild(*ctx_node, xmlDocGetRootElement(doc));
+		xmlAddChild(*ctx_node, rootNode);
 	}
 	else {
-		*ctx_node = xmlDocGetRootElement(doc);
+		*ctx_node = rootNode;
 	}
-	// xmlFreeDoc(doc);
+	xmlFreeDoc(doc);
 	return JAL_OK;
 }
 

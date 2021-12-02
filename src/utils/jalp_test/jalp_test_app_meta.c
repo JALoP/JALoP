@@ -633,7 +633,6 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 				break;
 			case (JALP_TRANSFORM_XOR):
 				tmp_jalp_transform = jalp_transform_append_xor(tmp_jalp_transform, *(uint32_t *)key_buf);
-				free(key_buf);
 				if (NULL == tmp_jalp_transform) {
 					printf("Error: line %d: jalp error on transform\n", config_setting_source_line(tmp_transform));
 					goto err_transform;
@@ -649,6 +648,10 @@ static int generate_transforms(config_setting_t *transforms, struct jalp_transfo
 		xml = NULL;
 		free(uri);
 		uri = NULL;
+		free(iv_buf);
+		iv_buf = NULL;
+		free(key_buf);
+		key_buf = NULL;
 	}
 
 	return 0;

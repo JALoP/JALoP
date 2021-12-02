@@ -81,7 +81,7 @@ enum jal_status jalp_content_type_to_elem(
 				param_curr,
 				(xmlChar *)JALP_XML_PARAMETER,
 				(xmlChar *)JALP_XML_PARAMETER_ATTR_NAME,
-				doc,
+				content_type_elt,
 				&param_curr_elt_p);
 		if (JAL_OK == ret) {
 			xmlAddChild(content_type_elt, param_curr_elt_p);

@@ -57,14 +57,14 @@
 enum jal_status jalp_syslog_metadata_to_elem(
 		const struct jalp_syslog_metadata *syslog,
 		const struct jalp_context_t *ctx,
-		xmlNodePtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem)
 {
-	if (!syslog || !ctx || !doc || !new_elem || *new_elem) {
+	if (!syslog || !ctx || !parent || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 	enum jal_status ret;
-	xmlNodePtr syslog_element = xmlNewChild(doc, NULL,
+	xmlNodePtr syslog_element = xmlNewChild(parent, NULL,
 						(xmlChar *)JALP_XML_SYSLOG,
 						NULL);
 	char *proc_id_str = NULL;

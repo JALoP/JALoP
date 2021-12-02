@@ -218,6 +218,8 @@ err_out:
 	free(hostname);
 	free(app_meta_path);
 	free(appname);
+	free(socket_path);
+	free(payload_path);
 
 	if(payload_fd != STDIN_FILENO) {
 		close(payload_fd);

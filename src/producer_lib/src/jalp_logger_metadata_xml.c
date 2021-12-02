@@ -60,17 +60,17 @@
 enum jal_status jalp_logger_metadata_to_elem(
 		const struct jalp_logger_metadata *logmeta,
 		const struct jalp_context_t *ctx,
-		xmlNodePtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem)
 {
-	if (!logmeta || !ctx || !doc || !new_elem || *new_elem) {
+	if (!logmeta || !ctx || !parent || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 
 	enum jal_status ret;
 	char *proc_id_str;
 	pid_t pid;
-	xmlNodePtr logger_metadata_element = xmlNewChild(doc, NULL,
+	xmlNodePtr logger_metadata_element = xmlNewChild(parent, NULL,
 							 (xmlChar *)JALP_XML_LOGGER,
 							 NULL);
 

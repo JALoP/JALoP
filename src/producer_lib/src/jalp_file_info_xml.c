@@ -71,7 +71,7 @@ enum jal_status jalp_file_info_to_elem(
 	/* append the content type element */
 	if (file_info->content_type) {
 		xmlNodePtr content_type_elt = NULL;
-		ret = jalp_content_type_to_elem(file_info->content_type, doc, &content_type_elt);
+		ret = jalp_content_type_to_elem(file_info->content_type, file_info_elt, &content_type_elt);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}

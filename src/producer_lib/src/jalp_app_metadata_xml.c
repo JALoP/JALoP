@@ -93,14 +93,12 @@ enum jal_status jalp_app_metadata_to_elem(
 			if (ret != JAL_OK) {
 				goto err_out;
 			}
-			xmlAddChild(app_meta_elem, syslog_elem);
 			break;
 		case(JALP_METADATA_LOGGER):
 			ret = jalp_logger_metadata_to_elem(app_meta->log, ctx, app_meta_elem, &logger_elem);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}
-			xmlAddChild(app_meta_elem, logger_elem);
 			break;
 		case(JALP_METADATA_CUSTOM):
 			custom_elem = xmlNewChild(
@@ -126,11 +124,10 @@ enum jal_status jalp_app_metadata_to_elem(
 
 	if (app_meta->file_metadata) {
 		xmlNodePtr journal_metadata_elem = NULL;
-		ret = jalp_journal_metadata_to_elem(app_meta->file_metadata, app_meta_elem, &journal_metadata_elem);
+		ret = jalp_journal_metadata_to_elem(app_meta->file_metadata, doc, app_meta_elem, &journal_metadata_elem);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}
-		xmlAddChild(app_meta_elem, journal_metadata_elem);
 	}
 
 
