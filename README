@@ -1,4 +1,8 @@
-This is a beta of a reference implementation of the Journal, Audit, and Logging Protocol (JALoP) updated to use HTTP as the transport layer instead of BEEP.
+This is a C reference implementation of the Journal, Audit, and Logging Protocol (JALoP) that uses HTTP as the transport layer. This is also known as "JALoP over HTTP" or simply, "JALoP v2.x"
+
+It is important to note that -
+  Branch 1.x.x.x implements JALoP over BEEP i.e. JALoP v1.x.
+  Branch 2.x.x.x implements JALoP over HTTP i.e. JALoP v2.x.
 
 The implementation is divided into a number of components:
   The JALoP Network Library (JNL)
@@ -10,15 +14,13 @@ This project makes use of the following libraries:
   lcov - http://ltp.sourceforge.net/coverage/lcov.php
   libaxl - http://www.aspl.es/xml
   libconfig - http://freshmeat.net/projects/libconfigduo
-  libcurl
+  libcurl - https://curl.se/libcurl/
   libuuid - http://e2fsprogs.sourceforge.net/
-  libvortex - http://www.aspl.es/fact/files/af-arch/vortex/html/
   libxml2 - http://xmlsoft.org/
   libxmlsec1 - http://www.aleksey.com/xmlsec/
   openssl - http://www.openssl.org/
   site_scons - http://scons.org/
   test-dept - http://code.google.com/p/test-dept/
-  vortex - http://www.aspl.es/vortex
   Berkeley DB - http://www.oracle.com/us/products/database/berkeley-db/overview/index.html
 
 The following libraries are included in the 3rd-party directory:
@@ -26,12 +28,11 @@ The following libraries are included in the 3rd-party directory:
   lcov
   libconfig
   site_scons
-  vortex
 
 Building and Installing
 
 This project uses the scons (www.scons.org) build tool.
-Below are the platform-specific versions of python and scons that were used to test JALoPv2.x.
+Below are the platform-specific versions of python and scons that were used to test JALoP v2.x.
 
   RHEL 6.x: python 2.6.x, scons 2.0.1
   RHEL 7.x: python 2.7.x, scons python2-scons-3.1.2
@@ -45,7 +46,7 @@ $ scons
 This generates debug, and release directories.
 
 To install the library, simply run the appropriate installation script for your
-platform (i.e., rhel_x86, rhel_x86_64, or solaris):
+platform (e.g. rhel_x86_64):
 
 $ install_<platform>.sh
 
@@ -95,12 +96,9 @@ existing projects (e.g. log4cxx) to utilize JALoP as an output method. These
 may be found under the 'patches' directory.
 
 This project is built and tested in the following environments:
-  RedHat Enterprise Linux (RHEL) 5 on x86_64, using gcc version 4.1.2
   RHEL 6 on x86_64, using gcc version 4.4.5
-  RHEL 6 on i386, using gcc version 4.4.5
-  Solaris 10 TX 09/10 on i386, using gcc version 3.4.3
+  RHEL 7 on x86_64, using gcc version 4.8.5
 
-Additional Notes for Solaris (See README-Solaris for more information)
 This project requires GNU awk to build and expects the 'awk' found on the path
 to be GNU awk. If this is not the case, you will need to install GNU awk either
 from source (http://www.gnu.org/s/gawk/), Sunfree (http://www.sunfreeware.com).
@@ -139,9 +137,6 @@ NOTES
   set_lg_regionmax    400000
   set_tx_max          400000
   set_cachesize 1 0 4
-
-  # The following two mutex config lines must be commented out for RHEL5, 
-  # or the database context will fail to initialize.
   mutex_set_max       400000
   mutex_set_increment 400000
 
