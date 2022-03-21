@@ -1,3 +1,9 @@
+Summary of next release -
+    - Fixed segmentation fault on JournalMetadata element in app metadata.
+    - Added JPP_VERSION 2, updated JAL_VERSION to 2.0.
+    - Fixed ignoring syslog->entry while creating syslog type app metadata.
+    - Fixed some memory leaks.
+
 Summary of release 2.0.0.5-final changes (Fri Jun 18 2021) -
 
     - Updated python and scons version information in README file.
