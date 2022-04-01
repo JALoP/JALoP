@@ -61,10 +61,12 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	enum jal_status ret = JAL_OK;
 	size_t curl_ret = 0;
 
+	// This if statement is for the purpose of backwards compatibility with the older
+	// version of curl that is available on RHEL/CentOS7, where sometimes (but not always?)
+	// the CURLOPT_READFUNCTION is called until a 0 is returned. This should never trigger
+	// with newer versions of curl
 	if (pd->finished_payload_break) {
-		// We're done sending
-		curl_ret = 0;
-		goto out;
+		return 0;
 	}
 
 	if (sess->errored) {
@@ -168,7 +170,7 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	curl_ret = dst_off;
 
 out:
-	if (curl_ret == CURL_READFUNC_ABORT || curl_ret == 0) {
+	if (curl_ret == CURL_READFUNC_ABORT || pd->finished_payload_break) {
 		vortex_mutex_unlock(&sess->wait_lock);
 		jaln_pub_feeder_on_finished(sess);
 		info->complete = axl_true;
