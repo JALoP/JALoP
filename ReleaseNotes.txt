@@ -1,4 +1,5 @@
 Summary of next release -
+    - Fixed hang in send thread after first publish on RHEL 8.
     - Fixed segmentation fault on JournalMetadata element in app metadata.
     - Added JPP_VERSION 2, updated JAL_VERSION to 2.0.
     - Fixed ignoring syslog->entry while creating syslog type app metadata.
