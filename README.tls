@@ -1,0 +1,52 @@
+TLS Setup (between jald & jal_subscribe)
+=========================================
+$ cd <jalop-root>/JALoP
+$ mkdir tls
+$ cd tls/
+
+Generate Publisher key & certificate -
+$ mkdir pub-certs
+$ cd pub-certs/
+$ openssl genrsa -out publisher.key 2048
+$ openssl req -new -key publisher.key -out pub.csr
+  [Entered all default selections on the prompts]
+$ openssl x509 -req -days 730 -in pub.csr -signkey publisher.key -out publisher.crt
+
+The public certificate of peers must be stored in the format below -
+<subject hash>.<index>
+
+Create links to the certificates in the proper format -
+$ ln publisher.crt $(openssl x509 -noout -hash -in publisher.crt).0
+
+Generate Subscriber key & certificate -
+$ mkdir sub-certs
+$ cd sub-certs/
+$ openssl genrsa -out subscriber.key 2048
+$ openssl req -new -key subscriber.key -out sub.csr
+  [Enter at least one different attribute value from publisher on the prompts]
+$ openssl x509 -req -days 730 -in sub.csr -signkey subscriber.key -out subscriber.crt
+
+The public certificate of peers must be stored in the format below -
+<subject hash>.<index>
+
+Create links to the certificates in the proper format -
+$ ln subscriber.crt $(openssl x509 -noout -hash -in subscriber.crt).0
+
+Have the following settings in jald.cfg -
+private_key = "./tls/pub-certs/publisher.key";
+public_cert = "./tls/pub-certs/publisher.crt";
+remote_cert_dir = "./tls/sub-certs";
+
+Have the following settings in jal_subscriber.cfg -
+private_key = "./tls/sub-certs/subscriber.key";
+public_cert = "./tls/sub-certs/subscriber.crt";
+remote_cert = "./tls/pub-certs";
+
+Start C Publisher (jald) with TLS -
+$ ./release/bin/jald -d -c ./jald.cfg --no-daemon
+
+Start C Subscriber (jal_subscribe) with TLS -
+$ ./release/bin/jal_subscribe -d -c ./jal_subscribe.cfg
+
+Important: If you are running both the publisher (jald) and subscriber (jal_subscribe) on the same host for testing, make sure to use a separate database for jal_subscribe (via db_root in jal_subscribe.cfg) to store the received JAL records.
+
