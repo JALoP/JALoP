@@ -71,13 +71,19 @@ enum jal_status jalp_app_metadata_to_elem(
 	xmlNodePtr app_meta_elem = xmlNewDocNode(doc, NULL,
 					(xmlChar *)APPLICATIONMETADATA, NULL);
 
-	xmlNsPtr ns = xmlNewNs(app_meta_elem,
+	xmlNsPtr jamns = xmlNewNs(app_meta_elem,
+			       (xmlChar *)JAL_APP_META_NAMESPACE_URI,
+			       (xmlChar *)JAL_APP_META_NAMESPACE_PREFIX);
+
+	xmlNsPtr jamtns = xmlNewNs(app_meta_elem,
 			       (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI,
 			       (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_PREFIX);
-	xmlSetNs(app_meta_elem, ns);
+	// Initially set jamt: as the namespace so that child elements
+	// correctly inherit
+	xmlSetNs(app_meta_elem, jamtns);
 
 	if (app_meta->event_id) {
-		xmlNewChild(app_meta_elem, NULL,
+		xmlNewChild(app_meta_elem, jamtns,
 				(xmlChar *)EVENTID,
 				(xmlChar *)app_meta->event_id);
 	}
@@ -145,6 +151,8 @@ enum jal_status jalp_app_metadata_to_elem(
 	}
 	free(ncname_jid);
 
+	// Set the top-level node only to use the jam: prefix and namespace
+	xmlSetNs(app_meta_elem, jamns);
 	*elem = app_meta_elem;
 
 	return JAL_OK;

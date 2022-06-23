@@ -35,6 +35,7 @@ extern "C" {
 
 /** JALoP metadata URI */
 #define JAL_APP_META_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadata"
+#define JAL_APP_META_NAMESPACE_PREFIX "jam"
 
 /** JALoP namespace URI */
 #define JAL_APP_META_TYPES_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
