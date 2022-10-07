@@ -1,3 +1,17 @@
+Summary of release 1.1.0.0 changes (Fri Oct 07 2022)
+    - Added RHEL 8 support.
+    - Fixed issues in multiple subscribers running simultaneously.
+        -- Fixed transferring duplicate records to live subscribers.
+        -- Programmatically allocate a larger Vortex threadpool.
+    - Improved jald daemonization.
+        -- Use daemon() to redirect stdin/out/err to /dev/null, set sid, change directory to "/" instead of using separate instructions for these.
+        -- Use dup2 to re-redirect stdout/err if log_dir has been configured.
+        -- Create a PID file.
+    - Converted scons build scripts from Python2 to Python3.
+    - Upgraded JAF schema (eventList.xsd) to the latest version 1.0.5.
+    - Fixed compiler warnings on RHEL 7 and RHEL 8.
+    - Fixed unit tests.
+
 Summary of release 1.0.0.5 changes (Mon Oct 11 2021)
 
     Upgraded from TLSv1 to TLSv1.2
