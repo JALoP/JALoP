@@ -30,6 +30,7 @@
 #include <vortex.h>
 #include <vortex_tls.h>
 #include <openssl/ssl.h>
+#include <openssl/opensslv.h>
 
 #include <jalop/jaln_network.h>
 #include <jalop/jaln_network_types.h>
@@ -68,7 +69,17 @@ axlPointer jaln_ssl_ctx_creation(__attribute__((unused))VortexConnection *connec
 	SSL_CTX *ssl_ctx;
 	jaln_context *jaln_ctx = (jaln_context *)user_data;
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	ssl_ctx = SSL_CTX_new(TLSv1_2_method());
+#else
+	// OpenSSL 1.1 deprecates the old way the protocol version was set.
+	// This replicates the same behavior (forcing TLS1.2).
+	ssl_ctx = SSL_CTX_new(TLS_method());
+	if (!SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_2_VERSION) ||
+	    !SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_2_VERSION)) {
+		goto out;
+	}
+#endif
 
 	if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, jaln_ctx->peer_certs)) {
 		goto out;

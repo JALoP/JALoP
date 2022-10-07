@@ -75,6 +75,13 @@ jaln_context *jaln_context_create(void)
 		jaln_context_destroy(&ctx);
 		jal_error_handler(JAL_E_UNINITIALIZED);
 	}
+
+	// Configure the vortex thread pool
+	// Set the maximum possible number of threads to 50
+	// When an additional thread is needed, create 1 at a time
+	// Set the delay between creation of new threads to 0 (no delay)
+	// Do not prune threads after their tasks are complete
+	vortex_thread_pool_setup(ctx->vortex_ctx, 50, 1, 0, axl_false);
 	return ctx;
 }
 

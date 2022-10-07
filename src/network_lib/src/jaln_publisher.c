@@ -347,12 +347,9 @@ out:
 	return ret;
 }
 
-axl_bool jaln_finish_session_helper(__attribute__((unused)) axlPointer key,
-				    axlPointer data,
-				    axlPointer user_data)
+void jaln_finish_session_helper(axlList* sessions,
+	jaln_context* ctx)
 {
-	axlList *sessions = (axlList *) data;
-	jaln_context *ctx = user_data;
 	int i;
 	jaln_session *sess = NULL;
 
@@ -373,11 +370,9 @@ axl_bool jaln_finish_session_helper(__attribute__((unused)) axlPointer key,
 		jaln_ctx_remove_session(ctx,sess);
 		vortex_mutex_unlock(&sess->lock);
 	}
-
-	return axl_false;
 }
 
-void jaln_publisher_on_connection_close(__attribute__((unused)) VortexConnection *conn,
+void jaln_publisher_on_connection_close(VortexConnection *conn,
 					axlPointer data)
 {
 	struct jaln_connection *jal_conn = (struct jaln_connection *) data;
@@ -388,7 +383,12 @@ void jaln_publisher_on_connection_close(__attribute__((unused)) VortexConnection
 
 	jaln_context *ctx = jal_conn->jaln_ctx;
 
-	axl_hash_foreach(ctx->sessions_by_conn, jaln_finish_session_helper, ctx);
+	char* hostname = strdup(vortex_connection_get_host(conn));
+	axlList *sessions = axl_hash_get(ctx->sessions_by_conn, hostname);
+
+	jaln_finish_session_helper(sessions, ctx);
+	free(hostname);
+
 	vortex_connection_shutdown(conn);
 
 	vortex_mutex_lock(&ctx->lock);
