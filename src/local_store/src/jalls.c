@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
 	//create a jaldb_context to pass to work threads
 	db_ctx = jaldb_context_create();
 	jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root,
-					jalls_ctx->schemas_root, 0);
+					jalls_ctx->schemas_root, JDB_THREADSAFE);
 	if (jal_err != JAL_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
 		goto err_out;
@@ -446,8 +446,8 @@ static int get_thread_count()
 	const char *threads_token = "Threads:";
 	size_t thread_token_length = strlen(threads_token);
 	int thread_count = 0;
-	const int line_length = 100;
-	char one_line [line_length];
+	char one_line [100];
+	const int line_length = sizeof(one_line);
 	char *fgets_status = NULL;
 	int strncmp_result = 0;
 	static bool file_error_reported = false;

@@ -6,6 +6,7 @@ env = env.Clone()
 
 sources = []
 env.MergeFlags('-D_BSD_SOURCE')
+env.MergeFlags('-D_DEFAULT_SOURCE')
 
 for source in (env.Glob("*.c") + env.Glob("*.cpp")):
 	sources.append(source)
