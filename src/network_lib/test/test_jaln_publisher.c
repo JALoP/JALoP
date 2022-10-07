@@ -55,21 +55,21 @@ static int sync_cnt;
 static bool fail;
 
 void peer_digest(
-		__attribute__((unused)) jaln_session *sess,
+		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
-			__attribute__((unused)) enum jaln_record_type type,
-			__attribute__((unused)) const char *nonce,
-			__attribute__((unused)) const uint8_t *local_digest,
-			__attribute__((unused)) const uint32_t local_size,
-			__attribute__((unused)) const uint8_t *peer_digest,
-			__attribute__((unused)) const uint32_t peer_size,
-			__attribute__((unused)) void *user_data)
+		__attribute__((unused)) enum jaln_record_type type,
+		__attribute__((unused)) const char *nonce,
+		__attribute__((unused)) const uint8_t *local_digest,
+		__attribute__((unused)) const uint32_t local_size,
+		__attribute__((unused)) const uint8_t *peer_digest,
+		__attribute__((unused)) const uint32_t peer_size,
+		__attribute__((unused)) void *user_data)
 {
 	peer_digest_call_cnt++;
 }
 
 void on_sync(
-		__attribute__((unused)) jaln_session *sess,
+		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) enum jaln_publish_mode mode,
@@ -164,7 +164,7 @@ int mock_jaln_handle_initialize_ack_success(__attribute__((unused)) jaln_session
 	return 1;
 }
 
-int mock_jaln_handle_initialize_nack(__attribute__((unused)) jaln_session *sess,
+int mock_jaln_handle_initialize_nack(__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) VortexFrame *frame)
 {
 	return 0;

@@ -77,9 +77,9 @@ void test_context_create()
 
 void test_context_destroy_does_not_crash()
 {
-	struct jaln_context_t *ctx = NULL;
+	jaln_context *null_ctx = NULL;
 	jaln_context_destroy(NULL);
-	jaln_context_destroy(&ctx);
+	jaln_context_destroy(&null_ctx);
 }
 
 void test_ref_and_unref_work()

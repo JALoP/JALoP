@@ -192,9 +192,9 @@ void test_session_create()
 
 void test_session_destroy_does_not_crash()
 {
-	jaln_session *sess = NULL;
+	jaln_session *null_sess = NULL;
 	jaln_session_destroy(NULL);
-	jaln_session_destroy(&sess);
+	jaln_session_destroy(&null_sess);
 }
 
 void test_session_destroy_sets_pointer_to_null()
