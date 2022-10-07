@@ -38,38 +38,28 @@
 #include "jal_asprintf_internal.h"
 
 int jalu_daemonize(const char *log_dir, const char *pid_file) {
-	pid_t pid, sid;
-	pid = fork();
-	if (pid < 0) {
-		return -1;
-	}
-	if (pid > 0) {
-		//exit the parent process
-		exit(0);
-	}
 
-	sid = setsid();
-	if (sid < 0) {
+	// Daemonize the process
+	// This causes the parent to exit, sets the sid for the child process,
+	// changes the directory to "/", and redirects stdin/out/err to /dev/null
+	if(0 != daemon(0,0)) {
 		return -1;
 	}
 
-	if ((chdir("/")) < 0) {
-		return -1;
+	// There is a known issue with the way daemonization works
+	// in order to prevent the daemonized process from acting as a session
+	// host - and in paticular from potentially attaching to a new
+	// terminal if one were created, an additional fork() call
+	// is recommended.
+	switch(fork()) {
+		case -1: return -1; // fork error
+		case 0: break; // child continues
+		default: exit(0); // parent process exits
 	}
 
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
 
 	if (log_dir != NULL) {
-		int fd = open("/dev/null", O_RDONLY);
-		if (fd != 0) {
-			/* fd 0 stdin */
-			if (fd != -1)
-				close(fd);
-			return -1;
-		}
-
+		// Re-redirect stdout to a log file in the provided directory
 		char filename[PATH_MAX];
 
 		if (snprintf(filename, sizeof(filename), "%s/stdout.log", log_dir) < 0) {
@@ -79,25 +69,34 @@ int jalu_daemonize(const char *log_dir, const char *pid_file) {
 		mode_t mode = 0660; // Let umask decide the group permissions
 		int flags = O_CREAT | O_WRONLY | O_TRUNC;
 
-		fd = open(filename, flags, mode);
-		if ( fd != 1) {
-			/* fd 1 stdout */
-			if (fd != -1)
-				close(fd);
+		// Attempt to create the stdout log file
+		int fd = open(filename, flags, mode);
+		if(-1 == fd) {
 			return -1;
 		}
 
+		// Redirect stdout to the stdout log file
+		if(-1 == dup2(fd, STDOUT_FILENO)) {
+			return -1;
+		}
+		close(fd);
+
+		// Re-redirect stderr to a log file in the provided directory
 		if (snprintf(filename, sizeof(filename), "%s/stderr.log", log_dir) < 0) {
 			return -1;
 		}
 
+		// Attempt to create the stderr log file
 		fd = open(filename, flags, mode);
-		if (fd != 2) {
-			/* fd 2 stderr */
-			if (fd != -1)
-				close(fd);
+		if(-1 == fd) {
 			return -1;
 		}
+
+		// Redirect stderr to the stderr log file
+		if(-1 == dup2(fd, STDERR_FILENO)) {
+			return -1;
+		}
+		close(fd);
 
 		// The stdout stream is buffered. To print immediately, disable buffering on stdout
 		setbuf(stdout, NULL);
