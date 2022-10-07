@@ -42,6 +42,13 @@ struct jaldb_segment;
 struct jaldb_context_t;
 typedef struct jaldb_context_t jaldb_context;
 
+// Define bit flags to represent settings for the Berkely DB
+enum jaldb_flags {
+	JDB_NONE = 0,
+	JDB_READONLY = 1,
+	JDB_THREADSAFE = 2
+};
+
 /**
  * Creates an empty DB context.
  *
@@ -58,8 +65,9 @@ jaldb_context *jaldb_context_create();
  * @param[in] schemas_root The path to the directory containing JALoP related
  * schemas. If schemas_root is NULL, then the default is
  * /usr/share/jalop/schemas.
- * @param[in] db_rdonly_flag A flag which indicates whether DB_RDONLY should
- * be passed to the DB open function.
+ * @param[in] jdb_flags Bit-packed options to be passed to the db. Specify zero
+ * or more options using a bitwise or "|" with the values specified in the
+ * jaldb_flags enum.
  *
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
@@ -68,7 +76,7 @@ enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root,
-	int db_rdonly_flag);
+	enum jaldb_flags jdb_flags);
 
 /**
  * Destroys a DB context.

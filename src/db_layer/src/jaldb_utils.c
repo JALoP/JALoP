@@ -249,7 +249,7 @@ char *jaldb_gen_timestamp()
 
 	int bytes = strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
 
-	snprintf(ftime+bytes,7,".%06ld",tv->tv_usec);
+	snprintf(ftime + bytes, 8, ".%06ld", tv->tv_usec);
 
 	free(tm);
 	free(tv);
