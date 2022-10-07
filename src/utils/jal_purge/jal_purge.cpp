@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	dbret = jaldb_context_init(ctx, global_args.home, NULL, 0);
+	dbret = jaldb_context_init(ctx, global_args.home, NULL, JDB_NONE);
 	if (JALDB_OK != dbret) {
 		fprintf(stderr, "Failed to initialize jaldb context\n");
 		goto out;
