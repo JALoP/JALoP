@@ -137,10 +137,9 @@ void test_jalp_transform_destroy_destroys_multinode_transform_list()
 {
 	struct jalp_transform *frst_transform;
 	struct jalp_transform *scnd_transform;
-	struct jalp_transform *thrd_transform;
 	frst_transform = jalp_transform_append_other(NULL, "uri", "snippet");
 	scnd_transform = jalp_transform_append_other(frst_transform, "uri2", "snippet2");
-	thrd_transform = jalp_transform_append_other(scnd_transform, "uri3", "snippet3");
+	(void)jalp_transform_append_other(scnd_transform, "uri3", "snippet3");
 
 	jalp_transform_destroy(&frst_transform);
 	assert_equals((struct jalp_transform *)NULL, frst_transform);

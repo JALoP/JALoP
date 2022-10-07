@@ -28,6 +28,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include <libxml/tree.h>
 #include <libxml/xmlschemas.h>
@@ -36,7 +37,8 @@
 #include "jal_asprintf_internal.h"
 #include "jal_xml_utils.h"
 
-#define XML_JAF_SCHEMA "event.xsd" //TODO: what is the canonical name?
+#define XML_JAF_SCHEMA_OLD "event.xsd"
+#define XML_JAF_SCHEMA_NEW "eventList.xsd"
 #define JALP_XML_CORE "Core"
 
 enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
@@ -58,12 +60,38 @@ enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
 	xmlSchemaPtr schema = NULL;
 	xmlSchemaValidCtxtPtr valid_ctx = NULL;
 	char *jafSchema = NULL;
-	
-	jal_asprintf(&jafSchema, "%s/" XML_JAF_SCHEMA, schema_root);
 
 	parsed_doc = xmlParseMemory((const char *)buffer, buf_len);
 
-	schema_doc = xmlReadFile(jafSchema, NULL, XML_PARSE_NONET);
+	// Newer versions of the JAF schemas use eventList.xsd, try this first
+	jal_asprintf(&jafSchema, "%s/" XML_JAF_SCHEMA_NEW, schema_root);
+	if(0 == access(jafSchema, F_OK)) {
+		schema_doc = xmlReadFile(jafSchema, NULL, XML_PARSE_NONET);
+		// If the file existed, but failed to load, abort immediately
+		if(!schema_doc) {
+			ret = JAL_E_XML_SCHEMA;
+			goto out;
+		}
+	}
+
+	// Older versions use event.xsd, fall back to this only if we did not
+	// already attempt to load the eventList.xsd
+	if (!schema_doc) {
+		free(jafSchema);
+		jafSchema = NULL;
+		jal_asprintf(&jafSchema, "%s/" XML_JAF_SCHEMA_OLD, schema_root);
+
+		if(0 == access(jafSchema, F_OK)) {
+			schema_doc = xmlReadFile(jafSchema, NULL, XML_PARSE_NONET);
+			// If the file existed, but failed to load, abort immediately
+			if(!schema_doc) {
+				ret = JAL_E_XML_SCHEMA;
+				goto out;
+			}
+		}
+	}
+
+	// If both of these schemas do not exist, abort
 	if (!schema_doc) {
 		ret = JAL_E_XML_SCHEMA;
 		goto out;
@@ -90,7 +118,7 @@ enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
 	if (xmlSchemaValidateDoc(valid_ctx, parsed_doc)) {
 		goto out;
 	}
-	
+
 	ret = jal_digest_xml_data(ctx, parsed_doc, digest_value, digest_len);
 out:
 	xmlSchemaFreeValidCtxt(valid_ctx);
