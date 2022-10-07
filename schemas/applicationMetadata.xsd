@@ -2,9 +2,7 @@
 <schema targetNamespace="http://www.dod.mil/jalop-1.0/applicationMetadata"
 	xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:jamt="http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
-	xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
 	elementFormDefault="qualified">
-	<import namespace="http://www.w3.org/2000/09/xmldsig#"/>
-	<import namespace="http://www.dod.mil/jalop-1.0/applicationMetadataTypes"/>
+	<import schemaLocation="./applicationMetadataTypes.xsd" namespace="http://www.dod.mil/jalop-1.0/applicationMetadataTypes"/>
 	<element name="ApplicationMetadata" type="jamt:ApplicationMetadataType"/>
 </schema>
