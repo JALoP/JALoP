@@ -55,20 +55,18 @@ extern "C" void setup()
 {
 	struct stat st;
 	if (stat(OTHER_DB_ROOT, &st) != 0) {
-		int status;
-		status = mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	}
 	else {
 		struct dirent *d;
 		DIR *dir;
-		char buf[256];
+		char buf[sizeof(OTHER_DB_ROOT) + NAME_MAX + 1];
 		dir = opendir(OTHER_DB_ROOT);
 		while ((d = readdir(dir)) != NULL) {
 			sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
 			remove(buf);
 		}
-		int ret_val;
-		ret_val = closedir(dir);
+		closedir(dir);
 	}
 	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT, OTHER_SCHEMA_ROOT);
 }

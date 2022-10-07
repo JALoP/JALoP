@@ -111,6 +111,7 @@ struct peer_config_t {
 };
 struct session_ctx_t {
 	struct jaldb_record *rec;
+	jaldb_context_t *db_ctx;
 };
 
 struct global_config_t {
@@ -144,7 +145,6 @@ enum jald_status {
 };
 
 static jaln_context *jctx = NULL;
-static jaldb_context_t *db_ctx = NULL;
 static pthread_mutex_t gs_journal_sub_lock;
 static pthread_mutex_t gs_audit_sub_lock;
 static pthread_mutex_t gs_log_sub_lock;
@@ -167,6 +167,8 @@ static void print_config(void);
 static enum jald_status set_global_config(config_t *config);
 static enum jald_status handle_allow_mask(config_setting_t *parent, config_setting_t *list, const char *cfg_key, enum jaln_record_type *mask);
 static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data);
+static jaldb_context_t* setup_db_layer(void);
+static enum jal_status select_channel(const struct jaln_channel_info *ch_info, axlHash** hash, pthread_mutex_t ** sub_lock);
 
 enum jaln_connect_error on_connect_request(
 		const struct jaln_connect_request *req,
@@ -209,23 +211,11 @@ void on_channel_close(
 {
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
-	switch (ch_info->type) {
-	case JALN_RTYPE_JOURNAL:
-		hash = gs_journal_subs;
-		sub_lock = &gs_journal_sub_lock;
-		break;
-	case JALN_RTYPE_AUDIT:
-		hash = gs_audit_subs;
-		sub_lock = &gs_audit_sub_lock;
-		break;
-	case JALN_RTYPE_LOG:
-		hash = gs_log_subs;
-		sub_lock = &gs_log_sub_lock;
-		break;
-	default:
-		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal record type");
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock))
+	{
 		return;
 	}
+
 	DEBUG_LOG_SUB_SESSION(ch_info, "Session is closing");
 	pthread_mutex_lock(sub_lock);
 	axl_hash_remove(hash, ch_info->hostname);
@@ -282,9 +272,14 @@ enum jal_status pub_on_journal_resume(
 	axl_hash_insert_full(gs_journal_subs, strdup(ch_info->hostname), free, ctx, free);
 	pthread_mutex_unlock(&gs_journal_sub_lock);
 	ctx->rec = NULL;
+	ctx->db_ctx = setup_db_layer();
+	if(NULL == ctx->db_ctx) {
+		return JAL_E_INVAL;
+	}
+
 	enum jaldb_status db_ret = JALDB_E_INVAL;
 	
-	db_ret = jaldb_get_record(db_ctx, JALDB_RTYPE_JOURNAL, record_info->nonce, &(ctx->rec));
+	db_ret = jaldb_get_record(ctx->db_ctx, JALDB_RTYPE_JOURNAL, record_info->nonce, &(ctx->rec));
 	if (JALDB_OK != db_ret) {
 		return JAL_E_INVAL;
 	}
@@ -335,11 +330,11 @@ enum jaldb_status pub_get_next_record(
 			if (!*timestamp) {
 				// Archive mode
 				DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Archive Mode");
-				ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
+				ret = jaldb_next_unsynced_record(ctx->db_ctx, db_type, nonce, &(ctx->rec));
 			} else {
 				// Live mode
 				DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Live Mode, timestamp: %s",*timestamp);
-				ret = jaldb_next_chronological_record(db_ctx,
+				ret = jaldb_next_chronological_record(ctx->db_ctx,
 								     db_type,
 								     nonce,
 								     &(ctx->rec),
@@ -350,7 +345,7 @@ enum jaldb_status pub_get_next_record(
 				sleep(global_config.poll_time);
 
 			}
-			if (exiting || JAL_OK != jaln_session_is_ok(sess)) {
+			if (exiting || (JAL_OK != jaln_session_is_ok(sess))) {
 				ret = JALDB_E_NETWORK_DISCONNECTED;
 				goto out;
 			}
@@ -388,7 +383,7 @@ enum jaldb_status pub_get_next_record(
 	if (rec->payload) {
 		*payload_len = rec->payload->length;
 		if (rec->payload->on_disk) {
-			ret = jaldb_open_segment_for_read(db_ctx, rec->payload);
+			ret = jaldb_open_segment_for_read(ctx->db_ctx, rec->payload);
 			if (JALDB_OK != ret) {
 				ret = JALDB_E_INVAL;
 				goto out;
@@ -452,6 +447,14 @@ enum jal_status pub_send_records_feeder(
 		}
 		DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
 
+	 ctx->db_ctx = setup_db_layer();
+	 if(NULL == ctx->db_ctx) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to setup db");
+			pthread_mutex_unlock(sub_lock);
+			ret = JAL_E_INVAL;
+			goto out;
+	 }
+
 		axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 	}
 
@@ -459,7 +462,7 @@ enum jal_status pub_send_records_feeder(
 	// Only need to clear sent flags for archive mode connection
 	// Have to use timestamp since sess->mode is internal to the network library
 	if (!*timestamp) {
-		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+		db_ret = jaldb_mark_unsynced_records_unsent(ctx->db_ctx, db_type);
 		if (JALDB_OK != db_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
 			ret = JAL_E_INVAL;
@@ -514,7 +517,7 @@ enum jal_status pub_send_records_feeder(
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 1);
+			db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 1);
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent: %d", nonce, db_ret);
@@ -534,6 +537,7 @@ out:
 	free(nonce);
 	return ret;
 }
+
 
 
 enum jal_status pub_send_records(
@@ -589,6 +593,14 @@ enum jal_status pub_send_records(
 		goto out;
 	}
 
+	ctx->db_ctx = setup_db_layer();
+	if(NULL == ctx->db_ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to setup db");
+		pthread_mutex_unlock(sub_lock);
+		ret = JAL_E_INVAL;
+		goto out;
+	}
+
 	DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
 
 	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
@@ -597,7 +609,7 @@ enum jal_status pub_send_records(
 	// Only need to clear sent flags for archive mode connection
 	// Have to use timestamp since sess->mode is internal to the network library
 	if (!*timestamp) {
-		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+		db_ret = jaldb_mark_unsynced_records_unsent(ctx->db_ctx, db_type);
 		if (JALDB_OK != db_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
 			ret = JAL_E_INVAL;
@@ -625,6 +637,7 @@ enum jal_status pub_send_records(
 					hash,
 					sub_lock,
 					db_type);
+
 		if (JALDB_OK != db_ret) {
 			if (JALDB_E_NOT_FOUND == db_ret) {
 				ret = JAL_OK;
@@ -649,7 +662,7 @@ enum jal_status pub_send_records(
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 1);
+			db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 1);
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
@@ -662,6 +675,7 @@ enum jal_status pub_send_records(
 
 		free(nonce);
 		nonce = NULL;
+
 	} while (JALDB_OK == db_ret);
 
 	ret = jaln_finish(sess);
@@ -867,7 +881,7 @@ enum jal_status pub_on_subscribe(
 enum jal_status pub_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		enum jaln_record_type type,
+		__attribute__((unused)) enum jaln_record_type type,
 		char *nonce,
 		__attribute__((unused)) void *user_data)
 {
@@ -875,21 +889,8 @@ enum jal_status pub_on_record_complete(
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
 
-	switch (type) {
-	case JALN_RTYPE_JOURNAL:
-		hash = gs_journal_subs;
-		sub_lock = &gs_journal_sub_lock;
-		break;
-	case JALN_RTYPE_AUDIT:
-		hash = gs_audit_subs;
-		sub_lock = &gs_audit_sub_lock;
-		break;
-	case JALN_RTYPE_LOG:
-		hash = gs_log_subs;
-		sub_lock = &gs_log_sub_lock;
-		break;
-	default:
-		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock))
+	{
 		return JAL_E_INVAL;
 	}
 
@@ -919,20 +920,31 @@ void pub_sync(
 	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
 
+	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
+
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock))
+	{
+		return;
+	}
+
+	pthread_mutex_lock(sub_lock);
+	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	pthread_mutex_unlock(sub_lock);
+	if (!ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		return;
+	}
 
 	switch(type) {
 	case JALN_RTYPE_JOURNAL:
 		db_type = JALDB_RTYPE_JOURNAL;
-		sub_lock = &gs_journal_sub_lock;
 		break;
 	case JALN_RTYPE_AUDIT:
 		db_type = JALDB_RTYPE_AUDIT;
-		sub_lock = &gs_audit_sub_lock;
 		break;
 	case JALN_RTYPE_LOG:
 		db_type = JALDB_RTYPE_LOG;
-		sub_lock = &gs_log_sub_lock;
 		break;
 	default:
 		// shouldn't happen.
@@ -941,7 +953,7 @@ void pub_sync(
 
 	if (mode == JALN_ARCHIVE_MODE) {
 		pthread_mutex_lock(sub_lock);
-		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, nonce);
+		jaldb_ret = jaldb_mark_synced(ctx->db_ctx, db_type, nonce);
 		pthread_mutex_unlock(sub_lock);
 		if (JALDB_OK != jaldb_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced: %d", nonce, jaldb_ret);
@@ -978,6 +990,22 @@ void pub_peer_digest(
 {
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
 	enum jaldb_status db_ret = JALDB_E_INVAL;
+
+	axlHash *hash = NULL;
+	pthread_mutex_t *sub_lock = NULL;
+
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock))
+	{
+		return;
+	}
+
+	pthread_mutex_lock(sub_lock);
+	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	pthread_mutex_unlock(sub_lock);
+	if (!ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		return;
+	}
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
@@ -1018,7 +1046,10 @@ void pub_peer_digest(
 
 error:
 	// The digests do not match. We need to mark the record as unsent so it can be sent again by the publisher.
-	db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 0);
+	if(ctx)
+	{
+		db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 0);
+	}
 
 	if (JALDB_OK != db_ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Failed to update record as unsent %s. Return code: %d", nonce, db_ret);
@@ -1063,8 +1094,6 @@ err_out:
 	return -1;
 }
 
-static enum jald_status setup_db_layer(void);
-static void teardown_db_layer(void);
 
 int main(int argc, char **argv)
 {
@@ -1108,12 +1137,16 @@ int main(int argc, char **argv)
 	print_config();
 
 	if (global_args.daemon) {
-		jalu_daemonize(global_config.log_dir, global_config.pid_file);
-	}
-
-	rc = setup_db_layer();
-	if (rc != JALD_OK) {
-		goto out;
+		DEBUG_LOG("Handing off process to daemon");
+		DEBUG_LOG("For additional logs, set log_dir in config file and refer to <log_dir>/std*");
+		if(0 != jalu_daemonize(global_config.log_dir, global_config.pid_file)) {
+			// Depending on exactly what fails in the daemonizing process, this log
+			// may not actually get written anywhere, as stdin/out/err are all closed
+			// and only reopened if log_dir is set and is accessible
+			DEBUG_LOG("Failed to daemonize process");
+			rc = -1;
+			goto out;
+		}
 	}
 
 	conn_cbs = jaln_connection_callbacks_create();
@@ -1215,7 +1248,6 @@ out:
 	jaln_listener_wait(jctx);
 	free_global_config();
 	free_global_args();
-	teardown_db_layer();
 	pthread_mutex_destroy(&gs_journal_sub_lock);
 	pthread_mutex_destroy(&gs_audit_sub_lock);
 	pthread_mutex_destroy(&gs_log_sub_lock);
@@ -1634,26 +1666,17 @@ enum jald_status handle_allow_mask(config_setting_t *parent, config_setting_t *l
 	return JALD_OK;
 }
 
-enum jald_status setup_db_layer(void)
+jaldb_context_t* setup_db_layer(void)
 {
-	enum jald_status rc = JALD_OK;
 	enum jaldb_status jaldb_ret = JALDB_OK;
-	db_ctx = jaldb_context_create();
+	jaldb_context_t* db_ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.schemas_root, 0);
+	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.schemas_root, JDB_NONE);
 
 	if (JALDB_OK != jaldb_ret) {
-		rc = JALD_E_DB_INIT;
+		jaldb_context_destroy(&db_ctx);
 	}
-
-	return rc;
-}
-
-void teardown_db_layer(void)
-{
-	jaldb_context_destroy(&db_ctx);
-
-	return;
+	return db_ctx;
 }
 
 static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data)
@@ -1677,5 +1700,30 @@ static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buff
 		return JAL_E_INVAL;
 	}
 	*size = bytes_read;
+	return JAL_OK;
+}
+
+static enum jal_status select_channel(const struct jaln_channel_info *ch_info, axlHash** hash, pthread_mutex_t ** sub_lock)
+{
+	*hash = NULL;
+	*sub_lock = NULL;
+
+	switch (ch_info->type) {
+	case JALN_RTYPE_JOURNAL:
+		*hash = gs_journal_subs;
+		*sub_lock = &gs_journal_sub_lock;
+		break;
+	case JALN_RTYPE_AUDIT:
+		*hash = gs_audit_subs;
+		*sub_lock = &gs_audit_sub_lock;
+		break;
+	case JALN_RTYPE_LOG:
+		*hash = gs_log_subs;
+		*sub_lock = &gs_log_sub_lock;
+		break;
+	default:
+		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
+		return JAL_E_INVAL;
+	}
 	return JAL_OK;
 }
