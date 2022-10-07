@@ -138,7 +138,7 @@ extern "C" void setup()
 	dir_cleanup(DB_ROOT);
 	mkdir(DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	context = jaldb_context_create();
-	jaldb_context_init(context, DB_ROOT, SCHEMA_ROOT, false);
+	jaldb_context_init(context, DB_ROOT, SCHEMA_ROOT, JDB_NONE);
 
 	records[0] = jaldb_create_record();
 	records[1] = jaldb_create_record();
