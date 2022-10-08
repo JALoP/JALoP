@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EventList JAFSchemaVersion="1.0.5" xmlns="urn:x-cds-tech:logging:jaf:event:1.0#">
+  <Events>
+    <!-- POSIX logon event using attributes to reference the profile and event class -->
+    <Event profUuid="00000000-1234-5678-9abc-000000000000" profVersion="4"
+           eventClassId="logon"
+           recordId="1234" timestamp="2001-12-31T12:01:00">
+      <Fields>
+        <Field name="username">jsmith</Field>
+        <Field name="hostname">foo.dod.mil</Field>
+      </Fields>
+     </Event>
+    <!-- Linux logon event using attributes to reference the profile and event class -->
+    <Event profUuid="11111111-1234-5678-9abc-111111111111"   profVersion="2"
+           eventClassId="linuxLogon"
+           recordId="1236" timestamp="2001-12-31T12:02:00">
+      <Fields>
+        <Field name="username">jsmith</Field>
+        <Field name="hostname">foo.dod.mil</Field>
+        <Field name="userId">507</Field>
+        <Field name="tty">ttyS4</Field>
+      </Fields>
+    </Event>
+  </Events>
+</EventList>
