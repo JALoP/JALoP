@@ -3,7 +3,7 @@ import string
 import os
 import subprocess
 
-platform = subprocess.Popen(['uname', '-p'], stdout=subprocess.PIPE).communicate()[0].strip()
+platform = subprocess.Popen(['uname', '-p'], stdout=subprocess.PIPE).communicate()[0].decode('ascii').strip()
 
 if platform == 'i686' or platform == 'i386':
 	SYMBOLS_TO_ASM = 'sym2asm_i686.awk'
@@ -88,7 +88,7 @@ def TestDeptTest(env, testfile, other_sources, useProxies=False):
 		sut_prefix = env[sut_prefix.split('$')[1]]
 
 	c_suffix = env['CFILESUFFIX']
-	(sut, suffix) = string.rsplit(string.split(str(testfile), 'test_')[1], '.')
+	(sut, suffix) = str(testfile).split('test_')[1].rsplit('.')
 	sut_path = os.path.join('..', 'src')
 	sut_object = os.path.join(sut_path, sut_prefix + sut + sut_suffix)
 
