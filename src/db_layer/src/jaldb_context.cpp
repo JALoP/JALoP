@@ -117,11 +117,9 @@ enum jaldb_status jaldb_context_init(
 		db_flags |= DB_CREATE;
 	}
 
-	if(JDB_THREADSAFE & jdb_flags)
-	{
-		env_flags |= DB_THREAD;
-		db_flags |= DB_THREAD;
-	}
+	//#706 DB_THREAD needs set all the time to prevent db corruption errors
+	env_flags |= DB_THREAD;
+	db_flags |= DB_THREAD;
 
 	env_flags |= (
 		DB_CREATE |
@@ -412,7 +410,7 @@ enum jaldb_status jaldb_mark_synced(
 
 	struct jaldb_serialize_record_headers *header_ptr = NULL;
 	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
-	
+
 	DB_TXN *txn = NULL;
 	DBT key;
 	DBT val;
@@ -613,7 +611,7 @@ enum jaldb_status jaldb_mark_confirmed(
 				header_ptr->flags |= JALDB_RFLAGS_CONFIRMED;
 
 				// Update the network nonce.
-				
+
 				buffer = (uint8_t *) header_ptr;
 				buffer += timestamp_bytes;
 
@@ -1235,7 +1233,7 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 			goto out;
 		}
 
-		nonce_list.push_front((const char *)pkey.data); 
+		nonce_list.push_front((const char *)pkey.data);
 		db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_PREV);
 	}
 
@@ -1274,7 +1272,7 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	}
 
 	memset(&key, 0, sizeof(key));
-	memset(&val, 0, sizeof(val));	
+	memset(&val, 0, sizeof(val));
 
 	ret = jaldb_record_sanity_check(rec);
 	if (ret != JALDB_OK) {
@@ -1869,11 +1867,11 @@ enum jaldb_status jaldb_next_unsynced_record(
 	}
 
 	while (1) {
-		
+
 		val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 		db_ret = rdbs->record_sent_db->pget(rdbs->record_sent_db, NULL, &skey, &pkey, &val, 0);
 		val.flags = DB_DBT_REALLOC;
-		
+
 		if (DB_NOTFOUND == db_ret) {
 			ret = JALDB_E_NOT_FOUND;
 			goto out;
@@ -1987,7 +1985,7 @@ enum jaldb_status jaldb_next_chronological_record(
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-	
+
 	switch(type) {
 	case JALDB_RTYPE_JOURNAL:
 		rdbs = ctx->journal_dbs;

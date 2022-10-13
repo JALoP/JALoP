@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
 	//create a jaldb_context to pass to work threads
 	db_ctx = jaldb_context_create();
 	jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root,
-					jalls_ctx->schemas_root, JDB_THREADSAFE);
+					jalls_ctx->schemas_root, JDB_NONE);
 	if (jal_err != JAL_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
 		goto err_out;
@@ -451,7 +451,7 @@ static int get_thread_count()
 	char *fgets_status = NULL;
 	int strncmp_result = 0;
 	static bool file_error_reported = false;
-	
+
 	/* Determine if a regular file before opening. */
 
 	struct stat stat_buffer;
