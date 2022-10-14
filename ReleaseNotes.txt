@@ -1,3 +1,6 @@
+Summary of release 1.1.0.1 changes (Thu Oct 13 2022)
+    - Set DB_THREAD flag all the time to prevent db corruption error (#706).
+
 Summary of release 1.1.0.0 changes (Fri Oct 07 2022)
     - Added RHEL 8 support.
     - Fixed issues in multiple subscribers running simultaneously.
