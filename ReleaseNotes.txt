@@ -1,3 +1,8 @@
+Summary of release 1.1.0.2 changes (Day Nov DD 2022)
+    - Clean up db_context upon channel close.
+    - Cache eventList.xsd JAF schema for repeated use.
+    - Minor python2/3 compatibility fix for doxygen scripts
+
 Summary of release 1.1.0.1 changes (Thu Oct 13 2022)
     - Set DB_THREAD flag all the time to prevent db corruption error (#706).
 
