@@ -76,6 +76,7 @@ void jalp_context_destroy(jalp_context **ctx)
 	RSA_free((*ctx)->signing_key);
 	X509_free((*ctx)->signing_cert);
 	free((*ctx)->schema_root);
+	xmlSchemaFree((*ctx)->jaf_schema);
 	free(*ctx);
 	*ctx = NULL;
 }
@@ -144,6 +145,8 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 		snprintf(abspath, PATH_MAX, "%" PRIdMAX, (intmax_t)pid);
 #endif /* JALP_HAVE_PROCFS */
 		ctx->app_name = abspath;
+
+		ctx->jaf_schema = NULL;
 	}
 
 	return JAL_OK;

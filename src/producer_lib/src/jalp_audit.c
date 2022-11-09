@@ -69,7 +69,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		xmlDocSetRootElement(doc, app_meta_elem);
 
 		if (ctx->digest_ctx) {
-			status = jalp_digest_audit_record(ctx->digest_ctx, ctx->schema_root,
+			status = jalp_digest_audit_record(ctx,
 					audit_buffer, audit_buffer_size, &digest, &digest_len);
 			if (status != JAL_OK) {
 				goto out;

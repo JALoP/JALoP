@@ -29,6 +29,9 @@
 #ifndef _JALP_CONTEXT_INTERNAL_H_
 #define _JALP_CONTEXT_INTERNAL_H_
 
+#include <libxml/tree.h>
+#include <libxml/xmlschemas.h>
+
 #include <openssl/pem.h>
 
 #include <jalop/jalp_context.h>
@@ -46,6 +49,7 @@ struct jalp_context_t {
 	struct jal_digest_ctx *digest_ctx; /**< The registered callback functions to use when creating a digest */
 	RSA *signing_key; /**< The RSA private key to use when signing application metadata documents */
 	X509 *signing_cert; /**< The certificate used for signing the application metadata */
+	xmlSchemaPtr jaf_schema;
 };
 
 /**

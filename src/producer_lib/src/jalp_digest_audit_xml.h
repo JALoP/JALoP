@@ -37,13 +37,15 @@ extern "C" {
 #include <jalop/jal_status.h>
 #include <stdint.h>
 #include <unistd.h>
+
+#include "jalp_context_internal.h"
+
 /**
  * Parse a byte buffer as XML and validate it against the JALoP Audit Format
  * (JAF) Event List XML schema.
  *
  */
-enum jal_status jalp_digest_audit_record(const struct jal_digest_ctx *ctx,
-		const char *schema_root,
+enum jal_status jalp_digest_audit_record(jalp_context *jalp_ctx,
 		const uint8_t *buffer,
 		const size_t buf_len,
 		uint8_t**digest_value,

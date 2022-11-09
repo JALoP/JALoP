@@ -39,6 +39,7 @@
 #include "jal_alloc.h"
 
 static struct jal_digest_ctx *ctx = NULL;
+static jalp_context *jalp_ctx = NULL;
 uint8_t *buffer = NULL;
 long buff_len = 0;
 
@@ -47,6 +48,11 @@ void setup()
 	jalp_init();
 	int ret = 0;
 	ctx = jal_sha256_ctx_create();
+	jalp_ctx = jalp_context_create();
+	jalp_context_init(jalp_ctx, NULL, NULL, NULL, NULL);
+	jalp_ctx->digest_ctx = ctx;
+
+
 	FILE *f = NULL;
 
 	f = fopen(TEST_INPUT_ROOT "good_audit_input.xml", "rb");
@@ -109,8 +115,8 @@ void test_jalp_digest_audit_record_returns_ok_with_valid_input()
 {
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						SCHEMAS_ROOT,
+	jalp_ctx->schema_root = SCHEMAS_ROOT;
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						buffer,
 						buff_len,
 						&dgst,
@@ -126,8 +132,8 @@ void test_jalp_digest_auidit_record_returns_error_with_invalid_input()
 	setup_bad();
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						SCHEMAS_ROOT,
+	jalp_ctx->schema_root = SCHEMAS_ROOT;
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						buffer,
 						buff_len,
 						&dgst,
@@ -141,8 +147,8 @@ void test_jalp_digest_audit_record_returns_schema_err_with_invalid_schema_root()
 {
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						"/",
+	jalp_ctx->schema_root = "/";
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						buffer,
 						buff_len,
 						&dgst,
@@ -156,8 +162,8 @@ void test_jalp_digest_audit_record_returns_inval_with_null_ctx()
 {
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
+	jalp_ctx->schema_root = SCHEMAS_ROOT;
 	enum jal_status ret = jalp_digest_audit_record(NULL,
-						SCHEMAS_ROOT,
 						buffer,
 						buff_len,
 						&dgst,
@@ -171,8 +177,8 @@ void test_jalp_digest_audit_record_returns_inval_with_null_schema_root()
 {
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						NULL,
+	jalp_ctx->schema_root = NULL;
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						buffer,
 						buff_len,
 						&dgst,
@@ -186,8 +192,8 @@ void test_jalp_digest_audit_record_returns_inval_with_null_buffer()
 {
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						SCHEMAS_ROOT,
+	jalp_ctx->schema_root = SCHEMAS_ROOT;
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						NULL,
 						buff_len,
 						&dgst,
@@ -201,8 +207,8 @@ void test_jalp_digest_audit_record_returns_inval_with_zero_buf_len()
 {
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						SCHEMAS_ROOT,
+	jalp_ctx->schema_root = SCHEMAS_ROOT;
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						buffer,
 						0,
 						&dgst,
@@ -215,8 +221,8 @@ void test_jalp_digest_audit_record_returns_inval_with_zero_buf_len()
 void test_jalp_digest_audit_record_returns_inval_with_dgst_null()
 {
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						SCHEMAS_ROOT,
+	jalp_ctx->schema_root = SCHEMAS_ROOT;
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						buffer,
 						buff_len,
 						NULL,
@@ -229,8 +235,8 @@ void test_jalp_digest_audit_record_returns_inval_with_dgst_ptr_not_null()
 {
 	uint8_t *dgst = jal_malloc(1);
 	int dgst_len = 0;
-	enum jal_status ret = jalp_digest_audit_record(ctx,
-						SCHEMAS_ROOT,
+	jalp_ctx->schema_root = SCHEMAS_ROOT;
+	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
 						buffer,
 						buff_len,
 						&dgst,

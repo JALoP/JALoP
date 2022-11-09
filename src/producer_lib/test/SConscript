@@ -78,9 +78,7 @@ tests.append(env.TestDeptTest('test_jalp_app_metadata.c',
 tests.append(env.TestDeptTest('test_jalp_context_crypto.c',
 	other_sources=[lib_common, jalopInitObj, contextObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jalp_digest_audit_xml.c',
-	other_sources=[lib_common, jalopInitObj])[0].abspath)
-tests.append(env.TestDeptTest('test_jalp_digest_audit_xml.c',
-	other_sources=[lib_common, jalopInitObj])[0].abspath)
+	other_sources=[lib_common, jalopInitObj, contextObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jalp_audit.c',
 	other_sources=[jalopInitObj, test_utils, contextObj,
 		lib_common, contextCryptoObj,

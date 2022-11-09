@@ -7,3 +7,4 @@ debug/
 /doc/doxygen.out
 /doc/devel-doxygen.out
 /cov
+*.sw?
