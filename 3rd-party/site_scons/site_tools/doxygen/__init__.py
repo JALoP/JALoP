@@ -24,6 +24,7 @@ import os
 import os.path
 import glob
 from fnmatch import fnmatch
+from functools import reduce
 
 def DoxyfileParse(file_contents):
    """
@@ -117,7 +118,7 @@ def DoxySourceScan(node, env, path):
 
    sources = []
 
-   data = DoxyfileParse(node.get_contents())
+   data = DoxyfileParse(node.get_contents().decode('ascii'))
 
    if data.get("RECURSIVE", "NO") == "YES":
       recursive = True
