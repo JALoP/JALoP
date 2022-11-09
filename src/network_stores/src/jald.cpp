@@ -217,6 +217,16 @@ void on_channel_close(
 	}
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Session is closing");
+
+	struct session_ctx_t* ctx = NULL;
+	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	if(!ctx || !ctx->db_ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or BDB context associated with closing channel");
+	}
+	else {
+		jaldb_context_destroy(&ctx->db_ctx);
+	}
+
 	pthread_mutex_lock(sub_lock);
 	axl_hash_remove(hash, ch_info->hostname);
 	pthread_mutex_unlock(sub_lock);
