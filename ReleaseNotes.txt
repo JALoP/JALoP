@@ -1,4 +1,4 @@
-Summary of release 1.1.0.2 changes (Day Nov DD 2022)
+Summary of release 1.1.0.2 changes (Thu Nov 10 2022)
     - Clean up db_context upon channel close.
     - Cache eventList.xsd JAF schema for repeated use.
     - Minor python2/3 compatibility fix for doxygen scripts
