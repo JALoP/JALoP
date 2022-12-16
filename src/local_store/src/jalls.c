@@ -73,6 +73,10 @@
 #include "jalls_init.h"
 #include "jal_alloc.h"
 
+#include <seccomp.h>
+#include <fcntl.h>
+#include <linux/seccomp.h>
+
 #define JALLS_LISTEN_BACKLOG 20
 #define JALLS_USAGE "usage: [-d, --debug] [-v, --version] [-p, --pid <pid_path>] -c, --config <config_file>\n"
 #define JALLS_ERRNO_MSG_SIZE 1024
@@ -82,8 +86,13 @@ struct global_args_t {
 	int daemon;		/* --no-daemon option */
 	bool debug_flag;	/* --debug option */
 	char *config_path;	/* --config option */
-	char *pid_path;		/* --pid option */
 } global_args;
+
+struct seccomp_config_t {
+	int enable_seccomp;
+	const config_setting_t *initial_syscalls;
+	const config_setting_t *final_syscalls;
+} seccomp_config = {0, NULL, NULL};
 
 // Members for deleting socket file
 extern volatile int should_exit;
@@ -94,9 +103,14 @@ static int setup_signals();
 static void sig_handler(int sig);
 static void delete_socket(const char *socket_path, int debug);
 static int get_thread_count();
+static int read_sc_config(config_t *sc_config, const char *config_path);
+static int configureInitialSeccomp();
+static int configureFinalSeccomp();
+static int configureDisallowSeccomp();
+static void catchSeccompViolation(int sig, siginfo_t * si, void * void_context);
+static int init_catchSeccompViolation();
 
 int main(int argc, char **argv) {
-
 	FILE *fp;
 	RSA *key = NULL;
 	X509 *cert = NULL;
@@ -105,6 +119,7 @@ int main(int argc, char **argv) {
 	enum jal_status jal_err = JAL_E_INVAL;
 	int sock = -1;
 	int old_socket_exist = 0;
+	config_t sc_config;
 
 	// Perform signal hookups
 	if ( 0 != setup_signals()) {
@@ -119,6 +134,26 @@ int main(int argc, char **argv) {
 		goto version_out;
 	} else if (err < 0) {
 		goto err_out;
+	}
+        
+	if(global_args.config_path){
+		int rc = read_sc_config(&sc_config, global_args.config_path);
+		if (rc != 0) {
+                	goto err_out;
+                }
+	}
+	
+	if(seccomp_config.enable_seccomp){
+		if (init_catchSeccompViolation()!=0){
+			fprintf(stderr, "Could not intialize seccomp signal\n");
+			goto err_out;
+		}
+		if (configureDisallowSeccomp()!=0){
+			goto err_out;
+		}
+		if (configureInitialSeccomp()!=0){
+			goto err_out;
+		}
 	}
 
 	err = jalls_parse_config(global_args.config_path, &jalls_ctx);
@@ -192,7 +227,7 @@ int main(int argc, char **argv) {
 	}
 
 	jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root,
-					jalls_ctx->schemas_root, 0);
+					jalls_ctx->schemas_root, JDB_NONE);
 	if (jal_err != JAL_OK) {
 		fprintf(stderr, "Failed to initialize jaldb context\n");
 		goto err_out;
@@ -253,17 +288,11 @@ int main(int argc, char **argv) {
 	}
 
 	if (global_args.daemon) {
-		err = jalu_daemonize();
+		err = jalu_daemonize(jalls_ctx->log_dir, jalls_ctx->pid_file);
 		if (err < 0) {
 			fprintf(stderr, "failed to create daemon\n");
 			goto err_out;
 		}
-	}
-
-	if (-1 == jalu_pid(global_args.pid_path))
-	{
-		fprintf(stderr, "Failed to write pid file\n");
-		return -1;
 	}
 
 	if (jalls_ctx->debug) {
@@ -280,6 +309,21 @@ int main(int argc, char **argv) {
 	const int max_thread_count_intervention = jalls_ctx->accept_delay_max;
 	const int min_accept_delay = jalls_ctx->accept_delay_increment;
 
+	if(seccomp_config.enable_seccomp){
+		if (configureFinalSeccomp()!=0){
+			goto err_out;
+		}
+	}
+	if(global_args.debug_flag){
+		//When debuging and finding the system calls the proceess makes,
+		//at this point is where the process is done its setup and continues
+		//on to do its routine work. This mark will show in your strace output.
+		FILE * test_file = fopen("SECCOMP_PROCESS_IS_DONE_SETTING_UP", "r");
+		if (test_file){
+			fclose(test_file);
+		}
+		fprintf(stderr, "Initial setup complete.\n");
+	}
 	while (!should_exit) {
 		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(*thread_ctx));
 		if (thread_ctx == NULL) {
@@ -362,6 +406,7 @@ err_out:
 
 	jaldb_context_destroy(&db_ctx);
 	close(sock);
+	config_destroy(&sc_config);
 
 	exit(-1);
 
@@ -386,14 +431,12 @@ static int process_options(int argc, char **argv) {
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
 		{"no-daemon", no_argument, &global_args.daemon, 0}, /* --no-daemon */
 		{"version", no_argument, NULL, 'v'}, /* --version or -v */
-		{"pid", required_argument, NULL, 'p'}, /* --pid or -p */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
 	global_args.daemon = true;
 	global_args.debug_flag = false;
 	global_args.config_path = NULL;
-	global_args.pid_path = NULL;
 
 	opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
 
@@ -409,19 +452,13 @@ static int process_options(int argc, char **argv) {
 				global_args.config_path = strdup(optarg);
 				break;
 			case 'v':
-				printf("%s\n", jal_version_as_string());
+				fprintf(stderr, "%s\n", jal_version_as_string());
 				return VERSION_CALLED;
 				break;
 			case 0:
 				// getopt_long returns 0 for long options that
 				// have no equivalent 'short' option, i.e.
 				// --no-daemon in this case.
-				break;
-			case 'p':
-				if (global_args.pid_path) {
-					free(global_args.pid_path);
-				}
-				global_args.pid_path = strdup(optarg);
 				break;
 			default:
 				usage();
@@ -475,7 +512,7 @@ static void delete_socket(const char *p_socket_path, int p_debug)
 			char *buf = jal_malloc(JALLS_ERRNO_MSG_SIZE);
 			int result = strerror_r(local_errno, buf, JALLS_ERRNO_MSG_SIZE);
 			if (0 != result) {
-				printf("Failed to parse errno.\n");
+				fprintf(stderr,"Failed to parse errno.\n");
 			}
 			fprintf(stderr,
 				"Error deleting socket file: %s\n",
@@ -484,7 +521,7 @@ static void delete_socket(const char *p_socket_path, int p_debug)
 		}
 	}
 	else {
-		printf("Removed jal.sock socket: %s\n", p_socket_path);
+		fprintf(stderr,"Removed jal.sock socket: %s\n", p_socket_path);
 	}
 }
 
@@ -496,8 +533,8 @@ static int get_thread_count()
 	const char *threads_token = "Threads:";
 	size_t thread_token_length = strlen(threads_token);
 	int thread_count = 0;
-	const int line_length = 100;
-	char one_line [line_length];
+	char one_line [100];
+	const int line_length = sizeof(one_line);
 	char *fgets_status = NULL;
 	int strncmp_result = 0;
 	static bool file_error_reported = false;
@@ -580,4 +617,174 @@ static int get_thread_count()
 		(void) fclose(self_status_file);
 	}
 	return thread_count;
+}
+
+int read_sc_config(config_t *sc_config, const char *config_path) {
+    int rc = 0;
+    config_init(sc_config);
+
+    if (config_path) {
+        rc = config_read_file(sc_config, config_path);
+        if (rc == CONFIG_FALSE) {
+            fprintf(stderr, "Failed to read SECCOMP config file: %s: (%d) %s!\n", config_path, config_error_line(sc_config), config_error_text(sc_config));
+            return -1;
+        }
+
+        // Now get the SECCOMP settings
+        rc = config_lookup_bool(sc_config, "enable_seccomp", &seccomp_config.enable_seccomp);
+        if (rc == CONFIG_TRUE) {
+            fprintf(stderr, "enable_seccomp: %i\n", seccomp_config.enable_seccomp);
+
+            // Read initial and final syscalls ONLY if enable_seccomp is non-zero
+            if (seccomp_config.enable_seccomp) {
+                seccomp_config.initial_syscalls = config_lookup(sc_config, "initial_seccomp_rules");
+                if (seccomp_config.initial_syscalls == NULL) {
+                    fprintf(stderr, "Initial syscalls not found in config file %s\n", config_path);
+                    return -1;
+                }
+
+                seccomp_config.final_syscalls = config_lookup(sc_config, "final_seccomp_rules");
+                if (seccomp_config.final_syscalls == NULL) {
+                    fprintf(stderr, "Final syscalls not found in config file %s\n", config_path);
+                    return -1;
+                }
+            }
+        }
+        else {
+            fprintf(stderr, "Failed to read enable_seccomp setting in config file: %s\n", config_path);
+            return -1;
+        }
+    }
+    else {
+        fprintf(stderr, "SECCOMP config path NULL\n");
+        return -1;
+    }
+
+    return 0;
+}
+int configureInitialSeccomp() {
+    if(global_args.debug_flag){
+    	fprintf(stderr, "configureInitialSeccomp \n");
+    }
+    scmp_filter_ctx filter_ctx;
+    filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+    
+    const config_setting_t * calls = seccomp_config.initial_syscalls;
+    int count = 0;
+    if (calls != NULL) {
+        count = config_setting_length(calls);
+    }
+    int call_number = 0;
+    for (int x=0; x< count; x++) {
+        const char * call_name = config_setting_get_string_elem(calls, x);
+        call_number = seccomp_syscall_resolve_name(call_name);
+    	if(global_args.debug_flag){
+        	fprintf(stderr, "initial syscall: %s %i\n", call_name, call_number);
+	} 
+        seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0);
+        if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0)){
+		fprintf(stderr, "configureInitialSeccomp seccomp_rule_add FAILED\n");
+		return -1;
+	}
+    }
+
+    calls = seccomp_config.final_syscalls;
+    count = 0;
+    if (calls != NULL) {
+        count = config_setting_length(calls);
+    }
+    call_number = 0;
+    for (int x=0; x< count; x++) {
+        const char * call_name = config_setting_get_string_elem(calls, x);
+        call_number = seccomp_syscall_resolve_name(call_name);
+    	if(global_args.debug_flag){
+        	fprintf(stderr, "from final syscall: %s %i\n", call_name, call_number); 
+	}
+        if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0)){
+		fprintf(stderr, "configureInitialSeccomp seccomp_rule_add FAILED\n");
+		return -1;
+	}
+    }
+    
+    if (seccomp_load(filter_ctx)!=0){
+	fprintf(stderr, "configureInitialSeccomp seccomp_load FAILED\n");
+	return -1;
+    }
+    
+    if(global_args.debug_flag){
+    	fprintf(stderr, "configureInitialSeccomp DONE \n");
+    }
+    return 0;
+}
+int configureFinalSeccomp() {
+    if(global_args.debug_flag){
+    	fprintf(stderr, "configureFinalSeccomp \n");
+    }
+    scmp_filter_ctx filter_ctx;
+    filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+    
+    const config_setting_t * calls = seccomp_config.final_syscalls;
+    int count = 0;
+    if (calls != NULL) {
+        count = config_setting_length(calls);
+    }
+    int call_number = 0;
+    for (int x=0; x< count; x++) {
+        const char * call_name = config_setting_get_string_elem(calls, x);
+        call_number = seccomp_syscall_resolve_name(call_name);
+    	if(global_args.debug_flag){
+        	fprintf(stderr, "final syscall: %s %i\n", call_name, call_number); 
+	}
+        if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0)){
+		fprintf(stderr, "configureFinalSeccomp seccomp_rule_add FAILED\n");
+		return -1;
+	}
+    }
+    if (seccomp_load(filter_ctx)!=0){
+	fprintf(stderr, "configureFinalSeccomp seccomp_load FAILED\n");
+	return -1;
+    }
+    if(global_args.debug_flag){
+    	fprintf(stderr, "configureFinalSeccomp DONE \n");
+    }
+    return 0;
+}
+int configureDisallowSeccomp() {
+    if(global_args.debug_flag){
+	fprintf(stderr, "configureDisallowSeccomp \n");
+    }
+    scmp_filter_ctx filter_ctx;
+    filter_ctx = seccomp_init(SCMP_ACT_ALLOW);
+    if(global_args.debug_flag){
+    	fprintf(stderr, "seccomp_rule_add(filter_ctx, SCMP_ACT_TRAP, SCMP_SYS(fcntl) , 1, SCMP_A1(SCMP_CMP_EQ, F_SETFL)); \n");
+    }    
+    if (seccomp_rule_add(filter_ctx, SCMP_ACT_TRAP, SCMP_SYS(fcntl) , 1, SCMP_A1(SCMP_CMP_EQ, F_SETFL))!=0){
+	fprintf(stderr, "configureDisallowSeccomp seccomp_rule_add FAILED\n");
+	return -1;
+    }
+        
+    if (seccomp_load(filter_ctx)!=0){
+	fprintf(stderr, "configureDisallowSeccomp seccomp_load FAILED\n");
+	return -1;
+    }
+    if(global_args.debug_flag){
+    	fprintf(stderr, "configureDisallowSeccomp DONE \n");
+    }
+    return 0;
+
+}
+static void catchSeccompViolation(int sig, siginfo_t * si, void * void_context){
+	if(void_context){};
+	if(sig==SIGSYS){
+		if(si->si_code==1){ //SYS_SECCOMP
+			fprintf(stderr,"Exiting. Disallowed system call: %i : %s.\n", si->si_syscall, seccomp_syscall_resolve_num_arch(si->si_arch,si->si_syscall));
+			exit(2);
+		}
+	}
+}
+static int init_catchSeccompViolation(){
+	struct sigaction action_on_sig;
+	action_on_sig.sa_flags = SA_SIGINFO;
+	action_on_sig.sa_sigaction = &catchSeccompViolation;
+	return sigaction(SIGSYS, &action_on_sig, NULL);
 }

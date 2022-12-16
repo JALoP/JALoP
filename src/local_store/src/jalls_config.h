@@ -49,6 +49,8 @@
 #define JALLS_CFG_SIGNATURE "sign_sys_meta"
 #define JALLS_CFG_MANIFEST "manifest_sys_meta"
 #define JALLS_CFG_SCHEMAS_ROOT "schemas_root"
+#define JALLS_CFG_PID_FILE "pid_file"
+#define JALLS_CFG_LOG_DIR "log_dir"
 #define JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT "accept_delay_thread_count"
 #define JALLS_CFG_ACCEPT_DELAY_INCREMENT "accept_delay_increment"
 #define JALLS_CFG_ACCEPT_DELAY_MAX "accept_delay_max"
