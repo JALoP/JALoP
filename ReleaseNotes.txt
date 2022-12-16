@@ -1,6 +1,11 @@
-Summary of next release -
-    - Added README.tls file.
-    - Fixed hang in send thread after first publish on RHEL 8.
+Summary of release 2.1.0.0 changes (Thu Dec 15 2022) -
+    - Added support for RHEL 8 platform.
+    - Added SECCOMP rules to jal-local-store (jalls.c).
+        -- To restrict syscalls to only the necessay ones.
+        -- To prohibit fcntl(2) being called with F_SETFL parameter to protect the UNIX Domain Socket from being switched to non-blocking mode.
+    - Added README.tls with instructions of an example TLS Setup between JALoPv2.x publisher "jald" & JJNLv2.x subscriber "jnl_test".
+    - Fixed "jald" j/a/l session hang after transferring the first record on RHEL 8.
+    - Fixed namespace of top node in applicationMetadata to 'jam'. All internal nodes have 'jamt' namespace.
     - Fixed segmentation fault on JournalMetadata element in app metadata.
     - Added JPP_VERSION 2, updated JAL_VERSION to 2.0.
     - Fixed ignoring syslog->entry while creating syslog type app metadata.
