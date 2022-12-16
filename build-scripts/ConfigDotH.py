@@ -32,12 +32,12 @@ def __proc_name_from_proc():
 
 def print_config(msg, two_dee_iterable):
 	"Print out a dictionary."
-	print
-	print msg
-	print
+	print()
+	print(msg)
+	print()
 	for key, val in two_dee_iterable:
-		print "    %-20s %s" % (key, val)
-	print
+		print("    %-20s %s" % (key, val))
+	print()
 
 def config_h_build(target, source, env):
 	"""
@@ -53,8 +53,8 @@ def config_h_build(target, source, env):
 	#		config_h_defines.items())
 
 	for a_target, a_source in zip(target, source):
-		config_h = file(str(a_target), "w")
-		config_h_in = file(str(a_source), "r")
+		config_h = open(str(a_target), "w")
+		config_h_in = open(str(a_source), "r")
 		config_h.write(config_h_in.read() % config_h_defines)
 		config_h_in.close()
 		config_h.close()

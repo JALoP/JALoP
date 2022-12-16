@@ -52,13 +52,11 @@ pkg_config_version = '0.21'
 packages_at_least = {
 	'openssl'  	: ['openssl', '0.9.8'],
 	'libconfig'	: ['libconfig', '1.3.2'],
-	'vortex'   	: ['vortex-1.1', '1.1.9'],
-	'vortex_tls'	: ['vortex-tls-1.1', '1.1.9'],
+	'axl'   	: ['axl', '0.6.8'],
 	'libxml2'	: ['libxml-2.0', '2.6.26'],
 	'xmlsec1'	: ['xmlsec1', '1.2.9'],
 	'xmlsec1_openssl'	: ['xmlsec1-openssl', '1.2.9'],
 	'libcurl'	: ['libcurl', '4.1.1'],
-	'apr_util'	: ['apr-util-1', '0.3.9'],
 	}
 
 # flags are shared by both debug and release builds
@@ -96,10 +94,10 @@ debug_env.PrependENVPath('PATH', os.path.join(os.getcwd(), 'build-scripts'))
 
 debug_env.Append(CFLAGS=default_cflags)
 
-if os.environ.has_key('LD'):
+if 'LD' in os.environ:
 	debug_env['LINK'] = os.environ['LD']
 for t in ['CC', 'CXX', 'CPP' ]:
-	if os.environ.has_key(t):
+	if t in os.environ:
 		debug_env[t] = os.environ[t]
 
 debug_env['SOURCE_ROOT'] = str(os.getcwd())
@@ -122,15 +120,15 @@ else:
 	debug_env["bdb_cflags"] = ""
 
 def merge_with_os_env(env):
-	if os.environ.has_key('LIBPATH'):
+	if 'LIBPATH' in os.environ:
 		env.MergeFlags({'LIBPATH':os.environ['LIBPATH'].split(':')})
-	if os.environ.has_key('INCLUDE'):
+	if 'INCLUDE' in os.environ:
 		env.MergeFlags({'CPPPATH':os.environ['INCLUDE'].split(':')})
-	if os.environ.has_key('LDFLAGS'):
+	if 'LDFLAGS' in os.environ:
 		env.MergeFlags(env.ParseFlags(os.environ['LDFLAGS']))
-	if os.environ.has_key('CCFLAGS'):
+	if 'CCFLAGS' in os.environ:
 		env.MergeFlags(env.ParseFlags(os.environ['CCFLAGS']))
-	if os.environ.has_key('CFLAGS'):
+	if 'CFLAGS' in os.environ:
 		# ParseFlags treats things that are not defines, include
 		# paths, linker flags, etc as things that should be dropped
 		# into CCFLAGS, which is used for both C and C++ compiles.
@@ -138,7 +136,7 @@ def merge_with_os_env(env):
 		d['CFLAGS'] = d['CFLAGS'] + d['CCFLAGS']
 		d['CCFLAGS'] = []
 		env.MergeFlags(d)
-	if os.environ.has_key('CXXFLAGS'):
+	if 'CXXFLAGS' in os.environ:
 		d = env.ParseFlags(os.environ['CXXFLAGS'])
 		if 'CXXFLAGS' not in d.keys():
 			d['CXXFLAGS'] = d['CFLAGS'] + d['CCFLAGS']
@@ -182,11 +180,11 @@ if not (GetOption("clean") or GetOption("help")):
 
 	if platform.system() == 'Linux':
 		if GetOption('DISABLE_SELINUX'):
-			print 'Disabling SELinux support';
+			print('Disabling SELinux support')
 		elif not conf.CheckSeLinux():
-			print 'Failed to find SELinux headers on Linux. If you are sure \
+			print('Failed to find SELinux headers on Linux. If you are sure \
 this is what you want, this is OK, re-run scons with the \
---no-selinux options'
+--no-selinux options')
 		else:
 			debug_env['HAVE_SELINUX'] = True
 			debug_env['selinux_ldflags'] = '-lselinux'
@@ -248,7 +246,10 @@ if debug_env['CC'] == 'gcc':
 	# Stack protector wasn't added to GCC until 4.x, disable it for earlier versions (i.e. 3.x compilers on solaris).
 	(major, _, _) = debug_env['CCVERSION'].split('.')
 	if int(major) >= 4:
-		debug_env.Prepend(CCFLAGS=stack_protector_ccflags)
+		release_env.Prepend(CCFLAGS=stack_protector_ccflags)
+		# disable warnings about disabling stack protection for debug builds
+		# avoids noise about VLAs that get optimized to fixed arrays in release builds
+		debug_env.Prepend(CCFLAGS=(stack_protector_ccflags + ['-Wno-stack-protector']))
 
 # coverage target
 lcov_output_dir = "cov"
