@@ -665,11 +665,18 @@ void test_add_signature_block()
 	assert_tag_equals("Exponent", exponent);
 	assert_content_equals(EXPECTED_EXPONENT, exponent);
 
+	// depending on the library version, the X509Certificate element may be first or last
 	xmlNodePtr x509_certificate = jal_get_first_element_child(x509_data);
 	assert_not_equals((void*) NULL, x509_certificate);
-	assert_tag_equals("X509Certificate", x509_certificate);
+	int leading_cert_elt = !strcmp((char*)x509_certificate->name, "X509Certificate");
+	xmlNodePtr x509_subject = NULL;
+	if (leading_cert_elt) {
+		assert_tag_equals("X509Certificate", x509_certificate);
+		x509_subject = get_next_element(x509_certificate);
+	} else {
+		x509_subject = x509_certificate;
+	}
 
-	xmlNodePtr x509_subject = get_next_element(x509_certificate);
 	assert_not_equals((void*) NULL, x509_subject);
 	assert_tag_equals("X509SubjectName", x509_subject);
 	assert_content_equals("CN=www.tresys.com,L=Columbia,ST=MD,C=US", x509_subject);
@@ -687,6 +694,12 @@ void test_add_signature_block()
 	assert_not_equals((void*) NULL, x509_number);
 	assert_tag_equals("X509SerialNumber", x509_number);
 	assert_content_equals("17415892367561384562", x509_number);
+
+	if (!leading_cert_elt) {
+		x509_certificate = get_next_element(x509_serial);
+		assert_not_equals((void*) NULL, x509_certificate);
+		assert_tag_equals("X509Certificate", x509_certificate);
+	}
 }
 
 void test_add_signature_block_works_with_prev()
@@ -779,11 +792,18 @@ void test_add_signature_block_works_with_prev()
 	assert_tag_equals("Exponent", exponent);
 	assert_content_equals(EXPECTED_EXPONENT, exponent);
 
+	// depending on the library version, the X509Certificate element may be first or last
 	xmlNodePtr x509_certificate = jal_get_first_element_child(x509_data);
 	assert_not_equals((void*) NULL, x509_certificate);
-	assert_tag_equals("X509Certificate", x509_certificate);
+	int leading_cert_elt = !strcmp((char*)x509_certificate->name, "X509Certificate");
+	xmlNodePtr x509_subject = NULL;
+	if (leading_cert_elt) {
+		assert_tag_equals("X509Certificate", x509_certificate);
+		x509_subject = get_next_element(x509_certificate);
+	} else {
+		x509_subject = x509_certificate;
+	}
 
-	xmlNodePtr x509_subject = get_next_element(x509_certificate);
 	assert_not_equals((void*) NULL, x509_subject);
 	assert_tag_equals("X509SubjectName", x509_subject);
 	assert_content_equals("CN=www.tresys.com,L=Columbia,ST=MD,C=US", x509_subject);
@@ -801,6 +821,12 @@ void test_add_signature_block_works_with_prev()
 	assert_not_equals((void*) NULL, x509_number);
 	assert_tag_equals("X509SerialNumber", x509_number);
 	assert_content_equals("17415892367561384562", x509_number);
+
+	if (!leading_cert_elt) {
+		x509_certificate = get_next_element(x509_serial);
+		assert_not_equals((void*) NULL, x509_certificate);
+		assert_tag_equals("X509Certificate", x509_certificate);
+	}
 }
 
 void test_add_signature_fails_with_bad_input()
