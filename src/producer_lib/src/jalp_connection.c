@@ -167,11 +167,9 @@ enum jal_status jalp_send_buffer(jalp_context *ctx, uint16_t message_type,
 
 	struct msghdr msgh;
 	memset(&msgh, 0, sizeof(msgh));
-	int iovlen = 8;
-	if (message_type == JALP_JOURNAL_FD_MSG) {
-		iovlen = 6;
-	}
-	struct iovec iov[iovlen];
+	// 8 chunks used to fill out all types besided fd-passed journal, which uses 6
+	struct iovec iov[8];
+	int iovlen = (message_type == JALP_JOURNAL_FD_MSG)? 6 : 8;
 	msgh.msg_iovlen = iovlen;
 	msgh.msg_iov = iov;
 

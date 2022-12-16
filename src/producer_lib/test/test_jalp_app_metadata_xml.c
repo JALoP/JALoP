@@ -138,7 +138,7 @@ void test_app_metadata_to_elem_works_for_custom()
 
 	assert_tag_equals(APP_META_TAG, new_elem);
 	xmlDocSetRootElement(doc, new_elem);
-	assert_true(0 == validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+	assert_true(0 == validate(doc, __FUNCTION__, TEST_XML_APP_META_SCHEMA, 0));
 
 	xmlChar *jid = xmlGetProp(new_elem, xml_jid_attr_name);
 	assert_true(0 == strncmp(JID_PREFIX, (char *)jid, strlen(JID_PREFIX)));
@@ -191,7 +191,7 @@ void test_app_metadata_to_elem_works_without_event_id()
 
 	assert_tag_equals(APP_META_TAG, new_elem);
 	xmlDocSetRootElement(doc, new_elem);
-	assert_true(0 == validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+	assert_true(0 == validate(doc, __FUNCTION__, TEST_XML_APP_META_SCHEMA, 0));
 
 	xmlChar *jid = xmlGetProp(new_elem, xml_jid_attr_name);
 	assert_true(0 == strncmp(JID_PREFIX, (char *)jid, strlen(JID_PREFIX)));
@@ -234,7 +234,7 @@ void test_app_metadata_to_elem_works_for_syslog()
 
 	assert_tag_equals(APP_META_TAG, new_elem);
 	xmlDocSetRootElement(doc, new_elem);
-	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_SCHEMA, 0));
 
 	xmlChar *jid = xmlGetProp(new_elem, xml_jid_attr_name);
 	assert_true(0 == strncmp(JID_PREFIX, (char *)jid, strlen(JID_PREFIX)));
@@ -270,7 +270,7 @@ void test_app_metadata_to_elem_works_for_logger()
 
 	assert_tag_equals(APP_META_TAG, new_elem);
 	xmlDocSetRootElement(doc, new_elem);
-	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_SCHEMA, 0));
 	
 	xmlChar *jid = xmlGetProp(new_elem, xml_jid_attr_name);
 	assert_equals(0, strncmp(JID_PREFIX, (char *)jid, strlen(JID_PREFIX)));
@@ -307,7 +307,7 @@ void test_app_metadata_to_elem_works_with_journal_meta()
 
 	assert_tag_equals(APP_META_TAG, new_elem);
 	xmlDocSetRootElement(doc, new_elem);
-	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
+	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_SCHEMA, 0));
 
 	xmlChar *jid = xmlGetProp(new_elem, xml_jid_attr_name);
 	assert_equals(0, strncmp(JID_PREFIX, (char *)jid, strlen(JID_PREFIX)));
