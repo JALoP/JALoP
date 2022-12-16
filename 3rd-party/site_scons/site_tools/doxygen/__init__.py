@@ -24,6 +24,7 @@ import os
 import os.path
 import glob
 from fnmatch import fnmatch
+from functools import reduce
 
 def DoxyfileParse(file_contents):
    """
@@ -63,10 +64,10 @@ def DoxyfileParse(file_contents):
          key_token = False
       else:
          if token == "+=":
-            if not data.has_key(key):
+            if not key in data:
                data[key] = list()
          elif token == "=":
-            if key == "TAGFILES" and data.has_key(key):
+            if key == "TAGFILES" and key in data:
                append_data( data, key, False, "=" )
                new_data=False
             else:
@@ -83,7 +84,11 @@ def DoxyfileParse(file_contents):
          append_data( data, key, new_data, '\\' )
 
    # compress lists of len 1 into single strings
-   for (k, v) in data.items():
+   # for (k, v) in data.items():
+   # make a copy of the set of keys
+   keys = list(data)
+   for k in keys:
+      v = data[k]
       if len(v) == 0:
          data.pop(k)
 
@@ -114,7 +119,7 @@ def DoxySourceScan(node, env, path):
 
    sources = []
 
-   data = DoxyfileParse(node.get_contents())
+   data = DoxyfileParse(node.get_contents().decode('ascii'))
 
    if data.get("RECURSIVE", "NO") == "YES":
       recursive = True
@@ -189,7 +194,7 @@ def DoxyEmitter(source, target, env):
       "XML": ("NO", "xml"),
    }
 
-   data = DoxyfileParse(source[0].get_contents())
+   data = DoxyfileParse(source[0].get_contents().decode('ascii'))
 
    targets = []
    out_dir = data.get("OUTPUT_DIRECTORY", ".")
