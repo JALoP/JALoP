@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<EventList JAFSchemaVersion="1.0.1" xmlns="urn:x-cds-tech:logging:jaf:event:1.0#">
+<EventList JAFSchemaVersion="1.0.5" xmlns="urn:x-cds-tech:logging:jaf:event:1.0#">
   <Events>
     <!-- POSIX logon event using attributes to reference the profile and event class -->
     <Event profUuid="00000000-1234-5678-9abc-000000000000" profVersion="4"
