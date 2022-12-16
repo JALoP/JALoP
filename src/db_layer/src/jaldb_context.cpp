@@ -69,7 +69,7 @@ enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
 	const char *schemas_root,
-	int db_rdonly_flag)
+	enum jaldb_flags jdb_flags)
 {
 	if (!ctx) {
 		return JALDB_E_INVAL;
@@ -104,15 +104,27 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_NO_MEM;
 	}
 
-	// set readonly flag if specified
-	ctx->db_read_only = db_rdonly_flag;
+	uint32_t db_flags = 0;
+	uint32_t env_flags = 0;
 
-	uint32_t env_flags = DB_CREATE |
+	if(JDB_READONLY & jdb_flags) {
+		ctx->db_read_only = 1;
+		db_flags |= DB_RDONLY;
+	}
+	else {
+		db_flags |= DB_CREATE;
+	}
+
+	//#706 DB_THREAD needs set all the time to prevent db corruption errors
+	env_flags |= DB_THREAD;
+	db_flags |= DB_THREAD;
+
+	env_flags |= (
+		DB_CREATE |
 		DB_INIT_LOCK |
 		DB_INIT_LOG |
 		DB_INIT_MPOOL |
-		DB_INIT_TXN |
-		DB_THREAD;
+		DB_INIT_TXN);
 
 	DB_ENV *env = NULL;
 	int db_err = db_env_create(&env, 0);
@@ -141,12 +153,6 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_INVAL;
 	}
 
-	uint32_t db_flags = DB_THREAD;
-	if (db_rdonly_flag) {
-		db_flags |= DB_RDONLY;
-	} else {
-		db_flags |= DB_CREATE;
-	}
 	enum jaldb_status ret;
 	ret = jaldb_create_primary_dbs_with_indices(env, db_txn, "log", db_flags, &ctx->log_dbs);
 	if (ret != JALDB_OK) {

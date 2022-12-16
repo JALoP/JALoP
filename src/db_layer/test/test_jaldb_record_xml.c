@@ -34,6 +34,12 @@
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 
+#include <xmlsec/xmlsec.h>
+#include <xmlsec/xmldsig.h>
+#include <xmlsec/crypto.h>
+
+#include <openssl/ssl.h>
+
 #include <test-dept.h>
 
 #include "jal_alloc.h"

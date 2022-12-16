@@ -60,20 +60,18 @@ void setup()
 {
 	struct stat st;
 	if (stat(OTHER_DB_ROOT, &st) != 0) {
-		int status;
-		status = mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		(void)mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	}
 	else {
 		struct dirent *d;
 		DIR *dir;
-		char buf[256];
+		char buf[sizeof(OTHER_DB_ROOT) + sizeof(d->d_name)];
 		dir = opendir(OTHER_DB_ROOT);
 		while ((d = readdir(dir)) != NULL) {
 			sprintf(buf, "%s/%s", OTHER_DB_ROOT, d->d_name);
 			remove(buf);
 		}
-		int ret_val;
-		ret_val = closedir(dir);
+		(void)closedir(dir);
 	}
 	uint32_t env_flags = DB_CREATE |
 		DB_INIT_LOCK |
@@ -81,8 +79,8 @@ void setup()
 		DB_INIT_MPOOL |
 		DB_INIT_TXN |
 		DB_THREAD;
-	int db_error = db_env_create(&env, 0);
-	db_error = env->open(env, OTHER_DB_ROOT, env_flags, 0);
+	(void)db_env_create(&env, 0);
+	(void)env->open(env, OTHER_DB_ROOT, env_flags, 0);
 }
 
 void teardown()
@@ -134,9 +132,9 @@ void test_store_confed_nonce_returns_ok_with_valid_input()
 void test_store_confed_nonce_returns_error_when_trying_to_insert_nonce_twice()
 {
 	DB_TXN *transaction = NULL;
-	int db_error = env->txn_begin(env, NULL, &transaction, 0);
-	db_error = db_create(&dbase, env, 0);
-	db_error = dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
+	(void)env->txn_begin(env, NULL, &transaction, 0);
+	(void)db_create(&dbase, env, 0);
+	(void)dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
 	char *rhost = jal_strdup("remote_host");
 	char *nonce = jal_strdup("1234");
 	int err = 0;
@@ -159,9 +157,9 @@ void test_store_confed_nonce_returns_error_when_trying_to_insert_nonce_twice()
 void test_store_confed_nonce_returns_error_with_invalid_input()
 {
 	DB_TXN *transaction = NULL;
-	int db_error = env->txn_begin(env, NULL, &transaction, 0);
-	db_error = db_create(&dbase, env, 0);
-	db_error = dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
+	(void)env->txn_begin(env, NULL, &transaction, 0);
+	(void)db_create(&dbase, env, 0);
+	(void)dbase->open(dbase, transaction, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
 	char *rhost = jal_strdup("remote_host");
 	char *nonce = jal_strdup("1234");
 	int err = 0;
@@ -189,8 +187,8 @@ void test_store_confed_nonce_returns_error_with_invalid_input()
 
 void test_nonce_cmp_returns_correct_value()
 {
-	int db_error = db_create(&dbase, env, 0);
-	db_error = dbase->open(dbase, NULL, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
+	(void)db_create(&dbase, env, 0);
+	(void)dbase->open(dbase, NULL, JALDB_CONF_DB, NULL, DB_BTREE, DB_CREATE, 0);
 	const char *s1 = "12345";
 	size_t slen1 = strlen(s1);
 	const char *s2 = "1234";

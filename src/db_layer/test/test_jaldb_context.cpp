@@ -126,7 +126,7 @@ extern "C" void setup()
 	mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	context = jaldb_context_create();
-	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false));
+	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_NONE));
 
 	records[0] = jaldb_create_record();
 	records[0]->version = EXPECTED_RECORD_VERSION;
@@ -809,7 +809,7 @@ extern "C" void test_db_destroy_sets_ctx_to_null()
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void *)NULL, ctx);
-	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, false);
+	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_NONE);
 	assert_equals(JALDB_OK, ret);
 	jaldb_context_destroy(&ctx);
 	assert_pointer_equals((void *)NULL, ctx);
@@ -941,7 +941,7 @@ extern "C" void test_read_only_flag_prevents_writing_to_db()
 	jaldb_context *ctx = jaldb_context_create();
 	enum jaldb_status ret;
 	int db_err;
-	ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, 1);
+	ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_READONLY);
 	assert_equals(JALDB_OK, ret);
 
 	std::string src = "foo";
