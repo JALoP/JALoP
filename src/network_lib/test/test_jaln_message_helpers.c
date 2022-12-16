@@ -33,17 +33,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <test-dept.h>
-#include <vortex.h>
 #include <curl/curl.h>
 
 #include "jal_alloc.h"
 
 #include "jaln_channel_info.h"
+#include "jaln_compression.c"
 #include "jaln_context.h"
 #include "jaln_digest.c"
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
-#include "jaln_encoding.c"
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
 #include "jaln_session.h"
@@ -93,12 +92,12 @@
 	"JAL-Unsupported-Mode: \r\n" \
 	"JAL-Unauthorized-Mode: \r\n\r\n"
 
-#define SOME_ENCODING "an_encoding"
+#define SOME_COMPRESSION "a_compression"
 #define SOME_DIGEST "31c482024fdf8ab7fd3fc1a6bf7fb3989c7fe706eacf8a719e53b18b2d29d9e0"
 #define EXPECTED_ACK\
 	"Content-Type: application/http+jalop\r\n" \
 	"JAL-Message: initialize-ack\r\n" \
-	"JAL-XML-Compression: " SOME_ENCODING "\r\n" \
+	"JAL-XML-Compression: " SOME_COMPRESSION "\r\n" \
 	"JAL-Digest: " SOME_DIGEST "\r\n\r\n" \
 
 #define SAMPLE_UUID "abcdabcd-abcd-abcd-abcd-abcdabcdabcd"
@@ -114,72 +113,6 @@
 #define SAMPLE_REC_FAIL_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_RECORD_FAILURE "\r\n"
 #define SAMPLE_SYNC_FAIL_MSG JALN_HDRS_MESSAGE JALN_COLON_SPACE JALN_MSG_SYNC_FAILURE "\r\n"
 #define SAMPLE_ERROR_MSG JALN_HDRS_ERROR_MESSAGE JALN_COLON_SPACE JALN_ERROR_MSG_INVALID_DIGEST "\r\n"
-
-VortexMimeHeader *wrong_encoding_get_mime_header(VortexFrame *frame, const char *header_name)
-{
-	if (!frame) {
-		return NULL;
-	}
-	if (strcasecmp(header_name, "content-type") == 0) {
-		return (VortexMimeHeader*) "application/http+jalop";
-	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
-		return (VortexMimeHeader*) "utf-16";
-	}
-	return NULL;
-}
-
-VortexMimeHeader *wrong_content_type_get_mime_header(VortexFrame *frame, const char *header_name)
-{
-	if (!frame) {
-		return NULL;
-	}
-	if (strcasecmp(header_name, "content-type") == 0) {
-		return (VortexMimeHeader*) "application/flubber";
-	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
-		return (VortexMimeHeader*) "binary";
-	}
-	return NULL;
-}
-
-VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *header_name)
-{
-	if (!frame) {
-		return NULL;
-	}
-	if (strcasecmp(header_name, "content-type") == 0) {
-		return (VortexMimeHeader*) "application/http+jalop";
-	} else if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
-		return (VortexMimeHeader*) "binary";
-	}
-	return NULL;
-}
-
-VortexMimeHeader *only_content_type_get_mime_header(VortexFrame *frame, const char *header_name)
-{
-	if (!frame) {
-		return NULL;
-	}
-	if (strcasecmp(header_name, "content-type") == 0) {
-		return (VortexMimeHeader*) "application/http+jalop";
-	}
-	return NULL;
-}
-
-VortexMimeHeader *only_enc_get_mime_header(VortexFrame *frame, const char *header_name)
-{
-	if (!frame) {
-		return NULL;
-	}
-	if (strcasecmp(header_name, "content-transfer-encoding") == 0) {
-		return (VortexMimeHeader*) "binary";
-	}
-	return NULL;
-}
-
-const char *fake_get_mime_content(VortexMimeHeader *header)
-{
-	return (const char*) header;
-}
 
 static struct jaln_digest_info *di_1;
 static struct jaln_digest_info *di_2;
@@ -214,7 +147,7 @@ static char *output_str;
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: log\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
-	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_cmp_1, xml_cmp_2\r\n\r\n"
 
 #define INIT_PUB_JOURNAL_ARCHIVE \
 	"Content-Type: application/http+jalop\r\n" \
@@ -224,7 +157,7 @@ static char *output_str;
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: journal\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
-	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_cmp_1, xml_cmp_2\r\n\r\n"
 
 #define INIT_PUB_AUDIT_ARCHIVE \
 	"Content-Type: application/http+jalop\r\n" \
@@ -234,9 +167,9 @@ static char *output_str;
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: audit\r\n" \
 	"JAL-Accept-Digest: sha256, sha512\r\n" \
-	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_cmp_1, xml_cmp_2\r\n\r\n"
 
-#define INIT_PUB_LOG_ARCHIVE_NO_ENC \
+#define INIT_PUB_LOG_ARCHIVE_NO_CMP \
 	"Content-Type: application/http+jalop\r\n" \
 	"JAL-Message: initialize\r\n" \
 	"JAL-Version: 2.0.0.0\r\n"\
@@ -252,7 +185,7 @@ static char *output_str;
 	"JAL-Publisher-Id: " SAMPLE_UUID "\r\n" \
 	"JAL-Mode: archival\r\n" \
 	"JAL-Record-Type: log\r\n" \
-	"JAL-Accept-XML-Compression: xml_enc_1, xml_enc_2\r\n\r\n"
+	"JAL-Accept-XML-Compression: xml_cmp_1, xml_cmp_2\r\n\r\n"
 
 #define EXPECTED_JOURNAL_REC_HDRS \
 	"Content-Type: application/http+jalop\r\n" \
@@ -299,7 +232,7 @@ static struct jaln_record_info *rec_info;
 
 axlList *dgst_list;
 axlList *dgst_algs;
-axlList *xml_encs;
+axlList *xml_cmps;
 axlList *dgst_resp_list;
 jaln_context ctx;
 jaln_session *sess;
@@ -307,7 +240,6 @@ struct jaln_response_header_info *info;
 
 void setup()
 {
-	replace_function(vortex_frame_mime_header_content, fake_get_mime_content);
 	di_1 = jaln_digest_info_create("nonce_1", di_buf_1, DGST_LEN);
 	di_2 = jaln_digest_info_create("nonce_2", di_buf_2, DGST_LEN);
 	di_3 = jaln_digest_info_create("nonce_3", di_buf_3, DGST_LEN);
@@ -329,9 +261,9 @@ void setup()
 	axl_list_append(dgst_algs, dc_1);
 	axl_list_append(dgst_algs, dc_2);
 
-	xml_encs = axl_list_new(jaln_string_list_case_insensitive_func, free);
-	axl_list_append(xml_encs, strdup("xml_enc_1"));
-	axl_list_append(xml_encs, strdup("xml_enc_2"));
+	xml_cmps = axl_list_new(jaln_string_list_case_insensitive_func, free);
+	axl_list_append(xml_cmps, strdup("xml_cmp_1"));
+	axl_list_append(xml_cmps, strdup("xml_cmp_2"));
 
 	rec_info = jaln_record_info_create();
 	rec_info->type = JALN_RTYPE_LOG;
@@ -350,7 +282,7 @@ void setup()
 	axl_list_append(dgst_resp_list, dr_2);
 	axl_list_append(dgst_resp_list, dr_3);
 	ctx.dgst_algs = dgst_algs;
-	ctx.xml_encodings = xml_encs;
+	ctx.xml_compressions = xml_cmps;
 	strcpy(ctx.pub_id, SAMPLE_UUID);
 
 	sess = jaln_session_create();
@@ -361,17 +293,19 @@ void setup()
 
 void teardown()
 {
-	restore_function(vortex_frame_get_mime_header);
-	restore_function(vortex_frame_mime_header_content);
 	free(output_str);
 	axl_list_free(dgst_list);
 	axl_list_free(dgst_algs);
-	axl_list_free(xml_encs);
+	axl_list_free(xml_cmps);
 	axl_list_free(dgst_resp_list);
 	jaln_record_info_destroy(&rec_info);
 	ctx.dgst_algs = NULL;
-	ctx.xml_encodings = NULL;
+	ctx.xml_compressions = NULL;
 	sess->jaln_ctx = NULL;
+	// For convenience in the setup function, the session was using
+	// the dgst created by the context, but if the session and context are
+	// destroyed both will attempt to free the same memory. Prevent this
+	sess->dgst = NULL;
 	jaln_session_destroy(&sess);
 	jaln_response_header_info_destroy(&info);
 }
@@ -640,42 +574,6 @@ void test_create_subscribe_msg_with_invalid_parameters_msg_out_len_is_null()
 	assert_equals(JAL_E_INVAL, ret);
 }
 
-
-void test_check_ct_and_txf_encoding_are_valid_returns_success_with_correct_ct_and_txf_enc()
-{
-	replace_function(vortex_frame_get_mime_header, fake_get_mime_header);
-	assert_true(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
-}
-
-void test_check_ct_and_txf_encoding_are_valid_returns_failure_when_missing_content_type()
-{
-	replace_function(vortex_frame_get_mime_header, only_enc_get_mime_header);
-	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
-}
-
-void test_check_ct_and_txf_encoding_are_valid_returns_failure_with_incorrect_content_type()
-{
-	replace_function(vortex_frame_get_mime_header, wrong_content_type_get_mime_header);
-	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
-}
-
-void test_check_ct_and_txf_encoding_are_valid_returns_failure_with_incorrect_encoding()
-{
-	replace_function(vortex_frame_get_mime_header, wrong_encoding_get_mime_header);
-	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
-}
-
-void test_check_ct_and_txf_encoding_are_valid_returns_success_when_missing_transfer_encoding()
-{
-	replace_function(vortex_frame_get_mime_header, only_content_type_get_mime_header);
-	assert_true(jaln_check_content_type_and_txfr_encoding_are_valid((VortexFrame*)0xbadf00d));
-}
-
-void test_check_ct_and_txf_encoding_are_valid_returns_failure_on_null()
-{
-	assert_false(jaln_check_content_type_and_txfr_encoding_are_valid(NULL));
-}
-
 void test_digest_info_strlen_works_for_valid_input()
 {
 	uint64_t len = jaln_digest_info_strlen(di_1);
@@ -843,15 +741,15 @@ void test_create_init_msg_works_for_journal_data()
 	curl_slist_free_all(headers);
 }
 
-void test_create_init_msg_works_with_no_enc()
+void test_create_init_msg_works_with_no_cmp()
 {
 	axlList *empty_list = axl_list_new(jaln_string_list_case_insensitive_func, free);
 	struct curl_slist *headers = NULL;
-	ctx.xml_encodings = empty_list;
+	ctx.xml_compressions = empty_list;
 	assert_equals(JAL_OK, jaln_create_init_msg(JALN_ARCHIVE_MODE, JALN_RTYPE_LOG,
 				&ctx, &headers));
 	assert_not_equals(NULL, headers);
-	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE_NO_ENC));
+	assert_equals(0, strcmp(flatten_headers(headers), INIT_PUB_LOG_ARCHIVE_NO_CMP));
 	axl_list_free(empty_list);
 	curl_slist_free_all(headers);
 }
@@ -936,10 +834,10 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(JALN_ARCHIVE_MODE, type, &inval_ctx, &headers));
 
 	inval_ctx.dgst_algs = ctx.dgst_algs;
-	inval_ctx.xml_encodings = NULL;
+	inval_ctx.xml_compressions = NULL;
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(JALN_ARCHIVE_MODE, type, &inval_ctx, &headers));
 
-	inval_ctx.xml_encodings = ctx.xml_encodings;
+	inval_ctx.xml_compressions = ctx.xml_compressions;
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(JALN_ARCHIVE_MODE, type, &ctx, NULL));
 
 	headers = (struct curl_slist *) 0xbadf00d;
@@ -968,7 +866,7 @@ void test_verify_init_ack_headers()
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->sess->ch_info->encoding = BAD_PTR(char);
+	info->sess->ch_info->compression = BAD_PTR(char);
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -994,7 +892,7 @@ void test_verify_init_ack_headers()
 	assert_equals(JAL_E_INVAL, rc);
 
 	info->sess->dgst = NULL;
-	info->sess->ch_info->encoding = NULL;
+	info->sess->ch_info->compression = NULL;
 	info->sess->id = NULL;
 }
 
@@ -1178,10 +1076,10 @@ void test_parse_init_ack_header_version_invalid()
 
 void test_parse_init_ack_header_compression_valid()
 {
-	char comp[] = "JAL-XML-Compression: xml_enc_1\r\n";
+	char comp[] = "JAL-XML-Compression: xml_cmp_1\r\n";
 	jaln_parse_init_ack_header(comp, strlen(comp), info);
 	assert_equals(axl_false, sess->errored);
-	assert_string_equals("xml_enc_1", sess->ch_info->encoding);
+	assert_string_equals("xml_cmp_1", sess->ch_info->compression);
 }
 
 void test_parse_init_ack_header_compression_invalid()
@@ -1189,7 +1087,7 @@ void test_parse_init_ack_header_compression_invalid()
 	char invalid[] = "JAL-XML-Compression: fake\r\n";
 	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
 	assert_equals(axl_true, sess->errored);
-	assert_pointer_equals(NULL, sess->ch_info->encoding);
+	assert_pointer_equals(NULL, sess->ch_info->compression);
 }
 
 void test_parse_init_ack_header_digest_valid()
@@ -1263,7 +1161,7 @@ void test_parse_init_ack_nack_errors_invalid()
 
 void test_parse_journal_missing_response()
 {
-	jaln_session *sess = jaln_session_create();
+	sess = jaln_session_create();
 	enum jal_status rc = jaln_parse_journal_missing_response(SAMPLE_JOURNAL_MISSING_RESP_MSG, strlen(SAMPLE_JOURNAL_MISSING_RESP_MSG), sess);
 
 	assert_equals(JAL_OK, rc);
@@ -1535,11 +1433,11 @@ void test_create_init_nack_msg_works_for_unsupported_version()
 	free(msg_out);
 }
 
-void test_create_init_nack_msg_works_for_unsupported_encoding()
+void test_create_init_nack_msg_works_for_unsupported_compression()
 {
 	char *msg_out = NULL;
 	uint64_t len = 0;
-	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_ENCODING, &msg_out, &len));
+	assert_equals(JAL_OK, jaln_create_init_nack_msg(JALN_CE_UNSUPPORTED_COMPRESSION, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_NACK_UNSUPP_ENC), len);
 	assert_equals(0, memcmp(EXPECTED_NACK_UNSUPP_ENC, msg_out, len));
@@ -1573,10 +1471,10 @@ void test_create_init_nack_msg_works_with_all_errors()
 	char *msg_out = NULL;
 	uint64_t len = 0;
 	enum jaln_connect_error errs =
-			JALN_CE_UNSUPPORTED_VERSION   |
-			JALN_CE_UNSUPPORTED_ENCODING  |
-			JALN_CE_UNSUPPORTED_DIGEST    |
-			JALN_CE_UNSUPPORTED_MODE      |
+			JALN_CE_UNSUPPORTED_VERSION      |
+			JALN_CE_UNSUPPORTED_COMPRESSION  |
+			JALN_CE_UNSUPPORTED_DIGEST       |
+			JALN_CE_UNSUPPORTED_MODE         |
 			JALN_CE_UNAUTHORIZED_MODE;
 	assert_equals(JAL_OK, jaln_create_init_nack_msg(errs, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
@@ -1623,7 +1521,7 @@ void test_create_init_ack_msg_works_for_valid_input()
 {
 	char *msg_out = NULL;
 	uint64_t len = 0;
-	assert_equals(JAL_OK, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, &len));
+	assert_equals(JAL_OK, jaln_create_init_ack_msg(SOME_COMPRESSION, SOME_DIGEST, &msg_out, &len));
 	assert_not_equals((void*) NULL, msg_out);
 	assert_equals(strlen(EXPECTED_ACK), len);
 	assert_equals(0, memcmp(EXPECTED_ACK, msg_out, len));
@@ -1638,15 +1536,15 @@ void test_create_init_ack_msg_returns_error_on_bad_input()
 	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(NULL, SOME_DIGEST, &msg_out, &len));
 
 	msg_out = NULL;
-	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, NULL, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_COMPRESSION, NULL, &msg_out, &len));
 
 	msg_out = NULL;
-	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, NULL, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_COMPRESSION, SOME_DIGEST, NULL, &len));
 
 	msg_out = (char*) 0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, &len));
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_COMPRESSION, SOME_DIGEST, &msg_out, &len));
 
 	msg_out = NULL;
-	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_ENCODING, SOME_DIGEST, &msg_out, NULL));
+	assert_equals(JAL_E_INVAL, jaln_create_init_ack_msg(SOME_COMPRESSION, SOME_DIGEST, &msg_out, NULL));
 
 }

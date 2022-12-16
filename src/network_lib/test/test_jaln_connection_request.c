@@ -41,9 +41,9 @@ void test_jaln_connect_request_create()
 	assert_equals((void*) NULL, cr->ch_info);
 	assert_equals(0, cr->type);
 	assert_equals(1, cr->jaln_version);
-	assert_equals((void*) NULL, cr->encodings);
+	assert_equals((void*) NULL, cr->compressions);
 	assert_equals((void*) NULL, cr->digests);
-	assert_equals(0, cr->enc_cnt);
+	assert_equals(0, cr->cmp_cnt);
 	assert_equals(0, cr->dgst_cnt);
 	assert_equals(JALN_ROLE_UNSET, cr->role);
 	assert_equals((void*) NULL, cr->jaln_agent);
@@ -66,11 +66,11 @@ void test_jaln_connect_request_destroy_works()
 	cr->hostname = jal_strdup("a string");
 	cr->addr = jal_strdup("a string");
 	cr->ch_info = jaln_channel_info_create();
-	cr->encodings = jal_calloc(3, sizeof(char*));
-	cr->encodings[0] = jal_strdup("enc 1");
-	cr->encodings[1] = jal_strdup("enc 2");
-	cr->encodings[2] = jal_strdup("enc 3");
-	cr->enc_cnt = 3;
+	cr->compressions = jal_calloc(3, sizeof(char*));
+	cr->compressions[0] = jal_strdup("cmp 1");
+	cr->compressions[1] = jal_strdup("cmp 2");
+	cr->compressions[2] = jal_strdup("cmp 3");
+	cr->cmp_cnt = 3;
 
 	cr->digests = jal_calloc(2, sizeof(char*));
 	cr->digests[0] = jal_strdup("dgst 1");

@@ -30,12 +30,12 @@
 #ifndef _JALN_SESSION_H_
 #define _JALN_SESSION_H_
 
+#include <pthread.h>
 #include <axl.h>
 #include <curl/curl.h>
 #include <jalop/jal_digest.h>
 #include <jalop/jaln_network.h>
 #include <jalop/jaln_network_types.h>
-#include <vortex.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +47,6 @@ extern "C" {
 #define JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS (30 * 60 * 100000)
 
 struct jaln_sub_state_machine;
-struct jaln_sub_data;
 struct jaln_pub_data;
 
 /**
@@ -55,9 +54,6 @@ struct jaln_pub_data;
  * receiving JAL records.
  */
 struct jaln_session_t {
-	VortexMutex lock;                    //!< Mutex to lock the structure
-	VortexMutex wait_lock;               //!< Mutex to lock the structure on wait
-	VortexCond wait;                     //!< Condition variable to wait on	
 	int ref_cnt;                         //!< Reference count
 	enum jaln_publish_mode mode;         //!< Whether to send messages as archive or live
 
@@ -65,10 +61,6 @@ struct jaln_session_t {
 	struct jal_digest_ctx *dgst;         //!< A copy of the digest to use.
 	axl_bool dgst_on;                    //!< Whether digest challenging is configured to be on
 	CURL *curl_ctx;                      //!< The libcurl context used for sending messages via HTTP.
-	VortexChannel *rec_chan;             //!< The channel used for sending/receiving records
-	VortexChannel *dgst_chan;            //!< The channel used for sending/receiving digests and sync messages.
-	int rec_chan_num;                    //!< The channel number for the \p rec_chan
-	int dgst_chan_num;                   //!< The channel number for the \p dgst_chan
 	struct jaln_channel_info *ch_info;   //!< Additional information about the channel
 	char *id;                            //!< Session ID added to messages to associate them with this session
 
@@ -78,29 +70,16 @@ struct jaln_session_t {
 	enum jaln_role role;                 //!< The role this context is performing (subscriber or publisher)
 	int dgst_list_max;                   //!< The maximum number of digest entries to keep as a subscriber
 	long dgst_timeout;                   //!< The maximum amount of time to wait before sending a 'digest' message
-	union {
-		struct jaln_sub_data* sub_data;   //!< Data specific to a subscriber
-		struct jaln_pub_data* pub_data;   //!< Data specific to a publisher
-	};
+	struct jaln_pub_data* pub_data;      //!< Data specific to a publisher
 };
 
-
-/**
- * Data related to a subscriber
- */
-struct jaln_sub_data {
-	//! The frame handler to use for the next incoming frame.
-	void (*curr_frame_handler)(jaln_session *session, VortexChannel *v_chan, VortexConnection *v_conn, VortexFrame *frame);
-	struct jaln_sub_state_machine *sm; //!< A state machine for processing the ANS responses for a 'subscribe' message
-	VortexCond dgst_list_cond;       //!< a conditional for a thread to wait on to get notified when it is time to send digest messages.
-};
 
 /**
  * Data related to a publisher session
  */
 struct jaln_pub_data {
 	struct jaln_payload_feeder journal_feeder;  //!< the jaln_payload_feeder for sending a journal record.
-	int64_t vortex_feeder_sz;                       //!< The size (as reported to the Vortex engine) of this message.
+	int64_t feeder_sz;                       //!< The size of this message.
 	int msg_no;                                 //!< The message number we are replying to
 
 	char *nonce;                            //!< The nonce of the last record sent.
@@ -161,13 +140,6 @@ jaln_session *jaln_session_create();
 void jaln_session_destroy(jaln_session **sess);
 
 /**
- * Create the subscriber data for a session
- *
- * @return a pointer to freshly created/initialized jaln_sub_data.
- */
-struct jaln_sub_data *jaln_sub_data_create();
-
-/**
  * Create an axlList to hold jaln_session objects. For this list, jaln_session
  * objects are considered equal iff they have the same pointer value. This
  * does not perform a deep comparison of any of the internal members.
@@ -184,13 +156,6 @@ axlList *jaln_session_list_create();
  * @return the difference between \p a and \p b.
  */
 int jaln_ptrs_equal(axlPointer a, axlPointer b);
-
-/**
- * Destroy a jaln_sub_data structure.
- *
- * @param[in,out] sub_data The jaln_sub_data to destroy
- */
-void jaln_sub_data_destroy(struct jaln_sub_data **sub_data);
 
 /**
  * Create the publisher data for a session
@@ -242,75 +207,6 @@ void jaln_session_set_dgst_timeout(jaln_session *sess, long timeout);
  * @param[in] max The value to set the max digest entries to
  */
 void jaln_session_set_dgst_max(jaln_session *sess, int max);
-
-/**
- * Callback that must get notified with vortex for when a channel related to a
- * particular jaln_session gets closed. If the channel closed was the 'record'
- * (main) channel, then this will try to shutdown the other channel.
- *
- * @param[in] channel The VortexChannel that was closed.
- * @param[in] user_data This is expected to be a pointer to a jaln_session.
- */
-void jaln_session_notify_unclean_channel_close(VortexChannel *channel, axlPointer user_data);
-
-/**
- * Callback function registered with Vortex for when use when creating a
- * 'digest' channel. The initiator of the communications should register this
- * callback when creating a channel for use as a 'digest' channel.
- *
- * @param[in] channel_num the channel number, -1 if the channel wasn't created
- * @param[in] chan The vortex channel, NULL if the channel wasn't created
- * @param[in] conn The vortex connection
- * @param[in] user_data Expected to be a pointer to a jaln_session. 
- *
- * @see vortex_channel_new
- */
-void jaln_session_on_dgst_channel_create(
-		int channel_num,
-		VortexChannel *chan,
-		VortexConnection *conn,
-		axlPointer user_data);
-
-/**
- * Callback function that can be used when closing a vortex channel associated
- * with a jaln_session.
- *
- * @see VortexOnClosedNotificationFull
- *
- */
-void jaln_session_notify_close(
-		VortexConnection *conn,
-		int channel_num,
-		axl_bool was_closed,
-		const char *code,
-		const char *msg,
-		axlPointer user_data);
-
-
-/**
- * Callback function that is used to respond to incoming requests to close the
- * channel.
- *
- * @see VortexOnCloseChannel
- */
-axl_bool jaln_session_on_close_channel(int channel_num,
-		VortexConnection *connection,
-		axlPointer user_data);
-
-/**
- * Helper to associate a Vortex channel for use as a 'digest' channel for the
- * session.
- *
- * @param[in] session The session to associate with.
- * @param[in] chan The vortex channel
- * @param[in] chan_num The channel number
- *
- * @return axl_true if \p chan was associated with \p session, axl_false
- * otherwise.
- */
-axl_bool jaln_session_associate_digest_channel_no_lock(jaln_session *session,
-		VortexChannel *chan,
-		int chan_num);
 
 #ifdef __cplusplus
 }

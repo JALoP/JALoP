@@ -1,6 +1,6 @@
 /**
  * @file jaln_pub_feeder.h This file contains the functions related to the
- * implementation of VortexPayloadFeeder for sending records from a publisher
+ * implementation of the payload feeder for sending records from a publisher
  * to a subscriber.
  *
  * @section LICENSE
@@ -31,17 +31,13 @@
 #ifndef JALN_PUB_FEEDER
 #define JALN_PUB_FEEDER
 
-#include <apr-1/apr_thread_pool.h>
-
 #include "jaln_session.h"
 
 /**
- * function for Vortex to return the 'size' of the record.
+ * return the 'size' of the record.
  *
  * @param[in] sess The session to operate on.
- * @param[out] size The size (in bytes). The size returned may not be accruate,
- * but vortex only uses it as an estimate. Vortex will continue to try and send
- * data until 'jaln_pub_feeder_is_finished' returns true.
+ * @param[out] size The size (in bytes).
  *
  * @return axl_true on success, axl_false otherwise.
  */
@@ -54,14 +50,10 @@ axl_bool jaln_pub_feeder_get_size(
  *
  * Struct used as argument to jaln_pub_feeder_fill_buffer, the curl readfunc
  * callback used to get the underlying data of a record being sent.
- * If the callback has aborted or the record has been successfully read,
- * complete will be set true so that the transfer is treated as "finished" twice
- * the case of a curl failure (eg connection reset by peer).
  */
 struct jaln_readfunc_info
 {
         jaln_session *sess;
-        axl_bool complete;
 };
 
 /**
@@ -81,8 +73,7 @@ size_t jaln_pub_feeder_fill_buffer(
 		void *userdata);
 
 /**
- * Function used to report to vortex if there is more data available, or if we
- * are finished sending this record.
+ * Function used to report if we are finished sending this record.
  *
  * @param[in] sess The session to operate on
  * @param[out] finished This will be set to axl_true if all bytes were sent or
@@ -96,16 +87,12 @@ axl_bool jaln_pub_feeder_is_finished(
 		int *finished);
 
 /**
- * Function registered with apr to send a record using curl and receive
+ * Function used to send a record using curl and receive
  * the response.
  *
- * @param[in] thread The thread we are running in
- * @param[in] user_data The jaln_session
- *
- * @return axl_true on success, axl_false otherwise.
+ * @param[in] sess The jaln_session
  */
-void * APR_THREAD_FUNC jaln_pub_feeder_handler(__attribute__((unused)) apr_thread_t *thread,
-		void *user_data);
+void jaln_pub_feeder_handler(jaln_session* sess);
 
 /**
  * Helper function to reset the state of the publisher data. This resets the
@@ -117,19 +104,15 @@ void jaln_pub_feeder_reset_state(jaln_session *sess);
 
 /**
  * Helper function that determines a size for the message.
- * This fudges the numbers slightly since BEEP essentially allows any sized
- * data to be sent. Vortex requests the size as an int, but only uses this to
- * determine the initial window size to allocate for the feeder. Vortex will
- * not stop sending data until we report there is no more data to send.
  *
- * This sets the jaln_session::pub_data::vortex_feeder_sz.
+ * This sets the jaln_session::pub_data::feeder_sz.
  *
  * @param[in] sess The jaln_session to operate on
  */
-void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess);
+void jaln_pub_feeder_calculate_size(jaln_session *sess);
 
 /**
- * Helper utility for calculating the 'size' for vortex.
+ * Helper utility for calculating the 'size' for the feeder.
  * This function adds \p to_add to \p cnt, while detecting integer overflow.
  * If the results of the addition would overflow an integer, then \p is set to
  * INT_MAX and axl_false is returned.
@@ -162,11 +145,42 @@ void jaln_pub_feeder_on_finished(jaln_session *sess);
  * @param[in] journal_offset The offset where to begin sending journal data
  * from. For audit and log data, this is ignored.
  * @param[in] rec_info The record info for the record to be sent.
- * @param[in] chan The vortex channel to send the data over.
  *
  * @return JAL_OK on success, or an error.
  */
 enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 		struct jaln_record_info *rec_info);
+
+/**
+ * Helper function to safely copy data between 2 buffers. Note that the buffers
+ * must not overlap, and calling this function with overlapping buffers is
+ * undefined.
+ *
+ * This function copies the maximum number of bytes that is possible, that is
+ * to say, if there are 10 bytes left in the source buffer, and 20 bytes
+ * available to fill the destination buffer, only 10 bytes will be copied.
+ * Conversely, if there are 20 bytes left in the source buffer, and 10 bytes
+ * available to fill the destination buffer, only 10 bytes will be copied.
+ *
+ * Note that this function will fail when there are not enough bytes in the
+ * source buffer to fill the destination buffer AND \p more is false.
+ *
+ * @param[in] dst The destination buffer.
+ * @param[in] dst_sz The size of the destination buffer
+ * @param[in, out] pdst_off The offset into the destination of where to copy
+ * to.
+ * @param[in] src The source buffer.
+ * @param[in] src_sz The size of the source buffer.
+ * @param[in, out] psrc_off The offset into the source of where to begin
+ * copying data from.
+ * @param[in] more indicates whether or not there are more source buffers
+ * (frames) expected
+ *
+ * @return
+ *  - axl_false if an error occured.
+ *  - axl_true otherwise.
+ */
+axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_size, uint64_t *pdst_off,
+		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, axl_bool more);
 
 #endif // JALN_PUB_FEEDER

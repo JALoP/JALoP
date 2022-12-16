@@ -37,11 +37,11 @@
 
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
+#include "jaln_compression.h"
 #include "jaln_context.h"
 #include "jaln_digest.h"
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
-#include "jaln_encoding.h"
 #include "jaln_message_helpers.h"
 #include "jaln_record_info.h"
 #include "jaln_session.h"
@@ -170,36 +170,13 @@ out:
 	return ret;
 }
 
-axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
-{
-	if (!frame) {
-		return axl_false;
-	}
-	const char *ct = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_CONTENT_TYPE));
-	if (!ct) {
-		return axl_false;
-	}
-	if (0 != strcasecmp(ct, JALN_STR_CT_JALOP)) {
-		return axl_false;
-	}
-	// the assumption for beep is if there is no content transfer encoding,
-	// it is binary.
-	const char *te = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_CONTENT_TXFR_ENCODING));
-	if (te) {
-		if (0 != strcasecmp(te, JALN_STR_BINARY)) {
-			return axl_false;
-		}
-	}
-	return axl_true;
-}
-
 enum jal_status jaln_verify_init_ack_headers(struct jaln_response_header_info *info) {
 
 	if (axl_true /*== info->content_type_valid*/ // subscriber not sending //TODO:required?
 	    && axl_true == info->message_type_valid
 	    && axl_true /*== info->version_valid*/ // subscriber not sending //TODO: required?
 	    && NULL != info->sess->dgst
-	    && NULL != info->sess->ch_info->encoding
+	    && NULL != info->sess->ch_info->compression
 	    && NULL != info->sess->id
 	    && 0 == info->error_cnt
 	    && ((info->sess->pub_data->nonce != NULL) == (info->sess->pub_data->payload_off != 0)) // Nonce and offset must both be defined or neither
@@ -330,7 +307,7 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 		if (JAL_OK == rc) {
 			info->version_valid = axl_true;
 		}
-	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_ENCODING))) {
+	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_COMPRESSION))) {
 		rc = jaln_parse_xml_compression_header(content, len, sess);
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_DIGEST))) {
 		rc = jaln_parse_digest_header(content, len, sess);
@@ -374,14 +351,14 @@ static char *jaln_get_header_value(const char *content, const size_t len, size_t
 
 enum jal_status jaln_parse_xml_compression_header(char *content, size_t len, jaln_session *sess)
 {
-	char *compression  = jaln_get_header_value(content, len, strlen(JALN_HDRS_ENCODING) + 1);
-	axlPointer ptr = axl_list_lookup(sess->jaln_ctx->xml_encodings,
+	char *compression  = jaln_get_header_value(content, len, strlen(JALN_HDRS_COMPRESSION) + 1);
+	axlPointer ptr = axl_list_lookup(sess->jaln_ctx->xml_compressions,
 		jaln_string_list_case_insensitive_lookup_func, compression);
 	if (!ptr) {
 		free(compression);
 		return JAL_E_INVAL;
 	}
-	sess->ch_info->encoding = compression;
+	sess->ch_info->compression = compression;
 	return JAL_OK;
 }
 
@@ -762,13 +739,13 @@ axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_record_type type,
 		jaln_context *ctx, struct curl_slist **headers_out)
 {
-	if (!ctx || !ctx->dgst_algs || !ctx->xml_encodings || !*ctx->pub_id ||
+	if (!ctx || !ctx->dgst_algs || !ctx->xml_compressions || !*ctx->pub_id ||
 			!headers_out || *headers_out) {
 		return JAL_E_INVAL;
 	}
 
 	axlList *dgst_list = ctx->dgst_algs;
-	axlList *enc_list = ctx->xml_encodings;
+	axlList *cmp_list = ctx->xml_compressions;
 
 	struct curl_slist *headers = NULL;
 
@@ -813,7 +790,7 @@ enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_reco
 	
 	char *dc_config_str = NULL;
 	char *dgst_list_str = NULL;
-	char *enc_list_str = NULL;
+	char *cmp_list_str = NULL;
 
 	if (JALN_DC_UNSET != ctx->digest_challenge) {
 		const char *dc_config_prefix = JALN_HDRS_ACCEPT_CONFIGURE_DIGEST_CHALLENGE JALN_COLON_SPACE;
@@ -882,37 +859,37 @@ enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_reco
 		cursor = NULL;
 	}
 
-	if (!axl_list_is_empty(enc_list)) {
-		uint64_t enc_list_size = 0;
-		cursor = axl_list_cursor_new(enc_list);
+	if (!axl_list_is_empty(cmp_list)) {
+		uint64_t cmp_list_size = 0;
+		cursor = axl_list_cursor_new(cmp_list);
 		axl_list_cursor_first(cursor);
-		if (!jaln_safe_add_size(&enc_list_size, strlen(JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE))) {
+		if (!jaln_safe_add_size(&cmp_list_size, strlen(JALN_HDRS_ACCEPT_COMPRESSION JALN_COLON_SPACE))) {
 			goto out;
 		}
-		int enc_cnt = 0;
+		int cmp_cnt = 0;
 		while (axl_list_cursor_has_item(cursor)) {
-			char *enc = (char *)axl_list_cursor_get(cursor);
-			if (!jaln_safe_add_size(&enc_list_size, strlen(enc))) {
+			char *cmp = (char *)axl_list_cursor_get(cursor);
+			if (!jaln_safe_add_size(&cmp_list_size, strlen(cmp))) {
 				goto out;
 			}
-			enc_cnt += 1;
+			cmp_cnt += 1;
 			axl_list_cursor_next(cursor);
 		}
 		// for each dgst in the list (except the last one), need to add
 		// a ", ".
-		if (!jaln_safe_add_size(&enc_list_size, 2 * (enc_cnt - 1))) {
+		if (!jaln_safe_add_size(&cmp_list_size, 2 * (cmp_cnt - 1))) {
 			goto out;
 		}
 
-		enc_list_str = malloc(enc_list_size + 1);
-		strcpy(enc_list_str, JALN_HDRS_ACCEPT_ENCODING JALN_COLON_SPACE);
+		cmp_list_str = malloc(cmp_list_size + 1);
+		strcpy(cmp_list_str, JALN_HDRS_ACCEPT_COMPRESSION JALN_COLON_SPACE);
 		axl_list_cursor_first(cursor);
 		while (axl_list_cursor_has_item(cursor)) {
-			char *enc = (char *)axl_list_cursor_get(cursor);
-			strcat(enc_list_str, enc);
+			char *cmp = (char *)axl_list_cursor_get(cursor);
+			strcat(cmp_list_str, cmp);
 			axl_list_cursor_next(cursor);
 			if (axl_list_cursor_has_item(cursor)) {
-				strcat(enc_list_str, ", ");
+				strcat(cmp_list_str, ", ");
 			}
 		}
 		axl_list_cursor_free(cursor);
@@ -965,8 +942,8 @@ enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_reco
 		}
 		headers = tmp;
 	}
-	if (enc_list_str) {
-		tmp = curl_slist_append(headers, enc_list_str);
+	if (cmp_list_str) {
+		tmp = curl_slist_append(headers, cmp_list_str);
 		if (!tmp) {
 			curl_slist_free_all(headers);
 			goto out;
@@ -985,7 +962,7 @@ out:
 	free(pub_id_str);
 	free(dc_config_str);
 	free(dgst_list_str);
-	free(enc_list_str);
+	free(cmp_list_str);
 	return ret;
 }
 
@@ -1195,9 +1172,9 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
 			goto err_out;
 		}
 	}
-	if (err_codes & JALN_CE_UNSUPPORTED_ENCODING) {
+	if (err_codes & JALN_CE_UNSUPPORTED_COMPRESSION) {
 		errors_listed = axl_true;
-		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_ENCODING JALN_COLON_SPACE JALN_CRLF))) {
+		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_COMPRESSION JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
@@ -1233,8 +1210,8 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
 	if (err_codes & JALN_CE_UNSUPPORTED_VERSION) {
 		strcat(msg, JALN_HDRS_UNSUPPORTED_VERSION JALN_COLON_SPACE JALN_CRLF);
 	}
-	if (err_codes & JALN_CE_UNSUPPORTED_ENCODING) {
-		strcat(msg, JALN_HDRS_UNSUPPORTED_ENCODING JALN_COLON_SPACE JALN_CRLF);
+	if (err_codes & JALN_CE_UNSUPPORTED_COMPRESSION) {
+		strcat(msg, JALN_HDRS_UNSUPPORTED_COMPRESSION JALN_COLON_SPACE JALN_CRLF);
 	}
 	if (err_codes & JALN_CE_UNSUPPORTED_DIGEST) {
 		strcat(msg, JALN_HDRS_UNSUPPORTED_DIGEST JALN_COLON_SPACE JALN_CRLF);
@@ -1257,15 +1234,15 @@ out:
 	return ret;
 }
 
-enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, uint64_t *msg_len_out)
+enum jal_status jaln_create_init_ack_msg(const char *compression, const char *digest, char **msg_out, uint64_t *msg_len_out)
 {
-	if (!encoding || !digest || !msg_out || *msg_out || !msg_len_out) {
+	if (!compression || !digest || !msg_out || *msg_out || !msg_len_out) {
 		return JAL_E_INVAL;
 	}
 	*msg_len_out = jal_asprintf(msg_out, JALN_MIME_PREAMBLE JALN_MSG_INIT_ACK JALN_CRLF \
-			  JALN_HDRS_ENCODING JALN_COLON_SPACE "%s" JALN_CRLF
+			  JALN_HDRS_COMPRESSION JALN_COLON_SPACE "%s" JALN_CRLF
 			  JALN_HDRS_DIGEST JALN_COLON_SPACE "%s" JALN_CRLF JALN_CRLF,
-			  encoding, digest);
+			  compression, digest);
 	return JAL_OK;
 }
 

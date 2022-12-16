@@ -27,8 +27,8 @@
  * limitations under the License.
  */
 
+#include <pthread.h>
 #include <axl.h>
-#include <vortex.h>
 #include <jalop/jaln_network.h>
 #include <jalop/jaln_network_types.h>
 
@@ -38,9 +38,7 @@
 
 void jaln_mark_closing(jaln_session *sess)
 {
-	vortex_mutex_lock(&sess->lock);
 	sess->closing = axl_true;
-	vortex_mutex_unlock(&sess->lock);
 }
 
 enum jal_status jaln_disconnect(struct jaln_connection *jal_conn)
@@ -68,21 +66,5 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn)
 		return JAL_E_INVAL;
 	}
 
-	axl_bool ret = axl_false;
-
-	vortex_connection_shutdown(jal_conn->v_conn);
-	ret = vortex_connection_close(jal_conn->v_conn);
-	if (axl_true != ret) {
-		return JAL_E_INVAL;
-	}
-
-	// Vortex will handle notifying everything to shut down, but we can't return to the
-	// network store until that is complete.  The network store should have one reference
-	// to the context.
-	/***
-	while (jal_conn->jaln_ctx->ref_cnt > 1) {
-		sleep(1);
-	}
-	***/
 	return JAL_OK;
 }

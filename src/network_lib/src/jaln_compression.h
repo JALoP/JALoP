@@ -1,6 +1,6 @@
 /**
- * @file jaln_encoding.h This file contains function declarations for code related
- * to the xml encodings.
+ * @file jaln_compression.h This file contains function declarations for code related
+ * to the xml compressions.
  *
  * @section LICENSE
  *
@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _JALN_ENCODING_INTERNAL_H_
-#define _JALN_ENCODING_INTERNAL_H_
+#ifndef _JALN_COMPRESSION_INTERNAL_H_
+#define _JALN_COMPRESSION_INTERNAL_H_
 #include <axl.h>
 #include <jalop/jal_digest.h>
 #include <jalop/jaln_network.h>
@@ -81,4 +81,4 @@ enum jal_status jaln_axl_string_list_to_array(axlList *list,
  */
 void jaln_string_array_destroy(char ***arr, int arr_size);
 
-#endif // _JALN_ENCODING_INTERNAL_H_
+#endif // _JALN_COMPRESSION_INTERNAL_H_

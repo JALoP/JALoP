@@ -26,8 +26,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "jaln_compression.h"
 #include "jaln_digest.h"
-#include "jaln_encoding.h"
 
 void jaln_digest_list_destroy(axlPointer ptr)
 {

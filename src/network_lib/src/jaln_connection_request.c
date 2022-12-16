@@ -29,9 +29,9 @@
 
 #include "jal_alloc.h"
 
-#include "jaln_connection_request.h"
 #include "jaln_channel_info.h"
-#include "jaln_encoding.h"
+#include "jaln_compression.h"
+#include "jaln_connection_request.h"
 
 struct jaln_connect_request *jaln_connect_request_create()
 {
@@ -51,7 +51,7 @@ void jaln_connect_request_destroy(struct jaln_connect_request **preq)
 
 	jaln_channel_info_destroy(&req->ch_info);
 
-	jaln_string_array_destroy(&req->encodings, req->enc_cnt);
+	jaln_string_array_destroy(&req->compressions, req->cmp_cnt);
 	jaln_string_array_destroy(&req->digests, req->dgst_cnt);
 
 	free(req->jaln_agent);

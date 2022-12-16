@@ -28,7 +28,6 @@
 */
 
 #include <jalop/jaln_network.h>
-#include <vortex.h>
 
 #include "jal_alloc.h"
 #include "jaln_context.h"
@@ -152,7 +151,7 @@ enum jal_status jaln_send_record(
 out:
 	// The library does not assume ownership of the buffers.
 	// Make sure there are no lingering pointers to them.
-	if (!pub_data)
+	if (pub_data)
 	{
 		pub_data->sys_meta = NULL;
 		pub_data->app_meta = NULL;
@@ -350,27 +349,14 @@ enum jal_status jaln_finish(jaln_session *sess)
 		return JAL_E_INVAL_PARAM;
 	}
 	// cancel queued records and wait for any running ones to complete
-	(void) apr_thread_pool_tasks_cancel(sess->jaln_ctx->threads, sess);
-	vortex_cond_signal(&sess->wait);
-	vortex_mutex_lock(&sess->lock);
 	jaln_send_close_session(sess);
-	vortex_mutex_unlock(&sess->lock);
 	jaln_context *ctx = sess->jaln_ctx;
-	vortex_mutex_lock(&ctx->lock);
+	pthread_mutex_lock(&ctx->lock);
 	ctx->conn_callbacks->on_channel_close(sess->ch_info, ctx->user_data);
 	if (0 >= --ctx->sess_cnt) {
 		ctx->conn_callbacks->on_connection_close(ctx->conn, ctx->user_data);
 	}
-	vortex_mutex_unlock(&ctx->lock);
-
-	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
-	if (!ans_rpy_sent) {
-		return JAL_E_COMM;
-	}
-
-	if (!vortex_channel_close_full(sess->rec_chan, NULL, NULL)) {
-		return JAL_E_COMM;
-	}
+	pthread_mutex_unlock(&ctx->lock);
 
 	return JAL_OK;
 }

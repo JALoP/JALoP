@@ -34,7 +34,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <test-dept.h>
-#include <vortex.h>
 #include <curl/curl.h>
 
 #include "jal_alloc.h"
@@ -52,7 +51,7 @@
 
 #define BUF_SIZE 256
 
-#define VORTEX_SZ (strlen(SYS_META) + strlen(APP_META) + \
+#define TOTAL_SZ (strlen(SYS_META) + strlen(APP_META) + \
 		strlen(PAYLOAD) + (3 * strlen("BREAK")))
 
 #define EXPECTED_MSG SYS_META "BREAK" APP_META "BREAK" PAYLOAD "BREAK"
@@ -60,41 +59,11 @@
 
 static axl_bool finalized_called;
 
-static VortexPayloadFeeder *fake_vortex_payload_feeder_new (
-		__attribute__((unused)) VortexPayloadFeederHandler handler,
-		__attribute__((unused)) axlPointer user_data)
-{
-	return (VortexPayloadFeeder*) 0xbadf00d;
-}
-
-static void fake_vortex_payload_feeder_set_on_finished(
-		__attribute__((unused)) VortexPayloadFeeder *feeder,
-		__attribute__((unused)) VortexPayloadFeederFinishedHandler on_finished,
-		__attribute__((unused)) axlPointer user_data)
-{
-	return;
-}
-
 struct curl_slist * fake_create_record_ans_rpy_headers(
 		__attribute__((unused)) struct jaln_record_info *rec_info,
 		__attribute__((unused)) jaln_session *sess)
 {
 	return NULL;
-}
-
-axl_bool fake_finalize_ans_rpy(
-		__attribute__((unused)) VortexChannel *chan,
-		__attribute__((unused)) int msg_no)
-{
-	finalized_called = axl_true;
-	return axl_true;
-}
-axl_bool fake_send_ans_rpy_from_feeder(
-		__attribute__((unused)) VortexChannel *chan,
-		__attribute__((unused)) VortexPayloadFeeder *feeder,
-		__attribute__((unused)) int msg_no)
-{
-	return axl_true;
 }
 
 enum jal_status fake_add_to_dgst_list(
@@ -199,11 +168,7 @@ static jaln_session *sess;
 void setup()
 {
 	replace_function(jaln_session_add_to_dgst_list, fake_add_to_dgst_list);
-	replace_function(vortex_channel_send_ans_rpy_from_feeder, fake_send_ans_rpy_from_feeder);
-	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
 	replace_function(jaln_create_record_ans_rpy_headers, fake_create_record_ans_rpy_headers);
-	replace_function(vortex_payload_feeder_new, fake_vortex_payload_feeder_new);
-	replace_function(vortex_payload_feeder_set_on_finished, fake_vortex_payload_feeder_set_on_finished);
 	sess = jaln_session_create();
 	sess->jaln_ctx = jaln_context_create();
 	sess->ch_info->type = JALN_RTYPE_LOG;
@@ -218,7 +183,7 @@ void setup()
 	sess->pub_data->payload_sz = strlen(PAYLOAD);
 	struct curl_slist *headers = NULL;
 	headers = curl_slist_append(headers, HEADERS);
-	sess->pub_data->headers = (uint8_t *) headers;
+	sess->pub_data->headers = headers;
 	sess->pub_data->sys_meta = (uint8_t *) jal_strdup(SYS_META);
 	sess->pub_data->app_meta = (uint8_t *) jal_strdup(APP_META);
 	sess->pub_data->payload = (uint8_t *) jal_strdup(PAYLOAD);
@@ -238,6 +203,10 @@ void setup()
 
 void teardown()
 {
+	// For convenience in the setup function, the session was using
+	// the dgst created by the context, but if the session and context are
+	// destroyed both will attempt to free the same memory. Prevent this
+	sess->dgst = NULL;
 	jaln_session_unref(sess);
 }
 
@@ -247,13 +216,12 @@ void test_pub_feeder_fill_buffer()
 
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
 
-	struct jaln_readfunc_info info = { sess, axl_false };
+	struct jaln_readfunc_info info = { sess };
 
 	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, &info);
 
 	assert_string_equals(EXPECTED_MSG, buffer);
-	assert_equals(VORTEX_SZ, ret);
-	assert_equals(axl_false, info.complete);
+	assert_equals(TOTAL_SZ, ret);
 }
 
 void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
@@ -262,15 +230,14 @@ void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
 	void *buffer = jal_malloc(BUF_SIZE);
 
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
-	sess->pub_data->payload_off = VORTEX_SZ - 5;
+	sess->pub_data->payload_off = TOTAL_SZ - 5;
 
-	struct jaln_readfunc_info info = { sess, axl_false };
+	struct jaln_readfunc_info info = { sess };
 
 	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, &info);
 
 	assert_string_equals(EXPECTED_MSG_MAX_OFFSET, buffer);
 	assert_equals(strlen(EXPECTED_MSG_MAX_OFFSET), ret);
-	assert_equals(axl_false, info.complete);
 }
 
 void test_pub_feeder_is_finished_returns_true_if_errored()
@@ -300,7 +267,7 @@ void test_pub_feeder_is_finished_returns_false_before_payload_break_is_written()
 void test_pub_feeder_get_size_returns_cached_size()
 {
 	uint64_t sz = 0;
-	sess->pub_data->vortex_feeder_sz = 24;
+	sess->pub_data->feeder_sz = 24;
 	sess->pub_data->finished_payload_break = axl_false;
 	sess->pub_data->payload_off = 0;
 	assert_true(jaln_pub_feeder_get_size(sess, &sz));
@@ -314,11 +281,11 @@ void test_pub_feeder_calculate_size_works_correctly()
 	pd->app_meta_sz = 20;
 	pd->payload_sz = 30;
 	pd->headers_sz = 40;
-	pd->vortex_feeder_sz = -1;
-	jaln_pub_feeder_calculate_size_for_vortex(sess);
+	pd->feeder_sz = -1;
+	jaln_pub_feeder_calculate_size(sess);
 	// The size is the length of all the data sections, headers, and the
 	// intervening "BREAK" strings
-	assert_equals(10 + 20 + 30 + 40 + (strlen("BREAK") * 3), pd->vortex_feeder_sz);
+	assert_equals(10 + 20 + 30 + 40 + (strlen("BREAK") * 3), pd->feeder_sz);
 }
 
 void test_pub_feeder_calculate_size_returns_int64_max_on_overflow()
@@ -328,11 +295,11 @@ void test_pub_feeder_calculate_size_returns_int64_max_on_overflow()
 	pd->app_meta_sz = 1;
 	pd->payload_sz = 1;
 	pd->headers_sz = 1;
-	pd->vortex_feeder_sz = -1;
-	jaln_pub_feeder_calculate_size_for_vortex(sess);
+	pd->feeder_sz = -1;
+	jaln_pub_feeder_calculate_size(sess);
 	// The size is the length of all the data sections, headers, and the
 	// intervening "BREAK" strings
-	assert_equals(INT64_MAX, pd->vortex_feeder_sz);
+	assert_equals(INT64_MAX, pd->feeder_sz);
 }
 
 void test_safe_add_works()
@@ -355,9 +322,9 @@ void test_safe_add_returns_false_on_overflow()
 
 void test_reset_state_clears_all_variables()
 {
-	sess->pub_data->vortex_feeder_sz = -1;
+	sess->pub_data->feeder_sz = -1;
 	jaln_pub_feeder_reset_state(sess);
-	assert_equals(0, sess->pub_data->vortex_feeder_sz);
+	assert_equals(0, sess->pub_data->feeder_sz);
 	assert_equals(0, sess->pub_data->headers_off);
 	assert_equals(0, sess->pub_data->sys_meta_off);
 	assert_equals(0, sess->pub_data->payload_off);

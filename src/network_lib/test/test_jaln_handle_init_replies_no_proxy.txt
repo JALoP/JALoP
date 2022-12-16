@@ -1,2 +1,0 @@
-jaln_handle_initialize_nack_test_dept_proxy jaln_handle_initialize_nack
-jaln_handle_initialize_ack_test_dept_proxy jaln_handle_initialize_ack

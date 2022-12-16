@@ -30,11 +30,9 @@
 #ifndef _JALN_CONNECTION_H_
 #define _JALN_CONNECTION_H_
 #include <jalop/jaln_network.h>
-#include <vortex.h>
 
 struct jaln_connection {
 	jaln_context *jaln_ctx;
-	VortexConnection *v_conn;
 	jaln_session *journal_sess;
 	jaln_session *audit_sess;
 	jaln_session *log_sess;
@@ -43,15 +41,12 @@ struct jaln_connection {
 
 /**
  * Create a jaln_connection object
+ *
+ * The definition for jaln_connection_destroy has been moved to
+ * jaln_network.h to allow users to destroy jaln_connections created with
+ * jaln_publish
  */
 struct jaln_connection *jaln_connection_create();
-
-/**
- * Destroy a jaln_connection object
- *
- * @param[in] conn The connection object to destroy.
- */
-void jaln_connection_destroy(struct jaln_connection **conn);
 
 #endif // _JALN_CONNECTION_H_
 

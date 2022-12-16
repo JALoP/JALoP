@@ -1,1 +1,0 @@
-jaln_process_sync_test_dept_proxy jaln_process_sync

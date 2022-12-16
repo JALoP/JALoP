@@ -45,7 +45,6 @@ void test_connection_create()
 	conn = jaln_connection_create();
 	assert_not_equals((void *) NULL, conn);
 	assert_equals((void *) NULL, conn->jaln_ctx);
-	assert_equals((void *) NULL, conn->v_conn);
 	assert_equals((void *) NULL, conn->user_data);
 	jaln_connection_destroy(&conn);
 }

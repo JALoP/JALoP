@@ -1,6 +1,6 @@
 /**
- * @file jaln_encoding.c This file contains function definitions for code related
- * to the XML encodings
+ * @file jaln_compression.c This file contains function definitions for code related
+ * to the XML compressions
  *
  * @section LICENSE
  *
@@ -27,8 +27,8 @@
  * limitations under the License.
  */
 #include "jal_alloc.h"
+#include "jaln_compression.h"
 #include "jaln_context.h"
-#include "jaln_encoding.h"
 
 int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b)
 {
@@ -37,16 +37,16 @@ int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b)
 	return strcasecmp(str_a, str_b);
 }
 
-int jaln_register_encoding(jaln_context *ctx,
-				const char *encoding)
+int jaln_register_compression(jaln_context *ctx,
+				const char *compression)
 {
-	if (!ctx || !ctx->xml_encodings || !encoding) {
+	if (!ctx || !ctx->xml_compressions || !compression) {
 		return JAL_E_INVAL;
 	}
-	char *enc_to_insert = jal_strdup(encoding);
+	char *cmp_to_insert = jal_strdup(compression);
 
-	axl_list_remove(ctx->xml_encodings, enc_to_insert);
-	axl_list_append(ctx->xml_encodings, enc_to_insert);
+	axl_list_remove(ctx->xml_compressions, cmp_to_insert);
+	axl_list_append(ctx->xml_compressions, cmp_to_insert);
 
 	return JAL_OK;
 }

@@ -92,8 +92,8 @@ struct jaln_channel_info {
 	char *hostname;
 	/** The IP address in dotted decimal notation (i.e. "192.168.1.6") */
 	char *addr;
-	/** The selected XML encoding, "XML", "EXI", "deflate" etc */
-	char *encoding;
+	/** The selected XML compression, "XML", "EXI", "deflate" etc */
+	char *compression;
 	/** The selected digest method, "sha256", "sha512", etc */
 	char *digest_method;
 	/** The type of JAL records exchanged on this channel */
@@ -211,12 +211,12 @@ struct jaln_connect_request {
 	/** The version of JALoP that the peers are using to communicate. */
 	int jaln_version;
 	/**
-	 * The proposed encodings the sender of this 'connect' message is will
+	 * The proposed compressions the sender of this 'connect' message is will
 	 * to use.
 	 */
-	char **encodings;
-	/** The number of encodings in the array. */
-	int enc_cnt;
+	char **compressions;
+	/** The number of compressions in the array. */
+	int cmp_cnt;
 	/** The proposed digest methods. */
 	char **digests;
 	/** The number of digests in the array. */
@@ -298,18 +298,18 @@ struct jaln_payload_feeder {
  */
 enum jaln_connect_error {
 	JALN_CE_ACCEPT = 0,
-	JALN_CE_UNSUPPORTED_VERSION   = 1 << 0,
-	JALN_CE_UNSUPPORTED_ENCODING  = 1 << 1,
-	JALN_CE_UNSUPPORTED_DIGEST    = 1 << 2,
-	JALN_CE_UNSUPPORTED_MODE      = 1 << 3,
-	JALN_CE_UNAUTHORIZED_MODE     = 1 << 4,
+	JALN_CE_UNSUPPORTED_VERSION      = 1 << 0,
+	JALN_CE_UNSUPPORTED_COMPRESSION  = 1 << 1,
+	JALN_CE_UNSUPPORTED_DIGEST       = 1 << 2,
+	JALN_CE_UNSUPPORTED_MODE         = 1 << 3,
+	JALN_CE_UNAUTHORIZED_MODE        = 1 << 4,
 };
 
 struct jaln_connection;
 
 
 /**
- * This handle maintains the data associated with a pair of BEEP channels used
+ * This handle maintains the data associated with HTTP connections used
  * to transmit/receive JALoP messages. For each type of data (journal, audit
  * or log) exchanged with a particular remote.
  */

@@ -27,66 +27,12 @@
  */
 
 #include <axl.h>
-#include <vortex.h>
-#include <vortex_tls.h>
-#include <openssl/ssl.h>
 
 #include <jalop/jaln_network.h>
 #include <jalop/jaln_network_types.h>
 #include "jaln_context.h"
 #include "jaln_tls.h"
 #include "jal_alloc.h"
-
-axl_bool jaln_profile_mask (VortexConnection *connection,
-				int channel_num,
-				const char *uri,
-				__attribute__((unused)) const char *profile_content,
-				__attribute__((unused)) VortexEncoding encoding,
-				__attribute__((unused)) const char *server_name,
-				__attribute__((unused)) VortexFrame *frame,
-				char **error_msg,
-				__attribute__((unused)) axlPointer user_data)
-{
-	if (0 == strcmp(uri, VORTEX_TLS_PROFILE_URI)) {
-		return axl_false;
-	} else if (channel_num > 0 && !vortex_connection_is_tlsficated(connection)) {
-		*error_msg = axl_strdup("Profile not accepted due to an insecure connection");
-		return axl_true;
-	}
-
-	return axl_false;
-}
-
-axl_bool jaln_tls_on_connection_accepted(VortexConnection *connection, axlPointer user_data)
-{
-	vortex_connection_set_profile_mask(connection, jaln_profile_mask, user_data);
-	return axl_true;
-}
-
-axlPointer jaln_ssl_ctx_creation(__attribute__((unused))VortexConnection *connection, axlPointer user_data)
-{
-	SSL_CTX *ssl_ctx;
-	jaln_context *jaln_ctx = (jaln_context *)user_data;
-
-	ssl_ctx = SSL_CTX_new(TLSv1_method());
-
-	if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, jaln_ctx->peer_certs)) {
-		goto out;
-	}
-	if (!SSL_CTX_use_certificate_chain_file(ssl_ctx, jaln_ctx->public_cert)) {
-		goto out;
-	}
-	if (!SSL_CTX_use_PrivateKey_file(ssl_ctx, jaln_ctx->private_key, SSL_FILETYPE_PEM)) {
-		goto out;
-	}
-
-	SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
-
-	return ssl_ctx;
-out:
-	SSL_CTX_free(ssl_ctx);
-	return NULL;
-}
 
 enum jal_status jaln_register_tls(jaln_context *ctx,
 				const char *private_key,

@@ -37,7 +37,7 @@
 
 enum jaln_connect_error my_connect_request_handler(
 	const struct jaln_connect_request *req __attribute__((unused)),
-	int *selected_encoding __attribute__((unused)),
+	int *selected_compression __attribute__((unused)),
 	int *selected_digest __attribute__((unused)),
 	void *user_data __attribute__((unused)))
 {

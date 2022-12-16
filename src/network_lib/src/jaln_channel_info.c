@@ -43,7 +43,7 @@ void jaln_channel_info_destroy(struct jaln_channel_info **ch_info) {
 	}
 	free((*ch_info)->hostname);
 	free((*ch_info)->addr);
-	free((*ch_info)->encoding);
+	free((*ch_info)->compression);
 	free((*ch_info)->digest_method);
 	free(*ch_info);
 	*ch_info = NULL;

@@ -46,16 +46,16 @@ struct jaln_connection_callbacks {
 	 * @param[in] req A structure containing the connection info requested by
 	 * the peer, including additional MIME headers.
 	 *
-	 * @param[in,out] selected_encoding Indicates which encoding the JNL is going
+	 * @param[in,out] selected_compression Indicates which compression the JNL is going
 	 * to select. Applications may change this value and override the selection
 	 * made by JNL.
 	 * The index starts at zero, so if the remote peer indicates
 	 * @verbatim
-	 * accept-encoding: exi, xml
+	 * accept-compression: exi, xml
 	 * @endverbatim
-	 * The application would signal 'EXI' by setting selected_encoded to 0, or
-	 * signal XML by setting selected_encoded to 1. The application may
-	 * refuse all encodings by setting selected_encoded to -1.
+	 * The application would signal 'EXI' by setting selected_compression to 0, or
+	 * signal XML by setting selected_compression to 1. The application may
+	 * refuse all compressions by setting selected_compression to -1.
 	 * @param[in,out] selected_digest Indicates which digest method the JNL is
 	 * going to select. Applications may change this value and override the selection
 	 * made by JNL.
@@ -65,9 +65,9 @@ struct jaln_connection_callbacks {
 	 * @endverbatim
 	 * The application would signal 'sha512' by setting selected_digest to 0, or
 	 * signal sha256 to 1. The application may refuse all digest methods by setting
-	 * selected_encoded to -1.
+	 * selected_digest to -1.
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * jaln_publish.
 	 *
 	 * @returns JALN_CE_ACCEPT to accept the connection, or any of the
 	 * or'ed combination of jaln_connect_errors to indicate the failure to return.
@@ -78,7 +78,7 @@ struct jaln_connection_callbacks {
 	 *
 	 */
 	enum jaln_connect_error (*connect_request_handler)(const struct jaln_connect_request *const req,
-			int *selected_encoding,
+			int *selected_compression,
 			int *selected_digest,
 			void *user_data);
 
@@ -86,7 +86,7 @@ struct jaln_connection_callbacks {
 	 * Notify the application that a channel was closed.
 	 * @param[in] channel_info Information about the channel that is closing.
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 */
 	void (*on_channel_close)(const struct jaln_channel_info *const channel_info,
 		void *user_data);
@@ -105,7 +105,7 @@ struct jaln_connection_callbacks {
 	 * @param[in] ack A structure containing information about the connection,
 	 * including the MIME headers.
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * or \p jaln_publish.
 	 *
 	 * @see jaln_connect_ack
 	 */
@@ -118,7 +118,7 @@ struct jaln_connection_callbacks {
 	 * @param nack The failure reasons given by the remote peer.
 	 * This includes any additional MIME headers.
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 *
 	 */
 	void (*connect_nack)(const struct jaln_connect_nack *const nack,

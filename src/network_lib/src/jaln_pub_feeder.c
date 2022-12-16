@@ -1,6 +1,6 @@
 /**
  * @file jaln_pub_feeder.c This file contains the functions related to the
- * implementation of VortexPayloadFeeder for sending records from a publisher
+ * implementation of a payload feeder for sending records from a publisher
  * to a subscriber.
  *
  * @section LICENSE
@@ -36,14 +36,11 @@
 #include "jaln_message_helpers.h"
 #include "jaln_publisher.h"
 #include "jaln_strings.h"
-// This is for the 'copy_buffer' function, which should probably get re-factored
-// to a different file.
-#include "jaln_subscriber_state_machine.h"
 
 axl_bool jaln_pub_feeder_get_size(jaln_session *sess, uint64_t *size)
 {
 	// expect that the pub_data is already filled out...
-	*size = sess->pub_data->vortex_feeder_sz - sess->pub_data->payload_off;
+	*size = sess->pub_data->feeder_sz - sess->pub_data->payload_off;
 	return axl_true;
 }
 
@@ -61,12 +58,10 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	enum jal_status ret = JAL_OK;
 	size_t curl_ret = 0;
 
-	// This if statement is for the purpose of backwards compatibility with the older
-	// version of curl that is available on RHEL/CentOS7, where sometimes (but not always?)
-	// the CURLOPT_READFUNCTION is called until a 0 is returned. This should never trigger
-	// with newer versions of curl
 	if (pd->finished_payload_break) {
-		return 0;
+		// We're done sending
+		curl_ret = 0;
+		goto out;
 	}
 
 	if (sess->errored) {
@@ -170,11 +165,6 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	curl_ret = dst_off;
 
 out:
-	if (curl_ret == CURL_READFUNC_ABORT || pd->finished_payload_break) {
-		vortex_mutex_unlock(&sess->wait_lock);
-		jaln_pub_feeder_on_finished(sess);
-		info->complete = axl_true;
-	}
 	return curl_ret;
 }
 
@@ -206,16 +196,11 @@ static enum jal_status jaln_pub_verify_sync(jaln_session *sess, struct jaln_resp
 	return rc;
 }
 
-void * APR_THREAD_FUNC jaln_pub_feeder_handler(
-		__attribute__((unused)) apr_thread_t *thread,
-		void *user_data)
+void jaln_pub_feeder_handler(jaln_session* sess)
 {
-	jaln_session *sess = (jaln_session*) user_data;
 	const long curl_timeout_period = sess->jaln_ctx->network_timeout * 60L;
 
-	vortex_mutex_lock(&sess->lock);
 	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
-	vortex_mutex_unlock(&sess->lock);
 	if (!ctx) {
 		// Error
 		jaln_session_set_errored(sess);
@@ -229,7 +214,7 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	jaln_pub_feeder_get_size(sess, &size);
 	curl_easy_setopt(ctx, CURLOPT_POSTFIELDSIZE_LARGE, size);
 
-	struct jaln_readfunc_info read_info = { sess, axl_false };
+	struct jaln_readfunc_info read_info = { sess };
 	curl_easy_setopt(ctx, CURLOPT_READFUNCTION, jaln_pub_feeder_fill_buffer);
 	curl_easy_setopt(ctx, CURLOPT_READDATA, &read_info);
 
@@ -241,8 +226,6 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	}
 
 	curl_easy_setopt(ctx, CURLOPT_HEADERDATA, info);
-
-	vortex_mutex_lock(&sess->wait_lock);
 
 	curl_easy_setopt(ctx, CURLOPT_HTTPHEADER, sess->pub_data->headers);
 
@@ -257,14 +240,17 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 
 	CURLcode res = curl_easy_perform(ctx);
 
+	// The record has either been sent successfully or an error was encountered
+	// Either way, we're finished with it. Invoke the on_record_complete function
+	// set in the session context, to allow custom cleanup and clean up the pub_data state
+	// Right now this doesn't do very much in the reference implmentation other than call
+	// destroy and set pd->payload_offset to 0
+	jaln_pub_feeder_on_finished(sess);
+
 	if (res != CURLE_OK || sess->errored) {
 		fprintf(stderr, "%s(): Failed: %d: %s\n", __func__, res, buf);
 		(void)fflush(stderr);
 		jaln_session_set_errored(sess);
-		if (!read_info.complete) {
-			vortex_mutex_unlock(&sess->wait_lock);
-			vortex_cond_signal(&sess->wait);
-		}
 		jaln_response_header_info_destroy(&info);
 		goto out;
 	}
@@ -339,14 +325,12 @@ void * APR_THREAD_FUNC jaln_pub_feeder_handler(
 	}
 
 	curl_slist_free_all(headers);
-	curl_easy_cleanup(ctx);
 	jaln_digest_resp_info_destroy(&resp_info);
 	jaln_digest_info_destroy(&peer_dgst);
 	jaln_response_header_info_destroy(&info);
 
 out:
-	jaln_session_unref(sess);
-	return NULL;
+	curl_easy_cleanup(ctx);
 }
 
 void jaln_pub_feeder_reset_state(jaln_session *sess)
@@ -365,7 +349,7 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	pd->sys_meta = NULL;
 	pd->app_meta = NULL;
 	pd->payload = NULL;
-	pd->vortex_feeder_sz = 0;
+	pd->feeder_sz = 0;
 	pd->headers_off = 0;
 	pd->sys_meta_off = 0;
 	pd->app_meta_off = 0;
@@ -402,26 +386,26 @@ err_out:
 	jaln_session_set_errored(sess);
 }
 
-void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess)
+void jaln_pub_feeder_calculate_size(jaln_session *sess)
 {
 	if (!sess || !sess->pub_data) {
 		return;
 	}
 	struct jaln_pub_data *pd = sess->pub_data;
-	pd->vortex_feeder_sz = 0;
-	if (!jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, pd->payload_sz)) {
+	pd->feeder_sz = 0;
+	if (!jaln_pub_feeder_safe_add_size(&pd->feeder_sz, pd->payload_sz)) {
 		return;
 	}
-	if (!jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, pd->app_meta_sz)) {
+	if (!jaln_pub_feeder_safe_add_size(&pd->feeder_sz, pd->app_meta_sz)) {
 		return;
 	}
-	if (!jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, pd->sys_meta_sz)) {
+	if (!jaln_pub_feeder_safe_add_size(&pd->feeder_sz, pd->sys_meta_sz)) {
 		return;
 	}
-	if (!jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, pd->headers_sz)) {
+	if (!jaln_pub_feeder_safe_add_size(&pd->feeder_sz, pd->headers_sz)) {
 		return;
 	}
-	jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, 3 * strlen(JALN_STR_BREAK));
+	jaln_pub_feeder_safe_add_size(&pd->feeder_sz, 3 * strlen(JALN_STR_BREAK));
 }
 
 axl_bool jaln_pub_feeder_safe_add_size(int64_t *cnt, const uint64_t to_add)
@@ -454,24 +438,18 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 
 	pd->headers = headers;
 
-	jaln_pub_feeder_calculate_size_for_vortex(sess);
+	jaln_pub_feeder_calculate_size(sess);
 
 	jaln_session_ref(sess);
 
-	vortex_mutex_lock(&sess->wait_lock);
+	jaln_pub_feeder_handler(sess);
 
-	if (APR_SUCCESS != apr_thread_pool_push(sess->jaln_ctx->threads,
-	                                        jaln_pub_feeder_handler,
-	                                        (void *) sess,
-	                                        APR_THREAD_TASK_PRIORITY_NORMAL,
-						(void *) sess)) { // use session as "owner" of the task
-		jaln_session_unref(sess);
-		vortex_mutex_unlock(&sess->wait_lock);
-		return JAL_E_NO_MEM;
-	}
+	// Headers were created at this level, so free them at this level
+	curl_slist_free_all(pd->headers);
+	pd->headers = NULL;
 
-	vortex_cond_wait(&sess->wait, &sess->wait_lock);
-	vortex_mutex_unlock(&sess->wait_lock);
+	jaln_session_unref(sess);
+
 	return sess->errored? JAL_E_INVAL : JAL_OK;
 }
 
@@ -485,8 +463,37 @@ void jaln_pub_feeder_on_finished(jaln_session *sess)
 	pub_cbs->on_record_complete(sess, ch_info, type, pd->nonce, sess->jaln_ctx->user_data);
 	pd->payload_off = 0;
 
-	vortex_mutex_lock(&sess->wait_lock);
-	vortex_mutex_unlock(&sess->wait_lock);
-	vortex_cond_signal(&sess->wait);
 	return;
+}
+
+axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_off,
+		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, axl_bool more)
+{
+	if (!dst || !pdst_off || !src || !psrc_off) {
+		return axl_false;
+	}
+	uint64_t dst_off = *pdst_off;
+	uint64_t src_off = *psrc_off;
+	dst += dst_off;
+	src += src_off;
+
+	if ((dst_sz < dst_off) ||
+		(src_sz < src_off)) {
+		return axl_false;
+	}
+
+	uint64_t dst_bytes_left = dst_sz - dst_off;
+	uint64_t src_bytes_left = src_sz - src_off;
+
+	int need_more_frames = src_bytes_left < dst_bytes_left;
+
+	if (need_more_frames && !more) {
+		return axl_false;
+	}
+
+	uint64_t bytes_to_copy = need_more_frames ? src_bytes_left : dst_bytes_left;
+	memcpy(dst, src, bytes_to_copy);
+	*psrc_off = src_off + bytes_to_copy;
+	*pdst_off = dst_off + bytes_to_copy;
+	return axl_true;
 }

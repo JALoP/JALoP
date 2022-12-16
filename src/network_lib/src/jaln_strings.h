@@ -36,7 +36,7 @@
 // defines for the various MIME headers
 #define JALN_HDRS_ACCEPT_CONFIGURE_DIGEST_CHALLENGE "JAL-Accept-Configure-Digest-Challenge"
 #define JALN_HDRS_ACCEPT_DIGEST "JAL-Accept-Digest"
-#define JALN_HDRS_ACCEPT_ENCODING "JAL-Accept-XML-Compression"
+#define JALN_HDRS_ACCEPT_COMPRESSION "JAL-Accept-XML-Compression"
 #define JALN_HDRS_APP_META_LEN "JAL-Application-Metadata-Length"
 #define JALN_HDRS_AUDIT_FORMAT "JAL-Audit-Format"
 #define JALN_HDRS_AUDIT_LEN "JAL-Audit-Length"
@@ -62,10 +62,10 @@
 #define JALN_HDRS_UNAUTHORIZED_MODE "JAL-Unauthorized-Mode"
 #define JALN_HDRS_UNSUPPORTED_MODE "JAL-Unsupported-Mode"
 #define JALN_HDRS_UNSUPPORTED_VERSION "JAL-Unsupported-Version"
-#define JALN_HDRS_UNSUPPORTED_ENCODING "JAL-Unsupported-XML-Compression"
+#define JALN_HDRS_UNSUPPORTED_COMPRESSION "JAL-Unsupported-XML-Compression"
 #define JALN_HDRS_UNSUPPORTED_DIGEST "JAL-Unsupported-Digest"
 #define JALN_HDRS_VERSION "JAL-Version"
-#define JALN_HDRS_ENCODING "JAL-XML-Compression"
+#define JALN_HDRS_COMPRESSION "JAL-XML-Compression"
 
 #define JALN_COLON_SPACE ": "
 

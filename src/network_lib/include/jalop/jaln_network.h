@@ -39,7 +39,6 @@ extern "C" {
 #include <jalop/jaln_network_types.h>
 #include <jalop/jaln_connection_callbacks.h>
 #include <jalop/jaln_publisher_callbacks.h>
-#include <jalop/jaln_subscriber_callbacks.h>
 
 /**
  * Create and initialize a new jaln_context
@@ -80,24 +79,24 @@ enum jal_status jaln_register_tls(jaln_context *jaln_ctx,
 				  const char *peer_certs);
 
 /**
- * Register a XML encoding.
- * By default, the JNL will only accept or send 'XML' as an encoding for the
+ * Register an XML compression.
+ * By default, the JNL will only accept or send 'XML' as an compression for the
  * metadata and audit records. Applications may choose to support additional
- * encodings (such as EXI, deflate, etc) by calling this function.
+ * compressions (such as EXI, deflate, etc) by calling this function.
  *
  * When the JNL initiates a connection to a remote peer, it will propose all
- * registered encodings. When the JNL receives a connection request, it will
- * auto-select which encoding to use. Applications may select a different
- * encoding in their jaln_connect_handler.
+ * registered compressions. When the JNL receives a connection request, it will
+ * auto-select which compression to use. Applications may select a different
+ * compression in their jaln_connect_handler.
  *
  * Converting XML to other formats must be handled by the application.
  *
- * @param jaln_ctx The context to add the encoding to.
- * @param encoding The encoding to add to the list.
+ * @param jaln_ctx The context to add the compression to.
+ * @param compression The compression to add to the list.
  * @return JAL_OK on success.
  */
-enum jal_status jaln_register_encoding(jaln_context *jaln_ctx,
-				  const char *encoding);
+enum jal_status jaln_register_compression(jaln_context *jaln_ctx,
+				  const char *compression);
 
 /**
  * Register a callbacks that the JNL executes when channels are created and
@@ -111,19 +110,6 @@ enum jal_status jaln_register_encoding(jaln_context *jaln_ctx,
  */
 enum jal_status jaln_register_connection_callbacks(jaln_context *jaln_ctx,
 		struct jaln_connection_callbacks *connection_callbacks);
-
-/**
- * Register the callbacks required to act as a subscriber.  The network library
- * will create a copy of the jaln_subscriber_callbacks_struct.  The calling process
- * should free the original struct with jaln_subscriber_callbacks_destroy().
- *
- * @param jaln_ctx The context object
- * @param subscriber_callbacks The structure containing all the callbacks.
- *
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jaln_register_subscriber_callbacks(jaln_context *jaln_ctx,
-				    struct jaln_subscriber_callbacks *subscriber_callbacks);
 
 /**
  * Register the callbacks required to act as a publisher.  The network library
@@ -204,78 +190,6 @@ enum jal_status jaln_register_publisher_id(
 				jaln_context *jal_ctx,
 				const char *pub_id);
 
-/**
- * Register the JALoP profile and start listening for connections. Once this
- * function is called, the \p jaln_ctx cannot be used to with calls to
- * jaln_context_subscribe or jaln_context_publish. \p jaln_context_listen may
- * be used to implement a server process that waits for remote systems to
- * connect.
- *
- * Once called, the caller must ensure the program continues to run to keep the
- * connections active. This may be accomplished via an external event loop, or
- * by calling jaln_listener_wait().
- *
- * When the program is ready to shutdown, it should call
- * jaln_listener_shutdown().
- *
- * @param[in] jaln_ctx The jaln_context that will parse incoming and format
- *            outgoing JALoP messages.
- * @param[in] host the host interface IP to listen on
- * @param[in] port The port to listen on
- * @param[in] user_data An address that will be passed into all the callback
- * methods.
- *
- * @return JAL_OK on success, or an error.
- *
- */
-enum jal_status jaln_listen(jaln_context *jaln_ctx,
-				    const char *host,
-				    const char *port,
-				    void *user_data);
-
-/**
- * Shutdown a listener. This will close all connections of a jaln_context used
- * as a listener.
- *
- * @param[in] ctx The context to shutdown.
- *
- * @return JAL_OK on success, or an error code.
- *
- */
-enum jal_status jaln_listener_shutdown(jaln_context *ctx);
-
-/**
- * Block the calling thread until the all connections are closed and the
- * listener is finished.
- *
- * @param[in] ctx The context to wait on.
- * 
- * @return JAL_OK on success, or an error.
- */
-enum jal_status jaln_listener_wait(jaln_context *ctx);
-
-/**
- * Connect to a remote peer and indicate a desire to receive JAL records from the
- * remote. Once connected, the JNL will execute the
- * jaln_subscriber_callbacks::get_subscribe_request for each data type
- * identified by record_types.
- * @param[in] ctx The jaln_context to use for the connection.
- * @param[in] host The hostname or IP address of the remote to connect to.
- * @param[in] port The port to connect to.
- * @param[in] record_types bitmask of JAL record types to publish. Must be
- * comprised of the entries of enum jaln_record_type.
- * @param[in] mode Indicates if the session should be in archive or live mode.
- * @param[in] user_data An address that will be passed into all the callback
- * methods.
- * @return A connection object that represents the link to the remote peer.
- */
-struct jaln_connection *jaln_subscribe(
-		jaln_context *ctx,
-		const char *host,
-		const char *port,
-		const int record_types,
-		enum jaln_publish_mode mode,
-		void *user_data);
 
 /**
  * Connect to a remote peer and indicate a desire to send JAL records to the
@@ -328,8 +242,20 @@ enum jal_status jaln_disconnect(struct jaln_connection *jal_conn);
  *
  * @param jal_conn The connection to shutdown.
  * @return JAL_OK if everything was successful, an error otherwise.
+ *
+ * TODO JALoP-733: Currently does nothing
  */
 enum jal_status jaln_shutdown(struct jaln_connection *jal_conn);
+
+/**
+ * Destroy a jaln_connection object, causing each contained session
+ * to free its memory. Call only once the sessions are no longer in use
+ * e.g. after calling jaln_disconnect and handling the
+ * subsequent call to on_connection_close
+ *
+ * @param[in] conn The connection object to destroy.
+ */
+void jaln_connection_destroy(struct jaln_connection **conn);
 
 /**
  * Determine if a session is OK.

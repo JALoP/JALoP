@@ -33,7 +33,6 @@
 #include <inttypes.h>
 #include <jalop/jaln_network_types.h>
 #include <stddef.h>
-#include <vortex.h>
 #include <curl/curl.h>
 
 #include "jaln_digest_info.h"
@@ -102,17 +101,6 @@ enum jal_status jaln_create_sync_msg(const char *nonce, char **msg, uint64_t *ms
  *
  */
 enum jal_status jaln_create_subscribe_msg(char **msg_out, uint64_t *msg_out_len);
-
-/**
- * Sanity check to make sure the MIME headers for a particular frame contain
- * the correct content-type and transfer encoding.
- *
- * @param frame The vortex frame to inspect.
- *
- * @return axl_true if the content type and transfer encoding are valid,
- * axl_false otherwise.
- */
-axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
 
 /**
  * Verify that a header_info struct has all the required fields for an initialize ack message
@@ -480,7 +468,7 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
 /**
  * Create an 'initialize-ack' message.
  *
- * @param[in] encoding The selected encoding
+ * @param[in] compression The selected compression
  * @param[in] digest The selected digest
  * @param[out] msg_out This will contain the contents of the initialize-ack
  * message
@@ -490,7 +478,7 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
  * @return JAL_OK on success of JAL_E_INVAL if there is something wrong with
  * the parameters.
  */
-enum jal_status jaln_create_init_ack_msg(const char *encoding, const char *digest, char **msg_out, uint64_t *msg_len_out);
+enum jal_status jaln_create_init_ack_msg(const char *compression, const char *digest, char **msg_out, uint64_t *msg_len_out);
 
 /**
  * Send a close-session message to end the current session.

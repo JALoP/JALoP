@@ -59,7 +59,7 @@ struct jaln_publisher_callbacks {
 	 * \p record_info indicates the size of this buffer.
 	 * @param[in] headers additional mime headers sent as part of this message
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 *
 	 * @return JAL_OK to continue sending the resumed record, JAL_E_JOURNAL_MISSING to send the
 	 * next record, or anything else to stop.
@@ -85,7 +85,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] mode The mode with which to publish record (archive or live)
 	 * @param[in] headers additional mime headers sent as part of this message
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 * @return JAL_OK to continue sending records, anything else to stop.
 	 */
 	enum jal_status (*on_subscribe)(
@@ -107,7 +107,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] nonce The nonce of this record_info
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 */
 	enum jal_status (*on_record_complete)(
 			jaln_session *session,
@@ -127,7 +127,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] nonce the nonce of the record sent by the remote peer.
 	 * @param[in] headers Any additional headers sent with this message.
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 *
 	 */
 	void (*sync)(
@@ -153,7 +153,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] digest The digest value of the record.
 	 * @param[in] lenght The length of the digest, in bytes.
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 *
 	 * @note should the JNL really track the digests? seems like a
 	 * reasonable feature, but may need some extra tuning parameters or
@@ -193,7 +193,7 @@ struct jaln_publisher_callbacks {
 	 * @param[in] peer_digest The digest, as calculated by the remote peer.
 	 * @param[in] peer_size The size, in bytes, of #peer_digest
 	 * @param[in] user_data A pointer to user data that was passed into
-	 * \p jaln_listen, \p jaln_publish, or \p jaln_subscribe.
+	 * \p jaln_publish.
 	 */
 	void (*peer_digest)(
 			jaln_session *session,

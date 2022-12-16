@@ -31,7 +31,6 @@
 #define JALN_PUBLISHER_H
 
 #include <axl.h>
-#include <vortex.h>
 #include <jalop/jaln_network.h>
 #include <curl/curl.h>
 
@@ -66,34 +65,6 @@ void jaln_pub_notify_digests_and_create_digest_response(
 		struct jaln_digest_resp_info **dgst_resp_info);
 
 /**
- * Helper function for a publisher to process (and reply to) a 'sync' message.
- * @param[in] sess The session
- * @param[in] chan The channel that received the message
- * @param[in] frame The frame for the sync message
- * @param[in] msg_no The message number for the frame.
- *
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jaln_publisher_handle_sync(
-		jaln_session *sess,
-		VortexChannel *chan,
-		VortexFrame *frame,
-		int msg_no);
-
-/**
- * Vortex Frame handler for responding to 'digest' and 'sync' messages.
- *
- * @param[in] chan The vortex channel
- * @param[in] conn The vortex connection
- * @param[in] frame The vortex frame
- * @param[in] user_data Expected to be a jaln_session object.
- */
-void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan,
-		VortexConnection *conn,
-		VortexFrame *frame,
-		axlPointer user_data);
-
-/**
  * Helper function to create a jaln_session for use as a publisher.
  *
  * @param[in] ctx The jaln_context associated with the session.
@@ -105,61 +76,13 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan,
 jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host, enum jaln_record_type type);
 
 /**
- * Top level vortex frame handler for the 'record' channel of a session.
+ * cURL callback to process the replies from an 'init' message.
  *
- * @param[in] chan The vortex channel
- * @param[in] conn The vortex connection
- * @param[in] frame The vortex frame
- * @param[in] user_data Expected to be a jaln_session pointer.
- */
-void jaln_pub_channel_frame_handler(VortexChannel *chan,
-		VortexConnection *v_conn,
-		VortexFrame *frame,
-		axlPointer user_data);
-
-/**
- * Function to process a 'subscribe' message.
- *
- * @param[in] session The session that is receiving the message
- * @param[in] chan The channel that received the message
- * @param[in] frame The frame for the subscribe message
- * @param[in] msg_no The message number of the 'subscribe' message.
- *
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jaln_pub_handle_subscribe(jaln_session *session,
-		VortexChannel *chan,
-		VortexFrame *frame,
-		int msg_no);
-
-/**
- * Handle to process a 'journal-resume' message.
- *
- * @param[in] chan The channel that received the message
- * @param[in] frame The frame containing the message
- * @param[in] msg_no The message number
- *
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jaln_pub_handle_journal_resume(jaln_session *session,
-		VortexChannel *chan,
-		VortexFrame *frame,
-		int msg_no);
-
-/**
- * Vortex frame handler to process the replies from an 'init' message.
- *
- * @param[in] chan The vortex channel that received the message
- * @param[in] conn The vortex connection
- * @param[in] frame The frame containing the message
+ * @param[in] ptr Buffer containing the received reply
+ * @param[in] size The size
+ * @param[in] nmemb The number of members
  * @param[in] user_data Expected to be a pointer to a jaln_session
  */
-/*
-void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
-		VortexConnection *v_conn,
-		VortexFrame *frame,
-		void *user_data);
-*/
 size_t jaln_publisher_init_reply_frame_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
 
 /**
@@ -204,16 +127,6 @@ size_t jaln_publisher_sync_handler(char *ptr, size_t size, size_t nmemb, void *u
 size_t jaln_publisher_failed_digest_handler(char *ptr, size_t size, size_t nmemb, void *user_data);
 
 /**
- * Vortex handler for when publisher's connection closes
- * This calls the user on_connection_close callback
- *
- * @param[in] conn The vortex connection
- * @param[in] data This is expected to be the jaln_connection
- */
-void jaln_publisher_on_connection_close(VortexConnection *conn,
-					axlPointer data);
-
-/**
  * Send initialize message to subscriber and parse the returned
  * initialize-ack message.
  *
@@ -229,28 +142,6 @@ enum jal_status jaln_publisher_send_init(jaln_session *session);
  * @param nonce The nonce of the missing journal
  */
 enum jal_status jaln_publisher_send_journal_missing(jaln_session *session, char *nonce);
-
-/**
- * Configure a jaln_session for use as a publisher. Before modifying the
- * jaln_session, this function will obtain the jaln_session::lock.
- *
- * @param[in] chan The vortex channel
- * @param[in] session The jaln_session
- *
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jaln_configure_pub_session(VortexChannel *chan, jaln_session *session);
-
-/**
- * Configure a jaln_session for use as a publisher. This function expects the
- * jaln_session::lock to be held by the calling thread.
- *
- * @param[in] chan The vortex channel
- * @param[in] session The jaln_session
- *
- * @return JAL_OK on success, or an error code.
- */
-enum jal_status jaln_configure_pub_session_no_lock(VortexChannel *chan, jaln_session *session);
 
 #ifdef __cplusplus
 }
