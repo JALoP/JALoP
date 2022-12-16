@@ -114,12 +114,14 @@ struct peer_config_t {
 	enum jaln_publish_mode mode;
 	jaln_context *net_ctx;
 	struct jaln_connection *conn;
+	bool connected;
 	long long int retries;
 	pthread_mutex_t peer_lock;
 };
 
 struct session_ctx_t {
 	struct jaldb_record *rec;
+	jaldb_context_t* db_ctx;
 };
 
 struct global_config_t {
@@ -133,6 +135,8 @@ struct global_config_t {
 	long long int network_timeout;
 	int num_peers;
 	struct peer_config_t *peers;
+	char* pid_file;
+	char* log_dir;
 } global_config;
 
 struct global_args_t {
@@ -152,7 +156,6 @@ enum jald_status {
 };
 
 static jaln_context *jctx = NULL;
-static jaldb_context_t *db_ctx = NULL;
 static pthread_mutex_t gs_journal_sub_lock;
 static pthread_mutex_t gs_audit_sub_lock;
 static pthread_mutex_t gs_log_sub_lock;
@@ -175,10 +178,12 @@ static void print_peer_config(peer_config_t *peer);
 static void print_config(void);
 static enum jald_status set_global_config(config_t *config);
 static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data);
+static jaldb_context_t* setup_db_layer(void);
+static enum jal_status select_channel(const struct jaln_channel_info* ch_info, axlHash** hash, pthread_mutex_t** sub_lock);
 
 enum jaln_connect_error on_connect_request(
 		__attribute__((unused)) const struct jaln_connect_request *req,
-		__attribute__((unused)) int *selected_encoding,
+		__attribute__((unused)) int *selected_compression,
 		__attribute__((unused)) int *selected_digest,
 		__attribute__((unused)) void *user_data)
 {
@@ -210,6 +215,17 @@ void on_channel_close(
 		return;
 	}
 	DEBUG_LOG_SUB_SESSION(ch_info, "Session is closing");
+
+	// Close db_handle for this channel
+	struct session_ctx_t* ctx = NULL;
+	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	if(!ctx || !ctx->db_ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or BDB context associated with closing channel");
+	}
+	else {
+		jaldb_context_destroy(&ctx->db_ctx);
+	}
+
 	pthread_mutex_lock(sub_lock);
 	axl_hash_remove(hash, ch_info->hostname);
 	pthread_mutex_unlock(sub_lock);
@@ -218,7 +234,7 @@ void on_channel_close(
 	struct peer_config_t *peer = (struct peer_config_t *)user_data;
 	if (peer) {
 		pthread_mutex_lock(&(peer->peer_lock));
-        	jaln_disconnect(peer->conn); //session->closing=axl_true, for each session.
+		jaln_disconnect(peer->conn); //session->closing=axl_true, for each session.
 		DEBUG_LOG_SUB_SESSION(ch_info, "Closed other sessions");
 		pthread_mutex_unlock(&(peer->peer_lock));
 	}
@@ -238,9 +254,8 @@ void on_connection_close(
 	} else {
 		DEBUG_LOG("Closed connection to %s:%llu", peer->host, peer->port);
 	}
-        jaln_disconnect(peer->conn); // marks session->closing = axl_true, for each session.
-        free(peer->conn);
-	peer->conn = NULL;
+	jaln_disconnect(peer->conn); // marks session->closing = axl_true, for each session.
+	peer->connected = false;
 }
 
 #define LOG_STR_FIELD(_s, _f) DEBUG_LOG(#_f": %s", _s->_f? _s->_f : "(nil)")
@@ -269,7 +284,7 @@ void on_connect_nack(
         DEBUG_LOG("user_data: %p", user_data);
         LOG_STR_FIELD(nack->ch_info, hostname);
         LOG_STR_FIELD(nack->ch_info, addr);
-        LOG_STR_FIELD(nack->ch_info, encoding);
+        LOG_STR_FIELD(nack->ch_info, compression);
         LOG_STR_FIELD(nack->ch_info, digest_method);
         LOG_INT_FIELD(nack->ch_info, type);
         LOG_PTR_FIELD(nack, error_list);
@@ -310,9 +325,14 @@ enum jal_status pub_on_journal_resume(
 	axl_hash_insert_full(gs_journal_subs, strdup(ch_info->hostname), free, ctx, free);
 	pthread_mutex_unlock(&gs_journal_sub_lock);
 	ctx->rec = NULL;
+	ctx->db_ctx = setup_db_layer();
+	if(NULL == ctx->db_ctx) {
+		return JAL_E_INVAL;
+	}
+
 	enum jaldb_status db_ret = JALDB_E_INVAL;
 	
-	db_ret = jaldb_get_record(db_ctx, JALDB_RTYPE_JOURNAL, record_info->nonce, &(ctx->rec));
+	db_ret = jaldb_get_record(ctx->db_ctx, JALDB_RTYPE_JOURNAL, record_info->nonce, &(ctx->rec));
 	if (JALDB_OK != db_ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to retrieve journal from db");
 		return JALDB_E_NOT_FOUND == db_ret? JAL_E_JOURNAL_MISSING : JAL_E_INVAL;
@@ -364,11 +384,11 @@ enum jaldb_status pub_get_next_record(
 			if (!*timestamp) {
 				// Archive mode
 				DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Archive Mode");
-				ret = jaldb_next_unsynced_record(db_ctx, db_type, nonce, &(ctx->rec));
+				ret = jaldb_next_unsynced_record(ctx->db_ctx, db_type, nonce, &(ctx->rec));
 			} else {
 				// Live mode
 				DEBUG_LOG_SUB_SESSION(ch_info, "Looking for a record in Live Mode, timestamp: %s",*timestamp);
-				ret = jaldb_next_chronological_record(db_ctx,
+				ret = jaldb_next_chronological_record(ctx->db_ctx,
 								     db_type,
 								     nonce,
 								     &(ctx->rec),
@@ -420,7 +440,7 @@ enum jaldb_status pub_get_next_record(
 	if (rec->payload) {
 		*payload_len = rec->payload->length;
 		if (rec->payload->on_disk) {
-			ret = jaldb_open_segment_for_read(db_ctx, rec->payload);
+			ret = jaldb_open_segment_for_read(ctx->db_ctx, rec->payload);
 			if (JALDB_OK != ret) {
 				ret = JALDB_E_INVAL;
 				goto out;
@@ -432,6 +452,9 @@ enum jaldb_status pub_get_next_record(
 
 	ret = JALDB_OK;
 out:
+	if(JALDB_OK != ret) {
+		jaldb_destroy_record(&ctx->rec);
+	}
 	return ret;
 }
 
@@ -484,6 +507,14 @@ enum jal_status pub_send_records_feeder(
 		}
 		DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
 
+		ctx->db_ctx = setup_db_layer();
+		if(NULL == ctx->db_ctx) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to setup db");
+			pthread_mutex_unlock(sub_lock);
+			ret = JAL_E_INVAL;
+			goto out;
+		}
+
 		axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
 	}
 
@@ -491,7 +522,7 @@ enum jal_status pub_send_records_feeder(
 	// Only need to clear sent flags for archive mode connection
 	// Have to use timestamp since sess->mode is internal to the network library
 	if (!*timestamp) {
-		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+		db_ret = jaldb_mark_unsynced_records_unsent(ctx->db_ctx, db_type);
 		if (JALDB_OK != db_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
 			ret = JAL_E_INVAL;
@@ -554,7 +585,7 @@ enum jal_status pub_send_records_feeder(
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 1);
+			db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 1);
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent: %d", nonce, db_ret);
@@ -630,6 +661,14 @@ enum jal_status pub_send_records(
 		goto out;
 	}
 
+	ctx->db_ctx = setup_db_layer();
+	if(NULL == ctx->db_ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Failed to setup db");
+		pthread_mutex_unlock(sub_lock);
+		return JAL_E_INVAL;
+		goto out;
+	}
+
 	DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
 
 	axl_hash_insert_full(hash, strdup(ch_info->hostname), free, ctx, free);
@@ -638,7 +677,7 @@ enum jal_status pub_send_records(
 	// Only need to clear sent flags for archive mode connection
 	// Have to use timestamp since sess->mode is internal to the network library
 	if (!*timestamp) {
-		db_ret = jaldb_mark_unsynced_records_unsent(db_ctx, db_type);
+		db_ret = jaldb_mark_unsynced_records_unsent(ctx->db_ctx, db_type);
 		if (JALDB_OK != db_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to verify records.");
 			ret = JAL_E_INVAL;
@@ -698,7 +737,7 @@ enum jal_status pub_send_records(
 		if (!*timestamp) {
 			//Archive mode
 			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 1);
+			db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 1);
 			pthread_mutex_unlock(sub_lock);
 			if (JALDB_OK != db_ret) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
@@ -733,8 +772,6 @@ struct thread_data {
 __attribute__((noreturn))
 void *pub_send_journal(__attribute__((unused)) void *args)
 {
-	enum jal_status *ret = (enum jal_status *) jal_malloc(sizeof(enum jal_status));
-	*ret = JAL_E_INVAL;
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
 	const struct jaln_channel_info *ch_info = data->ch_info;
@@ -745,11 +782,12 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 
 	if (data->timestamp) {
 		journal_timestamp = jal_strdup(data->timestamp);
+		free(data->timestamp);
 	}
 
 	free(data);
 
-	*ret = pub_send_records_feeder(sess, ch_info, &journal_timestamp, hash, sub_lock, &jaln_send_journal);
+	pub_send_records_feeder(sess, ch_info, &journal_timestamp, hash, sub_lock, &jaln_send_journal);
 
 	free(journal_timestamp);
 
@@ -757,7 +795,7 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 	threads_to_exit -= 1;
 	pthread_mutex_unlock(&exit_count_lock);
 
-	pthread_exit((void*)ret);
+	pthread_exit((void*)NULL);
 }
 
 /*
@@ -767,8 +805,6 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 __attribute__((noreturn))
 void *pub_send_audit(void *args)
 {
-	enum jal_status *ret = (enum jal_status *) jal_malloc(sizeof(enum jal_status));
-	*ret = JAL_E_INVAL;
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
 	const struct jaln_channel_info *ch_info = data->ch_info;
@@ -779,11 +815,12 @@ void *pub_send_audit(void *args)
 
 	if (data->timestamp) {
 		audit_timestamp = jal_strdup(data->timestamp);
+		free(data->timestamp);
 	}
 
 	free(data);
 
-	*ret = pub_send_records(sess, ch_info, &audit_timestamp, hash, sub_lock, &jaln_send_audit);
+	pub_send_records(sess, ch_info, &audit_timestamp, hash, sub_lock, &jaln_send_audit);
 
 	free(audit_timestamp);
 
@@ -791,7 +828,7 @@ void *pub_send_audit(void *args)
 	threads_to_exit -= 1;
 	pthread_mutex_unlock(&exit_count_lock);
 
-	pthread_exit((void*)ret);
+	pthread_exit((void*)NULL);
 }
 
 /*
@@ -801,8 +838,6 @@ void *pub_send_audit(void *args)
 __attribute__((noreturn))
 void *pub_send_log(void *args)
 {
-	enum jal_status *ret = (enum jal_status *) jal_malloc(sizeof(enum jal_status));
-	*ret = JAL_E_INVAL;
 	struct thread_data *data = (struct thread_data *) args;
 	jaln_session *sess = data->sess;
 	const struct jaln_channel_info *ch_info = data->ch_info;
@@ -813,11 +848,12 @@ void *pub_send_log(void *args)
 
 	if (data->timestamp) {
 		log_timestamp = jal_strdup(data->timestamp);
+		free(data->timestamp);
 	}
 
 	free(data);
 
-	*ret = pub_send_records(sess, ch_info, &log_timestamp, hash, sub_lock, &jaln_send_log);
+	pub_send_records(sess, ch_info, &log_timestamp, hash, sub_lock, &jaln_send_log);
 
 	free(log_timestamp);
 
@@ -825,7 +861,7 @@ void *pub_send_log(void *args)
 	threads_to_exit -= 1;
 	pthread_mutex_unlock(&exit_count_lock);
 
-	pthread_exit((void*)ret);
+	pthread_exit((void*)NULL);
 }
 
 enum jal_status pub_on_subscribe(
@@ -916,7 +952,7 @@ enum jal_status pub_on_subscribe(
 enum jal_status pub_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		enum jaln_record_type type,
+		__attribute__((unused)) enum jaln_record_type type,
 		char *nonce,
 		__attribute__((unused)) void *user_data)
 {
@@ -924,21 +960,7 @@ enum jal_status pub_on_record_complete(
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
 
-	switch (type) {
-	case JALN_RTYPE_JOURNAL:
-		hash = gs_journal_subs;
-		sub_lock = &gs_journal_sub_lock;
-		break;
-	case JALN_RTYPE_AUDIT:
-		hash = gs_audit_subs;
-		sub_lock = &gs_audit_sub_lock;
-		break;
-	case JALN_RTYPE_LOG:
-		hash = gs_log_subs;
-		sub_lock = &gs_log_sub_lock;
-		break;
-	default:
-		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock)) {
 		return JAL_E_INVAL;
 	}
 
@@ -967,31 +989,41 @@ void pub_sync(
 
 	enum jaldb_status jaldb_ret = JALDB_E_INVAL;
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
-
 	pthread_mutex_t *sub_lock = NULL;
 
 	switch(type) {
 	case JALN_RTYPE_JOURNAL:
 		db_type = JALDB_RTYPE_JOURNAL;
-		sub_lock = &gs_journal_sub_lock;
 		break;
 	case JALN_RTYPE_AUDIT:
 		db_type = JALDB_RTYPE_AUDIT;
-		sub_lock = &gs_audit_sub_lock;
 		break;
 	case JALN_RTYPE_LOG:
 		db_type = JALDB_RTYPE_LOG;
-		sub_lock = &gs_log_sub_lock;
 		break;
 	default:
 		// shouldn't happen.
+		return;
+	}
+	axlHash *hash = NULL;
+
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock))
+	{
+		return;
+	}
+
+	pthread_mutex_lock(sub_lock);
+	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	pthread_mutex_unlock(sub_lock);
+	if(!ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
 		return;
 	}
 
 	// Only sync the record in the DB in archive mode with digest challenges
 	if (mode == JALN_ARCHIVE_MODE && ch_info->digest_method) {
 		pthread_mutex_lock(sub_lock);
-		jaldb_ret = jaldb_mark_synced(db_ctx, db_type, nonce);
+		jaldb_ret = jaldb_mark_synced(ctx->db_ctx, db_type, nonce);
 		pthread_mutex_unlock(sub_lock);
 		if (JALDB_OK != jaldb_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced: %d", nonce, jaldb_ret);
@@ -1028,6 +1060,22 @@ void pub_peer_digest(
 {
 	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
 	enum jaldb_status db_ret = JALDB_E_INVAL;
+
+	axlHash *hash = NULL;
+	pthread_mutex_t *sub_lock = NULL;
+
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock))
+	{
+		return;
+	}
+
+	pthread_mutex_lock(sub_lock);
+	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	pthread_mutex_unlock(sub_lock);
+	if(!ctx) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		return;
+	}
 
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
@@ -1068,7 +1116,10 @@ void pub_peer_digest(
 
 error:
 	// The digests do not match. We need to mark the record as unsent so it can be sent again by the publisher.
-	db_ret = jaldb_mark_sent(db_ctx, db_type, nonce, 0);
+	if(ctx)
+	{
+		db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 0);
+	}
 
 	if (JALDB_OK != db_ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Failed to update record as unsent %s. Return code: %d", nonce, db_ret);
@@ -1113,9 +1164,6 @@ err_out:
 	return -1;
 }
 
-static enum jald_status setup_db_layer(void);
-static void teardown_db_layer(void);
-
 int main(int argc, char **argv)
 {
 	struct jaln_connection_callbacks *conn_cbs = NULL;
@@ -1157,19 +1205,22 @@ int main(int argc, char **argv)
 	print_config();
 
 	if (global_args.daemon) {
-		jalu_daemonize();
+		DEBUG_LOG("Handing off process to daemon");
+		DEBUG_LOG("For additional logs, set log_dir in config file and refer to <log_dir>/std*");
+		if(0 != jalu_daemonize(global_config.log_dir, global_config.pid_file)) {
+			// Depending on exactly what fails in the daemonizing process, this log
+			// may not actually get written anywhere, as stdin/out/err are all closed
+			// and only reopened if log_dir is set and is accessible
+			DEBUG_LOG("Failed to daemonize process");
+			rc = -1;
+			goto out;
+		}
 	}
 
 	if (-1 == jalu_pid(global_args.pid_path))
 	{
 		DEBUG_LOG("Failed to write pid file");
 		rc = -1;
-		goto out;
-	}
-
-	rc = setup_db_layer();
-	if (rc != JALD_OK) {
-		DEBUG_LOG("Error setting up database");
 		goto out;
 	}
 
@@ -1199,125 +1250,133 @@ int main(int argc, char **argv)
 	struct peer_config_t *peer;
 
 	do {
-	    // set up JALoP contexts for each peer
-	    for (int i = 0; i < global_config.num_peers; ++i) {
-		peer = global_config.peers + i;
-		if (peer->conn) {
-			// alreay connected
-			continue;
-		}
+		// set up JALoP contexts for each peer
+		for (int i = 0; i < global_config.num_peers; ++i) {
+			peer = global_config.peers + i;
+			if (peer->connected) {
+				// alreay connected
+				continue;
+			}
+			// Since the peer is no longer connected (or has not yet connected
+			// the firt time) cleanly shutdown the active connection if it exists
+			if(peer->conn) {
+				jaln_connection_destroy(&(peer->conn));
+				free(peer->conn);
+			}
 
-		conn_cbs = jaln_connection_callbacks_create();
-		conn_cbs->connect_request_handler = on_connect_request;
-		conn_cbs->on_channel_close = on_channel_close;
-		conn_cbs->on_connection_close = on_connection_close;
-		conn_cbs->connect_ack = on_connect_ack;
-		conn_cbs->connect_nack = on_connect_nack;
+			conn_cbs = jaln_connection_callbacks_create();
+			conn_cbs->connect_request_handler = on_connect_request;
+			conn_cbs->on_channel_close = on_channel_close;
+			conn_cbs->on_connection_close = on_connection_close;
+			conn_cbs->connect_ack = on_connect_ack;
+			conn_cbs->connect_nack = on_connect_nack;
 
-		pub_cbs = jaln_publisher_callbacks_create();
-		pub_cbs->on_journal_resume = pub_on_journal_resume;
-		pub_cbs->on_subscribe = pub_on_subscribe;
-		pub_cbs->on_record_complete = pub_on_record_complete;
-		pub_cbs->sync = pub_sync;
-		pub_cbs->notify_digest = pub_notify_digest;
-		pub_cbs->peer_digest = pub_peer_digest;
+			pub_cbs = jaln_publisher_callbacks_create();
+			pub_cbs->on_journal_resume = pub_on_journal_resume;
+			pub_cbs->on_subscribe = pub_on_subscribe;
+			pub_cbs->on_record_complete = pub_on_record_complete;
+			pub_cbs->sync = pub_sync;
+			pub_cbs->notify_digest = pub_notify_digest;
+			pub_cbs->peer_digest = pub_peer_digest;
 
-		jctx = peer->net_ctx;
-	    	jaln_context_destroy(&jctx);
-		sleep(1);
-		jctx = jaln_context_create();
+			jctx = peer->net_ctx;
+			jaln_context_destroy(&jctx);
+			sleep(1);
+			jctx = jaln_context_create();
 
-		if (!jctx) {
-			DEBUG_LOG("Failed to create the jaln_context");
-			rc = -1;
-			goto out;
-		}
-		if (JAL_OK != jaln_register_encoding(jctx, "none")) {
-			DEBUG_LOG("Failed to register default encoding");
-			rc = -1;
-			goto out;
-		}
-		dctx = jal_sha256_ctx_create();
-		if (JAL_OK != jaln_register_digest_algorithm(jctx, dctx)) {
-			DEBUG_LOG("Failed to register sha256 algorithm");
-			jal_digest_ctx_destroy(&dctx);
-			dctx = NULL;
-			rc = -1;
-			goto out;
-		}
-		// The jaln_context owns the digest algorithm, so don't keep a
-		// reference to it.
-		dctx = NULL;
-		if ((peer->dc_config[0] && JAL_OK != jaln_register_digest_challenge_configuration(
-					jctx, peer->dc_config[0])) ||
-				(peer->dc_config[1] && JAL_OK != jaln_register_digest_challenge_configuration(
-					jctx, peer->dc_config[1]))) {
-			DEBUG_LOG("Failed to register digest challenge configuration");
-			rc = -1;
-			goto out;
-		}
-		if (JAL_OK != jaln_register_publisher_id(jctx, global_config.pub_id)) {
-			DEBUG_LOG("Failed to register publisher ID");
-			rc = -1;
-			goto out;
-		}
-		if (global_args.enable_tls) {
-			jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
-					peer->cert_dir);
-			if (JAL_OK != jaln_ret) {
-				DEBUG_LOG("Failed to register TLS");
+			if (!jctx) {
+				DEBUG_LOG("Failed to create the jaln_context");
 				rc = -1;
 				goto out;
 			}
-		}
+			if (JAL_OK != jaln_register_compression(jctx, "none")) {
+				DEBUG_LOG("Failed to register default compression");
+				rc = -1;
+				goto out;
+			}
+			dctx = jal_sha256_ctx_create();
+			if (JAL_OK != jaln_register_digest_algorithm(jctx, dctx)) {
+				DEBUG_LOG("Failed to register sha256 algorithm");
+				jal_digest_ctx_destroy(&dctx);
+				dctx = NULL;
+				rc = -1;
+				goto out;
+			}
+			// The jaln_context owns the digest algorithm, so don't keep a
+			// reference to it.
+			dctx = NULL;
+			if ((peer->dc_config[0] &&
+				JAL_OK != jaln_register_digest_challenge_configuration(jctx, peer->dc_config[0])) ||
+				(peer->dc_config[1] && 
+				JAL_OK != jaln_register_digest_challenge_configuration(jctx, peer->dc_config[1])))
+			{
+				DEBUG_LOG("Failed to register digest challenge configuration");
+				rc = -1;
+				goto out;
+			}
+			if (JAL_OK != jaln_register_publisher_id(jctx, global_config.pub_id)) {
+				DEBUG_LOG("Failed to register publisher ID");
+				rc = -1;
+				goto out;
+			}
+			if (global_args.enable_tls) {
+				jaln_ret = jaln_register_tls(jctx, global_config.private_key, global_config.public_cert,
+					peer->cert_dir);
+				if (JAL_OK != jaln_ret) {
+					DEBUG_LOG("Failed to register TLS");
+					rc = -1;
+					goto out;
+				}
+			}
 
-		jaln_ret = jaln_register_connection_callbacks(jctx, conn_cbs);
-		if (JAL_OK != jaln_ret) {
-			DEBUG_LOG("Failed to register connection callbacks");
-			rc = -1;
-			goto out;
-		}
-		conn_cbs = NULL;
+			jaln_ret = jaln_register_connection_callbacks(jctx, conn_cbs);
+			if (JAL_OK != jaln_ret) {
+				DEBUG_LOG("Failed to register connection callbacks");
+				rc = -1;
+				goto out;
+			}
+			conn_cbs = NULL;
 
-		jaln_ret = jaln_register_publisher_callbacks(jctx, pub_cbs);
-		if (JAL_OK != jaln_ret) {
-			DEBUG_LOG("Failed to register publisher callbacks");
-			rc = -1;
-			goto out;
-		}
-		pub_cbs = NULL;
+			jaln_ret = jaln_register_publisher_callbacks(jctx, pub_cbs);
+			if (JAL_OK != jaln_ret) {
+				DEBUG_LOG("Failed to register publisher callbacks");
+				rc = -1;
+				goto out;
+			}
+			pub_cbs = NULL;
 
-		setNetworkTimeout(jctx, global_config.network_timeout);
-		peer->net_ctx = jctx;
+			setNetworkTimeout(jctx, global_config.network_timeout);
+			peer->net_ctx = jctx;
 
-		++peer->retries;
-		std::stringstream ss(std::ios_base::out);
-		ss << peer->port;
-		peer->conn = jaln_publish(peer->net_ctx, peer->host, ss.str().c_str(), \
+			++peer->retries;
+			std::stringstream ss(std::ios_base::out);
+			ss << peer->port;
+			peer->conn = jaln_publish(peer->net_ctx, peer->host, ss.str().c_str(),
 				peer->record_types, peer->mode, peer);
-		if (!peer->conn) {
-			DEBUG_LOG("Failed connection attempt %lld to %s:%llu", peer->retries, peer->host, peer->port);
-		} else {
-			peer->retries = 0;
-		}
-	    } // for loop over peers
+			if (!peer->conn) {
+				DEBUG_LOG("Failed connection attempt %lld to %s:%llu", peer->retries, peer->host, peer->port);
+			} else {
+				peer->retries = 0;
+				peer->connected = true;
+			}
+		} // for loop over peers
 
-	    if (global_config.retry_interval == -1) {
-		// don't retry
-		// wait for a signal and then check if we should be exiting
-		while (!exiting) {
-			pause();
-		}
-			break;
-	    }
-
-	    unsigned int remaining = global_config.retry_interval;
-	    while ((remaining = sleep(remaining))) {
-		// interrupted by a signal
-		if (exiting) {
+		if (global_config.retry_interval == -1) {
+			// don't retry
+			// wait for a signal and then check if we should be exiting
+			while (!exiting) {
+				pause();
+			}
 			break;
 		}
-	    }
+
+		unsigned int remaining = global_config.retry_interval;
+		while ((remaining = sleep(remaining))) {
+			// interrupted by a signal
+			if (exiting) {
+				break;
+				}
+			}
 	} while (!exiting);
 
 	// try to disconnect from each peer
@@ -1337,9 +1396,16 @@ out:
 	while (threads_to_exit > 0) {
 		sleep(1);
 	}
+	// try to free the connection to each peer
+	for (int i = 0; i < global_config.num_peers; ++i) {
+		peer = global_config.peers + i;
+		if (peer->conn) {
+			jaln_connection_destroy(&(peer->conn));
+			free(peer->conn);
+		}
+	}
 	free_global_config();
 	free_global_args();
-	teardown_db_layer();
 	pthread_mutex_destroy(&gs_journal_sub_lock);
 	pthread_mutex_destroy(&gs_audit_sub_lock);
 	pthread_mutex_destroy(&gs_log_sub_lock);
@@ -1347,6 +1413,9 @@ out:
 	jaln_context_destroy(&jctx);
 	jaln_connection_callbacks_destroy(&conn_cbs);
 	jaln_publisher_callbacks_destroy(&pub_cbs);
+	axl_hash_free(gs_journal_subs);
+	axl_hash_free(gs_log_subs);
+	axl_hash_free(gs_audit_subs);
 
 quick_out:
 	config_destroy(&config);
@@ -1491,23 +1560,28 @@ void print_record_types(enum jaln_record_type rtype)
 	const size_t j_len = strlen(JALNS_JOURNAL);
 	const size_t a_len = strlen(JALNS_AUDIT);
 	const size_t l_len = strlen(JALNS_LOG);
-	// max size: length of all strings plus 2 spaces and a NUL
-	const int size = j_len + a_len + l_len + 3;
-	char *buffer = (char *)alloca(size);
+	// max size: length of all strings plus 3 spaces and a NUL
+	char buffer[sizeof(JALNS_JOURNAL) + sizeof(JALNS_AUDIT) + sizeof(JALNS_LOG) + 1];
+	// Fill buffer with space characters
+	memset(buffer, ' ', sizeof(buffer));
+
 	char *head = buffer;
-	memset(head, ' ', size);
 	if (rtype & JALN_RTYPE_JOURNAL) {
 		memcpy(head, JALNS_JOURNAL, j_len);
+		// skip one past the end of this string to leave a space
 		head += j_len + 1;
 	}
 	if (rtype & JALN_RTYPE_AUDIT) {
 		memcpy(head, JALNS_AUDIT, a_len);
+		// skip one past the end of this string to leave a space
 		head += a_len + 1;
 	}
 	if (rtype & JALN_RTYPE_LOG) {
 		memcpy(head, JALNS_LOG, l_len);
+		// skip one past the end of this string to leave a space
 		head += l_len + 1;
 	}
+	// terminate with a NULL, potentially but not necessarily in the last byte of the array
 	*head = '\0';
 	printf("%s", buffer);
 }
@@ -1543,6 +1617,12 @@ void print_config(void)
 	printf("NETWORK TIMEOUT:\t%lld\n", global_config.network_timeout);
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
+	if(global_config.pid_file) {
+		printf("PID FILE:\t\t%s\n", global_config.pid_file);
+	}
+	if(global_config.log_dir) {
+		printf("LOG DIRECTORY:\t\t%s\n", global_config.log_dir);
+	}
 	printf("PUBLISHER ID:\t\t%s\n", global_config.pub_id);
 	for (int i = 0; i < global_config.num_peers; ++i) {
 		printf("PEER[%d]:\n", i);
@@ -1800,30 +1880,36 @@ enum jald_status set_global_config(config_t *config)
 		global_config.schemas_root = strdup(absolute_schemas_root);
 	}
 
+	// pid_file is optional
+	rc = jalu_config_lookup_string(root, JALNS_PID_FILE, &global_config.pid_file, false);
+	if(0 != rc) {
+		CONFIG_ERROR(root, JALNS_PID_FILE, "expected string value");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	// log_dir path is optional, kc_mod
+	rc = jalu_config_lookup_string(root, JALNS_LOG_DIR, &global_config.log_dir, false);
+	if(0 != rc) {
+		CONFIG_ERROR(root, JALNS_LOG_DIR, "expected string value");
+		return JALD_E_CONFIG_LOAD;
+	}
+
 	config_setting_t *peers =  config_setting_get_member(root, JALNS_PEERS);
 	return parse_peer_configs(root, peers);
 }
 
-enum jald_status setup_db_layer(void)
+static jaldb_context_t* setup_db_layer(void)
 {
-	enum jald_status rc = JALD_OK;
 	enum jaldb_status jaldb_ret = JALDB_OK;
-	db_ctx = jaldb_context_create();
+	jaldb_context_t* db_ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.schemas_root, 0);
+	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.schemas_root, JDB_NONE);
 
 	if (JALDB_OK != jaldb_ret) {
-		rc = JALD_E_DB_INIT;
+		jaldb_context_destroy(&db_ctx);
 	}
 
-	return rc;
-}
-
-void teardown_db_layer(void)
-{
-	jaldb_context_destroy(&db_ctx);
-
-	return;
+	return db_ctx;
 }
 
 static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buffer, uint64_t *size, void *feeder_data)
@@ -1847,5 +1933,30 @@ static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buff
 		return JAL_E_INVAL;
 	}
 	*size = bytes_read;
+	return JAL_OK;
+}
+
+static enum jal_status select_channel(const struct jaln_channel_info * ch_info, axlHash ** hash, pthread_mutex_t ** sub_lock)
+{
+	*hash = NULL;
+	*sub_lock = NULL;
+
+	switch(ch_info->type) {
+		case JALN_RTYPE_JOURNAL:
+			*hash = gs_journal_subs;
+			*sub_lock = &gs_journal_sub_lock;
+			break;
+		case JALN_RTYPE_AUDIT:
+			*hash = gs_audit_subs;
+			*sub_lock = &gs_audit_sub_lock;
+			break;
+		case JALN_RTYPE_LOG:
+			*hash = gs_log_subs;
+			*sub_lock = &gs_log_sub_lock;
+			break;
+		default:
+			DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
+			return JAL_E_INVAL;
+	}
 	return JAL_OK;
 }

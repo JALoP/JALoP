@@ -54,6 +54,8 @@ extern "C" {
 #define JALNS_RETRY_INTERVAL "retry_interval"
 #define JALNS_CERT_DIR "cert_dir"
 #define JALNS_NETWORK_TIMEOUT "network_timeout"
+#define JALNS_PID_FILE "pid_file"
+#define JALNS_LOG_DIR "log_dir"
 
 #ifdef __cplusplus
 }

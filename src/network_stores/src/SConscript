@@ -4,22 +4,10 @@ from Utils import install_for_build
 
 env = env.Clone()
 
-sources = []
-for source in (env.Glob("jsub*.cpp") + env.Glob("jal_subscribe.cpp")):
-	sources.append(source)
-
 add_project_lib(env, 'lib_common', 'jal-common')
 add_project_lib(env, 'db_layer', 'jal-db')
 add_project_lib(env, 'jal_utils', 'jal-utils')
 add_project_lib(env, 'network_lib', 'jal-network')
-
-jal_subscribe_objs = env.SharedObject(source=sources)
-
-jal_subscribe = env.Program(target='jal_subscribe', source=jal_subscribe_objs)
-
-env.Depends(jal_subscribe, [lib_common, db_layer, jal_utils, network_lib])
-
-env.Default(jal_subscribe)
 
 jald_objs = env.SharedObject("jald.cpp")
 jald = env.Program(target='jald', source=jald_objs)
@@ -27,10 +15,8 @@ env.Depends(jald, [lib_common, db_layer, jal_utils, network_lib])
 
 if (env['variant'] == 'release'):
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
-	env.Alias('install', env.Install(sbindir, jal_subscribe))
 	env.Alias('install', env.Install(sbindir, jald))
 
-install_for_build(env, 'bin', jal_subscribe)
 install_for_build(env, 'bin', jald)
 
-Return("jal_subscribe jald env")
+Return("jald env")
