@@ -51,11 +51,11 @@ struct thread_data {
 };
 
 enum jaln_connect_error on_connect_request(const struct jaln_connect_request *req,
-		int *selected_encoding, int *selected_digest, void *user_data)
+		int *selected_compression, int *selected_digest, void *user_data)
 {
 	user_data = user_data;
 	DEBUG_LOG("request: %p", req);
-	*selected_encoding = 0;
+	*selected_compression = 0;
 	*selected_digest = 0;
 	return JALN_CE_ACCEPT;
 }
@@ -101,7 +101,7 @@ void on_connect_nack(const struct jaln_connect_nack *nack, void *user_data)
 	DEBUG_LOG("user_data: %p", user_data);
 	LOG_STR_FIELD(nack->ch_info, hostname);
 	LOG_STR_FIELD(nack->ch_info, addr);
-	LOG_STR_FIELD(nack->ch_info, encoding);
+	LOG_STR_FIELD(nack->ch_info, compression);
 	LOG_STR_FIELD(nack->ch_info, digest_method);
 	LOG_INT_FIELD(nack->ch_info, type);
 	LOG_PTR_FIELD(nack, error_list);
@@ -429,7 +429,7 @@ int main(int argc, char **argv) {
 	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
 	jaln_register_digest_algorithm(net_ctx, dc1);
 	err = jaln_register_digest_challenge_configuration(net_ctx, "on");
-	err = jaln_register_encoding(net_ctx, "none");
+	err = jaln_register_compression(net_ctx, "none");
 
 	if (key) {
 		err = jaln_register_tls(net_ctx, key, cert, sub_certs);
