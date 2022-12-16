@@ -179,14 +179,14 @@ int main(void)
  * name of the algorithm. Applications may choose to support as many digest
  * algorithms as they would like.
  *
- * \subsection d_step4 Step 4: Register additional XML encodings (optional)
+ * \subsection d_step4 Step 4: Register additional XML compressions (optional)
  * In order to reduce the bandwidth required to send XML data, 2 JALoP Network
- * Stores may choose to support different encodings schemes for XML, such as
+ * Stores may choose to support different compression schemes for XML, such as
  * EXI, or compressing the data using the deflate algorithm. All
  * implementations must support the transferring XML documents as raw XML, that
- * is, without any encoding.
+ * is, without any compression.
  *
- * The encoding in use is always available in the #jaln_channel_info structure,
+ * The compression in use is always available in the #jaln_channel_info structure,
  * which is passed into the various callbacks.
  *
  * \subsection d_step5 Step 5: Registering the Publisher or Subscriber callbacks
@@ -222,7 +222,7 @@ int main(void)
  * used with single call to jaln_subscribe(), jaln_publish(), or
  * jaln_listen(). The #jaln_context must be fully configured,
  * with all necessary callbacks, digest algorithms, XML
- * encodings, etc. registered prior to these calls. Each of
+ * compressions, etc. registered prior to these calls. Each of
  * these functions accepts a \p user_data pointer as one of the
  * arguments. This pointer is passed into every callback
  * function for the application to use. It may be anything at
@@ -274,7 +274,7 @@ int main(void)
  * registering a #jaln_subscriber_callbacks object, you must register a
  * #jaln_publisher_callbacks object and you must execute jaln_publish()
  * rather than jaln_subscribe(). Just like for jaln_subscriber() all digest
- * algorithms, XML encodings, and #jaln_connection_callbacks must be registered
+ * algorithms, XML compressions, and #jaln_connection_callbacks must be registered
  * prior to executing jaln_subscriber() and once jaln_subscribe() is called,
  * the #jaln_context may not be used in any other calls to jaln_publish()
  * jaln_subscribe() or jaln_listen().
@@ -330,7 +330,7 @@ int main(void)
  * \subsubsection d_step7c Step 7c: Using a #jaln_context to listen for
  * connections. If the #jaln_context is going to be used for listening to
  * incoming connections, you must first register any additional digest
- * algorithms or XML encodings. You must also register your
+ * algorithms or XML compressions. You must also register your
  * #jaln_connection_callbacks and either #jaln_publisher_callbacks,
  * #jaln_subscriber_callbacks, or both. If you do not register both
  * #jaln_publisher_callbacks and #jaln_subscriber_callbacks, the JNL will
