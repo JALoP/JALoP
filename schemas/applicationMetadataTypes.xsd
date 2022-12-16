@@ -4,7 +4,7 @@
 	xmlns:jamt="http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
 	xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
 	elementFormDefault="qualified">
-	<import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="./xmldsig-core-schema.xsd"/>
+	<import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="./externalSchemas/xmldsig-core-schema.xsd"/>
 	<element name="ApplicationMetadata" type="jamt:ApplicationMetadataType"/>
 	<complexType name="ApplicationMetadataType">
 		<annotation><documentation>If the application adds a Signature element, it should also add a default namespace declaration to the node. This node must also contain namespace declarations for any namespaces included in the CanonicalizationMethod and Transform elements. This ensures that this document may be embedded into another document without breaking the signatures, regardless of how namespaces are declared elsewhere.</documentation></annotation>
