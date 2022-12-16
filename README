@@ -34,10 +34,13 @@ Building and Installing
 This project uses the scons (www.scons.org) build tool.
 Below are the platform-specific versions of python and scons that were used to test JALoP v2.x.
 
-  RHEL 6.x: python 2.6.x, scons 2.0.1
-  RHEL 7.x: python 2.7.x, scons python2-scons-3.1.2
+  RHEL 7.x: python3.6 (python 3.6.8), scons-3.6
+  RHEL 8.x: python3.6 (python 3.6.8), scons-3.6
   
 Later versions of Python should work as well, but were not tested.
+
+Note, the following commands assume your system installation invokes scons-3.6
+On RHEL7, it may be necessary to invoke "scons-3.6"
 
 To build, simply run 'scons' within the top level directory:
 
