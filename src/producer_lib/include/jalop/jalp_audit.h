@@ -79,6 +79,15 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		const uint8_t *audit_buffer,
 		const size_t audit_buffer_size);
 
+/**
+ * Trap XML error output to the console
+ *
+ * @param[in] ctx The context for handling the error
+ * @param[in] msg The error template
+ * @param[in] ... varargs parameters
+ */
+void xmlErrHandler(void *ctx, const char *msg, ...);
+
 /** @} */
 #ifdef __cplusplus
 }

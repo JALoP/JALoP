@@ -264,6 +264,7 @@ enum jal_status jal_digest_xml_data(
 	if (!dgst_ctx || !doc || !digest_out || *digest_out || !digest_len) {
 		return JAL_E_INVAL;
 	}
+
 	if (!jal_digest_ctx_is_valid(dgst_ctx)) {
 		return JAL_E_INVAL;
 	}

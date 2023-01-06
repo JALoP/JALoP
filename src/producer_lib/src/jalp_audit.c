@@ -34,11 +34,14 @@
 #include "jalp_connection_internal.h"
 #include "jalp_app_metadata_xml.h"
 #include "jal_xml_utils.h"
-#include "jalp_digest_audit_xml.h"
+#include "jal_asprintf_internal.h"
+#include "jalp_xml_validate.h"
 
 #define JALP_XML_CORE		"Core"
 #define JALP_XML_MANIFEST	"Manifest"
 #define JALP_XML_JID		"JID"
+#define XML_JAF_SCHEMA_NEW "eventList.xsd"
+#define XML_JAF_SCHEMA_OLD "event.xsd"
 
 enum jal_status jalp_audit(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
@@ -46,19 +49,70 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		const size_t audit_buffer_size)
 {
 
-	enum jal_status status;
+	enum jal_status status = JAL_OK;
 	uint8_t *digest = NULL;
 	xmlNodePtr app_meta_elem = NULL;
 	xmlNodePtr last_elem = NULL;
 	xmlDocPtr doc = NULL;
+	xmlDocPtr validated_doc = NULL;
 	xmlChar *buffer = NULL;
 	int digest_len = 0;
+	char *eventList_schema = NULL;
+	char *event_schema = NULL;
 
-	if (!ctx || !audit_buffer || (audit_buffer_size == 0)) {
+	if (!ctx || ctx->schema_root == NULL || !audit_buffer || (audit_buffer_size == 0)) {
 		status = JAL_E_INVAL;
 		goto out;
 	}
-	
+
+	xmlSetGenericErrorFunc(NULL, (xmlGenericErrorFunc)xmlErrHandler);
+	validated_doc = xmlReadMemory((const char *)audit_buffer, strlen((const char *)audit_buffer), "", NULL, 0);
+	bool isAnXmlDoc = validated_doc != NULL;
+
+	uint8_t flags = jalp_context_get_flags(ctx);
+
+	if((flags & JAF_VALIDATE_XML) && isAnXmlDoc)
+	{
+		if(!ctx->jaf_validCtxt) // if schema context is not cached
+		{
+			jal_asprintf(&eventList_schema, "%s/" XML_JAF_SCHEMA_NEW, ctx->schema_root);
+
+			status = jalp_validate_xml(ctx, validated_doc, eventList_schema);
+
+			if (status == JAL_E_INVAL) {
+				// a JAL_E_INVAL return means the XML_JAF_SCHEMA_NEW file doesn't exist.
+				// any other return value is an error.
+				// Older versions use event.xsd, fall back to this only if we did not
+				// already load the eventList.xsd
+				jal_asprintf(&event_schema, "%s/" XML_JAF_SCHEMA_OLD, ctx->schema_root);
+
+				status = jalp_validate_xml(ctx, validated_doc, event_schema);
+
+				if (status != JAL_OK) {
+					goto out;
+				}
+			}
+			if (status != JAL_OK) {
+				goto out;
+			}
+			free(eventList_schema);
+			eventList_schema = NULL;
+			if(event_schema != NULL){
+				free(event_schema);
+				event_schema = NULL;
+			}
+		}
+		else // always validate xml if the JAF_VALIDATE_XML is set...schema context is cached
+		{
+			// validate the xml document..0 == ok else error
+			int ret = xmlSchemaValidateDoc(ctx->jaf_validCtxt, validated_doc);
+			if (ret != 0) {
+				status = JAL_E_XML_PARSE;
+				goto out;
+			}
+		}
+	}
+
 	if (app_meta) {
 		doc = xmlNewDoc((xmlChar *)"1.0");
 
@@ -68,12 +122,13 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		}
 		xmlDocSetRootElement(doc, app_meta_elem);
 
-		if (ctx->digest_ctx) {
-			status = jalp_digest_audit_record(ctx,
-					audit_buffer, audit_buffer_size, &digest, &digest_len);
-			if (status != JAL_OK) {
+		if (ctx->digest_ctx && isAnXmlDoc) {
+			// generate digest of (validated) xml document
+			status = jal_digest_xml_data(ctx->digest_ctx, validated_doc, &digest, &digest_len);
+			if(status != JAL_OK) {
 				goto out;
 			}
+
 			xmlNodePtr reference_elem = NULL;
 			status = jal_create_reference_elem(JAL_PAYLOAD_URI, ctx->digest_ctx->algorithm_uri,
 					digest, digest_len, doc, &reference_elem);
@@ -131,5 +186,24 @@ out:
 	if (doc) {
 		xmlFreeDoc(doc);
 	}
+	if (validated_doc) {
+		xmlFreeDoc(validated_doc);
+	}
+	if(eventList_schema != NULL){
+		free(eventList_schema);
+	}
+	if(event_schema != NULL){
+		free(event_schema);
+	}
 	return status;
 }
+
+// XML parser generic error handler
+void xmlErrHandler(void *ctx, const char *msg, ...)
+{
+        (void)ctx;
+        (void)msg;
+
+        return;
+}
+

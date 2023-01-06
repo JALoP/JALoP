@@ -63,7 +63,8 @@ long buff_len = 0;
 
 // Password for the key that has a password.
 #define TEST_KEY_PASSWORD "pass"
-#define BAD_BUFFER "<lksdjflsdkj/>"
+#define BAD_BUFFER "<?xml version=\"1.0\" encoding=\"UTF-8\"?><anode></anode>"
+#define EMPTY_XML "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><anode/>"
 
 int ctx_is_null;
 int message_type_wrong;
@@ -173,8 +174,39 @@ void test_audit_fails_with_bad_input()
 	ret = jalp_audit(ctx, app_meta, buffer, 0);
 	assert_equals(JAL_E_INVAL, ret);
 
+	if(!jalp_context_flag_isSet(ctx, JAF_VALIDATE_XML)) {
+		jalp_context_set_flag(ctx, JAF_VALIDATE_XML);
+	}
+
 	ret = jalp_audit(ctx, app_meta, (uint8_t*)BAD_BUFFER, strlen(BAD_BUFFER));
 	assert_equals(JAL_E_XML_PARSE, ret);
+}
+
+void test_jalp_digest_audit_record_returns_schema_err_with_invalid_schema_root()
+{
+	free(ctx->schema_root); // init'd in setup()
+	ctx->schema_root = jal_strdup("/tmp");
+	ctx->flags = JAF_VALIDATE_XML;
+	ctx->jaf_validCtxt = NULL;
+
+	enum jal_status ret = jalp_audit(ctx, app_meta, (uint8_t *)EMPTY_XML, strlen(EMPTY_XML));
+
+	free(ctx->schema_root);
+	ctx->schema_root = jal_strdup(SCHEMAS_ROOT);
+
+	//assert_equals(JAL_E_XML_SCHEMA, ret);
+	assert_equals(JAL_E_INVAL, ret);
+}
+
+void test_audit_returns_inval_with_null_schema_root()
+{
+	ctx->schema_root = NULL;
+	ctx->flags = JAF_VALIDATE_XML;
+	ctx->jaf_validCtxt = NULL;
+
+	enum jal_status ret = jalp_audit(ctx, app_meta, (uint8_t *)EMPTY_XML, strlen(EMPTY_XML));
+
+	assert_equals(JAL_E_INVAL, ret);
 }
 
 #if 0

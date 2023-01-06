@@ -13,6 +13,8 @@ ccflags = '-DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT']  + '/schemas/\\"'
 env.Append(CCFLAGS=ccflags.split())
 
 env.MergeFlags({'CPPPATH':'#src/producer_lib/include:#src/lib_common/include:.'.split(':')})
+env.MergeFlags(env['libxml2_cflags'])
+env.MergeFlags(env['libxml2_ldflags'])
 
 add_project_lib(env, 'producer_lib', 'jal-producer')
 add_project_lib(env, 'lib_common', 'jal-common')

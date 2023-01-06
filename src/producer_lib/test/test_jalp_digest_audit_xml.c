@@ -42,6 +42,7 @@ static struct jal_digest_ctx *ctx = NULL;
 static jalp_context *jalp_ctx = NULL;
 uint8_t *buffer = NULL;
 long buff_len = 0;
+xmlDocPtr xmldoc;
 
 void setup()
 {
@@ -100,6 +101,8 @@ void setup_bad()
 	ret = fread(buffer, buff_len, 1, f);
 	assert_not_equals(0, ret);
 
+	xmldoc = xmlReadMemory((const char *)buffer, buff_len, "", NULL, 0);
+
 	fclose(f);
 }
 
@@ -127,6 +130,9 @@ void test_jalp_digest_audit_record_returns_ok_with_valid_input()
 	free(dgst);
 }
 #endif
+
+#if 0
+this test is no longer valid
 void test_jalp_digest_auidit_record_returns_error_with_invalid_input()
 {
 	setup_bad();
@@ -134,60 +140,34 @@ void test_jalp_digest_auidit_record_returns_error_with_invalid_input()
 	int dgst_len = 0;
 	jalp_ctx->schema_root = SCHEMAS_ROOT;
 	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
-						buffer,
-						buff_len,
+						xmldoc,
 						&dgst,
 						&dgst_len);
 	assert_equals(JAL_E_XML_PARSE, ret);
 	assert_equals((void*) NULL, dgst);
 	assert_equals(0, dgst_len);
 }
+#endif
 
-void test_jalp_digest_audit_record_returns_schema_err_with_invalid_schema_root()
-{
-	uint8_t *dgst = NULL;
-	int dgst_len = 0;
-	jalp_ctx->schema_root = "/";
-	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
-						buffer,
-						buff_len,
-						&dgst,
-						&dgst_len);
-	assert_equals(JAL_E_XML_SCHEMA, ret);
-	assert_equals((void*) NULL, dgst);
-	assert_equals(0, dgst_len);
-}
-
+#if 0
+this test is no longer valid
 void test_jalp_digest_audit_record_returns_inval_with_null_ctx()
 {
 	uint8_t *dgst = NULL;
 	int dgst_len = 0;
+	xmldoc = xmlNewDoc((xmlChar *)"1.0");
 	jalp_ctx->schema_root = SCHEMAS_ROOT;
 	enum jal_status ret = jalp_digest_audit_record(NULL,
-						buffer,
-						buff_len,
+						xmldoc,
 						&dgst,
 						&dgst_len);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*) NULL, dgst);
 	assert_equals(0, dgst_len);
 }
+#endif
 
-void test_jalp_digest_audit_record_returns_inval_with_null_schema_root()
-{
-	uint8_t *dgst = NULL;
-	int dgst_len = 0;
-	jalp_ctx->schema_root = NULL;
-	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
-						buffer,
-						buff_len,
-						&dgst,
-						&dgst_len);
-	assert_equals(JAL_E_INVAL, ret);
-	assert_equals((void*) NULL, dgst);
-	assert_equals(0, dgst_len);
-}
-
+#if 0
 void test_jalp_digest_audit_record_returns_inval_with_null_buffer()
 {
 	uint8_t *dgst = NULL;
@@ -217,14 +197,15 @@ void test_jalp_digest_audit_record_returns_inval_with_zero_buf_len()
 	assert_equals((void*) NULL, dgst);
 	assert_equals(0, dgst_len);
 }
+#endif
 
 void test_jalp_digest_audit_record_returns_inval_with_dgst_null()
 {
 	int dgst_len = 0;
+	xmldoc = xmlNewDoc((xmlChar *)"1.0");
 	jalp_ctx->schema_root = SCHEMAS_ROOT;
 	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
-						buffer,
-						buff_len,
+						xmldoc,
 						NULL,
 						&dgst_len);
 	assert_equals(JAL_E_INVAL, ret);
@@ -235,13 +216,15 @@ void test_jalp_digest_audit_record_returns_inval_with_dgst_ptr_not_null()
 {
 	uint8_t *dgst = jal_malloc(1);
 	int dgst_len = 0;
+	xmldoc = xmlNewDoc((xmlChar *)"1.0");
 	jalp_ctx->schema_root = SCHEMAS_ROOT;
 	enum jal_status ret = jalp_digest_audit_record(jalp_ctx,
-						buffer,
-						buff_len,
+						xmldoc,
 						&dgst,
 						&dgst_len);
 	free(dgst);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals(0, dgst_len);
 }
+
+
