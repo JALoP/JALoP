@@ -61,6 +61,8 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	char **log_dir = &((*jalls_ctx)->log_dir);
 	char **db_root = &((*jalls_ctx)->db_root);
 	char **socket = &((*jalls_ctx)->socket);
+	char **socket_owner = &((*jalls_ctx)->socket_owner);
+	char **socket_group = &((*jalls_ctx)->socket_group);
 	int *sign_sys_meta = &((*jalls_ctx)->sign_sys_meta);
 	int *manifest_sys_meta = &((*jalls_ctx)->manifest_sys_meta);
 	int *accept_delay_thread_count = &((*jalls_ctx)->accept_delay_thread_count);
@@ -137,6 +139,14 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	}
 
 	ret = jalu_config_lookup_string(root, JALLS_CFG_SOCKET, socket, JALU_CFG_OPTIONAL);
+	if (-1 == ret) {
+		goto err_out;
+	}
+	ret = jalu_config_lookup_string(root, JALLS_CFG_SOCKET_OWNER, socket_owner, JALU_CFG_OPTIONAL);
+	if (-1 == ret) {
+		goto err_out;
+	}
+	ret = jalu_config_lookup_string(root, JALLS_CFG_SOCKET_GROUP, socket_group, JALU_CFG_OPTIONAL);
 	if (-1 == ret) {
 		goto err_out;
 	}

@@ -60,11 +60,14 @@
 #include <openssl/pem.h>
 #include <limits.h>
 #include <signal.h>	/** For SIGABRT, SIGTERM, SIGINT **/
+#include <systemd/sd-daemon.h>
+#include <argp.h>
 
 #include <jalop/jal_status.h>
 #include <jalop/jal_version.h>
 
 #include "jal_fs_utils.h"
+#include "jal_linux_cap.h"
 #include "jalls_config.h"
 #include "jalu_daemonize.h"
 #include "jalls_handler.h"
@@ -72,26 +75,59 @@
 #include "jalls_init.h"
 #include "jal_alloc.h"
 
-#define JALLS_LISTEN_BACKLOG 20
-#define JALLS_USAGE "usage: [--debug] [--version] FILE\n"
-#define JALLS_ERRNO_MSG_SIZE 1024
-#define VERSION_CALLED 1
+#include <seccomp.h>
+#include <fcntl.h>
+#include <linux/seccomp.h>
 
-static const char *DEBUG_FLAG = "--debug";
-static const char *VERSION_FLAG = "--version";
+#define JALLS_LISTEN_BACKLOG 20
+#define JALLS_ERRNO_MSG_SIZE 1024
 
 // Members for deleting socket file
 extern volatile int should_exit;
 
-static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug);
+struct seccomp_config_t {
+	int enable_seccomp;
+	const config_setting_t *initial_syscalls;
+	const config_setting_t *final_syscalls;
+} seccomp_config = {0, NULL, NULL};
+
 static int setup_signals();
 static void sig_handler(int sig);
 static void delete_socket(const char *socket_path, int debug);
 static int get_thread_count();
 
-int main(int argc, char **argv) {
+static int read_sc_config(config_t *sc_config);
+static int configureInitialSeccomp();
+static int configureFinalSeccomp();
+static int configureDisallowSeccomp();
+static void catchSeccompViolation(int sig, siginfo_t * si, void * void_context);
+static int init_catchSeccompViolation();
+static int systemd_sockfd;
+static int get_sockfd_from_systemd();
+// argp
+const char *argp_program_version = "1";
+const char *argp_program_bug_address = "";
+static char args_doc[] = "";
+static char doc[] = "jal-local-store -- A program to receive and store JALoP records.";
+static error_t parse_opt(int key, char *arg, struct argp_state *state);
+static struct argp_option options[] =
+{
+    	{"debug", 'd', NULL, OPTION_ARG_OPTIONAL, "run jal-local-store in debug mode", 0},
+	{"config", 'c', "path", 0, "jal-local-store configuration file path", 0},
+	{"socket", 's', "path", 0, "jal-local-store socket path", 0},
+	{"socket-owner", 'o', "owner", 0, "jal-local-store socket owner", 0},
+	{"socket-group", 'g', "group", 0, "jal-local-store socket group", 0},
+	{0}
+};
+char *config_path;
+int debug;
+struct jalls_context cli_jalls_ctx;
+// merge command-line configurations into file configurations. Have command-line take precedence
+void merge_jal_contexts(struct jalls_context cli_ctx, struct jalls_context *out_ctx); 
+static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 
-	char *config_path;
+int main(int argc, char **argv) {
+	//char *config_path;
 	FILE *fp;
 	RSA *key = NULL;
 	X509 *cert = NULL;
@@ -100,6 +136,7 @@ int main(int argc, char **argv) {
 	enum jal_status jal_err = JAL_E_INVAL;
 	int sock = -1;
 	int old_socket_exist = 0;
+	config_t sc_config;
 
 	// Perform signal hookups
 	if ( 0 != setup_signals()) {
@@ -109,11 +146,10 @@ int main(int argc, char **argv) {
 	if (0 != jalls_init()) {
 		goto err_out;
 	}
-	int debug = 0;
-	int err = parse_cmdline(argc, argv, &config_path, &debug);
-	if (err == VERSION_CALLED) {
-		goto version_out;
-	} else if (err < 0) {
+	
+	debug = 0;
+	int err = argp_parse(&argp, argc, argv, 0, 0, &cli_jalls_ctx);
+	if(err!=0){
 		goto err_out;
 	}
 
@@ -121,7 +157,25 @@ int main(int argc, char **argv) {
 	if (err < 0) {
 		goto err_out;
 	}
+	merge_jal_contexts(cli_jalls_ctx, jalls_ctx);	
+	if(config_path){
+		int rc = read_sc_config(&sc_config);
+		if (rc != 0) {
+                	goto err_out;
+                }
+	}
+
 	jalls_ctx->debug = debug;
+
+	if(seccomp_config.enable_seccomp){
+		if (init_catchSeccompViolation()!=0){
+			fprintf(stderr, "Could not intialize seccomp signal\n");
+			goto err_out;
+		}
+		if (configureInitialSeccomp()!=0){
+			goto err_out;
+		}
+	}
 
 	jal_err = jal_create_dirs(jalls_ctx->db_root);
 	if (JAL_OK != jal_err) {
@@ -189,58 +243,89 @@ int main(int argc, char **argv) {
 		goto err_out;
 	}
 
-	//check if the socket file already exists
-	struct stat sock_stat;
-	struct sockaddr_un sock_addr;
-	memset(&sock_addr, 0, sizeof(sock_addr));
-	size_t socket_path_len = strlen(jalls_ctx->socket);
-
-	jal_err = jal_create_dirs(jalls_ctx->socket);
-	if (JAL_OK != jal_err) {
-		fprintf(stderr, "failed to create socket directory\n");
-		goto err_out;
+	systemd_sockfd = get_sockfd_from_systemd();
+	if (systemd_sockfd>0){
+		sock = systemd_sockfd;
 	}
+	else{
+		fprintf(stderr, "jal-local-store creating socket....\n");
+		//check if the socket file already exists
+		struct stat sock_stat;
+		struct sockaddr_un sock_addr;
+		memset(&sock_addr, 0, sizeof(sock_addr));
+		size_t socket_path_len = strlen(jalls_ctx->socket);
 
-	err = stat(jalls_ctx->socket, &sock_stat);
-	if (err != -1) {
-		fprintf(stderr, "failed to create socket: already exists\n");
-		fprintf(stderr, "Exiting ...\n");
-		old_socket_exist = 1;
-		goto err_out;
-	}
-	if (errno != ENOENT) {
-		fprintf(stderr, "failed to stat the socket path: %s\n", strerror(errno));
-		goto err_out;
-	}
+		jal_err = jal_create_dirs(jalls_ctx->socket);
+		if (JAL_OK != jal_err) {
+			fprintf(stderr, "failed to create socket directory\n");
+			goto err_out;
+		}
 
-	//create the socket
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sock < 0) {
-		fprintf(stderr, "failed to create the socket: %s\n", strerror(errno));
-		goto err_out;
-	}
+		err = stat(jalls_ctx->socket, &sock_stat);
+		if (err != -1) {
+			fprintf(stderr, "failed to create socket: already exists\n");
+			fprintf(stderr, "Exiting ...\n");
+			old_socket_exist = 1;
+			goto err_out;
+		}
+		if (errno != ENOENT) {
+			fprintf(stderr, "failed to stat the socket path: %s\n", strerror(errno));
+			goto err_out;
+		}
 
-	sock_addr.sun_family = AF_UNIX;
-	if (socket_path_len >= sizeof(sock_addr.sun_path)) {
-		fprintf(stderr, "could not create the socket: path %s is too long\n", jalls_ctx->socket);
-		goto err_out;
-	}
+		//create the socket
+		sock = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (sock < 0) {
+			fprintf(stderr, "failed to create the socket: %s\n", strerror(errno));
+			goto err_out;
+		}
 
-	strncpy(sock_addr.sun_path, jalls_ctx->socket, sizeof(sock_addr.sun_path));
-	sock_addr.sun_path[sizeof(sock_addr.sun_path) - 1] = '\0';
+		sock_addr.sun_family = AF_UNIX;
+		if (socket_path_len >= sizeof(sock_addr.sun_path)) {
+			fprintf(stderr, "could not create the socket: path %s is too long\n", jalls_ctx->socket);
+			goto err_out;
+		}
 
-	err = bind(sock, (struct sockaddr*) &sock_addr, sizeof(sock_addr));
-	if (-1 == err) {
-		fprintf(stderr, "failed to bind %s: %s\n", jalls_ctx->socket, strerror(errno));
-		close(sock);
-		return -1;
-	}
+		strncpy(sock_addr.sun_path, jalls_ctx->socket, sizeof(sock_addr.sun_path));
+		sock_addr.sun_path[sizeof(sock_addr.sun_path) - 1] = '\0';
 
-	err = listen(sock, JALLS_LISTEN_BACKLOG);
-	if (-1 == err) {
-		fprintf(stderr, "failed to listen, %s\n", strerror(errno));
-		close(sock);
-		return -1;
+		err = bind(sock, (struct sockaddr*) &sock_addr, sizeof(sock_addr));
+		if (-1 == err) {
+			fprintf(stderr, "failed to bind %s: %s\n", jalls_ctx->socket, strerror(errno));
+			close(sock);
+			return -1;
+		}
+
+		err = listen(sock, JALLS_LISTEN_BACKLOG);
+		if (-1 == err) {
+			fprintf(stderr, "failed to listen, %s\n", strerror(errno));
+			close(sock);
+			return -1;
+		}
+		if (performChmod(jalls_ctx->socket, 0420)!=0){
+			fprintf(stderr, "failed to set perms on the socket: %s\n", strerror(errno));
+			goto err_out;
+		}
+		fprintf(stderr, "Trying to get userid for socket_owner: %s ...\n", jalls_ctx->socket_owner);
+		int owner_id = get_userid_from_username(jalls_ctx->socket_owner);
+		fprintf(stderr, "Success: %i\n", owner_id);
+		if (owner_id<0){
+			fprintf(stderr, "failed to get socket owner id for %s\n", jalls_ctx->socket_owner);
+			goto err_out;
+		}
+		fprintf(stderr, "Trying to get groupid for socket_group: %s ...\n", jalls_ctx->socket_group);
+		int group_id = get_groupid_from_groupname(jalls_ctx->socket_group);
+		fprintf(stderr, "Success: %i\n", group_id);
+		if (group_id<0){
+			fprintf(stderr, "failed to get socket group id for %s\n", jalls_ctx->socket_group);
+			goto err_out;
+		}
+		if (performChown(jalls_ctx->socket, owner_id, group_id)!=0){
+			fprintf(stderr, "failed to set ownership on the socket: %s\n", strerror(errno));
+			goto err_out;
+		}
+		fprintf(stderr, "Socket Created!\n");
+
 	}
 
 	if (!debug) {
@@ -265,6 +350,27 @@ int main(int argc, char **argv) {
 	const int max_thread_count_intervention = jalls_ctx->accept_delay_max;
 	const int min_accept_delay = jalls_ctx->accept_delay_increment;
 
+	if(seccomp_config.enable_seccomp){
+		if (configureDisallowSeccomp()!=0){
+			goto err_out;
+		}
+		if (configureFinalSeccomp()!=0){
+			goto err_out;
+		}
+	}
+    	if(debug){
+		//When debuging and finding the system calls the proceess makes,
+		//at this point is where the process is done its setup and continues
+		//on to do its routine work. This mark will show in your strace output.
+		FILE * test_file = fopen("SECCOMP_PROCESS_IS_DONE_SETTING_UP", "r");
+		if (test_file){
+			fclose(test_file);
+		}
+		fprintf(stderr, "Initial setup complete.\n");
+	}
+	if(sock==systemd_sockfd){
+		sd_notify(0, "READY=1");
+	}
 	while (!should_exit) {
 		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(*thread_ctx));
 		if (thread_ctx == NULL) {
@@ -347,44 +453,9 @@ err_out:
 
 	jaldb_context_destroy(&db_ctx);
 	close(sock);
-
+	config_destroy(&sc_config);
+	
 	exit(-1);
-
-version_out:
-	jalls_shutdown();
-	exit(0);
-}
-
-static int parse_cmdline(int argc, char **argv, char ** config_path, int *debug) {
-	if (argc <= 1) {
-		fprintf(stderr, JALLS_USAGE);
-		return -1;
-	}
-	if (argc == 2) {
-		if (0 == strcmp(argv[1], DEBUG_FLAG)) {
-			fprintf(stderr, JALLS_USAGE);
-			return -1;
-		} else if (0 == strcmp(argv[1], VERSION_FLAG)) {
-			printf("%s\n", jal_version_as_string());
-			return VERSION_CALLED;
-		}
-		*config_path = argv[1];
-		return 0;
-	}
-	if (argc == 3) {
-		if (0 != strcmp(argv[1], DEBUG_FLAG)) {
-			fprintf(stderr, JALLS_USAGE);
-			return -1;
-		}
-		*debug = 1;
-		*config_path = argv[2];
-	}
-	else {
-		fprintf(stderr, JALLS_USAGE);
-		return -1;
-	}
-
-	return 0;
 
 }
 
@@ -428,7 +499,7 @@ static void delete_socket(const char *p_socket_path, int p_debug)
 			char *buf = jal_malloc(JALLS_ERRNO_MSG_SIZE);
 			int result = strerror_r(local_errno, buf, JALLS_ERRNO_MSG_SIZE);
 			if (0 != result) {
-				printf("Failed to parse errno.\n");
+				fprintf(stderr,"Failed to parse errno.\n");
 			}
 			fprintf(stderr,
 				"Error deleting socket file: %s\n",
@@ -530,4 +601,252 @@ static int get_thread_count()
 		(void) fclose(self_status_file);
 	}
 	return thread_count;
+}
+
+int read_sc_config(config_t *sc_config) {
+    int rc = 0;
+    config_init(sc_config);
+
+    if (config_path) {
+        rc = config_read_file(sc_config, config_path);
+        if (rc == CONFIG_FALSE) {
+            fprintf(stderr, "Failed to read SECCOMP config file: %s: (%d) %s!\n", config_path, config_error_line(sc_config), config_error_text(sc_config));
+            return -1;
+        }
+
+        // Now get the SECCOMP settings
+        rc = config_lookup_bool(sc_config, "enable_seccomp", &seccomp_config.enable_seccomp);
+        if (rc == CONFIG_TRUE) {
+            fprintf(stderr, "enable_seccomp: %i\n", seccomp_config.enable_seccomp);
+
+            // Read initial and final syscalls ONLY if enable_seccomp is non-zero
+            if (seccomp_config.enable_seccomp) {
+                seccomp_config.initial_syscalls = config_lookup(sc_config, "initial_seccomp_rules");
+                if (seccomp_config.initial_syscalls == NULL) {
+                    fprintf(stderr, "Initial syscalls not found in config file %s\n", config_path);
+                    return -1;
+                }
+
+                seccomp_config.final_syscalls = config_lookup(sc_config, "final_seccomp_rules");
+                if (seccomp_config.final_syscalls == NULL) {
+                    fprintf(stderr, "Final syscalls not found in config file %s\n", config_path);
+                    return -1;
+                }
+            }
+        }
+        else {
+            fprintf(stderr, "Failed to read enable_seccomp setting in config file: %s\n", config_path);
+            return -1;
+        }
+    }
+    else {
+        fprintf(stderr, "SECCOMP config path NULL\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+int configureInitialSeccomp() {
+    if(debug){
+    	fprintf(stderr, "configureInitialSeccomp \n");
+    }
+    scmp_filter_ctx filter_ctx;
+    filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+    
+    const config_setting_t * calls = seccomp_config.initial_syscalls;
+    int count = 0;
+    if (calls != NULL) {
+        count = config_setting_length(calls);
+    }
+    int call_number = 0;
+    for (int x=0; x< count; x++) {
+        const char * call_name = config_setting_get_string_elem(calls, x);
+        call_number = seccomp_syscall_resolve_name(call_name);
+    	if(debug){
+        	fprintf(stderr, "initial syscall: %s %i\n", call_name, call_number);
+	} 
+        seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0);
+        if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0)){
+		fprintf(stderr, "configureInitialSeccomp seccomp_rule_add FAILED\n");
+		return -1;
+	}
+    }
+
+    calls = seccomp_config.final_syscalls;
+    count = 0;
+    if (calls != NULL) {
+        count = config_setting_length(calls);
+    }
+    call_number = 0;
+    for (int x=0; x< count; x++) {
+        const char * call_name = config_setting_get_string_elem(calls, x);
+        call_number = seccomp_syscall_resolve_name(call_name);
+    	if(debug){
+        	fprintf(stderr, "from final syscall: %s %i\n", call_name, call_number); 
+	}
+        if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0)){
+		fprintf(stderr, "configureInitialSeccomp seccomp_rule_add FAILED\n");
+		return -1;
+	}
+    }
+    
+    if (seccomp_load(filter_ctx)!=0){
+	fprintf(stderr, "configureInitialSeccomp seccomp_load FAILED\n");
+	return -1;
+    }
+    
+    if(debug){
+    	fprintf(stderr, "configureInitialSeccomp DONE \n");
+    }
+    return 0;
+}
+int configureFinalSeccomp() {
+    if(debug){
+    	fprintf(stderr, "configureFinalSeccomp \n");
+    }
+    scmp_filter_ctx filter_ctx;
+    filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+    
+    const config_setting_t * calls = seccomp_config.final_syscalls;
+    int count = 0;
+    if (calls != NULL) {
+        count = config_setting_length(calls);
+    }
+    int call_number = 0;
+    for (int x=0; x< count; x++) {
+        const char * call_name = config_setting_get_string_elem(calls, x);
+        call_number = seccomp_syscall_resolve_name(call_name);
+    	if(debug){
+        	fprintf(stderr, "final syscall: %s %i\n", call_name, call_number); 
+	}
+        if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0)){
+		fprintf(stderr, "configureFinalSeccomp seccomp_rule_add FAILED\n");
+		return -1;
+	}
+    }
+    if (seccomp_load(filter_ctx)!=0){
+	fprintf(stderr, "configureFinalSeccomp seccomp_load FAILED\n");
+	return -1;
+    }
+    if(debug){
+    	fprintf(stderr, "configureFinalSeccomp DONE \n");
+    }
+    return 0;
+}
+int configureDisallowSeccomp() {
+    if(debug){
+	fprintf(stderr,"configureDisallowSeccomp \n");
+    }
+    scmp_filter_ctx filter_ctx;
+    filter_ctx = seccomp_init(SCMP_ACT_ALLOW);
+    if(debug){
+    	fprintf(stderr, "seccomp_rule_add(filter_ctx, SCMP_ACT_TRAP, SCMP_SYS(fcntl) , 1, SCMP_A1(SCMP_CMP_EQ, F_SETFL)); \n");
+    }    
+    if (seccomp_rule_add(filter_ctx, SCMP_ACT_TRAP, SCMP_SYS(fcntl) , 1, SCMP_A1(SCMP_CMP_EQ, F_SETFL))!=0){
+	fprintf(stderr, "configureDisallowSeccomp seccomp_rule_add FAILED\n");
+	return -1;
+    }
+        
+    if (seccomp_load(filter_ctx)!=0){
+	fprintf(stderr, "configureDisallowSeccomp seccomp_load FAILED\n");
+	return -1;
+    }
+    if(debug){
+    	fprintf(stderr, "configureDisallowSeccomp DONE \n");
+    }
+    return 0;
+}
+static void catchSeccompViolation(int sig, siginfo_t * si, void * void_context ){
+	(void)void_context;
+	if(SIGSYS==sig){
+		if(si->si_code==1){ //SYS_SECCOMP
+			fprintf(stderr,"Exiting. Disallowed system call: %i : %s.\n", si->si_syscall, seccomp_syscall_resolve_num_arch(si->si_arch,si->si_syscall));
+			exit(2);
+		}
+	}
+}
+static int init_catchSeccompViolation(){
+	struct sigaction action_on_sig;
+	action_on_sig.sa_flags = SA_SIGINFO;
+	action_on_sig.sa_sigaction = &catchSeccompViolation;
+	return sigaction(SIGSYS, &action_on_sig, NULL);
+}
+static int get_sockfd_from_systemd()
+{
+	int num_fds;
+	int socketfd = -1;
+
+	num_fds = sd_listen_fds(0);
+	if (num_fds<0){
+		fprintf(stderr, "No file descriptors from systemd\n");
+		return -1;
+	}
+	for (int x=0; x<num_fds; x++){
+		fprintf(stderr, "FD: %i \n", x+SD_LISTEN_FDS_START);
+		if (sd_is_socket_unix(x+SD_LISTEN_FDS_START, -1, SOCK_STREAM, NULL, 0)){
+			socketfd = x+SD_LISTEN_FDS_START;
+		}
+	}
+	if (socketfd == -1){
+		fprintf(stderr, "No socket file desriptors found from systemd\n");
+	}
+	return socketfd;
+}
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
+{
+	struct jalls_context * cli_ctx = state->input;
+	switch (key)
+	{
+		case 'd':
+			debug = 1;
+			break;
+		case 's':
+			cli_ctx->socket = arg;
+			break;
+		case 'o':
+			cli_ctx->socket_owner = arg;
+			break;
+		case 'g':
+			cli_ctx->socket_group = arg;
+			break;
+		case 'c':
+			config_path = arg;
+			break;
+		case ARGP_KEY_END:
+			if(!config_path)
+			{
+				argp_failure(state, 1, 0, "required -c");
+				argp_usage(state);
+			}
+			else
+			{
+				struct stat config_stat;
+				int ret = stat(config_path, &config_stat);
+				if(ret<0)
+				{
+					argp_failure(state, 1, 0, "Cannot stat config path: %s", config_path);
+					argp_usage(state);
+				}
+			}
+			break;
+		default:
+			return ARGP_ERR_UNKNOWN;
+	}
+	return 0;
+}
+void merge_jal_contexts(struct jalls_context cli_ctx, struct jalls_context *out_ctx)
+{
+	if (cli_ctx.socket)
+	{
+		out_ctx->socket = cli_ctx.socket;
+	}
+	if (cli_ctx.socket_owner)
+	{
+		out_ctx->socket_owner = cli_ctx.socket_owner;
+	}
+	if (cli_ctx.socket_group)
+	{
+		out_ctx->socket_group = cli_ctx.socket_group;
+	}
 }

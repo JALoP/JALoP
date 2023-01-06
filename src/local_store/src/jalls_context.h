@@ -62,6 +62,10 @@ struct jalls_context {
 	char *db_root;
 	/** The full path to a UNIX Domain Socket. The JALoP Local Store will create the socket and wait for producer applications to connect to the socket. */
 	char *socket;
+	/** The owner of the socket file */
+	char *socket_owner;
+	/** The group of the socket file */
+	char *socket_group;
 	/** A boolean for whether to sign the system metadata for data received from the producer library. */
 	int sign_sys_meta;
 	/** A boolean for whether to include manifests in the system metadata for data received from the producer library. */

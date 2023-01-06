@@ -4,8 +4,8 @@
 - JAL Local Store
 .SH SYNOPSIS
 .B jal-local-store
-[\fI\-\-debug\fR][\fI\-\-version\fR]
-.I config_file
+[\fI\-\-debug\fR][\fI\-\-version\fR][\fI\-\-help\fR][\fI\-\-socket=<path>\fR][\fI\-\-socket-owner=<username>\fR][\fI\-\-socket-group=<groupname>\fR]
+.I --config config_file
 .SH "DESCRIPTION"
 .B jal-local-store
 is an implementation of a JALoP local store. It will listen on a socket for producer applications and accept journal, audit,
@@ -25,6 +25,21 @@ from forking to the background.
 .TP
 \fB\-\-version\fR
 Outputs the version number and exits.
+.TP
+\fB\-\-help\fR
+Display help.
+.TP
+\fB\-\-socket\fR
+Enter the file system path of where the Unix Domain socket shall be created.
+.TP
+\fB\-\-socket-owner\fR
+Enter an existing linux user that will be owner of the socket file. Usally the user that jal-local-store will run as.
+.TP
+\fB\-\-socket-group\fR
+Enter an existing linux group that will have group privilege of the socket file. Usally the group that the jalop producers will belong to.
+.TP
+\fB\-\-config\fR
+The file system path of where the jal-local-store configuration file is located (This is required to run).
 .SH BUGS
 Attempting to insert audit data greater than 100MB will cause undefined behavior.
 

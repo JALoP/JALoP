@@ -1,0 +1,16 @@
+[Unit]
+Description=JALoP Localstore Service
+BindsTo=jalls.socket
+After=jalls.socket
+
+[Service]
+Type=forking
+User=dlinsalata
+Group=dlinsalata
+#PIDFile=/home/dlinsalata/jalop_home/jalop/jal.pid
+Environment=LD_LIBRARY_PATH=/home/dlinsalata/jalop_home/jalop/release/lib
+ExecStart=/home/dlinsalata/jalop_home/jalop/release/bin/jal-local-store /home/dlinsalata/jalop_home/jalop/test-input/jalls_service.cfg
+#StandardOutput=/home/dlinsalata/jalop_home/jalop/stdout.log
+#StandardError=/home/dlinsalata/jalop_home/jalop/stderr.log
+[Install]
+WantedBy=multi-user.target

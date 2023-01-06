@@ -1,0 +1,12 @@
+[Unit]
+Description=JALoP Localstore Socket
+BindsTo=jalls.service
+Before=jalls.service
+
+[Socket]
+SocketUser=dlinsalata
+SocketGroup=dlinsalata
+SocketMode=0250
+DirectoryMode=751
+Accept=no
+ListenStream=/home/dlinsalata/jalop_home/jalop/var/run/dean.sock

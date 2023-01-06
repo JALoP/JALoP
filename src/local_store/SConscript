@@ -3,6 +3,9 @@ from Utils import add_project_lib
 
 env = env.Clone()
 
+env.MergeFlags("-lseccomp")
+env.MergeFlags("-lsystemd")
+
 env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags(env['libconfig_cflags'])
 env.MergeFlags(env['libconfig_ldflags'])
