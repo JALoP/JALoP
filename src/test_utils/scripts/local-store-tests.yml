@@ -1,0 +1,39 @@
+---
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+  - name: stop jal-local-store
+    shell: 
+      cmd: 'killall {{cwd}}/release/bin/jal-local-store || true'
+  - name: clear database
+    file:
+        path: '{{cwd}}/testdb'
+        state: absent
+  - name: remove socket
+    file: 
+        path: '{{cwd}}/jal.sock' 
+        state: absent
+  - name: make database directory
+    file:
+        path: '{{cwd}}/testdb'
+        state: directory
+  - name: start jal-local-store
+    command: 
+        chdir: '{{cwd}}'
+        cmd:  './release/bin/jal-local-store ./test-input/local_store.cfg'
+  - name: send logs
+    async: 45
+    poll: 0
+    command:
+        chdir: '{{cwd}}'
+        cmd: './release/bin/jalp_test -j ./jal.sock -p ./test-input/big_payload.txt -n 10000 -t l'
+  - name: send logs 2
+    command:
+        chdir: '{{cwd}}'
+        cmd: './release/bin/jalp_test -j ./jal.sock -p ./test-input/big_payload.txt -n 10000 -t l'
+#call with this command from jalop home
+##ansible-playbook src/test_utils/scripts/local-store-tests.yml -e cwd=`pwd`
+
