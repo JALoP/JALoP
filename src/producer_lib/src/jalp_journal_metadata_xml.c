@@ -42,27 +42,23 @@
 
 enum jal_status jalp_journal_metadata_to_elem(
 		const struct jalp_journal_metadata *journal,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem)
 {
-	if (!journal || !doc || !new_elem || *new_elem) {
+	if (!journal || !parent || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 
 	enum jal_status ret;
-	xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr jmeta_element = xmlNewDocNode(doc, NULL,
+	xmlNodePtr jmeta_element = xmlNewChild(parent, NULL,
 					(xmlChar *)JALP_XML_JOURNAL_META, NULL);
-	xmlNsPtr ns = xmlNewNs(jmeta_element, namespace_uri, NULL);
-	xmlSetNs(jmeta_element, ns);
 
 	if (journal->file_info) {
 		xmlNodePtr tmp = NULL;
-		ret = jalp_file_info_to_elem(journal->file_info, doc, &tmp);
+		ret = jalp_file_info_to_elem(journal->file_info, jmeta_element, &tmp);
 		if (ret != JAL_OK) {
 			goto cleanup;
 		}
-		xmlAddChild(jmeta_element, tmp);
 	} else {
 		ret = JAL_E_INVAL_FILE_INFO;
 		goto cleanup;
@@ -75,12 +71,11 @@ enum jal_status jalp_journal_metadata_to_elem(
 				NULL);
 		while (curr) {
 			xmlNodePtr tmp = NULL;
-			ret = jalp_transform_to_elem(curr, doc, &tmp);
+			ret = jalp_transform_to_elem(curr, trans_element, &tmp);
 			if (ret != JAL_OK) {
 				xmlFreeNode(trans_element);
 				goto cleanup;
 			}
-			xmlAddChild(trans_element, tmp);
 			curr = curr->next;
 		}
 	}
@@ -91,6 +86,7 @@ enum jal_status jalp_journal_metadata_to_elem(
 
 cleanup:
 	if (jmeta_element) {
+		xmlUnlinkNode(jmeta_element);
 		xmlFreeNode(jmeta_element);
 	}
 	return ret;

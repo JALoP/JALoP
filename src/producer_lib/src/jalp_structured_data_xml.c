@@ -41,24 +41,21 @@
 #define JALP_XML_KEY "Key"
 
 enum jal_status jalp_structured_data_to_elem(const struct jalp_structured_data *sd,
-						xmlDocPtr doc,
+						xmlNodePtr parent,
 						xmlNodePtr *new_elem)
 {
-	if (!sd || !doc || !new_elem || *new_elem) {
+	if (!sd || !parent || !new_elem || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 	if (!sd->sd_id) {
 		return JAL_E_INVAL_STRUCTURED_DATA;
 	}
 	enum jal_status ret;
-	const xmlChar *jal_ns = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
 	const xmlChar *xml_sd_id = (xmlChar *)sd->sd_id;
 
-	xmlNodePtr sd_element = xmlNewDocNode(doc, NULL,
+	xmlNodePtr sd_element = xmlNewChild(parent, NULL,
 					(xmlChar *)JALP_XML_STRUCTURED_DATA, NULL);
 	xmlSetProp(sd_element, (xmlChar *)JALP_XML_SD_ID, xml_sd_id);
-	xmlNsPtr ns = xmlNewNs(sd_element, jal_ns, NULL);
-	xmlSetNs(sd_element, ns);
 	if (sd->param_list) {
 		struct jalp_param *curr = sd->param_list;
 		while (curr) {
@@ -66,14 +63,14 @@ enum jal_status jalp_structured_data_to_elem(const struct jalp_structured_data *
 			ret = jalp_param_to_elem(curr,
 				(xmlChar *)JALP_XML_FIELD,
 				(xmlChar *)JALP_XML_KEY,
-				doc, &tmp);
+				sd_element, &tmp);
 			if (JAL_OK != ret) {
 				return ret;
 			}
-			xmlAddChild(sd_element, tmp);
 			curr = curr->next;
 		}
 	} else {
+		xmlUnlinkNode(sd_element);
 		xmlFreeNode(sd_element);
 		return JAL_E_INVAL_STRUCTURED_DATA;
 	}

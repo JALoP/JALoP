@@ -97,14 +97,14 @@ enum jal_status jal_parse_xml_snippet(
 }
 
 enum jal_status jal_create_base64_element(
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		const uint8_t *buffer,
 		const size_t buf_len,
 		const xmlChar *namespace_uri,
 		const xmlChar *elm_name,
 		xmlNodePtr *new_elem)
 {
-	if (!doc || !buffer || (buf_len == 0) || !namespace_uri ||
+	if (!parent || !buffer || (buf_len == 0) || !namespace_uri ||
 		!elm_name || !new_elem || *new_elem) {
 		return JAL_E_INVAL;
 	}
@@ -120,9 +120,7 @@ enum jal_status jal_create_base64_element(
 
 	xml_base64_val = (xmlChar *)base64_val;
 
-	xmlNodePtr elm = xmlNewDocNode(doc, NULL, elm_name, NULL);
-	xmlNsPtr ns = xmlNewNs(elm, namespace_uri, NULL);
-	xmlSetNs(elm, ns);
+	xmlNodePtr elm = xmlNewChild(parent, NULL, elm_name, NULL);
 	xmlNodeAddContent(elm, xml_base64_val);
 
 	free(base64_val);
@@ -178,16 +176,14 @@ enum jal_status jal_create_reference_elem(
 		xmlSetProp(reference_elem, (xmlChar *) URI, xml_reference_uri);
 	}
 
-	ret = jal_create_base64_element(doc, digest_buf, len, namespace_uri,
+	digestmethod_elem = xmlNewChild(reference_elem, NULL, (xmlChar *) DIGESTMETHOD, NULL);
+	xmlSetProp(digestmethod_elem, (xmlChar *)ALGORITHM, xml_digest_method);
+
+	ret = jal_create_base64_element(reference_elem, digest_buf, len, namespace_uri,
 					(xmlChar *)DIGESTVALUE, &digestvalue_elem);
 	if (ret != JAL_OK) {
 		goto err_out;
 	}
-
-	digestmethod_elem = xmlNewChild(reference_elem, NULL, (xmlChar *) DIGESTMETHOD, NULL);
-	xmlSetProp(digestmethod_elem, (xmlChar *)ALGORITHM, xml_digest_method);
-
-	xmlAddChild(reference_elem, digestvalue_elem);
 
 	*elem = reference_elem;
 

@@ -42,14 +42,14 @@
  * for use with the libxml2 library.
  *
  * @param[in] content_type The jalp_content_type struct to convert.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from. Maintains the same namespace.
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr as a child of. Maintains the same namespace.
  * @param[out] elem A pointer to hold the created xmlNodePtr.
  * @return JAL_OK on success, JAL_E_INVAL if the jalp_content_type struct has issues,
  *   or else JAL_E_XML_CONVERSION on failure.
  */
 enum jal_status jalp_content_type_to_elem(
 		const struct jalp_content_type * content_type,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *elem);
 
 #endif //_JALP_CONTENT_TYPE_XML_H_

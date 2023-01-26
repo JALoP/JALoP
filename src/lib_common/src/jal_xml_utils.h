@@ -61,7 +61,7 @@ enum jal_status jal_parse_xml_snippet(
 /**
  * Helper function to base64 encode a buffer and create a new DOMElement.
  *
- * @param[in] doc The document to use when creating elements.
+ * @param[in] parent The parent node of the new base64 element.
  * @param[in] buffer The byte buffer to base64 encode
  * @param[in] buf_len The length, in bytes, of the buffer
  * @param[in] namespace_uri The URI to use as the namespace of the new element.
@@ -74,7 +74,7 @@ enum jal_status jal_parse_xml_snippet(
  * @return JAL_OK on error, or JAL_E_INVAL
  */
 enum jal_status jal_create_base64_element(
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		const uint8_t *buffer,
 		const size_t buf_len,
 		const xmlChar *namespace_uri,

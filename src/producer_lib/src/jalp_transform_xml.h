@@ -40,7 +40,7 @@
  * for use with the libxml2 library.
  *
  * @param[in] transform The jalp_transform struct to convert.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from. Maintains the same namespace
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr within. Maintains the same namespace
  * @param[out] out A pointer to store the new element in. This will get set
  * to NULL on error, otherwise a newly created element.
  * @return 
@@ -49,7 +49,7 @@
  */
 enum jal_status jalp_transform_to_elem(
 		const struct jalp_transform *transform,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *out);
 /**
  * Helper function to handle adding child elements 'custom' transform types.
@@ -63,14 +63,13 @@ enum jal_status jalp_transform_to_elem(
  * - JAL_E_INVALID_URI If the field is not a valid uri.
  */
 enum jal_status jalp_transform_to_elem_handle_custom(
-		xmlNodePtr *transform_elm,
+		xmlNodePtr transform_elm,
 		const struct jalp_transform_other_info *other_info);
 /**
  * Helper function to add elements to a transform for the XOR transform. The
  * URI attribute of \ptransform_elm will be set to the URI for XOR and a child
  * element that contains the XOR key will be appended.
- * @param[in] doc The document to use when creating elements.
- * @param[in,out] transform_elm The transform element to add to for an XOR
+ * @param[in,out] parent The transform element to add to for an XOR
  * transform.
  * @param[in] namespace_uri The URI to use as the namespace of the new element.
  * @param[in] enc_info An enc_info structure that must contain a key, but no
@@ -82,14 +81,12 @@ enum jal_status jalp_transform_to_elem_handle_custom(
  *
  */
 enum jal_status jalp_transform_to_elem_handle_xor(
-		xmlDocPtr doc,
-		xmlNodePtr *transform_elm,
+		xmlNodePtr parent,
 		const xmlChar *namespace_uri,
 		const struct jalp_transform_encryption_info *enc_info);
 /**
  * Helper function to add elements to a transform for the XOR stransform.
- * @param[in] doc The document to use when creating elements.
- * @param[in,out] transform_elm The xmlNodePtr to add to.
+ * @param[in,out] parent The xmlNodePtr to add to.
  * @param[in] namespace_uri The URI to use as the namespace of the new element.
  * @param[in] elm_name The name that should be given to the new element.
  * @param[in] algorithm The algorithm to set as the Algorithm attribute.
@@ -100,8 +97,7 @@ enum jal_status jalp_transform_to_elem_handle_xor(
  *                     element will be added to the \ptransform_elm.
  */
 enum jal_status jalp_transform_to_elem_handle_aes(
-		xmlDocPtr doc,
-		xmlNodePtr *transform_elm,
+		xmlNodePtr parent,
 		const xmlChar *namespace_uri,
 		const xmlChar *elm_name,
 		const xmlChar *algorithm,

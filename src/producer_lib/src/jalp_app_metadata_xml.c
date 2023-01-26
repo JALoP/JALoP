@@ -69,12 +69,16 @@ enum jal_status jalp_app_metadata_to_elem(
 	xmlChar *xml_jid;
 
 
-	xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-
 	xmlNodePtr app_meta_elem = xmlNewDocNode(doc, NULL,
 					(xmlChar *)APPLICATIONMETADATA, NULL);
-	xmlNsPtr ns = xmlNewNs(app_meta_elem, namespace_uri, NULL);
-	xmlSetNs(app_meta_elem, ns);
+
+	xmlNsPtr jamtns = xmlNewNs(app_meta_elem,
+		(xmlChar*)JAL_APP_META_TYPES_NAMESPACE_URI,
+		(xmlChar*)JAL_APP_META_TYPES_NAMESPACE_PREFIX);
+
+	// Initially set jamt: as the namespace prefix so that child elements
+	// correctly inherit
+	xmlSetNs(app_meta_elem, jamtns);
 
 	if (app_meta->event_id) {
 		xmlNewChild(app_meta_elem, NULL,
@@ -89,18 +93,16 @@ enum jal_status jalp_app_metadata_to_elem(
 	switch(app_meta->type) {
 
 		case(JALP_METADATA_SYSLOG):
-			ret = jalp_syslog_metadata_to_elem(app_meta->sys, ctx, doc, &syslog_elem);
+			ret = jalp_syslog_metadata_to_elem(app_meta->sys, ctx, app_meta_elem, &syslog_elem);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}
-			xmlAddChild(app_meta_elem, syslog_elem);
 			break;
 		case(JALP_METADATA_LOGGER):
-			ret = jalp_logger_metadata_to_elem(app_meta->log, ctx, doc, &logger_elem);
+			ret = jalp_logger_metadata_to_elem(app_meta->log, ctx, app_meta_elem, &logger_elem);
 			if (ret != JAL_OK) {
 				goto err_out;
 			}
-			xmlAddChild(app_meta_elem, logger_elem);
 			break;
 		case(JALP_METADATA_CUSTOM):
 			custom_elem = xmlNewChild(
@@ -126,11 +128,10 @@ enum jal_status jalp_app_metadata_to_elem(
 
 	if (app_meta->file_metadata) {
 		xmlNodePtr journal_metadata_elem = NULL;
-		ret = jalp_journal_metadata_to_elem(app_meta->file_metadata, doc, &journal_metadata_elem);
+		ret = jalp_journal_metadata_to_elem(app_meta->file_metadata, app_meta_elem, &journal_metadata_elem);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}
-		xmlAddChild(app_meta_elem, journal_metadata_elem);
 	}
 
 
@@ -149,6 +150,15 @@ enum jal_status jalp_app_metadata_to_elem(
 	xmlAddID(NULL, doc, (xmlChar *)xml_jid, attr);
 	free(ncname_jid);
 
+	// Now that all child nodes have been created, apply the jam: namespace prefix
+	// to just the top-level applicationMetadata node
+	xmlNsPtr jamns = xmlNewNs(app_meta_elem,
+		(xmlChar*)JAL_APP_META_NAMESPACE_URI,
+		(xmlChar*)JAL_APP_META_NAMESPACE_PREFIX);
+
+	// Initially set jamt: as the namespace prefix so that child elements
+	// correctly inherit
+	xmlSetNs(app_meta_elem, jamns);
 	*elem = app_meta_elem;
 
 	return JAL_OK;

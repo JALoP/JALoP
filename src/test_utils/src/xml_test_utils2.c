@@ -83,7 +83,11 @@ int validate(xmlDocPtr doc, const char *document_name, const char *schema_str, i
 		fprintf(stdout, "loaded schema: %s\n", schema_str);
 	}
 
-	if (xmlSchemaValidateDoc(valid_ctx, doc)) {
+	int err = xmlSchemaValidateDoc(valid_ctx, doc);
+	if(err) {
+		if(debug) {
+			fprintf(stderr, "failed to validate against schema with error code: %d\n", err);
+		}
 		goto out;
 	}
 

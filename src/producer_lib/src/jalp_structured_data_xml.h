@@ -39,15 +39,14 @@
  * for use with the libxml2 library.
  *
  * @param[in] sd The jalp_structured_data struct to convert.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from.
- * Maintains the same namespace.
+ * @param[in] parent The xmlNodePtr to create the new xmlNodePtr as a child of.
  * @param[out] new_elem The xmlNodePtr that holds the created element.
  *
  * @return JAL_OK on success, JAL_E_INVAL_* for any invalid structures
  * received, and JAL_E_XML_CONVERSION otherwise.
  */
 enum jal_status jalp_structured_data_to_elem(const struct jalp_structured_data *sd,
-						xmlDocPtr doc,
+						xmlNodePtr parent,
 						xmlNodePtr *new_elem);
 
 #endif //_JALP_STRUCTURED_DATA_XML_H_

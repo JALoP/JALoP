@@ -41,7 +41,7 @@
  * @param[in] param The jalp_param struct to convert.
  * @param[in] elem_name The name of the created element.
  * @param[in] attr_name The attribute name of the created element.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from. Maintains the same namespace.
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr as a child of. Maintains the same namespace.
  * @param[out] elem The xmlNodePtr that holds the newly created element.
  * 
  * @return JAL_OK on success, JAL_E_INVAL_PARAM if the param's key is not defined, and 
@@ -50,7 +50,7 @@
 enum jal_status jalp_param_to_elem(const struct jalp_param *param,
 				const xmlChar *elem_name,
 				const xmlChar *attr_name,
-				xmlDocPtr doc,
+				xmlNodePtr parent,
 				xmlNodePtr *elem);
 
 #endif //_JALP_PARAM_XML_H_

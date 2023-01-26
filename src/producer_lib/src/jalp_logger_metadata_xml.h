@@ -43,7 +43,7 @@
  *
  * @param[in] logmeta The jalp_logger_metadata struct to convert.
  * @param[in] ctx The JALP context.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from.
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr as a child of.
  * Maintains the same namespace.
  * @param[out] new_elem The xmlNodePtr that holds the new element.
  * 
@@ -53,7 +53,7 @@
 enum jal_status jalp_logger_metadata_to_elem(
 		const struct jalp_logger_metadata *logmeta,
 		const struct jalp_context_t *ctx,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem);
 
 

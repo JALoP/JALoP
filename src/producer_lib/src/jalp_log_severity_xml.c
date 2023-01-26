@@ -40,25 +40,22 @@
 
 enum jal_status jalp_log_severity_to_elem(
 		const struct jalp_log_severity * severity,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *elem)
 {
 
 	/* null checks on args */
-	if((!doc) || (!severity) || !elem || (*elem)) {
+	if((!parent) || (!severity) || !elem || (*elem)) {
 		return JAL_E_XML_CONVERSION;
 	}
 
-	const xmlChar *jal_ns = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
 	char *level_val_str;
 	jal_asprintf(&level_val_str, "%d", severity->level_val);
 	const xmlChar *xml_level_val = (xmlChar *) level_val_str;
 
 	/* Create the severity Element/Node */
-	xmlNodePtr severity_elt = xmlNewDocNode(doc, NULL,
+	xmlNodePtr severity_elt = xmlNewChild(parent, NULL,
 						(xmlChar *)JALP_XML_SEVERITY, NULL);
-	xmlNsPtr ns = xmlNewNs(severity_elt, jal_ns, NULL);
-	xmlSetNs(severity_elt, ns);
 
 	/* add the level_str field to the severity Element/Node */
 	if (severity->level_str) {

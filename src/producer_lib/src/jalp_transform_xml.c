@@ -53,34 +53,32 @@
 
 enum jal_status jalp_transform_to_elem(
 		const struct jalp_transform *transform,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *out)
 {
 	enum jal_status ret = JAL_E_INVAL_TRANSFORM;
 	/* null checks on args */
-	if(!doc || !transform || !out || *out) {
+	if(!parent || !transform || !out || *out) {
 		return JAL_E_XML_CONVERSION;
 	}
 
 	*out = NULL;
 	xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr transform_elm = xmlNewDocNode(doc, NULL,
+	xmlNodePtr transform_elm = xmlNewChild(parent, NULL,
 						(xmlChar *)JALP_XML_TRANSFORM,
 						NULL);
-	xmlNsPtr ns = xmlNewNs(transform_elm, namespace_uri, NULL);
-	xmlSetNs(transform_elm, ns);
 
 	switch (transform->type) {
 	case JALP_TRANSFORM_OTHER:
-		ret = jalp_transform_to_elem_handle_custom(&transform_elm,
+		ret = jalp_transform_to_elem_handle_custom(transform_elm,
 					transform->other_info);
 		if (ret != JAL_OK) {
 			goto error_out;
 		}
 		break;
 	case JALP_TRANSFORM_XOR:
-		ret = jalp_transform_to_elem_handle_xor(doc,
-					&transform_elm,
+		ret = jalp_transform_to_elem_handle_xor(
+					transform_elm,
 					namespace_uri,
 					transform->enc_info);
 		if (ret != JAL_OK) {
@@ -88,8 +86,8 @@ enum jal_status jalp_transform_to_elem(
 		}
 		break;
 	case JALP_TRANSFORM_AES128:
-		ret = jalp_transform_to_elem_handle_aes(doc,
-				&transform_elm,
+		ret = jalp_transform_to_elem_handle_aes(
+				transform_elm,
 				namespace_uri,
 				(xmlChar *)JALP_XML_AES128,
 				(xmlChar *)JALP_XML_AES128_URI,
@@ -100,8 +98,8 @@ enum jal_status jalp_transform_to_elem(
 		}
 		break;
 	case JALP_TRANSFORM_AES192:
-		ret = jalp_transform_to_elem_handle_aes(doc,
-				&transform_elm,
+		ret = jalp_transform_to_elem_handle_aes(
+				transform_elm,
 				namespace_uri,
 				(xmlChar *)JALP_XML_AES192,
 				(xmlChar *)JALP_XML_AES192_URI,
@@ -112,8 +110,8 @@ enum jal_status jalp_transform_to_elem(
 		}
 		break;
 	case JALP_TRANSFORM_AES256:
-		ret = jalp_transform_to_elem_handle_aes(doc,
-				&transform_elm,
+		ret = jalp_transform_to_elem_handle_aes(
+				transform_elm,
 				namespace_uri,
 				(xmlChar *)JALP_XML_AES256,
 				(xmlChar *)JALP_XML_AES256_URI,
@@ -135,6 +133,7 @@ enum jal_status jalp_transform_to_elem(
 
 error_out:
 	if (transform_elm) {
+		xmlUnlinkNode(transform_elm);
 		xmlFreeNode(transform_elm);
 	}
 	transform_elm = NULL;
@@ -144,7 +143,7 @@ out:
 }
 
 enum jal_status jalp_transform_to_elem_handle_custom(
-		xmlNodePtr *transform_elm,
+		xmlNodePtr transform_elm,
 		const struct jalp_transform_other_info *other_info)
 {
 	xmlChar *xml_algorithm = NULL;
@@ -158,20 +157,19 @@ enum jal_status jalp_transform_to_elem_handle_custom(
 		ret = JAL_E_INVAL_URI;
 		goto out;
 	}
-	xmlSetProp(*transform_elm, (xmlChar *)JALP_XML_ALGORITHM, xml_algorithm);
+	xmlSetProp(transform_elm, (xmlChar *)JALP_XML_ALGORITHM, xml_algorithm);
 
 	xmlNodePtr child_elm = NULL;
 	if (other_info->xml) {
 		ret = jal_parse_xml_snippet(&child_elm, other_info->xml);
-		xmlAddChild(*transform_elm, child_elm);
+		xmlAddChild(transform_elm, child_elm);
 	}
 out:
 	return ret;
 }
 
 enum jal_status jalp_transform_to_elem_handle_xor(
-		xmlDocPtr doc,
-		xmlNodePtr *transform_elm,
+		xmlNodePtr parent,
 		const xmlChar *namespace_uri,
 		const struct jalp_transform_encryption_info *enc_info)
 {
@@ -183,7 +181,12 @@ enum jal_status jalp_transform_to_elem_handle_xor(
 		ret = JAL_E_INVAL_TRANSFORM;
 		goto error_out;
 	}
-	ret = jal_create_base64_element(doc,
+
+	xmlSetProp(parent, (xmlChar *)JALP_XML_ALGORITHM, (xmlChar *)JALP_XML_XOR_URI);
+
+	xor_elm = xmlNewChild(parent, NULL, (xmlChar *)JALP_XML_XOR, NULL);
+
+	ret = jal_create_base64_element(xor_elm,
 			enc_info->key,
 			JALP_TRANSFORM_XOR_KEYSIZE,
 			namespace_uri,
@@ -194,16 +197,13 @@ enum jal_status jalp_transform_to_elem_handle_xor(
 		goto error_out;
 	}
 
-	xmlSetProp(*transform_elm, (xmlChar *)JALP_XML_ALGORITHM, (xmlChar *)JALP_XML_XOR_URI);
-
-	xor_elm = xmlNewChild(*transform_elm, NULL, (xmlChar *)JALP_XML_XOR, NULL);
-	xmlAddChild(xor_elm, key_elm);
-
 	goto out;
 error_out:
 	if (xor_elm) {
+		xmlUnlinkNode(xor_elm);
 		xmlFreeNode(xor_elm);
 	} else if (key_elm) {
+		xmlUnlinkNode(key_elm);
 		xmlFreeNode(key_elm);
 	}
 
@@ -212,8 +212,7 @@ out:
 }
 
 enum jal_status jalp_transform_to_elem_handle_aes(
-		xmlDocPtr doc,
-		xmlNodePtr *transform_elm,
+		xmlNodePtr parent,
 		const xmlChar *namespace_uri,
 		const xmlChar *elm_name,
 		const xmlChar *algorithm,
@@ -224,9 +223,18 @@ enum jal_status jalp_transform_to_elem_handle_aes(
 	xmlNodePtr key_elm = NULL;
 	xmlNodePtr iv_elm = NULL;
 	xmlNodePtr aes_elm = NULL;
+
+	// Create top-level AES element
+	aes_elm = xmlNewChild(
+			parent,
+			NULL,
+			elm_name,
+			NULL);
+
+	// populate with key/value nodes, if applicable
 	if (enc_info) {
 		if (enc_info->key) {
-			ret = jal_create_base64_element(doc,
+			ret = jal_create_base64_element(aes_elm,
 					enc_info->key,
 					key_size,
 					namespace_uri,
@@ -238,7 +246,7 @@ enum jal_status jalp_transform_to_elem_handle_aes(
 			}
 		}
 		if (enc_info->iv) {
-			ret = jal_create_base64_element(doc,
+			ret = jal_create_base64_element(aes_elm,
 					enc_info->iv,
 					JALP_TRANSFORM_AES_IVSIZE,
 					namespace_uri,
@@ -250,29 +258,21 @@ enum jal_status jalp_transform_to_elem_handle_aes(
 			}
 		}
 	}
-	aes_elm = xmlNewChild(
-			*transform_elm,
-			NULL,
-			elm_name,
-			NULL);
 
-	if (key_elm) {
-		xmlAddChild(aes_elm, key_elm);
-	}
-	if (iv_elm) {
-		xmlAddChild(aes_elm, iv_elm);
-	}
-	xmlSetProp(*transform_elm, (xmlChar *)JALP_XML_ALGORITHM, algorithm);
+	xmlSetProp(parent, (xmlChar *)JALP_XML_ALGORITHM, algorithm);
 	goto out;
 
 error_out:
 	if (aes_elm) {
+		xmlUnlinkNode(aes_elm);
 		xmlFreeNode(aes_elm);
 	} else {
 		if (iv_elm) {
+			xmlUnlinkNode(iv_elm);
 			xmlFreeNode(iv_elm);
 		}
 		if (key_elm) {
+			xmlUnlinkNode(key_elm);
 			xmlFreeNode(key_elm);
 		}
 	}

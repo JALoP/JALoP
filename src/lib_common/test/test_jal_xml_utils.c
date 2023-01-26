@@ -181,6 +181,8 @@ void teardown()
 
 void test_jal_create_base64_element_returns_null_with_null_inputs()
 {
+	xmlNodePtr parent = xmlNewDocNode(doc, NULL, (xmlChar *)"TestParent", NULL);
+
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
@@ -188,38 +190,40 @@ void test_jal_create_base64_element_returns_null_with_null_inputs()
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, 0, namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, 0, namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 }
 
 void test_jal_create_base64_element_fails_does_not_overwrite_existing_elm_pointer()
 {
+	xmlNodePtr parent = xmlNewDocNode(doc, NULL, (xmlChar *)"TestParent", NULL);
+
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr orig = new_elem;
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals(orig, new_elem);
 	xmlFreeNodeList(new_elem);
@@ -227,17 +231,30 @@ void test_jal_create_base64_element_fails_does_not_overwrite_existing_elm_pointe
 
 void test_jal_create_base64_element_works_with_normal_value()
 {
+	// Initialize a document and a parent node the same way the code does to ensure
+	// namespaces are correctly inherited
+	xmlDocPtr local_doc =  xmlNewDoc((xmlChar *)"1.0");
+	xmlNodePtr parent = xmlNewDocNode(local_doc, NULL, (xmlChar *)"TestParent", NULL);
+
+	xmlNsPtr jamtns = xmlNewNs(parent,
+		(xmlChar*)JAL_APP_META_TYPES_NAMESPACE_URI,
+		(xmlChar*)JAL_APP_META_TYPES_NAMESPACE_PREFIX);
+
+	// Initially set jamt: as the namespace prefix so that child elements
+	// correctly inherit
+	xmlSetNs(parent, jamtns);
+
 	// <SomeTag>YXNkZg==</SomeTag>
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals(TAG, new_elem);
 	assert_content_equals(base64_string, new_elem);
 	assert_namespace_equals(JAL_APP_META_TYPES_NAMESPACE_URI, new_elem);
-	xmlFreeNodeList(new_elem);
+	xmlFreeDoc(local_doc);
 }
 
 void test_jal_create_reference_elem_returns_null_with_null_inputs()

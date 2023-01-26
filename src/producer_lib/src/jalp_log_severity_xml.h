@@ -39,13 +39,13 @@
  * for use with the libxml2 library.
  *
  * @param[in] severity The jalp_log_severity struct to convert.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from. Maintains the same namespace
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr as a child of. Maintains the same namespace
  * @param[out] elem The xmlNodePtr that holds the newly created element.
  * @return JAL_OK on success, JAL_E_XML_CONVERSION otherwise
  */
 enum jal_status jalp_log_severity_to_elem(
 		const struct jalp_log_severity * severity,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *elem);
 
 #endif //_JALP_LOG_SEVERITY_XML_H_

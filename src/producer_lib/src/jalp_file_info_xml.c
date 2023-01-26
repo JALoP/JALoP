@@ -47,10 +47,10 @@
 
 enum jal_status jalp_file_info_to_elem(
 		const struct jalp_file_info * file_info,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *elem)
 {
-	if (!file_info || !doc || !elem || *elem) {
+	if (!file_info || !parent || !elem || *elem) {
 		return JAL_E_XML_CONVERSION;
 	}
 
@@ -62,23 +62,19 @@ enum jal_status jalp_file_info_to_elem(
 	xmlChar *xml_size;
 	xmlChar *xml_file_name;
 
-	xmlChar *jal_ns = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr file_info_elt = xmlNewDocNode(doc, NULL,
+	xmlNodePtr file_info_elt = xmlNewChild(parent, NULL,
 					(xmlChar *)JALP_XML_FILE_INFO,
 					NULL);
-	xmlNsPtr ns = xmlNewNs(file_info_elt, jal_ns, NULL);
-	xmlSetNs(file_info_elt, ns);
 
 	enum jal_status ret = JAL_OK;
 
 	/* append the content type element */
 	if (file_info->content_type) {
 		xmlNodePtr content_type_elt = NULL;
-		ret = jalp_content_type_to_elem(file_info->content_type, doc, &content_type_elt);
+		ret = jalp_content_type_to_elem(file_info->content_type, file_info_elt, &content_type_elt);
 		if (ret != JAL_OK) {
 			goto err_out;
 		}
-		xmlAddChild(file_info_elt, content_type_elt);
 	}
 
 	/* add file name attribute */
