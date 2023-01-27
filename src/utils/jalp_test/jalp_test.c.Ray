@@ -33,12 +33,11 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <limits.h>
-#include <libxml/tree.h>
-#include <libxml/parser.h>
 
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
@@ -54,8 +53,8 @@
 #define JALP_TEST_DEFEAULT_NUM_REPEAT (long) 1
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt, int *validate_xml);
-
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path,
+       	char **schema_path, long int *repeat_cnt, long int *rjw_seq, long int *rjw_seq_limit, bool *rjw_reuse_socket);
 
 static void print_usage();
 
@@ -69,6 +68,136 @@ static void print_error(enum jal_status error);
 
 static const size_t BUF_SIZE = 8192;
 
+static void send_record(int record_type,
+		const char *record_type_name,
+		bool rjw_reuse_socket,
+		struct jalp_app_metadata *app_meta,
+		char *socket_path,
+		char *schema_path,
+		char *hostname,
+		char *appname,
+		char *record_status_msg,
+		jalp_context *ctx,
+		size_t payload_size,
+		uint8_t *payload_buf)
+{
+	struct stat st;
+	enum jal_status jalp_ret;
+	/* Stay in the following loop until the record has been successfully
+	 * sent.
+	 */
+	fprintf(stderr, "rjw: at start of send_record().\n");
+	for (long int send_attempt=1;;send_attempt++) {
+		fprintf(stderr, "rjw: send_attempt:%d\n", send_attempt);
+		if (ctx == NULL) {
+			ctx = jalp_context_create();
+
+			jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
+			if (jalp_ret != JAL_OK) {
+				fprintf(stderr, "jalp_context_init failed; loop:%ld; %s.\n", send_attempt, record_status_msg);
+				sleep (1);
+				continue; // go back and try again
+			}
+		}
+		switch(record_type) {
+		case ('a'):
+			jalp_ret = jalp_audit(ctx, app_meta, payload_buf, payload_size);
+			fprintf(stderr, "rjw: back from jalp_audit()\n");
+			break;
+		case ('l'):
+			jalp_ret = jalp_log(ctx, app_meta, payload_buf, payload_size);
+			break;
+		default:
+			fprintf(stderr, "Invalid record type in send_record()\n");
+			exit(1);
+		}
+		
+		/* If a the socket connection is not to be reused, close the
+		 * connection now.
+		 */
+
+		if (!rjw_reuse_socket) {
+			if (ctx != NULL) {
+				//fprintf(stderr, "rjw: about to jalp_context_destroy()\n");
+				//jalp_context_destroy(&ctx); //rjw debug
+				//fprintf(stderr, "rjw: returned from jalp_context_destroy()\n");
+				ctx = NULL;
+			}
+		} 
+
+		if (jalp_ret == JAL_OK) {
+			return;
+		}
+		fprintf(stderr, "jalp_%s failed; loop:%ld; %s; ", record_type_name, send_attempt, record_status_msg);
+		print_error(jalp_ret);
+		/* Reached this point since attempt to write the record failed.
+		 * Disconnect from the socket so new connection will be
+		 * attempted next time through the loop. Pause for one second
+		 * before going back to beginning of the loop.
+		 */
+
+		if (ctx != NULL) {
+			jalp_context_destroy(&ctx);
+			ctx = NULL;
+		}
+		sleep(1);
+	} // for (long int send_attempt=1;;send_attempt++) Stay in loop and try again
+}
+
+static void send_seq(int record_type,
+		long int rjw_seq,
+		bool rjw_reuse_socket,
+		struct jalp_app_metadata *app_meta,
+		long int rjw_seq_limit,
+		jalp_context *ctx,
+		size_t payload_size,
+		char *socket_path,
+		char *schema_path,
+		char *hostname,
+		char *appname,
+		uint8_t *payload_buf)
+{
+	payload_buf = malloc(100);
+	char record_status_msg[100];
+	// in mode for sequential numbers
+	const char *record_type_name = NULL;
+	switch(record_type) {
+	case ('a'):
+		record_type_name = "audit";
+		break;
+	case ('l'):
+		record_type_name = "log";
+		break;
+	}
+	for (long int i=rjw_seq; i <= rjw_seq_limit; i++) {
+		if (ctx != NULL) {
+			jalp_context_destroy(&ctx); //rjw debug
+		}
+		ctx = jalp_context_create();
+		// struct jal_digest_ctx *digest_ctx = NULL;
+		/* jalp_ret = */ jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
+		sprintf((char *)payload_buf, "%ld\n", i);
+		payload_size = strlen((char *)payload_buf);
+		// Now stay in loop until successful return
+		snprintf(record_status_msg, sizeof(record_status_msg),
+			       	"sequence#:%ld", i);
+
+		send_record(record_type,
+			record_type_name,
+			rjw_reuse_socket,
+			app_meta,
+			socket_path,
+			schema_path,
+			hostname,
+			appname,
+			record_status_msg,
+			ctx,
+			payload_size,
+			payload_buf);
+	}
+	free(payload_buf);
+}
+
 int main(int argc, char **argv)
 {
 	char *app_meta_path = NULL;
@@ -77,14 +206,18 @@ int main(int argc, char **argv)
 	char *cert_path = NULL;
 	int stdin_payload = 0;
 	int calculate_sha = 0;
-	int validate_xml = 0;
 	char record_type = 0;
 	char *schema_path = NULL;
 	char *socket_path = NULL;
+	long int rjw_seq = 0;
+	long int rjw_seq_limit = 0;
+	bool rjw_reuse_socket = false;
 	long int repeat_cnt = JALP_TEST_DEFEAULT_NUM_REPEAT;
 
+	fprintf(stderr, "rjw entry\n");
 	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path,
-		&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path, &repeat_cnt, &validate_xml);
+			&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path,
+		       	&repeat_cnt, &rjw_seq, &rjw_seq_limit, &rjw_reuse_socket);
 
 	struct jalp_app_metadata *app_meta = NULL;
 	uint8_t *payload_buf = NULL;
@@ -98,9 +231,6 @@ int main(int argc, char **argv)
 
 	char *hostname = NULL;
 	char *appname = NULL;
-
-	jalp_context *ctx = NULL;
-	struct jal_digest_ctx *digest_ctx = NULL;
 
 	jalp_ret = jalp_init();
 	if (jalp_ret != JAL_OK) {
@@ -122,51 +252,50 @@ int main(int argc, char **argv)
 		printf("file open error\n");
 		goto err_out;
 	}
-
-	ctx = jalp_context_create();
-	jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
-	if (jalp_ret != JAL_OK) {
-		printf("error creating jalp context\n");
-		goto err_out;
-	}
-
-	if(validate_xml != 0) {
-		jalp_context_set_flag(ctx, JAF_VALIDATE_XML);
-	}
-
-	if (key_path) {
-		jalp_ret = jalp_context_load_pem_rsa(ctx, key_path, NULL);
-		if (jalp_ret != JAL_OK) {
-			printf("error loading key from path: %s\n", key_path);
-			goto err_out;
-		}
-	}
-
-	if (cert_path) {
-		jalp_ret = jalp_context_load_pem_cert(ctx, cert_path);
-		if (jalp_ret != JAL_OK) {
-			printf("error loading cert from path: %s\n", cert_path);
-			goto err_out;
-		}
-	}
-
-	if(calculate_sha) {
-		digest_ctx = jal_sha256_ctx_create();
-		jalp_ret = jalp_context_set_digest_callbacks(ctx, digest_ctx);
-		if (jalp_ret != JAL_OK) {
-			printf("error setting digest callbacks\n");
-			goto err_out;
-		}
-	}
+	jalp_context *ctx = NULL;
+	struct jal_digest_ctx *digest_ctx = NULL;
 
 	for(long int cnt = 0; cnt < repeat_cnt; cnt++) {
+		fprintf(stderr, "rjw: Loop count: %d\n", cnt);
+		if (ctx != NULL) {
+			jalp_context_destroy(&ctx); //rjw debug
+		}
+		ctx = jalp_context_create();
+		// struct jal_digest_ctx *digest_ctx = NULL;
+		jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
+		if (jalp_ret != JAL_OK) {
+			goto err_out;
+		}
+
+		if (key_path) {
+			jalp_ret = jalp_context_load_pem_rsa(ctx, key_path, NULL);
+			if (jalp_ret != JAL_OK) {
+				goto err_out;
+			}
+		}
+
+		if (cert_path) {
+			jalp_ret = jalp_context_load_pem_cert(ctx, cert_path);
+			if (jalp_ret != JAL_OK) {
+				goto err_out;
+			}
+		}
+		digest_ctx = NULL;
+
+		if(calculate_sha) {
+			digest_ctx = jal_sha256_ctx_create();
+			jalp_ret = jalp_context_set_digest_callbacks(ctx, digest_ctx);
+			if (jalp_ret != JAL_OK) {
+				goto err_out;
+			}
+		}
+
 		switch(record_type) {
 		case ('j'):
 			if (send_payload && cnt == 0) {
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
 			}
 			if (ret != 0) {
-				printf("error building payload\n");
 				goto err_out;
 			}
 			jalp_ret = jalp_journal(ctx, app_meta, payload_buf, payload_size);
@@ -177,34 +306,65 @@ int main(int argc, char **argv)
 			}
 			break;
 		case ('a'):
-			if (send_payload && cnt == 0) {
-				ret = build_payload(payload_fd, &payload_buf, &payload_size);
+			if (rjw_seq_limit > 0) {
+				send_seq(record_type,
+					rjw_seq,
+					rjw_reuse_socket,
+					app_meta,
+					rjw_seq_limit,
+					ctx,
+					payload_size,
+					socket_path,
+					schema_path,
+					hostname,
+					appname,
+					payload_buf);
+			} else {
+				if (send_payload && cnt == 0) {
+					ret = build_payload(payload_fd, &payload_buf, &payload_size);
+				}
+				if (ret != 0) {
+					goto err_out;
+				}
+				jalp_ret = jalp_audit(ctx, app_meta, payload_buf, payload_size);
+				if (jalp_ret != JAL_OK) {
+					printf("jalp_audit failed %d\n", jalp_ret);
+					print_error(jalp_ret);
+					goto err_out;
+				}
 			}
-			if (ret != 0) {
-				printf("error building payload\n");
-				goto err_out;
-			}
-			jalp_ret = jalp_audit(ctx, app_meta, payload_buf, payload_size);
-			if (jalp_ret != JAL_OK) {
-				printf("jalp_audit failed %d\n", jalp_ret);
-				print_error(jalp_ret);
-				goto err_out;
-			}
+			fprintf(stderr, "rjw: Reached end of 'a' case.\n");
 			break;
 		case ('l'):
-			if (send_payload && cnt == 0) {
-				ret = build_payload(payload_fd, &payload_buf, &payload_size);
+			//fprintf(stderr, "rjw l\n");
+			if (rjw_seq_limit > 0) {
+				send_seq(record_type,
+					rjw_seq,
+					rjw_reuse_socket,
+					app_meta,
+					rjw_seq_limit,
+					ctx,
+					payload_size,
+					socket_path,
+					schema_path,
+					hostname,
+					appname,
+					payload_buf);
+			} else {
+				if (send_payload && cnt == 0) {
+					ret = build_payload(payload_fd, &payload_buf, &payload_size);
+				}
+				if (ret != 0) {
+					goto err_out;
+				}
+				jalp_ret = jalp_log(ctx, app_meta, payload_buf, payload_size);
+				if (jalp_ret != JAL_OK) {
+					printf("jalp_log failed %d\n", jalp_ret);
+					print_error(jalp_ret);
+					goto err_out;
+				}
 			}
-			if (ret != 0) {
-				printf("error building payload\n");
-				goto err_out;
-			}
-			jalp_ret = jalp_log(ctx, app_meta, payload_buf, payload_size);
-			if (jalp_ret != JAL_OK) {
-				printf("jalp_log failed %d\n", jalp_ret);
-				print_error(jalp_ret);
-				goto err_out;
-			}
+			fprintf(stderr, "rjw: Reached end of 'l' case.\n");
 			break;
 		case ('f'):
 			jalp_ret = jalp_journal_fd(ctx, app_meta, payload_fd);
@@ -228,13 +388,12 @@ err_out:
 	}
 	jalp_app_metadata_destroy(&app_meta);
 	jalp_context_destroy(&ctx);
+	ctx = NULL;
 	jal_digest_ctx_destroy(&digest_ctx);
 	jalp_shutdown();
 	free(hostname);
 	free(app_meta_path);
 	free(appname);
-	free(socket_path);
-	free(payload_path);
 
 	if(payload_fd != STDIN_FILENO) {
 		close(payload_fd);
@@ -244,26 +403,13 @@ err_out:
 }
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, 
-	char **schema_path, long int *repeat_cnt, int *validate_xml)
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt,
+		long int *rjw_seq, long int *rjw_seq_limit, bool *rjw_reuse_socket)
 {
-	static const char *optstring = "a:p:st:hj:k:c:dx:n:vV";
-	static const struct option long_options[] = { 
-		{"type", 1, 0, 't'}, 
-		{"version", 0, 0, 'v'}, 
-		{"appmeta", 1, 0, 'a'}, 
-		{"payload", 1, 0, 'p'}, 
-		{"stdin", 0, 0, 's'}, 
-		{"socket", 1, 0, 'j'}, 
-		{"key", 1, 0, 'k'}, 
-		{"cert", 1, 0, 'c'}, 
-		{"digest", 0, 0, 'd'}, 
-		{"schemas", 1, 0, 'x'}, 
-		{"count", 1, 0, 'n'}, 
-		{"help", 0, 0, 'h'}, 
-		{"validate", 0, 0, 'V'}, 
-		{NULL, 0, 0, 0} 
-	};
+	static const char *optstring = "a:p:st:hj:k:c:dx:n:q:u:v:r";
+	static const struct option long_options[] = { {"type", 1, 0, 't'}, {"version", 0, 0, 'v'}, {NULL, 0, 0, 0} };
+	char *end_ptr = NULL; 
+	long int tmp_cnt = 0;
 
 	int ret_opt;
 
@@ -311,8 +457,8 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 				break;
 			case 'n':
 				errno = 0;
-				char *end_ptr = NULL; 
-				long int tmp_cnt = strtol(optarg, &end_ptr, 10);
+				end_ptr = NULL; 
+				tmp_cnt = strtol(optarg, &end_ptr, 10);
 
 				if(tmp_cnt && (LONG_MAX != tmp_cnt || ERANGE != errno) 
 					&& '\0' == *end_ptr) {
@@ -321,15 +467,36 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 					goto err_usage;
 				}
 				break;
+			case 'q':
+				errno = 0;
+				end_ptr = NULL; 
+				tmp_cnt = strtol(optarg, &end_ptr, 10);
+
+				if(tmp_cnt && (LONG_MAX != tmp_cnt || ERANGE != errno) 
+					&& '\0' == *end_ptr) {
+					*rjw_seq = tmp_cnt;
+				} else {
+					goto err_usage;
+				}
+				break;
+			case 'u':
+				errno = 0;
+				end_ptr = NULL; 
+				tmp_cnt = strtol(optarg, &end_ptr, 10);
+
+				if(tmp_cnt && (LONG_MAX != tmp_cnt || ERANGE != errno) 
+					&& '\0' == *end_ptr) {
+					*rjw_seq_limit = tmp_cnt;
+				} else {
+					goto err_usage;
+				}
+				break;
+			case 'r':
+				*rjw_reuse_socket = true;
+				break;
 			case 'v':
 				printf("%s\n", jal_version_as_string());
 				goto version_out;
-				break;
-			case 'V':
-				if(optarg) {
-					goto err_usage;
-				}
-				*validate_xml = 1;
 				break;
 			case ':':
 			case '?':
@@ -368,17 +535,6 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 		printf("Error: bad usage, the number of times to perform an event must be a positive number.\n");
 		goto err_usage;
 	}
-	if (!(*app_meta_path) && ((*validate_xml) || (*calculate_sha))) {
-		printf("Error: bad usage, must specify an app metadata path to validate XML or calculate a sha\n");
-		goto err_usage;
-	}
-	if (*app_meta_path && *calculate_sha) {
-		xmlDocPtr dp = xmlReadFile(*payload_path, NULL, 0);
-		if(dp == NULL) {
-			printf("Error: The payload must be valid XML to calculate and add SHA256 digest\n");
-			exit(-1);
-		}
-	}
 	return;
 
 
@@ -407,21 +563,24 @@ static void print_usage()
 {
 	static const char *usage =
 	"Usage:\n\
-	-a, --appmeta 	(optional) the full, or relative path to a file to use for generating the application metadata.\n\
-	-p, --payload	The full or relative path to a file that should be used as the payload for this particular record.\n\
-	-s, --stdin	Indicates the payload should be taken from <stdin>.\n\
+	-a 	(optional) the full, or relative path to a file to use for generating the application metadata.\n\
+	-p	The full or relative path to a file that should be used as the payload for this particular record.\n\
+	-s	Indicates the payload should be taken from <stdin>.\n\
 	-t, --type=T	Indicates which type of data to send: “j” (journal record), “a” (an audit record),\n\
 		or “l” (log entry), or “f” (journal record using file descriptor passing).\n\
-	-h, --help	Print a summary of options.\n\
-	-j, --socket	The full or relative path to the JALoP socket.\n\
-	-k, --key	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
-	-c, --cert	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
-	-d, --digest	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
-	-x, --schemas	The full or relative path to the JALoP Schemas.\n\
-	-n, --count	The number of times to repeat an event. Must be a positive numeric value within the representable range.\n\
-	-v, --version	Print the version number and exit.\n\
-	-V, --validate	Validate XML payload against a schema.";
-
+	-h	Print a summary of options.\n\
+	-j	The full or relative path to the JALoP socket.\n\
+	-k	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
+	-c	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
+	-d	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
+	-x	The full or relative path to the JALoP Schemas.\n\
+	-n	The number of times to repeat an event. Must be a positive numeric value within the representable range.\n\
+	-v, --version Print the version number and exit.\n\
+The following two arguments will send a series of audit or log records (based on -t argument) with the data payload of sequential\n\
+numbers starting with the number in '-s' and ending with the number in '-u'. There is no error checking of the following two arguments.\n\
+	-q      The starting sequence number.\n\
+	-u      The ending sequence number.\n\
+	-r	Reuse the UNIX socket session for consecutive records -- default is a new session for each record.";
 
 	printf("%s\n", usage);
 }
@@ -596,16 +755,11 @@ static void print_error(enum jal_status error)
 		case JAL_E_COMM:
 			printf("JAL_E_COMM");
 			break;
-		case JAL_E_INTERNAL_ERROR:
-			printf("JAL_E_INTERNAL_ERROR");
-			break;
-		case JAL_E_JOURNAL_MISSING:
-			printf("JAL_E_JOURNAL_MISSING");
-			break;
 		case JAL_OK:
+			break;
+		default:
 			break;
 	}
 	printf("\n");
 
 }
-

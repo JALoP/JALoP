@@ -82,6 +82,7 @@ void jalp_context_destroy(jalp_context **ctx)
 	RSA_free((*ctx)->signing_key);
 	X509_free((*ctx)->signing_cert);
 	free((*ctx)->schema_root);
+	xmlSchemaFreeValidCtxt((*ctx)->jaf_validCtxt);
 	free(*ctx);
 	*ctx = NULL;
 }
@@ -151,6 +152,8 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 #endif /* JALP_HAVE_PROCFS */
 		ctx->app_name = abspath;
 	}
+	ctx->jaf_validCtxt = NULL;
+	ctx->flags = 0;
 
 	return JAL_OK;
 }
@@ -227,3 +230,24 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 
 	return JAL_OK;
 }
+
+void jalp_context_set_flag(jalp_context *ctx, uint8_t flag)
+{
+	ctx->flags |= flag;
+}
+
+void jalp_context_reset_flag(jalp_context *ctx, uint8_t flag)
+{
+	ctx->flags &= ~flag;
+}
+
+bool jalp_context_flag_isSet(jalp_context *ctx, uint8_t flag)
+{
+	return ctx->flags & flag;
+}
+
+uint8_t jalp_context_get_flags(jalp_context *ctx)
+{
+	return ctx->flags;
+}
+

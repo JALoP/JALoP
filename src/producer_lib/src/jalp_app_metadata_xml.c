@@ -149,6 +149,7 @@ enum jal_status jalp_app_metadata_to_elem(
 		ret = JAL_E_INVAL;
 		goto err_out;
 	}
+	xmlAddID(NULL, doc, (xmlChar *)xml_jid, attr);
 	free(ncname_jid);
 
 	// Set the top-level node only to use the jam: prefix and namespace
