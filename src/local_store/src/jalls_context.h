@@ -62,14 +62,24 @@ struct jalls_context {
 	char *db_root;
 	/** The full path to a UNIX Domain Socket. The JALoP Local Store will create the socket and wait for producer applications to connect to the socket. */
 	char *socket;
+	/** The owner of the socket file */
+	char *socket_owner;
+	/** The group of the socket file */
+	char *socket_group;
+	/** The unix dac permissions of the socket file */
+	char *socket_mode;
+        /** A boolean for whether the DB_REVCOVER flag should be set when opening the DB */
+	int db_recover;
+	/** A boolean for whether the process should be daemonized */
+	int daemon;
 	/** A boolean for whether to sign the system metadata for data received from the producer library. */
 	int sign_sys_meta;
 	/** A boolean for whether to include manifests in the system metadata for data received from the producer library. */
 	int manifest_sys_meta;
-	/** Absolute path to file where the PID will be written if run as a daemon */
-	char* pid_file;
+	/** Absolute path to file where the PID will be written if run as a daemon. */
+	char *pid_file;
 	/** Absolute path to directory where stdout and stderr logs will be written if run as a daemon. */
-	char* log_dir;
+	char *log_dir;
 	/** Thread count threshold that shall prompt accept delay. */
 	int accept_delay_thread_count;
 	/** Length of each accept delay increment in microseconds. */
@@ -78,7 +88,7 @@ struct jalls_context {
 	int accept_delay_max;
 };
 
-struct jalls_thread_context {
+struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */
 	/** the connection fd for the worker thread to revieve data */
 	int fd;
 	/** pointer to the context loaded from the config.*/
