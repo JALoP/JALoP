@@ -156,6 +156,27 @@ enum jal_status jal_digest_xml_data(
 		int *digest_len);
 
 /**
+ * Use the digest context \p dgst_ctx to generate a digest for the data
+ * given in the buffer.
+ *
+ * @param dgst_ctx The digest method to use.
+ * @param data The data to generate a digest for.
+ * @param data_len The length of the data
+ * @param digest_out On success, this will be set to a newly allocated buffer
+ * that contains the binary version of the digest. It is up to the caller to
+ * release this memory with a call to free().
+ * @param digest_len On success, this will be set to the length, in bytes, of
+ * \pdigest_buffer.
+ * @return JAL_OK on success, or an error code.
+ */
+enum jal_status jal_digest_arbitrary_data(
+		const struct jal_digest_ctx *dgst_ctx,
+		const uint8_t * const data,
+		const int data_len,
+		uint8_t **digest_out,
+		int *digest_len);
+
+/**
  * Convert an OpenSSL BIGNUM to a Libxml2 xmlChar pointer of the decimal representation
  * of the BIGNUM.
  *

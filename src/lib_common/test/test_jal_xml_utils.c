@@ -51,9 +51,9 @@
 
 #define EVENT_ID "event-123-xyz"
 
-#define TEST_RSA_KEY  TEST_INPUT_ROOT "rsa_key"
-#define TEST_CERT  TEST_INPUT_ROOT "cert"
-#define TEST_CERT_AND_KEY  TEST_INPUT_ROOT "cert_and_key"
+#define TEST_RSA_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/rsa_key"
+#define TEST_CERT  TEST_INPUT_ROOT "TLS_Unit_Test_Files/cert"
+#define TEST_CERT_AND_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/cert_and_key"
 
 #define ID_NAME "xml:" LOCLA_ID_NAME
 #define LOCAL_ID_NAME "id"

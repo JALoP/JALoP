@@ -8,8 +8,15 @@ lib_common_env.MergeFlags(env['openssl_ldflags'])
 
 lib_common_env.MergeFlags(env['libuuid_ldflags'])
 
+lib_common_env.MergeFlags(env['libconfig_ldflags'])
+
 lib_common_env.MergeFlags(env['libxml2_cflags'])
 lib_common_env.MergeFlags(env['libxml2_ldflags'])
+
+lib_common_env.MergeFlags('-lcap')
+lib_common_env.MergeFlags('-lcap-ng')
+
+lib_common_env.MergeFlags('-lseccomp')
 
 lib_common_env.MergeFlags(env['xmlsec1_cflags'])
 lib_common_env.MergeFlags(env['xmlsec1_ldflags'])

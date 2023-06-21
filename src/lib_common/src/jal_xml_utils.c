@@ -321,6 +321,53 @@ out:
 	return ret;
 }
 
+enum jal_status jal_digest_arbitrary_data(
+		const struct jal_digest_ctx *dgst_ctx,
+		const uint8_t * const data,
+		int data_len,
+		uint8_t **digest_out,
+		int *digest_len)
+{
+	if (!dgst_ctx || !data || 0 == data_len || !digest_out || *digest_out || !digest_len) {
+		return JAL_E_INVAL;
+	}
+	if (!jal_digest_ctx_is_valid(dgst_ctx)) {
+		return JAL_E_INVAL;
+	}
+
+	size_t dlen = dgst_ctx->len;
+	uint8_t *dval = (uint8_t*)jal_malloc(dlen);
+	void *instance = dgst_ctx->create();
+	if (instance == NULL) {
+		free(dval);
+		dval = NULL;
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	enum jal_status ret = (enum jal_status) dgst_ctx->init(instance);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+
+	ret = (enum jal_status) dgst_ctx->update(instance, data, data_len);
+
+	ret = (enum jal_status) dgst_ctx->final(instance, dval, &dlen);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+	goto out;
+
+error_out:
+	free(dval);
+	dval = NULL;
+	dgst_ctx->destroy(instance);
+	return ret;
+out:
+	*digest_out = dval;
+	*digest_len = dlen;
+	dgst_ctx->destroy(instance);
+	return ret;
+}
+
 xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 {
 	if (!elem) {
