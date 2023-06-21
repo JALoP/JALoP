@@ -1,0 +1,50 @@
+Here is an example TLS Setup between JALoPv2.x publisher "jald" & JJNLv2.x subscriber "jnl_test".
+
+Publisher (jald) side:
+
+1. Generate Publisher (jald) Keystore of PKCS12 type -
+
+$ keytool -genkeypair -keyalg RSA -sigalg SHA384withRSA -keystore publisher.jks -noprompt -storepass changeit -keypass changeit -alias pub_key -deststoretype pkcs12 -validity 3650 -dname "CN=127.0.0.1" -ext "SAN=IP:127.0.0.1"
+
+2. Export Publisher (jald) Certificate in PEM format -
+
+$ openssl pkcs12 -in publisher.jks -nokeys -out pub_cert.pem
+Enter Import Password: changeit
+
+3. Export Publisher (jald) Private Key in PEM format -
+
+$ openssl pkcs12 -in publisher.jks -nodes -nocerts -out pub_key.pem
+Enter Import Password: changeit 
+
+Subscriber (JJNL jnl_test) side:
+
+4. Generate JJNL Subscriber Keystore of PKCS12 type -
+
+$ keytool -genkeypair -keyalg RSA -sigalg SHA384withRSA -keystore keystore.jks -noprompt -storepass changeit -keypass changeit -alias sub_key -deststoretype pkcs12 -validity 3650 -dname "CN=127.0.0.1" -ext "SAN=IP:127.0.0.1"
+
+5. Import jald Publsiher Certificate (pub_cert.pem) into JJNL Susbcriber Keystore -
+
+$ keytool -importcert -keystore keystore.jks -file pub_cert.pem -storepass changeit -keypass changeit -noprompt -alias "pub_key"
+
+6. Export JJNL Subscriber Certificate (PEM) from Keystore -
+
+$ keytool -exportcert -alias sub_key -storepass changeit -keypass changeit -keystore keystore.jks -rfc -file server.pem
+
+7. Set the following settings in jald.cfg to use these certificate and keys -
+
+private_key = "<path>/pub_key.pem";
+public_cert = "<path>/pub_cert.pem";
+
+In the Subscriber peer section of jald.cfg -
+
+cert_dir = "<directory containing JJNL subscriber keystore.jks from step 4>";
+
+8. Set the folloing settings in subscriber JSON config file -
+
+  "ssl": {
+    "Key Store Passphrase": "changeit",
+    "Key Store": "<path>/keystore.jks",
+  }
+
+Note that trust store is not used by the JJNL jnl_test code, so "Trust Store" related settings can be removed from the JSON config file.
+

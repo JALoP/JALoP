@@ -1,0 +1,72 @@
+The TLS directory is already populated with test certificates built from:
+	-generate_certs.sh
+	-generate_java_keystore.sh
+================================================================================
+The client directory has all you need to test:
+	-for c process
+		-jal_publisher_v2_client.cert.pem (client public key certificate)
+		-jal_publisher_v2_client.key.pem (client private key)
+		-trust_store_dir
+			-jal_subscriber_v2_server.cert.pem and hash name link (ex:33e17597.0)
+			-jalop_ca.cert.pem and hash name link (ex:281b40c4.0) (CA cert)
+================================================================================
+The server directory has all you need to test:
+	-for java process
+		-jal_subscriber_v2_server.jks (server private key and public key)
+		-jal_subscriber_v2_server-remotes.jks (trusted certificates: client and CA)
+================================================================================
+The public certificates for server and client are built with alt_names:
+	[ alt_name ]
+	DNS.0 = localhost
+	DNS.1 = jal_publisher_v2_client
+	IP.0 = 127.0.0.1
+	
+	[ alt_name ]
+	DNS.0 = localhost
+	DNS.1 = jal_subscriber_v2_server
+	IP.0 = 127.0.0.1
+	
+	So when running publisher and subscriber on different machines you can add
+	entries to their /etc/hosts file.
+	example:	
+		192.168.1.100 jal_publisher_v2_client (on server)
+		192.168.1.101 jal_subscriber_v2_server (on client)
+================================================================================
+If you want to build your own set of certificates you can alter these files:
+	-ca.cnf (the DN variables)
+	-client.cnf (the DN variables and alt names)
+	-server.cnf (the DN variables and alt names)
+	-generate_certs.sh (the 5 variables at top)
+	-generate_java_keystore.sh (the 4 variables at top)
+	-then run ./generate_certs.sh which will call generate_java_keystore.sh at end
+================================================================================
+You can have your in house certificates too. Refer to the client directory
+and server directory sections above for the correct artifacts needed or look
+below for configuration examples.
+================================================================================
+---------------------------- jald.cfg ------------------------------------------
+# The path to the private key, used for TLS.
+private_key = "<absolute_path>/jal_publisher_v2_client.key.pem";
+
+# The path to the public cert, used for TLS.
+public_cert = "<absolute_path>/jal_publisher_v2_client.cert.pem";
+
+# List of subscriber configurations.
+peers = ( {
+	# the hostname or IP address of the subscriber
+	host = "127.0.0.1";
+	-
+	-
+	# directory containing the CA certificate(s) to use for TLS negotiation
+	cert_dir = "<absolute_path>/trust_store_dir";
+	} );
+================================================================================
+----------------- sampleHttpSubscriber.json (snippet)---------------------------
+  "ssl": {
+    "Key Store Passphrase": "changeit",
+    "Key Store": "<absolute_path>/jal_subscriber_v2_server.jks",
+
+    "Trust Store Passphrase": "changeit",
+    "Trust Store": "<absolute_path>/jal_subscriber_v2_server-remotes.jks",
+  }
+================================================================================
