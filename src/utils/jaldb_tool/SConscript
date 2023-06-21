@@ -1,0 +1,25 @@
+Import('*')
+from Utils import install_for_build
+from Utils import add_project_lib
+
+env = env.Clone()
+
+add_project_lib(env, 'db_layer', 'jal-db')
+env.MergeFlags(env['bdb_cflags'])
+env.MergeFlags(env['bdb_ldflags'])
+
+sources = env.Glob("*.cpp")
+
+env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
+
+jaldb_tool_objs = env.SharedObject(source=sources)
+
+jaldb_tool = env.Program(target='jaldb_tool', source=jaldb_tool_objs)
+env.Default(jaldb_tool)
+if env['variant'] == 'release':
+	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
+	env.Alias('install', env.Install(sbindir, jaldb_tool))
+
+install_for_build(env, 'bin', jaldb_tool)
+
+Return("jaldb_tool")
