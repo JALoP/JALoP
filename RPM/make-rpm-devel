@@ -1,0 +1,26 @@
+#!/bin/bash
+RPMDIR=rpmbuild-devel
+TOPDIR=`pwd`/$RPMDIR
+
+rm -fr $RPMDIR
+
+mkdir $RPMDIR
+mkdir $RPMDIR/SOURCES
+mkdir $RPMDIR/SPECS
+mkdir $RPMDIR/BUILD
+mkdir $RPMDIR/BUILDROOT
+mkdir $RPMDIR/RPMS
+mkdir $RPMDIR/SRPMS
+
+tar -cf jalop-devel.tar ../src/db_layer ../src/lib_common ../src/network_lib ../src/producer_lib
+
+cp jalop-devel.spec $RPMDIR/SPECS
+cp jalop-devel.tar  $RPMDIR/SOURCES
+
+cd $TOPDIR && rpmbuild --define "_topdir $TOPDIR" -bb SPECS/jalop-devel.spec
+
+cd ../
+
+cp $RPMDIR/RPMS/x86_64/*.rpm ./
+
+#echo "Hello World"|jalp_test -j /var/run/jalop/jalls/socket/jalls.sock -s -n 10 -t l
