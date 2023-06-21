@@ -1,0 +1,11 @@
+[Unit]
+Description=JALoP Publishing Service
+
+[Service]
+Type=simple
+User=jald
+Group=jalop
+ExecStart=/usr/bin/jald -c /etc/jalop/jald_service.cfg -s --no-daemon -d
+
+[Install]
+WantedBy=multi-user.target
