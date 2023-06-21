@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 
 	gbl.ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(gbl.ctx, gbl.home, NULL, JDB_READONLY);
+	jaldb_ret = jaldb_context_init(gbl.ctx, gbl.home, JDB_READONLY);
 
 	if (jaldb_ret != JALDB_OK) {
 		printf("\nContext could not be made.\n");

@@ -20,5 +20,7 @@ jal_purge = env.SConscript('jal_purge/SConscript', exports='env all_tests lib_co
 testserver = env.SConscript('testserver/SConscript', exports='env all_tests lib_common')
 testpush = env.SConscript('testpush/SConscript', exports='env lib_common network_lib')
 jaldb_tail = env.SConscript('jaldb_tail/SConscript', exports='env all_tests lib_common db_layer')
+jaldb_record_update = env.SConscript('jaldb_tool/SConscript', exports='env all_tests lib_common db_layer')
+
 
 Return("jalp_test")

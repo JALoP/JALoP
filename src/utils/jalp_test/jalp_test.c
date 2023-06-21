@@ -37,6 +37,8 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <limits.h>
+#include <libxml/tree.h>
+#include <libxml/parser.h>
 
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
@@ -50,9 +52,11 @@
 #include "jalp_test_app_meta.h"
 
 #define JALP_TEST_DEFEAULT_NUM_REPEAT (long) 1
+#define DEFAULT_SCHEMA_DIR "/usr/share/jalop/schemas"
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt);
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt, int *validate_xml);
+
 
 static void print_usage();
 
@@ -74,13 +78,14 @@ int main(int argc, char **argv)
 	char *cert_path = NULL;
 	int stdin_payload = 0;
 	int calculate_sha = 0;
+	int validate_xml = 0;
 	char record_type = 0;
 	char *schema_path = NULL;
 	char *socket_path = NULL;
 	long int repeat_cnt = JALP_TEST_DEFEAULT_NUM_REPEAT;
 
 	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path,
-			&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path, &repeat_cnt);
+		&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path, &repeat_cnt, &validate_xml);
 
 	struct jalp_app_metadata *app_meta = NULL;
 	uint8_t *payload_buf = NULL;
@@ -122,12 +127,18 @@ int main(int argc, char **argv)
 	ctx = jalp_context_create();
 	jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
 	if (jalp_ret != JAL_OK) {
+		printf("error creating jalp context\n");
 		goto err_out;
+	}
+
+	if(validate_xml != 0) {
+		jalp_context_set_flag(ctx, JAF_VALIDATE_XML);
 	}
 
 	if (key_path) {
 		jalp_ret = jalp_context_load_pem_rsa(ctx, key_path, NULL);
 		if (jalp_ret != JAL_OK) {
+			printf("error loading key from path: %s\n", key_path);
 			goto err_out;
 		}
 	}
@@ -135,6 +146,7 @@ int main(int argc, char **argv)
 	if (cert_path) {
 		jalp_ret = jalp_context_load_pem_cert(ctx, cert_path);
 		if (jalp_ret != JAL_OK) {
+			printf("error loading cert from path: %s\n", cert_path);
 			goto err_out;
 		}
 	}
@@ -143,6 +155,7 @@ int main(int argc, char **argv)
 		digest_ctx = jal_sha256_ctx_create();
 		jalp_ret = jalp_context_set_digest_callbacks(ctx, digest_ctx);
 		if (jalp_ret != JAL_OK) {
+			printf("error setting digest callbacks\n");
 			goto err_out;
 		}
 	}
@@ -154,6 +167,7 @@ int main(int argc, char **argv)
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
 			}
 			if (ret != 0) {
+				printf("error building payload\n");
 				goto err_out;
 			}
 			jalp_ret = jalp_journal(ctx, app_meta, payload_buf, payload_size);
@@ -168,6 +182,7 @@ int main(int argc, char **argv)
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
 			}
 			if (ret != 0) {
+				printf("error building payload\n");
 				goto err_out;
 			}
 			jalp_ret = jalp_audit(ctx, app_meta, payload_buf, payload_size);
@@ -182,6 +197,7 @@ int main(int argc, char **argv)
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
 			}
 			if (ret != 0) {
+				printf("error building payload\n");
 				goto err_out;
 			}
 			jalp_ret = jalp_log(ctx, app_meta, payload_buf, payload_size);
@@ -229,10 +245,26 @@ err_out:
 }
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt)
+	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, 
+	char **schema_path, long int *repeat_cnt, int *validate_xml)
 {
-	static const char *optstring = "a:p:st:hj:k:c:dx:n:v";
-	static const struct option long_options[] = { {"type", 1, 0, 't'}, {"version", 0, 0, 'v'}, {NULL, 0, 0, 0} };
+	static const char *optstring = "a:p:st:hj:k:c:dx:n:vV";
+	static const struct option long_options[] = { 
+		{"type", 1, 0, 't'}, 
+		{"version", 0, 0, 'v'}, 
+		{"appmeta", 1, 0, 'a'}, 
+		{"payload", 1, 0, 'p'}, 
+		{"stdin", 0, 0, 's'}, 
+		{"socket", 1, 0, 'j'}, 
+		{"key", 1, 0, 'k'}, 
+		{"cert", 1, 0, 'c'}, 
+		{"digest", 0, 0, 'd'}, 
+		{"schemas", 1, 0, 'x'}, 
+		{"count", 1, 0, 'n'}, 
+		{"help", 0, 0, 'h'}, 
+		{"validate", 0, 0, 'V'}, 
+		{NULL, 0, 0, 0} 
+	};
 
 	int ret_opt;
 
@@ -294,6 +326,12 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 				printf("%s\n", jal_version_as_string());
 				goto version_out;
 				break;
+			case 'V':
+				if(optarg) {
+					goto err_usage;
+				}
+				*validate_xml = 1;
+				break;
 			case ':':
 			case '?':
 			default:
@@ -331,6 +369,13 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 		printf("Error: bad usage, the number of times to perform an event must be a positive number.\n");
 		goto err_usage;
 	}
+	if (!(*app_meta_path) && ((*validate_xml) || (*calculate_sha))) {
+		printf("Error: bad usage, must specify an app metadata path to validate XML or calculate a sha\n");
+		goto err_usage;
+	}
+	if(!(*schema_path)) {
+		(*schema_path) = strdup(DEFAULT_SCHEMA_DIR);
+	}
 	return;
 
 
@@ -359,19 +404,20 @@ static void print_usage()
 {
 	static const char *usage =
 	"Usage:\n\
-	-a 	(optional) the full, or relative path to a file to use for generating the application metadata.\n\
-	-p	The full or relative path to a file that should be used as the payload for this particular record.\n\
-	-s	Indicates the payload should be taken from <stdin>.\n\
+	-a, --appmeta 	(optional) the full, or relative path to a file to use for generating the application metadata.\n\
+	-p, --payload	The full or relative path to a file that should be used as the payload for this particular record.\n\
+	-s, --stdin	Indicates the payload should be taken from <stdin>.\n\
 	-t, --type=T	Indicates which type of data to send: “j” (journal record), “a” (an audit record),\n\
 		or “l” (log entry), or “f” (journal record using file descriptor passing).\n\
-	-h	Print a summary of options.\n\
-	-j	The full or relative path to the JALoP socket.\n\
-	-k	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
-	-c	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
-	-d	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
-	-x	The full or relative path to the JALoP Schemas.\n\
-	-n	The number of times to repeat an event. Must be a positive numeric value within the representable range.\n\
-	-v, --version Print the version number and exit.";
+	-h, --help	Print a summary of options.\n\
+	-j, --socket	The full or relative path to the JALoP socket.\n\
+	-k, --key	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
+	-c, --cert	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
+	-d, --digest	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
+	-x, --schemas	The full or relative path to the JALoP Schemas.\n\
+	-n, --count	The number of times to repeat an event. Must be a positive numeric value within the representable range.\n\
+	-v, --version	Print the version number and exit.\n\
+	-V, --Validate	Validate XML payload against a schema.\n.";
 
 	printf("%s\n", usage);
 }
@@ -558,3 +604,4 @@ static void print_error(enum jal_status error)
 	printf("\n");
 
 }
+
