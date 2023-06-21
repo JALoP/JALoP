@@ -60,7 +60,6 @@ extern "C" {
 using namespace std;
 
 #define OTHER_DB_ROOT "./testdb/"
-#define OTHER_SCHEMA_ROOT "./schemas/"
 #define JOURNAL_ROOT "/journal/"
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
@@ -73,13 +72,13 @@ using namespace std;
 #define LOG_DATA_Y "Log Buffer\nLog Entry 1\nLog Entry 2\n"
 #define PAYLOAD "SoMe_data   is here\nMoreData is Here!\n"
 
-#define DT1 "2012-12-12T09:00:00.00000"
+#define DT1 "2012-12-12T09:00:00.000000"
 #define HN1 "somehost"
 #define UN1 "someuser"
 #define S1 "source1"
 #define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
 
-#define DT2 "2012-12-12T09:00:00.00000"
+#define DT2 "2012-12-12T09:00:00.000000"
 #define HN2 "somehost"
 #define UN2 "someuser"
 #define S2 "source1"
@@ -150,7 +149,7 @@ extern "C" void setup()
 		(void)closedir(dir);
 	}
 	context = jaldb_context_create();
-	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_NONE);
+	jaldb_context_init(context, OTHER_DB_ROOT, JDB_NONE);
 }
 
 extern "C" void teardown()

@@ -54,8 +54,10 @@ struct jaldb_segment;
 
 /* This is used by the jaldb_extract_record_network_nonce function to
  * determine the necessary offset into the buffer. This value does not
- * include the null terminator. */
-#define JALDB_TIMESTAMP_LENGTH 25
+ * include the null terminator. 
+ * example: 2023-03-11T20:31:19.699759
+ */
+#define JALDB_TIMESTAMP_LENGTH 26
 
 /* This must match JALN_MAX_NONCE_LENGTH in jaln_network.h
  *

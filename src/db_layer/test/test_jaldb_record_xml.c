@@ -55,7 +55,7 @@ struct jaldb_segment app_meta;
 struct jaldb_segment payload;
 RSA *key;
 
-#define TEST_RSA_KEY  TEST_INPUT_ROOT "rsa_key"
+#define TEST_RSA_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/rsa_key"
 
 #define HOSTNAME "some.host.name.com"
 #define SOURCE "localhost"

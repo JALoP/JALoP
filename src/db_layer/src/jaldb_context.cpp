@@ -55,7 +55,6 @@
 using namespace std;
 
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
-#define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop/schemas"
 
 static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, const char *nonce);
 
@@ -68,7 +67,6 @@ jaldb_context *jaldb_context_create()
 enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
-	const char *schemas_root,
 	enum jaldb_flags jdb_flags)
 {
 	if (!ctx) {
@@ -76,7 +74,7 @@ enum jaldb_status jaldb_context_init(
 	}
 
 	// Make certain that the context is not already initialized.
-	if (ctx->env || ctx->journal_root || ctx->schemas_root) {
+	if (ctx->env || ctx->journal_root) {
 		return JALDB_E_INITIALIZED;
 	}
 
@@ -95,11 +93,6 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_INVAL;
 	}
 
-	if (!schemas_root) {
-		schemas_root = DEFAULT_SCHEMAS_ROOT;
-	}
-	ctx->schemas_root = jal_strdup(schemas_root);
-
 	if (-1 == jal_asprintf(&ctx->journal_root, "%s%s", db_root, JALDB_JOURNAL_ROOT_NAME)) {
 		return JALDB_E_NO_MEM;
 	}
@@ -107,14 +100,18 @@ enum jaldb_status jaldb_context_init(
 	uint32_t db_flags = 0;
 	uint32_t env_flags = 0;
 
-	if(JDB_READONLY & jdb_flags) {
+	if(JDB_READONLY & jdb_flags)
+	{
 		ctx->db_read_only = 1;
 		db_flags |= DB_RDONLY;
 	}
-	else {
+	else
+	{
 		db_flags |= DB_CREATE;
 	}
-
+        if (JDB_DB_RECOVER & jdb_flags){
+            env_flags |= DB_RECOVER;
+        }
 	//#706 DB_THREAD needs set all the time to prevent db corruption errors
 	env_flags |= DB_THREAD;
 	db_flags |= DB_THREAD;
@@ -232,7 +229,6 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	jaldb_context *ctxp = *ctx;
 
 	free(ctxp->journal_root);
-	free(ctxp->schemas_root);
 
 	if (ctxp->journal_conf_db) {
 		(*ctx)->journal_conf_db->close((*ctx)->journal_conf_db, 0);
@@ -358,6 +354,7 @@ enum jaldb_status jaldb_mark_sent(
 				else if (0 == target_state){
 					// Clear the flag
 					header_ptr->flags &= ~JALDB_RFLAGS_SENT;
+					header_ptr->flags &= ~JALDB_RFLAGS_SYNCED;
 				} else {
 					txn->abort(txn);
 					goto out;
@@ -408,7 +405,7 @@ enum jaldb_status jaldb_mark_synced(
 
 	struct jaldb_serialize_record_headers *header_ptr = NULL;
 	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
-	
+
 	DB_TXN *txn = NULL;
 	DBT key;
 	DBT val;
@@ -609,7 +606,7 @@ enum jaldb_status jaldb_mark_confirmed(
 				header_ptr->flags |= JALDB_RFLAGS_CONFIRMED;
 
 				// Update the network nonce.
-				
+
 				buffer = (uint8_t *) header_ptr;
 				buffer += timestamp_bytes;
 
@@ -1231,7 +1228,7 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 			goto out;
 		}
 
-		nonce_list.push_front((const char *)pkey.data); 
+		nonce_list.push_front((const char *)pkey.data);
 		db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_PREV);
 	}
 
@@ -1270,7 +1267,7 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	}
 
 	memset(&key, 0, sizeof(key));
-	memset(&val, 0, sizeof(val));	
+	memset(&val, 0, sizeof(val));
 
 	ret = jaldb_record_sanity_check(rec);
 	if (ret != JALDB_OK) {
@@ -1865,11 +1862,11 @@ enum jaldb_status jaldb_next_unsynced_record(
 	}
 
 	while (1) {
-		
+
 		val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
 		db_ret = rdbs->record_sent_db->pget(rdbs->record_sent_db, NULL, &skey, &pkey, &val, 0);
 		val.flags = DB_DBT_REALLOC;
-		
+
 		if (DB_NOTFOUND == db_ret) {
 			ret = JALDB_E_NOT_FOUND;
 			goto out;
@@ -1983,7 +1980,7 @@ enum jaldb_status jaldb_next_chronological_record(
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
-	
+
 	switch(type) {
 	case JALDB_RTYPE_JOURNAL:
 		rdbs = ctx->journal_dbs;

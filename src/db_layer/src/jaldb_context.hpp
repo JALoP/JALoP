@@ -40,7 +40,6 @@ struct jaldb_record_dbs;
 
 struct jaldb_context_t {
 	char *journal_root; 				//!< The journal record root path.
-	char *schemas_root; 				//!< The schemas root path.
 	DB_ENV *env; 					//!< The Berkeley DB Environment.
 	struct jaldb_record_dbs *log_dbs; 		//!< The DBs associated with log records
 	struct jaldb_record_dbs *audit_dbs; 		//!< The DBs associated with audit records

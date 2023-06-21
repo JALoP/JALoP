@@ -61,7 +61,6 @@ extern "C" {
 using namespace std;
 
 #define OTHER_DB_ROOT "./testdb/"
-#define OTHER_SCHEMA_ROOT "./schemas/"
 #define JOURNAL_ROOT "/journal/"
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
@@ -81,28 +80,28 @@ using namespace std;
 #define LAST_K_RECORDS_VALUE 20
 
 // record NONCE 1
-#define DT1 "2012-12-12T09:00:00.00000"
+#define DT1 "2012-12-12T09:00:00.000000"
 #define HN1 "somehost"
 #define UN1 "someuser"
 #define S1 "source1"
 #define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 2
-#define DT2 "2012-12-12T02:00:00.00000"
+#define DT2 "2012-12-12T02:00:00.000000"
 #define HN2 "somehost2"
 #define UN2 "someuser2"
 #define S2 "source2"
 #define UUID_2 "21234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 3
-#define DT3 "2012-12-12T03:00:00.00000"
+#define DT3 "2012-12-12T03:00:00.000000"
 #define HN3 "somehost3"
 #define UN3 "someuser3"
 #define S3 "source3"
 #define UUID_3 "31234567-89AB-CDEF-0123-456789ABCDEF"
 
 // record NONCE 4
-#define DT4 "2012-12-12T04:00:00.00000"
+#define DT4 "2012-12-12T04:00:00.000000"
 #define HN4 "somehost4"
 #define UN4 "someuser4"
 #define S4 "source4"
@@ -126,7 +125,7 @@ extern "C" void setup()
 	mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	context = jaldb_context_create();
-	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_NONE));
+	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, JDB_NONE));
 
 	records[0] = jaldb_create_record();
 	records[0]->version = EXPECTED_RECORD_VERSION;
@@ -809,7 +808,7 @@ extern "C" void test_db_destroy_sets_ctx_to_null()
 {
 	jaldb_context *ctx = jaldb_context_create();
 	assert_not_equals((void *)NULL, ctx);
-	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_NONE);
+	enum jaldb_status ret = jaldb_context_init(ctx, OTHER_DB_ROOT, JDB_NONE);
 	assert_equals(JALDB_OK, ret);
 	jaldb_context_destroy(&ctx);
 	assert_pointer_equals((void *)NULL, ctx);
@@ -941,7 +940,7 @@ extern "C" void test_read_only_flag_prevents_writing_to_db()
 	jaldb_context *ctx = jaldb_context_create();
 	enum jaldb_status ret;
 	int db_err;
-	ret = jaldb_context_init(ctx, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_READONLY);
+	ret = jaldb_context_init(ctx, OTHER_DB_ROOT, JDB_READONLY);
 	assert_equals(JALDB_OK, ret);
 
 	std::string src = "foo";
