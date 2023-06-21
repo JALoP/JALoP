@@ -72,6 +72,18 @@ A numeric value that indicates the maximum number of records to receive before s
 .B pending_digest_timeout
 A numeric value that indicates the maximum number of seconds to wait before sending a "digest" message.
 .TP
+.B enable_seccomp
+seccomp will restrict the process to the defined system calls.
+.TP
+.B initial_seccomp_rules
+System calls allowed in the setup phase only.
+.TP
+.B both_seccomp_rules
+System calls allowed in all phases.
+.TP
+.B final_seccomp_rules
+System calls allowed in the setup phase and while the process is running.
+.TP
 .B peers
 A list of peer configurations indicating which operations and JAL record types specific remotes are allowed to perform.
 .SH "PEER CONFIGURATIONS"

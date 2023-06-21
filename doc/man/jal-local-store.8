@@ -4,8 +4,16 @@
 - JAL Local Store
 .SH SYNOPSIS
 .B jal-local-store
-[\fI\-\-debug\fR][\fI\-\-version\fR]
-.I config_file
+[\fI\-\-debug\fR]
+[\fI\-\-version\fR]
+[\fI\-\-help\fR]
+[\fI\-\-socket=<path>\fR]
+[\fI\-\-socket-owner=<username>\fR]
+[\fI\-\-socket-group=<groupname>\fR]
+[\fI\-\-socket-mode=<mode>\fR]
+[\fI\-\-no-daemon\fR]
+[\fI\-\-run-db_recover\fR]
+.I --config config_file
 .SH "DESCRIPTION"
 .B jal-local-store
 is an implementation of a JALoP local store. It will listen on a socket for producer applications and accept journal, audit,
@@ -13,18 +21,45 @@ and log data using the JALoP Producer Protocol.
 .\" Below three lines commented out because this is not currently supported but may be supported in the future
 .\".B jal-local-store
 .\"will validate application metadata and audit records against the appropriate schemas,
-.\"which are found, by default, in /usr/share/jalop/schemas.
+.\"which are found, by default, in /usr/share/jalop-v1.0/schemas.
 .B jal-local-store
 will generate system metadata for each record, and insert the record into its database.
 .SH OPTIONS
 .TP
-\fB\-\-debug\fR
+\fB\-d\fR, \fB\-\-debug\fR
 Enable debug output and prevent
 .B jal-local-store
 from forking to the background.
 .TP
-\fB\-\-version\fR
+\fB\-V\fR, \fB\-\-version\fR
 Outputs the version number and exits.
+.TP
+\fB\-?\fR, \fB\-\-help\fR
+Display help.
+.TP
+\fB\-s\fR, \fB\-\-socket\fR
+Enter the file system path of where the Unix Domain socket shall be created.
+.TP
+\fB\-o\fR, \fB\-\-socket-owner\fR
+Enter an existing linux user that will be owner of the socket file. Defaults to the user that jal-local-store will run as.
+.TP
+\fB\-g\fR, \fB\-\-socket-group\fR
+Enter an existing linux group that will have group privilege of the socket file. Defaults to the group that jal-local-store belongs to.
+.TP
+\fB\-m\fR, \fB\-\-socket-mode\fR
+Enter unix dac permissions to set on socket file. Most secure is 0420. Defaults to 0666.
+.TP
+\fB\-n\fR, \fB\-\-no-daemon\fR
+Disable daemonizing of the jal-local-store process. You may want to do this when running under systemd.
+.TP
+\fB\-c\fR, \fB\-\-config\fR
+The file system path of where the jal-local-store configuration file is located (This is required to run).
+.TP
+\fB\-r\fR, \fB\-\-run-db_recover\fR
+Run db_recover before opening the database at startup.
+.TP
+\fB\  \fR  \fB\-\-usage\fR
+Short display of the various options.
 .SH BUGS
 Attempting to insert audit data greater than 100MB will cause undefined behavior.
 
