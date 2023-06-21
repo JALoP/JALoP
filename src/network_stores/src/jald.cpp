@@ -52,6 +52,7 @@
 #include "jaldb_record.h"
 #include "jaldb_utils.h"
 #include "jal_alloc.h"
+#include "jal_linux_seccomp.h"
 
 #define VERSION_CALLED 1
 
@@ -1190,6 +1191,17 @@ int main(int argc, char **argv)
 		goto quick_out;
 	}
 
+	rc = read_sc_config(global_args.config_path);
+	if (rc != JALD_OK){
+		goto out;
+	}
+	
+	if(seccomp_config.enable_seccomp){
+		if (configureInitialSeccomp()!=0){
+			goto out;
+		}
+	}
+
 	rc = config_load(&config, global_args.config_path);
 	if (rc != JALD_OK) {
 		goto quick_out;
@@ -1248,6 +1260,12 @@ int main(int argc, char **argv)
 	gs_audit_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	gs_log_subs = axl_hash_new(axl_hash_string, axl_hash_equal_string);
 	struct peer_config_t *peer;
+
+	if(seccomp_config.enable_seccomp){
+		if (configureFinalSeccomp()!=0){
+			goto out;
+		}
+	}
 
 	do {
 		// set up JALoP contexts for each peer
@@ -1903,7 +1921,7 @@ static jaldb_context_t* setup_db_layer(void)
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context_t* db_ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.schemas_root, JDB_NONE);
+	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, JDB_NONE);
 
 	if (JALDB_OK != jaldb_ret) {
 		jaldb_context_destroy(&db_ctx);
