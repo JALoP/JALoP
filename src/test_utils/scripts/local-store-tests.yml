@@ -20,19 +20,29 @@
     file:
         path: '{{cwd}}/testdb'
         state: directory
+  - name: copy DB_CONFIG
+    shell: 
+        cmd: 'cp {{cwd}}/test-input/DB_CONFIG {{cwd}}/testdb || true'
   - name: start jal-local-store
     command: 
         chdir: '{{cwd}}'
-        cmd:  './release/bin/jal-local-store -d -c ./test-input/local_store.cfg'
+        cmd:  './release/bin/jal-local-store -c ./test-input/local_store.cfg -d '
   - name: send logs
     async: 45
     poll: 0
     command:
         chdir: '{{cwd}}'
-        cmd: './release/bin/jalp_test -j ./jal.sock -p ./test-input/big_payload.txt -n 10000 -t l'
-  - name: send logs 2
+        cmd: './release/bin/jalp_test -j ./jal.sock -p ./test-input/big_payload.txt -n 4000 -t l'
+  - name: send journals
+    async: 45
+    poll: 0
     command:
         chdir: '{{cwd}}'
-        cmd: './release/bin/jalp_test -j ./jal.sock -p ./test-input/big_payload.txt -n 10000 -t l'
+        cmd: './release/bin/jalp_test -j ./jal.sock -p ./test-input/big_payload.txt -n 1000 -t j'
+  - name: send audits
+    command:
+        chdir: '{{cwd}}'
+        cmd: './release/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n 500 -t a'
 #call with this command from jalop home
-#ansible-playbook src/test_utils/scripts/local-store-tests.yml -e cwd=`pwd`
+##ansible-playbook src/test_utils/scripts/local-store-tests.yml -e cwd=`pwd`
+

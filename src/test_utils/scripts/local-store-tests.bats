@@ -4,7 +4,7 @@
 	killall ./release/bin/jal-local-store || true
 	rm -fr testdb/* || true
 	rm -f jal.sock || true
-        run ./release/bin/jal-local-store -d -c ./test-input/local_store.cfg
+        run ./release/bin/jal-local-store -c ./test-input/local_store.cfg -d
 }
 
 @test log test {
@@ -39,3 +39,4 @@
 ##strace -f -o strace.out ./release/bin/jal-local-store -d -c ./test-input/local_store.cfg
 ##cat strace.out | sed 's/^[0-9]* //' | sed 's/).*$/)/'|sort|uniq  //to include params
 ##cat strace.out | sed 's/^[0-9]* //' | sed 's/(.*$//'|sort|uniq  //to exclude params
+
