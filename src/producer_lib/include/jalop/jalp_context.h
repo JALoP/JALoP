@@ -35,6 +35,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include <openssl/pem.h>
 
@@ -46,10 +47,11 @@ extern "C" {
  * Path to the socket used when making a connection to the JALoP Local Store.
  */
 #define JALP_SOCKET_NAME "/var/run/jalop/jalop.sock"
+
 /**
- * Path to the schemas
+ * mask to indicate that audit xml payload is to be varified against a schema
  */
-#define JALP_SCHEMA_ROOT "/usr/share/jalop/schemas"
+#define JAF_VALIDATE_XML 0x00000001
 
 /**
  * @defgroup ProducerContext Producer Context
@@ -175,6 +177,41 @@ enum jal_status jalp_init();
  * application to clean up resources prior to exit.
  */
 void jalp_shutdown();
+
+/**
+ * Set context flags with flag
+ *
+ * @param[in] ctx jalp_context_t structure pointer 
+ * @param[in] flag the flag to set
+ */
+void jalp_context_set_flag(jalp_context *ctx, uint8_t flag);
+
+/**
+ * Reset context flags with flag
+ *
+ * @param[in] ctx jalp_context_t structure pointer 
+ * @param[in] flag the flag to reset
+ */
+void jalp_context_reset_flag(jalp_context *ctx, uint8_t flag);
+
+/**
+ * Check to see if a particular flag bit is set
+ *
+ * @param[in] ctx jalp_context_t structure pointer 
+ * @param[in] flag the flag to test
+ */
+bool jalp_context_flag_isSet(jalp_context *ctx, uint8_t flag);
+
+
+/**
+ * Return the flags member of jalp_context_t structure
+ *
+ * @param[in] ctx jalp_context_t structure pointer 
+ *
+ * @return flags member of the jalp_context
+ */
+uint8_t jalp_context_get_flags(jalp_context *ctx);
+
 
 /** @} */
 #ifdef __cplusplus

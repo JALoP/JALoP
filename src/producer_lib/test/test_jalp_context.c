@@ -39,7 +39,6 @@
 #define FAKE_PID (int)-1
 
 #define DEFAULT_JALOP_RENDEZVOUS "/var/run/jalop/jalop.sock"
-#define DEFAULT_SCHEMA_ROOT "/usr/share/jalop/schemas"
 #define MOCKED_HOSTNAME "mocked_hostname"
 #define MOCKED_APP_NAME "mocked_app_name"
 #define SOME_HOST "some_host"
@@ -276,11 +275,12 @@ void test_jalp_context_connect_returns_error_with_uninitialized_context()
 	assert_equals(JAL_E_UNINITIALIZED, ret);
 	jalp_context_destroy(&ctx);
 }
+
 void test_jalp_context_connect_returns_error_when_socket_fails()
 {
 	replace_function(socket, socket_always_fails);
 	jalp_context *ctx = jalp_context_create();
-	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, NULL);
+	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	ret = jalp_context_connect(ctx);
 	assert_equals(JAL_E_NOT_CONNECTED, ret);
@@ -290,7 +290,7 @@ void test_jalp_context_connect_returns_error_when_connect_fails()
 {
 	replace_function(connect, connect_always_fails);
 	jalp_context *ctx = jalp_context_create();
-	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, NULL);
+	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	ret = jalp_context_connect(ctx);
 	assert_equals(JAL_E_NOT_CONNECTED, ret);
@@ -300,7 +300,7 @@ void test_jalp_context_connect_returns_error_when_connect_fails()
 void test_multiple_calls_to_jalp_context_connect_attempt_reconnection()
 {
 	jalp_context *ctx = jalp_context_create();
-	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, NULL);
+	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	ret = jalp_context_connect(ctx);
 	assert_equals(JAL_OK, ret);
@@ -325,72 +325,72 @@ void test_jalp_context_init_returns_context_with_defaults()
 	// probably overkill
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	NULL,		NULL,		NULL, NULL);
+	ret = jalp_context_init(ctx, NULL, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(DEFAULT_JALOP_RENDEZVOUS, ctx->path);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(MOCKED_HOSTNAME, ctx->hostname);
 	assert_string_equals(MOCKED_APP_NAME, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	NULL,		NULL,		SOME_APP, NULL);
+	ret = jalp_context_init(ctx, NULL, NULL, SOME_APP,SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(DEFAULT_JALOP_RENDEZVOUS, ctx->path);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(MOCKED_HOSTNAME, ctx->hostname);
 	assert_string_equals(SOME_APP, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	NULL,		SOME_HOST,	NULL, NULL);
+	ret = jalp_context_init(ctx, NULL, SOME_HOST, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(DEFAULT_JALOP_RENDEZVOUS, ctx->path);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(SOME_HOST, ctx->hostname);
 	assert_string_equals(MOCKED_APP_NAME, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	NULL,		SOME_HOST,	SOME_APP, NULL);
+	ret = jalp_context_init(ctx, NULL, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT );
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(DEFAULT_JALOP_RENDEZVOUS, ctx->path);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(SOME_HOST, ctx->hostname);
 	assert_string_equals(SOME_APP, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	SOME_PATH,	NULL,		NULL, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(SOME_PATH, ctx->path);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(MOCKED_HOSTNAME, ctx->hostname);
 	assert_string_equals(MOCKED_APP_NAME, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	SOME_PATH,	NULL,		SOME_APP, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, NULL, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(SOME_PATH, ctx->path);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(MOCKED_HOSTNAME, ctx->hostname);
 	assert_string_equals(SOME_APP, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	SOME_PATH,	SOME_HOST,	NULL, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, NULL, SOME_SCHEMA_ROOT );
 	assert_equals(JAL_OK, ret);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(SOME_PATH, ctx->path);
 	assert_string_equals(SOME_HOST, ctx->hostname);
 	assert_string_equals(MOCKED_APP_NAME, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	SOME_PATH,	SOME_HOST,	SOME_APP, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
-	assert_string_equals(DEFAULT_SCHEMA_ROOT, ctx->schema_root);
+	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(SOME_PATH, ctx->path);
 	assert_string_equals(SOME_HOST, ctx->hostname);
 	assert_string_equals(SOME_APP, ctx->app_name);
@@ -398,7 +398,7 @@ void test_jalp_context_init_returns_context_with_defaults()
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	SOME_PATH,	SOME_HOST,	SOME_APP, SOME_SCHEMA_ROOT);
+	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(SOME_SCHEMA_ROOT, ctx->schema_root);
 	assert_string_equals(SOME_PATH, ctx->path);
@@ -419,57 +419,66 @@ void test_jalp_context_init_falls_back_to_pid_if_cannot_read_procfs()
 	// probably overkill
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	NULL,		NULL,		NULL, NULL);
+	ret = jalp_context_init(ctx, NULL, NULL, NULL, SOME_SCHEMA_ROOT );
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(FAKE_PID_STR, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	NULL,		SOME_HOST,	NULL, NULL);
+	ret = jalp_context_init(ctx, NULL, SOME_HOST, NULL,SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(FAKE_PID_STR, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	SOME_PATH,	NULL,		NULL, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(FAKE_PID_STR, ctx->app_name);
 	jalp_context_destroy(&ctx);
 
 	ctx = jalp_context_create();
-	ret = jalp_context_init(ctx,	SOME_PATH,	SOME_HOST,	NULL, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	assert_string_equals(FAKE_PID_STR, ctx->app_name);
 	jalp_context_destroy(&ctx);
 }
+
+void test_jalp_context_init_returns_error_when_schema_path_is_null()
+{
+	struct jalp_context_t *ctx = jalp_context_create();
+	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, NULL);
+	assert_equals(JAL_E_INVAL, ret);
+	jalp_context_destroy(&ctx);
+}
+
 void test_jalp_context_init_returns_error_when_context_is_null()
 {
 	enum jal_status ret;
 	// perhaps a bit of overkill....
-	ret = jalp_context_init(NULL,	NULL,		NULL,		 NULL, NULL);
+	ret = jalp_context_init(NULL, NULL, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
-	ret = jalp_context_init(NULL,	NULL,		NULL,		SOME_APP, NULL);
+	ret = jalp_context_init(NULL, NULL, NULL, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
-	ret = jalp_context_init(NULL,	NULL,		SOME_HOST,	NULL, NULL);
+	ret = jalp_context_init(NULL, NULL, SOME_HOST, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
-	ret = jalp_context_init(NULL,	NULL,		SOME_HOST,	SOME_APP, NULL);
+	ret = jalp_context_init(NULL, NULL, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
-	ret = jalp_context_init(NULL,	SOME_PATH,	NULL,		NULL, NULL);
+	ret = jalp_context_init(NULL, SOME_PATH, NULL, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
-	ret = jalp_context_init(NULL,	SOME_PATH,	NULL,		SOME_APP, NULL);
+	ret = jalp_context_init(NULL, SOME_PATH, NULL, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
-	ret = jalp_context_init(NULL,	SOME_PATH,	SOME_HOST,	NULL, NULL);
+	ret = jalp_context_init(NULL, SOME_PATH, SOME_HOST, NULL, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
-	ret = jalp_context_init(NULL,	SOME_PATH,	SOME_HOST,	SOME_APP, NULL);
+	ret = jalp_context_init(NULL, SOME_PATH, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INVAL, ret);
 }
 void test_calling_jalp_context_init_multiple_times_returns_an_error()
 {
 	struct jalp_context_t *ctx = jalp_context_create();
-	enum jal_status ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, NULL);
+	enum jal_status ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 
-	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INITIALIZED, ret);
 
 	assert_string_equals(SOME_PATH, ctx->path);
@@ -481,16 +490,16 @@ void test_calling_jalp_context_init_multiple_times_returns_an_error()
 void test_calling_jalp_context_init_multiple_times_does_not_reset_the_connection()
 {
 	struct jalp_context_t *ctx = jalp_context_create();
-	enum jal_status ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, NULL);
+	enum jal_status ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_OK, ret);
 	ret = jalp_context_connect(ctx);
 	assert_equals(JAL_OK, ret);
 	int originalSocket = ctx->socket;
 
-	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, NULL);
+	ret = jalp_context_init(ctx, SOME_PATH, SOME_HOST, SOME_APP, SOME_SCHEMA_ROOT);
 	assert_equals(JAL_E_INITIALIZED, ret);
 
-	ret = jalp_context_init(ctx, "path2", "hostname2", "app_name2", NULL);
+	ret = jalp_context_init(ctx, "path2", "hostname2", "app_name2", SOME_SCHEMA_ROOT);
 	assert_equals(0, close_called);
 	assert_equals(originalSocket, ctx->socket);
 	jalp_context_destroy(&ctx);

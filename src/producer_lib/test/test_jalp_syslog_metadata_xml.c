@@ -81,6 +81,11 @@ xmlNodePtr node;
 
 #define LEVEL_NUM 1
 #define LEVEL_NAME "test-level"
+
+#define APPLICATIONMETADATA "ApplicationMetadata"
+
+#define SCHEMA_PATH "./schemas/"
+
 char *pid_str = NULL;
 
 void setup()
@@ -90,7 +95,7 @@ void setup()
 	jal_asprintf(&pid_str, "%" PRIdMAX, (intmax_t) getpid());
 	jalp_init();
 	ctx = jalp_context_create();
-	jalp_context_init(ctx, NULL, HOSTNAME_VAL_STR, APP_NAME_VAL_STR, NULL);
+	jalp_context_init(ctx, NULL, HOSTNAME_VAL_STR, APP_NAME_VAL_STR, SCHEMA_PATH);
 	syslog = jalp_syslog_metadata_create();
 	syslog->timestamp = strdup(TIMESTAMP_WITH_SINGLE_DIGIT_VALS_STR);
 	syslog->message_id = strdup(MESSAGE_ID_VAL_STR);
