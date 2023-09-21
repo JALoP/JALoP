@@ -362,7 +362,7 @@ enum jaln_publish_mode parse_mode(const char *mode)
 	if (!strcmp(mode, "live")) {
 		return JALN_LIVE_MODE;
 	}
-	if (!strcmp(mode, "archive")) {
+	if (!strcmp(mode, "archive") || !strcmp(mode, "archival")) {
 		return JALN_ARCHIVE_MODE;
 	}
 	else {
@@ -376,6 +376,8 @@ int main(int argc, char **argv) {
 	const char *key = NULL;
 	const char *cert = NULL;
 	const char *sub_certs = "path/to/subscriber/certs"; // Currently unused
+	// This could also be set by command line value. Resolves to "sha256 sha384"
+	char digest_algorithms[] = JAL_SHA256_ALGORITHM_STR JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA384_ALGORITHM_STR;
 	if (argc == 6) {
 		key = argv[4];
 		cert = argv[5];
@@ -426,8 +428,17 @@ int main(int argc, char **argv) {
 	pub_callbacks->peer_digest = notify_peer_digest;
 
 	enum jal_status err; // TODO: check for and handle errors
-	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
-	jaln_register_digest_algorithm(net_ctx, dc1);
+	enum jal_digest_algorithm *digest_list = (enum jal_digest_algorithm *) malloc(sizeof(enum jal_digest_algorithm));
+	size_t num_digests = 0;
+	err = jal_get_digest_algorithm_list(NULL, digest_algorithms, &digest_list, &num_digests);
+	struct jal_digest_ctx *dctx = NULL;
+	for (size_t i = 0; i < num_digests; i++) {
+		dctx = jal_digest_ctx_create(digest_list[i]);
+		err = jaln_register_digest_algorithm(net_ctx, dctx);
+	}
+	// The jaln_context owns the digest algorithm, so don't keep a
+	// reference to it.
+	dctx = NULL;
 	err = jaln_register_digest_challenge_configuration(net_ctx, "on");
 	err = jaln_register_compression(net_ctx, "none");
 
@@ -447,5 +458,6 @@ int main(int argc, char **argv) {
 	//TODO: shutdown and cleanup
 	//err = jaln_shutdown(conn);
 	//jaln_context_destroy(&net_ctx);
+	//free(digest_list);
 	return 0;
 }

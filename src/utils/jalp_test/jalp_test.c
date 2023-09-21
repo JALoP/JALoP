@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 	}
 
 	if(calculate_sha) {
-		digest_ctx = jal_sha256_ctx_create();
+		digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 		jalp_ret = jalp_context_set_digest_callbacks(ctx, digest_ctx);
 		if (jalp_ret != JAL_OK) {
 			printf("error setting digest callbacks\n");
