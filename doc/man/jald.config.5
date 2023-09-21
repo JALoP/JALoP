@@ -33,19 +33,6 @@ The path to a PEM formatted public certificate file that
 .BR jald (8)
 will use for TLS negotiations.
 .TP
-.B remote_cert_dir
-The path to a directory that contains PEM formated certificates. These will be used to authenticate remote
-.SM JALoP
-peers. See the documentation for
-.BR c_rehash,
-and
-.BR x509 (1).
-Specifically the sections regarding the
-.B \-hash
-and/or
-.B \-subject_hash
-options for details on how to create the files in this directory.
-.TP
 .B db_root
 This identifies where
 .BR jald (8)
@@ -58,22 +45,36 @@ The full path to the
 .SM JALoP
 schemas. This is optional.
 .TP
-.B host
-The interface to listen on for incoming connections.
-This is a string value and should be an IPv4 address,
-or the string "0.0.0.0" to listen on all interfaces.
+.B publisher_id
+UUID used to identify this publisher
 .TP
-.B port
-A numeric value that indicates the port to listen on for incoming connections.
+.B poll_time
+Time in seconds between checks for new records when none are available
 .TP
-.B pending_digest_max
-A numeric value that indicates the maximum number of records to receive before sending a "digest" message.
+.B retry_interval
+Time in seconds between attempts to reconnect to peers where the connection has closed.
+The special value of -1 can be used to indicate that jald should not attempt reconnects.
 .TP
-.B pending_digest_timeout
-A numeric value that indicates the maximum number of seconds to wait before sending a "digest" message.
+.B network_timeout
+Network timeout for each session, in minutes. Upon failure to send or receive
+data in this time, a network outage is assumed and the session closes.
+The special value of 0 implies no network timeout is enforced.
+.TP
+.B pid_file
+File storing PID of jald when daemonized.
+.TP
+.B log_dir
+Log directory of jald when daemonized.
+.TP
+.B digest_algorithms
+A list of supported digest algorithms. These algorithms should be ordered by preference in a single double-quoted string with a space separating the algorithms.
+Valid values are "sha256", "sha384", and "sha512"
 .TP
 .B enable_seccomp
 seccomp will restrict the process to the defined system calls.
+.TP
+.B seccomp_debug
+Enable debugging messages for seccomp
 .TP
 .B initial_seccomp_rules
 System calls allowed in the setup phase only.
@@ -94,24 +95,27 @@ will reject connections from every
 .SM JALoP
 peer that tries to connect to it. The recognized keys are:
 .TP
-.B hosts
-This is a list of strings. Each element in the array is the IPv4 address of a remote peer that this peer configuration applies to.
-Each configuration may identify one or more peers.
+.B host
+The hostname or IP address of the subscriber
 .TP
-.B subscribe_allow
-This indicates the types of JAL records each of the hosts identified by the
-.B hosts
-key are allowed to subscribe to. Each string in this list must be either "\fIjournal\fR",
-"\fIaudit\fR",
-or "\fIlog\fR".
+.B port
+The port to connect to
 .TP
-.B publish_allow
-This indicates the types of JAL records each of the hosts identified by the
-.B hosts
-key are allowed to publish to \fBjald\fR.
-Each string in this list must be either "\fIjournal\fR",
-"\fIaudit\fR",
-or "\fIlog\fR".
+.B mode
+The mode of JALoP operation
+To run JALoP in Archive mode, use "archive" or "archival"
+To run JALoP in Live mode, use "live"
+.TP
+.B digest_challenge
+Array of digest challenge configuration settings ordered by descending priority
+Valid values are "on" and "off"
+.TP
+.B record_types
+Array of record types to be sent to the subscriber
+Valid values are "audit", "log", and "journal"
+.TP
+.B cert_dir
+Directory containing the CA certificate(s) to use for TLS negotiation
 .PP
 Peer configurations are additive.
 That is to say,
@@ -119,14 +123,11 @@ if there are more than one peer configurations that reference a particular host,
 the set of permissions is the union of all permissions granted by all configurations.
 .SH EXAMPLES
 .nf
-# the path to the private key, used for TLS negotiation
+# the path to the PEM formatted private key, used for TLS negotiation
 private_key = "/etc/jald/cert_and_key";
 
-# the path to the public cert, used for TLS negotiation
+# the path to the PEM formatted public cert, used for TLS negotiation
 public_cert = "/etc/jald/cert";
-
-# directory containing the certificates for the remote peers, used for TLS negotiation
-remote_cert_dir = "/etc/jald/remote_certs/";
 
 # path to the root of the database (optional)
 db_root = "/var/lib/jalop/db/";
@@ -134,32 +135,51 @@ db_root = "/var/lib/jalop/db/";
 # path to a directory containing the JALoP schemas (optional)
 schemas_root = "/usr/share/jalop/schemas/";
 
-# the port to listen on
-port = 1234L;
+# A list of supported digest algorithms. These algorithms should be ordered by preference in a single double-quoted string with a space separating the algorithms.
+# Valid values are "sha256", "sha384", and "sha512"
+digest_algorithms = "sha256";
 
-# the IPv4 interface to listen on, or 0.0.0.0 to listen on all interfaces
-host = "0.0.0.0";
+# Enable application of seccomp rules
+enable_seccomp = false;
 
-# For subscribe, the maximum number of records to send before sending a "digest" message
-pending_digest_max = 10L;
+# Enable debugging messages for seccomp
+seccomp_debug = false;
 
-# For subscribe, the maximum number of seconds to wait, before sending a "digest" message
-pending_digest_timeout = 100L;
+# Array of seccomp rules active during the setup phase of jald
+initial_seccomp_rules = ["prctl","access","arch_prctl","execve","getcwd","getrlimit","ioctl","lstat","set_tid_address","seccomp","statfs"]
+
+# Array of seccomp rules active after the setup phase but before the main loop of jald
+both_seccomp_rules = ["brk","close","fstat","lseek","mmap","mprotect","munmap","open","read","rt_sigaction","rt_sigprocmask","set_robust_list","stat","write"]
+
+# Array of seccomp rules active during the main loop of jald
+final_seccomp_rules = ["flock","setsockopt","getpid","clone","connect","exit","exit_group","fcntl","fdatasync","ftruncate","futex","getdents","getpeername","getsockname","getsockopt","gettid","madvise","nanosleep","openat","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_yield","sendto","socket"]
 
 # List of peer configurations. This configuration indicates that the hosts with
 # the IP addresses 127.0.0.1 and 192.168.1.5 are allowed to subscribe to
 # journal and log records, but not audit records. The 2 remotes will not be
 # allowed to publish records to jald
 peers = ( {
-		hosts = ("127.0.0.1", 192.168.1.5);
-		subscribe_allow = ("journal", "log");
-	},
-	# The additional peer configuration here adds audit records to the set
-	# of records the host with IP address 192.168.1.5 is allowed to
-	# subscribe to.
-	{
-		hosts = ("192.168.1.5");
-		subscriber_allow = ("audit");
+	# The hostname or IP address of the subscriber
+	host = "127.0.0.1";
+
+	# The port to connect to
+	port = 8080L;
+
+	# The mode of JALoP operation
+	# To run JALoP in Archive mode, use "archive" or "archival"
+	# To run JALoP in Live mode, use "live"
+	mode = "archive";
+
+	# Array of digest challenge configuration settings ordered by descending priority
+	# Valid values are "on" and "off"
+	digest_challenge = ["on"];
+
+	# Array of record types to be sent to the subscriber
+	# Valid values are "audit", "log", and "journal"
+	record_types = ["audit", "log", "journal"];
+
+	# Directory containing the CA certificate(s) to use for TLS negotiation
+	# cert_dir = "./test-input/TLS_Self_Signed";
 	} );
 
 .SH "SEE ALSO"
