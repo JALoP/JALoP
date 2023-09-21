@@ -36,17 +36,28 @@ Below are the platform-specific versions of python and scons that were used to t
 
   RHEL 7.x: python3.6 (python 3.6.8), scons-3.6
   RHEL 8.x: python3.6 (python 3.6.8), scons-3.6
-  
+
 Later versions of Python should work as well, but were not tested.
 
 Note, the following commands assume your system installation invokes scons-3.6
 On RHEL7, it may be necessary to invoke "scons-3.6"
 
-To build, simply run 'scons' within the top level directory:
+Building requires a C++ compiler with full C++17 capabilities.
+For EL7, use of a devtoolset can provide a capable compiler:
+ - Add the repository
+  - For CentOS 7:
+    - # yum install centos-release-scl
+  - For RHEL 7:
+    - # subscription-manager repos --enable rhel-7-server-devtools-rpms
+ - Install GCC 7 toolset
+  - # yum install devtoolset-7
+ - Launch a new shell using Devtoolset 7
+  - scl enable devtoolset-7 $SHELL
 
+To build, simply run 'scons' within the top level directory:
 $ scons
 
-This generates debug, and release directories.
+SCons generates debug and release directories.
 
 To install the library, simply run the appropriate installation script for your
 platform (e.g. rhel_x86_64):
@@ -113,7 +124,6 @@ $> PATH=/path/to/awk:$PATH scons tests
 KNOWN ISSUES
 -	If the publisher provides the same unique identifier for multiple different records, the subscriber may lose records.
 -	Journal resume handling in live mode may temporarily result in outdated records being transferred.
--	Digest queuing controls (pending_digest_max, pending_digest_timeout) in jald.cfg and jal_subscribe.cfg are not implemented and have no effect.
 -	Under high record volume, repeated interruption of the subscriber with Ctrl-C can cause the publisher to no longer accept connections from that client.
 -	When adding log or audits to the local store that greatly exceed the size limit of 200MB, the local store can fail to output a console message that records have been rejected.
 -	If a subscriber tries to connect without TLS, to a publisher using TLS, the subscriber will display a thread exited message, but will not close until it times out, or a ctrl-c is pressed.
