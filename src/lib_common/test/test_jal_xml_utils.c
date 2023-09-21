@@ -167,7 +167,7 @@ void setup()
 	xmlSecCryptoAppInit(NULL);
 	xmlSecCryptoInit();
 	
-	dgst_ctx = jal_sha256_ctx_create();
+	dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 }
 
 void teardown()
@@ -432,7 +432,7 @@ void test_jal_digest_xml_data_returns_inval_for_bad_digest_ctx()
 	assert_equals(0, dgst_len);
 
 	jal_digest_ctx_destroy(&dgst_ctx);
-	dgst_ctx = jal_sha256_ctx_create();
+	dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	dgst_ctx->init = NULL;
 	ret = jal_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
 	assert_not_equals(ret, JAL_OK);

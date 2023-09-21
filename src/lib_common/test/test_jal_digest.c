@@ -37,8 +37,9 @@
 #include "jal_alloc.h"
 
 #define HELLO_WORLD "Hello World"
-#define HELLO_WORLD_SUM "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
-#define JAL_SHA256_ALGORITHM_URI "http://www.w3.org/2001/04/xmlenc#sha256"
+#define HELLO_WORLD_SHA256_SUM "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
+#define HELLO_WORLD_SHA384_SUM "99514329186b2f6ae4a1329e7ee6c610a729636335174ac6b740f9028396fcc803d0e93863a7c3d90f86beee782f4f3f"
+#define HELLO_WORLD_SHA512_SUM "2c74fd17edafd80e8447b0d46741ee243b7eb74dd2149a0ab1b9246fb30382f27e853d8585719e0e67cbda0daa8f51671064615d645ae27acb15bfb1447f459b"
 #define DIGEST_LEN 2
 #define DATA_LEN 4
 #define FAKEURI "fakeuri"
@@ -67,6 +68,8 @@ static int lseek_called;
 
 static jmp_buf env;
 static size_t gs_expected_input_len;
+
+static enum jal_digest_algorithm *digest_list;
 
 __attribute__((noreturn)) static void abort_handler(__attribute__((unused))int sig)
 {
@@ -262,9 +265,8 @@ static void use_ctx_for_fd()
 	gs_ctx->final = fake_final_for_fd;
 }
 
-
-struct jal_digest_ctx *sha256_ctx;
-SHA256_CTX *sha256;
+struct jal_digest_ctx *digest_ctx_list[JAL_DIGEST_ALGORITHM_COUNT];
+void *digest_inst_list[JAL_DIGEST_ALGORITHM_COUNT];
 
 int SHA256_Init_always_fails(__attribute__((unused)) SHA256_CTX *c)
 {
@@ -278,16 +280,139 @@ int SHA256_Update_always_fails(__attribute__((unused)) SHA256_CTX *c,
 	return 0;
 }
 
-int SHA256_Final_always_failes(__attribute__((unused)) const unsigned char *d,
+int SHA256_Final_always_fails(__attribute__((unused)) unsigned char *d,
 				__attribute__((unused)) SHA256_CTX *c)
 {
 	return 0;
 }
 
+int SHA384_Init_always_fails(__attribute__((unused)) SHA512_CTX *c)
+{
+	return 0;
+}
+
+int SHA384_Update_always_fails(__attribute__((unused)) SHA512_CTX *c,
+				__attribute__((unused)) const void *data,
+				__attribute__((unused)) size_t len)
+{
+	return 0;
+}
+
+int SHA384_Final_always_fails(__attribute__((unused)) unsigned char *d,
+				__attribute__((unused)) SHA512_CTX *c)
+{
+	return 0;
+}
+
+int SHA512_Init_always_fails(__attribute__((unused)) SHA512_CTX *c)
+{
+	return 0;
+}
+
+int SHA512_Update_always_fails(__attribute__((unused)) SHA512_CTX *c,
+				__attribute__((unused)) const void *data,
+				__attribute__((unused)) size_t len)
+{
+	return 0;
+}
+
+int SHA512_Final_always_fails(__attribute__((unused)) unsigned char *d,
+				__attribute__((unused)) SHA512_CTX *c)
+{
+	return 0;
+}
+
+static const char *get_digest_algorithm(int algorithm)
+{
+	switch((enum jal_digest_algorithm) algorithm)
+	{
+		case JAL_DIGEST_ALGORITHM_SHA384:
+			return JAL_SHA384_ALGORITHM_URI;
+		case JAL_DIGEST_ALGORITHM_SHA512:
+			return JAL_SHA512_ALGORITHM_URI;
+		case JAL_DIGEST_ALGORITHM_SHA256:
+		default:
+			return JAL_SHA256_ALGORITHM_URI;
+	}
+}
+
+static int get_digest_length(int algorithm)
+{
+	switch((enum jal_digest_algorithm) algorithm)
+	{
+		case JAL_DIGEST_ALGORITHM_SHA384:
+			return SHA384_DIGEST_LENGTH;
+		case JAL_DIGEST_ALGORITHM_SHA512:
+			return SHA512_DIGEST_LENGTH;
+		case JAL_DIGEST_ALGORITHM_SHA256:
+		default:
+			return SHA256_DIGEST_LENGTH;
+	}
+}
+
+static char *get_digest_sum(int algorithm)
+{
+	switch((enum jal_digest_algorithm) algorithm)
+	{
+		case JAL_DIGEST_ALGORITHM_SHA384:
+			return HELLO_WORLD_SHA384_SUM;
+		case JAL_DIGEST_ALGORITHM_SHA512:
+			return HELLO_WORLD_SHA512_SUM;
+		case JAL_DIGEST_ALGORITHM_SHA256:
+		default:
+			return HELLO_WORLD_SHA256_SUM;
+	}
+}
+
+static void replace_init_function(int algorithm)
+{
+	switch((enum jal_digest_algorithm) algorithm)
+	{
+		case JAL_DIGEST_ALGORITHM_SHA384:
+			replace_function(SHA384_Init, SHA384_Init_always_fails);
+		case JAL_DIGEST_ALGORITHM_SHA512:
+			replace_function(SHA512_Init, SHA512_Init_always_fails);
+		case JAL_DIGEST_ALGORITHM_SHA256:
+		default:
+			replace_function(SHA256_Init, SHA256_Init_always_fails);
+	}
+}
+
+static void replace_update_function(int algorithm)
+{
+	switch((enum jal_digest_algorithm) algorithm)
+	{
+		case JAL_DIGEST_ALGORITHM_SHA384:
+			replace_function(SHA384_Update, SHA384_Update_always_fails);
+		case JAL_DIGEST_ALGORITHM_SHA512:
+			replace_function(SHA512_Update, SHA512_Update_always_fails);
+		case JAL_DIGEST_ALGORITHM_SHA256:
+		default:
+			replace_function(SHA256_Update, SHA256_Update_always_fails);
+	}
+}
+
+static void replace_final_function(int algorithm)
+{
+	switch((enum jal_digest_algorithm) algorithm)
+	{
+		case JAL_DIGEST_ALGORITHM_SHA384:
+			replace_function(SHA384_Final, SHA384_Final_always_fails);
+		case JAL_DIGEST_ALGORITHM_SHA512:
+			replace_function(SHA512_Final, SHA512_Final_always_fails);
+		case JAL_DIGEST_ALGORITHM_SHA256:
+		default:
+			replace_function(SHA256_Final, SHA256_Final_always_fails);
+	}
+}
+
 void setup()
 {
-	sha256_ctx = jal_sha256_ctx_create();
-	sha256 = sha256_ctx->create();
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		digest_ctx_list[i] = jal_digest_ctx_create((enum jal_digest_algorithm) i);
+		digest_inst_list[i] = digest_ctx_list[i]->create();
+	}
 
 	abort_called = 0;
 	create_called = 0;
@@ -302,7 +427,7 @@ void setup()
 
 	dgst_ptr = NULL;
 
-	gs_ctx = jal_digest_ctx_create();
+	gs_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	gs_ctx->algorithm_uri = strdup(FAKEURI);
 	gs_ctx->len = DIGEST_LEN;
 	gs_ctx->create = fake_create;
@@ -323,22 +448,36 @@ void setup()
 	replace_function(read, fake_read);
 	replace_function(lseek, fake_lseek);
 
+	digest_list = (enum jal_digest_algorithm *) jal_malloc(sizeof(enum jal_digest_algorithm));
 }
 
 void teardown()
 {
-	sha256_ctx->destroy(sha256);
-	jal_digest_ctx_destroy(&sha256_ctx);
-	assert_equals((void*)NULL, sha256_ctx);
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		digest_ctx_list[i]->destroy(digest_inst_list[i]);
+		jal_digest_ctx_destroy(&digest_ctx_list[i]);
+		assert_equals((void*)NULL, digest_ctx_list[i]);
+	}
+
 	restore_function(SHA256_Init);
 	restore_function(SHA256_Update);
 	restore_function(SHA256_Final);
+
+	restore_function(SHA384_Init);
+	restore_function(SHA384_Update);
+	restore_function(SHA384_Final);
+
+	restore_function(SHA512_Init);
+	restore_function(SHA512_Update);
+	restore_function(SHA512_Final);
 
 	jal_digest_ctx_destroy(&gs_ctx);
 	free(dgst_ptr);
 	restore_function(read);
 	restore_function(lseek);
 	free(gs_fake_file_buffer);
+	free(digest_list);
 }
 
 void set_digest_context(struct jal_digest_ctx *digest_ctx)
@@ -352,20 +491,6 @@ void set_digest_context(struct jal_digest_ctx *digest_ctx)
 	digest_ctx->destroy = fake_destroy;
 }
 
-void test_jal_digest_ctx_create_returns_struct_with_zeroed_fields()
-{
-	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
-	assert_not_equals(NULL, ptr);
-	assert_equals(0, ptr->len);
-	assert_equals((char*)NULL, ptr->algorithm_uri);
-	assert_equals((void*)NULL, ptr->create);
-	assert_equals((void*)NULL, ptr->init);
-	assert_equals((void*)NULL, ptr->update);
-	assert_equals((void*)NULL, ptr->final);
-	assert_equals((void*)NULL, ptr->destroy);
-	jal_digest_ctx_destroy(&ptr);
-}
-
 void test_jal_digest_ctx_destroy_does_not_crash_on_null()
 {
 	jal_digest_ctx_destroy(NULL);
@@ -376,123 +501,163 @@ void test_jal_digest_ctx_destroy_does_not_crash_on_null()
 void test_jal_digest_destroy_frees_struct()
 {
 	// Run under valgrind to check for leaks.
-	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
-	ptr->algorithm_uri = jal_strdup("asdf");
-	assert_not_equals(NULL, ptr);
-	jal_digest_ctx_destroy(&ptr);
-	assert_equals((struct jal_digest_ctx *)NULL, ptr);
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		struct jal_digest_ctx *ptr = jal_digest_ctx_create((enum jal_digest_algorithm) i);
+		ptr->algorithm_uri = jal_strdup("asdf");
+		assert_not_equals(NULL, ptr);
+		jal_digest_ctx_destroy(&ptr);
+		assert_equals((struct jal_digest_ctx *)NULL, ptr);
+	}
 }
 
-void test_jal_sha256_ctx_create_returns_full_struct()
+void test_jal_digest_ctx_create_returns_full_struct()
 {
-	assert_not_equals(NULL, sha256_ctx);
-	assert_string_equals(JAL_SHA256_ALGORITHM_URI, sha256_ctx->algorithm_uri);
-	assert_equals(SHA256_DIGEST_LENGTH, sha256_ctx->len);
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		assert_not_equals(NULL, digest_ctx_list[i]);
+		assert_string_equals(get_digest_algorithm(i), digest_ctx_list[i]->algorithm_uri);
+		assert_equals(get_digest_length(i), digest_ctx_list[i]->len);
+		assert_not_equals(NULL, digest_ctx_list[i]->create);
+		assert_not_equals(NULL, digest_ctx_list[i]->init);
+		assert_not_equals(NULL, digest_ctx_list[i]->update);
+		assert_not_equals(NULL, digest_ctx_list[i]->final);
+		assert_not_equals(NULL, digest_ctx_list[i]->destroy);
+	}
+
 	assert_equals(32, SHA256_DIGEST_LENGTH);
-	assert_not_equals(NULL, sha256_ctx->create);
-	assert_not_equals(NULL, sha256_ctx->init);
-	assert_not_equals(NULL, sha256_ctx->update);
-	assert_not_equals(NULL, sha256_ctx->final);
-	assert_not_equals(NULL, sha256_ctx->destroy);
+	assert_equals(48, SHA384_DIGEST_LENGTH);
+	assert_equals(64, SHA512_DIGEST_LENGTH);
 }
 
-void test_jal_sha256_create_returns_allocated_sha256()
+void test_jal_digest_create_returns_allocated_create()
 {
-	assert_not_equals(NULL, sha256);
-}
-
-void test_jal_sha256_init_returns_ok()
-{
-	enum jal_status ret = sha256_ctx->init(sha256);
-	assert_equals(JAL_OK, ret);
-}
-
-void test_jal_sha256_init_handles_error()
-{
-	replace_function(SHA256_Init, SHA256_Init_always_fails);
-	enum jal_status ret = sha256_ctx->init(sha256);
-	assert_equals(JAL_E_INVAL, ret);
-}
-
-void test_jal_sha256_update_returns_ok()
-{
-	size_t len = strlen(HELLO_WORLD);
-	enum jal_status ret = sha256_ctx->update(sha256, (uint8_t *)HELLO_WORLD, len);
-	assert_equals(JAL_OK, ret);
-}
-
-void test_jal_sha256_update_handles_error()
-{
-	size_t len = strlen(HELLO_WORLD);
-	replace_function(SHA256_Update, SHA256_Update_always_fails);
-	enum jal_status ret = sha256_ctx->update(sha256, (uint8_t *)HELLO_WORLD, len);
-	assert_equals(JAL_E_INVAL, ret);
-}
-
-void test_jal_sha256_final_handles_error()
-{
-	size_t len = SHA256_DIGEST_LENGTH;
-	replace_function(SHA256_Update, SHA256_Update_always_fails);
-	enum jal_status ret = sha256_ctx->update(sha256, (uint8_t *)HELLO_WORLD, len);
-	assert_equals(JAL_E_INVAL, ret);
-}
-
-void test_jal_sha256_final_returns_invalid_when_len_lt_sha256_digest_length()
-{
-	size_t len = 0;
-	uint8_t data[len];
-	enum jal_status ret = sha256_ctx->final(sha256, data, &len);
-	assert_equals(JAL_E_INVAL, ret);
-}
-
-void test_jal_sha256_full()
-{
-	int i = 0;
-	size_t len = SHA256_DIGEST_LENGTH;
-	uint8_t data[len];
-	char buf[65];
-	sha256_ctx->init(sha256);
-	sha256_ctx->update(sha256, (uint8_t *)HELLO_WORLD, strlen(HELLO_WORLD));
-	sha256_ctx->final(sha256, data, &len);
-	for (i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-		sprintf(buf + (i * 2), "%02x", data[i]);
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		assert_not_equals(NULL, digest_inst_list[i]);
 	}
-	buf[64] = 0;
-	assert_string_equals(HELLO_WORLD_SUM, buf);
 }
 
-void test_jal_sha256_full_multiple_updates()
+void test_jal_digest_init_returns_ok()
 {
-	int i = 0;
-	size_t len = SHA256_DIGEST_LENGTH;
-	uint8_t data[len];
-	char buf[65];
-	sha256_ctx->init(sha256);
-	sha256_ctx->update(sha256, (uint8_t *)"Hel", 3);
-	sha256_ctx->update(sha256, (uint8_t *)"lo ", 3);
-	sha256_ctx->update(sha256, (uint8_t *)"Wor", 3);
-	sha256_ctx->update(sha256, (uint8_t *)"ld", 2);
-	sha256_ctx->final(sha256, data, &len);
-	for (i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-		sprintf(buf  + (i * 2), "%02x", data[i]);
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		enum jal_status ret = digest_ctx_list[i]->init(digest_inst_list[i]);
+		assert_equals(JAL_OK, ret);
 	}
-	buf[64] = 0;
-	assert_string_equals(HELLO_WORLD_SUM, buf);
+}
+
+void test_jal_digest_init_handles_error()
+{
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		replace_init_function(i);
+		enum jal_status ret = digest_ctx_list[i]->init(digest_inst_list[i]);
+		assert_equals(JAL_E_INVAL, ret);
+	}
+}
+
+void test_jal_digest_update_returns_ok()
+{
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		size_t len = strlen(HELLO_WORLD);
+		enum jal_status ret = digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)HELLO_WORLD, len);
+		assert_equals(JAL_OK, ret);
+	}
+}
+
+void test_jal_digest_update_handles_error()
+{
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		size_t len = strlen(HELLO_WORLD);
+		replace_update_function(i);
+		enum jal_status ret = digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)HELLO_WORLD, len);
+		assert_equals(JAL_E_INVAL, ret);
+	}
+}
+
+void test_jal_digest_final_handles_error()
+{
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		size_t len = get_digest_length(i);
+		uint8_t data[len];
+		replace_final_function(i);
+		enum jal_status ret = digest_ctx_list[i]->final(digest_inst_list[i], data, &len);
+		assert_equals(JAL_E_INVAL, ret);
+	}
+}
+
+void test_jal_digest_final_returns_invalid_when_len_lt_digest_length()
+{
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		size_t len = 0;
+		uint8_t data[len];
+		enum jal_status ret = digest_ctx_list[i]->final(digest_inst_list[i], data, &len);
+		assert_equals(JAL_E_INVAL, ret);
+	}
+}
+
+void test_jal_digest_full()
+{
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		void *ctx_inst = digest_inst_list[i];
+		size_t len = digest_ctx_list[i]->len;
+		uint8_t data[len];
+		char buf[(len * 2) + 1];
+		digest_ctx_list[i]->init(ctx_inst);
+		digest_ctx_list[i]->update(ctx_inst, (uint8_t *)HELLO_WORLD, strlen(HELLO_WORLD));
+		digest_ctx_list[i]->final(ctx_inst, data, &len);
+		
+		for (int j = 0; j < (int) len; j++) {
+			sprintf(buf + (j * 2), "%02x", data[j]);
+		}
+		buf[(len * 2)] = 0;
+		assert_string_equals(get_digest_sum(i), buf);
+	}
+}
+
+void test_jal_digest_full_multiple_updates()
+{
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		size_t len = digest_ctx_list[i]->len;
+		uint8_t data[len];
+		char buf[(len * 2) + 1];
+		digest_ctx_list[i]->init(digest_inst_list[i]);
+		digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)"Hel", 3);
+		digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)"lo ", 3);
+		digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)"Wor", 3);
+		digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)"ld", 2);
+		digest_ctx_list[i]->final(digest_inst_list[i], data, &len);
+		for (int j = 0; j < (int) len; j++) {
+			sprintf(buf  + (j * 2), "%02x", data[j]);
+		}
+		buf[(len * 2)] = 0;
+		assert_string_equals(get_digest_sum(i), buf);
+	}
 }
 
 void test_jal_digest_ctx_is_valid()
 {
-	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
-	assert_not_equals(NULL, ptr);
-	set_digest_context(ptr);
-	int ret_val = jal_digest_ctx_is_valid(ptr);
-	assert_true(ret_val);
-	jal_digest_ctx_destroy(&ptr);
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		struct jal_digest_ctx *ptr = jal_digest_ctx_create((enum jal_digest_algorithm) i);
+		assert_not_equals(NULL, ptr);
+		set_digest_context(ptr);
+		int ret_val = jal_digest_ctx_is_valid(ptr);
+		assert_true(ret_val);
+		jal_digest_ctx_destroy(&ptr);
+	}
 }
 
 void test_jal_digest_ctx_is_invalid()
 {
-	struct jal_digest_ctx *ptr = jal_digest_ctx_create();
+	struct jal_digest_ctx *ptr = jal_calloc(1, sizeof(*ptr));
 	assert_not_equals(NULL, ptr);
 	set_digest_context(ptr);
 	ptr->len = 0;
@@ -757,4 +922,121 @@ void test_jal_digest_fd_returns_correct_buffer_with_short_len()
 	enum jal_status ret = jal_digest_fd(gs_ctx, gs_fake_file_fd, &dgst_ptr);
 	assert_equals(JAL_OK, ret);
 	assert_equals(0, memcmp(gs_digest_value, dgst_ptr, DIGEST_LEN));
+}
+
+void test_jal_get_digest_algorithm_list_sha256()
+{
+	char *input = JAL_SHA256_ALGORITHM_STR;
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(input, NULL, &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA256, digest_list[0]);
+}
+
+void test_jal_get_digest_algorithm_list_sha384()
+{
+	char *input = JAL_SHA384_ALGORITHM_STR;
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(input, NULL, &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA384, digest_list[0]);
+}
+
+void test_jal_get_digest_algorithm_list_sha512()
+{
+	char *input = JAL_SHA512_ALGORITHM_STR;
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(input, NULL, &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA512, digest_list[0]);
+}
+
+void test_jal_get_digest_algorithm_list_supports_multiple()
+{
+	// "sha256 sha384 sha512"
+	char input[] = JAL_SHA256_ALGORITHM_STR JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA384_ALGORITHM_STR \
+							   JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA512_ALGORITHM_STR;
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(input, NULL, &digest_list, &num_digests);
+	assert_equals(3, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA256, digest_list[0]);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA384, digest_list[1]);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA512, digest_list[2]);
+}
+
+void test_jal_get_digest_algorithm_list_ignores_duplicates()
+{
+	// "sha256 sha256 sha256 sha256 sha384"
+	char input[] = JAL_SHA256_ALGORITHM_STR JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA256_ALGORITHM_STR \
+								 JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA256_ALGORITHM_STR JAL_DIGEST_ALGORITHM_DELIMETER \
+								 JAL_SHA256_ALGORITHM_STR JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA384_ALGORITHM_STR;
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(input, NULL, &digest_list, &num_digests);
+	assert_equals(2, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA256, digest_list[0]);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA384, digest_list[1]);
+}
+
+void test_jal_get_digest_algorithm_list_cli_overwrites_config()
+{
+	char *cfg_input = JAL_SHA256_ALGORITHM_STR;
+	char *cli_input = JAL_SHA512_ALGORITHM_STR;
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(cfg_input, cli_input, &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA512, digest_list[0]);
+}
+
+void test_jal_get_digest_algorithm_list_default_both_null()
+{
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(NULL, NULL, &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_DEFAULT, digest_list[0]);
+}
+
+void test_jal_get_digest_algorithm_list_default_both_empty()
+{
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list("", "", &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_DEFAULT, digest_list[0]);
+}
+
+void test_jal_get_digest_algorithm_list_default_config_empty()
+{
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list("", NULL, &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_DEFAULT, digest_list[0]);
+}
+
+void test_jal_get_digest_algorithm_list_default_cli_empty()
+{
+	size_t num_digests = 0;
+	jal_get_digest_algorithm_list(NULL, "", &digest_list, &num_digests);
+	assert_equals(1, num_digests);
+	assert_equals(JAL_DIGEST_ALGORITHM_DEFAULT, digest_list[0]);
+}
+
+void test_jal_get_digest_from_str()
+{
+	enum jal_digest_algorithm digest_algorithm;
+	jal_get_digest_from_str(JAL_SHA256_ALGORITHM_STR, &digest_algorithm);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA256, digest_algorithm);
+	jal_get_digest_from_str(JAL_SHA384_ALGORITHM_STR, &digest_algorithm);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA384, digest_algorithm);
+	jal_get_digest_from_str(JAL_SHA512_ALGORITHM_STR, &digest_algorithm);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA512, digest_algorithm);
+}
+
+void test_jal_get_digest_from_uri()
+{
+	enum jal_digest_algorithm digest_algorithm;
+	jal_get_digest_from_uri(JAL_SHA256_ALGORITHM_URI, &digest_algorithm);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA256, digest_algorithm);
+	jal_get_digest_from_uri(JAL_SHA384_ALGORITHM_URI, &digest_algorithm);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA384, digest_algorithm);
+	jal_get_digest_from_uri(JAL_SHA512_ALGORITHM_URI, &digest_algorithm);
+	assert_equals(JAL_DIGEST_ALGORITHM_SHA512, digest_algorithm);
 }
