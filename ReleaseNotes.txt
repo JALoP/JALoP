@@ -1,3 +1,13 @@
+Summary of release 2.1.0.1-beta changes (Fri Sep 22 2023) -
+    - The initial (beta) version of JALoPv2 C subscriber. This C subscriber supports both Berkeley DB (BDB) and filesystem-based databases to store the received J/A/L records. Only one database type (fs or bdb) can be selected for a given instance of the subscriber.
+    - Support configurable digest algorithms (one of sha256, sha384, sha512) for digest-challenge between publisher (‘jald’) and subscribers (‘jal_subscribe’, ‘jnl_test’). Until this point, only sha256 was supported. Note that Java 8 does not support sha384 hash algorithm.
+    - Added scripts (bash) to generate self-signed and CA-signed certificates, Java Keystore for SSL/TLS connection between Publisher and Subscriber.
+    - Added sample self-signed and CA-signed certificates and Java Keystore for testing SSL/TLS connection between Publisher and Subscriber.
+    - Added configurable SECCOMP filters to 'jald' and 'jal-local-store' applications. By default, application-specific SECCOMP filtering is disabled to allow the parent process e.g. the systemd process enforce SECCOMP filters. Application-specific SECCOMP can be enabled and lists of allowed SYSCALLs can be provided via application-specific configuration file.
+    - Clean up session-specific BDB contexts properly upon session termination to avoid leaks.
+    - Added 'jaldb_tool' to update record flags (e.g. sent, confirmed, sync flags) for testing purpose.
+    - Added [-r|--run-db_recover] command-line option to 'jal-local-store' application to initiate a db_recover before opening the BDB database.
+
 Summary of release 2.1.0.0 changes (Thu Dec 15 2022) -
     - Added support for RHEL 8 platform.
     - Added SECCOMP rules to jal-local-store (jalls.c).
