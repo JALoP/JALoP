@@ -42,7 +42,7 @@ struct jaldb_segment;
 struct jaldb_context_t;
 typedef struct jaldb_context_t jaldb_context;
 
-// Define bit flags to represent settings for the Berkely DB
+// Define bit flags to represent settings for the Berkeley DB
 enum jaldb_flags {
 	JDB_NONE = 0,
 	JDB_READONLY = 1,
