@@ -57,6 +57,7 @@ packages_at_least = {
 	'xmlsec1'	: ['xmlsec1', '1.2.9'],
 	'xmlsec1_openssl'	: ['xmlsec1-openssl', '1.2.9'],
 	'libcurl'	: ['libcurl', '4.1.1'],
+	'libmicrohttpd'	: ['libmicrohttpd', '0.9.33'],
 	}
 
 # flags are shared by both debug and release builds
@@ -238,8 +239,8 @@ all_tests = debug_env.Alias('tests')
 release_env = debug_env.Clone()
 
 # add appropriate flags for debug/release
-release_env.Prepend(CCFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags, RPATH=rpath)
-debug_env.Prepend(CCFLAGS=extra_debug_ccflags)
+release_env.Prepend(CCFLAGS=extra_release_ccflags, CXXFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags, RPATH=rpath)
+debug_env.Prepend(CCFLAGS=extra_debug_ccflags, CXXFLAGS=extra_debug_ccflags)
 
 if debug_env['CC'] == 'gcc':
 	debug_env.Prepend(CCFLAGS=profiling_ccflags, LINKFLAGS=profiling_ldflags)
