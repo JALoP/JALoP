@@ -70,3 +70,16 @@ peers = ( {
     "Trust Store": "<absolute_path>/jal_subscriber_v2_server-remotes.jks",
   }
 ================================================================================
+-------------------------- jal_subscribe.cfg -----------------------------------
+# If true, utilize tls encryption and authentication
+enableTls = true
+
+# The path to the private key, used for TLS.
+privateKey = "<absolute_path>/jal_subscriber_v2_server.key.pem";
+
+# The path to the public cert, used for TLS.
+publicCert = "<absolute_path>/jal_subscriber_v2_server.cert.pem";
+
+# File containing all certificates for remote peers concatenated together.
+trustStore = "<absolute_path>/trust_store.pem";
+--------------------------------------------------------------------------------
