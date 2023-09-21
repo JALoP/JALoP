@@ -43,6 +43,7 @@ extern "C" {
 #define JALNS_LOG "log"
 #define JALNS_MODE "mode"
 #define JALNS_MODE_ARCHIVE "archive"
+#define JALNS_MODE_ARCHIVE_ALTERNATIVE "archival"
 #define JALNS_MODE_LIVE "live"
 #define JALNS_PEERS "peers"
 #define JALNS_POLL_TIME "poll_time"
@@ -56,6 +57,7 @@ extern "C" {
 #define JALNS_NETWORK_TIMEOUT "network_timeout"
 #define JALNS_PID_FILE "pid_file"
 #define JALNS_LOG_DIR "log_dir"
+#define JALNS_DIGEST_ALGORITHMS "digest_algorithms"
 
 #ifdef __cplusplus
 }

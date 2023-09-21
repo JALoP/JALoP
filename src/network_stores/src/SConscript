@@ -4,19 +4,40 @@ from Utils import install_for_build
 
 env = env.Clone()
 
+env.Append(LIBS = 'microhttpd')
+env.Append(CXXFLAGS = '-std=c++17')
+env.MergeFlags(env['libcurl_cflags'])
+env.MergeFlags(env['libcurl_ldflags'])
+
+env.MergeFlags({'CPPPATH': ('#src/network_lib/include')})
+
 add_project_lib(env, 'lib_common', 'jal-common')
 add_project_lib(env, 'db_layer', 'jal-db')
 add_project_lib(env, 'jal_utils', 'jal-utils')
 add_project_lib(env, 'network_lib', 'jal-network')
 
+jal_sub_cpp_objs = env.SharedObject("jal_sub.cpp")
+jal_sub_cpp = env.Program(target='jal_sub_cpp', source=jal_sub_cpp_objs)
+env.Depends(jal_sub_cpp, [lib_common, db_layer, jal_utils, network_lib])
+
+env.Default(jal_sub_cpp)
+
 jald_objs = env.SharedObject("jald.cpp")
 jald = env.Program(target='jald', source=jald_objs)
 env.Depends(jald, [lib_common, db_layer, jal_utils, network_lib])
 
+jal_subscribe_objs = env.SharedObject("jal_subscribe.c")
+jal_subscribe = env.Program(target='jal_subscribe', source=jal_subscribe_objs)
+env.Depends(jal_subscribe, [lib_common, db_layer, jal_utils, network_lib])
+
 if (env['variant'] == 'release'):
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
+	env.Alias('install', env.Install(sbindir, jal_subscribe))
+	env.Alias('install', env.Install(sbindir, jal_sub_cpp))
 	env.Alias('install', env.Install(sbindir, jald))
 
+install_for_build(env, 'bin', jal_subscribe)
+install_for_build(env, 'bin', jal_sub_cpp)
 install_for_build(env, 'bin', jald)
 
-Return("jald env")
+Return("jal_subscribe jal_sub_cpp jald env")

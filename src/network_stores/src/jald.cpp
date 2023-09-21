@@ -138,6 +138,7 @@ struct global_config_t {
 	struct peer_config_t *peers;
 	char* pid_file;
 	char* log_dir;
+	char* digest_algorithms;
 } global_config;
 
 struct global_args_t {
@@ -146,6 +147,7 @@ struct global_args_t {
 	char *config_path;	/* --config option */
 	char *pid_path;		/* --pid option */
 	bool enable_tls;	/* --disable_tls option */
+	char *digest_algorithms; /* --digest-algorithms option */
 } global_args;
 
 enum jald_status {
@@ -1175,6 +1177,9 @@ int main(int argc, char **argv)
 	config_t config;
 	config_init(&config);
 
+	enum jal_digest_algorithm *digest_list = (enum jal_digest_algorithm *) jal_malloc(sizeof(enum jal_digest_algorithm));
+	size_t num_digests = 0;
+
 	rc = setup_signals();
 	if (0 != rc) {
 		goto quick_out;
@@ -1312,14 +1317,25 @@ int main(int argc, char **argv)
 				rc = -1;
 				goto out;
 			}
-			dctx = jal_sha256_ctx_create();
-			if (JAL_OK != jaln_register_digest_algorithm(jctx, dctx)) {
-				DEBUG_LOG("Failed to register sha256 algorithm");
-				jal_digest_ctx_destroy(&dctx);
-				dctx = NULL;
+
+			if (JAL_OK != jal_get_digest_algorithm_list(global_config.digest_algorithms, global_args.digest_algorithms, &digest_list, &num_digests)) {
+				DEBUG_LOG("Failed to parse digest list");
 				rc = -1;
 				goto out;
 			}
+			
+			for (size_t i = 0; i < num_digests; i++) {
+				dctx = jal_digest_ctx_create(digest_list[i]);
+
+				if (JAL_OK != jaln_register_digest_algorithm(jctx, dctx)) {
+					DEBUG_LOG("Failed to register digest algorithm");
+					jal_digest_ctx_destroy(&dctx);
+					dctx = NULL;
+					rc = -1;
+					goto out;
+				}
+			}
+			
 			// The jaln_context owns the digest algorithm, so don't keep a
 			// reference to it.
 			dctx = NULL;
@@ -1437,6 +1453,7 @@ out:
 
 quick_out:
 	config_destroy(&config);
+	free(digest_list);
 
 	return rc;
 }
@@ -1446,7 +1463,7 @@ int process_options(int argc, char **argv)
 	int opt = 0;
 	int long_index = 0;
 
-	static const char *opt_string = "c:dvsp:";
+	static const char *opt_string = "c:dvsp:a:";
 	static const struct option long_options[] = {
 		{"config", required_argument, NULL, 'c'}, /* --config or -c */
 		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
@@ -1454,6 +1471,7 @@ int process_options(int argc, char **argv)
 		{"version", no_argument, NULL, 'v'}, /* --version or -v */
 		{"disable-tls", no_argument, NULL, 's'}, /* --disable-tls or -s */
 		{"pid", required_argument, NULL, 'p'}, /* --pid or -p */
+		{"digest-algorithms", required_argument, NULL, 'a'}, /* --digest_algorithms or -a */
 		{0, 0, 0, 0} /* terminating -0 item */
 	};
 
@@ -1495,6 +1513,12 @@ int process_options(int argc, char **argv)
 				}
 				global_args.pid_path = strdup(optarg);
 				break;
+			case 'a':
+				if (global_args.digest_algorithms) {
+					free(global_args.digest_algorithms);
+				}
+				global_args.digest_algorithms = strdup(optarg);
+				break;
 			default:
 				usage();
 		}
@@ -1509,7 +1533,7 @@ int process_options(int argc, char **argv)
 
 __attribute__((noreturn)) void usage()
 {
-	fprintf(stderr, "Usage: jald -c, --config <config_file> [-d, --debug] [-s, --disable-tls] [-v, --version] [--no-daemon]\n");
+	fprintf(stderr, "Usage: jald -c, --config <config_file> [-d, --debug] [-s, --disable-tls] [-v, --version] [--no-daemon] [-a, --digest-algorithms]\n");
 	exit(1);
 }
 
@@ -1571,6 +1595,7 @@ void free_global_args(void)
 {
 	free((void*) global_args.config_path);
 	free((void*) global_args.pid_path);
+	free((void*) global_args.digest_algorithms);
 }
 
 void print_record_types(enum jaln_record_type rtype)
@@ -1642,6 +1667,9 @@ void print_config(void)
 		printf("LOG DIRECTORY:\t\t%s\n", global_config.log_dir);
 	}
 	printf("PUBLISHER ID:\t\t%s\n", global_config.pub_id);
+	if(global_config.digest_algorithms) {
+		printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
+	}
 	for (int i = 0; i < global_config.num_peers; ++i) {
 		printf("PEER[%d]:\n", i);
 		print_peer_config(global_config.peers + i);
@@ -1777,11 +1805,11 @@ static enum jald_status parse_peer_configs(config_setting_t *root, config_settin
 		if (CONFIG_TRUE == rc) {
 			if (!strcasecmp(mode, JALNS_MODE_LIVE)) {
 				peer_cfg->mode = JALN_LIVE_MODE;
-			} else if (!strcasecmp(mode, JALNS_MODE_ARCHIVE)) {
+			} else if (!strcasecmp(mode, JALNS_MODE_ARCHIVE) || (!strcasecmp(mode, JALNS_MODE_ARCHIVE_ALTERNATIVE))) {
 				peer_cfg->mode = JALN_ARCHIVE_MODE;
 			} else {
-				CONFIG_ERROR(a_peer, JALNS_DC_CONFIG, "expected \"" JALNS_MODE_LIVE "\" or \"" \
-						JALNS_MODE_ARCHIVE "\"");
+				CONFIG_ERROR(a_peer, JALNS_DC_CONFIG, "expected \"" JALNS_MODE_LIVE "\", \"" \
+						JALNS_MODE_ARCHIVE "\", or " "\"" JALNS_MODE_ARCHIVE_ALTERNATIVE "\"");
 				return JALD_E_CONFIG_LOAD;
 			}
 		} else {
@@ -1909,6 +1937,13 @@ enum jald_status set_global_config(config_t *config)
 	rc = jalu_config_lookup_string(root, JALNS_LOG_DIR, &global_config.log_dir, false);
 	if(0 != rc) {
 		CONFIG_ERROR(root, JALNS_LOG_DIR, "expected string value");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	// digest_algorithm is optional
+	rc = jalu_config_lookup_string(root, JALNS_DIGEST_ALGORITHMS, &global_config.digest_algorithms, false);
+	if(0 != rc) {
+		CONFIG_ERROR(root, JALNS_DIGEST_ALGORITHMS, "expected string value");
 		return JALD_E_CONFIG_LOAD;
 	}
 
