@@ -163,16 +163,19 @@ void my_peer_digest(
 	return;
 }
 
+static struct jal_digest_ctx *dctx;
 static jaln_session *sess;
 
 void setup()
 {
+	dctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	replace_function(jaln_session_add_to_dgst_list, fake_add_to_dgst_list);
 	replace_function(jaln_create_record_ans_rpy_headers, fake_create_record_ans_rpy_headers);
 	sess = jaln_session_create();
 	sess->jaln_ctx = jaln_context_create();
+	jaln_register_digest_algorithm(sess->jaln_ctx, dctx);
 	sess->ch_info->type = JALN_RTYPE_LOG;
-	sess->dgst = sess->jaln_ctx->sha256_digest;
+	sess->dgst = dctx;
 	sess->pub_data = jaln_pub_data_create();
 	sess->pub_data->dgst_inst = sess->dgst->create();
 	sess->dgst->init(sess->pub_data->dgst_inst);
@@ -199,6 +202,10 @@ void setup()
 	sess->jaln_ctx->pub_callbacks = pub_cbs;
 
 	finalized_called = axl_false;
+
+	// The jaln_context owns the digest algorithm, so don't keep a
+	// reference to it.
+	dctx = NULL;
 }
 
 void teardown()

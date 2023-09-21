@@ -50,9 +50,6 @@ jaln_context *jaln_context_create(void)
 	}
 
 	ctx->ref_cnt = 1;
-	ctx->sha256_digest = jal_sha256_ctx_create();
-	free(ctx->sha256_digest->algorithm_uri);
-	ctx->sha256_digest->algorithm_uri = jal_strdup(JALN_DGST_SHA256);
 
 	ctx->dgst_algs = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
 	if (!ctx->dgst_algs) {
@@ -77,7 +74,6 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 
 	jaln_publisher_callbacks_destroy(&(*jaln_ctx)->pub_callbacks);
 	jaln_connection_callbacks_destroy(&(*jaln_ctx)->conn_callbacks);
-	jal_digest_ctx_destroy(&(*jaln_ctx)->sha256_digest);
 	if ((*jaln_ctx)->dgst_algs) {
 		axl_list_free((*jaln_ctx)->dgst_algs);
 	}
@@ -107,6 +103,16 @@ enum jal_status jaln_register_digest_algorithm(jaln_context *ctx,
 
 	axl_list_remove(ctx->dgst_algs, dgst_ctx);
 	axl_list_append(ctx->dgst_algs, dgst_ctx);
+
+	return JAL_OK;
+}
+
+
+enum jal_status jaln_validate_digest_algorithms(jaln_context *ctx)
+{
+	if (!ctx || !ctx->dgst_algs || axl_list_is_empty(ctx->dgst_algs)) {
+		return JAL_E_INVAL;
+	}
 
 	return JAL_OK;
 }

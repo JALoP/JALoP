@@ -195,7 +195,14 @@ enum jal_status jaln_publisher_send_init(jaln_session *session)
 		ack.addr = session->ch_info->addr;
 		ack.jaln_version = JALN_JALOP_VERSION_TWO;
 		ack.mode = session->role;
-		session->dgst = jal_sha256_ctx_create();
+		enum jal_digest_algorithm algorithm = JAL_DIGEST_ALGORITHM_DEFAULT;
+		if (session->dgst && session->dgst->algorithm_uri) {
+			enum jal_status err = jal_get_digest_from_uri(session->dgst->algorithm_uri, &algorithm);
+			if (JAL_OK != err) {
+				goto err_out;
+			}
+		}
+		session->dgst = jal_digest_ctx_create(algorithm);
 		// TODO: agent and headers?
 		// Agent unused by subscriber, but was supported in 1.x.
 		// Headers never set in 1.x.

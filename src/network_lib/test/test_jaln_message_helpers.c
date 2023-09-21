@@ -250,11 +250,11 @@ void setup()
 	axl_list_append(dgst_list, di_3);
 
 	dgst_algs = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
-	struct jal_digest_ctx *dc_1 = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dc_1 = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	free(dc_1->algorithm_uri);
 	dc_1->algorithm_uri = strdup("sha256");
 
-	struct jal_digest_ctx *dc_2 = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dc_2 = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	free(dc_2->algorithm_uri);
 	dc_2->algorithm_uri = strdup("sha512");
 
@@ -1183,7 +1183,7 @@ void test_parse_digest_challenge_header()
 	sess->pub_data = jaln_pub_data_create();
 	info->expected_nonce = jal_strdup(SAMPLE_UUID);
 
-	sess->dgst = jal_sha256_ctx_create();
+	sess->dgst = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	sess->dgst->len = strlen(SOME_DIGEST)/2;
 
 	enum jal_status rc = jaln_parse_digest_challenge_header(SAMPLE_DGST_CHAL_MSG, strlen(SAMPLE_DGST_CHAL_MSG), info);

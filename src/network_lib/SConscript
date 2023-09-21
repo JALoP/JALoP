@@ -3,7 +3,7 @@ Import('*')
 env = env.Clone()
 
 env.MergeFlags({'CPPPATH': ('#src/network_lib/src:#src/network_lib/include:' + 
-	'#src/lib_common/include:#src/lib_common/src:.').split(':')})
+	'#src/lib_common/include:#src/lib_common/src:#src/network_lib/src/subscriber:.').split(':')})
 
 env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags(env['axl_cflags'])

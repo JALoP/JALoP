@@ -5,10 +5,15 @@ from Utils import add_project_lib
 
 env = env.Clone()
 
+env.Append(LIBS = 'microhttpd')
+env.Append(CXXFLAGS = '-std=c++17')
+
 sources = []
-sources = env.Glob("*.c")
+sources = env.Glob("*.c") + env.Glob("subscriber/*.cpp")
+env.MergeFlags({'CPPPATH':['#src/db_layer/src']})
 
 add_project_lib(env, 'lib_common', 'jal-common')
+add_project_lib(env, 'db_layer', 'jal-db')
 
 network_lib = env.SharedLibrary(target='jal-network', source=[sources])
 env.Default(network_lib)

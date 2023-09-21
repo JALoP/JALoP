@@ -124,13 +124,6 @@ void test_record_info_is_valid_fails_when_missing_app_meta()
 	assert_true(jaln_record_info_is_valid(rec_info));
 }
 
-void test_record_info_is_valid_fails_for_journal_without_payload()
-{
-	rec_info->type = JALN_RTYPE_JOURNAL;
-	rec_info->payload_len = 0;
-	assert_false(jaln_record_info_is_valid(rec_info));
-}
-
 void test_record_info_is_valid_fails_when_record_info_is_null()
 {
 	assert_false(jaln_record_info_is_valid(NULL));

@@ -261,7 +261,6 @@ void jaln_pub_feeder_handler(jaln_session* sess)
 	if (!sess->dgst_on) {
 		// if digest challenges are configured to be disabled, the sync has alreay ocurred
 		rc = jaln_pub_verify_sync(sess, info);
-		curl_easy_cleanup(ctx);
 		if (JAL_OK != rc && JAL_OK != jaln_verify_sync_failure_headers(info)) {
 			perror("Sync verification failed"); // TODO: Remove me once the library is more stable
 			jaln_session_set_errored(sess);

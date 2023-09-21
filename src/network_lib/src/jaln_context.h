@@ -64,7 +64,6 @@ struct jaln_context_t {
 	struct jaln_connection *conn; // Connection to pass to on_connection_close
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;
-	struct jal_digest_ctx *sha256_digest;
 	axlList *dgst_algs;
 	axlList *xml_compressions;
 	enum jaln_digest_challenge digest_challenge;

@@ -50,25 +50,28 @@ void jaln_record_info_destroy(struct jaln_record_info **rec_info) {
 axl_bool jaln_record_info_is_valid(struct jaln_record_info *rec_info)
 {
 	if (!rec_info) {
-		return axl_false;;
+		return axl_false;
 	}
 	if (0 == rec_info->sys_meta_len) {
-		return axl_false;;
+		return axl_false;
 	}
 	if (NULL == rec_info->nonce) {
 		return axl_false;
 	}
 	switch (rec_info->type) {
-	case JALN_RTYPE_AUDIT:
-		// fall through
 	case JALN_RTYPE_JOURNAL:
+		// In the case of a journal resume where then entire
+		// payload has been transferred, it is possible to have a valid payload
+		// length of 0
+		break;
+	case JALN_RTYPE_AUDIT:
 		if (0 == rec_info->payload_len) {
-			return axl_false;;
+			return axl_false;
 		}
 		break;
 	case JALN_RTYPE_LOG:
 		if ((0 == rec_info->payload_len) && (0 == rec_info->app_meta_len)) {
-			return axl_false;;
+			return axl_false;
 		}
 		break;
 	default:
