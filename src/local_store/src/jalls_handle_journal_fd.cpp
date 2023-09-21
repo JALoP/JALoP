@@ -122,7 +122,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	}
 
 	//digest and write the file
-	digest_ctx = jal_sha256_ctx_create();
+	digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_SHA256);
 	sha256_instance = digest_ctx->create();
 	digest = (uint8_t *)jal_malloc(digest_ctx->len);
 	jal_err = digest_ctx->init(sha256_instance);

@@ -161,7 +161,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 	rec->source = jal_strdup("localhost");
 
 	if (thread_ctx->ctx->manifest_sys_meta) {
-		digest_ctx = jal_sha256_ctx_create();
+		digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_SHA256);
 		if (rec->payload) {
 			err = jal_digest_buffer(digest_ctx, rec->payload->payload, rec->payload->length, &payload_digest);
 			if (JAL_OK != err) {
