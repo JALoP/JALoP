@@ -221,7 +221,7 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 
 
 	if(!ctx->digest_ctx) {
-		ctx->digest_ctx = jal_digest_ctx_create();
+		ctx->digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	}
 
 	free(ctx->digest_ctx->algorithm_uri);

@@ -171,8 +171,8 @@ void setup()
 	connect_call_cnt = 0;
 
 	jpctx = jalp_context_create();
-	dctx = jal_digest_ctx_create();
-	dctx2 = jal_digest_ctx_create();
+	dctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
+	dctx2 = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 
 	dctx->create = fake_create;
 	dctx->init = fake_init;

@@ -104,7 +104,7 @@ void setup()
 	app_meta->event_id = jal_strdup(EVENT_ID);
 
 	ctx = jalp_context_create();
-	struct jal_digest_ctx *dgst_ctx = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	jalp_context_set_digest_callbacks(ctx, dgst_ctx);
 	jal_digest_ctx_destroy(&dgst_ctx);
 
