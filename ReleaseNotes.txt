@@ -1,4 +1,4 @@
-Summary of release 2.1.0.1-rc changes (Mon Feb 19 2024) -
+Summary of release 2.1.0.1-rc changes (Fri Mar 08 2024) -
     - Implement SSL/TLS Client Authentication.
     - Switch to libMicroHttpdServer option USE_INTERNAL_THREAD_POOL. This requires libmicrohttpd v0.9.59 or newer.
     - Factory-ize http server creation, add additional JalSubscriber constructors.
