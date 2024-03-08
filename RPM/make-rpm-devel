@@ -1,6 +1,6 @@
 #!/bin/bash
 RPMDIR=rpmbuild-devel
-TOPDIR=`pwd`/$RPMDIR
+TOPDIR=$(pwd)/$RPMDIR
 
 rm -fr $RPMDIR
 
@@ -17,9 +17,9 @@ tar -cf jalop-devel.tar ../src/db_layer ../src/lib_common ../src/network_lib ../
 cp jalop-devel.spec $RPMDIR/SPECS
 cp jalop-devel.tar  $RPMDIR/SOURCES
 
-cd $TOPDIR && rpmbuild --define "_topdir $TOPDIR" -bb SPECS/jalop-devel.spec
+cd "$TOPDIR" && rpmbuild --define "_topdir $TOPDIR" -bb SPECS/jalop-devel.spec
 
-cd ../
+cd ../ || exit
 
 cp $RPMDIR/RPMS/x86_64/*.rpm ./
 

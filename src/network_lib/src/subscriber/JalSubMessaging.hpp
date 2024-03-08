@@ -224,6 +224,8 @@ class Message : public MessageBase
 
 	ReceiveMessageType getMessageType() const;
 
+	std::string getDigest() const;
+
 	Response generateError();
 
 	void setError(std::string errorKind, std::string errorMessage);

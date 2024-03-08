@@ -40,6 +40,8 @@ extern "C" {
 #include <stdint.h>
 #include <uuid/uuid.h>
 
+#include "jalop/jal_digest.h"
+
 #include "jaldb_context.h"
 
 /** holds the fields to be passed to a worker thread */
@@ -86,6 +88,8 @@ struct jalls_context {
 	int accept_delay_increment;
 	/** Maximum accept delay in microseconds. */
 	int accept_delay_max;
+	/** Digest algorithm to use in system metadata */
+	enum jal_digest_algorithm sys_meta_dgst_alg;
 };
 
 struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */

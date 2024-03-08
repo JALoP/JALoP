@@ -59,6 +59,7 @@
 #define JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT "accept_delay_thread_count"
 #define JALLS_CFG_ACCEPT_DELAY_INCREMENT "accept_delay_increment"
 #define JALLS_CFG_ACCEPT_DELAY_MAX "accept_delay_max"
+#define JALLS_CFG_SYS_META_DGST_ALG "sys_meta_dgst_alg"
 
 /**
  * Parses the config file and fills out the jalls_context struct.

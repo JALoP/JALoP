@@ -229,6 +229,25 @@ void test_jaldb_create_file_returns_cleanly_when_open_fails()
 	assert_pointer_equals((void*) NULL, path);
 	assert_equals(-1, fd);
 	assert_equals(uuid_compare(uuid,uuid_orig),0);
+
+	// When this particular failure occurs, the subdirectory /tmp/XX where XX is the first
+	// two characters in uuid will still happen as a side effect, but path is left as NULL
+	// So we have to rebuild the directory name ourselves
+	const int UUID_LEN = 37;
+	char *uuid_string = jal_calloc(UUID_LEN,sizeof(char));
+	uuid_unparse(uuid,uuid_string);
+
+	char* dir_path = NULL;
+	int dir_path_len = strlen("/tmp/XX/") + 1;
+	dir_path = jal_calloc(dir_path_len, sizeof(char));
+	strcpy(dir_path, "/tmp/");
+	strncat(dir_path, uuid_string, 2);
+	dir_path[dir_path_len-1] = '/';
+
+	// Remove this directory
+	remove(dir_path);
+	free(dir_path);
+	free(uuid_string);
 	restore_function(open);
 }
 
@@ -279,7 +298,21 @@ void test_jaldb_create_file_works()
 	full_path = jal_calloc(strlen(path)+6,sizeof(char));
 	snprintf(full_path,strlen(path)+6,"/tmp/%s",path);
 
+	// Ensure the file was created
 	assert_equals(access(full_path,F_OK),0);
+	// Remove the file
+	remove(full_path);
+
+	// truncate to just the /tmp/XX portion by finding the last / and replacing it with 0
+	char* lastSlash = strrchr(full_path, '/');
+	assert_not_equals(NULL, lastSlash);
+	// Sanity checks to make sure we don't try to remove /tmp
+	assert_not_equals(strlen("/tmp/"), strlen(full_path));
+	assert_not_equals(strlen("/tmp"), strlen(full_path));
+	*lastSlash = 0;
+
+	// remove the temporary directory /tmp/XX
+	remove(full_path);
 
 	free(full_path);
 	free(path);

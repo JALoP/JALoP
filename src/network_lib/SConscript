@@ -14,6 +14,6 @@ env.MergeFlags(env['libcurl_ldflags'])
 
 network_lib, net_lib_env = SConscript('src/SConscript', exports='env')
 SConscript('include/SConscript', exports='env all_tests lib_common')
-SConscript('test/SConscript', exports='env net_lib_env all_tests lib_common test_utils')
+SConscript('test/SConscript', exports='env net_lib_env all_tests lib_common network_lib test_utils')
 
 Return('network_lib')

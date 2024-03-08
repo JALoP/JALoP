@@ -370,6 +370,10 @@ err_out:
 }
 
 enum jal_status jal_get_digest_from_str(const char *str, enum jal_digest_algorithm *digest) {
+	if (!str) {
+		return JAL_E_INVAL;
+	}
+
 	for (unsigned long int i = 0; i < sizeof(conversion) / sizeof(conversion[0]); i++) {
 		if (!strcasecmp(str, conversion[i].str)) {
 			*digest = conversion[i].val;
@@ -382,6 +386,10 @@ enum jal_status jal_get_digest_from_str(const char *str, enum jal_digest_algorit
 }
 
 enum jal_status jal_get_digest_from_uri(const char *uri, enum jal_digest_algorithm *digest) {
+	if (!uri) {
+		return JAL_E_INVAL;
+	}
+
 	for (unsigned long int i = 0; i < sizeof(conversion) / sizeof(conversion[0]); i++) {
 		if (!strcmp(uri, uri_conversion[i].str)) {
 			*digest = uri_conversion[i].val;
@@ -398,8 +406,12 @@ enum jal_status jal_parse_digest_algorithm_str(const char *str, enum jal_digest_
 	char *cur_str = NULL;
 	char *saveptr = NULL; 
 	size_t list_len = 0;
-	char *str_cpy = strdup(str);
 
+	if (!str) {
+		return JAL_E_INVAL;
+	}
+
+	char *str_cpy = strdup(str);
 	cur_str = strtok_r(str_cpy, JAL_DIGEST_ALGORITHM_DELIMETER, &saveptr);
 
 	while(cur_str) {

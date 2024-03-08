@@ -74,6 +74,10 @@ If this is not provided and the -a|--digest-algorithms command line flag is not 
 Specify the format that the subscriber should use to store received records.
 Valid values are "fs" (file system) and "bdb" (BerkeleyDB).
 If this is not provided and the -f|--fs or -b|--bdb command line flags are not used, bdb will be used as the default.
+.TP
+.B http_server_thread_pool_size
+Specify the size of the thread pool used by the http server.
+May not be applicable to all server implementations
 .SH EXAMPLES
 .nf
 # If true, utilize tls encryption and authentication
@@ -119,6 +123,10 @@ network_timeout = 0;
 # Defaults to "bdb" if not specified here or by CLI flags
 database_type = "bdb";
 
+# For http server implementations which support thread pools (such as libmicrohttpd)
+# Set the size of the thread pool
+# 9 is sufficient for 3 fully connected publishers to be handled concurrently, and is a safe starting point
+http_server_thread_pool_size = 9;
 .SH "SEE ALSO"
 .BR jal_subscribe (8),
 .BR openssl (1)

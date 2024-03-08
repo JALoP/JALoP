@@ -18,8 +18,6 @@ lib_common_env.MergeFlags('-lcap-ng')
 
 lib_common_env.MergeFlags('-lseccomp')
 
-lib_common_env.MergeFlags('-ljal-common')
-
 lib_common_env.MergeFlags(env['xmlsec1_cflags'])
 lib_common_env.MergeFlags(env['xmlsec1_ldflags'])
 

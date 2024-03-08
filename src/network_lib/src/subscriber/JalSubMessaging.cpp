@@ -668,6 +668,11 @@ void Message::finalizeData()
 	}
 }
 
+std::string Message::getDigest() const
+{
+	return info.digest;
+}
+
 // TODO: This is slightly dangerous as the reference could potentially outlive
 // the class and become dangling. Consider alternatives or return a copy
 std::map<std::string, std::string>& MessageBase::getHeaders() 

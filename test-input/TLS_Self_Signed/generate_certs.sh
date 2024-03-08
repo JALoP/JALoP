@@ -2,7 +2,7 @@
 PASSWORD=changeit
 SHA_VERSION=SHA384withRSA
 
-rm -fr server client *.pem *.jks
+rm -fr server client ./*.pem ./*.jks
 ################################################################################
 #Generate Publisher (jald) Keystore of PKCS12 type
 keytool -genkeypair -keyalg RSA -keystore publisher.jks -noprompt -sigalg $SHA_VERSION \

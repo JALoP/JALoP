@@ -113,9 +113,6 @@ enum jal_status jaln_send_record(
 	}
 
 	enum jal_status ret = jaln_session_is_ok(sess);
-	if (JAL_E_INTERNAL_ERROR == ret) {
-		jaln_finish(sess);
-	}
 	if (JAL_OK != ret) {
 		return JAL_E_NOT_CONNECTED;
 	}
@@ -160,9 +157,6 @@ out:
 		pub_data->app_meta_sz = 0;
 		pub_data->payload_sz = 0;
 	}
-	if (JAL_OK != ret) {
-		jaln_finish(sess);
-	}
 	return ret;
 }
 
@@ -200,9 +194,6 @@ enum jal_status jaln_send_record_feeder(
 	}
 
 	enum jal_status ret = jaln_session_is_ok(sess);
-	if (JAL_E_INTERNAL_ERROR == ret) {
-		jaln_finish(sess);
-	}
 	if (JAL_OK != ret) {
 		return JAL_E_NOT_CONNECTED;
 	}
@@ -262,9 +253,6 @@ out:
 		pub_data->app_meta = NULL;
 		pub_data->sys_meta_sz = 0;
 		pub_data->app_meta_sz = 0;
-	}
-	if (JAL_OK != ret) {
-		jaln_finish(sess);
 	}
 	return ret;
 }

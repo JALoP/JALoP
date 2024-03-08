@@ -133,7 +133,7 @@ std::string modeTypeToString(ModeType mode)
 	}
 	else
 	{
-		return "archive";
+		return "archival";
 	}
 }
 

@@ -50,16 +50,6 @@ struct thread_data {
 	char *nonce;
 };
 
-enum jaln_connect_error on_connect_request(const struct jaln_connect_request *req,
-		int *selected_compression, int *selected_digest, void *user_data)
-{
-	user_data = user_data;
-	DEBUG_LOG("request: %p", req);
-	*selected_compression = 0;
-	*selected_digest = 0;
-	return JALN_CE_ACCEPT;
-}
-
 void on_channel_close(const struct jaln_channel_info *channel_info, void *user_data)
 {
 	user_data = user_data;
@@ -413,7 +403,6 @@ int main(int argc, char **argv) {
 	jaln_context *net_ctx = jaln_context_create();
 	struct jaln_connection_callbacks *connect_handlers = jaln_connection_callbacks_create();
 
-	connect_handlers->connect_request_handler = on_connect_request;
 	connect_handlers->on_channel_close = on_channel_close;
 	connect_handlers->on_connection_close = on_connection_close;
 	connect_handlers->connect_ack = on_connect_ack;

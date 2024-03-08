@@ -361,7 +361,7 @@ bool Session::validateAndStoreAcceptDigest(const Message& message)
 
 		if(JAL_OK != err)
 		{
-			debugOutput(config.debug, stdout, "Error while parsing digest URI\n");
+			debugOutput(config.debug, stderr, "Error while parsing digest URI\n");
 		}
 	}
 
@@ -624,7 +624,7 @@ Response Session::handleRecord(const Message& message, RecordType messageRecordT
 			// Shouldn't be possible to reach
 			fprintf(stderr, "Unreachable code reached in Session::handleRecord. "
 				"Generating Record Failure response\n");
-			generateRecordFailure(JAL_UNSUPPORTED_RECORD_TYPE, currentRecordInfo.jalId);
+			return generateRecordFailure(JAL_UNSUPPORTED_RECORD_TYPE, currentRecordInfo.jalId);
 			break;
 	}
 
@@ -691,9 +691,9 @@ Response Session::handleInitMessage(const Message& message)
 	response.addHeader(HEADER_MESSAGE_TYPE, MSG_INIT_ACK_STR);
 	response.addHeader(HEADER_JAL_SESSION_ID_TYPE, uuid);
 
-	// TODO - override default Xml compression and digest
+	// TODO - override default Xml compression
 	response.addHeader("JAL-XML-Compression", "None");
-	response.addHeader("JAL-Digest", digest_uri_str[digestAlgorithm]);
+	response.addHeader(HEADER_JAL_DIGEST, digest_uri_str[digestAlgorithm]);
 
 	if(shouldChallengeDigest)
 	{

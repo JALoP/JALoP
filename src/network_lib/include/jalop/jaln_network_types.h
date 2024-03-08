@@ -197,52 +197,6 @@ struct jaln_connect_ack {
 };
 
 /**
- * This represents the data that is sent as part of a 'connect' message.
- */
-struct jaln_connect_request {
-	/** The hostname of the remote peer */
-	char *hostname;
-	/** The address of the remote peer */
-	char *addr;
-	/** Information about the connection request; */
-	struct jaln_channel_info *ch_info;
-	/** The requested type of data to transfer using this channel. */
-	enum jaln_record_type type;
-	/** The version of JALoP that the peers are using to communicate. */
-	int jaln_version;
-	/**
-	 * The proposed compressions the sender of this 'connect' message is will
-	 * to use.
-	 */
-	char **compressions;
-	/** The number of compressions in the array. */
-	int cmp_cnt;
-	/** The proposed digest methods. */
-	char **digests;
-	/** The number of digests in the array. */
-	int dgst_cnt;
-	/**
-	 * The role as sent by the remote peer. Note that when the peer sends a
-	 * 'connect' message with the role set to JALN_ROLE_SUBSCRIBE, it is
-	 * indicating that it plans on acting as a subscriber. Conversely, when
-	 * the role is JALN_ROLE_PUBLISH, it indicates the peer plans on acting
-	 * as a publisher.
-	 */
-	enum jaln_role role;
-	/**
- 	 * The mode sent by the remote peer.  Can be either JALN_LIVE_MODE or
- 	 * JALN_ARCHIVE_MODE.  In archive mode, the publisher should send all
- 	 * data.  In live mode, the publisher should send only new data.
- 	 */
-	enum jaln_publish_mode mode;
-	/**
-	 * The jal user agent string (if any). This is the user agent of the
-	 * sender of the 'connect' message.
-	 */
-	char *jaln_agent;
-};
-
-/**
  * The JNL fills out the #jaln_connect_nack and passes it to the application
  * when the peer sends a 'connect-nack' message.
  */

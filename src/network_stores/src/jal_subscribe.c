@@ -23,6 +23,8 @@
 #include <string.h>
 #include <jalop/jal_status.h>
 
+#include "jal_linux_seccomp.h"
+
 static struct SubscriberConfig_t* process_options(int argc, char **argv);
 void usage();
 
@@ -83,13 +85,27 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+	if(seccomp_config.enable_seccomp){
+		if (configureInitialSeccomp()!=0){
+			fprintf(stderr, "%s\n", "Cannot configureInitialSeccomp()");
+			return -1;
+		}
+	}
+	
 	struct Subscriber_t* jsub = jal_subscriber_create(config, &errBuf);
 	jal_subscriber_config_destroy(&config);
-
+	
 	if(NULL == jsub)
 	{
 		fprintf(stderr, "%s\n", errBuf);
 		return -1;
+	}
+
+	if(seccomp_config.enable_seccomp){
+		if (configureFinalSeccomp()!=0){
+			fprintf(stderr, "%s\n", "Cannot configureFinalSeccomp()");
+			return -1;
+		}
 	}
 
 	while(keep_running)
@@ -201,7 +217,12 @@ struct SubscriberConfig_t* process_options(int argc, char **argv)
 		fprintf(stderr, "Config file is required\n");
 		return NULL;
 	}
-
+	
+	if(read_sc_config(conf)!=0){
+		usage();
+		fprintf(stderr, "SECCOMP Config file is corrupted");
+	}
+	
 	struct SubscriberConfig_t* config = jal_subscriber_config_create(conf, &errBuf);
 	if(NULL == config)
 	{

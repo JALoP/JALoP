@@ -57,7 +57,7 @@ packages_at_least = {
 	'xmlsec1'	: ['xmlsec1', '1.2.9'],
 	'xmlsec1_openssl'	: ['xmlsec1-openssl', '1.2.9'],
 	'libcurl'	: ['libcurl', '4.1.1'],
-	'libmicrohttpd'	: ['libmicrohttpd', '0.9.33'],
+	'libmicrohttpd'	: ['libmicrohttpd', '0.9.59'],
 	}
 
 # flags are shared by both debug and release builds
@@ -76,9 +76,9 @@ profiling_ccflags = '-fprofile-arcs -ftest-coverage'.split()
 profiling_ldflags = profiling_ccflags
 
 stack_protector_ccflags = '-fstack-protector-all -Wstack-protector --param=ssp-buffer-size=4'.split()
-rpath = '/usr/lib64:/lib64'
 harden_ldflags = '-pie -Wl,-z,relro,-z,now '
-extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -fPIC -g -O3'.split()
+extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -fPIC -O3'.split()
+extra_release_ldflags = '-s '
 
 debug_env = Environment(ENV=os.environ, tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 		parse_flags= default_ccflags,
@@ -106,7 +106,6 @@ debug_env['HAVE_SELINUX'] = False;
 debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 
 if platform.system() == 'SunOS':
-	debug_env.Replace(RPATHPREFIX = '-Wl,-R')
 	debug_env.PrependENVPath('PKG_CONFIG_PATH',
 			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
 	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/lib -Wl,-R,/usr/local/lib -Wl,-R,/usr/local/ssl/lib'.split()})
@@ -239,7 +238,7 @@ all_tests = debug_env.Alias('tests')
 release_env = debug_env.Clone()
 
 # add appropriate flags for debug/release
-release_env.Prepend(CCFLAGS=extra_release_ccflags, CXXFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags, RPATH=rpath)
+release_env.Prepend(CCFLAGS=extra_release_ccflags, CXXFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags + extra_release_ldflags)
 debug_env.Prepend(CCFLAGS=extra_debug_ccflags, CXXFLAGS=extra_debug_ccflags)
 
 if debug_env['CC'] == 'gcc':

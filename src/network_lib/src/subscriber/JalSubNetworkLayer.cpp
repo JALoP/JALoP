@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <memory>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -23,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <gnutls/gnutls.h>
 
 #include "JalSubMessaging.hpp"
 #include "JalSubNetworkLayer.hpp"
@@ -50,7 +52,7 @@ static int accept_func(
 	// TODO - assuming the addr is an ipv4 family address
 	// should check the family type first
 	// TODO - does not support ipv6
-	char*ip = inet_ntoa( ((sockaddr_in*)(addr))->sin_addr );
+	char* ip = inet_ntoa( ((sockaddr_in*)(addr))->sin_addr );
 
 	for(auto& host : (*allowedHosts))
 	{
@@ -119,6 +121,158 @@ static char* load_file(const char* filename)
 	return buffer;
 }
 
+// Helper to get ipv4 or ipv6 string from sockadrr and lookup the corresponding hostname (if available)
+static bool get_ip_and_hostname(const struct sockaddr* sa, std::string& addr_string, std::string& hostname_string, bool debug)
+{
+	// Ensure we have a valid sockaddr ptr
+	if(NULL == sa)
+	{
+		debugOutput(debug, stderr,
+			"Error: Can't extract ip information from NULL sockaddr for incoming connection\n");
+		return false;
+	}
+	// Preallocate enough storage for a max length ipv6 string plus null terminator
+	char local_addr_string[INET6_ADDRSTRLEN + 1];
+	uint16_t addr_struct_size;
+	switch(sa->sa_family)
+	{
+		case AF_INET:
+			{ // Explicitly scope declaration of sin to suppress warning about the switch going across declarations
+				const sockaddr_in* sin = reinterpret_cast<const sockaddr_in*>(sa);
+				addr_struct_size = sizeof(struct sockaddr_in);
+				if(NULL == inet_ntop(AF_INET, &sin->sin_addr, local_addr_string, INET6_ADDRSTRLEN))
+				{
+					debugOutput(debug, stderr,
+						"Error: Failed to extract ipv4 address from sockaddr for incoming connection with errno: %d, %s\n", errno, strerror(errno));
+					return false;
+				}
+			}
+			break;
+		case AF_INET6:
+			{ // Explicitly scope declaration of sin to suppress warning about the switch going across declarations
+				const sockaddr_in6* sin = reinterpret_cast<const sockaddr_in6*>(sa);
+				addr_struct_size = sizeof(struct sockaddr_in6);
+				if(NULL == inet_ntop(AF_INET6, &sin->sin6_addr, local_addr_string, INET6_ADDRSTRLEN))
+				{
+					debugOutput(debug, stderr,
+						"Error: Failed to extract ipv6 address from sockaddr for incoming connection with errno: %d, %s\n", errno, strerror(errno));
+					return false;
+				}
+			}
+			break;
+		default:
+			debugOutput(debug, stderr,
+				"Error: sockaddr family for incoming connection is neither ipv4 or ipv6\n");
+			return false;
+	}
+
+	// Attempt to translate the resolved ip address into a hostname
+	char local_hostname_string[NI_MAXSERV + 1];
+	if(0 == getnameinfo(sa, addr_struct_size, local_hostname_string, NI_MAXSERV, NULL, 0, NI_NAMEREQD))
+	{
+		hostname_string = std::string(local_hostname_string);
+	}
+	else
+	{
+		hostname_string.clear();
+	}
+
+	addr_string = std::string(local_addr_string);
+	return true;
+}
+
+// Helper to check the client certificate against the trust store
+// Based on the get_client_certificate example in the libmicrohttpd docs
+static bool validate_client_certificate (struct MHD_Connection *conn, bool debug)
+{
+	if(NULL == conn)
+	{
+		debugOutput(debug, stderr,
+			"Rejected Connection: validate_client_certificate called with NULL MHD Connection\n");
+		return false;
+	}
+
+	// Get the gnutls session from the connection
+	const union MHD_ConnectionInfo *ci = MHD_get_connection_info (conn, MHD_CONNECTION_INFO_GNUTLS_SESSION);
+
+	// If the connection info isn't available, reject the connection
+	if(NULL == ci)
+	{
+		debugOutput(debug, stderr,
+			"Rejected Connection: Failed to get connection info from MHD Connection\n");
+		return false;
+	}
+
+	// ci->tls_session is a void*, which, because we don't compile with  -fpermissive, we have to explicitly cast
+	// to the typedef'd gnutls_session_t opaque pointer to avoid a warning/error
+	// To be safe we'll do also NULL check
+	gnutls_session_t tls_session = (gnutls_session_t)ci->tls_session;
+	if(NULL == tls_session)
+	{
+		debugOutput(debug, stderr,
+			"Rejected Connection: Failed to extract tls session from MHD Connction Info\n");
+		return false;
+	}
+
+	
+	// Query libmicrohttpd for the address associated with the client
+	struct sockaddr** client_addr = (struct sockaddr**)MHD_get_connection_info (conn, MHD_CONNECTION_INFO_CLIENT_ADDRESS);
+	if(NULL == client_addr || NULL == *client_addr)
+	{
+		debugOutput(debug, stderr,
+			"Rejected Connection: Unable to obtain sockaddr description of incoming connection\n");
+		return false;
+	}
+
+	// Get ip (may be ipv4 or ipv6) and hostname (if available) strings from this sockaddr
+	std::string addr_string, hostname_string;
+	if(!get_ip_and_hostname(*client_addr, addr_string, hostname_string, debug))
+	{
+		debugOutput(debug, stderr,
+			"Rejected Connection: Unable to obtain ip address of incoming connection\n");
+		return false;
+	}
+
+	unsigned int client_cert_status;
+	int gnutls_status;
+
+	// If we were able to map the ip address to a hostname, try verifying against that first
+	if(!hostname_string.empty())
+	{
+		gnutls_status = gnutls_certificate_verify_peers3(tls_session, hostname_string.data(), &client_cert_status);
+		// If that verification completes without error, but returns a status of with GNUTLS_CERT_UNEXPECTED_OWNER set, try again with the ip
+		if(0 == gnutls_status && (GNUTLS_CERT_UNEXPECTED_OWNER & client_cert_status))
+		{
+			gnutls_status = gnutls_certificate_verify_peers3(tls_session, addr_string.data(), &client_cert_status);
+		}
+	}
+	// If we couldn't map a hostname to the ip address, just verify against the ip address
+	else
+	{
+		gnutls_status = gnutls_certificate_verify_peers3(tls_session, addr_string.data(), &client_cert_status);
+	}
+
+	// Ensure that a) the validation succeeded, and b) that the cert is valid
+	if(gnutls_status != 0)
+	{
+		debugOutput(debug, stderr,
+			"Rejected Connection: Client Certificate Validation Failed with error code: %d\n"
+			"See libgnutls Core-TLS-API documentation for error code descriptions\n",
+			gnutls_status);
+		return false;
+	}
+
+	if(client_cert_status != 0)
+	{
+		debugOutput(debug, stderr,
+			"Rejected Connection: Client Certificate Invalid with error code: %u\n"
+			"See libgnutls enum definition: gnutls_certificate_status_t\n",
+			client_cert_status);
+		return false;
+	}
+	return true;
+}
+
 void* request_completed(
 	void* cls,
 	struct MHD_Connection* conn,
@@ -171,6 +325,12 @@ static int response_func(
 	size_t* upload_data_size,
 	void** con_cls)
 {
+	// Extract cls values
+	SubscriberCallbacks callbacks = ((ResponseFuncSettings*)cls)->callbacks;
+	bool debug = ((ResponseFuncSettings*)cls)->debug;
+	bool tlsEnabled = ((ResponseFuncSettings*)cls)->tlsEnabled;
+
+
 	Message* messagePtr;
 	// TODO examine unused params
 	(void)url;
@@ -181,12 +341,30 @@ static int response_func(
 	// decide when we're done
 	size_t upload_data_received = *upload_data_size;
 
-	// Extract cls values
-	SubscriberCallbacks callbacks = ((ResponseFuncSettings*)cls)->callbacks;
-	bool debug = ((ResponseFuncSettings*)cls)->debug;
-
 	if(NULL == *con_cls)
 	{
+		// For new transactions, verify the client certificate before proceeding
+		// libmicrohttpd should really do this for us, but doesn't, which unfortunately means we're doing
+		// this way more often than should be necessary
+		// TODO: Consider switching to an http server library that is more fully featured
+		// TODO: Determine if it's actually safe to only verify the client cert for new http transactions
+		// or if the certificate should be re-examined for each chunk of a POST message
+		if(tlsEnabled && !validate_client_certificate(conn, debug))
+		{
+			//// Option 1 - form up an http response with error
+			//MHD_Response* mhd_response = MHD_create_response_from_buffer(0, NULL,
+			//	MHD_RESPMEM_PERSISTENT);
+			//// TODO: Is 400 the right response for an invalid client cert? Online docs
+			//// say it shouldn't even reach the server proper, but libmicrohttpd doesn't check
+			//// the certs for us, so we have to do something here.
+			//MHD_queue_response(conn, MHD_HTTP_BAD_REQUEST, mhd_response);
+			//MHD_destroy_response(mhd_response);
+			//return MHD_YES;
+
+			//Option 2 - just break the pipe. curl gets a "no data, no headers" response
+			return MHD_NO;
+		}
+
 		// set con_cls to some state which can be used in subsequent calls to this function
 		// during the same transaction
 		// Free this in the request_complete handler
@@ -304,11 +482,12 @@ static int response_func(
 	return MHD_YES;
 }
 
-HttpServer::HttpServer(
+LibMicroHttpdServer::LibMicroHttpdServer(
 	std::vector<std::string> paramAllowedHosts,
 	SubscriberCallbacks callbacks,
 	SubscriberConfig config)
-	: allowedHosts(paramAllowedHosts), responseFuncSettings(callbacks, config.debug)
+	: HttpServer(callbacks, config),
+	allowedHosts(paramAllowedHosts)
 {
 	struct addrinfo hints;
 	struct addrinfo* result;
@@ -364,8 +543,9 @@ HttpServer::HttpServer(
 				+ config.tlsConfig.trustStore);
 		}
 
+
 		daemon = MHD_start_daemon(
-			MHD_USE_SSL | MHD_USE_POLL | MHD_USE_THREAD_PER_CONNECTION,
+			MHD_USE_SSL | MHD_USE_POLL | MHD_USE_INTERNAL_POLLING_THREAD,
 			0, // port ignored when using MHD_OPTION_SOCK_ADDR
 			&accept_func,
 			(void*)&(this->allowedHosts),
@@ -375,15 +555,15 @@ HttpServer::HttpServer(
 			MHD_OPTION_HTTPS_MEM_CERT, publicCert,
 			MHD_OPTION_HTTPS_MEM_TRUST, trustStore,
 			MHD_OPTION_NOTIFY_COMPLETED, request_completed, &(this->responseFuncSettings),
-			MHD_OPTION_HTTPS_MEM_KEY, privateKey,
 			MHD_OPTION_CONNECTION_TIMEOUT, config.networkTimeout,
 			MHD_OPTION_SOCK_ADDR, res->ai_addr,
+			MHD_OPTION_THREAD_POOL_SIZE, config.httpServerThreadPoolSize,
 			MHD_OPTION_END);
 	}
 	else
 	{
 		daemon = MHD_start_daemon(
-			MHD_USE_POLL | MHD_USE_THREAD_PER_CONNECTION,
+			MHD_USE_POLL | MHD_USE_INTERNAL_POLLING_THREAD,
 			0, // port ignored when using MHD_OPTION_SOCK_ADDR
 			&accept_func,
 			(void*)&(this->allowedHosts),
@@ -392,6 +572,7 @@ HttpServer::HttpServer(
 			MHD_OPTION_NOTIFY_COMPLETED, request_completed, &(this->responseFuncSettings),
 			MHD_OPTION_CONNECTION_TIMEOUT, config.networkTimeout,
 			MHD_OPTION_SOCK_ADDR, res->ai_addr,
+			MHD_OPTION_THREAD_POOL_SIZE, config.httpServerThreadPoolSize,
 			MHD_OPTION_END);
 	}
 
@@ -404,7 +585,7 @@ HttpServer::HttpServer(
 	debugOutput(config.debug, stdout, "daemon start\n");
 }
 
-HttpServer::~HttpServer()
+LibMicroHttpdServer::~LibMicroHttpdServer()
 {
 	// TODO - I think this call will wait for any currently active threads to join
 	// before shutting down. So we shouldn't get interrupted during our handling, but
@@ -413,4 +594,15 @@ HttpServer::~HttpServer()
 	free(privateKey);
 	free(publicCert);
 	free(trustStore);
+}
+
+std::shared_ptr<HttpServer> LibMicroHttpdServer::factory(
+	std::vector<std::string> allowedHosts,
+	SubscriberCallbacks callbacks,
+	SubscriberConfig config)
+{
+	return std::make_shared<LibMicroHttpdServer>(
+		allowedHosts,
+		callbacks,
+		config);
 }

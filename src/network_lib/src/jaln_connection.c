@@ -37,8 +37,8 @@ struct jaln_connection *jaln_connection_create()
 }
 
 void jaln_connection_destroy(struct jaln_connection **conn) {
-	// The connection doesn't actually own any of the data members, it just
-	// needs pointers back to them.
+	// The connection doesn't "own" the sessions in a pure sense. Just "unref" each session
+	// which will trigger the session's destruction when the reference count hits 0
 	if (!conn || !*conn) {
 		return;
 	}

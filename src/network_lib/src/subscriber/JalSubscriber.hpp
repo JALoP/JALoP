@@ -50,7 +50,7 @@ class JalSubscriber
 	// A wrapper for the libmicrohttpd server to manage state and lifetime
 	// Note - keep this declared last. the HttpServer relies on some of the other members
 	// of JalSubscriber (notably the activeSessions and jdb), so should be destructed first
-	HttpServer httpServer;
+	std::shared_ptr<HttpServer> httpServer;
 
 	Response messageHandler(const Message& message);
 
@@ -64,9 +64,48 @@ class JalSubscriber
 
 	void pruneOldestSession();
 
+	// Consolidates actual construction, should be called only from
+	// within public constructors
+	void constructorImpl(
+		SubscriberConfig config,
+		std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory,
+		std::function<std::shared_ptr<HttpServer>(
+			std::vector<std::string>,
+			SubscriberCallbacks callbacks,
+			SubscriberConfig)> serverFactory);
+
 	public:
 	JalSubscriber(
 		SubscriberConfig config);
+
+	// For advanced users
+	// The following constructors allow the use of httpServer or JalSubDatabase implementations
+	// which might not be in the same library as the subscriber without rebuilding
+	// the subscriber itself
+	//
+	// NOTE - The JalSubDatabase constructors will override the db selection in the config
+	//
+	// Specify a custom database
+	JalSubscriber(
+		SubscriberConfig config,
+		std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory);
+
+	// Specify a custom httpServer
+	JalSubscriber(
+		SubscriberConfig config,
+		std::function<std::shared_ptr<HttpServer>(
+			std::vector<std::string>,
+			SubscriberCallbacks,
+			SubscriberConfig)> httpServer);
+
+	// Specify a custom database and http server
+	JalSubscriber(
+		SubscriberConfig paramConfig,
+		std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory,
+		std::function<std::shared_ptr<HttpServer>(
+			std::vector<std::string>,
+			SubscriberCallbacks,
+			SubscriberConfig)> httpServer);
 };
 
 #endif

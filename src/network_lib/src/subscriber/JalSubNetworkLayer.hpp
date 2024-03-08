@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <memory>
 #include "JalSubMessaging.hpp"
 #include "JalSubCallbacks.hpp"
 #include "JalSubConfig.hpp"
@@ -27,30 +28,50 @@ struct ResponseFuncSettings
 {
 	SubscriberCallbacks callbacks;
 	bool debug;
+	bool tlsEnabled;
 
-	ResponseFuncSettings(SubscriberCallbacks paramCallbacks, bool paramDebug) :
-		callbacks(paramCallbacks), debug(paramDebug)
+	ResponseFuncSettings(SubscriberCallbacks paramCallbacks, bool paramDebug, bool paramTlsEnabled) :
+		callbacks(paramCallbacks), debug(paramDebug), tlsEnabled(paramTlsEnabled)
 		{}
 };
 
-
+// Base class to allow polymorphic handling and flexibility for multiple
+// http server factories to exist
+// Currently only the libmicrohttpdserver implementation exists outside of the testing
+// environment
 class HttpServer
 {
-	private:
+	public:
+	ResponseFuncSettings responseFuncSettings;
+
+	HttpServer(SubscriberCallbacks paramCallbacks, SubscriberConfig paramConfig) :
+		responseFuncSettings(ResponseFuncSettings(paramCallbacks, paramConfig.debug, paramConfig.enableTls))
+	{
+	}
+
+	virtual ~HttpServer() {};
+};
+
+class LibMicroHttpdServer : public HttpServer
+{
 	struct MHD_Daemon* daemon;
 	std::vector<std::string> allowedHosts;
-	ResponseFuncSettings responseFuncSettings;
 	char* privateKey = NULL;
 	char* publicCert = NULL;
 	char* trustStore = NULL;
 
 	public:
-	HttpServer(
+	static std::shared_ptr<HttpServer> factory(
+		std::vector<std::string> allowedHosts,
+		SubscriberCallbacks callbacks,
+		SubscriberConfig config);
+
+	LibMicroHttpdServer(
 		std::vector<std::string> allowedHosts, // List of ipv4 addresses to accept messages from
 		SubscriberCallbacks callbacks,
 		SubscriberConfig config);
 
-	~HttpServer();
+	~LibMicroHttpdServer();
 };
 
 #endif

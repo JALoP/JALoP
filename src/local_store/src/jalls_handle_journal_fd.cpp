@@ -76,7 +76,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	int app_meta_digest_len = 0;
 	char *app_meta_alg = NULL;
 
-	void *sha256_instance = NULL;
+	void *digest_instance = NULL;
 
 	//get the payload, write it to the db file.
 	char data_buf[JALLS_JOURNAL_BUF_LEN];
@@ -122,13 +122,13 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	}
 
 	//digest and write the file
-	digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_SHA256);
-	sha256_instance = digest_ctx->create();
+	digest_ctx = jal_digest_ctx_create(thread_ctx->ctx->sys_meta_dgst_alg);
+	digest_instance = digest_ctx->create();
 	digest = (uint8_t *)jal_malloc(digest_ctx->len);
-	jal_err = digest_ctx->init(sha256_instance);
+	jal_err = digest_ctx->init(digest_instance);
 	if(jal_err != JAL_OK) {
 		if (debug) {
-			fprintf(stderr, "could not init sha256 digest context\n");
+			fprintf(stderr, "could not init digest context\n");
 		}
 		goto err_out;
 	}
@@ -147,7 +147,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 			}
 			goto err_out;
 		}
-		jal_err = digest_ctx->update(sha256_instance, (uint8_t *)data_buf, bytes_read);
+		jal_err = digest_ctx->update(digest_instance, (uint8_t *)data_buf, bytes_read);
 		if (jal_err != JAL_OK) {
 			if (debug) {
 				fprintf(stderr, "could not digest the journal data\n");
@@ -166,7 +166,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 
 	size_t digest_length;
 	digest_length = digest_ctx->len;
-	jal_err = digest_ctx->final(sha256_instance, digest, &digest_length);
+	jal_err = digest_ctx->final(digest_instance, digest, &digest_length);
 	if(jal_err != JAL_OK) {
 		if (debug) {
 			fprintf(stderr, "could not digest the journal\n");
@@ -294,7 +294,7 @@ err_out:
 	close(journal_fd);
 	free(app_meta_buf);
 	if (digest_ctx) {
-		digest_ctx->destroy(sha256_instance);
+		digest_ctx->destroy(digest_instance);
 		jal_digest_ctx_destroy(&digest_ctx);
 	}
 	free(digest);

@@ -51,7 +51,7 @@ void jaln_connection_callbacks_destroy(struct jaln_connection_callbacks **callba
 
 int jaln_connection_callbacks_is_valid(struct jaln_connection_callbacks *callbacks)
 {
-	if (!callbacks || !callbacks->connect_request_handler ||
+	if (!callbacks ||
 			!callbacks->on_channel_close ||
 			!callbacks->on_connection_close ||
 			!callbacks->connect_ack ||

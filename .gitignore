@@ -7,3 +7,9 @@ debug/
 /doc/doxygen.out
 /doc/devel-doxygen.out
 /cov
+testdb
+subdb
+*.log
+nbproject
+*.sock
+*.out
