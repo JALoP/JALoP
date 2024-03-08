@@ -42,8 +42,8 @@ The full or relative path to a key file to be used for signing. Must also specif
 \fB\-c\fR
 The full or relative path to a certificate file to be used for signing. Requires '-k'.
 .TP
-\fB\-d\fR
-Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.
+\fB\-d\fR, \fB\-\-digest=D\fR
+Calculates and adds a digest of the payload to the application metadata. Must also specify '-a'. Defaults to "sha256" if no algorithm is specified. Valid values are "sha256", "sha384", "sha512".
 .TP
 \fB\-x\fR
 The full or relative path to the JALoP Schemas.

@@ -22,6 +22,7 @@ This project makes use of the following libraries:
   site_scons - http://scons.org/
   test-dept - http://code.google.com/p/test-dept/
   Berkeley DB - http://www.oracle.com/us/products/database/berkeley-db/overview/index.html
+  libmicrohttpd - http://www.gnu.org/software/libmicrohttpd/
 
 The following libraries are included in the 3rd-party directory:
   axl
@@ -53,6 +54,49 @@ For EL7, use of a devtoolset can provide a capable compiler:
   - # yum install devtoolset-7
  - Launch a new shell using Devtoolset 7
   - scl enable devtoolset-7 $SHELL
+
+The version of libmicrohttpd available in the CentOS/RHEL7 packages is not sufficient for this project
+It is necessary to acquire v0.9.59 (or newer) from http://www.gnu.org/software/libmicrohttpd/
+or one of the mirrors - or clone the repo from: https://git.gnunet.org/libmicrohttpd.git
+v0.9.59 is recommended because it is the version available in the CentOS/RHEL8 packages and has
+been the most thoroughly tested
+
+Once the source has been acquired, cd to that directory
+There are a few additional dependencies to build libmicrohttpd "makeinfo", but these dependencies
+are already available in the rhel/centos packages
+$ sudo yum install texinfo gnutls gnutls-devel
+
+At this point, you're ready to build the expected version of libmicrohttpd
+$ git checkout v0.9.59
+$ ./boostrap
+$ ./configure --enable-https --with-gnutls
+$ make
+$ make install (This will likely require sudo, depending on the prefix given to ./configure)
+
+By default, make install places the installed library in /usr/local/lib and the header in
+/usr/local/include, which SCons will not understand to look for by default.
+The JALoP SConstruct uses pkg-config to find dependencies. Additional
+locations can be added to pkg-config's search path. Use the command:
+
+$ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig/
+
+to inform pkg-config of this additional search location. This command will only affect
+the current shell and must be re-run if a new shell is used for building. If a different
+--prefix=PREFIX option is passed to the ./configure for libmicrohttpd, the path given to
+PKG_CONFIG_PATH must be modified accordingly. If necessary, the installation locations
+can be configured even more precisely. Use ./configure --help to see the available options.
+e.g. --libdir, --includedir
+
+At run-time, it's necessary to link against this newly built .so with the jal_sub_cpp and jal_subscribe
+CLIs - or any program that creates a JalSubscriber object. There are a few ways to do this.
+1. Add a file under /etc/ld.so.conf.d/ containing the directory in which your built library exists
+then run sudo ldconfig to update the cache
+2. Add the directory containing your built library to environment variable LD_LIBRARY_PATH in the shell
+where jal_sub_cpp, jal_subscribe, or other v2 subscriber will be run
+3. Modify the call to ./configure to use a --prefix=PREFIX that will place the library somewhere
+it will be found by the usual means.
+e.g. ./configure --prefix=/usr/ - oddly on CentOS7 this places the lib in /lib, not /usr/lib, but
+it does appear to otherwise work as you would expect and links correctly without other modifications.
 
 To build, simply run 'scons' within the top level directory:
 $ scons

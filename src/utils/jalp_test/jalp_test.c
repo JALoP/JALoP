@@ -55,7 +55,7 @@
 #define DEFAULT_SCHEMA_DIR "/usr/share/jalop/schemas"
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt, int *validate_xml);
+	char **cert_path, int *stdin_payload, int *calculate_sha, enum jal_digest_algorithm *dgst_alg, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt, int *validate_xml);
 
 
 static void print_usage();
@@ -78,6 +78,7 @@ int main(int argc, char **argv)
 	char *cert_path = NULL;
 	int stdin_payload = 0;
 	int calculate_sha = 0;
+	enum jal_digest_algorithm dgst_alg = JAL_DIGEST_ALGORITHM_DEFAULT;
 	int validate_xml = 0;
 	char record_type = 0;
 	char *schema_path = NULL;
@@ -85,7 +86,7 @@ int main(int argc, char **argv)
 	long int repeat_cnt = JALP_TEST_DEFEAULT_NUM_REPEAT;
 
 	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path,
-		&stdin_payload, &calculate_sha, &record_type, &socket_path, &schema_path, &repeat_cnt, &validate_xml);
+		&stdin_payload, &calculate_sha, &dgst_alg, &record_type, &socket_path, &schema_path, &repeat_cnt, &validate_xml);
 
 	struct jalp_app_metadata *app_meta = NULL;
 	uint8_t *payload_buf = NULL;
@@ -152,7 +153,7 @@ int main(int argc, char **argv)
 	}
 
 	if(calculate_sha) {
-		digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
+		digest_ctx = jal_digest_ctx_create(dgst_alg);
 		jalp_ret = jalp_context_set_digest_callbacks(ctx, digest_ctx);
 		if (jalp_ret != JAL_OK) {
 			printf("error setting digest callbacks\n");
@@ -245,24 +246,24 @@ err_out:
 }
 
 static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, char *record_type, char **socket_path, 
+	char **cert_path, int *stdin_payload, int *calculate_sha, enum jal_digest_algorithm *dgst_alg, char *record_type, char **socket_path, 
 	char **schema_path, long int *repeat_cnt, int *validate_xml)
 {
-	static const char *optstring = "a:p:st:hj:k:c:dx:n:vV";
+	static const char *optstring = "a:p:st:hj:k:c:d::x:n:vV";
 	static const struct option long_options[] = { 
-		{"type", 1, 0, 't'}, 
-		{"version", 0, 0, 'v'}, 
-		{"appmeta", 1, 0, 'a'}, 
-		{"payload", 1, 0, 'p'}, 
-		{"stdin", 0, 0, 's'}, 
-		{"socket", 1, 0, 'j'}, 
-		{"key", 1, 0, 'k'}, 
-		{"cert", 1, 0, 'c'}, 
-		{"digest", 0, 0, 'd'}, 
-		{"schemas", 1, 0, 'x'}, 
-		{"count", 1, 0, 'n'}, 
-		{"help", 0, 0, 'h'}, 
-		{"validate", 0, 0, 'V'}, 
+		{"type", required_argument, NULL, 't'}, 
+		{"version", no_argument, NULL, 'v'}, 
+		{"appmeta", required_argument, NULL, 'a'}, 
+		{"payload", required_argument, NULL, 'p'}, 
+		{"stdin", no_argument, NULL, 's'}, 
+		{"socket", required_argument, NULL, 'j'}, 
+		{"key", required_argument, NULL, 'k'}, 
+		{"cert", required_argument, NULL, 'c'}, 
+		{"digest", optional_argument, NULL, 'd'}, 
+		{"schemas", required_argument, NULL, 'x'}, 
+		{"count", required_argument, NULL, 'n'}, 
+		{"help", no_argument, NULL, 'h'}, 
+		{"validate", no_argument, NULL, 'V'}, 
 		{NULL, 0, 0, 0} 
 	};
 
@@ -302,10 +303,25 @@ static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **pa
 				*cert_path = strdup(optarg);
 				break;
 			case 'd':
-				if(optarg) {
-					goto err_usage;
-				}
 				*calculate_sha = 1;
+				*dgst_alg = JAL_DIGEST_ALGORITHM_DEFAULT;
+
+				// Because we're using "::" notation in long_options to denote that the argument
+				// is optional, but the argument is expected to appear after the option without
+				// a space separating them. To get around this, we look at the next item in argv
+				// check if the first character is "-". If it is, it's a new argument and the user
+				// did not specify a digest algorithm. Otherwise, we assume it's a digest algorithm.
+				if (!optarg && optind < argc && argv[optind][0] != '-') {
+					optarg = argv[optind++];
+				}
+				// If the digest=ALG format is used, optarg contains the value
+				if (optarg) {
+					enum jal_status status = jal_get_digest_from_str(optarg, dgst_alg);
+					if (JAL_OK != status) {
+						printf("Invalid digest found: %s\n", optarg);
+						goto err_usage;
+					}
+				}
 				break;
 			case 'x':
 				*schema_path = strdup(optarg);
@@ -413,7 +429,8 @@ static void print_usage()
 	-j, --socket	The full or relative path to the JALoP socket.\n\
 	-k, --key	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
 	-c, --cert	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
-	-d, --digest	Calculates and adds a SHA256 digest of the payload to the application metadata. Must also specify '-a'.\n\
+	-d, --digest=D	Calculates and adds a digest of the payload to the application metadata. Defaults to \"sha256\" if no algorithm is provided.\n\
+		Valid values are \"sha256\", \"sha384\", and \"sha512\". Must also specify '-a'.\n\
 	-x, --schemas	The full or relative path to the JALoP Schemas.\n\
 	-n, --count	The number of times to repeat an event. Must be a positive numeric value within the representable range.\n\
 	-v, --version	Print the version number and exit.\n\

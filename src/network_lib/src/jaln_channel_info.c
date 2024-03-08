@@ -36,8 +36,6 @@ struct jaln_channel_info *jaln_channel_info_create()
 }
 
 void jaln_channel_info_destroy(struct jaln_channel_info **ch_info) {
-	// The channel_info doesn't actually own any of the data members, it just
-	// needs pointers back to them.
 	if (!ch_info || !*ch_info) {
 		return;
 	}

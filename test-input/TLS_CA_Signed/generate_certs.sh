@@ -67,8 +67,8 @@ cp jalop_ca.cert.pem client/trust_store_dir
 cp $SERVER_NAME.cert.pem client/trust_store_dir
 #cat jalop_ca.cert.pem > client/$CLIENT_NAME.trusted_certs
 #cat $SERVER_NAME.cert.pem >> client/$CLIENT_NAME.trusted_certs
-ln client/trust_store_dir/$SERVER_NAME.cert.pem client/trust_store_dir/$(openssl x509 -noout -hash -in client/trust_store_dir/$SERVER_NAME.cert.pem).0
-ln client/trust_store_dir/jalop_ca.cert.pem client/trust_store_dir/$(openssl x509 -noout -hash -in client/trust_store_dir/jalop_ca.cert.pem).0
+ln client/trust_store_dir/$SERVER_NAME.cert.pem client/trust_store_dir/"$(openssl x509 -noout -hash -in client/trust_store_dir/$SERVER_NAME.cert.pem)".0
+ln client/trust_store_dir/jalop_ca.cert.pem client/trust_store_dir/"$(openssl x509 -noout -hash -in client/trust_store_dir/jalop_ca.cert.pem)".0
 
 cp $SERVER_NAME.key.pem server
 cp $SERVER_NAME.cert.pem server
@@ -76,8 +76,8 @@ cp jalop_ca.cert.pem server/trust_store_dir
 cp $CLIENT_NAME.cert.pem server/trust_store_dir
 cat jalop_ca.cert.pem > server/trust_store_dir/$SERVER_NAME.trusted_certs
 cat $CLIENT_NAME.cert.pem >> server/trust_store_dir/$SERVER_NAME.trusted_certs
-ln server/trust_store_dir/$CLIENT_NAME.cert.pem server/trust_store_dir/$(openssl x509 -noout -hash -in server/trust_store_dir/$CLIENT_NAME.cert.pem).0
-ln server/trust_store_dir/jalop_ca.cert.pem server/trust_store_dir/$(openssl x509 -noout -hash -in server/trust_store_dir/jalop_ca.cert.pem).0
+ln server/trust_store_dir/$CLIENT_NAME.cert.pem server/trust_store_dir/"$(openssl x509 -noout -hash -in server/trust_store_dir/$CLIENT_NAME.cert.pem)".0
+ln server/trust_store_dir/jalop_ca.cert.pem server/trust_store_dir/"$(openssl x509 -noout -hash -in server/trust_store_dir/jalop_ca.cert.pem)".0
 
 rm -f $SERVER_NAME.*; 
 rm -f $CLIENT_NAME.*; 

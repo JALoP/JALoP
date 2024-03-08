@@ -9,13 +9,11 @@ env = env.Clone()
 # The test code trigger warnings we'd just assume ignore.
 ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code '
 env.Append(CCFLAGS=ccflags.split())
-env.Append(RPATH=os.path.dirname(str(lib_common[0])))
 
 ch_info_obj = net_lib_env.SharedObject("../src/jaln_channel_info.c")
 cmp_obj = net_lib_env.SharedObject("../src/jaln_compression.c")
 conn_cb_obj = net_lib_env.SharedObject("../src/jaln_connection_callbacks.c")
 conn_obj = net_lib_env.SharedObject("../src/jaln_connection.c")
-conn_req_obj = net_lib_env.SharedObject("../src/jaln_connection_request.c")
 ctx_obj = net_lib_env.SharedObject("../src/jaln_context.c")
 dgst_obj = net_lib_env.SharedObject("../src/jaln_digest.c")
 dgst_info_obj = net_lib_env.SharedObject("../src/jaln_digest_info.c")
@@ -28,6 +26,11 @@ rec_info_obj = net_lib_env.SharedObject("../src/jaln_record_info.c")
 sess_obj = net_lib_env.SharedObject("../src/jaln_session.c")
 str_utils_obj = net_lib_env.SharedObject("../src/jaln_string_utils.c")
 tls_obj = net_lib_env.SharedObject("../src/jaln_tls.c")
+subscriber_objs = [
+	lib_common,
+	network_lib,
+	net_lib_env.SharedObject("test_jal_subscribe_utils.cpp")
+	]
 
 tests.append(env.TestDeptTest('test_jaln_publisher_callbacks.c',
 	other_sources=[lib_common,
@@ -115,8 +118,12 @@ tests.append(env.TestDeptTest('test_jaln_publisher.c',
 		sess_obj, str_utils_obj],
 		useProxies=True)[0].abspath)
 
-tests.append(env.TestDeptTest('test_jaln_connection_request.c',
-	other_sources=[lib_common, ch_info_obj, cmp_obj])[0].abspath)
+cppTestsEnv = env.Clone()
+cppTestsEnv.Append(CXXFLAGS = '-std=c++17')
+cppTestsEnv.Append(LIBS = 'stdc++fs')
+tests.append(cppTestsEnv.TestDeptTest('test_jal_subscribe.cpp',
+	other_sources=[subscriber_objs], pathPrefix='subscriber',
+	skip_associated_source=True)[0].abspath)
 
 net_lib_tests = env.Alias('net_lib_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(net_lib_tests)

@@ -71,6 +71,8 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	int *accept_delay_thread_count = &((*jalls_ctx)->accept_delay_thread_count);
 	int *accept_delay_increment = &((*jalls_ctx)->accept_delay_increment);
 	int *accept_delay_max = &((*jalls_ctx)->accept_delay_max);
+	char *dgst_alg_str = NULL;
+	enum jal_digest_algorithm *sys_meta_dgst_alg = &((*jalls_ctx)->sys_meta_dgst_alg);
 
 	config_t jalls_config;
 	config_init(&jalls_config);
@@ -159,11 +161,37 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	}
         config_setting_lookup_bool(root, JALLS_CFG_DB_RECOVER, db_recover);
 
-	config_setting_lookup_bool(root, JALLS_CFG_DAEMON, daemon);
+	ret = config_setting_lookup_bool(root, JALLS_CFG_DAEMON, daemon);
+
+	// If there is no daemon config setting, default to true (daemonize).
+	if (CONFIG_FALSE == ret) {
+		*daemon = 1;
+	}
 
 	config_setting_lookup_bool(root, JALLS_CFG_SIGNATURE, sign_sys_meta);
 
-	config_setting_lookup_bool(root, JALLS_CFG_MANIFEST, manifest_sys_meta);
+	ret = config_setting_lookup_bool(root, JALLS_CFG_MANIFEST, manifest_sys_meta);
+
+	// Set a default value for a digest algorithm. This is necessary because a journal record
+	// always uses a digest and isn't dependent on whether the system metadata is to be signed
+	*sys_meta_dgst_alg = JAL_DIGEST_ALGORITHM_DEFAULT;
+
+	// Only attempt to override the default value if 'true' is specified for manifest_sys_meta
+	if (CONFIG_TRUE == ret && *manifest_sys_meta) {
+		ret = jalu_config_lookup_string(root, JALLS_CFG_SYS_META_DGST_ALG, &dgst_alg_str, JALU_CFG_OPTIONAL);
+
+		// If we found a digest algorithm in the config
+		if (-1 != ret && dgst_alg_str) {
+			enum jal_status status = jal_get_digest_from_str(dgst_alg_str, sys_meta_dgst_alg);
+
+			// If we couldn't convert the config's digest algorithm into a valid algorithm
+			if (JAL_OK != status) {
+				ret = -1;
+				fprintf(stderr, "Config Error: Invalid digest found: field: %s value: %s\n", JALLS_CFG_SYS_META_DGST_ALG, dgst_alg_str);
+				goto err_out;
+			}
+		}
+	}
 
 	ret = config_setting_lookup_int(root,
 		JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT,
@@ -222,6 +250,7 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 
 	config_destroy(&jalls_config);
 	free(system_uuid_str);
+	free(dgst_alg_str);
 	return 0;
 
 err_out:
@@ -229,6 +258,7 @@ err_out:
 	free((*jalls_ctx)->private_key_file);
 	free((*jalls_ctx)->public_cert_file);
 	free(system_uuid_str);
+	free(dgst_alg_str);
 	free((*jalls_ctx)->hostname);
 	free((*jalls_ctx)->schemas_root);
 	free((*jalls_ctx)->db_root);

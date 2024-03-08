@@ -5,7 +5,7 @@ from Utils import add_project_lib
 
 env = env.Clone()
 
-env.Append(LIBS = 'microhttpd')
+env.Append(LIBS = ['microhttpd', 'config', 'gnutls'])
 env.Append(CXXFLAGS = '-std=c++17')
 
 sources = []

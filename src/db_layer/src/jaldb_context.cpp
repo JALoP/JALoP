@@ -1936,6 +1936,27 @@ out:
 	return ret;
 }
 
+static enum jaldb_status jaldb_parse_timestamp(const char *timestamp, time_t *time, int *microseconds)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+	struct tm tm_;
+	memset(&tm_,0,sizeof(tm_));
+	char *end_timestamp = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &tm_);
+	if (!end_timestamp) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	*time = mktime(&tm_);
+
+	if (!sscanf(end_timestamp,".%d-%*d:%*d",microseconds)) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	ret = JALDB_OK;
+out:
+	return ret;
+}
+
 enum jaldb_status jaldb_next_chronological_record(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
@@ -1945,10 +1966,8 @@ enum jaldb_status jaldb_next_chronological_record(
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
 	struct jaldb_record *rec = NULL;
-	struct tm search_time, current_time;
+	time_t search_time, current_time;
 	int search_microseconds, cur_microseconds;
-	memset(&search_time,0,sizeof(search_time));
-	memset(&current_time,0,sizeof(current_time));
 	int byte_swap;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
@@ -1964,15 +1983,10 @@ enum jaldb_status jaldb_next_chronological_record(
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC;
 
-	char *end_timestamp = strptime(*timestamp, "%Y-%m-%dT%H:%M:%S", &search_time);
+	ret = jaldb_parse_timestamp(*timestamp, &search_time, &search_microseconds);
 
-	if (!end_timestamp) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
 
-	if (!sscanf(end_timestamp,".%d-%*d:%*d",&search_microseconds)) {
-		ret = JALDB_E_INVAL;
+	if (ret != JALDB_OK) {
 		goto out;
 	}
 
@@ -2029,28 +2043,35 @@ enum jaldb_status jaldb_next_chronological_record(
 		goto out;
 	}
 
-	end_timestamp = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
+	ret = jaldb_parse_timestamp((char*) key.data, &current_time, &cur_microseconds);
 
-	if (!end_timestamp) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	if (!sscanf(end_timestamp,".%d-%*d:%*d",&cur_microseconds)) {
-		ret = JALDB_E_INVAL;
+	if (ret != JALDB_OK) {
 		goto out;
 	}
 
 	nonce_string = (char *)pkey.data;
 
-	while (difftime(mktime(&search_time), mktime(&current_time)) == 0 &&
+	// It's possible that multiple records have exactly the same timestamp
+	// we will always end up examining the "first" of these when re-entering this function
+	// thanks to the use of DB_RANGE when acquiring the cursor
+	// Loop until either we "next" our way to a new timestamp or we find a record which we
+	// have not "seen" in this loop so far
+	// Note that seen_records persists across function calls
+	//
+	// If the YYYY-MM-DDThh:mm:ss portion of the timestamp matches &&
+	// the .ssssss portion matches
+	while (difftime(search_time, current_time) == 0 &&
 			search_microseconds == cur_microseconds) {
+
 		// Check to see if we already got a record at this time
 		if (seen_records->count(nonce_string) == 0) {
-			//Haven't seen it
+			// We have not seen this nonce before, add this record to our "seen" list and stop searching
 			seen_records->insert(nonce_string);
 			break;
 		} else {
+			// We have seen this particular nonce before, advance to the next record
+			// This will continue until the while test fails, we hit the if clause,
+			// or an error causes early termination
 			db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_NEXT);
 			if (0 != db_ret) {
 				if (DB_NOTFOUND == db_ret) {
@@ -2062,18 +2083,18 @@ enum jaldb_status jaldb_next_chronological_record(
 			}
 			nonce_string = (char *)pkey.data;
 		}
-		end_timestamp = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
-		if (!end_timestamp) {
-			ret = JALDB_E_INVAL;
-			goto out;
-		}
-		if (!sscanf(end_timestamp,".%d-%*d:%*d",&cur_microseconds)) {
-			ret = JALDB_E_INVAL;
+		ret = jaldb_parse_timestamp((char*) key.data, &current_time, &cur_microseconds);
+
+		if(ret != JALDB_OK) {
 			goto out;
 		}
 	}
 
-	if (difftime(mktime(&search_time), mktime(&current_time)) != 0 ||
+	// If the "current" item's timestamp is no longer equal to the "search" timestamp,
+	// we have advanced to a new time index. Clean up the seen_records list and update the
+	// timestamp in-out parameter accordingly. Note that *timestamp is taking ownership of the
+	// key.data field.
+	if (difftime(search_time, current_time) != 0 ||
 			search_microseconds != cur_microseconds) {
 		free(*timestamp);
 		*timestamp = (char*)key.data;
@@ -2082,6 +2103,7 @@ enum jaldb_status jaldb_next_chronological_record(
 		seen_records->insert(nonce_string);
 	}
 
+	// If we reach this line, we have found a "new" record, extract the relevant data from the db
 	ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
 	if (ret != JALDB_OK) {
 		goto out;

@@ -17,6 +17,7 @@
 #include <exception>
 #include <mutex>
 #include <shared_mutex>
+#include <memory>
 
 #include "JalSubscriber.hpp"
 #include "JalSubConfig.hpp"
@@ -256,10 +257,113 @@ Response JalSubscriber::messageHandler(const Message& message)
 
 
 JalSubscriber::JalSubscriber(
-	SubscriberConfig paramConfig) :
-	config(paramConfig),
-	httpServer(
-		{},
+	SubscriberConfig paramConfig) : config(paramConfig)
+{
+	// HttpServer not specified in this constructor, default to LibMicroHttpdServer
+	std::function<std::shared_ptr<HttpServer>(
+		std::vector<std::string>,
+		SubscriberCallbacks,
+		SubscriberConfig)> serverFactory =
+		&LibMicroHttpdServer::factory;
+
+	// DB type not specified in this constructor, use option in provided config
+	std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory;
+
+	switch(paramConfig.dbType)
+	{
+		case DBType::BDB:
+			dbFactory = BerkeleyDb::berkeleyDbFactory;
+			break;
+		case DBType::FS:
+			dbFactory = FsDb::fsDbFactory;
+			break;
+		// Purposely omitting the default statement, if any valid value of the enum
+		// is ever not covered, we want the compiler to complain
+	}
+
+	constructorImpl(paramConfig, dbFactory, serverFactory);
+}
+
+JalSubscriber::JalSubscriber(
+	SubscriberConfig paramConfig,
+	std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory)
+	: config(paramConfig)
+{
+	// HttpServer not specified in this constructor, default to LibMicroHttpdServer
+	std::function<std::shared_ptr<HttpServer>(
+		std::vector<std::string>,
+		SubscriberCallbacks,
+		SubscriberConfig)> serverFactory =
+		&LibMicroHttpdServer::factory;
+
+	constructorImpl(paramConfig, dbFactory, serverFactory);
+}
+
+JalSubscriber::JalSubscriber(
+	SubscriberConfig paramConfig,
+	std::function<std::shared_ptr<HttpServer>(
+		std::vector<std::string>,
+		SubscriberCallbacks,
+		SubscriberConfig)> serverFactory)
+	: config(paramConfig)
+{
+	std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory;
+
+	// DB type not specified in this constructor, use option in provided config
+	switch(paramConfig.dbType)
+	{
+		case DBType::BDB:
+			dbFactory = BerkeleyDb::berkeleyDbFactory;
+			break;
+		case DBType::FS:
+			dbFactory = FsDb::fsDbFactory;
+			break;
+		// Purposely omitting the default statement, if any valid value of the enum
+		// is ever not covered, we want the compiler to complain
+	}
+	constructorImpl(paramConfig, dbFactory, serverFactory);
+}
+
+JalSubscriber::JalSubscriber(
+	SubscriberConfig paramConfig,
+	std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory,
+	std::function<std::shared_ptr<HttpServer>(
+		std::vector<std::string>,
+		SubscriberCallbacks,
+		SubscriberConfig)> serverFactory)
+	: config(paramConfig)
+{
+	constructorImpl(paramConfig, dbFactory, serverFactory);
+}
+
+void JalSubscriber::constructorImpl(
+	SubscriberConfig paramConfig,
+	std::function<std::shared_ptr<JalSubDatabase>(SubscriberConfig)> dbFactory,
+	std::function<std::shared_ptr<HttpServer>(
+		std::vector<std::string>,
+		SubscriberCallbacks,
+		SubscriberConfig)> serverFactory)
+{
+	// Apply configuration options to message class
+	Message::setBufferSize(paramConfig.bufferSize);
+	// Test that the specified databasePath exists to provide a clearer error message
+	// in some cases
+	if(!dirExists(paramConfig.databasePath))
+	{
+		std::string errMsg = "Selected db_root: " + paramConfig.databasePath 
+			+ " does not exist.";
+			throw std::runtime_error(errMsg);
+	}
+	Message::setTempFilePath(paramConfig.databasePath + "/staging");
+	Message::setDebug(paramConfig.debug);
+
+	// Initialize database
+	this->jdb = dbFactory(paramConfig);
+	
+	// Initialize httpServer
+	this->httpServer = serverFactory(
+		{}, // parameter currently unused
+				// provides future support for allowing only producers with specific ips
 		{ std::bind(&JalSubscriber::messageHandler,
 			this, std::placeholders::_1),
 			std::bind(&JalSubscriber::getDigestAlgorithm,
@@ -271,21 +375,5 @@ JalSubscriber::JalSubscriber(
 			std::bind(&JalSubscriber::notifyTimeout,
 			this, std::placeholders::_1)
 		},
-		config)
-{
-	// Apply configuration options to message class
-	Message::setBufferSize(config.bufferSize);
-	Message::setTempFilePath(config.databasePath + "/staging");
-	Message::setDebug(config.debug);
-	switch(config.dbType)
-	{
-		case DBType::BDB:
-			jdb = BerkeleyDb::berkeleyDbFactory(config);
-			break;
-		case DBType::FS:
-			jdb = FsDb::fsDbFactory(config);
-			break;
-		// Purposely omitting the default statement, if any valid value of the enum
-		// is ever not covered, we want the compiler to complain
-	}
+		paramConfig);
 }

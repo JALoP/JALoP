@@ -66,6 +66,7 @@ const std::string HEADER_JAL_AUDIT_LENGTH = "JAL-Audit-Length";
 const std::string HEADER_JAL_LOG_LENGTH = "JAL-Log-Length";
 const std::string HEADER_JAL_JOURNAL_LENGTH = "JAL-Journal-Length";
 const std::string HEADER_JAL_PRIORITY = "JAL-Priority";
+const std::string HEADER_JAL_DIGEST = "JAL-Digest";
 const std::string HEADER_JAL_DIGEST_VALUE = "JAL-Digest-Value";
 const std::string HEADER_JAL_DIGEST_STATUS = "JAL-Digest-Status";
 const std::string HEADER_JAL_JOURNAL_OFFSET = "JAL-Journal-Offset";

@@ -41,48 +41,6 @@ extern "C" {
  */
 struct jaln_connection_callbacks {
 	/**
-	 * The JNL will execute this callback when it receives a 'initialize'
-	 * message from the remote peer.
-	 * @param[in] req A structure containing the connection info requested by
-	 * the peer, including additional MIME headers.
-	 *
-	 * @param[in,out] selected_compression Indicates which compression the JNL is going
-	 * to select. Applications may change this value and override the selection
-	 * made by JNL.
-	 * The index starts at zero, so if the remote peer indicates
-	 * @verbatim
-	 * accept-compression: exi, xml
-	 * @endverbatim
-	 * The application would signal 'EXI' by setting selected_compression to 0, or
-	 * signal XML by setting selected_compression to 1. The application may
-	 * refuse all compressions by setting selected_compression to -1.
-	 * @param[in,out] selected_digest Indicates which digest method the JNL is
-	 * going to select. Applications may change this value and override the selection
-	 * made by JNL.
-	 * The index starts at zero, so if the remote peer indicates
-	 * @verbatim
-	 * accept-digest: sha512, sha256
-	 * @endverbatim
-	 * The application would signal 'sha512' by setting selected_digest to 0, or
-	 * signal sha256 to 1. The application may refuse all digest methods by setting
-	 * selected_digest to -1.
-	 * @param[in] user_data A pointer to user data that was passed into
-	 * jaln_publish.
-	 *
-	 * @returns JALN_CE_ACCEPT to accept the connection, or any of the
-	 * or'ed combination of jaln_connect_errors to indicate the failure to return.
-	 *
-	 * @note: This limits applications to a single error code. In
-	 * practice this is probably fine, but not sure it should be so limited...
-	 *
-	 *
-	 */
-	enum jaln_connect_error (*connect_request_handler)(const struct jaln_connect_request *const req,
-			int *selected_compression,
-			int *selected_digest,
-			void *user_data);
-
-	/**
 	 * Notify the application that a channel was closed.
 	 * @param[in] channel_info Information about the channel that is closing.
 	 * @param[in] user_data A pointer to user data that was passed into

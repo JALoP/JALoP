@@ -35,15 +35,6 @@
 
 /* Dummy connection callbacks. */
 
-enum jaln_connect_error my_connect_request_handler(
-	const struct jaln_connect_request *req __attribute__((unused)),
-	int *selected_compression __attribute__((unused)),
-	int *selected_digest __attribute__((unused)),
-	void *user_data __attribute__((unused)))
-{
-	return JALN_CE_ACCEPT;
-}
-
 void my_on_channel_close(
 	const struct jaln_channel_info *channel_info __attribute__((unused)),
 	void *user_data __attribute__((unused)))
@@ -90,7 +81,6 @@ void test_register_connection_callbacks()
 	jaln_context *ctx = jaln_context_create();
 
 	struct jaln_connection_callbacks *cb = jaln_connection_callbacks_create();
-	cb->connect_request_handler = my_connect_request_handler;
 	cb->on_channel_close = my_on_channel_close;
 	cb->on_connection_close = my_on_connection_close;
 	cb->connect_ack = my_connect_ack;
@@ -108,7 +98,6 @@ void test_register_connection_callbacks_fails_with_invalid()
 	assert_equals(JAL_E_INVAL, jaln_register_connection_callbacks(ctx, NULL));
 
 	struct jaln_connection_callbacks *cb = jaln_connection_callbacks_create();
-	cb->connect_request_handler = NULL;
 	cb->on_channel_close = NULL;
 	cb->on_connection_close = NULL;
 	cb->connect_ack = NULL;
@@ -116,7 +105,6 @@ void test_register_connection_callbacks_fails_with_invalid()
 
 	assert_equals(JAL_E_INVAL, jaln_register_connection_callbacks(ctx, cb));
 
-	cb->connect_request_handler = my_connect_request_handler;
 	assert_equals(JAL_E_INVAL, jaln_register_connection_callbacks(ctx, cb));
 
 	cb->on_channel_close = my_on_channel_close;
@@ -133,7 +121,7 @@ void test_register_connection_callbacks_fails_with_invalid()
 	assert_equals(JAL_E_INVAL, jaln_register_connection_callbacks(NULL, cb));
 
 	/* Unsetting to invalidate (all set but first). */
-	cb->connect_request_handler = NULL;
+	cb->on_channel_close = NULL;
 	assert_equals(JAL_E_INVAL, jaln_register_connection_callbacks(ctx, cb));
 
 	jaln_connection_callbacks_destroy(&cb);

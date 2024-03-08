@@ -42,6 +42,10 @@ char sc_num[12];
 
 int configureInitialSeccomp()
 {
+	if (seccomp_config.seccomp_strace_mode == 1)
+	{
+		return 0;
+	}
 	if (init_catchSeccompViolation() != 0)
 	{
 		fprintf(stderr, "Could not intialize seccomp signal\n");
@@ -156,91 +160,93 @@ int configureInitialSeccomp()
 
 int configureFinalSeccomp()
 {
-	if (seccomp_config.restrict_seccomp_F_SETFL == 1)
+	if (seccomp_config.seccomp_strace_mode == 0)
 	{
-		if (configureDisallowSeccomp() != 0)
+		if (seccomp_config.restrict_seccomp_F_SETFL == 1)
 		{
+			if (configureDisallowSeccomp() != 0)
+			{
+				return -1;
+			}
+		}
+		else
+		{
+			dfprintf(stderr, "Not using restrict_seccomp_F_SETFL.\n");
+		}
+		dfprintf(stderr, "configureFinalSeccomp \n");
+		scmp_filter_ctx filter_ctx;
+		filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+		strncpy(sc_msg, "both syscalls\n[\n", 17);
+
+		const config_setting_t * calls;
+
+		calls = seccomp_config.both_syscalls;
+		int count = 0;
+		if (calls != NULL)
+		{
+			count = config_setting_length(calls);
+		}
+		if (count > MAX_SYSCALLS)
+		{
+			fprintf(stderr, "%i final syscalls exceeds max syscalls of %i\n", count, MAX_SYSCALLS);
 			return -1;
 		}
-	}
-	else
-	{
-		dfprintf(stderr, "Not using restrict_seccomp_F_SETFL.\n");
-	}
-	dfprintf(stderr, "configureFinalSeccomp \n");
-	scmp_filter_ctx filter_ctx;
-	filter_ctx = seccomp_init(SCMP_ACT_TRAP);
-	strncpy(sc_msg, "both syscalls\n[\n", 17);
-
-	const config_setting_t * calls;
-
-	calls = seccomp_config.both_syscalls;
-	int count = 0;
-	if (calls != NULL)
-	{
-		count = config_setting_length(calls);
-	}
-	if (count > MAX_SYSCALLS)
-	{
-		fprintf(stderr, "%i final syscalls exceeds max syscalls of %i\n", count, MAX_SYSCALLS);
-		return -1;
-	}
-	int call_number = 0;
-	for (int x = 0; x < count; x++)
-	{
-		const char * call_name = config_setting_get_string_elem(calls, x);
-		call_number = seccomp_syscall_resolve_name(call_name);
-		strncat(sc_msg, call_name, MAX_SYSCALL_LEN);
-		strncat(sc_msg, "-", 2);
-		snprintf(sc_num, 12, "%d ", call_number);
-		strncat(sc_msg, sc_num, 14);
-		if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0))
+		int call_number = 0;
+		for (int x = 0; x < count; x++)
 		{
-			fprintf(stderr, "configureFinalSeccomp seccomp_rule_add FAILED for %s %i\n", call_name, call_number);
+			const char * call_name = config_setting_get_string_elem(calls, x);
+			call_number = seccomp_syscall_resolve_name(call_name);
+			strncat(sc_msg, call_name, MAX_SYSCALL_LEN);
+			strncat(sc_msg, "-", 2);
+			snprintf(sc_num, 12, "%d ", call_number);
+			strncat(sc_msg, sc_num, 14);
+			if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0))
+			{
+				fprintf(stderr, "configureFinalSeccomp seccomp_rule_add FAILED for %s %i\n", call_name, call_number);
+				return -1;
+			}
+		}
+		strncat(sc_msg, "\n]\n", 4);
+		dfprintf(stderr, "%s", sc_msg);
+
+		strncpy(sc_msg, "final syscalls\n[\n", 18);
+		calls = seccomp_config.final_syscalls;
+		count = 0;
+		if (calls != NULL)
+		{
+			count = config_setting_length(calls);
+		}
+		if (count > MAX_SYSCALLS)
+		{
+			fprintf(stderr, "%i final syscalls exceeds max syscalls of %i\n", count, MAX_SYSCALLS);
 			return -1;
 		}
-	}
-	strncat(sc_msg, "\n]\n", 4);
-	dfprintf(stderr, "%s", sc_msg);
-
-	strncpy(sc_msg, "final syscalls\n[\n", 18);
-	calls = seccomp_config.final_syscalls;
-	count = 0;
-	if (calls != NULL)
-	{
-		count = config_setting_length(calls);
-	}
-	if (count > MAX_SYSCALLS)
-	{
-		fprintf(stderr, "%i final syscalls exceeds max syscalls of %i\n", count, MAX_SYSCALLS);
-		return -1;
-	}
-	call_number = 0;
-	for (int x = 0; x < count; x++)
-	{
-		const char * call_name = config_setting_get_string_elem(calls, x);
-		call_number = seccomp_syscall_resolve_name(call_name);
-		strncat(sc_msg, call_name, MAX_SYSCALL_LEN);
-		strncat(sc_msg, "-", 2);
-		snprintf(sc_num, 12, "%d ", call_number);
-		strncat(sc_msg, sc_num, 14);
-		if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0))
+		call_number = 0;
+		for (int x = 0; x < count; x++)
 		{
-			fprintf(stderr, "configureFinalSeccomp seccomp_rule_add FAILED for %s %i\n", call_name, call_number);
+			const char * call_name = config_setting_get_string_elem(calls, x);
+			call_number = seccomp_syscall_resolve_name(call_name);
+			strncat(sc_msg, call_name, MAX_SYSCALL_LEN);
+			strncat(sc_msg, "-", 2);
+			snprintf(sc_num, 12, "%d ", call_number);
+			strncat(sc_msg, sc_num, 14);
+			if (seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, call_number, 0))
+			{
+				fprintf(stderr, "configureFinalSeccomp seccomp_rule_add FAILED for %s %i\n", call_name, call_number);
+				return -1;
+			}
+		}
+		strncat(sc_msg, "\n]\n", 4);
+		dfprintf(stderr, "%s", sc_msg);
+
+		if (seccomp_load(filter_ctx) != 0)
+		{
+			fprintf(stderr, "configureFinalSeccomp seccomp_load FAILED\n");
 			return -1;
 		}
+		dfprintf(stderr, "configureFinalSeccomp DONE \n");
 	}
-	strncat(sc_msg, "\n]\n", 4);
-	dfprintf(stderr, "%s", sc_msg);
-
-	if (seccomp_load(filter_ctx) != 0)
-	{
-		fprintf(stderr, "configureFinalSeccomp seccomp_load FAILED\n");
-		return -1;
-	}
-	dfprintf(stderr, "configureFinalSeccomp DONE \n");
-	
-	if(seccomp_config.seccomp_debug==1){
+	if(seccomp_config.seccomp_strace_mode==1){
 		//When debugging and finding the system calls the process makes,
 		//at this point is where the process is done its setup and continues
 		//on to do its routine work. This mark will show in your strace output.
@@ -325,7 +331,15 @@ int read_sc_config(char * config_path)
 					seccomp_config.seccomp_debug = 0;
 				}
 				
-				dfprintf(stderr, "enable_seccomp: %i\n", seccomp_config.enable_seccomp);
+				rc = config_lookup_bool(&sc_config, "seccomp_strace_mode", &seccomp_config.seccomp_strace_mode);
+				if (rc == CONFIG_FALSE)
+				{
+					seccomp_config.seccomp_strace_mode = 0;
+				}
+				
+				fprintf(stderr, "enable_seccomp: %i\n", seccomp_config.enable_seccomp);
+				fprintf(stderr, "seccomp_debug: %i\n", seccomp_config.seccomp_debug);
+				fprintf(stderr, "seccomp_strace_mode: %i\n", seccomp_config.seccomp_strace_mode);
 				
 				rc = config_lookup_bool(&sc_config, "restrict_seccomp_F_SETFL", &seccomp_config.restrict_seccomp_F_SETFL);
 				if (rc != CONFIG_TRUE)
@@ -363,4 +377,9 @@ int read_sc_config(char * config_path)
 	}
 
 	return 0;
+}
+
+void drop_sc_config()
+{
+	config_destroy(&sc_config);
 }

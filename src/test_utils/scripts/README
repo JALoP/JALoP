@@ -1,0 +1,18 @@
+These scripts are used to run rpmlint and shellcheck on spec files and shell scripts under the jalop directory.
+
+The rpmlint/shellcheck program must be installed on your system in order to run these scripts.
+
+To install rpmlint: yum install rpmlint
+To install shellcheck: yum install ShellCheck
+To install python-magic: pip3 install python-magic
+
+To run them, from this directory:
+python3 run_rpmlint.py
+python3 run_shellcheck.py
+
+
+The script checksec_builds.sh is used to validate whether rpath is present in built artifacts.
+It validates libraries installed to the system and locally built artifacts.
+
+To run it, from this directory:
+bash checksec_builds.sh

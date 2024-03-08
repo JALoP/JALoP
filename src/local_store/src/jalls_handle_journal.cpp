@@ -82,7 +82,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	int app_meta_digest_len = 0;
 	char *app_meta_alg = NULL;
 
-	void *sha256_instance = NULL;
+	void *digest_instance = NULL;
 
 	char *nonce = NULL;
 	
@@ -128,13 +128,13 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	bytes_remaining = data_len;
 	int bytes_written;
 
-	digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_SHA256);
-	sha256_instance = digest_ctx->create();
+	digest_ctx = jal_digest_ctx_create(thread_ctx->ctx->sys_meta_dgst_alg);
+	digest_instance = digest_ctx->create();
 	digest = (uint8_t *)jal_malloc(digest_ctx->len);
-	jal_err = digest_ctx->init(sha256_instance);
+	jal_err = digest_ctx->init(digest_instance);
 	if(jal_err != JAL_OK) {
 		if (debug) {
-			fprintf(stderr, "could not init sha256 digest context\n");
+			fprintf(stderr, "could not init digest context\n");
 		}
 		goto err_out;
 	}
@@ -142,7 +142,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 	while (bytes_received > 0 && bytes_remaining >= (uint64_t)bytes_received) {
 		bytes_remaining -= (uint64_t)bytes_received;
-		jal_err = digest_ctx->update(sha256_instance, (uint8_t *)data_buf, bytes_received);
+		jal_err = digest_ctx->update(digest_instance, (uint8_t *)data_buf, bytes_received);
 		if (jal_err != JAL_OK) {
 			if (debug) {
 				fprintf(stderr, "could not digest the journal data\n");
@@ -170,7 +170,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	}
 	size_t digest_length;
 	digest_length = digest_ctx->len;
-	jal_err = digest_ctx->final(sha256_instance, digest, &digest_length);
+	jal_err = digest_ctx->final(digest_instance, digest, &digest_length);
 	if(jal_err != JAL_OK) {
 		if (debug) {
 			fprintf(stderr, "could not digest the journal\n");
@@ -305,7 +305,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 
 err_out:
 	if (digest_ctx) {
-		digest_ctx->destroy(sha256_instance);
+		digest_ctx->destroy(digest_instance);
 		jal_digest_ctx_destroy(&digest_ctx);
 	}
 	free(digest);

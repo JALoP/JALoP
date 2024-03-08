@@ -1,8 +1,11 @@
 Import('*')
+from Utils import add_project_lib
 
 env = env.Clone()
 env.MergeFlags({'CPPPATH':'#src/network_lib/src:#src/lib_common/include:#src/network_lib/include:#src/lib_common/src:#src/db_layer/src/:.'.split(':')})
 env.MergeFlags('-pthread')
+
+add_project_lib(env, 'db_layer', 'jal-db')
 
 testpush = env.Program(target='dummy_push', source=["push.c", lib_common, network_lib])
 

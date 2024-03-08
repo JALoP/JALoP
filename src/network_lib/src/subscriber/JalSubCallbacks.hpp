@@ -24,7 +24,7 @@
 struct SubscriberCallbacks
 {
 	std::function<Response(Message&)> messageHandler;
-	std::function<enum jal_digest_algorithm(Message&)> getDigestAlgorithm;
+	std::function<enum jal_digest_algorithm(const Message&)> getDigestAlgorithm;
 	std::function<std::string(Message&)> getPublisherId;
 	std::function<ModeType(Message&)> getReceiveMode;
 	std::function<void(Message&)> notifyTimeout;

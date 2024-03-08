@@ -1,3 +1,26 @@
+Summary of release 2.1.0.1-rc changes (Mon Feb 19 2024) -
+    - Implement SSL/TLS Client Authentication.
+    - Switch to libMicroHttpdServer option USE_INTERNAL_THREAD_POOL. This requires libmicrohttpd v0.9.59 or newer.
+    - Factory-ize http server creation, add additional JalSubscriber constructors.
+    - Fixed some race conditions, invalid read attempts.
+    - Removed RPATH from compilation/build scripts.
+    - Made digest algorithm for app metadata configurable.
+    - Made digest algorithm for sys metadata configurable.
+    - Added SECCOMP filter rules to C and C++ subscribers.
+    - Daemonize the local store by default.
+    - Use a local instance of time struct to avoid issues from mktime() calls. This fixes the issue of multiple records with the same timestamp causeing infinite loop.
+    - Add -s linker flag for released artifacts.
+    - Remove -g flag from released artifacts.
+    - Add script to run rpmlint on .spec files in RPM folder.
+    - Fix lint errors in shell scripts.
+    - Add script to recursively find scripts and run shellcheck on them.
+    - Remove installed library from lib_common dependencies.
+    - Add db_layer as lib dependency for testpush.
+    - Unit test fix - remove test files from /tmp when finished.
+    - Updated man page for http_server_thread_pool_size
+    - Updated sample jal_subscribe.cfg to include thread pool size
+    - Updated README with instructions to build libmicrohttpd.
+
 Summary of release 2.1.0.1-beta changes (Fri Sep 22 2023) -
     - The initial (beta) version of JALoPv2 C subscriber. This C subscriber supports both Berkeley DB (BDB) and filesystem-based databases to store the received J/A/L records. Only one database type (fs or bdb) can be selected for a given instance of the subscriber.
     - Support configurable digest algorithms (one of sha256, sha384, sha512) for digest-challenge between publisher (‘jald’) and subscribers (‘jal_subscribe’, ‘jnl_test’). Until this point, only sha256 was supported. Note that Java 8 does not support sha384 hash algorithm.

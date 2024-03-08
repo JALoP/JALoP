@@ -33,13 +33,14 @@ extern "C" {
 
 struct seccomp_config_t {
 	int seccomp_debug;
+	int seccomp_strace_mode;
 	int enable_seccomp;
 	int restrict_seccomp_F_SETFL;
 	const config_setting_t *initial_syscalls;
 	const config_setting_t *both_syscalls;
 	const config_setting_t *final_syscalls;
 };
-struct seccomp_config_t seccomp_config = {0, 0, 0, NULL, NULL, NULL};
+struct seccomp_config_t seccomp_config = {0, 0, 0, 0, NULL, NULL, NULL};
 config_t sc_config;
 
 /**
@@ -67,6 +68,12 @@ int configureInitialSeccomp();
  * @return 0 on success
  */
 int configureFinalSeccomp();
+
+/**
+ * Destroy the config_t associated with the seccomp policies
+ * TODO: Refactor this to not use a header-defined global
+ */
+void drop_sc_config();
 
 #ifdef __cplusplus
 }

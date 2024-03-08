@@ -184,39 +184,17 @@ static enum jal_status pub_get_bytes(const uint64_t offset, uint8_t * const buff
 static jaldb_context_t* setup_db_layer(void);
 static enum jal_status select_channel(const struct jaln_channel_info* ch_info, axlHash** hash, pthread_mutex_t** sub_lock);
 
-enum jaln_connect_error on_connect_request(
-		__attribute__((unused)) const struct jaln_connect_request *req,
-		__attribute__((unused)) int *selected_compression,
-		__attribute__((unused)) int *selected_digest,
-		__attribute__((unused)) void *user_data)
-{
-	// Incoming connections are not supported
-	return JALN_CE_UNAUTHORIZED_MODE;
-}
-
 void on_channel_close(
 		const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) void *user_data)
 {
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
-	switch (ch_info->type) {
-	case JALN_RTYPE_JOURNAL:
-		hash = gs_journal_subs;
-		sub_lock = &gs_journal_sub_lock;
-		break;
-	case JALN_RTYPE_AUDIT:
-		hash = gs_audit_subs;
-		sub_lock = &gs_audit_sub_lock;
-		break;
-	case JALN_RTYPE_LOG:
-		hash = gs_log_subs;
-		sub_lock = &gs_log_sub_lock;
-		break;
-	default:
-		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal record type");
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock))
+	{
 		return;
 	}
+
 	DEBUG_LOG_SUB_SESSION(ch_info, "Session is closing");
 
 	// Close db_handle for this channel
@@ -227,6 +205,9 @@ void on_channel_close(
 	}
 	else {
 		jaldb_context_destroy(&ctx->db_ctx);
+		if(ctx->rec) {
+			jaldb_destroy_record(&ctx->rec);
+		}
 	}
 
 	pthread_mutex_lock(sub_lock);
@@ -494,7 +475,8 @@ enum jal_status pub_send_records_feeder(
 		db_type = JALDB_RTYPE_JOURNAL;
 		break;
 	default:
-		return JAL_E_INVAL;
+		ret = JAL_E_INVAL;
+		goto out;
 	}
 
 	pthread_mutex_lock(sub_lock);
@@ -567,7 +549,6 @@ enum jal_status pub_send_records_feeder(
 				if (JAL_OK != jaln_session_is_ok(sess)) {
 					DEBUG_LOG_SUB_SESSION(ch_info, "Session issues detected 2");
 					DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 2");
-					ret = jaln_finish(sess);
 					goto out;
 				}
 				ret = JAL_E_NOT_CONNECTED;
@@ -604,8 +585,8 @@ enum jal_status pub_send_records_feeder(
 	} while (JALDB_OK == db_ret);
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 3");
-	ret = jaln_finish(sess);
 out:
+	ret = jaln_finish(sess);
 	free(nonce);
 	return ret;
 }
@@ -642,7 +623,8 @@ enum jal_status pub_send_records(
 		db_type = JALDB_RTYPE_LOG;
 		break;
 	default:
-		return JAL_E_INVAL;
+		ret = JAL_E_INVAL;
+		goto out;
 	}
 
 	pthread_mutex_lock(sub_lock);
@@ -719,7 +701,6 @@ enum jal_status pub_send_records(
 				if (JAL_OK != jaln_session_is_ok(sess)) {
 					DEBUG_LOG_SUB_SESSION(ch_info, "Session issues detected 4");
 					DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 4");
-					ret = jaln_finish(sess);
 					goto out;
 				}
 				ret = JAL_E_NOT_CONNECTED;
@@ -756,8 +737,8 @@ enum jal_status pub_send_records(
 	} while (JALDB_OK == db_ret);
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 5");
-	ret = jaln_finish(sess);
 out:
+	ret = jaln_finish(sess);
 	free(nonce);
 	return ret;
 }
@@ -875,42 +856,47 @@ enum jal_status pub_on_subscribe(
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
-	pthread_t journal_thread;
-	pthread_t audit_thread;
-	pthread_t log_thread;
 	pthread_attr_t attr;
-	struct thread_data *data = (struct thread_data *) jal_malloc(sizeof(struct thread_data));
-
 	if (0 != pthread_attr_init(&attr)) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR in pthread_attr_init()");
 		return JAL_E_INVAL;
 	}
 
-	//pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (0 != pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE)) {
-		pthread_attr_destroy(&attr);
-		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR in pthread_attr_setdetachstate()");
-		return JAL_E_INVAL;
-	}
-
+	enum jal_status ret = JAL_E_INVAL;
+	// Ensure main doesn't try to exit before the thread we're about to create does
+	// Note - pub_on_subscribe is called in the chain from jaln_publish, so there isn't actually
+	// a risk of main trying to exit during this function
 	pthread_mutex_lock(&exit_count_lock);
 	threads_to_exit += 1;
 	pthread_mutex_unlock(&exit_count_lock);
 
+	pthread_t journal_thread;
+	pthread_t audit_thread;
+	pthread_t log_thread;
+
+	struct thread_data *data = (struct thread_data *) jal_malloc(sizeof(struct thread_data));
 	data->sess = sess;
 	data->ch_info = ch_info;
 	data->timestamp = NULL;
+
+	if (0 != pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR in pthread_attr_setdetachstate()");
+		ret = JAL_E_INVAL;
+		goto err_out;
+	}
 
 	if (JALN_LIVE_MODE == mode) {
 		data->timestamp = jaldb_gen_timestamp();
 		if (!data->timestamp) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Error: Error generating timestamp");
-			return JAL_E_INVAL_TIMESTAMP;
+			ret = JAL_E_INVAL_TIMESTAMP;
+			goto err_out;
 		}
 	} else if (JALN_ARCHIVE_MODE != mode) {
 		// Bad mode
 		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: Bad mode");
-		return JAL_E_INVAL;
+		ret = JAL_E_INVAL;
+		goto err_out;
 	}
 
 	switch (type) {
@@ -918,38 +904,44 @@ enum jal_status pub_on_subscribe(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Starting journal thread.");
 		if(0 != pthread_create(&journal_thread, &attr, pub_send_journal, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
-			return JAL_E_INVAL;
+			ret = JAL_E_INVAL;
+			goto err_out;
 		}
-
-		pthread_attr_destroy(&attr);
-
 		break;
+
 	case JALN_RTYPE_AUDIT:
 		DEBUG_LOG_SUB_SESSION(ch_info, "Starting audit thread.");
 		if(0 != pthread_create(&audit_thread, &attr, pub_send_audit, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
-			return JAL_E_INVAL;
+			ret = JAL_E_INVAL;
+			goto err_out;
 		}
-
-		pthread_attr_destroy(&attr);
-
 		break;
+
 	case JALN_RTYPE_LOG:
 		DEBUG_LOG_SUB_SESSION(ch_info, "Starting log thread.");
 		if (0 != pthread_create(&log_thread, &attr, pub_send_log, data)) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
-			return JAL_E_INVAL;
+			ret = JAL_E_INVAL;
+			goto err_out;
 		}
-
-		pthread_attr_destroy(&attr);
-
 		break;
+
 	default:
 		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
-		return JAL_E_INVAL;
+		ret = JAL_E_INVAL;
+		goto err_out;
 	}
+	pthread_attr_destroy(&attr);
 
 	return JAL_OK;
+	// There are a number of cleanup steps that we need to do in error cases
+err_out:
+	pthread_attr_destroy(&attr);
+	pthread_mutex_lock(&exit_count_lock);
+	threads_to_exit -= 1;
+	pthread_mutex_unlock(&exit_count_lock);
+	return ret;
 }
 
 enum jal_status pub_on_record_complete(
@@ -1288,7 +1280,6 @@ int main(int argc, char **argv)
 			}
 
 			conn_cbs = jaln_connection_callbacks_create();
-			conn_cbs->connect_request_handler = on_connect_request;
 			conn_cbs->on_channel_close = on_channel_close;
 			conn_cbs->on_connection_close = on_connection_close;
 			conn_cbs->connect_ack = on_connect_ack;
@@ -1431,11 +1422,15 @@ out:
 		sleep(1);
 	}
 	// try to free the connection to each peer
+	// also destroy any remaining jaln_context for each peer
 	for (int i = 0; i < global_config.num_peers; ++i) {
 		peer = global_config.peers + i;
 		if (peer->conn) {
 			jaln_connection_destroy(&(peer->conn));
 			free(peer->conn);
+		}
+		if(peer->net_ctx) {
+			jaln_context_destroy(&(peer->net_ctx));
 		}
 	}
 	free_global_config();
@@ -1444,7 +1439,6 @@ out:
 	pthread_mutex_destroy(&gs_audit_sub_lock);
 	pthread_mutex_destroy(&gs_log_sub_lock);
 	pthread_mutex_destroy(&exit_count_lock);
-	jaln_context_destroy(&jctx);
 	jaln_connection_callbacks_destroy(&conn_cbs);
 	jaln_publisher_callbacks_destroy(&pub_cbs);
 	axl_hash_free(gs_journal_subs);
@@ -1452,6 +1446,7 @@ out:
 	axl_hash_free(gs_audit_subs);
 
 quick_out:
+	drop_sc_config();
 	config_destroy(&config);
 	free(digest_list);
 

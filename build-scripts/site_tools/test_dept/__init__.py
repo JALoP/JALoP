@@ -59,7 +59,7 @@ def TestDeptObjectCopyReplacingSymbols(source, target, env, for_signature):
 	'''
 	return 'objcopy_wrapper objcopy %s %s %s' % (source[0], source[1], target[0])
 
-def TestDeptTest(env, testfile, other_sources, useProxies=False):
+def TestDeptTest(env, testfile, other_sources, useProxies=False, pathPrefix="", skip_associated_source=False):
 	''' This function hooks everything together.
 
 	testfile should be a file named test_<sut>.c, where <sut> is the
@@ -89,7 +89,11 @@ def TestDeptTest(env, testfile, other_sources, useProxies=False):
 
 	c_suffix = env['CFILESUFFIX']
 	(sut, suffix) = (str(testfile).split('test_')[1]).rsplit('.')
-	sut_path = os.path.join('..', 'src')
+	if pathPrefix:
+		sut_path = os.path.join('..', 'src', pathPrefix)
+	else:
+		sut_path = os.path.join('..', 'src')
+
 	sut_object = os.path.join(sut_path, sut_prefix + sut + sut_suffix)
 
 	proxies = 'test_' + sut + '_proxies.s'
@@ -112,7 +116,7 @@ def TestDeptTest(env, testfile, other_sources, useProxies=False):
 		env.TDObjectCopyReplacingSymbols(target=sut_using_proxies, source=[protected_symbols, sut_using_proxies_tmp])
 		test_sources.append(sut_using_proxies)
 		test_sources.append(proxiesObject)
-	else:
+	elif not skip_associated_source:
 		test_sources.append(sut_object)
 
 	for i in other_sources:

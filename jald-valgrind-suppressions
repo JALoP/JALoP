@@ -1,0 +1,112 @@
+{
+   LibDB Uninitialized, Cond __log_put
+   Memcheck:Cond
+   obj:/usr/lib64/libdb-5.3.so
+   fun:__log_put
+   ...
+   fun:__db_put_pp
+   fun:jaldb_mark_synced
+   ...
+}
+
+{
+   LibDB Uninitialized, Param pwrite64
+   Memcheck:Param
+   pwrite64(buf)
+   fun:pwrite
+   fun:__os_io
+   ...
+   obj:/usr/lib64/libdb-5.3.so
+}
+
+{
+   LibDB Uninitialized, Cond __bam_stkrel
+   Memcheck:Cond
+   fun:__bam_stkrel
+   ...
+   fun:__db_put_pp
+   fun:jaldb_mark_sent
+   ...
+}
+
+{
+   LibCrypto, value8, curl_multi_perform -> pub_notify_digest
+   Memcheck:Value8
+   obj:/usr/lib64/libcrypto.so.1.1.1k
+   ...
+   fun:curl_multi_perform
+   ...
+}
+
+{
+   Still reachable Libxml2 via libdb
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   obj:/usr/lib64/libxml2.so.2.9.7
+   ...
+   obj:/usr/lib64/libdb-5.3.so
+   ...
+}
+
+{
+   Still reachable via config
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:jalu_config_lookup_string
+   ...
+}
+
+{
+   Next Chronological cond jump from bdb
+   Memcheck:Cond
+   fun:__bam_stkrel
+   fun:__bam_search
+   obj:/usr/lib64/libdb-5.3.so
+   ...
+   fun:jaldb_next_chronological_record
+   ...
+}
+
+{
+   Mark synced libdb cond jump
+   Memcheck:Cond
+   fun:__bam_stkrel
+   fun:__bam_search
+   obj:/usr/lib64/libdb-5.3.so
+   ...
+   fun:jaldb_mark_synced
+   ...
+   fun:jaln_pub_verify_sync
+}
+
+{
+   LibDB Cond Jump Nonce Compare, Unsynced
+   Memcheck:Cond
+   ...
+   fun:jaldb_nonce_compare
+   fun:__bam_cmp
+   fun:__bam_search
+   ...
+   obj:/usr/lib64/libdb-5.3.so
+   ...
+   fun:jaldb_next_unsynced_record
+   ...
+}
+
+{
+   LibDB Cond Jump Nonce Compare, Mark Synced
+   Memcheck:Cond
+   ...
+   fun:jaldb_nonce_compare
+   fun:__bam_cmp
+   fun:__bam_search
+   ...
+   obj:/usr/lib64/libdb-5.3.so
+   ...
+   fun:jaldb_mark_synced
+   ...
+}

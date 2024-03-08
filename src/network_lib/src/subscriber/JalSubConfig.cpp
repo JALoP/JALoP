@@ -168,6 +168,27 @@ static void handleIntConfigSetting(
 	}
 }
 
+static void handleUIntConfigSetting(
+	config_t* root, // config root
+	const char* path, // path to the config setting relative to the config root
+	const bool optional, // if false, generates an error if the setting is absent
+	unsigned int& destination) // reference to the value to update on success
+{
+	// defer to get int, then check against negative numbers
+	int maybeNegative;
+	handleIntConfigSetting(root, path, optional, maybeNegative);
+
+	if(0 > maybeNegative)
+	{
+		throw std::runtime_error("Failed to parse config setting: " + std::string(path)
+			+ " Expected positive integer.");
+	}
+	else
+	{
+		destination = (unsigned int)maybeNegative;
+	}
+}
+
 void SubscriberConfig::setDigestAlgorithms(
 	std::string digests)
 {
@@ -241,6 +262,15 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 	handleIntConfigSetting(config, "buffer_size", REQUIRED, bufferSize);
 	handleBoolConfigSetting(config, "enable_tls", REQUIRED, enableTls);
 	handleIntConfigSetting(config, "network_timeout", REQUIRED, networkTimeout);
+	handleUIntConfigSetting(config, "http_server_thread_pool_size",
+		REQUIRED, httpServerThreadPoolSize);
+	// Additional require httpServerThreadPoolSize > 0
+	if(httpServerThreadPoolSize < 1)
+	{
+		std::string errMsg = "http_server_thread_pool_size must be at least 1";
+		throw std::runtime_error(errMsg);
+	}
+
 	if(this->enableTls)
 	{
 		handleStringConfigSetting(config, "private_key", REQUIRED, tlsConfig.privateKey);
@@ -296,4 +326,5 @@ void SubscriberConfig::printConfiguration() const
 	}
 	printf("digest_algorithms: %s\n", configuredAllowedAlgorithms.c_str());
 	printf("database_type: %s\n", dbTypeToString(dbType).c_str());
+	printf("http_server_thread_pool_size: %d\n", httpServerThreadPoolSize);
 }
