@@ -2,7 +2,7 @@
  * @file jalls_record_utils.c Functions for obtained various hunks of metadata
  * for JALoP Records
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -108,7 +108,7 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 	uuid_generate(rec->uuid);
 	if (rec->username == NULL) {
 		jaldb_destroy_record(&rec);
-		return -1;	
+		return -1;
 	}
 
 	*prec = rec;

@@ -2,7 +2,7 @@
  * @file jalls_config.h This file contains functions for parsing the local store
  * config file.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -31,7 +31,6 @@
 #ifndef _JALLS_CONFIG_H_
 #define _JALLS_CONFIG_H_
 
-#include <libconfig.h>
 #include "jalls_context.h"
 
 #define JALLS_CFG_DB_DEFAULT "/var/lib/jalop/db"
@@ -46,14 +45,19 @@
 #define JALLS_CFG_HOSTNAME "hostname"
 #define JALLS_CFG_DB_ROOT "db_root"
 #define JALLS_CFG_SOCKET "socket"
+#define JALLS_CFG_SOCKET_OWNER "socket_owner"
+#define JALLS_CFG_SOCKET_GROUP "socket_group"
+#define JALLS_CFG_SOCKET_MODE "socket_mode"
+#define JALLS_CFG_DB_RECOVER "db_recover"
+#define JALLS_CFG_DAEMON "daemon"
 #define JALLS_CFG_SIGNATURE "sign_sys_meta"
 #define JALLS_CFG_MANIFEST "manifest_sys_meta"
-#define JALLS_CFG_SCHEMAS_ROOT "schemas_root"
 #define JALLS_CFG_PID_FILE "pid_file"
 #define JALLS_CFG_LOG_DIR "log_dir"
 #define JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT "accept_delay_thread_count"
 #define JALLS_CFG_ACCEPT_DELAY_INCREMENT "accept_delay_increment"
 #define JALLS_CFG_ACCEPT_DELAY_MAX "accept_delay_max"
+#define JALLS_CFG_SYS_META_DGST_ALG "sys_meta_dgst_alg"
 
 /**
  * Parses the config file and fills out the jalls_context struct.

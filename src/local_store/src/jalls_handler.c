@@ -2,7 +2,7 @@
  * @file jalls_handler.c This file contains functions to handle a connection
  * to the jalp local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -139,7 +139,7 @@ void *jalls_handler(void *thread_ctx_p) {
 			ucred_free(cred);
 		}
 #endif
-		
+
 		ssize_t bytes_recv = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 		if (bytes_recv < 0) {
 			if (debug) {

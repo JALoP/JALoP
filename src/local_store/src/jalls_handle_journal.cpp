@@ -2,7 +2,7 @@
  * @file jalls_handle_journal.cpp This file contains functions to handle a journal
  * to the jal local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -82,11 +82,11 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	int app_meta_digest_len = 0;
 	char *app_meta_alg = NULL;
 
-	void *sha256_instance = NULL;
+	void *digest_instance = NULL;
 
 	char *nonce = NULL;
-	
-	RSA *signing_key = NULL;
+
+	EVP_PKEY *signing_key = NULL;
 
 	if (thread_ctx->ctx->sign_sys_meta) {
 		signing_key = thread_ctx->signing_key;
@@ -128,13 +128,13 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	bytes_remaining = data_len;
 	int bytes_written;
 
-	digest_ctx = jal_sha256_ctx_create();
-	sha256_instance = digest_ctx->create();
+	digest_ctx = jal_digest_ctx_create(thread_ctx->ctx->sys_meta_dgst_alg);
+	digest_instance = digest_ctx->create();
 	digest = (uint8_t *)jal_malloc(digest_ctx->len);
-	jal_err = digest_ctx->init(sha256_instance);
+	jal_err = digest_ctx->init(digest_instance);
 	if(jal_err != JAL_OK) {
 		if (debug) {
-			fprintf(stderr, "could not init sha256 digest context\n");
+			fprintf(stderr, "could not init digest context\n");
 		}
 		goto err_out;
 	}
@@ -142,7 +142,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 	bytes_received = jalls_recvmsg_helper(thread_ctx->fd, &msgh, debug);
 	while (bytes_received > 0 && bytes_remaining >= (uint64_t)bytes_received) {
 		bytes_remaining -= (uint64_t)bytes_received;
-		jal_err = digest_ctx->update(sha256_instance, (uint8_t *)data_buf, bytes_received);
+		jal_err = digest_ctx->update(digest_instance, (uint8_t *)data_buf, bytes_received);
 		if (jal_err != JAL_OK) {
 			if (debug) {
 				fprintf(stderr, "could not digest the journal data\n");
@@ -168,9 +168,9 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 		}
 		goto err_out;
 	}
-	size_t digest_length;
+	unsigned int digest_length;
 	digest_length = digest_ctx->len;
-	jal_err = digest_ctx->final(sha256_instance, digest, &digest_length);
+	jal_err = digest_ctx->final(digest_instance, digest, &digest_length);
 	if(jal_err != JAL_OK) {
 		if (debug) {
 			fprintf(stderr, "could not digest the journal\n");
@@ -247,7 +247,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 				goto err_out;
 			}
 			payload_digest_len = digest_ctx->len;
-			payload_alg = jal_strdup(digest_ctx->algorithm_uri); 
+			payload_alg = jal_strdup(digest_ctx->algorithm_uri);
 		}
 
 		if (rec->app_meta) {
@@ -259,7 +259,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 				goto err_out;
 			}
 			app_meta_digest_len = digest_ctx->len;
-			app_meta_alg = jal_strdup(digest_ctx->algorithm_uri); 
+			app_meta_alg = jal_strdup(digest_ctx->algorithm_uri);
 		}
 
 	}
@@ -305,7 +305,7 @@ extern "C" int jalls_handle_journal(struct jalls_thread_context *thread_ctx, uin
 
 err_out:
 	if (digest_ctx) {
-		digest_ctx->destroy(sha256_instance);
+		digest_ctx->destroy(digest_instance);
 		jal_digest_ctx_destroy(&digest_ctx);
 	}
 	free(digest);

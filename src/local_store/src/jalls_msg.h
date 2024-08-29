@@ -2,7 +2,7 @@
  * @file jalls_msg.h This file contains helper functions to deal with
  * receiving messages for the jal local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

@@ -2,7 +2,7 @@
  * @file jalls_context.h This file contains structs to deal with passing data
  * to local store worker threads.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -40,6 +40,8 @@ extern "C" {
 #include <stdint.h>
 #include <uuid/uuid.h>
 
+#include "jalop/jal_digest.h"
+
 #include "jaldb_context.h"
 
 /** holds the fields to be passed to a worker thread */
@@ -56,12 +58,20 @@ struct jalls_context {
 	uuid_t system_uuid;
 	/** The hostname the JALoP Local Store should record in the system metadata */
 	char *hostname;
-	/** The full path to a directory that has the schemas */
-	char *schemas_root;
 	/** The full path to a directory to store the various database files and journal data */
 	char *db_root;
 	/** The full path to a UNIX Domain Socket. The JALoP Local Store will create the socket and wait for producer applications to connect to the socket. */
 	char *socket;
+	/** The owner of the socket file */
+	char *socket_owner;
+	/** The group of the socket file */
+	char *socket_group;
+	/** The unix dac permissions of the socket file */
+	char *socket_mode;
+        /** A boolean for whether the DB_REVCOVER flag should be set when opening the DB */
+	int db_recover;
+	/** A boolean for whether the process should be daemonized */
+	int daemon;
 	/** A boolean for whether to sign the system metadata for data received from the producer library. */
 	int sign_sys_meta;
 	/** A boolean for whether to include manifests in the system metadata for data received from the producer library. */
@@ -76,6 +86,8 @@ struct jalls_context {
 	int accept_delay_increment;
 	/** Maximum accept delay in microseconds. */
 	int accept_delay_max;
+	/** Digest algorithm to use in system metadata */
+	enum jal_digest_algorithm sys_meta_dgst_alg;
 };
 
 struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */
@@ -90,7 +102,7 @@ struct jalls_thread_context { /* the worker thread should never write to or free
 	/** The uid of the peer that sent the record. This will be gathered by the thread and stored in the system metadata */
 	uid_t peer_uid;
 	/** The RSA private key to use when signing system metadata*/
-	RSA *signing_key;
+	EVP_PKEY *signing_key;
 	/** The certificate used for signing the system metadata */
 	X509 *signing_cert;
 };
