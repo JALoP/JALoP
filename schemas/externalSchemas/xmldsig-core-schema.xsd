@@ -155,8 +155,8 @@
   <element name="KeyValue" type="ds:KeyValueType"/>
   <complexType name="KeyValueType" mixed="true">
    <choice>
-     <element ref="ds:DSAKeyValue"/>
-     <element ref="ds:RSAKeyValue"/>
+     <element ref="ds:DSAKeyValue" minOccurs="0"/>
+     <element ref="ds:RSAKeyValue" minOccurs="0"/>
      <any namespace="##other" processContents="lax"/>
    </choice>
   </complexType>
