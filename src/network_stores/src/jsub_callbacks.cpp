@@ -2,7 +2,7 @@
 * @file jsub_callbacks.cpp This file contains handlers for the
 * Network Library subscriber callbacks.
 *
-* @section LICENSE
+* ### LICENSE
 *
 * Source code in 3rd-party is licensed and owned by their respective
 * copyright holders.
@@ -130,6 +130,8 @@ void jsub_connect_ack(
 			DEBUG_LOG("agent: %s", ack->jaln_agent);
 		}
 		DEBUG_LOG("role: %s", ack->mode == JALN_ROLE_SUBSCRIBER ? "subscriber" : "publisher");
+		DEBUG_LOG("digest_algorithm: %s", ack->digest_algorithm);
+		DEBUG_LOG("encoding: %s", ack->encoding);
 	}
 }
 
@@ -238,7 +240,7 @@ int jsub_on_record_info(
 			application_metadata_buffer,
 			application_metadata_size, user_data);
 	}
-	
+
 	switch (type) {
 	case JALN_RTYPE_JOURNAL:
 		journal_sys_meta_size = system_metadata_size;

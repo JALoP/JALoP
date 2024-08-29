@@ -2,7 +2,7 @@
  * @file jal_subscribe.cpp This file contains functions the main function of the
  * jal_subscribe program.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -27,8 +27,7 @@
  * limitations under the License.
  */
 
-#include <getopt.h>
-#include <libconfig.h>
+#include <argp.h>
 #include <syslog.h>
 #include <pthread.h>
 #include <string.h>
@@ -38,9 +37,13 @@
 #include <jalop/jaln_network.h>
 #include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
+#include "jal_config.h"
 #include "jalu_daemonize.h"
 #include "jsub_db_layer.hpp"
 #include "jsub_callbacks.hpp"
+
+#include "jal_seccomp_enforcer.h"
+#include "jal_subscribe_config_context.h"
 
 #define DEBUG_MODE_ON 1
 #define DEBUG_MODE_OFF 0
@@ -54,10 +57,14 @@
 #define MODE "mode"
 #define PENDING_DIGEST_MAX "pending_digest_max"
 #define PENDING_DIGEST_TIMEOUT "pending_digest_timeout"
+#define WINDOW_SIZE "window_size"
 #define DB_ROOT "db_root"
-#define SCHEMAS_ROOT "schemas_root"
+#define DIGEST_ALGORITHMS "digest_algorithms"
 #define MAX_PORT_LENGTH 10
 #define VERSION_CALLED 1
+
+//The size here is in kilobytes, so 4KB.
+#define DEFAULT_WINDOW_SIZE 4
 
 #define DEBUG_LOG(args...) \
 	do { \
@@ -87,23 +94,44 @@ struct global_config_t {
 	long long int pending_digest_timeout;
 	int len_data_class;
 	const char *db_root;
-	const char *schemas_root;
 	int data_classes;
+	int window_size;
+	const char *digest_algorithms;
 } global_config;
 
 struct global_args_t {
-	int debug_flag;		/* --debug option */
+	char *digest_algorithms; /* --digest-algorithms option */
 	char *config_path;	/* --config option */
+	char *mode;  /* --mode option */
+	char *dbpath;  /* --home option */
+	char *ipaddr;  /* --ipaddr option */
+	int port;  /* --port option */
+	int debug_flag;		/* --debug option */
 	bool enable_tls;	/* --disable_tls option */
+	int window_size; /*beep channel window size */
 } global_args;
 
-enum jal_subscribe_status {
-	JAL_E_CONFIG_LOAD = -1
+// argp
+const char *argp_program_version = "1";
+const char *argp_program_bug_address = 0;
+static char args_doc[] = "--config config_file";
+static char doc[] = "jal_subscribe - JALoPv1 Network Store that creates a BEEP connection to a remote JALoPv1 peer and subscribes for JALoP records.";
+static struct argp_option options[] =
+{
+	{"digest-algorithms", 'a', "algs", 0, "Allowable digest algorithms", 0},
+	{"config", 'c', "file", 0, "REQUIRED: Specify the path to the configuration file.", 0},
+	{"mode", 'm', "mode", 0, "Mode to run on. Valid values are 'archive' or 'live'.", 0},
+	{"home", 'h', "db-root", 0, "Specify the root of the JALoP database.", 0},
+	{"ipaddr", 'i', "ip-address", 0, "IP Address to listen on.", 0},
+	{"port", 't', "port", 0, "Port to listen on.", 0},
+	{"debug", 'd', NULL, 0, "Enable debug output.", 0},
+	{"disable-tls", 's', NULL, 0, "Disable TLS authentication.", 0},
+	{"window-size", 'w', NULL, 0, "The BEEP windows size.", 0},
+	{NULL, 0, NULL, 0, NULL, 0}
 };
+static struct argp argp = {options, jal_subscribe_parse_opt, args_doc, doc, NULL, NULL, NULL};
 
-static void usage();
 static int process_options(int argc, char **argv);
-static int config_load(config_t *config, char *config_path);
 static void init_global_config(void);
 static void free_global_args(void);
 static void print_config(void);
@@ -120,7 +148,6 @@ static void sig_handler(__attribute__((unused)) int sig)
 
 static int setup_signals(void)
 {
-	// Signal action to delete the socket file
 	struct sigaction action_on_sig;
 	action_on_sig.sa_handler = &sig_handler;
 	sigemptyset(&action_on_sig.sa_mask);
@@ -150,39 +177,58 @@ int main(int argc, char **argv)
 	pthread_t thread_timer, thread_subscriber;
 	int rc_timer, rc_subscriber;
 	config_t config;
-	config_init(&config);
 	jsub_is_conn_closed = false; // Externed in jsub_callbacks
+	struct jal_seccomp_enforcer_t* seccomp_enforcer = NULL;
 
 	rc = setup_signals();
 	if (0 != rc) {
 		goto out;
 	}
 
+	init_global_config();
 	if (VERSION_CALLED == process_options(argc, argv)) {
 		goto version_out;
 	}
 
 	DEBUG_LOG("Config Path: %s\tDebug: %d",
-		 global_args.config_path, global_args.debug_flag);
+		global_args.config_path, global_args.debug_flag);
 	if (!global_args.config_path){
-		rc = JAL_E_CONFIG_LOAD;
+		rc = JAL_CFG_FAILURE;
 		goto out;
 	}
-	rc = config_load(&config, global_args.config_path);
-	if (rc == JAL_E_CONFIG_LOAD){
+
+	rc = jal_config_init(&config);
+	if (JAL_CFG_SUCCESS != rc) {
 		goto out;
 	}
+
+	seccomp_enforcer = jal_seccomp_enforcer_create(global_args.config_path);
+	if(NULL == seccomp_enforcer){
+		goto out;
+	}
+
+	if (0 != jal_seccomp_enforcer_apply_initial(seccomp_enforcer)){
+		goto out;
+	}
+
+	rc = jal_config_read_file(&config, global_args.config_path);
+
+	if (JAL_CFG_SUCCESS != rc) {
+		goto out;
+	}
+
 	jsub_debug = global_args.debug_flag;
+
 	if (global_args.debug_flag) {
 		DEBUG_LOG("Config load result: %d", rc);
 	}
-	init_global_config();
+
 	rc = set_global_config(&config);
-	if (rc == JAL_E_CONFIG_LOAD){
+	if (rc != JAL_CFG_SUCCESS){
 		goto out;
 	}
 	print_config();
-	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root, global_config.schemas_root);
+	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root);
 	if (!jsub_db_ctx) {
 		if (global_args.debug_flag) {
 			DEBUG_LOG("DBLayer Setup Failed!");
@@ -213,6 +259,10 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
+	if (0 != jal_seccomp_enforcer_apply_final(seccomp_enforcer)){
+		goto out;
+	}
+
 	pthread_join(thread_timer, NULL);
 	pthread_join(thread_subscriber, NULL);
 	if (global_args.debug_flag) {
@@ -225,6 +275,7 @@ out:
 	if (global_args.debug_flag) {
 		DEBUG_LOG("Cleanup completed!");
 	}
+	jal_seccomp_enforcer_destroy(&seccomp_enforcer);
 	return rc;
 
 version_out:
@@ -232,84 +283,110 @@ version_out:
 	return 0;
 }
 
+void init_global_args(void)
+{
+	global_args.digest_algorithms = NULL;
+	global_args.config_path = NULL;
+	global_args.mode = NULL;
+	global_args.dbpath = NULL;
+	global_args.ipaddr = NULL;
+	global_args.port = 0;
+	global_args.debug_flag = 0;
+	global_args.enable_tls = true;
+	global_args.window_size = 0;
+}
+
 int process_options(int argc, char **argv)
 {
-	int opt = 0;
-	int long_index = 0;
+	init_global_args();
 
-	static const char *opt_string = "c:dvs";
-	static const struct option long_options[] = {
-		{"config", required_argument, NULL,'c'}, /* --config or -c */
-		{"debug", no_argument, NULL, 'd'}, /* --debug or -d */
-		{"version", no_argument, NULL, 'v'}, /* --version or -v */
-		{"disable-tls", no_argument, NULL, 's'}, /* --disable-tls or -s */
-		{0, 0, 0, 0} /* terminating -0 item */
+	struct jal_subscribe_config_context js_conf_ctx = {
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		0,
+		0,
+		0,
+		0
 	};
 
-	global_args.debug_flag = DEBUG_MODE_OFF;
-	global_args.config_path = NULL;
-	global_args.enable_tls = true;
+	int err = argp_parse(&argp, argc, argv, 0, 0, &js_conf_ctx);
+	if(0 != err) {
+		fprintf(stderr, "ERROR: Cannot parse command line arguments.\n");
+		exit(1);
+	}
+	// Used in several functions to report additional error information
+	if(js_conf_ctx.conf == NULL)
+	{
+		fprintf(stderr, "Config file is required\n");
+		exit(1);
+	}
 
-	opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
+	//Sets global args
+	global_args.config_path = strdup(js_conf_ctx.conf);
 
-	while(opt != -1){
-		switch (opt) {
-			case 'd':
-				global_args.debug_flag = DEBUG_MODE_ON;
-				break;
-			case 'c':
-				global_args.config_path = strdup(optarg);
-				break;
-			case 'v':
-				printf("%s\n", jal_version_as_string());
-				return VERSION_CALLED;
-				break;
-			case 's':
-				global_args.enable_tls = false;
-				break;
-			case 0:
-				break;
-			default:
-				usage();
+	if (js_conf_ctx.debug != 0)
+	{
+		global_args.debug_flag = DEBUG_MODE_ON;
+	}
+
+	if (js_conf_ctx.disableTls != 0)
+	{
+		global_args.enable_tls = false;
+	}
+
+	if (js_conf_ctx.window_size != NULL)
+	{
+		global_args.window_size = atoi(js_conf_ctx.window_size);
+		if (global_args.window_size<1){
+			fprintf(stderr, "window_size must be an integer greater then 0. \n");
+			exit(1);
 		}
-		opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
 	}
-	if (!global_args.config_path) {
-		usage();
+
+	if (js_conf_ctx.digest_algorithms != NULL)
+	{
+		global_args.digest_algorithms = strdup(js_conf_ctx.digest_algorithms);
 	}
+
+	if(js_conf_ctx.port != NULL)
+	{
+		int portno;
+		int portlen = strlen(js_conf_ctx.port);
+		int scanLen;
+		int ret = sscanf(js_conf_ctx.port, "%d%n", &portno, &scanLen);
+
+		if(ret == 1 && portlen == scanLen) // no error
+		{
+			global_args.port = portno;
+		}
+		else
+		{
+			fprintf(stderr, "Could not convert port number: %s to integral type\n", js_conf_ctx.port);
+			exit(1);
+		}
+	}
+
+	if(NULL != js_conf_ctx.ipaddr)
+	{
+		global_args.ipaddr = strdup(js_conf_ctx.ipaddr);
+	}
+
+	if(js_conf_ctx.dbpath != NULL)
+	{
+		global_args.dbpath = strdup(js_conf_ctx.dbpath);
+	}
+
+	if(js_conf_ctx.inmode != NULL)
+	{
+		global_args.mode = strdup(js_conf_ctx.inmode);
+	}
+
+	jal_subscribe_config_drop_memory(&js_conf_ctx);
 
 	return 0;
-}
-
-__attribute__((noreturn)) void usage()
-{
-        fprintf(stderr, "Usage: jal_subscribe -c, --config <config_directory> [-d, --debug] [-s, --disable-tls] [-v, --version]\n");
-        exit(1);
-}
-
-int config_load(config_t *config, char *config_path)
-{
-	int rc = 0;
-
-	if (!config || !config_path) {
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Failed to load config!");
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
-	}
-	rc = config_read_file(config, config_path);
-	if (rc != CONFIG_TRUE) {
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Failure reading config file, rc: %d, %s, line: %d", rc,
-			       config_error_text(config),
-			       config_error_line(config));
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
-	}
-out:
-	return rc;
 }
 
 void init_global_config(void)
@@ -322,174 +399,223 @@ void init_global_config(void)
 	global_config.host = NULL;
 	global_config.mode = NULL;
 	global_config.db_root = NULL;
-	global_config.schemas_root = NULL;
 	global_config.data_classes = 0;
+	global_config.window_size = DEFAULT_WINDOW_SIZE;
+	global_config.digest_algorithms = NULL;
 }
 
 void free_global_args(void)
 {
 	free((void*) global_args.config_path);
+	free((void*) global_args.digest_algorithms);
+	free((void*) global_args.ipaddr);
+	free((void*) global_args.dbpath);
+	free((void*) global_args.mode);
 }
 
 void print_config(void)
 {
-	if (global_args.debug_flag) {
-		DEBUG_LOG("\n===\nBEGIN CONFIG VALUES:\n===");
-		if (global_args.enable_tls) {
-			DEBUG_LOG("PRIVATE KEY:\t\t%s", global_config.private_key);
-			DEBUG_LOG("PUBLIC CERT:\t\t%s", global_config.public_cert);
-			DEBUG_LOG("REMOTE CERT:\t\t%s", global_config.remote_cert);
-		} else {
-			DEBUG_LOG("!!!!!!!! TLS IS DISABLED !!!!!!!!");
-		}
-		DEBUG_LOG("SESSION TIMEOUT:\t%s", global_config.session_timeout);
-		//DEBUG_LOG("DATA CLASS:\t\t%s\n", global_config.data_class);
-		DEBUG_LOG("DATA CLASS LENGTH:\t%d", global_config.len_data_class);
-		DEBUG_LOG("PORT:\t\t\t%lld", global_config.port);
-		DEBUG_LOG("HOST:\t\t\t%s", global_config.host);
-		DEBUG_LOG("MODE:\t\t\t%s", global_config.mode);
-		DEBUG_LOG("PENDING DIGEST MAX:\t%lld", global_config.pending_digest_max);
-		DEBUG_LOG("PENDING DIGEST TIMEOUT:\t%lld", global_config.pending_digest_timeout);
-		DEBUG_LOG("DB ROOT:\t\t%s\n", global_config.db_root);
-		DEBUG_LOG("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
-		DEBUG_LOG("\n===\nEND CONFIG VALUES:\n===");
+	printf("\n===\nBEGIN CONFIG VALUES:\n===\n");
+	if(global_args.debug_flag) {
+		printf("DEBUG:\t\tenabled\n");
+	} else {
+		printf("DEBUG:\t\tdisabled\n");
 	}
+	if (global_args.enable_tls) {
+		printf("PRIVATE KEY:\t\t%s\n", global_config.private_key);
+		printf("PUBLIC CERT:\t\t%s\n", global_config.public_cert);
+		printf("REMOTE CERT:\t\t%s\n", global_config.remote_cert);
+	} else {
+		printf("!!!!!!!! TLS IS DISABLED !!!!!!!!\n");
+	}
+	printf("SESSION TIMEOUT:\t%s\n", global_config.session_timeout);
+	printf("DATA CLASS LENGTH:\t%d\n", global_config.len_data_class);
+	printf("DATA CLASSES ENABLED: ");
+	if(global_config.data_classes & JALN_RTYPE_JOURNAL) {
+		printf("\tjournal ");
+	}
+	if(global_config.data_classes & JALN_RTYPE_AUDIT) {
+		printf("\taudit ");
+	}
+	if(global_config.data_classes & JALN_RTYPE_LOG) {
+		printf("\tlog ");
+	}
+	printf("\n");
+	printf("PORT:\t\t\t%lld\n", global_config.port);
+	printf("HOST:\t\t\t%s\n", global_config.host);
+	printf("MODE:\t\t\t%s\n", global_config.mode);
+	printf("PENDING DIGEST MAX:\t%lld\n", global_config.pending_digest_max);
+	printf("PENDING DIGEST TIMEOUT:\t%lld\n", global_config.pending_digest_timeout);
+	printf("DB ROOT:\t\t%s\n", global_config.db_root);
+	printf("WINDOW_SIZE:\t\t%d\n", global_config.window_size);
+	printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
+	printf("\n===\nEND CONFIG VALUES:\n===");
 }
 
 int set_global_config(config_t *config)
 {
-	int rc = 0;
+	int rc = JAL_CFG_SUCCESS;
 	if (!config){
 		if (global_args.debug_flag) {
 			DEBUG_LOG("Config is NULL!");
 		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
+		rc = JAL_CFG_FAILURE;
+		return rc;
 	}
+
+	// Because all of the config strings are stored as const, we need to put the value
+	// into a temporary variable and assign the pointer to the const
+	char * config_string = NULL;
+	config_setting_t *root = config_root_setting(config);
+
 	// REQUIRED CONFIG VALUES
-	rc = 0;
 	if (global_args.enable_tls) {
-		rc = config_lookup_string(config, PRIVATE_KEY, &global_config.private_key);
-		if (rc == CONFIG_FALSE){
-			if (global_args.debug_flag) {
-				DEBUG_LOG("Missing setting for '%s'", PRIVATE_KEY);
-			}
-			rc = JAL_E_CONFIG_LOAD;
-			goto out;
+		rc |= jal_config_lookup_string(root, PRIVATE_KEY, &config_string, JAL_CFG_REQUIRED);
+		char *expanded_priv_key_path = jal_expand_path(config_string, PRIVATE_KEY);
+		if (expanded_priv_key_path != NULL) {
+			global_config.private_key = expanded_priv_key_path;
 		}
-		rc = config_lookup_string(config, PUBLIC_CERT, &global_config.public_cert);
-		if (rc == CONFIG_FALSE){
-			if (global_args.debug_flag) {
-				DEBUG_LOG("Missing setting for '%s'", PUBLIC_CERT);
-			}
-			rc = JAL_E_CONFIG_LOAD;
-			goto out;
+		else {
+			rc |= JAL_CFG_FAILURE;
 		}
-		rc = config_lookup_string(config, REMOTE_CERT, &global_config.remote_cert);
-		if (rc == CONFIG_FALSE){
-			if (global_args.debug_flag) {
-				DEBUG_LOG("Missing setting for '%s'", REMOTE_CERT);
-			}
-			rc = JAL_E_CONFIG_LOAD;
-			goto out;
+		config_string = NULL;
+
+		rc |= jal_config_lookup_string(root, PUBLIC_CERT, &config_string, JAL_CFG_REQUIRED);
+		char *expanded_pub_cert_path = jal_expand_path(config_string, PUBLIC_CERT);
+		if (expanded_pub_cert_path != NULL) {
+			global_config.public_cert = expanded_pub_cert_path;
 		}
+		else {
+			rc |= JAL_CFG_FAILURE;
+		}
+		config_string = NULL;
+
+		rc |= jal_config_lookup_string(root, REMOTE_CERT, &config_string, JAL_CFG_REQUIRED);
+		char *expanded_remote_cert_path = jal_expand_path(config_string, REMOTE_CERT);
+		if (expanded_pub_cert_path != NULL) {
+			global_config.remote_cert = expanded_remote_cert_path;
+		}
+		else {
+			rc |= JAL_CFG_FAILURE;
+		}
+		config_string = NULL;
 	}
-	rc = config_lookup_int64(config, PORT, &global_config.port);
-	if (rc == CONFIG_FALSE){
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Missing setting for '%s'", PORT);
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
+
+	if (global_args.port != 0)
+	{
+		global_config.port = global_args.port;
 	}
-	rc = config_lookup_string(config, HOST, &global_config.host);
-	if (rc == CONFIG_FALSE){
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Missing setting for '%s'", HOST);
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
+	else
+	{
+		rc |= jal_config_lookup_int64(root, PORT, &global_config.port, JAL_CFG_REQUIRED);
 	}
-	rc = config_lookup_string(config, MODE, &global_config.mode);
-	if (rc == CONFIG_FALSE){
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Missing setting for '%s'", MODE);
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
+
+	if (global_args.ipaddr != NULL)
+	{
+		global_config.host = global_args.ipaddr;
 	}
-	rc = config_lookup_int64(config, PENDING_DIGEST_MAX, &global_config.pending_digest_max);
-	if (rc == CONFIG_FALSE){
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Missing setting for '%s'", PENDING_DIGEST_MAX);
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
+	else
+	{
+		rc |= jal_config_lookup_string(root, HOST, &config_string, JAL_CFG_REQUIRED);
+		global_config.host = config_string;
+		config_string = NULL;
 	}
-	rc &= config_lookup_int64(config, PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout);
-	if (rc == CONFIG_FALSE){
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Missing setting for '%s'", PENDING_DIGEST_TIMEOUT);
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
+
+	if (global_args.mode != NULL)
+	{
+		global_config.mode = global_args.mode;
 	}
-	global_config.data_class = config_lookup(config, DATA_CLASS);	// Array
-	if (!global_config.data_class) {
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Data class was not found in configuration file and is required!");
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
+	else
+	{
+		rc |= jal_config_lookup_string(root, MODE, &config_string, JAL_CFG_REQUIRED);
+		global_config.mode = config_string;
+		config_string = NULL;
 	}
-	if (!config_setting_is_array(global_config.data_class)) {
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Expected data_class to be an array!");
-		}
-		rc = JAL_E_CONFIG_LOAD;
-		goto out;
-	}
-	global_config.len_data_class = config_setting_length(global_config.data_class);
+
+	rc |= jal_config_lookup_int64(root, PENDING_DIGEST_MAX, &global_config.pending_digest_max, JAL_CFG_REQUIRED);
+	rc |= jal_config_lookup_int64(root, PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout, JAL_CFG_REQUIRED);
+	rc |= jal_config_lookup_list(root, DATA_CLASS, &global_config.data_class, &global_config.len_data_class, JAL_CFG_REQUIRED);
 
 	// Iterate through the data classes and create the
 	//	appropriate record_type mask
 	for (int i = 0; i < global_config.len_data_class; i++){
-		const char *value = config_setting_get_string_elem(
-						global_config.data_class,
-						i);
+		char *value = NULL;
+		rc |= jal_config_get_elem_string(global_config.data_class, i, &value, DATA_CLASS);
+
 		if (0 == strcmp(value, "journal")){
 			global_config.data_classes =
 					global_config.data_classes |
 					JALN_RTYPE_JOURNAL;
 		}
-		if (0 == strcmp(value, "audit")){
+		else if (0 == strcmp(value, "audit")){
 			global_config.data_classes =
 					global_config.data_classes |
 					JALN_RTYPE_AUDIT;
 		}
-		if (0 == strcmp(value, "log")){
+		else if (0 == strcmp(value, "log")){
 			global_config.data_classes =
 					global_config.data_classes |
 					JALN_RTYPE_LOG;
 		}
+		else {
+			rc |= JAL_CFG_FAILURE;
+			DEBUG_LOG("data_class: \"%s\" not recognized. "
+				"Allowed data classes are: \"journal\", \"audit\", and \"log\".", value);
+		}
 	}
 
 	// OPTIONAL CONFIG VALUES
-	rc = config_lookup_string(config, SESSION_TIMEOUT, &global_config.session_timeout);
-	if (rc == CONFIG_FALSE){
-		global_config.session_timeout = NULL; // NULL or Zero is INFINITE
+	rc |= jal_config_lookup_string(root, SESSION_TIMEOUT, &config_string, JAL_CFG_OPTIONAL);
+	global_config.session_timeout = config_string;
+	config_string = NULL;
+
+	if (global_args.dbpath != NULL)
+	{
+		char *expanded_db_root_path = jal_expand_path(global_args.dbpath, DB_ROOT);
+		if (expanded_db_root_path != NULL) {
+			global_config.db_root = expanded_db_root_path;
+		}
+		else {
+			rc |= JAL_CFG_FAILURE;
+		}
+	}
+	else
+	{
+		rc |= jal_config_lookup_string(root, DB_ROOT, &config_string, JAL_CFG_OPTIONAL);
+		if (config_string != NULL)
+		{
+			char *expanded_db_root_path = jal_expand_path(config_string, DB_ROOT);
+			if (expanded_db_root_path != NULL) {
+				global_config.db_root = expanded_db_root_path;
+			}
+			else {
+				rc |= JAL_CFG_FAILURE;
+			}
+		}
+		config_string = NULL;
 	}
 
-	rc = config_lookup_string(config, DB_ROOT, &global_config.db_root);
-	if (rc == CONFIG_FALSE){
-		global_config.db_root = NULL;
+	if(global_args.window_size > 0){
+		global_config.window_size = global_args.window_size;
+	}
+	else{
+		rc |= jal_config_lookup_int(root, WINDOW_SIZE, &global_config.window_size, JAL_CFG_OPTIONAL);
+
+		if (global_config.window_size < 1) {
+			rc |= JAL_CFG_FAILURE;
+			DEBUG_LOG("window_size must be an integer greater then 0.");
+		}
 	}
 
-	rc = config_lookup_string(config, SCHEMAS_ROOT, &global_config.schemas_root);
-	if (rc == CONFIG_FALSE) {
-		global_config.schemas_root = NULL;
+	if(global_args.digest_algorithms) {
+		global_config.digest_algorithms = global_args.digest_algorithms;
 	}
-out:
+	else {
+		rc |= jal_config_lookup_string(root, DIGEST_ALGORITHMS, &config_string, JAL_CFG_OPTIONAL);
+		global_config.digest_algorithms = config_string;
+		config_string = NULL;
+	}
+
 	return rc;
 }
 
@@ -571,89 +697,118 @@ void *subscriber_do_work(void *ptr)
 {
 	char port[MAX_PORT_LENGTH];
 	int ret = sprintf(port, "%lld", global_config.port);
-	struct jaln_connection *conn = NULL;
-	struct global_config_t *cfg = (struct global_config_t *) ptr;
-	cfg = cfg;
-	jaln_context *net_ctx = jaln_context_create();
-	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
-	enum jal_status err;
-	enum jaln_publish_mode mode = JALN_UNKNOWN_MODE;
+	bool config_err = false;
+	while(global_quit==false){
+		jsub_is_conn_closed = false;
+		struct jaln_connection *conn = NULL;
+		struct global_config_t *cfg = (struct global_config_t *) ptr;
+		cfg = cfg;
+		jaln_context *net_ctx = jaln_context_create();
+		jaln_context_set_debug(net_ctx, global_args.debug_flag);
+		enum jal_status err;
+		enum jaln_publish_mode mode = JALN_UNKNOWN_MODE;
 
-	if (0 > ret){
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Port wasn't converted to string! Quitting.");
-		}
-		goto err;
-	}
-	jaln_register_digest_algorithm(net_ctx, dc1);
-	if (global_args.enable_tls) {
-		err = jaln_register_tls(net_ctx,
-					global_config.private_key,
-					global_config.public_cert,
-					global_config.remote_cert);
-		if (JAL_OK != err) {
-			if (global_args.debug_flag) {
-				DEBUG_LOG("Error w/ registration of TLS! Quitting.");
+		size_t num_digests = 0;
+		enum jal_digest_algorithm *digest_list = NULL;
+
+		// If this is NULL, we don't have digest algorithms defined in the cfg or CLI
+		// Skip digest algorithm configuration in this case. The default algorithm will be set later.
+		if (global_config.digest_algorithms) {
+			enum jal_status status = jal_parse_digest_algorithm_str(global_config.digest_algorithms, &digest_list, &num_digests);
+
+			if (JAL_OK != status) {
+				if (global_args.debug_flag) {
+					DEBUG_LOG("Failed to parse digest list! Quitting.");
+				}
+				config_err = true;
+				goto out;
 			}
-			goto err;
-		}
-	}
-	err = jaln_register_encoding(net_ctx, "xml");
-	err = jsub_callbacks_init(net_ctx);
-	if (JAL_OK != err) {
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Error w/ registration of encoding, digest or callbacks! Quitting.");
-		}
-		goto err;
-	}
-	if (0 == strcmp("archive",global_config.mode)) {
-		mode = JALN_ARCHIVE_MODE;
-	} else if (0 == strcmp("live",global_config.mode)) {
-		mode = JALN_LIVE_MODE;
-	} else {
-		DEBUG_LOG("Bad mode specification in config file! Quitting.");
-		goto err;
-	}
-	conn = jaln_subscribe(
-				net_ctx,
-				global_config.host,
-				port,
-				global_config.data_classes,
-				mode,
-				jsub_db_ctx);
-	if (!conn){
-		if (global_args.debug_flag) {
-			DEBUG_LOG("conn null, quitting!");
-		}
-		goto err;
-	}
-	while(!jsub_is_conn_closed){
-		if (global_quit) {
-			if (global_args.debug_flag) {
-				DEBUG_LOG("Subscribe thread ending!");
+
+			for (size_t i = 0; i < num_digests; i ++ ) {
+				jaln_register_digest_algorithm(net_ctx, jal_digest_ctx_create(digest_list[i]));
 			}
-			err = jaln_disconnect(conn);
+		}
+
+		if (0 > ret){
+			if (global_args.debug_flag) {
+				DEBUG_LOG("Port wasn't converted to string! Quitting.");
+			}
+			config_err = true;
+			goto out;
+		}
+
+		if (global_args.enable_tls) {
+			err = jaln_register_tls(net_ctx,
+						global_config.private_key,
+						global_config.public_cert,
+						global_config.remote_cert);
 			if (JAL_OK != err) {
 				if (global_args.debug_flag) {
-					DEBUG_LOG("Subscriber failed to disconnect!");
+					DEBUG_LOG("Error w/ registration of TLS! Quitting.");
+				}
+				config_err = true;
+				goto out;
+			}
+		}
+		err = jaln_register_encoding(net_ctx, "xml");
+		err = jsub_callbacks_init(net_ctx);
+		if (JAL_OK != err) {
+			if (global_args.debug_flag) {
+				DEBUG_LOG("Error w/ registration of encoding, digest or callbacks! Quitting.");
+			}
+			config_err = true;
+			goto out;
+		}
+		if (0 == strcmp("archive",global_config.mode)) {
+			mode = JALN_ARCHIVE_MODE;
+		} else if (0 == strcmp("live",global_config.mode)) {
+			mode = JALN_LIVE_MODE;
+		} else {
+			DEBUG_LOG("Bad mode specification in config file! Quitting.");
+			config_err = true;
+			goto out;
+		}
+		while(conn==NULL && global_quit==false){
+				conn = jaln_subscribe(
+							net_ctx,
+							global_config.host,
+							port,
+							global_config.data_classes,
+							mode,
+							jsub_db_ctx,
+							global_config.pending_digest_max,
+							global_config.pending_digest_timeout,
+							global_config.window_size);
+				if (conn==NULL){
+					if (global_args.debug_flag) {
+						DEBUG_LOG("Waiting to connect to: %s:%i \n", global_config.host, (int)global_config.port);
+					}
+					sleep(1);
 				}
 			}
-			break;
+
+		while(!jsub_is_conn_closed){
+			if (global_quit) {
+				jaln_disconnect(conn);
+				break;
+			}
+			sleep(1);
 		}
-		sleep(1);
-	}
-err:
-	timer_keep_going = false;
-	err = jaln_shutdown(conn);
-	if (JAL_OK != err) {
-		if (global_args.debug_flag) {
-			DEBUG_LOG("Subscriber failed to shutdown network connection!");
+	out:
+		if(global_quit==true){
+			timer_keep_going = false;
+			sleep(2);
+			err = jaln_shutdown(conn);
+			if(JAL_OK != err){
+				DEBUG_LOG("Subscriber failed to shutdown network connection!");
+			}
 		}
-	}
-	jaln_context_destroy(&net_ctx);
-	free(conn);
-	if (global_args.debug_flag) {
-		printf("Subscribe thread exited!");
+		free(digest_list);
+		jaln_context_destroy(&net_ctx);
+		free(conn);
+		if(config_err || global_quit==true){
+				break;
+		}
 	}
 	return NULL;
 }

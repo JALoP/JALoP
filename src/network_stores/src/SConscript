@@ -8,6 +8,7 @@ sources = []
 for source in (env.Glob("jsub*.cpp") + env.Glob("jal_subscribe.cpp")):
 	sources.append(source)
 
+sources.append("jal_subscribe_config_context.c");
 add_project_lib(env, 'lib_common', 'jal-common')
 add_project_lib(env, 'db_layer', 'jal-db')
 add_project_lib(env, 'jal_utils', 'jal-utils')

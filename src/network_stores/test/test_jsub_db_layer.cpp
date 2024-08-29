@@ -2,7 +2,7 @@
 * @file test_jsub_db_layer.cpp This file contains functions to test
 * jsub_db_layer.cpp.
 *
-* @section LICENSE
+* ### LICENSE
 *
 * Source code in 3rd-party is licensed and owned by their respective
 * copyright holders.
@@ -68,7 +68,7 @@ extern "C" void setup()
 		}
 		closedir(dir);
 	}
-	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT, OTHER_SCHEMA_ROOT);
+	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT);
 }
 
 extern "C" void teardown()

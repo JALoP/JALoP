@@ -2,7 +2,7 @@
  * @file jsub_callbacks.hpp This file provides the function calls
  * to be executed by the network library callback handler.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

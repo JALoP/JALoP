@@ -2,7 +2,7 @@
 * @file jsub_db_layer.cpp This file provides the function calls to the DB
 * Layer.
 *
-* @section LICENSE
+* ### LICENSE
 *
 * Source code in 3rd-party is licensed and owned by their respective
 * copyright holders.
@@ -51,15 +51,14 @@
 	} while(0)
 
 jaldb_context *jsub_setup_db_layer(
-		const char *db_root,
-		const char *schemas_root)
+		const char *db_root)
 {
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *db_ctx = jaldb_context_create();
 	if (!db_ctx) {
 		goto err;
 	}
-	jaldb_ret = jaldb_context_init(db_ctx, db_root, schemas_root, JDB_NONE);
+	jaldb_ret = jaldb_context_init(db_ctx, db_root, JDB_NONE);
 	if (JALDB_OK == jaldb_ret){
 		goto out;
 	}

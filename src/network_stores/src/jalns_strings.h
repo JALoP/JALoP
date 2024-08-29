@@ -2,7 +2,7 @@
  * @file jalns_strings.h This file contains strings and other defines used by
  * the network stores.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -35,14 +35,11 @@ extern "C" {
 
 #define JALNS_AUDIT "audit"
 #define JALNS_DB_ROOT "db_root"
-#define JALNS_SCHEMAS_ROOT "schemas_root"
 #define JALNS_HOST "host"
 #define JALNS_HOSTS "hosts"
 #define JALNS_JOURNAL "journal"
 #define JALNS_LOG "log"
 #define JALNS_PEERS "peers"
-#define JALNS_PENDING_DIGEST_MAX "pending_digest_max"
-#define JALNS_PENDING_DIGEST_TIMEOUT "pending_digest_timeout"
 #define JALNS_POLL_TIME "poll_time"
 #define JALNS_PORT "port"
 #define JALNS_PRIVATE_KEY "private_key"
@@ -52,6 +49,7 @@ extern "C" {
 #define JALNS_REMOTE_CERT_DIR "remote_cert_dir"
 #define JALNS_PID_FILE "pid_file"
 #define JALNS_LOG_DIR "log_dir"
+#define JALNS_DIGEST_ALGORITHMS "digest_algorithms"
 
 #ifdef __cplusplus
 }
