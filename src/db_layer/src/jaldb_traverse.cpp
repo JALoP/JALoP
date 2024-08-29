@@ -2,7 +2,7 @@
  * @file jaldb_traverse.cpp This file defines functions for traversing
  * the records in the database.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -154,9 +154,9 @@ enum jaldb_status jaldb_iterate_by_timestamp(jaldb_context *ctx,
 		double delta = difftime(target_secs,mktime(&record_time));
 		if (delta < 0) {
 			// record_time is > target_time, so break out
-			goto out; 
+			goto out;
 		}
-		
+
 		if (delta == 0) {
 			if (record_ms > target_ms) {
 				goto out;
@@ -323,9 +323,9 @@ enum jaldb_status jaldb_iterate_by_timestamp2(jaldb_context *ctx,
 		double delta = difftime(target_secs,mktime(&record_time));
 		if (delta < 0) {
 			// record_time is > target_time, so break out
-			goto out; 
+			goto out;
 		}
-		
+
 		if (delta == 0) {
 			if (record_ms > target_ms) {
 				goto out;

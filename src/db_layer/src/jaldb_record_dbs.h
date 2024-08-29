@@ -2,7 +2,7 @@
  * @file jaldb_record_dbs.h This file provides the structure definition and
  * functions related to jaldb_record_dbs objects.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

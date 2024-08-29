@@ -2,7 +2,7 @@
  * @file jaldb_context.hpp This file provides the DB context structure and
  * constants for use by the DB Layer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -40,7 +40,6 @@ struct jaldb_record_dbs;
 
 struct jaldb_context_t {
 	char *journal_root; 				//!< The journal record root path.
-	char *schemas_root; 				//!< The schemas root path.
 	DB_ENV *env; 					//!< The Berkeley DB Environment.
 	struct jaldb_record_dbs *log_dbs; 		//!< The DBs associated with log records
 	struct jaldb_record_dbs *audit_dbs; 		//!< The DBs associated with audit records
@@ -226,7 +225,7 @@ enum jaldb_status jaldb_get_log_document_list(
 * @param[in] k the number of records to retrieve.
 * @param[out] nonce_list the list of nonces.
 * @param[in] type the record type.
-* @param[in] get all records of given type.
+* @param[in] get_all records of given type.
 *
 * @return  JALDB_OK - success
 *      JALDB_E_INVAL - invalid parameter.
@@ -261,7 +260,7 @@ enum jaldb_status jaldb_get_all_records(
  * after the record denoted by \p last_nonce.
  *
  * @param[in] ctx the context to use.
- * @param[in] nonce the nonce of the last record retrieved.
+ * @param[in] last_nonce the nonce of the last record retrieved.
  * @param[out] nonce_list the list of nonces.
  * @param[in] type the record type.
  *
@@ -274,5 +273,5 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 		char *last_nonce,
 		std::list<std::string> &nonce_list,
 		enum jaldb_rec_type type);
-		
+
 #endif // _JALDB_CONTEXT_HPP_

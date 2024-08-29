@@ -2,7 +2,7 @@
  * @file jaldb_traverse.h This file defines types and functions for traversing
  * the records in the database.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -71,7 +71,7 @@ typedef enum jaldb_iter_status (*jaldb_iter_cb)(const char *nonce, struct jaldb_
  * which fulfill <tt> start_time <= current_time <= end_time </tt> are examined. Timestamps are
  * never negative numbers.
  *
- * If the return from \p cb is JALDB_ITER_CONT, continue processing, but do not 
+ * If the return from \p cb is JALDB_ITER_CONT, continue processing, but do not
  * modify the current record.
  *
  * If the return from \p cb is JALDB_ITER_REMOVE, remove the current record,

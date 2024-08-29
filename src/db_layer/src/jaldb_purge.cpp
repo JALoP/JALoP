@@ -1,7 +1,7 @@
 /**
  * @file jaldb_purge.cpp This file implements the DB purge functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -94,7 +94,7 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		}
 		ret = JALDB_E_DB;
 		goto out;
-		
+
 	}
 	ret = JALDB_OK;
 out:
@@ -102,56 +102,56 @@ out:
 	return ret;
 }
 
-enum jaldb_status jaldb_purge_log_by_nonce(jaldb_context *ctx,
-					const char *nonce,
-					list<jaldb_doc_info> &docs,
-					int force,
-					int del)
+enum jaldb_status jaldb_purge_log_by_nonce(__attribute__((unused)) jaldb_context *ctx,
+					__attribute__((unused)) const char *nonce,
+					__attribute__((unused)) list<jaldb_doc_info> &docs,
+					__attribute__((unused)) int force,
+					__attribute__((unused)) int del)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_purge_log_by_uuid(jaldb_context *ctx,
-					const char *uuid,
-					list<jaldb_doc_info> &docs,
-					int force,
-					int del)
+enum jaldb_status jaldb_purge_log_by_uuid(__attribute__((unused)) jaldb_context *ctx,
+					__attribute__((unused)) const char *uuid,
+					__attribute__((unused)) list<jaldb_doc_info> &docs,
+					__attribute__((unused)) int force,
+					__attribute__((unused)) int del)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_purge_audit_by_nonce(jaldb_context *ctx,
-					const char *nonce,
-					list<jaldb_doc_info> &docs,
-					int force,
-					int del)
+enum jaldb_status jaldb_purge_audit_by_nonce(__attribute__((unused)) jaldb_context *ctx,
+					__attribute__((unused)) const char *nonce,
+					__attribute__((unused)) list<jaldb_doc_info> &docs,
+					__attribute__((unused)) int force,
+					__attribute__((unused)) int del)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_purge_audit_by_uuid(jaldb_context *ctx,
-					const char *uuid,
-					list<jaldb_doc_info> &docs,
-					int force,
-					int del)
+enum jaldb_status jaldb_purge_audit_by_uuid(__attribute__((unused)) jaldb_context *ctx,
+					__attribute__((unused)) const char *uuid,
+					__attribute__((unused)) list<jaldb_doc_info> &docs,
+					__attribute__((unused)) int force,
+					__attribute__((unused)) int del)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_purge_journal_by_nonce(jaldb_context *ctx,
-					const char *nonce,
-					list<jaldb_doc_info> &docs,
-					int force,
-					int del)
+enum jaldb_status jaldb_purge_journal_by_nonce(__attribute__((unused)) jaldb_context *ctx,
+					__attribute__((unused)) const char *nonce,
+					__attribute__((unused)) list<jaldb_doc_info> &docs,
+					__attribute__((unused)) int force,
+					__attribute__((unused)) int del)
 {
 	return JALDB_E_NOT_IMPL;
 }
 
-enum jaldb_status jaldb_purge_journal_by_uuid(jaldb_context *ctx,
-					const char *uuid,
-					list<jaldb_doc_info> &docs,
-					int force,
-					int del)
+enum jaldb_status jaldb_purge_journal_by_uuid(__attribute__((unused)) jaldb_context *ctx,
+					__attribute__((unused)) const char *uuid,
+					__attribute__((unused)) list<jaldb_doc_info> &docs,
+					__attribute__((unused)) int force,
+					__attribute__((unused)) int del)
 {
 	return JALDB_E_NOT_IMPL;
 }

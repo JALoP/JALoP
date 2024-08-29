@@ -1,7 +1,7 @@
 /**
  * @file jaldb_purge.hpp This file provides the DB doc_info structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -32,6 +32,9 @@
 #include <list>
 #include "jaldb_context.hpp"
 
+/**
+ * jaldb_doc_info structure definition
+ */
 struct jaldb_doc_info {
 	char *nonce;
 	char *uuid;

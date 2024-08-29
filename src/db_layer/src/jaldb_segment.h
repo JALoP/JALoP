@@ -4,7 +4,7 @@
  * payload), as well as functions for allocating/freeing memory associated with
  * the structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -69,7 +69,7 @@ struct jaldb_segment *jaldb_create_segment();
  * Function to destroy a jaldb_segment.
  * This will call close the file descriptor (if it's valid) & call free on the
  * other members.
- * @param [in,out] ppsegment The jaldb_segment to destroy. This will be set to NULL.
+ * @param [in,out] ppsegmennt The jaldb_segment to destroy. This will be set to NULL.
  */
 void jaldb_destroy_segment(struct jaldb_segment **ppsegmennt);
 

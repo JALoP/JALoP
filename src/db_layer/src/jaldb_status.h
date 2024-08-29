@@ -1,7 +1,7 @@
 /**
  * @file jaldb_status.h This file defines return codes used by the JAL DB Layer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

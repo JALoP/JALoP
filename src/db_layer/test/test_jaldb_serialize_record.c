@@ -2,7 +2,7 @@
  * @file test_jaldb_record.c This file contains functions to test
  * jaldb_record.c.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -296,15 +296,15 @@ void test_serialize_add_segment_on_works_for_null()
 void test_deserialize_string()
 {
 	char *str = TEST_STRING;
-	uint8_t *buffer = (uint8_t*) str;
+	uint8_t *bufferLocal = (uint8_t*) str;
 	size_t len = strlen(str) + 1;
 	char *res = NULL;
-	enum jaldb_status ret = jaldb_deserialize_string(&buffer, &len, &res);
+	enum jaldb_status ret = jaldb_deserialize_string(&bufferLocal, &len, &res);
 	assert_equals(JALDB_OK, ret);
 	assert_equals(0, len);
 	assert_not_equals(NULL, res);
-	assert_not_equals((char*) buffer, res);
-	assert_equals(str + strlen(str) + 1, (char*) buffer);
+	assert_not_equals((char*) bufferLocal, res);
+	assert_equals(str + strlen(str) + 1, (char*) bufferLocal);
 	assert_string_equals(TEST_STRING, res);
 	free(res);
 }
@@ -312,31 +312,31 @@ void test_deserialize_string()
 void test_deserialize_string_fails_when_missing_null_terminator()
 {
 	char *str = TEST_STRING;
-	uint8_t *buffer = (uint8_t*) str;
+	uint8_t *bufferLocal = (uint8_t*) str;
 	size_t len = strlen(str);
 	char *res = NULL;
-	enum jaldb_status ret = jaldb_deserialize_string(&buffer, &len, &res);
+	enum jaldb_status ret = jaldb_deserialize_string(&bufferLocal, &len, &res);
 	assert_not_equals(JALDB_OK, ret);
 	assert_equals(strlen(str), len);
 	assert_pointer_equals((void*)NULL, res);
-	assert_equals((uint8_t*) str, buffer);
+	assert_equals((uint8_t*) str, bufferLocal);
 }
 
 void test_deserialize_string_fails_on_bad_args()
 {
 	char *str = TEST_STRING;
-	uint8_t *buffer = (uint8_t*) str;
+	uint8_t *bufferLocal = (uint8_t*) str;
 	size_t len = strlen(str);
 	char *res = NULL;
 	enum jaldb_status ret;
 	ret = jaldb_deserialize_string(NULL, &len, &res);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_deserialize_string(&buffer, NULL, &res);
+	ret = jaldb_deserialize_string(&bufferLocal, NULL, &res);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_deserialize_string(&buffer, &len, NULL);
+	ret = jaldb_deserialize_string(&bufferLocal, &len, NULL);
 	assert_not_equals(JALDB_OK, ret);
 	res = (char*) 0xbadf00d;
-	ret = jaldb_deserialize_string(&buffer, &len, &res);
+	ret = jaldb_deserialize_string(&bufferLocal, &len, &res);
 	assert_not_equals(JALDB_OK, ret);
 	res = NULL;
 }
@@ -347,15 +347,15 @@ void test_deserialize_segment_on_disk_works()
 	struct jaldb_segment *seg = NULL;
 	uint64_t segment_len = 1024;
 	char *str = TEST_STRING;
-	uint8_t *buffer = (uint8_t*) str;
+	uint8_t *bufferLocal = (uint8_t*) str;
 	size_t blen = strlen(str) + 1;
 
 	ret = jaldb_deserialize_segment(1,
 		segment_len,
-		&buffer, &blen,
+		&bufferLocal, &blen,
 		&seg);
 	assert_equals(JALDB_OK, ret);
-	assert_equals((uint8_t* )str, buffer - strlen(TEST_STRING) -1);
+	assert_equals((uint8_t* )str, bufferLocal - strlen(TEST_STRING) -1);
 	assert_equals(0, blen);
 
 	assert_not_equals((void*) NULL, seg);
@@ -373,15 +373,15 @@ void test_deserialize_segment_not_on_disk_works()
 	struct jaldb_segment *seg = NULL;
 	uint64_t segment_len = strlen(TEST_STRING);
 	char *str = TEST_STRING;
-	uint8_t *buffer = (uint8_t*) str;
+	uint8_t *bufferLocal = (uint8_t*) str;
 	size_t blen = strlen(str) + 1;
 
 	ret = jaldb_deserialize_segment(0,
 		segment_len,
-		&buffer, &blen,
+		&bufferLocal, &blen,
 		&seg);
 	assert_equals(JALDB_OK, ret);
-	assert_equals((uint8_t* )str, buffer - strlen(TEST_STRING));
+	assert_equals((uint8_t* )str, bufferLocal - strlen(TEST_STRING));
 	assert_equals(1, blen);
 
 	assert_not_equals((void*) NULL, seg);
@@ -399,15 +399,15 @@ void test_deserialize_segment_not_on_disk_fails_if_payload_too_big()
 	struct jaldb_segment *seg = NULL;
 	uint64_t segment_len = strlen(TEST_STRING);
 	char *str = TEST_STRING;
-	uint8_t *buffer = (uint8_t*) str;
+	uint8_t *bufferLocal = (uint8_t*) str;
 	size_t blen = strlen(str) - 1;
 
 	ret = jaldb_deserialize_segment(0,
 		segment_len,
-		&buffer, &blen,
+		&bufferLocal, &blen,
 		&seg);
 	assert_not_equals(JALDB_OK, ret);
-	assert_pointer_equals((void*)str, (void*)buffer);
+	assert_pointer_equals((void*)str, (void*)bufferLocal);
 	assert_equals(strlen(str) - 1, blen);
 	assert_pointer_equals((void*) NULL, seg);
 	jaldb_destroy_segment(&seg);
@@ -419,18 +419,18 @@ void test_deserialize_segment_not_on_disk_fails_on_bad_input()
 	struct jaldb_segment *seg = NULL;
 	uint64_t segment_len = strlen(TEST_STRING);
 	char *str = TEST_STRING;
-	uint8_t *buffer = (uint8_t*) str;
+	uint8_t *bufferLocal = (uint8_t*) str;
 	size_t blen = strlen(str) - 1;
 
 	ret = jaldb_deserialize_segment(0, segment_len, NULL, &blen, &seg);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_deserialize_segment(0, segment_len, &buffer, NULL, &seg);
+	ret = jaldb_deserialize_segment(0, segment_len, &bufferLocal, NULL, &seg);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_deserialize_segment(0, segment_len, &buffer, &blen, NULL);
+	ret = jaldb_deserialize_segment(0, segment_len, &bufferLocal, &blen, NULL);
 	assert_not_equals(JALDB_OK, ret);
 
 	seg = (struct jaldb_segment*) 0xdeadbeef;
-	ret = jaldb_deserialize_segment(0, segment_len, &buffer, &blen, &seg);
+	ret = jaldb_deserialize_segment(0, segment_len, &bufferLocal, &blen, &seg);
 	assert_not_equals(JALDB_OK, ret);
 	seg = NULL;
 }

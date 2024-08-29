@@ -2,7 +2,7 @@
  * @file jaldb_datetime.h Declaration of utilties related to XML DateTime
  * strings within the JALoP DBs.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

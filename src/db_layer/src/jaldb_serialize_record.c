@@ -2,7 +2,7 @@
  * @file jaldb_serialize_record.c This file contains to seriailze/deserialize a
  * jaldb_record to/from a raw memory buffer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -64,7 +64,7 @@
  *
  * @subsubsection RecordHeaders Record Headers
  * The order, size, and type of the records headers is documented in the
- * section \ref jaldb_serialze_record_headers.
+ * section \ref jaldb_serialize_record_headers.
  *
  * @subsubsection StringData Record String Data
  * Each record includes the following string data
@@ -190,7 +190,7 @@ err_out:
 }
 
 void jaldb_serialize_add_fixed_string(uint8_t **buf, size_t str_len, const char *str)
-{	
+{
 	if (!str) {
 		// String is null, so pad the space with null terminators.
 		memset(*buf, '\0', (str_len + 1));

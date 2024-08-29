@@ -2,7 +2,7 @@
  * @file jaldb_context.cpp This file implements the DB context management
  * functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -55,7 +55,6 @@
 using namespace std;
 
 #define DEFAULT_DB_ROOT "/var/lib/jalop/db"
-#define DEFAULT_SCHEMAS_ROOT "/usr/local/share/jalop-v1.0/schemas"
 
 static enum jaldb_status jaldb_remove_record_from_db(jaldb_context *ctx, jaldb_record_dbs *rdbs, const char *nonce);
 
@@ -68,7 +67,6 @@ jaldb_context *jaldb_context_create()
 enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
-	const char *schemas_root,
 	enum jaldb_flags jdb_flags)
 {
 	if (!ctx) {
@@ -76,7 +74,7 @@ enum jaldb_status jaldb_context_init(
 	}
 
 	// Make certain that the context is not already initialized.
-	if (ctx->env || ctx->journal_root || ctx->schemas_root) {
+	if (ctx->env || ctx->journal_root) {
 		return JALDB_E_INITIALIZED;
 	}
 
@@ -95,11 +93,6 @@ enum jaldb_status jaldb_context_init(
 		return JALDB_E_INVAL;
 	}
 
-	if (!schemas_root) {
-		schemas_root = DEFAULT_SCHEMAS_ROOT;
-	}
-	ctx->schemas_root = jal_strdup(schemas_root);
-
 	if (-1 == jal_asprintf(&ctx->journal_root, "%s%s", db_root, JALDB_JOURNAL_ROOT_NAME)) {
 		return JALDB_E_NO_MEM;
 	}
@@ -116,7 +109,9 @@ enum jaldb_status jaldb_context_init(
 	{
 		db_flags |= DB_CREATE;
 	}
-
+        if (JDB_DB_RECOVER & jdb_flags){
+            env_flags |= DB_RECOVER;
+        }
 	//#706 DB_THREAD needs set all the time to prevent db corruption errors
 	env_flags |= DB_THREAD;
 	db_flags |= DB_THREAD;
@@ -234,7 +229,6 @@ void jaldb_context_destroy(jaldb_context **ctx)
 	jaldb_context *ctxp = *ctx;
 
 	free(ctxp->journal_root);
-	free(ctxp->schemas_root);
 
 	if (ctxp->journal_conf_db) {
 		(*ctx)->journal_conf_db->close((*ctx)->journal_conf_db, 0);
@@ -360,6 +354,7 @@ enum jaldb_status jaldb_mark_sent(
 				else if (0 == target_state){
 					// Clear the flag
 					header_ptr->flags &= ~JALDB_RFLAGS_SENT;
+					header_ptr->flags &= ~JALDB_RFLAGS_SYNCED;
 				} else {
 					txn->abort(txn);
 					goto out;
@@ -523,7 +518,6 @@ enum jaldb_status jaldb_mark_confirmed(
 	enum jaldb_status ret = JALDB_OK;
 	int db_ret;
 
-	uint8_t *buffer;
 	struct jaldb_record_dbs *rdbs = NULL;
 	size_t timestamp_bytes;
 	size_t network_nonce_bytes;
@@ -565,7 +559,7 @@ enum jaldb_status jaldb_mark_confirmed(
 		goto out;
 	}
 
-	timestamp_bytes = header_bytes + JALDB_TIMESTAMP_LENGTH + 1;
+	timestamp_bytes = header_bytes + 1 + JALDB_TIMESTAMP_LENGTH + 1;
 	network_nonce_bytes = timestamp_bytes + JALDB_MAX_NETWORK_NONCE_LENGTH + 1;
 
 	skey.flags = DB_DBT_REALLOC;
@@ -611,16 +605,8 @@ enum jaldb_status jaldb_mark_confirmed(
 				header_ptr->flags |= JALDB_RFLAGS_CONFIRMED;
 
 				// Update the network nonce.
-
-				buffer = (uint8_t *) header_ptr;
-				buffer += timestamp_bytes;
-
-				// Don't include the null terminator.
-				memcpy(buffer, pkey.data, pkey.size - 1);
-				buffer += (pkey.size - 1);
-
-				// Account for the null terminator now.
-				memset(buffer, '\0', (JALDB_MAX_NETWORK_NONCE_LENGTH - pkey.size + 1));
+				memcpy((char*)val.data + JALDB_RECORD_HEADERS_LENGTH +
+						JALDB_TIMESTAMP_LENGTH + 1, pkey.data, pkey.size-1);
 
 				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &pkey, &val, 0);
 

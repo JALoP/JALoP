@@ -1,8 +1,8 @@
 /**
- * @file test_jaldb_reocrd_dbs.c This file contains unit tests for functions
+ * @file test_jaldb_record_dbs.c This file contains unit tests for functions
  * related to the jaldb_record_dbs structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -39,7 +39,7 @@
 
 #define DEF_MOCK_CLOSE(dbname) \
 char dbname ## _closed; \
-int mock_ ## dbname ## _close(DB *db, u_int32_t flags) \
+int mock_ ## dbname ## _close(__attribute__((unused)) DB *db, __attribute__((unused)) u_int32_t flags) \
 { \
 	dbname ## _closed++; \
 	return 0; \
@@ -54,7 +54,7 @@ rdbs->m->close = mock_ ## m ## _close;
 DEF_MOCK_CLOSE(timestamp_idx_db)
 DEF_MOCK_CLOSE(record_id_idx_db)
 
-static void silent_errcall(const DB_ENV *dbenv, const char *errpfx, const char *msg)
+static void silent_errcall(__attribute__((unused)) const DB_ENV *dbenv, __attribute__((unused)) const char *errpfx, __attribute__((unused)) const char *msg)
 {
 	// do nothing... This is silent, remember?
 }
@@ -63,7 +63,7 @@ struct jaldb_record_dbs *rdbs;
 char primary_db_closed;
 char secondaries_closed_before_primary;
 
-static int mock_primary_db_close(DB *db, u_int32_t flags)
+static int mock_primary_db_close(__attribute__((unused)) DB *db, __attribute__((unused)) u_int32_t flags)
 {
 	if (!timestamp_idx_db_closed || !record_id_idx_db_closed) {
 		secondaries_closed_before_primary = 0;
@@ -73,16 +73,16 @@ static int mock_primary_db_close(DB *db, u_int32_t flags)
 	return 0;
 }
 
-static int set_bt_compare_fails(DB *db,
-    int (*bt_compare_fcn)(DB *db, const DBT *dbt1, const DBT *dbt2))
+static int set_bt_compare_fails(__attribute__((unused)) DB *db,
+    __attribute__((unused)) int (*bt_compare_fcn)(DB *db, __attribute__((unused)) const DBT *dbt1, __attribute__((unused)) const DBT *dbt2))
 {
 	return EINVAL;
 }
 
 static int associate_fail_at;
-static int associate_fails_by_count(DB *primary, DB_TXN *txnid, DB *secondary,
-    int (*callback)(DB *secondary,
-    const DBT *key, const DBT *data, DBT *result), u_int32_t flags)
+static int associate_fails_by_count(__attribute__((unused)) DB *primary, __attribute__((unused)) DB_TXN *txnid, __attribute__((unused)) DB *secondary,
+    __attribute__((unused)) int (*callback)(DB *secondary,
+    __attribute__((unused)) const DBT *key, __attribute__((unused)) const DBT *data, __attribute__((unused)) DBT *result), __attribute__((unused)) u_int32_t flags)
 {
 	if (associate_fail_at-- == 0) {
 		return EINVAL;
@@ -121,8 +121,8 @@ static int db_create_fails_bt_compare_by_count(DB **dbp, DB_ENV *dbenv, u_int32_
 	return ret;
 }
 
-int open_fails(DB *db, DB_TXN *txnid, const char *file,
-    const char *database, DBTYPE type, u_int32_t flags, int mode)
+int open_fails(__attribute__((unused)) DB *db, __attribute__((unused)) DB_TXN *txnid, __attribute__((unused)) const char *file,
+    __attribute__((unused)) const char *database, __attribute__((unused)) DBTYPE type, __attribute__((unused)) u_int32_t flags, __attribute__((unused)) int mode)
 {
 	return EINVAL;
 }
@@ -440,7 +440,7 @@ void test_create_primary_dbs_w_indices_works()
 	assert_equals(DB_NOTFOUND, db_err); // Shouldn't be any more records in the DB.
 	ts_c->c_close(ts_c);
 	ts_c = NULL;
-	
+
 	// Lastly, check the UUID index, everything should make it in here...
 	memset(&key, 0, sizeof(key));
 	memset(&pkey, 0, sizeof(pkey));

@@ -2,7 +2,7 @@
  * @file jaldb_datetime.c Implementation of utilties related to XML DateTime
  * strings within the JALoP DBs.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -39,7 +39,7 @@
 #include "jaldb_datetime.h"
 #include "jaldb_serialize_record.h"
 
-int jaldb_xml_datetime_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
+int jaldb_xml_datetime_compare(__attribute__((unused)) DB *db, const DBT *dbt1, const DBT *dbt2)
 {
 	int xml_ret;
 	xmlSchemaValPtr dt1 = NULL;
@@ -131,7 +131,7 @@ out:
 }
 
 
-int jaldb_extract_datetime_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+int jaldb_extract_datetime_key(__attribute__((unused)) DB *secondary, __attribute__((unused)) const DBT *key, const DBT *data, DBT *result)
 {
 	enum jaldb_status ret;
 	char *dtString = NULL;
@@ -147,7 +147,7 @@ int jaldb_extract_datetime_key(DB *secondary, const DBT *key, const DBT *data, D
 	return 0;
 }
 
-int jaldb_extract_nonce_timestamp_key(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+int jaldb_extract_nonce_timestamp_key(__attribute__((unused)) DB *secondary, const DBT *key, __attribute__((unused)) const DBT *data, DBT *result)
 {
 	char *timestamp = strchr((char*)key->data,'_');
 	if (!timestamp) {

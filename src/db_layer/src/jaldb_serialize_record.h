@@ -1,8 +1,8 @@
 /**
- * @file jaldb_record_serialize.h This file provides the functions headers for
+ * @file jaldb_serialize_record.h This file provides the functions headers for
  * serializing/deserializing JALoP Records from a memory buffer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -54,15 +54,19 @@ struct jaldb_segment;
 
 /* This is used by the jaldb_extract_record_network_nonce function to
  * determine the necessary offset into the buffer. This value does not
- * include the null terminator. */
-#define JALDB_TIMESTAMP_LENGTH 25
+ * include the null terminator.
+ * example: 2023-03-11T20:31:19.699759
+ */
+#define JALDB_TIMESTAMP_LENGTH 26
 
 /* This must match JALN_MAX_NONCE_LENGTH in jaln_network.h
  *
  * In the db_layer, this is used when serializing and deserializing the
  * network_nonce, and in the mark_synced function to efficiently update
  * the network nonce by determining the necessary offset into the buffer.
- * This value does not include the null terminator. */
+ * This value does not include the null terminator.
+ * example: d3130e1b-566c-4451-b889-349664eeccf0_2023-03-11T20:31:20.091439_115377_2868893440
+ */
 #define JALDB_MAX_NETWORK_NONCE_LENGTH 127
 
 /**
@@ -80,6 +84,8 @@ struct jaldb_serialize_record_headers {
 	uuid_t host_uuid;      //<! The UUID of the host machine that generated the record
 	uuid_t record_uuid;    //<! The UUID of the record
 };
+
+#define JALDB_RECORD_HEADERS_LENGTH sizeof(struct jaldb_serialize_record_headers)
 
 /**
  * Helper utility to append a variable length string to the memory buffer.
@@ -235,6 +241,7 @@ enum jaldb_status jaldb_deserialize_fixed_string(uint8_t **buffer, size_t *buf_s
  * buffer.
  *
  * @param[in] on_disk flag to indicate if the actual contents of the segment
+ * @param[in] segment_length Length of the segmet to extract
  * are located on the disk, or in the database.
  * @param[in,out] buffer the buffer to read from. \p buffer will be advanced
  * past the segment on success.

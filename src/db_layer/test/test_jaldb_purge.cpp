@@ -2,7 +2,7 @@
  * @file test_jaldb_purge.cpp This file contains functions to test
  * jaldb_purge.cpp.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -60,7 +60,6 @@ extern "C" {
 using namespace std;
 
 #define OTHER_DB_ROOT "./testdb/"
-#define OTHER_SCHEMA_ROOT "./schemas/"
 #define JOURNAL_ROOT "/journal/"
 #define AUDIT_SYS_TEST_XML_DOC "./test-input/domwriter_audit_sys.xml"
 #define AUDIT_APP_TEST_XML_DOC "./test-input/domwriter_audit_app.xml"
@@ -73,13 +72,13 @@ using namespace std;
 #define LOG_DATA_Y "Log Buffer\nLog Entry 1\nLog Entry 2\n"
 #define PAYLOAD "SoMe_data   is here\nMoreData is Here!\n"
 
-#define DT1 "2012-12-12T09:00:00.00000"
+#define DT1 "2012-12-12T09:00:00.000000"
 #define HN1 "somehost"
 #define UN1 "someuser"
 #define S1 "source1"
 #define UUID_1 "11234567-89AB-CDEF-0123-456789ABCDEF"
 
-#define DT2 "2012-12-12T09:00:00.00000"
+#define DT2 "2012-12-12T09:00:00.000000"
 #define HN2 "somehost"
 #define UN2 "someuser"
 #define S2 "source1"
@@ -118,7 +117,7 @@ void print_out_docs(list<jaldb_doc_info> docs)
 	list<jaldb_doc_info>::iterator cur = docs.begin();
 	int i=0;
 	while(cur != docs.end())
-	{	
+	{
 		cout << "i " << i << endl;
 		i++;
 		if (cur->nonce)
@@ -150,7 +149,7 @@ extern "C" void setup()
 		(void)closedir(dir);
 	}
 	context = jaldb_context_create();
-	jaldb_context_init(context, OTHER_DB_ROOT, OTHER_SCHEMA_ROOT, JDB_NONE);
+	jaldb_context_init(context, OTHER_DB_ROOT, JDB_NONE);
 }
 
 extern "C" void teardown()
@@ -169,7 +168,7 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 
 	jaldb_record *rec1 = jaldb_create_record();
 	rec1->version = EXPECTED_RECORD_VERSION;
-	rec1->type = JALDB_RTYPE_LOG;	
+	rec1->type = JALDB_RTYPE_LOG;
 	rec1->timestamp = jal_strdup(DT1);
 	rec1->hostname = jal_strdup(HN1);
 	rec1->source = jal_strdup(S1);
@@ -180,7 +179,7 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 
 	jaldb_record *rec2 = jaldb_create_record();
 	rec2->version = EXPECTED_RECORD_VERSION;
-	rec2->type = JALDB_RTYPE_LOG;	
+	rec2->type = JALDB_RTYPE_LOG;
 	rec2->timestamp = jal_strdup(DT2);
 	rec2->hostname = jal_strdup(HN2);
 	rec2->source = jal_strdup(S2);
@@ -188,7 +187,7 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 	rec2->payload = jaldb_create_segment();
 	assert_equals(0, uuid_parse(UUID_2, rec2->uuid));
 	rec2->network_nonce = jal_strdup("NN2");
-	
+
 	char *nonce = NULL;
 	char *nonce2 = NULL;
 	char *nonce3 = NULL;

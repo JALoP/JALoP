@@ -1,7 +1,7 @@
 /**
  * @file jaldb_context.h This file defines the DB context management functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -45,7 +45,8 @@ typedef struct jaldb_context_t jaldb_context;
 // Define bit flags to represent settings for the Berkely DB
 enum jaldb_flags {
 	JDB_NONE = 0,
-	JDB_READONLY = 1
+	JDB_READONLY = 1,
+        JDB_DB_RECOVER = 2
 };
 
 /**
@@ -61,9 +62,6 @@ jaldb_context *jaldb_context_create();
  * @param[in] ctx The context to initialize.
  * @param[in] db_root The root path of the DB Layer's files. If db_root is
  * NULL, then the default is /var/lib/jalop/db.
- * @param[in] schemas_root The path to the directory containing JALoP related
- * schemas. If schemas_root is NULL, then the default is
- * /usr/share/jalop/schemas.
  * @param[in] jdb_flags Bit-packed options to be passed to the db. Specify zero
  * or more options using a bitwise or "|" with the values specified in the
  * jaldb_flags enum.
@@ -74,14 +72,13 @@ jaldb_context *jaldb_context_create();
 enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
-	const char *schemas_root,
 	enum jaldb_flags jdb_flags);
 
 /**
  * Destroys a DB context.
  * Release all resources associated with this context.
  *
- * @param ctx[in,out] The context to destroy. *ctx will be set to NULL.
+ * @param[in,out] ctx The context to destroy. *ctx will be set to NULL.
  */
 void jaldb_context_destroy(jaldb_context **ctx);
 
@@ -209,7 +206,7 @@ enum jaldb_status jaldb_next_unsynced_record(
  * @param[in] type The type of record to retrieve.
  * @param[out] nonce The nonce for the returned record.
  * @param[out] rec The record from the DB.
- * @param[in/out] timestamp The timestamp of the last sent record.
+ * @param[in,out] timestamp The timestamp of the last sent record.
  * 		Overwritten to the new timestamp when a record is returned
  * 		Calling with a timestamp less than a previous timestamp
  * 		may result in records being sent multiple times.
@@ -249,6 +246,7 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
  * Remove a record (by nonce) from the database
  *
  * @param[in] ctx The context.
+ * @param[in] type The record type.
  * @param[in] nonce The nonce of the record being retrieved.
  *
  * @return JALDB_OK if the function succeeds or an error code.
@@ -261,7 +259,7 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
  * Utility function to remove all the segments store on disk for a specific
  * record.
  * @param[in] ctx the jaldb_context
- * @param[in] rec the record whose segemnts should be removed.
+ * @param[in] segment the segment to remove.
  *
  * @return JALDB_OK on success, or an error.
  */
@@ -270,7 +268,7 @@ enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jald
 /**
  * Utility function to remove a single segment from disk.
  * @param[in] ctx the jaldb_context
- * @param[in] segment the segment to remove.
+ * @param[in] rec the record whose segemnts should be removed.
  *
  * @return JALDB_OK on success, or an error.
  */

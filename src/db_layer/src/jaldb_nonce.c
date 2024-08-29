@@ -1,7 +1,7 @@
 /**
  * @file jaldb_nonce.c Implementation of utilties dealing with nonces.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,7 +36,7 @@
 #include "jaldb_nonce.h"
 #include "jaldb_strings.h"
 
-int jaldb_nonce_compare(DB *db, const DBT *dbt1, const DBT *dbt2)
+int jaldb_nonce_compare(__attribute__((unused)) DB *db, const DBT *dbt1, const DBT *dbt2)
 {
 	int ret;
 	if (!dbt1 || !dbt1->data || (0 == dbt1->size) || !dbt2 || !dbt2->data || (0 == dbt2->size)) {
