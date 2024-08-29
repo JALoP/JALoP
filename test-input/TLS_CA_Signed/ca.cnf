@@ -1,0 +1,77 @@
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir						= ./
+certs					= $dir
+crl_dir				= $dir
+new_certs_dir	= $dir
+database			= $dir/index.txt
+serial				= $dir/serial
+RANDFILE			= $dir/.rand
+
+private_key		= $dir/jalop_ca.key.pem
+certificate		= $dir/jalop_ca.cert.pem
+
+crlnumber			= $dir/crlnumber
+crl						= $dir/ca.crl.pem
+crl_extensions = crl_ext
+default_crl_days = 3750
+
+name_opt			= ca_default
+cert_opt			= ca_default
+default_days	= 3750
+preserve			= no
+policy				= policy_strict
+email_in_dn = no
+copy_extensions = copy
+
+[ policy_loose ]
+countryName							= optional
+stateOrProvinceName			= optional
+localityName						= optional
+organizationName				= optional
+organizationalUnitName	= optional
+commonName							= supplied
+emailAddress						= optional
+
+[ req ]
+default_bits = 2048
+distinguished_name = req_distinguished_name
+string_mask = utf8only
+x509_extensions = va_ca
+
+[ policy_strict ]
+countryName							= match
+stateOrProvinceName			= match
+localityName						= match
+organizationName				= match
+0.organizationalUnitName	= match
+1.organizationalUnitName	= match
+commonName							= match
+emailAddress						= match
+
+[ req_distinguished_name ]
+countryName						= Country
+stateOrProvinceName		= State
+localityName					= City
+organizationName		= Organization
+0.organizationalUnitName	= Department1
+1.organizationalUnitName	= Department2
+commonName						= CN
+emailAddress					= email
+
+countryName_default						= US
+stateOrProvinceName_default		= MD
+localityName_default					= Savage
+organizationName_default		= CTC
+0.organizationalUnitName_default	= ISIS
+1.organizationalUnitName_default	= JALoP
+commonName_default						= JALoP_CA
+emailAddress_default					= cds_tech@nsa.gov
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign

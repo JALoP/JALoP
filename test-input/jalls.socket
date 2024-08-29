@@ -1,0 +1,13 @@
+[Unit]
+Description=JALoP Localstore Socket
+BindsTo=jalls.service
+Before=jalls.service
+
+[Socket]
+SocketUser=jalls
+SocketGroup=jalproducer
+SocketMode=0666
+DirectoryMode=751
+Accept=no
+ListenStream=/var/run/jalop/jalls/socket/jalls.sock
+RemoveOnStop=yes

@@ -1,0 +1,22 @@
+[Unit]
+Description=System Logging Service
+;Requires=syslog.socket
+Wants=network.target network-online.target
+After=network.target network-online.target
+After=jalls.service
+Wants=jalls.service
+Documentation=man:rsyslogd(8)
+Documentation=http://www.rsyslog.com/doc/
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/sysconfig/rsyslog
+ExecStart=/usr/sbin/rsyslogd -n $SYSLOGD_OPTIONS
+Restart=on-failure
+UMask=0066
+StandardOutput=null
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+;Alias=syslog.service

@@ -1,0 +1,15 @@
+[Unit]
+Description=JALoP Localstore Service
+BindsTo=jalls.socket
+After=jalls.socket
+
+[Service]
+Type=simple
+User=jalls
+Group=jalop
+ExecStartPre=-/usr/bin/db_recover -h /var/log/jalop
+ExecStart=/usr/bin/jal-local-store -c /etc/jalop/jalls_service.cfg
+ExecStopPost=-/usr/bin/db_recover -h /var/log/jalop
+
+[Install]
+WantedBy=multi-user.target
