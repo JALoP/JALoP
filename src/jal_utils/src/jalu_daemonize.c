@@ -1,7 +1,7 @@
 /**
  * @file jalu_daemonize.c This file contains utility functions to daemonize a process.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -114,4 +114,22 @@ int jalu_daemonize(const char *log_dir, const char *pid_file) {
 	}
 
 	return 0;
+}
+
+int jalu_pid(const char* path) {
+	pid_t pid;
+	FILE *pidfile = NULL;
+	pid = getpid();
+
+	if (path) {
+		pidfile = fopen(path, "w");
+		if (NULL == pidfile) {
+			return -1;
+		}
+		fprintf(pidfile, "%d\n", pid);
+		fclose(pidfile);
+		pidfile = NULL;
+	}
+
+	return pid;
 }
