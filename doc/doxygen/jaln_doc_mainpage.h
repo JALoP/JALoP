@@ -1,6 +1,6 @@
 /**
  * @file jaln_doc_mainpage.h
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -29,7 +29,7 @@
 /**
  * \page page_jnl JALoP Network Library (JNL)
  *
- * \section intro_sec Introduction
+ * \section main_intro_sec Introduction
  *
  * The JALoP Network Library (JNL) provides an API to send and receive JAL
  * records between 2 JALoP Network Stores using the JALoP Network Protocol
@@ -41,7 +41,7 @@
  * a JALoP connection to a remote JALoP Network Store. By using the JNL, an
  * application may act as a JALoP Publisher, JALoP Subscriber, or both.
  *
- *  \section jal_protocol The JAL Network Protocol
+ *  \section jaln_jal_protocol The JAL Network Protocol
  *
  * The JNP is used to exchange the 3 different types of JALoP records
  *  - Journal - records that have potentially large payloads that will be
@@ -62,7 +62,7 @@
  *
  *  \section devel_sec Development
  *
- *  \subsection d_step1 Step 1: Initializing a context
+ *  \subsection jaln_d_step1 Step 1: Initializing a context
  *
  *  The library state related to a connection(s) is stored in an opaque context.
  *  Therefore, the first order of business is to create a context
@@ -91,7 +91,7 @@ int main(void)
 
 \endcode
  *
- *  \subsection d_step2 Step 2: Loading keys and certificates (optional)
+ *  \subsection jaln_d_step2 Step 2: Loading keys and certificates (optional)
  *
  *  The JALoP protocol requires JALoP Peers to authenticate themselves and that
  *  all communications have some level of privacy. To achieve this, the JNL
@@ -158,7 +158,7 @@ int main(void)
 }
  * \endcode
  *
- * \subsection d_step3 Step 3: Register additional digest algorithms (optional)
+ * \subsection jaln_d_step3 Step 3: Register additional digest algorithms (optional)
  * When 2 JALoP Network begin communicating, they will negotiate the use of a
  * particular digest algorithm. As records are sent from the Publisher the
  * Subscriber, both peers will use the agreed upon digest algorithm to
@@ -179,7 +179,7 @@ int main(void)
  * name of the algorithm. Applications may choose to support as many digest
  * algorithms as they would like.
  *
- * \subsection d_step4 Step 4: Register additional XML compressions (optional)
+ * \subsection jaln_d_step4 Step 4: Register additional XML compressions (optional)
  * In order to reduce the bandwidth required to send XML data, 2 JALoP Network
  * Stores may choose to support different compression schemes for XML, such as
  * EXI, or compressing the data using the deflate algorithm. All
@@ -189,7 +189,7 @@ int main(void)
  * The compression in use is always available in the #jaln_channel_info structure,
  * which is passed into the various callbacks.
  *
- * \subsection d_step5 Step 5: Registering the Publisher or Subscriber callbacks
+ * \subsection jaln_d_step5 Step 5: Registering the Publisher or Subscriber callbacks
  * Before any data can be transfered, and application must register the
  * appropriate callbacks for the role they wish to take. If the application is
  * going to be a listener (wait for connections from remotes) then it may choose
@@ -199,7 +199,7 @@ int main(void)
  * the role the application will take.
  *
  * Registering the callbacks is simply a matter of creating the appropriate
- * structure(s), either #jaln_publisher_callbacks, #jaln_subscriber_callbacks,
+ * structure(s), either #jaln_publisher_callbacks, jaln_subscriber_callbacks,
  * or both (if acting as a listener). These should be created with their
  * corresponding jaln_publisher_callbacks_create() and
  * jaln_subscriber_callbacks_create() functions. Once created, all function
@@ -258,7 +258,7 @@ int main(void)
  * very similar and will deliver the entire contents of the record in the
  * callbacks. The callbacks for journal is slightly different in that it will
  * deliver chunks of data as they are received over the network. See the
- * relevant documentation for #jaln_subscriber_callbacks for more details.
+ * relevant documentation for jaln_subscriber_callbacks for more details.
  * Callbacks will be executed on threads other than the one that called
  * jaln_subscribe() so applications need to take proper steps to lock shared
  * structures.
@@ -271,7 +271,7 @@ int main(void)
  * \subsubsection d_step7b Step 7b: Using a #jaln_context to initiate a
  * connection to a remote and act as a publisher. The initial setup for a
  * publisher is similar to that of a subscriber except that rather than
- * registering a #jaln_subscriber_callbacks object, you must register a
+ * registering a jaln_subscriber_callbacks object, you must register a
  * #jaln_publisher_callbacks object and you must execute jaln_publish()
  * rather than jaln_subscribe(). Just like for jaln_subscriber() all digest
  * algorithms, XML compressions, and #jaln_connection_callbacks must be registered
@@ -332,8 +332,8 @@ int main(void)
  * incoming connections, you must first register any additional digest
  * algorithms or XML compressions. You must also register your
  * #jaln_connection_callbacks and either #jaln_publisher_callbacks,
- * #jaln_subscriber_callbacks, or both. If you do not register both
- * #jaln_publisher_callbacks and #jaln_subscriber_callbacks, the JNL will
+ * jaln_subscriber_callbacks, or both. If you do not register both
+ * #jaln_publisher_callbacks and jaln_subscriber_callbacks, the JNL will
  * automatically reject requests from remote peers wishing to connect as the
  * related roles. For example, if you only register the #jaln_publisher_callbacks
  * and a remote peer initiates a connection indicating

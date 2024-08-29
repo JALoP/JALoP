@@ -1,14 +1,14 @@
 /**
  * @file jalp_doc_mainpage.h
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011-2014 Tresys Technology LLC, Columbia, 
- * Maryland, USA 
+ * Copyright (c) 2011-2014 Tresys Technology LLC, Columbia,
+ * Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -28,7 +28,7 @@
 
 /** \page page_jpl JALoP Producer Library (JPL)
  *
- * \section intro_sec Introduction
+ * \section jalp_intro_sec Introduction
  *
  * The JALoP Producer Library (JPL) provides an API to send JAL data and
  * application metadata over a UNIX Domain Socket to a JALoP Local Store. The
@@ -44,7 +44,7 @@
  * "JALoPv1.0 Specification." The JPL uses its implementation of the JAL
  * Producer Protocol to send JAL data to the JALoP Local Store.
  *
- *  \section jal_protocol The JAL Producer Protocol
+ *  \section jalp_jal_protocol The JAL Producer Protocol
  *
  * JALoP has three different message types:
  *  - Journal - records that have potentially large payloads that will be
@@ -84,7 +84,7 @@
  *  The JAL Producer Protocol is one-way. A JAL producer sends a message to
  *  the local store over a UNIX domain socket and does not get a response.
  *
- *  \section devel_sec Development
+ *  \section jalp_devel_sec Development
  *
  *  \subsection d_step1 Step 1: Initializing a context
  *
@@ -155,7 +155,7 @@ int main(void)
 	if (ret != JAL_OK)
 		return -1;
 
-	ret = jalp_context_load_pem_rsa(context, "/path/to/key", NULL);	
+	ret = jalp_context_load_pem_rsa(context, "/path/to/key", NULL);
 	if (ret != JAL_OK)
 		return -1;
 
