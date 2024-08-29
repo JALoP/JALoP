@@ -1,3 +1,19 @@
+Summary of release 1.2.0.0 changes (Fri Aug 30 2024)
+    - Added RHEL 9 support.
+    - Added SECCOMP filters to applications (jal-local-store, jald, jal_subscribe). Allowed system calls can be listed in each application's configuration file. By default, configuration files have SECCOMP filtering disabled.
+    - Added Linux Capability code to jal-local-store to enforce one-way communication between JAL Producers and the local store process.
+    - Updated jal-local-store code so it can be configured and started as a systemd service. The JAL socket, SECCOMP system calls etc. can be configured via systemd. Added example systemd scripts and configuration files.
+    - Added support for configurable digest algorithms - sha256, sha384, sha512 - for digest-challenge handshake, system metadata, and application metadata.
+    - Updated RPMs in 3rd-party/ directory.
+    - Removed RPATH or RUNPATH from build scripts in accordance with RTBv5 requirement OSSR-41.
+    - Fix lint warnings/issues found in SPEC files and scripts.
+    - Updated/added example self-signed and CA-signed certs for TLS connection.
+    - Added/updated scripts and READMEs to generate example self-signed and CA-signed certs.
+    - Add DB_RECOVER option to jal-local-store CLI and configuration file.
+    - Bug fix: allow digest calculation for non-XML audit payload.
+    - Fixed memory leaks, cleaned up jaldb_context.
+    - Updated user guide, man pages, configuration files.
+
 Summary of release 1.1.0.2 changes (Thu Nov 10 2022)
     - Clean up db_context upon channel close.
     - Cache eventList.xsd JAF schema for repeated use.
