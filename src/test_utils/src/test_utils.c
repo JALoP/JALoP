@@ -1,7 +1,7 @@
 /**
  * @file test_utils.c This file defines functions to assist with general testing.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

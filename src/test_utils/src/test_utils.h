@@ -1,7 +1,7 @@
 /**
  * @file test_utils.h This file contains utilities to help with general testing.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
