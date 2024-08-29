@@ -2,7 +2,7 @@
  * @file jaldb_record.c This file contains functions related to the
  * jaldb_record structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

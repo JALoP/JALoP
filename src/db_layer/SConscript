@@ -7,7 +7,6 @@ env.MergeFlags(env['libxml2_cflags'])
 env.MergeFlags(env['libxml2_ldflags'])
 
 env.MergeFlags(env['lfs_cflags'])
-env.MergeFlags('-Wno-shadow -Wno-unused-parameter'.split())
 env.MergeFlags(env['libuuid_ldflags'])
 env.MergeFlags(env['bdb_cflags'])
 env.MergeFlags(env['bdb_ldflags'])

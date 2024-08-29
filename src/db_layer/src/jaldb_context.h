@@ -1,7 +1,7 @@
 /**
  * @file jaldb_context.h This file defines the DB context management functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -78,7 +78,7 @@ enum jaldb_status jaldb_context_init(
  * Destroys a DB context.
  * Release all resources associated with this context.
  *
- * @param ctx[in,out] The context to destroy. *ctx will be set to NULL.
+ * @param[in,out] ctx The context to destroy. *ctx will be set to NULL.
  */
 void jaldb_context_destroy(jaldb_context **ctx);
 
@@ -206,7 +206,7 @@ enum jaldb_status jaldb_next_unsynced_record(
  * @param[in] type The type of record to retrieve.
  * @param[out] nonce The nonce for the returned record.
  * @param[out] rec The record from the DB.
- * @param[in/out] timestamp The timestamp of the last sent record.
+ * @param[in,out] timestamp The timestamp of the last sent record.
  * 		Overwritten to the new timestamp when a record is returned
  * 		Calling with a timestamp less than a previous timestamp
  * 		may result in records being sent multiple times.
@@ -246,6 +246,7 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
  * Remove a record (by nonce) from the database
  *
  * @param[in] ctx The context.
+ * @param[in] type The record type.
  * @param[in] nonce The nonce of the record being retrieved.
  *
  * @return JALDB_OK if the function succeeds or an error code.
@@ -258,7 +259,7 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
  * Utility function to remove all the segments store on disk for a specific
  * record.
  * @param[in] ctx the jaldb_context
- * @param[in] rec the record whose segemnts should be removed.
+ * @param[in] segment the segment to remove.
  *
  * @return JALDB_OK on success, or an error.
  */
@@ -267,7 +268,7 @@ enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jald
 /**
  * Utility function to remove a single segment from disk.
  * @param[in] ctx the jaldb_context
- * @param[in] segment the segment to remove.
+ * @param[in] rec the record whose segemnts should be removed.
  *
  * @return JALDB_OK on success, or an error.
  */

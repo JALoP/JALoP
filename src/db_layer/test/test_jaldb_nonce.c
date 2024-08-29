@@ -2,7 +2,7 @@
  * @file test_jaldb_nonce.c This file contains functions to test
  * functions related to acquiring a serial id.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

@@ -2,7 +2,7 @@
  * @file test_jaldb_purge.cpp This file contains functions to test
  * jaldb_purge.cpp.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -117,7 +117,7 @@ void print_out_docs(list<jaldb_doc_info> docs)
 	list<jaldb_doc_info>::iterator cur = docs.begin();
 	int i=0;
 	while(cur != docs.end())
-	{	
+	{
 		cout << "i " << i << endl;
 		i++;
 		if (cur->nonce)
@@ -168,7 +168,7 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 
 	jaldb_record *rec1 = jaldb_create_record();
 	rec1->version = EXPECTED_RECORD_VERSION;
-	rec1->type = JALDB_RTYPE_LOG;	
+	rec1->type = JALDB_RTYPE_LOG;
 	rec1->timestamp = jal_strdup(DT1);
 	rec1->hostname = jal_strdup(HN1);
 	rec1->source = jal_strdup(S1);
@@ -179,7 +179,7 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 
 	jaldb_record *rec2 = jaldb_create_record();
 	rec2->version = EXPECTED_RECORD_VERSION;
-	rec2->type = JALDB_RTYPE_LOG;	
+	rec2->type = JALDB_RTYPE_LOG;
 	rec2->timestamp = jal_strdup(DT2);
 	rec2->hostname = jal_strdup(HN2);
 	rec2->source = jal_strdup(S2);
@@ -187,7 +187,7 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 	rec2->payload = jaldb_create_segment();
 	assert_equals(0, uuid_parse(UUID_2, rec2->uuid));
 	rec2->network_nonce = jal_strdup("NN2");
-	
+
 	char *nonce = NULL;
 	char *nonce2 = NULL;
 	char *nonce3 = NULL;

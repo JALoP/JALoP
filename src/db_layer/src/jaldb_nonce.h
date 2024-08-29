@@ -2,7 +2,7 @@
  * @file jaldb_nonce.h This file deals with C function declarations related
  * to nonces for the DB Layer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

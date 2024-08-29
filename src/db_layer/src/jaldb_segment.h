@@ -4,7 +4,7 @@
  * payload), as well as functions for allocating/freeing memory associated with
  * the structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -71,7 +71,7 @@ struct jaldb_segment *jaldb_create_segment();
  * other members.
  * @param [in,out] ppsegment The jaldb_segment to destroy. This will be set to NULL.
  */
-void jaldb_destroy_segment(struct jaldb_segment **ppsegmennt);
+void jaldb_destroy_segment(struct jaldb_segment **ppsegment);
 
 /**
  * Helper function to sanity check a segment before inserting into the DB.

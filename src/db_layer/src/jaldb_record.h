@@ -3,7 +3,7 @@
  * retrieve records from the database, as well as functions for allocating/
  * freeing memory associated with the structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 #define JALDB_RECORD_VERSION 1
-#define JALDB_MAX_REC_LENGTH 200000000 
+#define JALDB_MAX_REC_LENGTH 200000000
 
 struct jaldb_segment;
 
@@ -121,7 +121,7 @@ void jaldb_destroy_record(struct jaldb_record **pprecord);
  * @param[in] rec The jaldb_record object to check;
  * @return JALDB_OK on success, or JALDB_EINVAL on error.
  */
-enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *);
+enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec);
 
 #ifdef __cplusplus
 }

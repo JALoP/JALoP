@@ -2,7 +2,7 @@
  * @file jaldb_utils.h This file provides some additional utilities for the db
  * layer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -44,8 +44,8 @@ extern "C" {
 
 /**
  * Macro to that will log a Berkeley DB error with the file and line number
- * @param db a DB* or DB_ENV*
- * @param err The Berkeley DB error code
+ * @param __db a DB* or DB_ENV*
+ * @param __err The Berkeley DB error code
  */
 #define JALDB_DB_ERR(__db, __err) \
 	do { \
@@ -90,7 +90,10 @@ int jaldb_nonce_cmp(const char *nonce1, size_t s1_len, const char* nonce2, size_
  * @param[in] db_root The root to create the file at
  * @param[out] path The path (relative to \p db_root) of the new file.
  * @param[out] fd An open file descriptor for this file.
- * @return 
+ * @param[in] uuid Unique identifier for this file
+ * @param[in] rtype The record type
+ * @param[in] dtype The data type
+ * @return
  *  - JAL_OK on success
  */
 enum jaldb_status jaldb_create_file(

@@ -2,7 +2,7 @@
  * @file jaldb_record_extract.c Implementation of utilties related to the record
  * UUID stored with the JALoP record in the database.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,7 +36,7 @@
 #include "jaldb_record_extract.h"
 #include "jaldb_serialize_record.h"
 
-int jaldb_extract_record_uuid(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+int jaldb_extract_record_uuid(__attribute__((unused)) DB *secondary, __attribute__((unused)) const DBT *key, const DBT *data, DBT *result)
 {
 	struct jaldb_serialize_record_headers *headers = NULL;
 
@@ -59,7 +59,7 @@ int jaldb_extract_record_uuid(DB *secondary, const DBT *key, const DBT *data, DB
 	return 0;
 }
 
-int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+int jaldb_extract_record_sent_flag(__attribute__((unused)) DB *secondary, __attribute__((unused)) const DBT *key, const DBT *data, DBT *result)
 {
 	struct jaldb_serialize_record_headers *headers = NULL;
 
@@ -85,7 +85,7 @@ int jaldb_extract_record_sent_flag(DB *secondary, const DBT *key, const DBT *dat
 	return 0;
 }
 
-int jaldb_extract_record_network_nonce(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+int jaldb_extract_record_network_nonce(__attribute__((unused)) DB *secondary, __attribute__((unused)) const DBT *key, const DBT *data, DBT *result)
 {
 	char *nnString = NULL;
 	size_t nnLen = 0;
@@ -117,7 +117,7 @@ int jaldb_extract_record_network_nonce(DB *secondary, const DBT *key, const DBT 
 	return 0;
 }
 
-int jaldb_extract_record_confirmed_flag(DB *secondary, const DBT *key, const DBT *data, DBT *result)
+int jaldb_extract_record_confirmed_flag(__attribute__((unused)) DB *secondary, __attribute__((unused)) const DBT *key, const DBT *data, DBT *result)
 {
 	struct jaldb_serialize_record_headers *headers = NULL;
 

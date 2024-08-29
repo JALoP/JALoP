@@ -2,7 +2,7 @@
  * @file test_jaldb_context.cpp This file contains functions to test
  * jaldb_context.cpp.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -193,7 +193,7 @@ extern "C" void test_remove_by_nonce()
 {
 	struct jaldb_record *rec = NULL;
 
-	char *nonce = NULL;	
+	char *nonce = NULL;
 
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
 	assert_equals(JALDB_OK, jaldb_remove_record(context, JALDB_RTYPE_LOG, nonce));
@@ -556,7 +556,7 @@ extern "C" void test_next_chronological_works()
 	nonce = NULL;
 
 	sleep(2);
-	
+
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce));
 	free(nonce);
 	nonce = NULL;
@@ -921,7 +921,7 @@ extern "C" void test_jaldb_get_records_since_last_nonce_works()
 
 	ret = jaldb_get_records_since_last_nonce(context, nonce2, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_OK, ret);
-	
+
 	assert_equals(3, nonce_list.size());
 	assert_equals(nonce3, nonce_list.front());
 	assert_equals(nonce1, nonce_list.back());
@@ -984,7 +984,7 @@ extern "C" void test_jaldb_mark_confirmed_works()
 	struct jaldb_record *temp_rec = NULL;
 	char *nonce = NULL;
 	char *nonce2 = NULL;
-	
+
 	records[0]->network_nonce = jal_strdup("1");
 
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 0, &nonce));

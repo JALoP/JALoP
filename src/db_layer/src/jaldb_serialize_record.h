@@ -1,8 +1,8 @@
 /**
- * @file jaldb_record_serialize.h This file provides the functions headers for
+ * @file jaldb_serialize_record.h This file provides the functions headers for
  * serializing/deserializing JALoP Records from a memory buffer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -54,7 +54,7 @@ struct jaldb_segment;
 
 /* This is used by the jaldb_extract_record_network_nonce function to
  * determine the necessary offset into the buffer. This value does not
- * include the null terminator. 
+ * include the null terminator.
  * example: 2023-03-11T20:31:19.699759
  */
 #define JALDB_TIMESTAMP_LENGTH 26
@@ -238,6 +238,7 @@ enum jaldb_status jaldb_deserialize_fixed_string(uint8_t **buffer, size_t *buf_s
  *
  * @param[in] on_disk flag to indicate if the actual contents of the segment
  * are located on the disk, or in the database.
+ * @param[in] segment_length Length of the segmet to extract
  * @param[in,out] buffer the buffer to read from. \p buffer will be advanced
  * past the segment on success.
  * @param[in,out] size the number of bytes remaining in \p buffer. \p size will

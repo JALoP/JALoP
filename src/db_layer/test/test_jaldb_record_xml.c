@@ -2,7 +2,7 @@
  * @file test_jaldb_record_xml.c This file contains functions to test
  * jaldb_record_xml.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -53,7 +53,7 @@
 struct jaldb_record rec;
 struct jaldb_segment app_meta;
 struct jaldb_segment payload;
-RSA *key;
+EVP_PKEY *key;
 
 #define TEST_RSA_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/rsa_key"
 
@@ -71,6 +71,7 @@ RSA *key;
 #define GOOD_SYS_META_CDATA "./test-input/system-metadata-with-cdata.xml"
 #define MALFORMED_SYS_META "./test-input/system-metadata-malformed.xml"
 #define SIGNATURE "tOpBqUbWFLwxN/IEQVv3VOkzGnuNywqZE1F1ahnbO6SE3hNkeEGofQd9xxcj+uy8\nLOh4FIh0WHpZx8Wz5y29TA=="
+#define OPENSSL_V11_VER 0x1010000fL
 
 void setup()
 {
@@ -90,7 +91,13 @@ void setup()
 	assert_equals(0, uuid_parse(REC_UUID, rec.uuid));
 	assert_equals(0, uuid_parse(HOST_UUID, rec.host_uuid));
 
+	//JAL-897 - OPENSSL_init_ssl() replaces SSL_library_init() in openssl v1.1 and higher
+	#if OPENSSL_VERSION_NUMBER < OPENSSL_V11_VER
 	SSL_library_init();
+	#else
+	OPENSSL_init_ssl(0, NULL);
+	#endif
+
 	xmlSecInit();
 
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
@@ -244,7 +251,8 @@ void test_to_system_works_with_signing_key()
 
 	FILE *fp = fopen(TEST_RSA_KEY, "r");
 	assert_not_equals(NULL, fp);
-	key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+	key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+
 	fclose(fp);
 
 	VERIFY_DOC(log, 1, 1, 1);
@@ -281,7 +289,7 @@ void test_jaldb_xml_to_sys_metadata_works()
 	assert_equals(fseek(fd, 0L, SEEK_END),0);
 	long bufsize = ftell(fd);
 	assert_not_equals(bufsize,-1);
-	
+
 	char *buf = jal_calloc(bufsize,sizeof(char));
 	assert_not_equals(NULL,buf);
 	assert_equals(fseek(fd,0L,SEEK_SET),0);
@@ -296,7 +304,7 @@ void test_jaldb_xml_to_sys_metadata_works()
 	assert_string_equals(sys_meta->username,"root");
 	assert_string_equals(sys_meta->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
 	assert_equals(sys_meta->type,JALDB_RTYPE_JOURNAL);
-	
+
 	fclose(fd);
 	free(buf);
 }
@@ -309,7 +317,7 @@ void test_jaldb_xml_to_sys_metadata_works_with_cdata()
 	assert_equals(fseek(fd, 0L, SEEK_END),0);
 	long bufsize = ftell(fd);
 	assert_not_equals(bufsize,-1);
-	
+
 	char *buf = jal_calloc(bufsize,sizeof(char));
 	assert_not_equals(NULL,buf);
 	assert_equals(fseek(fd,0L,SEEK_SET),0);
@@ -324,7 +332,7 @@ void test_jaldb_xml_to_sys_metadata_works_with_cdata()
 	assert_string_equals(sys_meta->username,"root");
 	assert_string_equals(sys_meta->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
 	assert_equals(sys_meta->type,JALDB_RTYPE_JOURNAL);
-	
+
 	fclose(fd);
 	free(buf);
 }
@@ -337,14 +345,14 @@ void test_jaldb_xml_to_sys_metadata_returns_error_on_malformed_data()
 	assert_equals(fseek(fd, 0L, SEEK_END),0);
 	long bufsize = ftell(fd);
 	assert_not_equals(bufsize,-1);
-	
+
 	char *buf = jal_calloc(bufsize,sizeof(char));
 	assert_not_equals(NULL,buf);
 	assert_equals(fseek(fd,0L,SEEK_SET),0);
 	assert_not_equals(fread(buf,sizeof(char),bufsize,fd),0);
 
-	assert_equals(JALDB_E_INVAL,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
-	
+	assert_equals(JAL_E_INVAL,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
+
 	fclose(fd);
 	free(buf);
 }

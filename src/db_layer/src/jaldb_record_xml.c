@@ -1,8 +1,8 @@
 /**
- * @file jaldb_reocrd_xml.c This file defines functions to deal with
+ * @file jaldb_record_xml.c This file defines functions to deal with
  * converting jaldb_record to a system meta-data document.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -67,12 +67,11 @@
 #define UID_STR_MAX_LEN 22
 
 enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
-						RSA* signing_key,
+						EVP_PKEY* signing_key,
 						uint8_t *app_meta_dgst, size_t app_meta_dgst_len, const char *app_meta_algorithm_uri,
 						uint8_t *payload_dgst, size_t payload_dgst_len, const char *payload_algorithm_uri,
 						char **doc, size_t *dsize)
 {
-	enum jaldb_status ret;
 	char uuid_str[UUID_STR_LEN];
 	char uuid_str_with_prefix[UUID_STR_LEN + 5];
 	char host_uuid_str[UUID_STR_LEN];
@@ -80,7 +79,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 	char uid_str[UID_STR_MAX_LEN];
 	xmlChar *res = NULL;
 	char *type_str;
-	xmlDocPtr xmlDoc = NULL;
+	xmlDocPtr xmlDocLocal = NULL;
 	xmlNodePtr root_node = NULL;
 
 	if (!rec || !doc || *doc) {
@@ -108,7 +107,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 	uuid_unparse(rec->uuid, uuid_str);
 	snprintf(uuid_str_with_prefix, UUID_STR_LEN + 5, "UUID-%s", uuid_str);
 	uuid_unparse(rec->host_uuid, host_uuid_str);
- 
+
 	if (PID_STR_MAX_LEN <= snprintf(pid_str, PID_STR_MAX_LEN, "%"PRIu64, rec->pid)) {
 		return JALDB_E_INVAL;
 	}
@@ -119,21 +118,21 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		}
 	}
 
-	xmlDoc = xmlNewDoc((xmlChar *) "1.0");
-	root_node = xmlNewDocNode(xmlDoc, NULL, (xmlChar *) JALDB_RECORD_TAG, NULL);
+	xmlDocLocal = xmlNewDoc((xmlChar *) "1.0");
+	root_node = xmlNewDocNode(xmlDocLocal, NULL, (xmlChar *) JALDB_RECORD_TAG, NULL);
 	xmlSetProp(root_node, (xmlChar *) JALDB_JID, (xmlChar *) uuid_str_with_prefix);
 
 	xmlNsPtr ns = xmlNewNs(root_node, (xmlChar *) JAL_SYS_META_NAMESPACE_URI, NULL);
 	xmlSetNs(root_node, ns);
 
-	xmlDocSetRootElement(xmlDoc, root_node);
+	xmlDocSetRootElement(xmlDocLocal, root_node);
 
 	xmlAttrPtr attr = xmlHasProp(root_node, (xmlChar *)JALDB_JID);
 	if (!attr || !attr->children) {
-		xmlFreeDoc(xmlDoc);
+		xmlFreeDoc(xmlDocLocal);
 		return JALDB_E_INVAL;
 	}
-	xmlAddID(NULL, xmlDoc, (xmlChar *)uuid_str_with_prefix, attr);
+	xmlAddID(NULL, xmlDocLocal, (xmlChar *)uuid_str_with_prefix, attr);
 
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_DATA_TYPE_TAG, (xmlChar *) type_str);
 	xmlNewChild(root_node, NULL, (xmlChar *) JALDB_RECORD_ID_TAG, (xmlChar *) uuid_str);
@@ -157,7 +156,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 	}
 
 	if (payload_dgst || app_meta_dgst) {
-		xmlNodePtr manifest = xmlNewDocNode(xmlDoc, NULL, (xmlChar *)"Manifest", NULL);
+		xmlNodePtr manifest = xmlNewDocNode(xmlDocLocal, NULL, (xmlChar *)"Manifest", NULL);
 		xmlChar *namespace_uri = (xmlChar *)JAL_XMLDSIG_URI;
 		ns = xmlNewNs(manifest, namespace_uri, NULL);
 		xmlSetNs(manifest, ns);
@@ -165,20 +164,20 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 
 		xmlNodePtr reference_elem = NULL;
 		if (payload_dgst) {
-			ret = jal_create_reference_elem(JAL_PAYLOAD_URI, payload_algorithm_uri, payload_dgst, payload_dgst_len, xmlDoc, &reference_elem);
-			if (0 != ret) {
-				xmlFreeDoc(xmlDoc);
-				return ret;
+			enum jal_status status = jal_create_reference_elem(JAL_PAYLOAD_URI, payload_algorithm_uri, payload_dgst, payload_dgst_len, xmlDocLocal, &reference_elem);
+			if (0 != status) {
+				xmlFreeDoc(xmlDocLocal);
+				return JALDB_E_INVAL;
 			}
 
 			xmlAddChild(manifest, reference_elem);
 		}
 		if (app_meta_dgst) {
 			reference_elem = NULL;
-			ret = jal_create_reference_elem(JAL_APP_META_URI, app_meta_algorithm_uri, app_meta_dgst, app_meta_dgst_len, xmlDoc, &reference_elem);
-			if (0 != ret) {
-				xmlFreeDoc(xmlDoc);
-				return ret;
+			enum jal_status status = jal_create_reference_elem(JAL_APP_META_URI, app_meta_algorithm_uri, app_meta_dgst, app_meta_dgst_len, xmlDocLocal, &reference_elem);
+			if (0 != status) {
+				xmlFreeDoc(xmlDocLocal);
+				return JALDB_E_INVAL;
 			}
 
 			xmlAddChild(manifest, reference_elem);
@@ -187,25 +186,25 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		last_node = manifest;
 	} else {
 		last_node = NULL;
-	} 
+	}
 
 	if (signing_key) {
-		ret = jal_add_signature_block(signing_key, NULL, xmlDoc, last_node, uuid_str_with_prefix);
-		if (0 != ret) {
-			xmlFreeDoc(xmlDoc);
-			return ret;
+		enum jal_status status = jal_add_signature_block(signing_key, NULL, xmlDocLocal, last_node, uuid_str_with_prefix);
+		if (0 != status) {
+			xmlFreeDoc(xmlDocLocal);
+			return JALDB_E_INVAL;
 		}
 	}
 
-	ret = jal_xml_output(xmlDoc, &res, dsize);
-	if (0 != ret) {
+	enum jal_status status = jal_xml_output(xmlDocLocal, &res, dsize);
+	if (0 != status) {
 		free(res);
-		xmlFreeDoc(xmlDoc);
-		return ret;
+		xmlFreeDoc(xmlDocLocal);
+		return JALDB_E_INVAL;
 	}
 	*doc = (char *) res;
-	xmlFreeDoc(xmlDoc);
-	return ret;
+	xmlFreeDoc(xmlDocLocal);
+	return JALDB_OK;
 }
 
 enum parse_state { START,IN_JAL_RECORD,END,UNKNOWN };
@@ -222,7 +221,7 @@ struct sax_parse_user_data {
 void jaldb_start_document(void *user_data)
 {
 	struct sax_parse_user_data *sp_user_data = (struct sax_parse_user_data *)user_data;
-	sp_user_data->ret = JALDB_OK;
+	sp_user_data->ret = JAL_OK;
 	sp_user_data->state = START;
 }
 
@@ -238,7 +237,7 @@ void jaldb_end_document(void *user_data)
 	   !sp_user_data->sys_meta->type	||
 	   !sp_user_data->sys_meta->host_uuid	||
 	   !sp_user_data->sys_meta->uuid) {
-		sp_user_data->ret = JALDB_E_INVAL;
+		sp_user_data->ret = JAL_E_INVAL;
 	}
 	if (sp_user_data->ret != 0) {
 		jaldb_destroy_record(&(sp_user_data->sys_meta));
@@ -250,19 +249,19 @@ void jaldb_start_element(void *user_data,
 			  const xmlChar **attrs)
 {
 	struct sax_parse_user_data *sp_user_data = (struct sax_parse_user_data *)user_data;
-	if (sp_user_data->state == START) {	
+	if (sp_user_data->state == START) {
 		if (0 == strcmp((char *)name, JALDB_RECORD_TAG)) {
 			free(sp_user_data->tag_name);
 			sp_user_data->tag_name = (xmlChar *)jal_strdup((const char *)name);
 			sp_user_data->state = IN_JAL_RECORD;
 		} else {
-			sp_user_data->ret = JALDB_E_INVAL;
+			sp_user_data->ret = JAL_E_INVAL;
 			sp_user_data->state = UNKNOWN;
-		}	
+		}
 	} else if (sp_user_data->state == IN_JAL_RECORD) {
 		free(sp_user_data->tag_name);
 		sp_user_data->tag_name = (xmlChar *)jal_strdup((const char *)name);
-		
+
 		if (0 == strcmp((char *)name, JALDB_USER_TAG) && attrs) {
 			// Even indices are names, odd are values.  The username field has name "name"
 			int i=0;
@@ -275,7 +274,7 @@ void jaldb_start_element(void *user_data,
 			}
 		}
 	} else {
-		sp_user_data->ret = JALDB_E_INVAL;
+		sp_user_data->ret = JAL_E_INVAL;
 	}
 	free(sp_user_data->chars);
 	sp_user_data->chars = NULL;
@@ -293,14 +292,14 @@ static void handle_type(struct sax_parse_user_data *sp_user_data,
 		sp_user_data->sys_meta->type = JALDB_RTYPE_LOG;
 	} else {
 		sp_user_data->sys_meta->type = JALDB_RTYPE_UNKNOWN;
-		sp_user_data->ret = JALDB_E_INVAL;
+		sp_user_data->ret = JAL_E_INVAL;
 	}
 }
 
 void jaldb_characters(void *user_data,
 		const xmlChar *name,
 		int len)
-{	
+{
 	struct sax_parse_user_data *sp_user_data = (struct sax_parse_user_data *)user_data;
 	if (sp_user_data->chars == NULL) {
 		sp_user_data->chars = jal_calloc(len+1,sizeof(char));
@@ -323,14 +322,14 @@ void jaldb_end_element(void *user_data,
 		handle_type(sp_user_data,sp_user_data->chars,sp_user_data->chars_len);
 	} else if (0 == strcmp((char *)name, JALDB_RECORD_ID_TAG)) {
 		if (-1 == uuid_parse(sp_user_data->chars,sp_user_data->sys_meta->uuid)) {
-			sp_user_data->ret = JALDB_E_INVAL;
+			sp_user_data->ret = JAL_E_INVAL;
 		}
 	} else if (0 == strcmp((char *)name, JALDB_HOSTNAME_TAG)) {
 		sp_user_data->sys_meta->hostname = sp_user_data->chars;
 		sp_user_data->chars = NULL;
 	} else if (0 == strcmp((char *)name, JALDB_HOST_UUID_TAG)) {
 		if (-1 == uuid_parse(sp_user_data->chars,sp_user_data->sys_meta->host_uuid)) {
-			sp_user_data->ret = JALDB_E_INVAL;
+			sp_user_data->ret = JAL_E_INVAL;
 		}
 	} else if (0 == strcmp((char *)name, JALDB_TIMESTAMP_TAG)) {
 		sp_user_data->sys_meta->timestamp = sp_user_data->chars;
@@ -339,7 +338,7 @@ void jaldb_end_element(void *user_data,
 		errno=0;
 		uint64_t pid = (uint64_t)strtoul((const char *)sp_user_data->chars,NULL,0);
 		if (errno != 0) {
-			sp_user_data->ret = JALDB_E_INVAL;
+			sp_user_data->ret = JAL_E_INVAL;
 		}
 		sp_user_data->sys_meta->pid = pid;
 	} else if (0 == strcmp((char *)sp_user_data->tag_name, JALDB_USER_TAG)) {
@@ -347,7 +346,7 @@ void jaldb_end_element(void *user_data,
 		if (sp_user_data->chars != NULL) {
 			uint64_t uid = (uint64_t)strtoul((const char *)sp_user_data->chars,NULL,0);
 			if (errno != 0) {
-				sp_user_data->ret = JALDB_E_INVAL;
+				sp_user_data->ret = JAL_E_INVAL;
 			}
 			sp_user_data->sys_meta->uid = uid;
 		}
@@ -359,17 +358,17 @@ void jaldb_end_element(void *user_data,
 	sp_user_data->chars = NULL;
 }
 
-void jaldb_cdata_handler(void *user_data,const xmlChar *ch, int len)
+void jaldb_cdata_handler(__attribute__((unused)) void *user_data, __attribute__((unused)) const xmlChar *ch, __attribute__((unused)) int len)
 {
 	// We don't need to do anything with CDATA, but it will be passed to the characters
  	// callback if we don't assign a callback for it, which isn't what we want
 	return;
 }
 
-void jaldb_xml_error(void *user_data,const char * msg, ...)
-{	
+void jaldb_xml_error(void *user_data, __attribute__((unused)) const char * msg, ...)
+{
 	struct sax_parse_user_data *sp_user_data = (struct sax_parse_user_data *)user_data;
-	sp_user_data->ret = JALDB_E_INVAL;
+	sp_user_data->ret = JAL_E_INVAL;
 }
 
 enum jal_status jaldb_xml_to_sys_metadata(uint8_t *xml, size_t xml_len, struct jaldb_record **sys_meta)

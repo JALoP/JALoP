@@ -2,7 +2,7 @@
  * @file jaldb_record_extract.h Declaration of utilties related to the record
  * UUID stored with the JALoP record in the database.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

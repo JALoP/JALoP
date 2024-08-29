@@ -2,7 +2,7 @@
  * @file test_jaldb_segment.c This file contains functions to test
  * jaldb_segment.c.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,7 +36,7 @@
 
 static int closed_called;
 
-int mocked_close(int fd) {
+int mocked_close(__attribute__((unused)) int fd) {
 	closed_called = 1;
 	return 0;
 }

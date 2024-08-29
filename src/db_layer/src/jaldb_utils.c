@@ -2,7 +2,7 @@
  * @file jaldb_utils.c This file provides some additional utilities for the db
  * layer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -164,7 +164,7 @@ enum jaldb_status jaldb_create_file(
 
 	suffix = jal_calloc(FILENAME_LEN,sizeof(char));
 
-	
+
 	if (rtype == JALDB_RTYPE_JOURNAL)
 	{
 		strcpy(suffix,"journal");

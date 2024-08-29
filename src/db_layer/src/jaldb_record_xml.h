@@ -1,8 +1,8 @@
 /**
- * @file jaldb_reocrd_xml.h This file declares functions to deal with
+ * @file jaldb_record_xml.h This file declares functions to deal with
  * converting jaldb_record to a system meta-data document.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -53,8 +53,12 @@ struct jaldb_record;
  * document will be left unsigned
  * @param [in] app_meta_dgst The digest of the application metadata. If NULL
  * the manifest will not include this digest.
+ * @param [in] app_meta_dgst_len The length of the digest of the application metadata.
+ * @param [in] app_meta_algorithm_uri URI of the meta data algorithm.
  * @param [in] payload_dgst The digest of the payload. If NULL the manifest
  * will not include this digest.
+ * @param [in] payload_dgst_len The digest length of the payload.
+ * @param [in] payload_algorithm_uri URI of the payload algorithm.
  * @param [out] doc Upon successful return, this will be assigned to a memory
  * buffer that contains the XML document.
  * @param [out] dsize Upon successful return, this will be the size of the
@@ -63,7 +67,7 @@ struct jaldb_record;
  * @return JALDB_OK on success, or an error code.
  */
 enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
-		RSA *signing_key,
+		EVP_PKEY *signing_key,
 		uint8_t *app_meta_dgst, size_t app_meta_dgst_len, const char *app_meta_algorithm_uri,
 		uint8_t *payload_dgst, size_t payload_dgst_len, const char *payload_algorithm_uri,
 		char **doc,

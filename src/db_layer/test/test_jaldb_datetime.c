@@ -2,7 +2,7 @@
  * @file test_jaldb_datetime.c This file contains functions to test XML
  * DateTime related functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -67,12 +67,12 @@ uint8_t buffer[BUFFER_SIZE];
 static struct jaldb_serialize_record_headers *headers;
 char *datetime_in_buffer;
 
-xmlSchemaTypePtr mock_xmlSchemaGetBuiltInType(xmlSchemaValType type)
+xmlSchemaTypePtr mock_xmlSchemaGetBuiltInType(__attribute__((unused)) xmlSchemaValType type)
 {
 	return NULL;
 }
 
-void mock_error_handler(enum jal_status s)
+void mock_error_handler(__attribute__((unused)) enum jal_status s)
 {
 	error_handler_called = 1;
 }
@@ -227,7 +227,7 @@ void test_if_datetime_length_changed()
 	 * must be changed to accomodate it. That function can be found in
 	 * src/db_layer/src/jaldb_record_extract.c */
 	size_t dtLen = 0;
-	
+
 	dtLen = strlen(DT8);
 	assert_equals(JALDB_TIMESTAMP_LENGTH, dtLen);
 }

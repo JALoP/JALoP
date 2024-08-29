@@ -2,7 +2,7 @@
  * @file jaldb_record_dbs.c This file provides the implementation of
  * functions related to jaldb_record_dbs objects.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -317,7 +317,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
                 ret = JALDB_E_DB;
                 goto err_out;
         }
- 
+
 	// Associate the databases for secondary keys.
 	db_ret = rdbs->primary_db->associate(rdbs->primary_db, txn, rdbs->timestamp_idx_db,
 			jaldb_extract_datetime_key, 0);
