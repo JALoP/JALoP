@@ -2,7 +2,7 @@
  * @file jal_asprintf.c
  * Defines the jal_asprintf function and jal_vasprintf functions
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Copyright (c) 2004 Darren Tucker.
  *

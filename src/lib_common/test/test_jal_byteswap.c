@@ -1,7 +1,7 @@
 /**
  * @file test_jal_byteswap.c This file contains tests for byte swap functions
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -101,7 +101,7 @@ void test_bs64() {
 				(uint64_t) bytes[byte5] << 40 | (uint64_t) bytes[byte4] << 32 |
 				(uint64_t) bytes[byte3] << 24 | (uint64_t) bytes[byte2] << 16 |
 				(uint64_t) bytes[byte1] << 8 | (uint64_t) bytes[byte0];
-		
+
 		assert_equals(exp, __jal_bswap_64(orig));
 	}
 	}

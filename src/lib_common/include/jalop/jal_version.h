@@ -1,7 +1,7 @@
 /**
  * @file jal_version.h This file defines the version number
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -35,7 +35,9 @@ extern "C" {
 /** Sets the version for JALoP */
 #define JAL_VERSION 1.0
 
-/** Return a pointer to a string containing the JALoP verion */
+/** Return a pointer to a string containing the JALoP version
+* @return jal version
+*/
 char *jal_version_as_string();
 
 #ifdef __cplusplus

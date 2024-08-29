@@ -2,7 +2,7 @@
  * @file jal_xml_utils.h This file defines helper functions for dealing with
  * creating/reading XML data.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -49,8 +49,8 @@ extern "C" {
 /**
  * Helper function to parse an xml snippet.
  *
- * @param[in] ctx_node A node to use as the parent of elements encountered during the parse.
- * @param[in] snippet a snippet of XML. The contents will be added to \pctx_node.
+ * @param [in] ctx_node A node to use as the parent of elements encountered during the parse.
+ * @param [in] snippet a snippet of XML. The contents will be added to \p ctx_node.
  * @return JAL_OK on success or JAL_E_XML_PARSE if there was an error parsing the
  * snippet.
  */
@@ -61,20 +61,20 @@ enum jal_status jal_parse_xml_snippet(
 /**
  * Helper function to base64 encode a buffer and create a new DOMElement.
  *
- * @param[in] doc The document to use when creating elements.
- * @param[in] buffer The byte buffer to base64 encode
- * @param[in] buf_len The length, in bytes, of the buffer
- * @param[in] namespace_uri The URI to use as the namespace of the new element.
- * @param[in] elm_name The name that should be given to the new element.
- * @param[in,out] new_elem Pointer that will be assigned to the newly created
+ * @param [in] parent The parent node of the new base64 element.
+ * @param [in] buffer The byte buffer to base64 encode
+ * @param [in] buf_len The length, in bytes, of the buffer
+ * @param [in] namespace_uri The URI to use as the namespace of the new element.
+ * @param [in] elm_name The name that should be given to the new element.
+ * @param [in,out] new_elem Pointer that will be assigned to the newly created
  * DOMElement, This new DOMElement will have the name
- * \pelm_name, and the default namespace set to \p namespace_uri. The text
+ * \p elm_name, and the default namespace set to \p namespace_uri. The text
  * content of the new node will be the base64 encoded value of \p buffer.
  *
  * @return JAL_OK on error, or JAL_E_INVAL
  */
 enum jal_status jal_create_base64_element(
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		const uint8_t *buffer,
 		const size_t buf_len,
 		const xmlChar *namespace_uri,
@@ -93,12 +93,12 @@ char *jal_get_timestamp();
  *
  * Does not deal with the transfrom child Element, this will be appended later by the caller.
  *
- * @param[in] reference_uri A uri for the reference
- * @param[in] digest_method A uri for the algorithm used in creating the digest.
- * @param[in] digest_buf A pointer to the generated digest.
- * @param[in] digest_len The length of the generated digest.
- * @param[in] doc A pointer to the xmlDocPtr to use in creating the element
- * @param[out] elem A pointer to hold the created element. Should point to NULL.
+ * @param [in] reference_uri A uri for the reference
+ * @param [in] digest_method A uri for the algorithm used in creating the digest.
+ * @param [in] digest_buf A pointer to the generated digest.
+ * @param [in] len The length of the generated digest.
+ * @param [in] doc A pointer to the xmlDocPtr to use in creating the element
+ * @param [out] elem A pointer to hold the created element. Should point to NULL.
  * @return JAL_OK on success, JAL_E_XML_CONVERSION on failure.
 */
 enum jal_status jal_create_reference_elem(
@@ -112,8 +112,8 @@ enum jal_status jal_create_reference_elem(
 /**
  * Helper function return a Transforms element.
  *
- * @param[in] doc The document to use when creating elements.
- * @param[in,out] new_elem Pointer that will be assigned to the newly created
+ * @param [in] doc The document to use when creating elements.
+ * @param [in,out] new_elem Pointer that will be assigned to the newly created
  * Transforms element.
  *
  * @return JAL_OK,  or JAL_E_XML_CONVERSION on error
@@ -125,9 +125,10 @@ enum jal_status jal_create_audit_transforms_elem(
 /**
  * Given a xmlDocPtr, write out the corresponding XML to a byte buffer.
  *
- * @param doc[in] The xmlDocPtr to serialize
- * @param buffer[out] The buffer that contains the serialized XML.
- * @return 
+ * @param doc [in] The xmlDocPtr to serialize
+ * @param buffer [out] The buffer that contains the serialized XML.
+ * @param buffersize [out] The buffer size that contains the serialized XML.
+ * @return
  *  - JAL_OK on success
  *  - JAL_E_INVAL if one of the arguments is invalid.
  */
@@ -146,7 +147,7 @@ enum jal_status jal_xml_output(
  * that contains the binary version of the digest. It is up to the caller to
  * release this memory with a call to free().
  * @param digest_len On success, this will be set to the length, in bytes, of
- * \pdigest_buffer.
+ * \p digest_buffer.
  * @return JAL_OK on success, or an error code.
  */
 enum jal_status jal_digest_xml_data(
@@ -156,19 +157,30 @@ enum jal_status jal_digest_xml_data(
 		int *digest_len);
 
 /**
- * Convert an OpenSSL BIGNUM to a Libxml2 xmlChar pointer of the decimal representation
- * of the BIGNUM.
+ * Use the digest context \p dgst_ctx to generate a digest for the data
+ * given in the buffer.
  *
- * @param[in] bn The BIGNUM to convert.
- *
- * @return xmlChar pointer to the decimal representation of the BIGNUM.  This needs
- * to be free'd with xmlFree.
+ * @param dgst_ctx The digest method to use.
+ * @param data The data to generate a digest for.
+ * @param data_len The length of the data
+ * @param digest_out On success, this will be set to a newly allocated buffer
+ * that contains the binary version of the digest. It is up to the caller to
+ * release this memory with a call to free().
+ * @param digest_len On success, this will be set to the length, in bytes, of
+ * \p digest_buffer.
+ * @return JAL_OK on success, or an error code.
  */
+enum jal_status jal_digest_arbitrary_data(
+		const struct jal_digest_ctx *dgst_ctx,
+		const uint8_t * const data,
+		const int data_len,
+		uint8_t **digest_out,
+		int *digest_len);
 
 /**
  * Get the first non-text element child.
  *
- * @param[in] elem The element to retrieve the child from.
+ * @param [in] elem The element to retrieve the child from.
  *
  * @return non-text element child or NULL
  */
@@ -177,26 +189,25 @@ xmlNodePtr jal_get_first_element_child(xmlNodePtr elem);
 /**
  * Add a signature block to a document.
  *
- * @param[in] rsa RSA key to use as a signing key.  This is required.
- * @param[in] x509 Certificate to use when signing.  This is not required
+ * @param [in] rsa RSA key to use as a signing key.  This is required.
+ * @param [in] x509 Certificate to use when signing.  This is not required
  * and could be passed in as NULL.
- * @param[in] doc The document to sign.
- * @param[in] last The element to add the signature before.  Pass in
+ * @param [in] doc The document to sign.
+ * @param [in] last The element to add the signature before.  Pass in
  * NULL to have the signature element added as the last element under
  * parent_element.
- * @param[in] id The id to use in the Reference elements URI attribute.
+ * @param [in] id The id to use in the Reference elements URI attribute.
  * This should be the id of the root node in the document.
  *
  * @return JAL_OK,  or JAL_E_INVAL on error
  */
 enum jal_status jal_add_signature_block(
-		RSA *rsa,
+		EVP_PKEY *rsa,
 		X509 *x509,
 		xmlDocPtr doc,
 		xmlNodePtr last,
 		const char *id);
 
-/** @} */
 #ifdef __cplusplus
 }
 #endif

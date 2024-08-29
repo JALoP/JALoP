@@ -2,7 +2,7 @@
  * @file jal_namespaces.h This file defines namespace uri's for use by jal
  * xml document functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,8 +36,14 @@ extern "C" {
 /** JALoP metadata URI */
 #define JAL_APP_META_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadata"
 
+/** JALoP app metadata namespace prefix */
+#define JAL_APP_META_NAMESPACE_PREFIX "jam"
+
 /** JALoP namespace URI */
 #define JAL_APP_META_TYPES_NAMESPACE_URI "http://www.dod.mil/jalop-1.0/applicationMetadataTypes"
+
+/** JALoP app metadata types namespace prefix */
+#define JAL_APP_META_TYPES_NAMESPACE_PREFIX "jamt"
 
 /** JALoP Schema for XML Signatures URI */
 #define JAL_XMLDSIG_URI "http://www.w3.org/2000/09/xmldsig#"

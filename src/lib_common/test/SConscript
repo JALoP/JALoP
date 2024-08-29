@@ -5,9 +5,10 @@ Import('*')
 tests = []
 
 testEnv = env.Clone()
-# The test-dept macros trigger this warning, so disable it for all the test
-# drivers.
-ccflags = '-Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/test-input/\\" '
+# We get these warnings in the tests. Disable for these tests only.
+# -Wno-format-nonliteral: Because we're using assert_equals on non-string types. Note that assert_equals_int et. al. are deprecated and will cause a failure/error.
+# -fcommon needed to restore original gcc behavior in rhel9 to prevent multiple definition linker errors
+ccflags = '-fcommon -Wno-format-nonliteral -DSCHEMAS_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + testEnv['SOURCE_ROOT'] + '/test-input/\\" '
 
 testEnv.Append(CPPPATH="#/src/test_utils/src")
 testEnv.Append(CCFLAGS=ccflags.split())
@@ -28,10 +29,8 @@ tests.append(testEnv.TestDeptTest('test_jal_xml_utils.c',
 tests.append(testEnv.TestDeptTest('test_jal_fs_utils.c',
 	other_sources=[allocObj, errorCallbackObj, test_utils], useProxies=True)[0].abspath)
 tests.append(testEnv.TestDeptTest('test_jal_byteswap.c', other_sources=[])[0].abspath)
-
+tests.append(testEnv.TestDeptTest('test_jal_config.c', other_sources=[], useProxies=True)[0].abspath)
 
 common_tests = env.Alias('common_tests', tests, 'test_dept ' + " ".join(tests))
 AlwaysBuild(common_tests)
 env.Depends(all_tests, common_tests)
-
-

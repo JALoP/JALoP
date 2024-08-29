@@ -1,7 +1,7 @@
 /**
  * @file test_jal_alloc.c This file contains tests for jal_alloc functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -115,7 +115,7 @@ void test_jal_calloc_success_for_non_zero_elements_zero_size_allocation()
 	free(ptr);
 }
 
-void test_jal_calloc_success_for_non_zero_elements_non_zero_size_allocation() 
+void test_jal_calloc_success_for_non_zero_elements_non_zero_size_allocation()
 {
 	void *ptr = jal_calloc(1, sizeof(int));
 	assert_not_equals(NULL, ptr);
@@ -143,7 +143,7 @@ void test_jal_realloc_success_null_pointer_zero_size()
 }
 void test_jal_realloc_returns_null_with_non_null_pointer_and_zero_size()
 {
-	// for realloc(ptr, 0), where ptr is a valid, non-null, pointer, realloc 
+	// for realloc(ptr, 0), where ptr is a valid, non-null, pointer, realloc
 	// should act like free, and return NULL.
 	void *ptr = malloc(10);
 	assert_not_equals(NULL, ptr);
@@ -194,13 +194,13 @@ void test_jal_strndup_success_full()
 	int i=0;
 	char source[256];
 	for (i = 0; i < 255; i++) {
-		source[i] = i+1; 
+		source[i] = i+1;
 	}
 	source[i] = '\0';
 
 	char *ptr = jal_strndup(source, 256);
 
-	/* Check for no errors */ 
+	/* Check for no errors */
 	assert_not_equals(NULL, ptr);
 	assert_not_equals(ENOMEM, errno);
 
@@ -216,7 +216,7 @@ void test_jal_strndup_success_buffer_bigger()
 	char *source = "Howdy";
 	char *ptr = jal_strndup(source, 6);
 
-	/* Check for no errors */ 
+	/* Check for no errors */
 	assert_not_equals(NULL, ptr);
 	assert_not_equals(ENOMEM, errno);
 
@@ -230,9 +230,9 @@ void test_jal_strndup_success_buffer_bigger()
 void test_jal_strndup_success_buffer_exact()
 {
 	char *source = "Howdy";
-	char *ptr = jal_strndup(source, 5); 
+	char *ptr = jal_strndup(source, 5);
 
-	/* Check for no errors */ 
+	/* Check for no errors */
 	assert_not_equals(NULL, ptr);
 	assert_not_equals(ENOMEM, errno);
 
@@ -246,9 +246,9 @@ void test_jal_strndup_success_buffer_exact()
 void test_jal_strndup_success_buffer_short()
 {
 	char *source = "Howdy";
-	char *ptr = jal_strndup(source, 4); 
+	char *ptr = jal_strndup(source, 4);
 
-	/* Check for no errors */ 
+	/* Check for no errors */
 	assert_not_equals(NULL, ptr);
 	assert_not_equals(ENOMEM, errno);
 
@@ -282,12 +282,12 @@ void test_jal_memdup_success_full()
 	int i=0;
 	char source[256];
 	for (i = 0; i <= 255; i++) {
-		source[i] = i; 
+		source[i] = i;
 	}
 
 	char *ptr = jal_memdup(source, 256);
 
-	/* Check for no errors */ 
+	/* Check for no errors */
 	assert_not_equals(NULL, ptr);
 	assert_not_equals(ENOMEM, errno);
 
@@ -302,9 +302,9 @@ void test_jal_memdup_success_full()
 void test_jal_memdup_success_buffer_exact()
 {
 	char *source = "Howdy";
-	char *ptr = jal_memdup(source, 5); 
+	char *ptr = jal_memdup(source, 5);
 
-	/* Check for no errors */ 
+	/* Check for no errors */
 	assert_not_equals(NULL, ptr);
 	assert_not_equals(ENOMEM, errno);
 
@@ -317,9 +317,9 @@ void test_jal_memdup_success_buffer_exact()
 void test_jal_memdup_success_buffer_short()
 {
 	char *source = "Howdy";
-	char *ptr = jal_memdup(source, 4); 
+	char *ptr = jal_memdup(source, 4);
 
-	/* Check for no errors */ 
+	/* Check for no errors */
 	assert_not_equals(NULL, ptr);
 	assert_not_equals(ENOMEM, errno);
 

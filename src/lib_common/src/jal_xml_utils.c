@@ -2,7 +2,7 @@
  * @file jal_xml_utils.c This file contains utility funtions for dealing
  * with XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -75,6 +75,8 @@
 #define JAL_XML_XPOINTER_ID_BEG "#xpointer(id('"
 #define JAL_XML_XPOINTER_ID_END "'))"
 
+#define OPENSSL_V30_VER 0x3000000fL
+
 enum jal_status jal_parse_xml_snippet(
 		xmlNodePtr *ctx_node,
 		const char *snippet)
@@ -97,14 +99,14 @@ enum jal_status jal_parse_xml_snippet(
 }
 
 enum jal_status jal_create_base64_element(
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		const uint8_t *buffer,
 		const size_t buf_len,
 		const xmlChar *namespace_uri,
 		const xmlChar *elm_name,
 		xmlNodePtr *new_elem)
 {
-	if (!doc || !buffer || (buf_len == 0) || !namespace_uri ||
+	if (!parent || !buffer || (buf_len == 0) || !namespace_uri ||
 		!elm_name || !new_elem || *new_elem) {
 		return JAL_E_INVAL;
 	}
@@ -120,9 +122,7 @@ enum jal_status jal_create_base64_element(
 
 	xml_base64_val = (xmlChar *)base64_val;
 
-	xmlNodePtr elm = xmlNewDocNode(doc, NULL, elm_name, NULL);
-	xmlNsPtr ns = xmlNewNs(elm, namespace_uri, NULL);
-	xmlSetNs(elm, ns);
+	xmlNodePtr elm = xmlNewChild(parent, NULL, elm_name, NULL);
 	xmlNodeAddContent(elm, xml_base64_val);
 
 	free(base64_val);
@@ -178,16 +178,14 @@ enum jal_status jal_create_reference_elem(
 		xmlSetProp(reference_elem, (xmlChar *) URI, xml_reference_uri);
 	}
 
-	ret = jal_create_base64_element(doc, digest_buf, len, namespace_uri,
+	digestmethod_elem = xmlNewChild(reference_elem, NULL, (xmlChar *) DIGESTMETHOD, NULL);
+	xmlSetProp(digestmethod_elem, (xmlChar *)ALGORITHM, xml_digest_method);
+
+	ret = jal_create_base64_element(reference_elem, digest_buf, len, namespace_uri,
 					(xmlChar *)DIGESTVALUE, &digestvalue_elem);
 	if (ret != JAL_OK) {
 		goto err_out;
 	}
-
-	digestmethod_elem = xmlNewChild(reference_elem, NULL, (xmlChar *) DIGESTMETHOD, NULL);
-	xmlSetProp(digestmethod_elem, (xmlChar *)ALGORITHM, xml_digest_method);
-
-	xmlAddChild(reference_elem, digestvalue_elem);
 
 	*elem = reference_elem;
 
@@ -264,11 +262,12 @@ enum jal_status jal_digest_xml_data(
 	if (!dgst_ctx || !doc || !digest_out || *digest_out || !digest_len) {
 		return JAL_E_INVAL;
 	}
+
 	if (!jal_digest_ctx_is_valid(dgst_ctx)) {
 		return JAL_E_INVAL;
 	}
 
-	size_t dlen = dgst_ctx->len;
+	unsigned int dlen = dgst_ctx->len;
 	uint8_t *dval = (uint8_t*)jal_malloc(dlen);
 	void *instance = dgst_ctx->create();
 	if (instance == NULL) {
@@ -318,6 +317,53 @@ out:
 	return ret;
 }
 
+enum jal_status jal_digest_arbitrary_data(
+		const struct jal_digest_ctx *dgst_ctx,
+		const uint8_t * const data,
+		int data_len,
+		uint8_t **digest_out,
+		int *digest_len)
+{
+	if (!dgst_ctx || !data || 0 == data_len || !digest_out || *digest_out || !digest_len) {
+		return JAL_E_INVAL;
+	}
+	if (!jal_digest_ctx_is_valid(dgst_ctx)) {
+		return JAL_E_INVAL;
+	}
+
+	unsigned int dlen = dgst_ctx->len;
+	uint8_t *dval = (uint8_t*)jal_malloc(dlen);
+	void *instance = dgst_ctx->create();
+	if (instance == NULL) {
+		free(dval);
+		dval = NULL;
+		jal_error_handler(JAL_E_NO_MEM);
+	}
+	enum jal_status ret = (enum jal_status) dgst_ctx->init(instance);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+
+	ret = (enum jal_status) dgst_ctx->update(instance, data, data_len);
+
+	ret = (enum jal_status) dgst_ctx->final(instance, dval, &dlen);
+	if (ret != JAL_OK) {
+		goto error_out;
+	}
+	goto out;
+
+error_out:
+	free(dval);
+	dval = NULL;
+	dgst_ctx->destroy(instance);
+	return ret;
+out:
+	*digest_out = dval;
+	*digest_len = dlen;
+	dgst_ctx->destroy(instance);
+	return ret;
+}
+
 xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 {
 	if (!elem) {
@@ -325,7 +371,7 @@ xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 	}
 	xmlNodePtr child = elem->children;
 
-	while (child != NULL && 
+	while (child != NULL &&
 		child->type != XML_ELEMENT_NODE) {
 		child = child->next;
 	}
@@ -341,7 +387,7 @@ xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 static pthread_mutex_t xmlsec_sign_lock = PTHREAD_MUTEX_INITIALIZER;
 
 enum jal_status jal_add_signature_block(
-		RSA *rsa,
+		EVP_PKEY *rsa,
 		X509 *x509,
 		xmlDocPtr doc,
 		xmlNodePtr last,
@@ -358,10 +404,27 @@ enum jal_status jal_add_signature_block(
 	xmlNodePtr x509IssuerSerialNode = NULL;
 	xmlSecDSigCtxPtr dsigCtx = NULL;
 
-	RSA *new_rsa = RSAPrivateKey_dup(rsa);
+	//On rhel 7 and rhel8, RSA structure needs to be used to prevent
+	//assert failure in xmlSecOpenSSLKeyDataRsaAdoptRsa
+	//Key duplication is needed to prevent this assert failure and EVP_PKEY_dup
+	//is only available in openssl 3.0 or higher
+#if OPENSSL_VERSION_NUMBER < OPENSSL_V30_VER
+	RSA *curr_rsa = EVP_PKEY_get1_RSA(rsa);
+	if (!curr_rsa) {
+		return JAL_E_INVAL;
+	}
+
+	RSA *new_rsa = RSAPrivateKey_dup(curr_rsa);
 	if (!new_rsa) {
 		return JAL_E_INVAL;
 	}
+#else
+
+	EVP_PKEY *new_rsa = EVP_PKEY_dup(rsa);
+	if (!new_rsa) {
+		return JAL_E_INVAL;
+	}
+#endif
 
 	enum jal_status ret = JAL_E_INVAL;
 
@@ -390,7 +453,7 @@ enum jal_status jal_add_signature_block(
 	strncat(reference_uri, JAL_XML_XPOINTER_ID_BEG, beg_len);
 	strncat(reference_uri, id, id_len);
 	strncat(reference_uri, JAL_XML_XPOINTER_ID_END, end_len);
-	
+
 	refNode = xmlSecTmplSignatureAddReference(signNode,
 						xmlSecOpenSSLTransformSha256Id,
 						NULL, // id
@@ -405,7 +468,7 @@ enum jal_status jal_add_signature_block(
 	if (!xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
 		goto done;
 	}
-	
+
 	keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, NULL);
 	if (!keyInfoNode) {
 		goto done;
@@ -418,15 +481,23 @@ enum jal_status jal_add_signature_block(
 	xmlSecKeyDataPtr pKeyData = NULL;
 	pKeyData = xmlSecKeyDataCreate(xmlSecKeyDataRsaId);
 
+	//On rhel 7/rhel8, xmlSecOpenSSLKeyDataRsaAdoptRsa needs to be used to prevent
+	//assert failure in xmlSecOpenSSLKeyDataRsaAdoptEvp
+#if OPENSSL_VERSION_NUMBER < OPENSSL_V30_VER
 	if (0 != xmlSecOpenSSLKeyDataRsaAdoptRsa(pKeyData, new_rsa)) {
 		goto done;
 	}
+#else
+	if (0 != xmlSecOpenSSLKeyDataRsaAdoptEvp(pKeyData, new_rsa)) {
+		goto done;
+	}
+#endif
 
 	xmlSecKeyPtr pSecKey = xmlSecKeyCreate();
 	if (!pSecKey) {
 		goto done;
 	}
-	
+
 	if (0 != xmlSecKeySetValue(pSecKey, pKeyData)) {
 		goto done;
 	}
@@ -435,7 +506,7 @@ enum jal_status jal_add_signature_block(
     	if (!dsigCtx) {
 		goto done;
     	}
-	
+
 	dsigCtx->signKey = pSecKey;
 
 	// add certificate information, if available

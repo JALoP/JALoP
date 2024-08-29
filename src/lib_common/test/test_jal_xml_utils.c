@@ -2,7 +2,7 @@
  * @file test_jal_xml_utils.c This file contains unit tests for a
  * variety of utilities dealing with generating XML data.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -51,9 +51,9 @@
 
 #define EVENT_ID "event-123-xyz"
 
-#define TEST_RSA_KEY  TEST_INPUT_ROOT "rsa_key"
-#define TEST_CERT  TEST_INPUT_ROOT "cert"
-#define TEST_CERT_AND_KEY  TEST_INPUT_ROOT "cert_and_key"
+#define TEST_RSA_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/rsa_key"
+#define TEST_CERT  TEST_INPUT_ROOT "TLS_Unit_Test_Files/cert"
+#define TEST_CERT_AND_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/cert_and_key"
 
 #define ID_NAME "xml:" LOCLA_ID_NAME
 #define LOCAL_ID_NAME "id"
@@ -83,6 +83,7 @@
 #define EXPECTED_SIGNING_DGST_VALUE "zqfv/c2dvejx20CIJ5Kg7j+HxlB95r1q8XqL74aeWCk="
 #define EXPECTED_MODULUS "\n3PRI+qegjHCd70xtRMPzknUDqY6iH93XJwfuGqXguiEB8n3dxaZu1ZNzMe1BHpGj\ne2RPaRr5EXBKAXMPnw6MXQ==\n"
 #define EXPECTED_EXPONENT "\nAQAB\n"
+#define OPENSSL_V11_VER 0x1010000fL
 
 static const uint8_t EXPECTED_DGST[] = { 0xca, 0x60, 0x88, 0xd0, 0xab,
 	0x26, 0x59, 0x66, 0xa7, 0x5b, 0xbf, 0xc2, 0x24, 0xc8, 0xb3,
@@ -95,7 +96,7 @@ static const char *base64_string = "YXNkZg==";
 static struct jal_digest_ctx *dgst_ctx = NULL;
 
 static X509 *cert;
-static RSA *key;
+static EVP_PKEY *key;
 
 xmlChar *namespace_uri;
 xmlChar *tag;
@@ -132,7 +133,7 @@ static void load_key_and_cert()
 	fclose(fp);
 
 	fp = fopen(TEST_RSA_KEY, "r");
-	key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+	key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
 	fclose(fp);
 }
 
@@ -142,7 +143,7 @@ static void build_dom_for_signing()
 	xmlNsPtr ns = xmlNewNs(elem, (xmlChar *)ID_NS, NULL);
 	xmlSetNs(elem, ns);
 	xmlSetProp(elem, (xmlChar *)"xml:id", (xmlChar *)ID_STR);
-	
+
 	xmlNodePtr achild = xmlNewDocNode(doc, NULL, (xmlChar *)"achild", NULL);
 	xmlNodePtr bchild = xmlNewDocNode(doc, NULL, (xmlChar *)"bchild", NULL);
 
@@ -159,15 +160,21 @@ void setup()
 	tag = (xmlChar *)TAG;
 	id_val = ID_STR;
 
+	//JAL-897 - OPENSSL_init_ssl() replaces SSL_library_init() in openssl v1.1 and higher
+	#if OPENSSL_VERSION_NUMBER < OPENSSL_V11_VER
 	SSL_library_init();
+	#else
+	OPENSSL_init_ssl(0, NULL);
+	#endif
+
 	xmlSecInit();
 
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
 
 	xmlSecCryptoAppInit(NULL);
 	xmlSecCryptoInit();
-	
-	dgst_ctx = jal_sha256_ctx_create();
+
+	dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 }
 
 void teardown()
@@ -181,6 +188,8 @@ void teardown()
 
 void test_jal_create_base64_element_returns_null_with_null_inputs()
 {
+	xmlNodePtr parent = xmlNewDocNode(doc, NULL, (xmlChar *)"TestParent", NULL);
+
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
@@ -188,38 +197,40 @@ void test_jal_create_base64_element_returns_null_with_null_inputs()
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, 0, namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, 0, namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 }
 
 void test_jal_create_base64_element_fails_does_not_overwrite_existing_elm_pointer()
 {
+	xmlNodePtr parent = xmlNewDocNode(doc, NULL, (xmlChar *)"TestParent", NULL);
+
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr orig = new_elem;
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals(orig, new_elem);
 	xmlFreeNodeList(new_elem);
@@ -227,17 +238,30 @@ void test_jal_create_base64_element_fails_does_not_overwrite_existing_elm_pointe
 
 void test_jal_create_base64_element_works_with_normal_value()
 {
+	// Initialize a document and a parent node the same way the code does to ensure
+	// namespaces are correctly inherited
+	xmlDocPtr local_doc =  xmlNewDoc((xmlChar *)"1.0");
+	xmlNodePtr parent = xmlNewDocNode(local_doc, NULL, (xmlChar *)"TestParent", NULL);
+
+	xmlNsPtr jamtns = xmlNewNs(parent,
+		(xmlChar*)JAL_APP_META_TYPES_NAMESPACE_URI,
+		(xmlChar*)JAL_APP_META_TYPES_NAMESPACE_PREFIX);
+
+	// Initially set jamt: as the namespace prefix so that child elements
+	// correctly inherit
+	xmlSetNs(parent, jamtns);
+
 	// <SomeTag>YXNkZg==</SomeTag>
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(parent, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals(TAG, new_elem);
 	assert_content_equals(base64_string, new_elem);
 	assert_namespace_equals(JAL_APP_META_TYPES_NAMESPACE_URI, new_elem);
-	xmlFreeNodeList(new_elem);
+	xmlFreeDoc(local_doc);
 }
 
 void test_jal_create_reference_elem_returns_null_with_null_inputs()
@@ -432,7 +456,7 @@ void test_jal_digest_xml_data_returns_inval_for_bad_digest_ctx()
 	assert_equals(0, dgst_len);
 
 	jal_digest_ctx_destroy(&dgst_ctx);
-	dgst_ctx = jal_sha256_ctx_create();
+	dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	dgst_ctx->init = NULL;
 	ret = jal_digest_xml_data(dgst_ctx, doc, &dgst, &dgst_len);
 	assert_not_equals(ret, JAL_OK);
@@ -643,27 +667,13 @@ void test_add_signature_block()
 	assert_not_equals((void*) NULL, key_info);
 	assert_tag_equals("KeyInfo", key_info);
 
+	//JAL-897 - KeyValue xml node is empty in xmlsec1 1.3.3 and higher
 	xmlNodePtr key_val = jal_get_first_element_child(key_info);
-	assert_not_equals((void*) NULL, key_val);
 	assert_tag_equals("KeyValue", key_val);
 
 	xmlNodePtr x509_data = get_next_element(key_val);
 	assert_not_equals((void*) NULL, x509_data);
 	assert_tag_equals("X509Data", x509_data);
-	
-	xmlNodePtr rsa_key_val = jal_get_first_element_child(key_val);
-	assert_not_equals((void*) NULL, rsa_key_val);
-	assert_tag_equals("RSAKeyValue", rsa_key_val);
-
-	xmlNodePtr modulus = jal_get_first_element_child(rsa_key_val);
-	assert_not_equals((void*) NULL, modulus);
-	assert_tag_equals("Modulus", modulus);
-	assert_content_equals(EXPECTED_MODULUS, modulus);
-	
-	xmlNodePtr exponent = get_next_element(modulus);
-	assert_not_equals((void*) NULL, exponent);
-	assert_tag_equals("Exponent", exponent);
-	assert_content_equals(EXPECTED_EXPONENT, exponent);
 
 	// depending on the library version, the X509Certificate element may be first or last
 	xmlNodePtr x509_certificate = jal_get_first_element_child(x509_data);
@@ -770,27 +780,13 @@ void test_add_signature_block_works_with_prev()
 	assert_not_equals((void*) NULL, key_info);
 	assert_tag_equals("KeyInfo", key_info);
 
+	//JAL-897 - KeyValue xml node is empty in xmlsec1 1.3.3 and higher
 	xmlNodePtr key_val = jal_get_first_element_child(key_info);
-	assert_not_equals((void*) NULL, key_val);
 	assert_tag_equals("KeyValue", key_val);
 
 	xmlNodePtr x509_data = get_next_element(key_val);
 	assert_not_equals((void*) NULL, x509_data);
 	assert_tag_equals("X509Data", x509_data);
-	
-	xmlNodePtr rsa_key_val = jal_get_first_element_child(key_val);
-	assert_not_equals((void*) NULL, rsa_key_val);
-	assert_tag_equals("RSAKeyValue", rsa_key_val);
-
-	xmlNodePtr modulus = jal_get_first_element_child(rsa_key_val);
-	assert_not_equals((void*) NULL, modulus);
-	assert_tag_equals("Modulus", modulus);
-	assert_content_equals(EXPECTED_MODULUS, modulus);
-	
-	xmlNodePtr exponent = get_next_element(modulus);
-	assert_not_equals((void*) NULL, exponent);
-	assert_tag_equals("Exponent", exponent);
-	assert_content_equals(EXPECTED_EXPONENT, exponent);
 
 	// depending on the library version, the X509Certificate element may be first or last
 	xmlNodePtr x509_certificate = jal_get_first_element_child(x509_data);
@@ -927,7 +923,7 @@ void test_get_first_element_child_returns_correct_node()
 	xmlNodePtr parent = xmlNewNode(NULL, (xmlChar *)"Parent");
 	xmlNodePtr text_child = xmlNewText((xmlChar *)"text");
 	xmlNodePtr real_child = xmlNewNode(NULL, (xmlChar *)"Child");
-	
+
 	xmlAddChild(parent, text_child);
 	xmlAddChild(parent, real_child);
 
@@ -942,7 +938,7 @@ void test_get_first_element_child_returns_NULL_when_child_is_NULL()
 {
 	xmlNodePtr parent = xmlNewNode(NULL, (xmlChar *)"Parent");
 	xmlNodePtr text_child = xmlNewText((xmlChar *)"text");
-	
+
 	xmlAddChild(parent, text_child);
 
 	xmlNodePtr child = jal_get_first_element_child(parent);

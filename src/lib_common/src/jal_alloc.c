@@ -2,7 +2,7 @@
  * @file jal_alloc.c This file contains wrappers for malloc,
  * calloc, and realloc.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -94,7 +94,7 @@ char *jal_strndup(const char *str, size_t size)
 	size_t len = end ? (size_t)(end - str) : size;
 
 	/* Allocate memory for the string + the null termination */
-	char *tmp = malloc(len+1); 
+	char *tmp = malloc(len+1);
 	if (!tmp) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}
@@ -113,7 +113,7 @@ char *jal_memdup(const char *buf, size_t size)
 		return NULL;
 	}
 
-	char *tmp = malloc(size); 
+	char *tmp = malloc(size);
 	if (!tmp) {
 		jal_error_handler(JAL_E_NO_MEM);
 	}

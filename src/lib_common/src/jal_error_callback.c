@@ -2,7 +2,7 @@
  * @file jal_error_callback.c This file contains functions to handle fatal
  * errors encountered by the Producer Library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
