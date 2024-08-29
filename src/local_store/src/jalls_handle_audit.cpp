@@ -2,7 +2,7 @@
  * @file jalls_handle_audit.cpp This file contains functions to handle an audit
  * to the jal local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -88,7 +88,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 
 	char *nonce = NULL;
 
-	RSA *signing_key = NULL;
+	EVP_PKEY *signing_key = NULL;
 
 	if (thread_ctx->ctx->sign_sys_meta) {
 		signing_key = thread_ctx->signing_key;
@@ -173,7 +173,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 				goto err_out;
 			}
 			payload_digest_len = digest_ctx->len;
-			payload_alg = jal_strdup(digest_ctx->algorithm_uri); 
+			payload_alg = jal_strdup(digest_ctx->algorithm_uri);
 		}
 
 		if (rec->app_meta) {
@@ -185,7 +185,7 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 				goto err_out;
 			}
 			app_meta_digest_len = digest_ctx->len;
-			app_meta_alg = jal_strdup(digest_ctx->algorithm_uri); 
+			app_meta_alg = jal_strdup(digest_ctx->algorithm_uri);
 		}
 
 	}

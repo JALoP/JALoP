@@ -2,7 +2,7 @@
  * @file jalls.c This file contains functions the main function of the
  * jal local store
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -68,9 +68,10 @@
 
 #include "jal_fs_utils.h"
 #include "jal_linux_cap.h"
-#include "jal_linux_seccomp.h"
+#include <jalop/jal_seccomp_enforcer.h>
 #include "jalls_config.h"
 #include "jalu_daemonize.h"
+#include "jal_config.h"
 #include "jalls_handler.h"
 #include "jalls_msg.h"
 #include "jalls_init.h"
@@ -113,7 +114,7 @@ char *config_path;
 int debug;
 struct jalls_context cli_jalls_ctx;
 // merge command-line configurations into file configurations. Have command-line take precedence
-void merge_jal_contexts(struct jalls_context cli_ctx, struct jalls_context *out_ctx); 
+void merge_jal_contexts(struct jalls_context cli_ctx, struct jalls_context *out_ctx);
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 //validate file mode parameter for socket-mode
 static int check_mode(char * mode);
@@ -121,7 +122,7 @@ char mode_error[256] = "socket-mode must be in the form example: 0420.\nExactly 
 
 int main(int argc, char **argv) {
 	FILE *fp;
-	RSA *key = NULL;
+	EVP_PKEY *key = NULL;
 	X509 *cert = NULL;
 	jaldb_context *db_ctx = NULL;
 	struct jalls_context *jalls_ctx = NULL;
@@ -129,7 +130,7 @@ int main(int argc, char **argv) {
 	int sock = -1;
 	int old_socket_exist = 0;
 	char * absolute_path = NULL;
-
+	struct jal_seccomp_enforcer_t* seccomp_enforcer = NULL;
 	// Perform signal hookups
 	if ( 0 != setup_signals()) {
 		goto err_out;
@@ -138,9 +139,9 @@ int main(int argc, char **argv) {
 	if (0 != jalls_init()) {
 		goto err_out;
 	}
-	
+
 	debug = 0;
-        cli_jalls_ctx.db_recover = -1;
+	cli_jalls_ctx.db_recover = -1;
 	cli_jalls_ctx.daemon = -1;
 	int err = argp_parse(&argp, argc, argv, 0, 0, &cli_jalls_ctx);
 	if(err!=0){
@@ -151,20 +152,19 @@ int main(int argc, char **argv) {
 	if (err < 0) {
 		goto err_out;
 	}
-	merge_jal_contexts(cli_jalls_ctx, jalls_ctx);	
-	if(config_path){
-		int rc = read_sc_config(config_path);
-		if (rc != 0) {
-                	goto err_out;
-                }
+	merge_jal_contexts(cli_jalls_ctx, jalls_ctx);
+	// config_path must be set at this point
+	// Create a seccomp policy enforcer using the config file
+	seccomp_enforcer = jal_seccomp_enforcer_create(config_path);
+	if(NULL == seccomp_enforcer){
+		goto err_out;
 	}
 
 	jalls_ctx->debug = debug;
 
-	if(seccomp_config.enable_seccomp){
-		if (configureInitialSeccomp()!=0){
-			goto err_out;
-		}
+	// Enforce initial seccomp policy set
+	if (0 != jal_seccomp_enforcer_apply_initial(seccomp_enforcer)){
+		goto err_out;
 	}
 
 	jal_err = jal_create_dirs(jalls_ctx->db_root);
@@ -176,9 +176,9 @@ int main(int argc, char **argv) {
 	//load the private key
 	if (jalls_ctx->private_key_file) {
 		absolute_path = NULL;
-		absolute_path = realpath(jalls_ctx->private_key_file, NULL);
+		absolute_path = jal_expand_path(jalls_ctx->private_key_file, JALLS_CFG_PRIVATE_KEY_FILE);
 		if(absolute_path == NULL){
-			fprintf(stderr, "failed getting private_key_file absolute path for: %s\n", jalls_ctx->private_key_file);
+			//Error already displayed from method above
 			goto err_out;
 		}
 		free(jalls_ctx->private_key_file);
@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "failed to open private key file\n");
 			goto err_out;
 		}
-		key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+		key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
 		fclose(fp);
 		if (!key) {
 			fprintf(stderr, "failed to read private key\n");
@@ -201,16 +201,17 @@ int main(int argc, char **argv) {
 	//load the public cert
 	if (jalls_ctx->public_cert_file) {
 		absolute_path = NULL;
-		absolute_path = realpath(jalls_ctx->public_cert_file, NULL);
+		absolute_path = jal_expand_path(jalls_ctx->public_cert_file, JALLS_CFG_PUBLIC_CERT_FILE);
 		if(absolute_path == NULL){
-			fprintf(stderr, "failed getting public_cert_file absolute path for: %s\n", jalls_ctx->public_cert_file);
+			//Error already displayed from method above
 			goto err_out;
 		}
+
 		free(jalls_ctx->public_cert_file);
 		jalls_ctx->public_cert_file = absolute_path;
 		absolute_path = NULL;
 
-		fp = fopen(jalls_ctx->public_cert_file, "r");		
+		fp = fopen(jalls_ctx->public_cert_file, "r");
 		if (!fp) {
 			fprintf(stderr, "failed to open public cert file\n");
 			goto err_out;
@@ -223,31 +224,44 @@ int main(int argc, char **argv) {
 	}
 
 	//create a jaldb_context to pass to work threads
-	absolute_path = NULL;		
-	absolute_path = realpath(jalls_ctx->db_root, NULL);
+	absolute_path = NULL;
+	absolute_path = jal_expand_path(jalls_ctx->db_root, JALLS_CFG_DB_ROOT);
+
 	if(absolute_path == NULL){
-		fprintf(stderr, "failed getting db_root absolute path for: %s\n", jalls_ctx->db_root);
+		//Error already displayed from method above
 		goto err_out;
 	}
+
 	free(jalls_ctx->db_root);
 	jalls_ctx->db_root = absolute_path;
 	absolute_path = NULL;
 
 	db_ctx = jaldb_context_create();
-        enum jaldb_flags db_flags = JDB_NONE;
-        if (jalls_ctx->db_recover==1){
-	    dfprintf(stderr, "Setting DB_RECOVER flag.\n");
-            db_flags |= JDB_DB_RECOVER;
-        }
-	else{
-	    dfprintf(stderr, "Not setting DB_RECOVER flag.\n");
+	enum jaldb_flags db_flags = JDB_NONE;
+	if (jalls_ctx->db_recover==1){
+		dfprintf(stderr, "Setting DB_RECOVER flag.\n");
+		db_flags |= JDB_DB_RECOVER;
 	}
-	jal_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, db_flags);
+	else{
+		dfprintf(stderr, "Not setting DB_RECOVER flag.\n");
+	}
+	enum jaldb_status jaldb_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, db_flags);
 
-	if (jal_err != JAL_OK) {
+	if (jaldb_err != JALDB_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
 		goto err_out;
 	}
+
+	//Expands any "~/" in socket path first so the socket can be created
+	absolute_path = jal_expand_home_dir(jalls_ctx->socket, JALLS_CFG_SOCKET);
+	if(absolute_path == NULL){
+		//Error already displayed from method above
+		goto err_out;
+	}
+
+	free(jalls_ctx->socket);
+	jalls_ctx->socket = absolute_path;
+	absolute_path = NULL;
 
 	systemd_sockfd = get_sockfd_from_systemd();
 	if (systemd_sockfd>0){
@@ -310,7 +324,7 @@ int main(int argc, char **argv) {
 		}
 		if(!jalls_ctx->socket_mode){
 			jalls_ctx->socket_mode = "0666";
-		}		
+		}
 		if (check_mode(jalls_ctx->socket_mode)!=0){
 			fprintf(stderr, "%s", mode_error);
 			goto err_out;
@@ -361,41 +375,57 @@ int main(int argc, char **argv) {
 
 	}
 	//the paths must be made absolute before daemonizing
-	absolute_path = NULL;	
-	absolute_path = realpath(jalls_ctx->schemas_root, NULL);
+	absolute_path = NULL;
+	absolute_path = jal_expand_path(jalls_ctx->schemas_root, JALLS_CFG_SCHEMAS_ROOT);
 	if(absolute_path == NULL){
-		fprintf(stderr, "failed getting schemas_root absolute path for: %s\n", jalls_ctx->schemas_root);
+		//Error already displayed from method above
 		goto err_out;
 	}
+
 	free(jalls_ctx->schemas_root);
 	jalls_ctx->schemas_root = absolute_path;
 	absolute_path = NULL;
 
 	if (systemd_sockfd<0){
 		absolute_path = NULL;
-		absolute_path = realpath(jalls_ctx->socket, NULL);
+		absolute_path = jal_expand_path(jalls_ctx->socket, JALLS_CFG_SOCKET);
 		if(absolute_path == NULL){
-			fprintf(stderr, "failed getting socket absolute path for: %s\n", jalls_ctx->socket);
+			//Error already displayed from method above
 			goto err_out;
 		}
+
 		free(jalls_ctx->socket);
 		jalls_ctx->socket = absolute_path;
 		absolute_path = NULL;
 	}
 	if (jalls_ctx->log_dir){
 		absolute_path = NULL;
-		absolute_path = realpath(jalls_ctx->log_dir, NULL);
+		absolute_path = jal_expand_path(jalls_ctx->log_dir, JALLS_CFG_LOG_DIR);
 		if(absolute_path == NULL){
-			fprintf(stderr, "failed getting log_dir absolute path for: %s\n", jalls_ctx->log_dir);
+			//Error already displayed from method above
 			goto err_out;
 		}
+
 		free(jalls_ctx->log_dir);
 		jalls_ctx->log_dir = absolute_path;
 		absolute_path = NULL;
 	}
-	dfprintf(stderr, "private_key_file:%s \npublic_cert_file:%s \ndb_root:%s \nschemas_root:%s \nsocket:%s \nlog_dir:%s\n", 
+
+	if (jalls_ctx->pid_file){
+		absolute_path = NULL;
+		absolute_path = jal_expand_home_dir(jalls_ctx->pid_file, JALLS_CFG_PID_FILE);
+		if(absolute_path == NULL){
+			//Error already displayed from method above
+			goto err_out;
+		}
+
+		free(jalls_ctx->pid_file);
+		jalls_ctx->pid_file = absolute_path;
+		absolute_path = NULL;
+	}
+	dfprintf(stderr, "private_key_file:%s \npublic_cert_file:%s \ndb_root:%s \nschemas_root:%s \nsocket:%s \nlog_dir:%s\n",
 		jalls_ctx->private_key_file, jalls_ctx->public_cert_file, jalls_ctx->db_root, jalls_ctx->schemas_root, jalls_ctx->socket, jalls_ctx->log_dir);
-	
+
 	if (jalls_ctx->daemon) {
 		dfprintf(stderr, "daemonizing...\n");
 		err = jalu_daemonize(jalls_ctx->log_dir, jalls_ctx->pid_file);
@@ -419,10 +449,8 @@ int main(int argc, char **argv) {
 	const int max_thread_count_intervention = jalls_ctx->accept_delay_max;
 	const int min_accept_delay = jalls_ctx->accept_delay_increment;
 
-	if(seccomp_config.enable_seccomp){
-		if (configureFinalSeccomp()!=0){
-			goto err_out;
-		}
+	if (0 != jal_seccomp_enforcer_apply_final(seccomp_enforcer)){
+		goto err_out;
 	}
 
 	if(sock==systemd_sockfd){
@@ -498,12 +526,13 @@ err_out:
 		close(sock);
 		delete_socket(jalls_ctx->socket, jalls_ctx->debug);
 	}
-	RSA_free(key);
+
+	EVP_PKEY_free(key);
 	X509_free(cert);
 	jalls_shutdown();
-	jaldb_context_destroy(&db_ctx);	
-	config_destroy(&sc_config);
-	
+	jaldb_context_destroy(&db_ctx);
+	jal_seccomp_enforcer_destroy(&seccomp_enforcer);
+
 	exit(-1);
 
 }
@@ -716,7 +745,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 				cli_ctx->socket_mode = arg;
 			}
 			break;
-                case 'r':
+		case 'r':
 			cli_ctx->db_recover = 1;
 			break;
 		case 'n':
@@ -777,7 +806,7 @@ void merge_jal_contexts(struct jalls_context cli_ctx, struct jalls_context *out_
 		}
 		out_ctx->socket_mode = jal_strdup(cli_ctx.socket_mode);
 	}
-        if (cli_ctx.db_recover>-1)
+	if (cli_ctx.db_recover>-1)
 	{
 		out_ctx->db_recover = cli_ctx.db_recover;
 	}

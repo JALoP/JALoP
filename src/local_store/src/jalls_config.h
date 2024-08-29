@@ -2,7 +2,7 @@
  * @file jalls_config.h This file contains functions for parsing the local store
  * config file.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -34,7 +34,7 @@
 #include <libconfig.h>
 #include "jalls_context.h"
 
-#define JALLS_CFG_DB_DEFAULT "/var/lib/jalop/db"
+#define JALLS_CFG_DB_DEFAULT "/var/lib/jalop/db/"
 #define JALLS_CFG_SOCKET_DEFAULT "/var/run/jalop/jalop.sock"
 #define JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT_DEFAULT 10
 #define JALLS_CFG_ACCEPT_DELAY_INCREMENT_DEFAULT 100

@@ -2,7 +2,7 @@
  * @file jalls_handle_journal_fd.cpp This file contains functions to handle a journal
  * to the jal local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -102,8 +102,8 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	int db_payload_fd = -1;
 	char *db_payload_path = NULL;
 	char *nonce = NULL;
-	
-	RSA *signing_key = NULL;
+
+	EVP_PKEY *signing_key = NULL;
 
 	if (thread_ctx->ctx->sign_sys_meta) {
 		signing_key = thread_ctx->signing_key;
@@ -164,7 +164,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 		bytes_remaining -= (uint64_t)bytes_read;
 	}
 
-	size_t digest_length;
+	unsigned int digest_length;
 	digest_length = digest_ctx->len;
 	jal_err = digest_ctx->final(digest_instance, digest, &digest_length);
 	if(jal_err != JAL_OK) {
@@ -235,7 +235,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 				goto err_out;
 			}
 			payload_digest_len = digest_ctx->len;
-			payload_alg = jal_strdup(digest_ctx->algorithm_uri); 
+			payload_alg = jal_strdup(digest_ctx->algorithm_uri);
 		}
 
 		if (rec->app_meta) {
@@ -247,7 +247,7 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 				goto err_out;
 			}
 			app_meta_digest_len = digest_ctx->len;
-			app_meta_alg = jal_strdup(digest_ctx->algorithm_uri); 
+			app_meta_alg = jal_strdup(digest_ctx->algorithm_uri);
 		}
 
 	}

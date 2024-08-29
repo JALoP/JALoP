@@ -1,7 +1,7 @@
 /**
  * @file test_jalls_handler.c This file contains tests for jalls_handler functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

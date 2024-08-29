@@ -2,7 +2,7 @@
  * @file jalls_init.h This file contains functions to initialize/cleanup
  * libraries used by the local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
