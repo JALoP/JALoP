@@ -3,7 +3,7 @@
  *
  * Public functions for creating and configuring a jaln_context.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -56,6 +56,9 @@ enum jaln_digest_challenge {
 	JALN_DC_PREF_ON   = JALN_DC_PREF_BIT | JALN_DC_ON_BIT | JALN_DC_OFF_BIT //!< May be configured on or off. On is preferred.
 };
 
+/**
+ * Definition of jaln_context type
+ */
 struct jaln_context_t {
 	pthread_mutex_t lock;
 	int ref_cnt;

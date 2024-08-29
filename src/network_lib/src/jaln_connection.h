@@ -3,7 +3,7 @@
  * declarations for internal library functions related to a jaln_connection
  * structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

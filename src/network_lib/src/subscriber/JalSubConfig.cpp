@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 #include <libconfig.h>
+#include "jal_config.h"
 #include <vector>
 #include <string>
 #include <stdexcept>
 
 #include <jalop/jal_digest.h>
+#include <jal_config.h>
 
 #include "JalSubEnumTypes.hpp"
 #include "JalSubConfig.hpp"
@@ -27,149 +29,64 @@ const bool REQUIRED = false;
 const bool OPTIONAL = true;
 
 static void handleBoolConfigSetting(
-	config_t* root,
+	config_setting_t* root,
 	const char* path,
 	const bool optional,
 	bool& destination)
 {
-	// Abort if root is NULL
-	if(NULL == root)
+	int value = 0;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_bool(
+		root,
+		path,
+		&value,
+		optional ? JAL_CFG_OPTIONAL : JAL_CFG_REQUIRED))
 	{
-		throw std::runtime_error("Null config root");
-	}
-
-	// Abort if path is NULL
-	if(NULL == path)
-	{
-		throw std::runtime_error("Null config setting path");
-	}
-
-	// Lookup the desired setting
-	config_setting_t *config_item = config_lookup(root, path);
-
-	// Optional item does not exist, do nothing, return
-	if(optional && NULL == config_item)
-	{
-		return;
-	}
-	// Required item does not exist, do nothing, return failure
-	else if(NULL == config_item)
-	{
-		throw std::runtime_error("Required config setting: " + std::string(path)
-			+ " not present in config file");
-	}
-
-	// We know the setting exists, now check if it also satisfies constraints with a more
-	// focused lookup.
-	int intSetting;
-	int lookupStatus = config_lookup_bool(root, path, &intSetting);
-	if(CONFIG_FALSE == lookupStatus)
-	{
-		// CONFIG_FALSE is returned either if the setting is not found or if it doesn't match
-		// type constraints. Since we know from above the setting exists, we know it didn't
-		// match one of [true|false]
 		throw std::runtime_error("Expected one of [true|false] for setting: "
 			+ std::string(path));
 	}
-
-	// If we get this far, the boolean setting exists and was valid, convert from the integer
-	// macro CONFIG_TRUE or CONFIG_FALSE to an appropriate boolean value
-
-	destination = (CONFIG_TRUE == intSetting);
+	destination = (CONFIG_TRUE == value);
 }
 
 static void handleStringConfigSetting(
-	config_t* root, // config root
+	config_setting_t* root, // config root
 	const char* path, // path to the config settings relative to the config root
 	const bool optional, // if false, generates an error if the setting is absent
 	std::string& destination) // reference to the string to update on success
 {
-	// Abort if root is NULL
-	if(NULL == root)
-	{
-		throw std::runtime_error("Null config root");
-	}
-
-	// Abort if path is NULL
-	if(NULL == path)
-	{
-		throw std::runtime_error("Null config setting path");
-	}
-
-	// Lookup the desired setting
-	config_setting_t *config_item = config_lookup(root, path);
-
-	// Optional item does not exist, do nothing, return
-	if(optional && NULL == config_item)
-	{
-		return;
-	}
-	// Required item does not exist, do nothing, return failure
-	else if(NULL == config_item)
-	{
-		throw std::runtime_error("Required config setting: " + std::string(path)
-			+ " not present in config file");
-	}
-
-	// Item exists, attempt parse
-	// DO NOT FREE stringSetting LIBCONFIG DOES THIS FOR US
-	const char* stringSetting = config_setting_get_string(config_item);
-
-	// This would be weird since we know the setting exists, but we'll check anyway
-	if(NULL == stringSetting)
+	// Defer to jal_config to extract a C string from the config
+	char* value = NULL;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
+		root,
+		path,
+		&value,
+		optional ? JAL_CFG_OPTIONAL : JAL_CFG_REQUIRED))
 	{
 		throw std::runtime_error("Failed to retrieve string for config setting: "
 			+ std::string(path));
 	}
-	destination = std::string(stringSetting);
+	destination = std::string(value);
+	free(value);
 }
 
 static void handleIntConfigSetting(
-	config_t* root, // config root
+	config_setting_t* root, // config root
 	const char* path, // path to the config setting relative to the config root
 	const bool optional, // if false, generates an error if the setting is absent
 	int& destination) // reference to the value to update on success
 {
-	// Abort if root is NULL
-	if(NULL == root)
+	if(JAL_CFG_SUCCESS != jal_config_lookup_int(
+		root,
+		path, 
+		&destination,
+		optional ? JAL_CFG_OPTIONAL : JAL_CFG_REQUIRED))
 	{
-		throw std::runtime_error("Null config root");
-	}
-
-	// Abort if path is NULL
-	if(NULL == path)
-	{
-		throw std::runtime_error("Null config setting path encountered parsing config file");
-	}
-
-	// Lookup the desired setting
-	config_setting_t *config_item = config_lookup(root, path);
-
-	// Optional item does not exist, do nothing, return
-	if(optional && NULL == config_item)
-	{
-		return;
-	}
-	// Required item does not exist, do nothing, throw
-	else if(NULL == config_item)
-	{
-		throw std::runtime_error("Required config setting: "
-			+ std::string(path) + " not found in config file");
-	}
-
-	// Item exists, attempt parse
-	if(CONFIG_FALSE == config_lookup_int(root, path, &destination))
-	{
-		// There are technically two ways this can fail - a type-mismatch and failure to
-		// find the setting specified by path. Since we already know the setting exists
-		// we can assume a failure to parse an int
-		throw std::runtime_error("Failed to parse config setting: " + std::string(path)
-			+ " Expects integer.");
+		throw std::runtime_error("Failed to retrieve int for config setting: "
+			+ std::string(path));
 	}
 }
 
 static void handleUIntConfigSetting(
-	config_t* root, // config root
+	config_setting_t* root, // config root
 	const char* path, // path to the config setting relative to the config root
 	const bool optional, // if false, generates an error if the setting is absent
 	unsigned int& destination) // reference to the value to update on success
@@ -233,7 +150,11 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		config_t config;
 		ConfigHandler()
 		{
-			config_init(&config);
+			if(JAL_CFG_SUCCESS != jal_config_init(&config))
+			{
+				std::string errMsg = "Failed to initialize config_t";
+				throw std::runtime_error(errMsg);
+			}
 		}
 
 		~ConfigHandler()
@@ -244,7 +165,7 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 
 	config_t* config = &(handler.config);
 
-	if(CONFIG_TRUE != config_read_file(config, configFilePath.c_str()))
+	if(JAL_CFG_SUCCESS != jal_config_read_file(config, configFilePath.c_str()))
 	{
 		std::string errMsg = "Failed to read config file at path: " + configFilePath
 			+ " with error at line [" + std::to_string(config_error_line(config)) + "]: "
@@ -252,17 +173,20 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		throw std::runtime_error(errMsg);
 	}
 
-	handleStringConfigSetting(config, "address", REQUIRED, ipAddr);
-	handleIntConfigSetting(config, "port", REQUIRED, listenPort);
-	handleIntConfigSetting(config, "session_limit", REQUIRED, sessionLimit);
+	// Extract root configuration setting
+	config_setting_t *root = config_root_setting(config);
+
+	handleStringConfigSetting(root, "address", REQUIRED, ipAddr);
+	handleIntConfigSetting(root, "port", REQUIRED, listenPort);
+	handleIntConfigSetting(root, "session_limit", REQUIRED, sessionLimit);
 	std::string modeString;
-	handleStringConfigSetting(config, "mode", REQUIRED, modeString);
+	handleStringConfigSetting(root, "mode", REQUIRED, modeString);
 	this->mode = modeTypeFromString(modeString);
-	handleStringConfigSetting(config, "db_root", REQUIRED, databasePath);
-	handleIntConfigSetting(config, "buffer_size", REQUIRED, bufferSize);
-	handleBoolConfigSetting(config, "enable_tls", REQUIRED, enableTls);
-	handleIntConfigSetting(config, "network_timeout", REQUIRED, networkTimeout);
-	handleUIntConfigSetting(config, "http_server_thread_pool_size",
+	handleStringConfigSetting(root, "db_root", REQUIRED, databasePath);
+	handleIntConfigSetting(root, "buffer_size", REQUIRED, bufferSize);
+	handleBoolConfigSetting(root, "enable_tls", REQUIRED, enableTls);
+	handleIntConfigSetting(root, "network_timeout", REQUIRED, networkTimeout);
+	handleUIntConfigSetting(root, "http_server_thread_pool_size",
 		REQUIRED, httpServerThreadPoolSize);
 	// Additional require httpServerThreadPoolSize > 0
 	if(httpServerThreadPoolSize < 1)
@@ -273,13 +197,13 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 
 	if(this->enableTls)
 	{
-		handleStringConfigSetting(config, "private_key", REQUIRED, tlsConfig.privateKey);
-		handleStringConfigSetting(config, "public_cert", REQUIRED, tlsConfig.publicCert);
-		handleStringConfigSetting(config, "trust_store", REQUIRED, tlsConfig.trustStore);
+		handleStringConfigSetting(root, "private_key", REQUIRED, tlsConfig.privateKey);
+		handleStringConfigSetting(root, "public_cert", REQUIRED, tlsConfig.publicCert);
+		handleStringConfigSetting(root, "trust_store", REQUIRED, tlsConfig.trustStore);
 	}
 
 	std::string digests;
-	handleStringConfigSetting(config, "digest_algorithms", OPTIONAL, digests);
+	handleStringConfigSetting(root, "digest_algorithms", OPTIONAL, digests);
 	if(!digests.empty())
 	{
 		this->setDigestAlgorithms(digests);
@@ -287,11 +211,59 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 
 	std::string dbTypeStr;
 	// Review note - do we want to have a default setting, or make this required?
-	handleStringConfigSetting(config, "database_type", OPTIONAL, dbTypeStr);
+	handleStringConfigSetting(root, "database_type", OPTIONAL, dbTypeStr);
 	if(!dbTypeStr.empty())
 	{
 		this->dbType = dbTypeFromString(dbTypeStr);
 	}
+
+	//Expands all file path config entries
+	if (!this->expandAllFilePaths())
+	{
+		throw std::runtime_error("Failed to resolve file path entry in config file");
+	}
+}
+
+bool SubscriberConfig::expandAllFilePaths()
+{
+	//Expands all filepaths
+	if(this->enableTls)
+	{
+		char *expanded_priv_key_path = jal_expand_path(tlsConfig.privateKey.c_str(), "private_key");
+		if (expanded_priv_key_path == NULL)
+		{
+			return false;
+		}
+
+		tlsConfig.privateKey = std::string(expanded_priv_key_path);
+		free(expanded_priv_key_path);
+
+		char *expanded_pub_cert_path = jal_expand_path(tlsConfig.publicCert.c_str(), "public_cert");
+		if (expanded_pub_cert_path == NULL)
+		{
+			return false;
+		}
+		tlsConfig.publicCert = std::string(expanded_pub_cert_path);
+		free(expanded_pub_cert_path);
+
+		char *expanded_truststore_path = jal_expand_path(tlsConfig.trustStore.c_str(), "trust_store");
+		if (expanded_truststore_path == NULL)
+		{
+			return false;
+		}
+		tlsConfig.trustStore = std::string(expanded_truststore_path);
+		free(expanded_truststore_path);
+	}
+
+	char *expanded_db_path = jal_expand_path(databasePath.c_str(), "db_root");
+	if (expanded_db_path == NULL)
+	{
+		return false;
+	}
+	databasePath = std::string(expanded_db_path);
+	free(expanded_db_path);
+
+	return true;
 }
 
 void SubscriberConfig::printConfiguration() const

@@ -1,7 +1,7 @@
 /**
  * @file jaln_tls.h This file declares functions related to tls
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,10 +36,12 @@ extern "C" {
  * Populates the private key and cert parameters within the jaln_context.
  * These are used by the JNL for TLS activation.
  *
+ * @cond Doxygen_Suppress  (#800 needed to suppress false positive doxygen warning on rhel9)
  * @param[in] ctx The jaln_context
  * @param[in] private_key The private key
  * @param[in] public_cert The public certificate
  * @param[in] peer_certs The peer certificates
+ * @endcond
  *
  * @return JAL_OK upon success or JAL_E_INVAL on error
  */

@@ -3,7 +3,7 @@
  *
  * Public functions for creating and configuring a jaln_context.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -67,13 +67,13 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx);
  * default TLS handler that checks that the certificate sent by the remote side
  * matches a known certificate.
  *
- * @param[in] jaln_ctx The jaln_ctx to register the TLS profile on.
+ * @param[in] ctx The jaln_ctx to register the TLS profile on.
  * @param[in] private_key The private key that should be used for TLS
  * @param[in] public_cert The public certificate for the private key
  * @param[in] peer_certs A directory containing certificates for remote peers.
  * @return JAL_OK, or an error code.
  */
-enum jal_status jaln_register_tls(jaln_context *jaln_ctx,
+enum jal_status jaln_register_tls(jaln_context *ctx,
 				  const char *private_key,
 				  const char *public_cert,
 				  const char *peer_certs);
@@ -266,7 +266,7 @@ void jaln_connection_destroy(struct jaln_connection **conn);
  * still connected. Otherwise, the internal resources can never be reclaimed.
  *
  * @param[in] sess The session containg the connection and subscriber information
- *  
+ *
  * @return JAL_OK if the session is active, or an error if the connection was
  * disconnected.
  */
@@ -377,6 +377,7 @@ enum jal_status jaln_finish(jaln_session *sess);
 /**
  * Set network timeout value.
  *
+ * @param[in] ctx The jaln context.
  * @param[in] timeout Network timeout in minutes.
  */
 void setNetworkTimeout(jaln_context *ctx, const long long int timeout);

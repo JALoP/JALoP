@@ -3,7 +3,7 @@
  * declarations for internal library functions related to creating JALoP
  * messages
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -70,7 +70,7 @@ void jaln_response_header_info_destroy(struct jaln_response_header_info **info);
  * @param[in] nonce The nonce to resume
  * @param[in] offset The offset in the journal record to resume data from.
  * @param[out] msg_out This will contain the contents of the initialize message.
- * @param[out] msg_len_out The length of the initialize message
+ * @param[out] msg_out_len The length of the initialize message
  *
  * @return JAL_E_INVAL if there is something wrong with the parameters, or
  * JAL_OK on success
@@ -92,9 +92,8 @@ enum jal_status jaln_create_sync_msg(const char *nonce, char **msg, uint64_t *ms
 /**
  * Helper function to create a 'subscribe' message
  *
- * @param[in] nonce The last nonce to send
  * @param[out] msg_out This will contain the contents of the initialize message.
- * @param[out] msg_len_out The length of the initialize message
+ * @param[out] msg_out_len The length of the initialize message
  *
  * @return JAL_E_INVAL if there is something wrong with the parameters, or
  * JAL_OK on success
@@ -323,13 +322,13 @@ enum jal_status jaln_parse_error_messages(char *content, size_t len, struct jaln
  * jaln_digest_info to a string for sending as part of a digest message.
  *
  * @param[in] di the digest info object.
- * @param return the length of the resulting string, or 0 if an error occurred.
+ * @return the length of the resulting string, or 0 if an error occurred.
  */
 uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
 
 /**
  * Helper function to append a jaln_digest_info as line for a digest message.
- * This works similar to strcat, and appends the string 'dgst=nonce\r\n', i.e.
+ * This works similar to strcat, and appends the string \c "dgst=nonce\r\n", i.e.
  * the digest value (as a hex string with no leading 0x) followed by the equals
  * symbol ('=') followed by the nonce, and finished with a carriage return
  * and line feed.
@@ -367,13 +366,13 @@ enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, uint6
  * jaln_digest_resp_info to a string for sending as part of a digest message.
  *
  * @param[in] di the digest_resp_info object.
- * @param return the length of the resulting string, or 0 if an error occurred.
+ * @return the length of the resulting string, or 0 if an error occurred.
  */
 uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di);
 
 /**
  * Helper function to append a jaln_digest_resp_info as line for a digest message.
- * This works similar to strcat, and appends the string '<status>=nonce\r\n', i.e.
+ * This works similar to strcat, and appends the string \c "<status>=nonce\r\n", i.e.
  * the status (confirmed, invalid, or unknown) followed by the equals
  * symbol ('=') followed by the nonce, and finished with a carriage return
  * and line feed.

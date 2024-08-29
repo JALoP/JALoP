@@ -32,9 +32,22 @@
 #include "JalSubUtils.hpp"
 #include "JalSubConfig.hpp"
 
+// The return type of several libmicrohttpd functions changes between
+// RHEL8 and RHEL9, use a typedef to handle this variance in one place
+//libmicrohttpd version 0.9.72
+#define MHD_VERSION_0972 0x00097200
+
+#if (MHD_VERSION >= MHD_VERSION_0972)
+typedef MHD_Result MHD_Return_Type;
+#else
+typedef int MHD_Return_Type;
+#endif
+
 // Filter out all messages that aren't from one of our expected hosts
 // Invoked by the httpd server
-static int accept_func(
+// The return type of this callback function was changed as of version 0.9.72
+// Modify our declaration to make gcc happy depending on the veresion
+static MHD_Return_Type accept_func(
 	void* cls,
 	const struct sockaddr* addr,
 	socklen_t addrlen)
@@ -214,7 +227,7 @@ static bool validate_client_certificate (struct MHD_Connection *conn, bool debug
 		return false;
 	}
 
-	
+
 	// Query libmicrohttpd for the address associated with the client
 	struct sockaddr** client_addr = (struct sockaddr**)MHD_get_connection_info (conn, MHD_CONNECTION_INFO_CLIENT_ADDRESS);
 	if(NULL == client_addr || NULL == *client_addr)
@@ -285,7 +298,7 @@ void* request_completed(
 	SubscriberCallbacks callbacks = ((ResponseFuncSettings*)cls)->callbacks;
 
 	Message* messagePtr = (Message*)(*con_cls);
-	
+
 	// If this exchange has been completed because of a timeout,
 	// notify the message class to take any necessary steps
 	if(MHD_REQUEST_TERMINATED_TIMEOUT_REACHED == toe)
@@ -299,7 +312,7 @@ void* request_completed(
 	return NULL;
 }
 
-int header_func(
+static MHD_Return_Type header_func(
 	void* cls,
 	enum MHD_ValueKind kind,
 	const char* key,
@@ -315,7 +328,7 @@ int header_func(
 }
 
 // Instructions for the httpd server on message receive
-static int response_func(
+static MHD_Return_Type response_func(
 	void *cls,
 	struct MHD_Connection *conn,
 	const char* url,
@@ -376,6 +389,7 @@ static int response_func(
 
 		// Subsequent messages in the same transaction have the same headers, process the
 		// headers only on the first one
+
 		MHD_get_connection_values(conn, MHD_HEADER_KIND, &header_func, messagePtr);
 
 		if(debug)
@@ -542,7 +556,6 @@ LibMicroHttpdServer::LibMicroHttpdServer(
 			throw std::runtime_error("Failed to load trust store file: "
 				+ config.tlsConfig.trustStore);
 		}
-
 
 		daemon = MHD_start_daemon(
 			MHD_USE_SSL | MHD_USE_POLL | MHD_USE_INTERNAL_POLLING_THREAD,

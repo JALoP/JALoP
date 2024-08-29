@@ -1,7 +1,7 @@
 /**
  * @file jaln_publisher_callbacks.h This file declares jaln_publisher_callbacks
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -80,7 +80,7 @@ struct jaln_publisher_callbacks {
 	 *
 	 * @param[in] session The jaln_session.
 	 * @param[in] ch_info Information about the connection
-	 * @param[in] type The type of records the remote is subscribing 
+	 * @param[in] type The type of records the remote is subscribing
 	 * to (journal, audit, or log).
 	 * @param[in] mode The mode with which to publish record (archive or live)
 	 * @param[in] headers additional mime headers sent as part of this message
@@ -185,10 +185,10 @@ struct jaln_publisher_callbacks {
 	 * @param[in] type The type of record (journal, audit, or log)
 	 * @param[in] nonce The nonce of a particular record
 	 * @param[in] local_digest The digest, as calculated by the JNL when the
-	 * record was sent. If the nonce of this record has not been seen, or 
+	 * record was sent. If the nonce of this record has not been seen, or
 	 * was already flushed from memory, \p local_digest will be NULL.
 	 * @param[in] local_size The size, in bytes, of the local_digest. If
-	 * the nonce of this record has not been seen, or was already flushed 
+	 * the nonce of this record has not been seen, or was already flushed
 	 * from memory, \p local_size will be 0.
 	 * @param[in] peer_digest The digest, as calculated by the remote peer.
 	 * @param[in] peer_size The size, in bytes, of #peer_digest
@@ -217,7 +217,7 @@ struct jaln_publisher_callbacks *jaln_publisher_callbacks_create();
 /**
  * Destroy a jaln_publisher_callbacks structure
  *
- * @param[in,out] callbacks The structure to destroy. This will 
+ * @param[in,out] callbacks The structure to destroy. This will
  *       be set to NULL.
  */
 void jaln_publisher_callbacks_destroy(struct jaln_publisher_callbacks **callbacks);

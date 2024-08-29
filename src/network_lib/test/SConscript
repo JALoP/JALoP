@@ -7,7 +7,8 @@ tests = []
 env = env.Clone()
 
 # The test code trigger warnings we'd just assume ignore.
-ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code '
+# -fcommon needed to restore original gcc behavior in rhel9 to prevent multiple definition linker errors
+ccflags = ' -fcommon -Wno-format-nonliteral '
 env.Append(CCFLAGS=ccflags.split())
 
 ch_info_obj = net_lib_env.SharedObject("../src/jaln_channel_info.c")

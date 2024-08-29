@@ -42,7 +42,7 @@ struct SubscriberConfig
 	unsigned int httpServerThreadPoolSize;
 	std::vector<std::string> allowedRecordTypes;
 	// Default to supporting only the required SHA_256 digest algorithm
-	std::vector<enum jal_digest_algorithm> allowedConfigureDigest = 
+	std::vector<enum jal_digest_algorithm> allowedConfigureDigest =
 		{ JAL_DIGEST_ALGORITHM_DEFAULT };
 	std::string databasePath;
 	ModeType mode;
@@ -51,10 +51,10 @@ struct SubscriberConfig
 	DBType dbType = DBType::BDB;
 	// Default to listen on all addresses
 	std::string ipAddr = "0.0.0.0";
-	
+
 	// CLI Only Settings
 	bool debug;
-	
+
 	SubscriberConfig(std::string configFilePath);
 
 	void printConfiguration() const;
@@ -66,6 +66,10 @@ struct SubscriberConfig
 	// in the context of the library
 	protected:
 	SubscriberConfig() {};
+
+	private:
+	//This method expands all relative paths and ~/ in all file path config entries
+	bool expandAllFilePaths();
 };
 
 #endif

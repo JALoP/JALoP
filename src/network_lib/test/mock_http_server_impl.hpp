@@ -2,7 +2,7 @@
  * @file mock_http_server_impl.hpp This file contains a mocked-out implementation
  * of the HttpServer for use in testing
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -48,11 +48,11 @@ class MockHttpServer : public HttpServer
 	// session uuid in the Message
 	// getDigestAlgorithm
 	//   Retrieves the digest algorithm for this session
-	// getPublisherId 
+	// getPublisherId
 	//   Retrieves the publisher ID for this session
 	// getReceiveMode
 	//   Retrives the mode for this session
-	//   
+	//
 	// notifyTimeout
 	//   Informs the Subscriber that a Message timed out during transmission
 	public:

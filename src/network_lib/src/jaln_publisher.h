@@ -2,7 +2,7 @@
  * @file jaln_publisher.h This file contains function
  * declarations related to publishing records to a remote.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

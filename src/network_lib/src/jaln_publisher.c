@@ -2,7 +2,7 @@
  * @file jaln_publisher.c  This file contains function
  * definitions related to the jal publisher.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

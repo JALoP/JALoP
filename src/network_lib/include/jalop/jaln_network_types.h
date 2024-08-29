@@ -3,7 +3,7 @@
  *
  * Public types of the JALoP Network Library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -37,8 +37,10 @@ extern "C" {
 #include <jalop/jal_status.h>
 #include <stdint.h>
 
-/** Integer version of JALoP network protocol */
+/** Integer version of JALoP V1 network protocol */
 #define JALN_JALOP_VERSION_ONE 1
+
+/** Integer version of JALoP V2 network protocol */
 #define JALN_JALOP_VERSION_TWO 2
 
 /**
@@ -69,10 +71,10 @@ struct jaln_mime_header {
 
 /**
  * Create a jaln_mime_header list.
- *  
+ *
  * @param[in,out] headers The structure will contain the list of
  *       headers. This will be set to NULL.
- *  
+ *
  * @return a newly created jaln_mime_header_list
  */
 struct jaln_mime_header *jaln_mime_header_create(struct jaln_mime_header **headers);

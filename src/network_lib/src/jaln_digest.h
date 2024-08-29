@@ -2,7 +2,7 @@
  * @file jaln_digest.h This file contains function declarations for code related
  * to the digest used during JALoP communications.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

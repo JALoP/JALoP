@@ -4,7 +4,7 @@
  * structure. The jaln_session tracks the internal state for a peer that is
  * receiving jal records.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

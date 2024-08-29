@@ -2,7 +2,7 @@
  * @file jaln_strings.h This file contains various strings used by the network
  * library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

@@ -1,7 +1,7 @@
 /**
  * @file test_jal_subscribe.cpp This file contains tests for the JalSubscriber.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

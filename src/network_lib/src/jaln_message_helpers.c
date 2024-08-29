@@ -3,7 +3,7 @@
  * definitions for internal library functions related to creating JALoP
  * messages
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -787,7 +787,7 @@ enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_reco
 	char *pub_id_str = jal_malloc(prefix_len + pub_id_size);
 	memcpy(pub_id_str, JALN_HDRS_PUBLISHER_ID JALN_COLON_SPACE, prefix_len);
 	memcpy(pub_id_str + prefix_len, ctx->pub_id, pub_id_size);
-	
+
 	char *dc_config_str = NULL;
 	char *dgst_list_str = NULL;
 	char *cmp_list_str = NULL;

@@ -3,7 +3,7 @@
  * declarations for internal library functions related to a jaln_session
  * structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -174,7 +174,9 @@ void jaln_pub_data_destroy(struct jaln_pub_data **pub_data);
 /**
  * Cache the calculations of a digest to be sent at a later time.
  *
- * @param[in] session The session that the digests are associated with.
+ * @param[in] sess The session that the digests are associated with.
+
+ * @param[in] dgst_buf The digest buffer
  * @param[in] nonce The nonce of the record
  * @param[in] dgst_len The length of the digest (in bytes).
  *
@@ -188,10 +190,15 @@ enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess,
 /**
  * Flag this session as 'errored'
  *
- * @param[in] ctx The jaln_session that encountered an error;
+ * @param[in] sess The jaln_session that encountered an error;
  */
 void jaln_session_set_errored_no_lock(jaln_session *sess);
 
+/**
+ * Flag this session as 'errored'
+ *
+ * @param[in] sess The jaln_session that encountered an error;
+ */
 void jaln_session_set_errored(jaln_session *sess);
 
 /**

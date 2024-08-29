@@ -3,7 +3,7 @@
  * declarations for internal library functions related to a
  * jaln_record_info structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

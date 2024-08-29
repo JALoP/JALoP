@@ -3,7 +3,7 @@
  * implementation of the payload feeder for sending records from a publisher
  * to a subscriber.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -120,7 +120,7 @@ void jaln_pub_feeder_calculate_size(jaln_session *sess);
  * @param[in,out] cnt The value to add to.
  * @param[in] to_add The value to add
  *
- * @return 
+ * @return
  *   - axl_true if the addition was performed successfull
  *   - axl_false if the addtion would result in integer overflow.
  */
@@ -142,8 +142,6 @@ void jaln_pub_feeder_on_finished(jaln_session *sess);
  * Helper function to start the next record.
  *
  * @param[in] sess The session to operate on.
- * @param[in] journal_offset The offset where to begin sending journal data
- * from. For audit and log data, this is ignored.
  * @param[in] rec_info The record info for the record to be sent.
  *
  * @return JAL_OK on success, or an error.
@@ -166,7 +164,7 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
  * source buffer to fill the destination buffer AND \p more is false.
  *
  * @param[in] dst The destination buffer.
- * @param[in] dst_sz The size of the destination buffer
+ * @param[in] dst_size The size of the destination buffer
  * @param[in, out] pdst_off The offset into the destination of where to copy
  * to.
  * @param[in] src The source buffer.

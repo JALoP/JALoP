@@ -3,7 +3,7 @@
  * implementation of a payload feeder for sending records from a publisher
  * to a subscriber.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -143,7 +143,7 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 		}
 		if (pd->payload_sz == pd->payload_off) {
 			pd->finished_payload = axl_true;
-			size_t dgst_len = sess->dgst->len;
+			unsigned int dgst_len = sess->dgst->len;
 			if (JAL_OK != sess->dgst->final(pd->dgst_inst, pd->dgst, &dgst_len)) {
 				curl_ret = CURL_READFUNC_ABORT;
 				goto out;

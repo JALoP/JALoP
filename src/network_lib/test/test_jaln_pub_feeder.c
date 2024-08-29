@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_pub_feeder.c This file contains tests for jaln_pub_feeder.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -219,7 +219,7 @@ void teardown()
 
 void test_pub_feeder_fill_buffer()
 {
-	void *buffer = jal_malloc(BUF_SIZE);
+	void *buffer = jal_calloc(1, BUF_SIZE);
 
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
 
@@ -234,7 +234,7 @@ void test_pub_feeder_fill_buffer()
 void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
 {
 
-	void *buffer = jal_malloc(BUF_SIZE);
+	void *buffer = jal_calloc(1, BUF_SIZE);
 
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
 	sess->pub_data->payload_off = TOTAL_SZ - 5;

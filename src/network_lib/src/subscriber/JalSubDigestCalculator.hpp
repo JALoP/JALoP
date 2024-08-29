@@ -103,7 +103,7 @@ class DigestCalculator
 
 	std::string finalizeDigest()
 	{
-		size_t digestLen = digestContext->len;
+		unsigned int digestLen = digestContext->len;
 		uint8_t* digest = (uint8_t*)malloc(digestLen);
 		enum jal_status ret = digestContext->final(instance, digest, &digestLen);
 		if(JAL_OK != ret)

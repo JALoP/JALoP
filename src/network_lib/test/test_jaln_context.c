@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_context.c This file contains tests for jaln_context.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
