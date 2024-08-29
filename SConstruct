@@ -61,7 +61,7 @@ packages_at_least = {
 
 # flags are shared by both debug and release builds
 default_ccflags = ' -Wall -W -Wundef -Wshadow -Wmissing-noreturn -Wformat=2 -Wmissing-format-attribute '
-default_ccflags += ' -Wextra -Wno-unreachable-code -fexceptions'
+default_ccflags += ' -Wextra -Werror -fexceptions'
 default_ccflags += ' -DSHARED -D__EXTENSIONS__ -D_GNU_SOURCE -DHAVE_VA_COPY '
 default_cflags = ' -std=gnu99 '
 
@@ -77,7 +77,9 @@ profiling_ldflags = profiling_ccflags
 
 stack_protector_ccflags = '-fstack-protector --param=ssp-buffer-size=4'.split()
 
-extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -g -O3'.split()
+harden_ldflags = '-pie -Wl,-z,relro,-z,now '
+extra_release_ccflags = '-DNDEBUG -D_FORTIFY_SOURCE=2 -fPIC -O3'.split()
+extra_release_ldflags = '-s '
 debug_env = Environment(ENV=os.environ, tools=['default','doxygen', 'test_dept', 'gcc', 'g++'],
 		parse_flags= default_ccflags,
 		toolpath=['./3rd-party/site_scons/site_tools/', './build-scripts/site_tools/'])
@@ -238,7 +240,7 @@ all_tests = debug_env.Alias('tests')
 release_env = debug_env.Clone()
 
 # add appropriate flags for debug/release
-release_env.Prepend(CCFLAGS=extra_release_ccflags)
+release_env.Prepend(CCFLAGS=extra_release_ccflags, LINKFLAGS=harden_ldflags + extra_release_ldflags)
 debug_env.Prepend(CCFLAGS=extra_debug_ccflags)
 
 if debug_env['CC'] == 'gcc':

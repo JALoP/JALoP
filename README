@@ -44,6 +44,18 @@ Later versions of Python should work as well, but were not tested.
 Note: The following commands assume your system directs "scons" to scons version 3.6.
 On RHEL7, it may be necessary to invoke "scons-3.6" if multiple versions exist
 
+Building requires a C++ compiler with full C++17 capabilities.
+For CentOS/RHEL7, use of a devtoolset can provide a capable compiler:
+ - Add the repository
+  - For CentOS 7:
+    - # yum install centos-release-scl
+  - For RHEL 7:
+    - # subscription-manager repos --enable rhel-7-server-devtools-rpms
+ - Install GCC 7 toolset
+  - # yum install devtoolset-7
+ - Launch a new shell using Devtoolset 7
+  - scl enable devtoolset-7 $SHELL
+
 To build, simply run 'scons' within the top level directory:
 
 $ scons
