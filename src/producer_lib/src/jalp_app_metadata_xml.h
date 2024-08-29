@@ -2,7 +2,7 @@
  * @file jalp_app_metadata_xml.h This file defines functions to deal with
  * converting jalp_app_metadata to a DOMDocument.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -56,7 +56,6 @@ enum jal_status jalp_app_metadata_to_elem(
 		xmlDocPtr doc,
 		xmlNodePtr *elem);
 
-/** @} */
 #ifdef __cplusplus
 }
 #endif

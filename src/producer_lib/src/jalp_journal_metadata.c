@@ -2,7 +2,7 @@
  * @file jalp_journal_metadata.c This file contains functions
  * for jalp_journal_metadata
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

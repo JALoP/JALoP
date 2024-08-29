@@ -2,7 +2,7 @@
  * @file jalp_syslog_metadata.c This file contains constructors
  * and destructors for the syslog_metadata structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

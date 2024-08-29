@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_context_crypto.c This file contains tests for jalp_context_crypto functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -32,18 +32,18 @@
 #include "jalp_context_internal.h"
 
 // Path to the test rsa keys to use.
-#define TEST_RSA_KEY  TEST_INPUT_ROOT "rsa_key"
-#define TEST_RSA_KEY_WITH_PASS  TEST_INPUT_ROOT "rsa_key_with_pass"
+#define TEST_RSA_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/rsa_key"
+#define TEST_RSA_KEY_WITH_PASS  TEST_INPUT_ROOT "TLS_Unit_Test_Files/rsa_key_with_pass"
 
 // Path to the test certs to use.
-#define TEST_CERT  TEST_INPUT_ROOT "cert"
-#define TEST_CERT_AND_KEY  TEST_INPUT_ROOT "cert_and_key"
-#define TEST_CERT_AND_KEY_WITH_PASS  TEST_INPUT_ROOT "cert_and_key_with_pass"
+#define TEST_CERT  TEST_INPUT_ROOT "TLS_Unit_Test_Files/cert"
+#define TEST_CERT_AND_KEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/cert_and_key"
+#define TEST_CERT_AND_KEY_WITH_PASS  TEST_INPUT_ROOT "TLS_Unit_Test_Files/cert_and_key_with_pass"
 
 // Path to a file that is not a key to use for negative testing.
 // This file will definitely exist, so we will use it as a file
 // that is not a key.
-#define TEST_NONKEY  TEST_INPUT_ROOT "README_keys"
+#define TEST_NONKEY  TEST_INPUT_ROOT "TLS_Unit_Test_Files/README_keys"
 
 // Password for the key that has a password.
 #define TEST_KEY_PASSWORD "pass"

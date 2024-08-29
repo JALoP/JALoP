@@ -2,7 +2,7 @@
  * @file jalp_init.c This file defines the Producer Library
  * init and shutdown functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -35,10 +35,18 @@
 
 #include <jalop/jal_status.h>
 #include <jalop/jalp_context.h>
+#define OPENSSL_V30_VER 0x3000000fL
+#define OPENSSL_V11_VER 0x1010000fL
 
 enum jal_status jalp_init()
 {
+	//JAL-897 - OPENSSL_init_ssl() replaces SSL_library_init() in openssl v1.1 and higher
+	#if OPENSSL_VERSION_NUMBER < OPENSSL_V11_VER
 	SSL_library_init();
+	#else
+	OPENSSL_init_ssl(0, NULL);
+	#endif
+
 	xmlSecInit();
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
 	xmlSecCryptoAppInit(NULL);
@@ -50,8 +58,13 @@ enum jal_status jalp_init()
 
 void jalp_shutdown()
 {
+	//JAL-897 - According to the openssl 3.0 change log (https://www.openssl.org/new/cl30.txt),
+	//the following cleanup routines are deprecated in openssl 3.0.
+	#if OPENSSL_VERSION_NUMBER < OPENSSL_V30_VER
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
+	#endif
+
 	xmlSecCryptoShutdown();
 	xmlSecCryptoAppShutdown();
 	xmlSecShutdown();

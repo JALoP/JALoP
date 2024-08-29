@@ -2,7 +2,7 @@
  * @file jalp_stack_frame_xml.c This file defines functions to deal with
  * converting stack frame structures to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -45,18 +45,15 @@
 
 enum jal_status jalp_stack_frame_to_elem(
 		const struct jalp_stack_frame *stack_frame,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem)
 {
-	if (!stack_frame || !doc || *new_elem) {
+	if (!stack_frame || !parent || *new_elem) {
 		return JAL_E_XML_CONVERSION;
 	}
-	xmlChar *namespace_uri = (xmlChar *)JAL_APP_META_TYPES_NAMESPACE_URI;
-	xmlNodePtr stack_frame_element = xmlNewDocNode(doc, NULL,
+	xmlNodePtr stack_frame_element = xmlNewChild(parent, NULL,
 							(xmlChar *)JALP_XML_STACK_FRAME,
 							NULL);
-	xmlNsPtr ns = xmlNewNs(stack_frame_element, namespace_uri, NULL);
-	xmlSetNs(stack_frame_element, ns);
 
 	if (stack_frame->caller_name) {
 		xmlNewChild(stack_frame_element, NULL,

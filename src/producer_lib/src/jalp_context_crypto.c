@@ -2,7 +2,7 @@
  * @file jalp_context_crypto.c This file defines the JALoP context crypto
  * functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -43,7 +43,7 @@ enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
 	}
 
 	FILE *fp;
-	RSA *key;
+	EVP_PKEY *key;
 
 	if (ctx->signing_key) {
 		return JAL_E_EXISTS;
@@ -52,7 +52,7 @@ enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
 	if (!fp) {
 		return JAL_E_FILE_OPEN;
 	}
-	key = PEM_read_RSAPrivateKey(fp, NULL, cb, NULL);
+	key = PEM_read_PrivateKey(fp, NULL, cb, NULL);
 	fclose(fp);
 	if (!key) {
 		return JAL_E_READ_PRIVKEY;

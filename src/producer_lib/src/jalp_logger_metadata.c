@@ -2,7 +2,7 @@
  * @file jalp_logger_metadata.c This file contains functions related to
  * the jalp_logger_metadata struct.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

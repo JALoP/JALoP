@@ -2,7 +2,7 @@
  * @file jalp_content_type.c This file defines functions to deal adding
  * "content-type" information.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

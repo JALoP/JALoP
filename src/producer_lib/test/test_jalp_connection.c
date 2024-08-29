@@ -2,7 +2,7 @@
  * @file test_jalp_connection.c This file contains tests for helper functions related to sending DATA
  * to the JAL Local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

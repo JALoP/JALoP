@@ -2,7 +2,7 @@
  * @file jalp_syslog_metadata_xml.h This file defines functions to deal with
  * converting log severity metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -41,9 +41,9 @@
  * Convert a jalp_syslog_metadata struct to a xmlDocPtr element
  * for use with the libxml2 library.
  *
- * @param[in] syslogmeta The jalp_syslog_metadata struct to convert.
+ * @param[in] syslog The jalp_syslog_metadata struct to convert.
  * @param[in] ctx The JALP context.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from.
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr as a child of.
  * Maintains the same namespace.
  * @param[out] new_elem xmlNodePtr that holds the newly created element.
  *
@@ -52,7 +52,7 @@
 enum jal_status jalp_syslog_metadata_to_elem(
 		const struct jalp_syslog_metadata *syslog,
 		const struct jalp_context_t *ctx,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem);
 
 #endif //_JALP_LOG_SEVERITY_XML_H_

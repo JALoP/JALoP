@@ -2,7 +2,7 @@
  * @file jalp_stack_frame_xml.h This file defines functions to deal with
  * converting jalp_stack_frame to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -38,24 +38,24 @@
  * Convert a single jalp_stack_frame struct to a DOMDocument element.
  *
  * regardless of the number of elements in the list pointed to by
- * \pstack_frame, this function will only create the XML for a  single stack
+ * \p stack_frame, this function will only create the XML for a  single stack
  * frame. To generate the output for the complete list, you must iterate over
- * the list pointed to by \pstack_frame and call jalp_stack_frame_to_elem for
- * each element. On success, \pnew_elem will be set to the newly created 
+ * the list pointed to by \p stack_frame and call jalp_stack_frame_to_elem for
+ * each element. On success, \p new_elem will be set to the newly created
  * DOMElement and JAL_OK is returned.
  *
  * @param[in] stack_frame The jalp_stack_frame struct to convert.
- * @param[in] doc The DOMDocument to create the DOMElement from.
+ * @param[in] parent The xmlNodePtr to create the new node as a child of
  * @param[out] new_elem An address that will get set to a newly created element.
- *             If \p*new_elem is non-null, it is treated as an error and 
+ *             If \p *new_elem is non-null, it is treated as an error and
  *             JAL_E_XML_CONVERSION is returned
- * @return 
+ * @return
  *  - JAL_OK on success
  *  - JAL_E_XML_CONVERSION if an error occurs
  */
 enum jal_status jalp_stack_frame_to_elem(
 		const struct jalp_stack_frame *stack_frame,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem);
 
 #endif //_JALP_STACK_FRAME_XML_H_

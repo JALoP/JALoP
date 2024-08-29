@@ -2,7 +2,7 @@
  * @file jalp_logger_metadata_xml.h This file defines functions to handle
  * converting logger metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -43,17 +43,17 @@
  *
  * @param[in] logmeta The jalp_logger_metadata struct to convert.
  * @param[in] ctx The JALP context.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from.
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr as a child of.
  * Maintains the same namespace.
  * @param[out] new_elem The xmlNodePtr that holds the new element.
- * 
+ *
  * @return JAL_OK on success, JAL_E_INVAL_* for any invalid structs,
  * and JAL_E_XML_CONVERSION otherwise.
  */
 enum jal_status jalp_logger_metadata_to_elem(
 		const struct jalp_logger_metadata *logmeta,
 		const struct jalp_context_t *ctx,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem);
 
 

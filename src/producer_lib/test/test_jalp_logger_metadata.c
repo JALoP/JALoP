@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_logger_metadata.c This file contains tests for jalp_logger_metadata functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

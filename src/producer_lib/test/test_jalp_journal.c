@@ -2,7 +2,7 @@
  * @file test_jalp_journal.c This file contains functions to test
  * jalp_journal_* functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -68,6 +68,7 @@ const char* EVENT_ID = "foo-123";
 // Password for the key that has a password.
 #define TEST_KEY_PASSWORD "pass"
 #define BUFFER "lalalalala"
+#define OPENSSL_V11_VER 0x1010000fL
 
 int ctx_is_null;
 int message_type_wrong;
@@ -104,7 +105,7 @@ void setup()
 	app_meta->event_id = jal_strdup(EVENT_ID);
 
 	ctx = jalp_context_create();
-	struct jal_digest_ctx *dgst_ctx = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	jalp_context_set_digest_callbacks(ctx, dgst_ctx);
 	jal_digest_ctx_destroy(&dgst_ctx);
 
@@ -122,8 +123,14 @@ void setup()
 	fd_is_set = 0;
 	expected_data_len = 0;
 	expected_meta_len = 0;
-	
+
+	//JAL-897 - OPENSSL_init_ssl() replaces SSL_library_init() in openssl v1.1 and higher
+	#if OPENSSL_VERSION_NUMBER < OPENSSL_V11_VER
 	SSL_library_init();
+	#else
+	OPENSSL_init_ssl(0, NULL);
+	#endif
+
 	xmlSecInit();
 
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");

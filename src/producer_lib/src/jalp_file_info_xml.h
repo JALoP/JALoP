@@ -2,7 +2,7 @@
  * @file jalp_file_info_xml.h This file defines functions to deal with
  * converting the jalp_file_info struct to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -45,16 +45,15 @@ extern "C" {
  * for use with the libxml2 library.
  *
  * @param[in] file_info The jalp_file_info struct to convert.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from. Maintains the same namespace
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr as a child of. Maintains the same namespace
  * @param[out] elem A pointer to hold the created DOMElement.
  * @return JAL_OK on success, JAL_E_XML_CONVERSION on failure.
  */
 enum jal_status jalp_file_info_to_elem(
 		const struct jalp_file_info * file_info,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *elem);
 
-/** @} */
 #ifdef __cplusplus
 }
 #endif

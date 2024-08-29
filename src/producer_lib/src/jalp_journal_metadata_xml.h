@@ -2,7 +2,7 @@
  * @file jalp_journal_metadata_xml.h This file defines functions to handle
  * converting journal metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -40,16 +40,16 @@
  * for use with the libxml2 library.
  *
  * @param[in] journal The jalp_journal_metadata struct to convert.
- * @param[in] doc The xmlDocPtr to create the xmlNodePtr from.
+ * @param[in] parent The xmlNodePtr to create the xmlNodePtr under.
  * Maintains the same namespace.
  * @param[out] new_elem The xmlNodePtr that holds the new element.
  *
- * @return JAL_OK on success, JAL_E_INVAL_* for invalid structs, 
+ * @return JAL_OK on success, JAL_E_INVAL_* for invalid structs,
  * and JAL_E_XML_CONVERSION otherwise.
  */
 enum jal_status jalp_journal_metadata_to_elem(
 		const struct jalp_journal_metadata *journal,
-		xmlDocPtr doc,
+		xmlNodePtr parent,
 		xmlNodePtr *new_elem);
 
 #endif //_JALP_JOURNAL_METADATA_XML_H_

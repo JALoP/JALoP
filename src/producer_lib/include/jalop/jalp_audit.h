@@ -2,7 +2,7 @@
  * @file jalp_audit.h This file defines the public API that may interest a
  * program sending JALoP Audit Format (JAF) audit records to the Local Store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -78,6 +78,15 @@ enum jal_status jalp_audit(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
 		const uint8_t *audit_buffer,
 		const size_t audit_buffer_size);
+
+/**
+ * Trap XML error output to the console
+ *
+ * @param[in] ctx The context for handling the error
+ * @param[in] msg The error template
+ * @param[in] ... varargs parameters
+ */
+void xmlErrHandler(void *ctx, const char *msg, ...);
 
 /** @} */
 #ifdef __cplusplus

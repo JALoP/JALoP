@@ -2,7 +2,7 @@
  * @file jalp_context.c This file defines functions for dealing
  * with the jalp_context struct.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -73,10 +73,10 @@ void jalp_context_destroy(jalp_context **ctx)
 	free((*ctx)->path);
 	free((*ctx)->hostname);
 	free((*ctx)->app_name);
-	RSA_free((*ctx)->signing_key);
+	EVP_PKEY_free((*ctx)->signing_key);
 	X509_free((*ctx)->signing_cert);
 	free((*ctx)->schema_root);
-	xmlSchemaFree((*ctx)->jaf_schema);
+	xmlSchemaFreeValidCtxt((*ctx)->jaf_validCtxt);
 	free(*ctx);
 	*ctx = NULL;
 }
@@ -103,6 +103,8 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 	if (schema_root) {
 		ctx->schema_root = jal_strdup(schema_root);
 	} else {
+		//Default schema root is needed even if not used since the datataps
+		//can pass in NULL for this
 		ctx->schema_root = jal_strdup(JALP_SCHEMA_ROOT);
 	}
 
@@ -146,8 +148,9 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 #endif /* JALP_HAVE_PROCFS */
 		ctx->app_name = abspath;
 
-		ctx->jaf_schema = NULL;
 	}
+	ctx->jaf_validCtxt = NULL;
+	ctx->flags = 0;
 
 	return JAL_OK;
 }
@@ -215,7 +218,7 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 
 
 	if(!ctx->digest_ctx) {
-		ctx->digest_ctx = jal_digest_ctx_create();
+		ctx->digest_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	}
 
 	free(ctx->digest_ctx->algorithm_uri);
@@ -224,3 +227,26 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 
 	return JAL_OK;
 }
+
+void jalp_context_set_flag(jalp_context *ctx, uint8_t flag)
+{
+	ctx->flags |= flag;
+}
+
+void jalp_context_reset_flag(jalp_context *ctx, uint8_t flag)
+{
+	ctx->flags &= ~flag;
+}
+
+bool jalp_context_flag_isSet(jalp_context *ctx, uint8_t flag)
+{
+	return ctx->flags & flag;
+}
+
+uint8_t jalp_context_get_flags(jalp_context *ctx)
+{
+    return ctx->flags;
+}
+
+
+

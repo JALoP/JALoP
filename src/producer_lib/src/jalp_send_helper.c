@@ -1,7 +1,7 @@
 /**
  * @file jalp_send_helper.c This file contains functions for sending an xml buffer.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -50,7 +50,7 @@ enum jal_status jalp_send_buffer_xml(jalp_context *ctx,
 	xmlChar *xml_mem_buffer = NULL;
 	size_t bsize = buffer_size;
 
-	// if buffer can't be NULL, or buffer_size can't be 0, it 
+	// if buffer can't be NULL, or buffer_size can't be 0, it
 	// should be checked in the function calling this one
 	if (!ctx) {
 		return JAL_E_INVAL;

@@ -2,7 +2,7 @@
  * @file jalp_context_internal.h This file defines the private structures and
  * APIs for the jalp_producer context
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -40,6 +40,9 @@
 extern "C" {
 #endif
 
+/**
+ * jalp_context_t Structure definition
+ */
 struct jalp_context_t {
 	int socket; /**< The socket used to communicate with the JALoP Local Store */
 	char *path; /**< The path that was originally used to connect to the socket */
@@ -47,9 +50,10 @@ struct jalp_context_t {
 	char *app_name; /**< The application name to use when generating the application metadata sections */
 	char *schema_root; /**< The location of the schema files */
 	struct jal_digest_ctx *digest_ctx; /**< The registered callback functions to use when creating a digest */
-	RSA *signing_key; /**< The RSA private key to use when signing application metadata documents */
+	EVP_PKEY *signing_key; /**< The RSA private key to use when signing application metadata documents */
 	X509 *signing_cert; /**< The certificate used for signing the application metadata */
-	xmlSchemaPtr jaf_schema;
+	uint8_t flags;
+	xmlSchemaValidCtxtPtr jaf_validCtxt;
 };
 
 /**

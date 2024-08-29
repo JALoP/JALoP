@@ -2,7 +2,7 @@
  * @file jalp_journal_metadata.h This file defines structures and functions for
  * building the "journalMetadata" section of the application metadata.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -111,7 +111,7 @@ struct jalp_transform_encryption_info {
 	uint8_t *key;
 	/**
 	 * a buffer that contains the IV (initialization vector) for a
-	 * tranform. The length of the IV is dependant on the transform type. 
+	 * tranform. The length of the IV is dependant on the transform type.
 	 */
 	uint8_t *iv;
 };
@@ -143,8 +143,8 @@ struct jalp_transform_encryption_info *jalp_transform_encryption_info_create(con
 void jalp_transform_encryption_info_destroy(struct jalp_transform_encryption_info **enc_info);
 
 /**
- * Enum to indicate which transform type is being applied to an 
- * entry. 
+ * Enum to indicate which transform type is being applied to an
+ * entry.
  */
 enum jalp_transform_type {
 	JALP_TRANSFORM_OTHER,
@@ -161,24 +161,24 @@ enum jalp_transform_type {
 struct jalp_transform {
 	/** the type for this transform.
 	 *
-	 * If the transform is JALP_TRANSFORM_AES128, and the \p 
-	 * enc_info is non-null, it may contain a 128 bit key element, 
-	 * and a 128 bit iv element. 
+	 * If the transform is JALP_TRANSFORM_AES128, and the \p
+	 * enc_info is non-null, it may contain a 128 bit key element,
+	 * and a 128 bit iv element.
 	 *
-	 * If the transform is JALP_TRANSFORM_AES192, and the \p 
-	 * enc_info is non-null, it may contain a 192 bit key element, 
-	 * and a 128 bit iv element. 
+	 * If the transform is JALP_TRANSFORM_AES192, and the \p
+	 * enc_info is non-null, it may contain a 192 bit key element,
+	 * and a 128 bit iv element.
 	 *
-	 * If the transform is JALP_TRANSFORM_AES256, and the \p 
-	 * enc_info is non-null, it may contain a 256 bit key element, 
-	 * and a 128 bit iv element. 
+	 * If the transform is JALP_TRANSFORM_AES256, and the \p
+	 * enc_info is non-null, it may contain a 256 bit key element,
+	 * and a 128 bit iv element.
 	 *
 	 * If the transform is JALP_TRANSFORM_XOR, and the \p enc_info
 	 * is non-null, it may contain a 32 bit key element, but must not
 	 * contain an IV element.
 	 *
-	 * If the transform is JALP_TRANSFORM_DEFLATE, then the \p 
-	 * enc_info element must be NULL. 
+	 * If the transform is JALP_TRANSFORM_DEFLATE, then the \p
+	 * enc_info element must be NULL.
 	 *
 	 * If the transform is JALP_TRANSFORM_OTHER, then the \p other
 	 * element must non-NULL and must contain a valid uri. It may also
@@ -186,6 +186,8 @@ struct jalp_transform {
 	 * elements for the transform.
 	 */
 	enum jalp_transform_type type;
+
+	/** transform union */
 	union {
 		/** Extra encryption info for JALoP recognized algorithms */
 		struct jalp_transform_encryption_info *enc_info;
@@ -262,7 +264,7 @@ struct jalp_transform *jalp_transform_append_deflate(struct jalp_transform *prev
  *
  * @note If you call this function with \p key or \p iv as NULL, then this
  * transform will be created without the \p Key or \p IV nodes,
- * respectively. 
+ * respectively.
  *
  * @return a pointer to the newly created transform
  */
@@ -270,7 +272,7 @@ struct jalp_transform *jalp_transform_append_aes(struct jalp_transform *prev,
 		const enum jalp_aes_key_size key_size,
 		const uint8_t *key,
 		const uint8_t *iv);
-/** 
+/**
  * Enum covering the IANA MIME types.
  * Although JALoP uses MIME types, the content of a journal record is not
  * expected to conform to MIME, hence the omission of the 'multipart' type.
@@ -347,8 +349,8 @@ void jalp_content_type_destroy(struct jalp_content_type **content_type);
 struct jalp_file_info {
 	/** The size of the file (in bytes) before any transforms were applied to it. */
 	uint64_t original_size;
-	/** The size of the file (in bytes) after any transforms have been applied to 
-	 *  it.  Any value given by the application will be overwritten by the producer 
+	/** The size of the file (in bytes) after any transforms have been applied to
+	 *  it.  Any value given by the application will be overwritten by the producer
 	 *  library.
 	 */
 	uint64_t size;

@@ -2,7 +2,7 @@
  * @file jalp_syslog_metadata.h This file defines structures and functions to
  * deal with syslog style application metadata.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
