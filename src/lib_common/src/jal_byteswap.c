@@ -2,7 +2,7 @@
  * @file jal_byteswap.c This file is really only here for the unit tests.
  * Byteswaps are implemented as macros, so they don't need a source file.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

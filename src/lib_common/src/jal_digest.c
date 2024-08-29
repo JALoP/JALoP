@@ -1,8 +1,8 @@
-/** 
+/**
  * @file jal_digest.c This file contains functions for dealing with the
  * jal_digest_ctx struct.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -29,6 +29,7 @@
 
 #include <unistd.h>
 #include <errno.h>
+#include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <jalop/jal_status.h>
 #include <jalop/jal_digest.h>
@@ -36,16 +37,17 @@
 #include "jal_error_callback_internal.h"
 
 #define DIGEST_BUF_SIZE 8192
+#define OPENSSL_V11_VER 0x1010000fL
 
 static void *jal_sha256_create(void)
 {
-	SHA256_CTX * new_sha256 = jal_calloc(1, sizeof(*new_sha256));
+	EVP_MD_CTX * new_sha256 = EVP_MD_CTX_create();
 	return new_sha256;
 }
 
 static enum jal_status jal_sha256_init(void *instance)
 {
-	int ret = SHA256_Init((SHA256_CTX *)instance);
+	int ret = EVP_DigestInit_ex((EVP_MD_CTX *)instance, EVP_sha256(), NULL);
 
 	if (ret == 1) {
 		return JAL_OK;
@@ -56,7 +58,7 @@ static enum jal_status jal_sha256_init(void *instance)
 
 static enum jal_status jal_sha256_update(void *instance, const uint8_t *data, size_t len)
 {
-	int ret = SHA256_Update((SHA256_CTX *)instance, data, len);
+	int ret = EVP_DigestUpdate((EVP_MD_CTX *)instance, data, len);
 
 	if (ret == 1) {
 		return JAL_OK;
@@ -65,16 +67,15 @@ static enum jal_status jal_sha256_update(void *instance, const uint8_t *data, si
 	}
 }
 
-static enum jal_status jal_sha256_final(void *instance, uint8_t *data, size_t *len)
+static enum jal_status jal_sha256_final(void *instance, uint8_t *data, unsigned int *len)
 {
 	if (*len < SHA256_DIGEST_LENGTH) {
 		return JAL_E_INVAL;
 	}
 
-	int ret = SHA256_Final((unsigned char *)data, (SHA256_CTX *)instance);
+	int ret = EVP_DigestFinal((EVP_MD_CTX *)instance, (unsigned char *)data, len);
 
 	if (ret == 1) {
-		*len = ((SHA256_CTX *)instance)->md_len;
 		return JAL_OK;
 	} else {
 		return JAL_E_INVAL;
@@ -83,18 +84,22 @@ static enum jal_status jal_sha256_final(void *instance, uint8_t *data, size_t *l
 
 static void jal_sha256_destroy(void *instance)
 {
-	free(instance);
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_V11_VER
+	EVP_MD_CTX_free((EVP_MD_CTX *)instance);
+#else
+	EVP_MD_CTX_destroy((EVP_MD_CTX *)instance);
+#endif
 }
 
 static void *jal_sha384_create(void)
 {
-	SHA512_CTX * new_sha384 = jal_calloc(1, sizeof(*new_sha384));
+	EVP_MD_CTX * new_sha384 = EVP_MD_CTX_create();
 	return new_sha384;
 }
 
 static enum jal_status jal_sha384_init(void *instance)
 {
-	int ret = SHA384_Init((SHA512_CTX *)instance);
+	int ret = EVP_DigestInit_ex((EVP_MD_CTX *)instance, EVP_sha384(), NULL);
 
 	if (ret == 1) {
 		return JAL_OK;
@@ -105,7 +110,7 @@ static enum jal_status jal_sha384_init(void *instance)
 
 static enum jal_status jal_sha384_update(void *instance, const uint8_t *data, size_t len)
 {
-	int ret = SHA384_Update((SHA512_CTX *)instance, data, len);
+	int ret = EVP_DigestUpdate((EVP_MD_CTX *)instance, data, len);
 
 	if (ret == 1) {
 		return JAL_OK;
@@ -114,16 +119,15 @@ static enum jal_status jal_sha384_update(void *instance, const uint8_t *data, si
 	}
 }
 
-static enum jal_status jal_sha384_final(void *instance, uint8_t *data, size_t *len)
+static enum jal_status jal_sha384_final(void *instance, uint8_t *data, unsigned int *len)
 {
 	if (*len < SHA384_DIGEST_LENGTH) {
 		return JAL_E_INVAL;
 	}
 
-	int ret = SHA384_Final((unsigned char *)data, (SHA512_CTX *)instance);
+	int ret = EVP_DigestFinal((EVP_MD_CTX *)instance, (unsigned char *)data, len);
 
 	if (ret == 1) {
-		*len = ((SHA512_CTX *)instance)->md_len;
 		return JAL_OK;
 	} else {
 		return JAL_E_INVAL;
@@ -132,18 +136,22 @@ static enum jal_status jal_sha384_final(void *instance, uint8_t *data, size_t *l
 
 static void jal_sha384_destroy(void *instance)
 {
-	free(instance);
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_V11_VER
+	EVP_MD_CTX_free((EVP_MD_CTX *)instance);
+#else
+	EVP_MD_CTX_destroy((EVP_MD_CTX *)instance);
+#endif
 }
 
 static void *jal_sha512_create(void)
 {
-	SHA512_CTX * new_sha512 = jal_calloc(1, sizeof(*new_sha512));
+	EVP_MD_CTX * new_sha512 = EVP_MD_CTX_create();
 	return new_sha512;
 }
 
 static enum jal_status jal_sha512_init(void *instance)
 {
-	int ret = SHA512_Init((SHA512_CTX *)instance);
+	int ret = EVP_DigestInit_ex((EVP_MD_CTX *)instance, EVP_sha512(), NULL);
 
 	if (ret == 1) {
 		return JAL_OK;
@@ -154,7 +162,7 @@ static enum jal_status jal_sha512_init(void *instance)
 
 static enum jal_status jal_sha512_update(void *instance, const uint8_t *data, size_t len)
 {
-	int ret = SHA512_Update((SHA512_CTX *)instance, data, len);
+	int ret = EVP_DigestUpdate((EVP_MD_CTX *)instance, data, len);
 
 	if (ret == 1) {
 		return JAL_OK;
@@ -163,16 +171,15 @@ static enum jal_status jal_sha512_update(void *instance, const uint8_t *data, si
 	}
 }
 
-static enum jal_status jal_sha512_final(void *instance, uint8_t *data, size_t *len)
+static enum jal_status jal_sha512_final(void *instance, uint8_t *data, unsigned int *len)
 {
 	if (*len < SHA512_DIGEST_LENGTH) {
 		return JAL_E_INVAL;
 	}
 
-	int ret = SHA512_Final((unsigned char *)data, (SHA512_CTX *)instance);
+	int ret = EVP_DigestFinal((EVP_MD_CTX *)instance, (unsigned char *)data, len);
 
 	if (ret == 1) {
-		*len = ((SHA512_CTX *)instance)->md_len;
 		return JAL_OK;
 	} else {
 		return JAL_E_INVAL;
@@ -181,7 +188,11 @@ static enum jal_status jal_sha512_final(void *instance, uint8_t *data, size_t *l
 
 static void jal_sha512_destroy(void *instance)
 {
-	free(instance);
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_V11_VER
+	EVP_MD_CTX_free((EVP_MD_CTX *)instance);
+#else
+	EVP_MD_CTX_destroy((EVP_MD_CTX *)instance);
+#endif
 }
 
 void jal_digest_ctx_destroy(struct jal_digest_ctx **digest_ctx)
@@ -287,7 +298,7 @@ enum jal_status jal_digest_buffer(struct jal_digest_ctx *digest_ctx,
 		goto err_out;
 	}
 
-	size_t digest_length = digest_ctx->len;
+	unsigned int digest_length = digest_ctx->len;
 	ret = digest_ctx->final(instance, *digest, &digest_length);
 	if(ret != JAL_OK) {
 		goto err_out;
@@ -350,7 +361,7 @@ enum jal_status jal_digest_fd(struct jal_digest_ctx *digest_ctx,
 		goto err_out;
 	}
 
-	size_t digest_length = digest_ctx->len;
+	unsigned int digest_length = digest_ctx->len;
 	ret = digest_ctx->final(instance, *digest, &digest_length);
 	if(ret != JAL_OK) {
 		goto err_out;
@@ -404,7 +415,7 @@ enum jal_status jal_get_digest_from_uri(const char *uri, enum jal_digest_algorit
 enum jal_status jal_parse_digest_algorithm_str(const char *str, enum jal_digest_algorithm **digest_list, size_t *num_digests) {
 	enum jal_digest_algorithm cur_enum = JAL_DIGEST_ALGORITHM_DEFAULT;
 	char *cur_str = NULL;
-	char *saveptr = NULL; 
+	char *saveptr = NULL;
 	size_t list_len = 0;
 
 	if (!str) {

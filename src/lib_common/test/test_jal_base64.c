@@ -1,7 +1,7 @@
 /**
  * @file test_jal_base64.c This file contains tests for jal_base64_enc.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

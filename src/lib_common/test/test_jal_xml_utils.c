@@ -2,7 +2,7 @@
  * @file test_jal_xml_utils.c This file contains unit tests for a
  * variety of utilities dealing with generating XML data.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -83,6 +83,7 @@
 #define EXPECTED_SIGNING_DGST_VALUE "zqfv/c2dvejx20CIJ5Kg7j+HxlB95r1q8XqL74aeWCk="
 #define EXPECTED_MODULUS "\n3PRI+qegjHCd70xtRMPzknUDqY6iH93XJwfuGqXguiEB8n3dxaZu1ZNzMe1BHpGj\ne2RPaRr5EXBKAXMPnw6MXQ==\n"
 #define EXPECTED_EXPONENT "\nAQAB\n"
+#define OPENSSL_V11_VER 0x1010000fL
 
 static const uint8_t EXPECTED_DGST[] = { 0xca, 0x60, 0x88, 0xd0, 0xab,
 	0x26, 0x59, 0x66, 0xa7, 0x5b, 0xbf, 0xc2, 0x24, 0xc8, 0xb3,
@@ -95,7 +96,7 @@ static const char *base64_string = "YXNkZg==";
 static struct jal_digest_ctx *dgst_ctx = NULL;
 
 static X509 *cert;
-static RSA *key;
+static EVP_PKEY *key;
 
 xmlChar *namespace_uri;
 xmlChar *tag;
@@ -132,7 +133,7 @@ static void load_key_and_cert()
 	fclose(fp);
 
 	fp = fopen(TEST_RSA_KEY, "r");
-	key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+	key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
 	fclose(fp);
 }
 
@@ -142,7 +143,7 @@ static void build_dom_for_signing()
 	xmlNsPtr ns = xmlNewNs(elem, (xmlChar *)ID_NS, NULL);
 	xmlSetNs(elem, ns);
 	xmlSetProp(elem, (xmlChar *)"xml:id", (xmlChar *)ID_STR);
-	
+
 	xmlNodePtr achild = xmlNewDocNode(doc, NULL, (xmlChar *)"achild", NULL);
 	xmlNodePtr bchild = xmlNewDocNode(doc, NULL, (xmlChar *)"bchild", NULL);
 
@@ -159,14 +160,19 @@ void setup()
 	tag = (xmlChar *)TAG;
 	id_val = ID_STR;
 
+	//JAL-897 - OPENSSL_init_ssl() replaces SSL_library_init() in openssl v1.1 and higher
+	#if OPENSSL_VERSION_NUMBER < OPENSSL_V11_VER
 	SSL_library_init();
+	#else
+	OPENSSL_init_ssl(0, NULL);
+	#endif
 	xmlSecInit();
 
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
 
 	xmlSecCryptoAppInit(NULL);
 	xmlSecCryptoInit();
-	
+
 	dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 }
 
@@ -643,27 +649,13 @@ void test_add_signature_block()
 	assert_not_equals((void*) NULL, key_info);
 	assert_tag_equals("KeyInfo", key_info);
 
+	//JAL-897 - KeyValue xml node is empty in xmlsec1 1.3.3 and higher
 	xmlNodePtr key_val = jal_get_first_element_child(key_info);
-	assert_not_equals((void*) NULL, key_val);
 	assert_tag_equals("KeyValue", key_val);
 
 	xmlNodePtr x509_data = get_next_element(key_val);
 	assert_not_equals((void*) NULL, x509_data);
 	assert_tag_equals("X509Data", x509_data);
-	
-	xmlNodePtr rsa_key_val = jal_get_first_element_child(key_val);
-	assert_not_equals((void*) NULL, rsa_key_val);
-	assert_tag_equals("RSAKeyValue", rsa_key_val);
-
-	xmlNodePtr modulus = jal_get_first_element_child(rsa_key_val);
-	assert_not_equals((void*) NULL, modulus);
-	assert_tag_equals("Modulus", modulus);
-	assert_content_equals(EXPECTED_MODULUS, modulus);
-	
-	xmlNodePtr exponent = get_next_element(modulus);
-	assert_not_equals((void*) NULL, exponent);
-	assert_tag_equals("Exponent", exponent);
-	assert_content_equals(EXPECTED_EXPONENT, exponent);
 
 	// depending on the library version, the X509Certificate element may be first or last
 	xmlNodePtr x509_certificate = jal_get_first_element_child(x509_data);
@@ -770,27 +762,13 @@ void test_add_signature_block_works_with_prev()
 	assert_not_equals((void*) NULL, key_info);
 	assert_tag_equals("KeyInfo", key_info);
 
+	//JAL-897 - KeyValue xml node is empty in xmlsec1 1.3.3 and higher
 	xmlNodePtr key_val = jal_get_first_element_child(key_info);
-	assert_not_equals((void*) NULL, key_val);
 	assert_tag_equals("KeyValue", key_val);
 
 	xmlNodePtr x509_data = get_next_element(key_val);
 	assert_not_equals((void*) NULL, x509_data);
 	assert_tag_equals("X509Data", x509_data);
-	
-	xmlNodePtr rsa_key_val = jal_get_first_element_child(key_val);
-	assert_not_equals((void*) NULL, rsa_key_val);
-	assert_tag_equals("RSAKeyValue", rsa_key_val);
-
-	xmlNodePtr modulus = jal_get_first_element_child(rsa_key_val);
-	assert_not_equals((void*) NULL, modulus);
-	assert_tag_equals("Modulus", modulus);
-	assert_content_equals(EXPECTED_MODULUS, modulus);
-	
-	xmlNodePtr exponent = get_next_element(modulus);
-	assert_not_equals((void*) NULL, exponent);
-	assert_tag_equals("Exponent", exponent);
-	assert_content_equals(EXPECTED_EXPONENT, exponent);
 
 	// depending on the library version, the X509Certificate element may be first or last
 	xmlNodePtr x509_certificate = jal_get_first_element_child(x509_data);
@@ -927,7 +905,7 @@ void test_get_first_element_child_returns_correct_node()
 	xmlNodePtr parent = xmlNewNode(NULL, (xmlChar *)"Parent");
 	xmlNodePtr text_child = xmlNewText((xmlChar *)"text");
 	xmlNodePtr real_child = xmlNewNode(NULL, (xmlChar *)"Child");
-	
+
 	xmlAddChild(parent, text_child);
 	xmlAddChild(parent, real_child);
 
@@ -942,7 +920,7 @@ void test_get_first_element_child_returns_NULL_when_child_is_NULL()
 {
 	xmlNodePtr parent = xmlNewNode(NULL, (xmlChar *)"Parent");
 	xmlNodePtr text_child = xmlNewText((xmlChar *)"text");
-	
+
 	xmlAddChild(parent, text_child);
 
 	xmlNodePtr child = jal_get_first_element_child(parent);

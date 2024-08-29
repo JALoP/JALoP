@@ -3,7 +3,7 @@
  *
  * APIs for implementing and registering additional digest algorithms
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -42,12 +42,21 @@ extern "C" {
 
 /**
  * @name Digest Algorithm URIs
- * @{ 
+ * @{
  * URI values for supported digest algorithms.
  * Supported digest algorithms and their URIs are defined in the JALoP specification.
  */
+/**
+* SHA256
+*/
 #define JAL_SHA256_ALGORITHM_URI "http://www.w3.org/2001/04/xmlenc#sha256"
+/**
+* SHA384
+*/
 #define JAL_SHA384_ALGORITHM_URI "http://www.w3.org/2001/04/xmldsig-more#sha384"
+/**
+* SHA512
+*/
 #define JAL_SHA512_ALGORITHM_URI "http://www.w3.org/2001/04/xmlenc#sha512"
 /**@}*/
 
@@ -57,8 +66,17 @@ extern "C" {
  * Digest Algorithm names used in config/CLI parameters
  * Supported digest algorithms are defined in the JALoP specification
  */
+/**
+* SHA256
+*/
 #define JAL_SHA256_ALGORITHM_STR "sha256"
+/**
+* SHA384
+*/
 #define JAL_SHA384_ALGORITHM_STR "sha384"
+/**
+* SHA512
+*/
 #define JAL_SHA512_ALGORITHM_STR "sha512"
 /**@}*/
 
@@ -98,13 +116,45 @@ static const struct {
 	 * Config/CLI string value
 	 */
 	const char *str;
-} conversion [] = {
+}
+
+/**
+* conversion
+*/
+conversion [] = {
 	/**
 	 * Mappings between config/CLI Strings and enum values
 	 */
-	{JAL_DIGEST_ALGORITHM_SHA256, JAL_SHA256_ALGORITHM_STR},
-	{JAL_DIGEST_ALGORITHM_SHA384, JAL_SHA384_ALGORITHM_STR},
-	{JAL_DIGEST_ALGORITHM_SHA512, JAL_SHA512_ALGORITHM_STR},
+	{
+		/**
+		 * SHA256
+		 */
+		JAL_DIGEST_ALGORITHM_SHA256,
+		/**
+		 * SHA256 algorithm
+		 */
+		JAL_SHA256_ALGORITHM_STR
+	},
+	{
+		/**
+		 * SHA384
+		 */
+		JAL_DIGEST_ALGORITHM_SHA384,
+		/**
+		 * SHA384 algorithm
+		 */
+		JAL_SHA384_ALGORITHM_STR
+	},
+	{
+		/**
+		 * SHA512
+		 */
+		JAL_DIGEST_ALGORITHM_SHA512,
+		/**
+		 * SHA512 algorithm
+		 */
+		JAL_SHA512_ALGORITHM_STR
+	},
 };
 
 /**
@@ -117,7 +167,7 @@ static const char * const digest_str[] = {
 };
 /**@}*/
 
-/** 
+/**
  * @name URI String <-> Enum Value Conversion
  * @{
  * Allow for conversion from URI string to enum value
@@ -131,13 +181,45 @@ static const struct {
 	 * URI string value
 	 */
 	const char *str;
-} uri_conversion [] = { 
+}
+
+/**
+* uri_conversion
+*/
+uri_conversion [] = {
 	/**
 	 * Mappings between URI strings and enum values
 	 */
-	{JAL_DIGEST_ALGORITHM_SHA256, JAL_SHA256_ALGORITHM_URI},
-	{JAL_DIGEST_ALGORITHM_SHA384, JAL_SHA384_ALGORITHM_URI},
-	{JAL_DIGEST_ALGORITHM_SHA512, JAL_SHA512_ALGORITHM_URI},
+	{
+		/**
+		 * SHA256 algorithm
+		 */
+		JAL_DIGEST_ALGORITHM_SHA256,
+		/**
+		 * SHA256 algorithm uri
+		 */
+		JAL_SHA256_ALGORITHM_URI
+	},
+	{
+		/**
+		 * SHA384 algorithm
+		 */
+		JAL_DIGEST_ALGORITHM_SHA384,
+		/**
+		 * SHA384 algorithm uri
+		 */
+		JAL_SHA384_ALGORITHM_URI
+	},
+	{
+		/**
+		 * SHA512 algorithm
+		 */
+		JAL_DIGEST_ALGORITHM_SHA512,
+		/**
+		 * SHA512 algorithm uri
+		 */
+		JAL_SHA512_ALGORITHM_URI
+	},
 };
 
 /**
@@ -158,14 +240,23 @@ static const char * const digest_uri_str[] = {
  */
 #define ASSERT_NUM_ENUM_CONVERSIONS(sarray, max) typedef char assert_sizeof_##max[(sizeof(sarray)/sizeof(sarray[0]) == (max)) ? 1 : -1]
 
-/** 
+/**
  * @name Compile-time Completion Checks
  * @{
- * Compile-time checks to ensure that we have the right number of conversions 
+ * Compile-time checks to ensure that we have the right number of conversions
  * from string representation to enum and from enum to URI
  */
+/**
+* conversion
+*/
 ASSERT_NUM_ENUM_CONVERSIONS(conversion, JAL_DIGEST_ALGORITHM_COUNT);
+/**
+* digest string
+*/
 ASSERT_NUM_ENUM_CONVERSIONS(digest_str, JAL_DIGEST_ALGORITHM_COUNT);
+/**
+* digest uri str
+*/
 ASSERT_NUM_ENUM_CONVERSIONS(digest_uri_str, JAL_DIGEST_ALGORITHM_COUNT);
 /**@}*/
 
@@ -225,7 +316,7 @@ struct jal_digest_ctx {
 	 *
 	 * @returns the JAL_OK on success, or JAL_E_INVAL on error.
 	 */
-	enum jal_status (*final)(void *instance, uint8_t *digest, size_t *len);
+	enum jal_status (*final)(void *instance, uint8_t *digest, unsigned int *len);
 	/**
 	 * Function to clean up resources used by a digest instance.
 	 * @param[in] instance The instance to destroy.
@@ -282,7 +373,7 @@ enum jal_status jal_digest_fd(struct jal_digest_ctx *digest_ctx,
 /**
  * Get the digest algorithm enum value from a string representation.
  * This is a case-insensitive comparison
- * 
+ *
  * @param[in] str The string to convert to an enum value
  * @param[out] digest The resulting digest algorithm enum value is placed into this parameter
  * @returns JAL_OK on success
@@ -292,7 +383,7 @@ enum jal_status jal_get_digest_from_str(const char *str, enum jal_digest_algorit
 /**
  * Get the digest algorithm enum value from a URI string representation.
  * This is a case-sensitive comparison
- * 
+ *
  * @param[in] uri The string to convert to an enum value
  * @param[out] digest The resulting digest algorithm enum value is placed into this parameter
  * @returns JAL_OK on success
@@ -301,7 +392,7 @@ enum jal_status jal_get_digest_from_uri(const char *uri, enum jal_digest_algorit
 
 /**
  * Parse a string for digest algorithms
- * 
+ *
  * @param[in] str The string to parse
  * @param[out] digest_list The list of digest algorithms found in the input string.
  *                         The order in this list corresponds to the order found in the input string
@@ -313,7 +404,7 @@ enum jal_status jal_parse_digest_algorithm_str(const char *str, enum jal_digest_
 
 /**
  * Take the config and cli digest algorithms, and determine the correct set of digest algorithms
- * 
+ *
  * @param[in] config String of digest algorithms set by the config file
  * @param[in] cli String of digest algorithms set by the CLI
  * @param[out] digest_list The list of digest algorithms found in the input string.

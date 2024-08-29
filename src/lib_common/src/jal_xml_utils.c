@@ -2,7 +2,7 @@
  * @file jal_xml_utils.c This file contains utility funtions for dealing
  * with XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -74,6 +74,8 @@
 #define JAL_XML_DS "ds"
 #define JAL_XML_XPOINTER_ID_BEG "#xpointer(id('"
 #define JAL_XML_XPOINTER_ID_END "'))"
+
+#define OPENSSL_V30_VER 0x3000000fL
 
 enum jal_status jal_parse_xml_snippet(
 		xmlNodePtr *ctx_node,
@@ -271,7 +273,7 @@ enum jal_status jal_digest_xml_data(
 		return JAL_E_INVAL;
 	}
 
-	size_t dlen = dgst_ctx->len;
+	unsigned int dlen = dgst_ctx->len;
 	uint8_t *dval = (uint8_t*)jal_malloc(dlen);
 	void *instance = dgst_ctx->create();
 	if (instance == NULL) {
@@ -335,7 +337,7 @@ enum jal_status jal_digest_arbitrary_data(
 		return JAL_E_INVAL;
 	}
 
-	size_t dlen = dgst_ctx->len;
+	unsigned int dlen = dgst_ctx->len;
 	uint8_t *dval = (uint8_t*)jal_malloc(dlen);
 	void *instance = dgst_ctx->create();
 	if (instance == NULL) {
@@ -375,7 +377,7 @@ xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 	}
 	xmlNodePtr child = elem->children;
 
-	while (child != NULL && 
+	while (child != NULL &&
 		child->type != XML_ELEMENT_NODE) {
 		child = child->next;
 	}
@@ -391,7 +393,7 @@ xmlNodePtr jal_get_first_element_child(xmlNodePtr elem)
 static pthread_mutex_t xmlsec_sign_lock = PTHREAD_MUTEX_INITIALIZER;
 
 enum jal_status jal_add_signature_block(
-		RSA *rsa,
+		EVP_PKEY *rsa,
 		X509 *x509,
 		xmlDocPtr doc,
 		xmlNodePtr last,
@@ -408,10 +410,28 @@ enum jal_status jal_add_signature_block(
 	xmlNodePtr x509IssuerSerialNode = NULL;
 	xmlSecDSigCtxPtr dsigCtx = NULL;
 
-	RSA *new_rsa = RSAPrivateKey_dup(rsa);
+
+	//On rhel 7 and rhel8, RSA structure needs to be used to prevent
+	//assert failure in xmlSecOpenSSLKeyDataRsaAdoptRsa
+	//Key duplication is needed to prevent this assert failure and EVP_PKEY_dup
+	//is only available in openssl 3.0 or higher
+#if OPENSSL_VERSION_NUMBER < OPENSSL_V30_VER
+	RSA *curr_rsa = EVP_PKEY_get1_RSA(rsa);
+	if (!curr_rsa) {
+		return JAL_E_INVAL;
+	}
+
+	RSA *new_rsa = RSAPrivateKey_dup(curr_rsa);
 	if (!new_rsa) {
 		return JAL_E_INVAL;
 	}
+#else
+
+	EVP_PKEY *new_rsa = EVP_PKEY_dup(rsa);
+	if (!new_rsa) {
+		return JAL_E_INVAL;
+	}
+#endif
 
 	enum jal_status ret = JAL_E_INVAL;
 
@@ -440,7 +460,7 @@ enum jal_status jal_add_signature_block(
 	strncat(reference_uri, JAL_XML_XPOINTER_ID_BEG, beg_len);
 	strncat(reference_uri, id, id_len);
 	strncat(reference_uri, JAL_XML_XPOINTER_ID_END, end_len);
-	
+
 	refNode = xmlSecTmplSignatureAddReference(signNode,
 						xmlSecOpenSSLTransformSha256Id,
 						NULL, // id
@@ -455,7 +475,7 @@ enum jal_status jal_add_signature_block(
 	if (!xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
 		goto done;
 	}
-	
+
 	keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, NULL);
 	if (!keyInfoNode) {
 		goto done;
@@ -468,24 +488,32 @@ enum jal_status jal_add_signature_block(
 	xmlSecKeyDataPtr pKeyData = NULL;
 	pKeyData = xmlSecKeyDataCreate(xmlSecKeyDataRsaId);
 
+	//On rhel 7/rhel8, xmlSecOpenSSLKeyDataRsaAdoptRsa needs to be used to prevent
+	//assert failure in xmlSecOpenSSLKeyDataRsaAdoptEvp
+#if OPENSSL_VERSION_NUMBER < OPENSSL_V30_VER
 	if (0 != xmlSecOpenSSLKeyDataRsaAdoptRsa(pKeyData, new_rsa)) {
 		goto done;
 	}
+#else
+	if (0 != xmlSecOpenSSLKeyDataRsaAdoptEvp(pKeyData, new_rsa)) {
+		goto done;
+	}
+#endif
 
 	xmlSecKeyPtr pSecKey = xmlSecKeyCreate();
 	if (!pSecKey) {
 		goto done;
 	}
-	
+
 	if (0 != xmlSecKeySetValue(pSecKey, pKeyData)) {
 		goto done;
 	}
 
-    	dsigCtx = xmlSecDSigCtxCreate(NULL);
-    	if (!dsigCtx) {
+	dsigCtx = xmlSecDSigCtxCreate(NULL);
+	if (!dsigCtx) {
 		goto done;
-    	}
-	
+	}
+
 	dsigCtx->signKey = pSecKey;
 
 	// add certificate information, if available

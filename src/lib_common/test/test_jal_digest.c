@@ -1,7 +1,7 @@
 /**
  * @file test_jal_digest.c This file contains tests to for jal_digest functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -28,6 +28,7 @@
 
 #include <unistd.h>
 #include <test-dept.h>
+#include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <signal.h>
 #include <setjmp.h>
@@ -97,7 +98,7 @@ static enum jal_status update_fails(__attribute__((unused)) void *ctx,
 
 static enum jal_status final_fails(__attribute__((unused)) void *ctx,
 		__attribute__((unused)) uint8_t *buffer,
-		__attribute__((unused)) size_t *len)
+		__attribute__((unused)) unsigned int *len)
 {
 	final_called += 1;
 	return JAL_E_INVAL;
@@ -159,7 +160,7 @@ static enum jal_status fake_update_for_fd(void *ctx, const uint8_t *data, __attr
 	return JAL_OK;
 }
 
-static enum jal_status fake_final(void *ctx, uint8_t *digest_out, size_t *len)
+static enum jal_status fake_final(void *ctx, uint8_t *digest_out, unsigned int *len)
 {
 	final_called += 1;
 	if (ctx != (void*)0xaabbccdd || digest_out == NULL || len == NULL || *len != DIGEST_LEN) {
@@ -171,7 +172,7 @@ static enum jal_status fake_final(void *ctx, uint8_t *digest_out, size_t *len)
 	return JAL_OK;
 }
 
-static enum jal_status fake_final_for_fd(void *ctx, uint8_t *digest_out, size_t *len)
+static enum jal_status fake_final_for_fd(void *ctx, uint8_t *digest_out, unsigned int *len)
 {
 	final_called += 1;
 	if (ctx != (void*)0xaabbccdd || digest_out == NULL || len == NULL || *len != DIGEST_LEN) {
@@ -268,56 +269,20 @@ static void use_ctx_for_fd()
 struct jal_digest_ctx *digest_ctx_list[JAL_DIGEST_ALGORITHM_COUNT];
 void *digest_inst_list[JAL_DIGEST_ALGORITHM_COUNT];
 
-int SHA256_Init_always_fails(__attribute__((unused)) SHA256_CTX *c)
+int EVP_DigestInit_ex_always_fails(__attribute__((unused)) EVP_MD_CTX *c, __attribute__((unused)) const EVP_MD *type, __attribute__((unused)) ENGINE *impl)
 {
 	return 0;
 }
 
-int SHA256_Update_always_fails(__attribute__((unused)) SHA256_CTX *c,
+int EVP_DigestUpdate_always_fails(__attribute__((unused)) EVP_MD_CTX *c,
 				__attribute__((unused)) const void *data,
 				__attribute__((unused)) size_t len)
 {
 	return 0;
 }
 
-int SHA256_Final_always_fails(__attribute__((unused)) unsigned char *d,
-				__attribute__((unused)) SHA256_CTX *c)
-{
-	return 0;
-}
-
-int SHA384_Init_always_fails(__attribute__((unused)) SHA512_CTX *c)
-{
-	return 0;
-}
-
-int SHA384_Update_always_fails(__attribute__((unused)) SHA512_CTX *c,
-				__attribute__((unused)) const void *data,
-				__attribute__((unused)) size_t len)
-{
-	return 0;
-}
-
-int SHA384_Final_always_fails(__attribute__((unused)) unsigned char *d,
-				__attribute__((unused)) SHA512_CTX *c)
-{
-	return 0;
-}
-
-int SHA512_Init_always_fails(__attribute__((unused)) SHA512_CTX *c)
-{
-	return 0;
-}
-
-int SHA512_Update_always_fails(__attribute__((unused)) SHA512_CTX *c,
-				__attribute__((unused)) const void *data,
-				__attribute__((unused)) size_t len)
-{
-	return 0;
-}
-
-int SHA512_Final_always_fails(__attribute__((unused)) unsigned char *d,
-				__attribute__((unused)) SHA512_CTX *c)
+int EVP_DigestFinal_always_fails(__attribute__((unused)) EVP_MD_CTX *c, __attribute__((unused)) unsigned char *d,  __attribute__((unused)) unsigned int *i
+				)
 {
 	return 0;
 }
@@ -369,12 +334,12 @@ static void replace_init_function(int algorithm)
 	switch((enum jal_digest_algorithm) algorithm)
 	{
 		case JAL_DIGEST_ALGORITHM_SHA384:
-			replace_function(SHA384_Init, SHA384_Init_always_fails);
+			replace_function(EVP_DigestInit_ex, EVP_DigestInit_ex_always_fails);
 		case JAL_DIGEST_ALGORITHM_SHA512:
-			replace_function(SHA512_Init, SHA512_Init_always_fails);
+			replace_function(EVP_DigestInit_ex, EVP_DigestInit_ex_always_fails);
 		case JAL_DIGEST_ALGORITHM_SHA256:
 		default:
-			replace_function(SHA256_Init, SHA256_Init_always_fails);
+			replace_function(EVP_DigestInit_ex, EVP_DigestInit_ex_always_fails);
 	}
 }
 
@@ -383,12 +348,12 @@ static void replace_update_function(int algorithm)
 	switch((enum jal_digest_algorithm) algorithm)
 	{
 		case JAL_DIGEST_ALGORITHM_SHA384:
-			replace_function(SHA384_Update, SHA384_Update_always_fails);
+			replace_function(EVP_DigestUpdate, EVP_DigestUpdate_always_fails);
 		case JAL_DIGEST_ALGORITHM_SHA512:
-			replace_function(SHA512_Update, SHA512_Update_always_fails);
+			replace_function(EVP_DigestUpdate, EVP_DigestUpdate_always_fails);
 		case JAL_DIGEST_ALGORITHM_SHA256:
 		default:
-			replace_function(SHA256_Update, SHA256_Update_always_fails);
+			replace_function(EVP_DigestUpdate, EVP_DigestUpdate_always_fails);
 	}
 }
 
@@ -397,12 +362,12 @@ static void replace_final_function(int algorithm)
 	switch((enum jal_digest_algorithm) algorithm)
 	{
 		case JAL_DIGEST_ALGORITHM_SHA384:
-			replace_function(SHA384_Final, SHA384_Final_always_fails);
+			replace_function(EVP_DigestFinal, EVP_DigestFinal_always_fails);
 		case JAL_DIGEST_ALGORITHM_SHA512:
-			replace_function(SHA512_Final, SHA512_Final_always_fails);
+			replace_function(EVP_DigestFinal, EVP_DigestFinal_always_fails);
 		case JAL_DIGEST_ALGORITHM_SHA256:
 		default:
-			replace_function(SHA256_Final, SHA256_Final_always_fails);
+			replace_function(EVP_DigestFinal, EVP_DigestFinal_always_fails);
 	}
 }
 
@@ -460,17 +425,9 @@ void teardown()
 		assert_equals((void*)NULL, digest_ctx_list[i]);
 	}
 
-	restore_function(SHA256_Init);
-	restore_function(SHA256_Update);
-	restore_function(SHA256_Final);
-
-	restore_function(SHA384_Init);
-	restore_function(SHA384_Update);
-	restore_function(SHA384_Final);
-
-	restore_function(SHA512_Init);
-	restore_function(SHA512_Update);
-	restore_function(SHA512_Final);
+	restore_function(EVP_DigestInit_ex);
+	restore_function(EVP_DigestUpdate);
+	restore_function(EVP_DigestFinal);
 
 	jal_digest_ctx_destroy(&gs_ctx);
 	free(dgst_ptr);
@@ -538,11 +495,18 @@ void test_jal_digest_create_returns_allocated_create()
 	}
 }
 
-void test_jal_digest_init_returns_ok()
+void test_jal_digest_init_and_update_returns_ok()
 {
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
 		enum jal_status ret = digest_ctx_list[i]->init(digest_inst_list[i]);
+		assert_equals(JAL_OK, ret);
+	}
+
+	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
+	{
+		size_t len = strlen(HELLO_WORLD);
+		enum jal_status ret = digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)HELLO_WORLD, len);
 		assert_equals(JAL_OK, ret);
 	}
 }
@@ -554,16 +518,6 @@ void test_jal_digest_init_handles_error()
 		replace_init_function(i);
 		enum jal_status ret = digest_ctx_list[i]->init(digest_inst_list[i]);
 		assert_equals(JAL_E_INVAL, ret);
-	}
-}
-
-void test_jal_digest_update_returns_ok()
-{
-	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
-	{
-		size_t len = strlen(HELLO_WORLD);
-		enum jal_status ret = digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)HELLO_WORLD, len);
-		assert_equals(JAL_OK, ret);
 	}
 }
 
@@ -582,7 +536,7 @@ void test_jal_digest_final_handles_error()
 {
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
-		size_t len = get_digest_length(i);
+		unsigned int len = get_digest_length(i);
 		uint8_t data[len];
 		replace_final_function(i);
 		enum jal_status ret = digest_ctx_list[i]->final(digest_inst_list[i], data, &len);
@@ -594,7 +548,7 @@ void test_jal_digest_final_returns_invalid_when_len_lt_digest_length()
 {
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
-		size_t len = 0;
+		unsigned int len = 0;
 		uint8_t data[len];
 		enum jal_status ret = digest_ctx_list[i]->final(digest_inst_list[i], data, &len);
 		assert_equals(JAL_E_INVAL, ret);
@@ -606,13 +560,13 @@ void test_jal_digest_full()
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
 		void *ctx_inst = digest_inst_list[i];
-		size_t len = digest_ctx_list[i]->len;
+		unsigned int len = digest_ctx_list[i]->len;
 		uint8_t data[len];
 		char buf[(len * 2) + 1];
 		digest_ctx_list[i]->init(ctx_inst);
 		digest_ctx_list[i]->update(ctx_inst, (uint8_t *)HELLO_WORLD, strlen(HELLO_WORLD));
 		digest_ctx_list[i]->final(ctx_inst, data, &len);
-		
+
 		for (int j = 0; j < (int) len; j++) {
 			sprintf(buf + (j * 2), "%02x", data[j]);
 		}
@@ -625,7 +579,7 @@ void test_jal_digest_full_multiple_updates()
 {
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
-		size_t len = digest_ctx_list[i]->len;
+		unsigned int len = digest_ctx_list[i]->len;
 		uint8_t data[len];
 		char buf[(len * 2) + 1];
 		digest_ctx_list[i]->init(digest_inst_list[i]);

@@ -1,7 +1,7 @@
 /**
  * @file jal_status.h This file defines return codes used by the JAL libraries.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

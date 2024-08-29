@@ -1,7 +1,7 @@
 /**
  * @file jal_fs_utils.c This file contains general utility functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

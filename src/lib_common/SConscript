@@ -1,6 +1,9 @@
 Import('*')
 
 lib_common_env = env.Clone()
+
+env = env.Clone()
+
 lib_common_env.MergeFlags({'CPPPATH':['#src/lib_common/include', '#src/lib_common/src']})
 lib_common_env.MergeFlags(env['lfs_cflags'])
 lib_common_env.MergeFlags(env['openssl_cflags'])

@@ -2,7 +2,7 @@
  * @file jal_alloc.h This file defines wrappers for malloc, calloc,
  * and realloc for use by the Producer Library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -89,10 +89,10 @@ void *jal_realloc(void *ptr, size_t size);
 
 /**
  * Calls strdup.
- * If strdup returns with no issues, returns a pointer to the new duplicate 
+ * If strdup returns with no issues, returns a pointer to the new duplicate
  * string.
  * Otherwise, calls jal_error_handler.
- * 
+ *
  * @param[in] str pointer to string to be duplicated.
  *
  * @return a char pointer to the duplicate string, to be freed with free()
@@ -102,11 +102,11 @@ char *jal_strdup(const char *str);
 
 /**
  * Calls strndup.
- * If strndup returns with no issues, returns a pointer to the 
- * new duplicate string. Otherwise, calls jal_error_handler. 
- * 
- * @param[in] str pointer to string to be duplicated. 
- * @param[in] size maximum number of string bytes to copy. 
+ * If strndup returns with no issues, returns a pointer to the
+ * new duplicate string. Otherwise, calls jal_error_handler.
+ *
+ * @param[in] str pointer to string to be duplicated.
+ * @param[in] size maximum number of string bytes to copy.
  *
  * @return a char pointer to the duplicate string, to be freed with free()
  *
@@ -114,11 +114,11 @@ char *jal_strdup(const char *str);
 char *jal_strndup(const char *str, size_t size);
 
 /**
- * Allocates a buffer based on size, and uses memcpy to copy the buffer pointer to by str. 
+ * Allocates a buffer based on size, and uses memcpy to copy the buffer pointer to by str.
  * If malloc returns with no issues, returns a pointer to the new duplicate string. Otherwise, calls jal_error_handler.
- * 
- * @param[in] buf pointer to buffer to be duplicated. 
- * @param[in] size number of bytes to copy. 
+ *
+ * @param[in] buf pointer to buffer to be duplicated.
+ * @param[in] size number of bytes to copy.
  *
  * @return a char pointer to the duplicate buffer, to be freed with free()
  *
