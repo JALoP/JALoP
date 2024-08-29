@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_subscriber_state_machine.c This file contains tests for the subscriber state machine.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -264,7 +264,7 @@ void setup()
 	jaln_subscriber_callbacks_destroy(&sub_cbs);
 	session = jaln_session_create();
 	session->jaln_ctx = ctx;
-	session->dgst = jal_sha256_ctx_create();
+	session->dgst = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 
 	jal_asprintf(&app_meta_sz_str, "%ju", (uintmax_t) EXPECTED_APP_META_SZ);
 	jal_asprintf(&sys_meta_sz_str, "%ju", (uintmax_t) EXPECTED_SYS_META_SZ);
@@ -801,7 +801,7 @@ void test_copy_buf_works_for_exact_copy()
 	assert(0 == memcmp(src, dst, dst_sz));
 	assert_equals(dst_off, dst_sz);
 	assert_equals(src_off, src_sz);
-	
+
 	free(dst);
 }
 
@@ -821,7 +821,7 @@ void test_copy_buf_works_for_exact_copy_with_no_more_frames()
 	assert(0 == memcmp(EXPECTED_PAYLOAD, dst, dst_sz));
 	assert_equals(dst_off, dst_sz);
 	assert_equals(src_off, src_sz);
-	
+
 	free(dst);
 }
 
@@ -841,7 +841,7 @@ void test_copy_buf_works_when_dst_smaller_than_src()
 	assert(0 == memcmp(EXPECTED_PAYLOAD, dst, dst_sz));
 	assert_equals(dst_off, dst_sz);
 	assert_equals(src_off, dst_sz);
-	
+
 	free(dst);
 }
 
@@ -861,7 +861,7 @@ void test_copy_buf_works_when_dst_smaller_than_src_with_no_more_expected_frames(
 	assert(0 == memcmp(EXPECTED_PAYLOAD, dst, dst_sz));
 	assert_equals(dst_off, dst_sz);
 	assert_equals(src_off, dst_sz);
-	
+
 	free(dst);
 }
 

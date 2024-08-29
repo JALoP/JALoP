@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_listen.c This file contains tests for jaln_listen.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -64,6 +64,10 @@ static enum jaln_connect_error connect_request_handler_sha256(
 {
 	// The sha256 digest should get appended to the list.
 	*selected_digest = req->dgst_cnt - 1;
+	// Verify that a digest was added to the list. This should be the default digest.
+	assert_equals(2, req->dgst_cnt);
+	// Verify that this digest's URI matches the default digest's URI
+	assert_equals(0, strcasecmp(digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT], req->digests[*selected_digest]));
 	return JALN_CE_ACCEPT;
 }
 
@@ -113,7 +117,7 @@ static enum jal_status fake_subscriber_send_subscribe_request(__attribute__((unu
 
 static enum jal_status fake_configure_sub_session_no_lock(
 		__attribute__((unused)) VortexChannel *chan,
-		__attribute__((unused)) jaln_session *sess)
+		__attribute__((unused)) jaln_session *session)
 {
 	return JAL_OK;
 }
@@ -183,6 +187,14 @@ void fake_channel_set_received_handler(
 	return;
 }
 
+VortexChannelFrameSize fake_vortex_channel_set_next_frame_size_handler(
+		__attribute__((unused)) VortexChannel *chan,
+		__attribute__((unused)) VortexChannelFrameSize received,
+		__attribute__((unused)) axlPointer user_data)
+{
+	return 0;
+}
+
 void fake_channel_set_closed_handler(
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) VortexOnClosedChannel received,
@@ -199,7 +211,7 @@ void fake_channel_set_close_handler(
 	return;
 }
 static jaln_session * fake_find_session_by_rec_channel_fails(
-		__attribute__((unused)) jaln_context* ctx,
+		__attribute__((unused)) jaln_context* curr_ctx,
 		__attribute__((unused)) char *server_name_cpy,
 		__attribute__((unused)) int paired_chan_num)
 {
@@ -207,7 +219,7 @@ static jaln_session * fake_find_session_by_rec_channel_fails(
 }
 
 static jaln_session * fake_find_session_by_rec_channel_no_lock(
-		__attribute__((unused)) jaln_context* ctx,
+		__attribute__((unused)) jaln_context* curr_ctx,
 		__attribute__((unused)) char *server_name_cpy,
 		__attribute__((unused)) int paired_chan_num)
 {
@@ -215,7 +227,7 @@ static jaln_session * fake_find_session_by_rec_channel_no_lock(
 }
 
 static axl_bool fake_associate_digest_channel_no_lock(
-		__attribute__((unused)) jaln_session* sess,
+		__attribute__((unused)) jaln_session* session,
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) int paired_chan_num)
 {
@@ -223,7 +235,7 @@ static axl_bool fake_associate_digest_channel_no_lock(
 }
 
 static axl_bool fake_associate_digest_channel_fails(
-		__attribute__((unused)) jaln_session* sess,
+		__attribute__((unused)) jaln_session* session,
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) int paired_chan_num)
 {
@@ -313,7 +325,7 @@ int mock_jaln_connection_callbacks_is_valid_succeeds(__attribute__((unused)) str
 	return 1;
 }
 
-axl_bool mock_vortex_profiles_register_extended_start_success(__attribute__((unused)) VortexCtx *ctx,
+axl_bool mock_vortex_profiles_register_extended_start_success(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *uri,
 		__attribute__((unused)) VortexOnStartChannelExtended extended_start,
 		__attribute__((unused)) axlPointer extended_start_user_data)
@@ -321,7 +333,7 @@ axl_bool mock_vortex_profiles_register_extended_start_success(__attribute__((unu
 	return axl_true;
 }
 
-axl_bool mock_vortex_profiles_register_extended_start(__attribute__((unused)) VortexCtx *ctx,
+axl_bool mock_vortex_profiles_register_extended_start(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *uri,
 		__attribute__((unused)) VortexOnStartChannelExtended extended_start,
 		__attribute__((unused)) axlPointer extended_start_user_data)
@@ -329,7 +341,7 @@ axl_bool mock_vortex_profiles_register_extended_start(__attribute__((unused)) Vo
 	return axl_false;
 }
 
-axl_bool mock_vortex_profiles_register(__attribute__((unused)) VortexCtx *ctx,
+axl_bool mock_vortex_profiles_register(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *uri,
 		__attribute__((unused)) VortexOnStartChannel start,
 		__attribute__((unused)) axlPointer start_user_data,
@@ -341,7 +353,7 @@ axl_bool mock_vortex_profiles_register(__attribute__((unused)) VortexCtx *ctx,
 	return axl_true;
 }
 
-VortexConnection * mock_vortex_listener_new_success(__attribute__((unused)) VortexCtx *ctx,
+VortexConnection * mock_vortex_listener_new_success(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *host,
 		__attribute__((unused)) const char *port,
 		__attribute__((unused)) VortexListenerReady on_ready,
@@ -350,7 +362,7 @@ VortexConnection * mock_vortex_listener_new_success(__attribute__((unused)) Vort
 	return (VortexConnection *) "dummy";
 }
 
-VortexConnection * mock_vortex_listener_new_failure(__attribute__((unused)) VortexCtx *ctx,
+VortexConnection * mock_vortex_listener_new_failure(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *host,
 		__attribute__((unused)) const char *port,
 		__attribute__((unused)) VortexListenerReady on_ready,
@@ -371,14 +383,15 @@ void mock_vortex_listener_shutdown(__attribute__((unused)) VortexConnection * li
 }
 
 enum jal_status fake_jaln_ctx_add_session_no_lock_fails(
-		__attribute__((unused)) jaln_context *ctx,
-		__attribute__((unused)) jaln_session *sess)
+		__attribute__((unused)) jaln_context *curr_ctx,
+		__attribute__((unused)) jaln_session *session)
 {
 	return JAL_E_INVAL;
 }
 
 void setup()
 {
+	replace_function(vortex_channel_set_next_frame_size_handler, fake_vortex_channel_set_next_frame_size_handler);
 	replace_function(vortex_channel_close, fake_channel_close);
 	replace_function(vortex_channel_send_err, fake_channel_send_err);
 	replace_function(vortex_channel_send_rpy, fake_channel_send_rpy);
@@ -407,7 +420,7 @@ void setup()
 	conn_cbs = jaln_connection_callbacks_create();
 	ctx->conn_callbacks = conn_cbs;
 	conn_cbs->connect_request_handler = my_connect_request_handler;
-	struct jal_digest_ctx *dgst = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dgst = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	free(dgst->algorithm_uri);
 	dgst->algorithm_uri = jal_strdup(DGST_ONE);
 	jaln_register_digest_algorithm(ctx, dgst);
@@ -421,6 +434,7 @@ void setup()
 
 void teardown()
 {
+	restore_function(vortex_channel_set_next_frame_size_handler);
 	restore_function(vortex_connection_get_channel);
 	restore_function(vortex_channel_set_automatic_mime);
 	restore_function(vortex_channel_set_serialize);
@@ -712,6 +726,7 @@ void test_jaln_listener_shutdown_fails_with_bad_input()
 void test_handle_new_record_channel_no_lock()
 {
 	replace_function(vortex_channel_set_received_handler, fake_channel_set_received_handler);
+	replace_function(vortex_channel_set_next_frame_size_handler, fake_vortex_channel_set_next_frame_size_handler);
 	replace_function(vortex_channel_set_closed_handler, fake_channel_set_closed_handler);
 	replace_function(vortex_channel_set_close_handler, fake_channel_set_close_handler);
 	restore_function(jaln_ctx_find_session_by_rec_channel_no_lock);

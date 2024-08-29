@@ -2,7 +2,7 @@
  * @file jaln_strings.h This file contains various strings used by the network
  * library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -66,7 +66,7 @@
 
 // defines for the various message JALoP message types
 #define JALN_MSG_AUDIT "audit-record"
-#define JALN_MSG_DIGEST "digest"
+#define JALN_MSG_DIGEST_CHAL "digest-challenge"
 #define JALN_MSG_DIGEST_RESP "digest-response"
 #define JALN_MSG_INIT "initialize"
 #define JALN_MSG_INIT_ACK "initialize-ack"
@@ -81,8 +81,6 @@
 #define JALN_MSG_SUBSCRIBE_LIVE "subscribe-live"
 #define JALN_MSG_SUBSCRIBE_ARCHIVE "subscribe-archival"
 #define JALN_MSG_SYNC "sync"
-
-#define JALN_DGST_SHA256 "sha256"
 
 #define JALN_DGST_CHAN_FORMAT_STR "digest:%d"
 

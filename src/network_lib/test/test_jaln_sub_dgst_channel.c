@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_sub_dgst_channel.c This file contains tests for jaln_sub_dgst_channel.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -41,8 +41,8 @@ static jaln_session *sess;
 static axlList *dgst_list;
 
 int on_digest_response(
-		__attribute__((unused)) jaln_session *sess,
-		__attribute__((unused)) const struct jaln_channel_info *ch_info,
+		__attribute__((unused)) jaln_session *curr_sess,
+		__attribute__((unused)) const struct jaln_channel_info *curr_ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
 		__attribute__((unused)) const char *nonce,
 		__attribute__((unused)) const enum jaln_digest_status status,
@@ -88,7 +88,7 @@ VortexMimeHeader *fake_vortex_frame_get_mime_header(VortexFrame *frame, const ch
 	return NULL;
 }
 
-void fake_vortex_connection_timeout(__attribute__((unused)) VortexCtx *ctx,
+void fake_vortex_connection_timeout(__attribute__((unused)) VortexCtx *curr_ctx,
 				    __attribute__((unused)) long int microseconds_to_wait)
 {
 	return;
@@ -123,6 +123,16 @@ enum jal_status fake_jaln_process_digest_resp(__attribute__((unused)) VortexFram
 void fake_vortex_frame_unref(__attribute__((unused)) VortexFrame *frame)
 {
 	return;
+}
+
+int fake_vortex_frame_get_mime_header_size(__attribute__((unused)) VortexFrame *frame)
+{
+	return 0;
+}
+
+const char *fake_vortex_frame_get_content(__attribute__((unused)) VortexFrame *frame)
+{
+	return NULL;
 }
 
 void setup()
@@ -160,6 +170,8 @@ void test_jaln_send_digest_and_sync_no_lock_does_not_crash_with_bad_input()
 	replace_function(vortex_frame_unref, fake_vortex_frame_unref);
 	replace_function(vortex_connection_timeout, fake_vortex_connection_timeout);
 	replace_function(vortex_channel_get_ctx, fake_vortex_channel_get_ctx);
+	replace_function(vortex_frame_get_mime_header_size, fake_vortex_frame_get_mime_header_size);
+	replace_function(vortex_frame_get_content, fake_vortex_frame_get_content);
 
 	jaln_send_digest_and_sync_no_lock(NULL, dgst_list);
 	jaln_send_digest_and_sync_no_lock(sess, NULL);
@@ -175,7 +187,7 @@ void test_jaln_send_digest_and_sync_no_lock_does_not_crash_with_bad_input()
 	sess->jaln_ctx = NULL;
 	jaln_send_digest_and_sync_no_lock(sess, dgst_list);
 	sess->jaln_ctx = ctx;
-	
+
 	sess->jaln_ctx->sub_callbacks->on_digest_response = NULL;
 	jaln_send_digest_and_sync_no_lock(sess, dgst_list);
 	sess->jaln_ctx->sub_callbacks->on_digest_response = on_digest_response;
@@ -193,6 +205,8 @@ void test_jaln_send_digest_and_sync_no_lock_succeeds()
 	replace_function(vortex_frame_unref, fake_vortex_frame_unref);
 	replace_function(vortex_connection_timeout, fake_vortex_connection_timeout);
 	replace_function(vortex_channel_get_ctx, fake_vortex_channel_get_ctx);
+	replace_function(vortex_frame_get_mime_header_size, fake_vortex_frame_get_mime_header_size);
+	replace_function(vortex_frame_get_content, fake_vortex_frame_get_content);
 
 	jaln_send_digest_and_sync_no_lock(sess, dgst_list);
 }

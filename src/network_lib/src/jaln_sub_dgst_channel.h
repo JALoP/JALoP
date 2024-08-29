@@ -1,9 +1,9 @@
 /**
  * @file jaln_sub_dgst_channel.h This file contains function
  * declarations for internal library functions related to the 'subscriber'
- * channel that sends 'digest' and 'sync' messages.
+ * channel that sends 'digest-challenge' and 'sync' messages.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -39,12 +39,12 @@ extern "C" {
 #include "jaln_session.h"
 
 /**
- * Helper function that sends 'digest' and 'sync' messages. It waits for each
+ * Helper function that sends 'digest-challenge' and 'sync' messages. It waits for each
  * reply and calls the appropriate user provided callbacks.
  *
- * @param[in] sess The session to use.
- * @param[in] dgst_list An axlList of jaln_digest_info objects, used
- * to compose the 'digest' message.
+ * @param[in] ctx The session to use.
+ * @param[in] dgst_resp_list An axlList of jaln_digest_info objects, used
+ * to compose the 'digest-challenge' message.
  */
 void jaln_send_digest_and_sync_no_lock(jaln_session *ctx, axlList *dgst_resp_list);
 
@@ -58,7 +58,7 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *ctx, axlList *dgst_resp_lis
 axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data);
 
 /**
- * Helper function to create the thread to send 'digest' and 'sync' messages.
+ * Helper function to create the thread to send 'digest-challenge' and 'sync' messages.
  *
  * @param[in] session The session to use for the new thread.
  */

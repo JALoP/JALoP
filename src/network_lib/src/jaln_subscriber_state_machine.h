@@ -2,7 +2,7 @@
  * @file jaln_subscriber_state_machine.h This file contains the declaration for a
  * state machine used when receiving JAL records.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -49,7 +49,7 @@ struct jaln_sub_state {
 	 * @param [in] more Set to axl_true if more frames are expected,
 	 * axl_false otherwise.
 	 *
-	 * @return 
+	 * @return
 	 *  - axl_true if the state was successful at processing the frame.
 	 *  Success is only indicated by an absence of a failure. For example,
 	 *  when processing the system metadata, if the system metadata is
@@ -248,6 +248,10 @@ void jaln_sub_state_reset(jaln_session *session);
  * Helper function to cache a frame within the state machine.
  *
  * @param[in] session The session to cache the frame on.
+ * @param[in] frame The frame
+ * @return
+ *  - axl_false if an error occurred.
+ *  - axl_true otherwise.
  */
 axl_bool jaln_sub_state_append_frame(jaln_session *session, VortexFrame *frame);
 
@@ -266,7 +270,7 @@ axl_bool jaln_sub_state_append_frame(jaln_session *session, VortexFrame *frame);
  * source buffer to fill the destination buffer AND \p more is false.
  *
  * @param[in] dst The destination buffer.
- * @param[in] dst_sz The size of the destination buffer
+ * @param[in] dst_size The size of the destination buffer
  * @param[in, out] pdst_off The offset into the destination of where to copy
  * to.
  * @param[in] src The source buffer.
@@ -277,7 +281,7 @@ axl_bool jaln_sub_state_append_frame(jaln_session *session, VortexFrame *frame);
  * (frames) expected
  *
  * @return
- *  - axl_false if an error occured.
+ *  - axl_false if an error occurred.
  *  - axl_true otherwise.
  */
 axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_size, uint64_t *pdst_off,

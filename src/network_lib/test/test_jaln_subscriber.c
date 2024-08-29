@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_subscriber.c This file contains tests for jaln_subscriber.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -60,13 +60,13 @@ static bool fail;
 static int isMsgSent = 0; // 1 TRUE, 0 FALSE
 
 int fake_vortex_channel_get_number(
-	__attribute__((unused)) VortexChannel *chan)
+	__attribute__((unused)) VortexChannel *channel)
 {
 	return CHAN_NUM;
 }
 
 void fake_vortex_channel_set_received_handler(
-	__attribute__((unused)) VortexChannel *chan,
+	__attribute__((unused)) VortexChannel *channel,
 	__attribute__((unused)) VortexOnFrameReceived received,
 	__attribute__((unused)) axlPointer user_data)
 {
@@ -81,33 +81,33 @@ void fake_vortex_connection_set_on_close_full(__attribute__((unused)) VortexConn
 }
 
 void fake_jaln_sub_state_reset(
-	__attribute__((unused)) jaln_session *session)
+	__attribute__((unused)) jaln_session *sess)
 {
 	return;
 }
 
-VortexFrameType mock_vortex_frame_get_type_success(__attribute__((unused)) VortexFrame *frame)
+VortexFrameType mock_vortex_frame_get_type_success(__attribute__((unused)) VortexFrame *curr_frame)
 {
 	return VORTEX_FRAME_TYPE_ANS;
 }
 
-VortexFrameType mock_vortex_frame_get_type_failure(__attribute__((unused)) VortexFrame *frame)
+VortexFrameType mock_vortex_frame_get_type_failure(__attribute__((unused)) VortexFrame *curr_frame)
 {
 	return VORTEX_FRAME_TYPE_ERR;
 }
 
-axl_bool mock_frame_handler_failure(__attribute__((unused)) jaln_session *session, 
-				__attribute__((unused)) VortexFrame *frame, 
-				__attribute__((unused)) uint64_t payload_offset, 
+axl_bool mock_frame_handler_failure(__attribute__((unused)) jaln_session *sess,
+				__attribute__((unused)) VortexFrame *curr_frame,
+				__attribute__((unused)) uint64_t payload_offset,
 				__attribute__((unused)) axl_bool flag_more)
 {
 	return axl_false;
 }
 
 axl_bool fake_vortex_channel_send_msg_success(
-	__attribute__((unused)) VortexChannel *chan, 
-	__attribute__((unused)) const void *msg, 
-	__attribute__((unused)) size_t msg_size, 
+	__attribute__((unused)) VortexChannel *channel,
+	__attribute__((unused)) const void *msg,
+	__attribute__((unused)) size_t msg_size,
 	__attribute__((unused)) int* msg_no)
 {
 	isMsgSent = 1;
@@ -116,9 +116,9 @@ axl_bool fake_vortex_channel_send_msg_success(
 
 
 axl_bool fake_vortex_channel_send_msg_fail(
-	__attribute__((unused)) VortexChannel *chan, 
-	__attribute__((unused)) const void *msg, 
-	__attribute__((unused)) size_t msg_size, 
+	__attribute__((unused)) VortexChannel *channel,
+	__attribute__((unused)) const void *msg,
+	__attribute__((unused)) size_t msg_size,
 	__attribute__((unused)) int* msg_no)
 {
 	isMsgSent = 0;
@@ -126,14 +126,14 @@ axl_bool fake_vortex_channel_send_msg_fail(
 }
 
 void fake_vortex_channel_set_complete_flag(
-	__attribute__((unused)) VortexChannel *chan, 
+	__attribute__((unused)) VortexChannel *channel,
 	__attribute__((unused)) axl_bool value)
 {
 	return;
 }
 
 axl_bool fake_vortex_channel_close_full(
-	__attribute__((unused)) VortexChannel *chan,
+	__attribute__((unused)) VortexChannel *channel,
 	__attribute__((unused)) VortexOnClosedNotificationFull on_closed,
 	__attribute__((unused)) axlPointer user_data)
 {
@@ -149,7 +149,7 @@ int fake_connection_callbacks_is_valid(struct jaln_connection_callbacks *conn_ca
 }
 
 VortexConnection  *fake_vortex_connection_new(
-		__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *host,
 		__attribute__((unused)) const char *port,
 		__attribute__((unused)) VortexConnectionNew on_connected,
@@ -164,8 +164,8 @@ axl_bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *
 	return axl_true;
 }
 
-axl_bool mock_frame_handler_success(__attribute__((unused)) jaln_session *session,
-				__attribute__((unused)) VortexFrame *frame,
+axl_bool mock_frame_handler_success(__attribute__((unused)) jaln_session *sess,
+				__attribute__((unused)) VortexFrame *curr_frame,
 				__attribute__((unused)) uint64_t payload_offset,
 				__attribute__((unused)) axl_bool flag_more)
 {
@@ -206,7 +206,7 @@ void setup()
 	chan = (VortexChannel *) "dummy";
 	frame = (VortexFrame *) "dummy";
 	replace_function(vortex_channel_close_full, mock_vortex_channel_close_full);
-	replace_function(vortex_channel_get_number, 
+	replace_function(vortex_channel_get_number,
 			fake_vortex_channel_get_number);
 	replace_function(vortex_channel_set_received_handler,
 			fake_vortex_channel_set_received_handler);
@@ -277,7 +277,7 @@ void test_jaln_subscriber_record_frame_handler_success()
 
 int fake_get_subscribe_request_success(
 	__attribute__((unused)) jaln_session *sess,
-	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
+	__attribute__((unused)) const struct jaln_channel_info *ch_info,
 	enum jaln_record_type type,
 	char **nonce,
 	__attribute__((unused)) uint64_t *offset)
@@ -315,7 +315,7 @@ int fake_get_subscribe_request_null_nonce(
 
 int fake_get_subscribe_request_fail(
 	__attribute__((unused)) jaln_session *sess,
-	__attribute__((unused)) const struct jaln_channel_info *ch_info, 
+	__attribute__((unused)) const struct jaln_channel_info *ch_info,
 	__attribute__((unused)) enum jaln_record_type type,
 	__attribute__((unused)) char **nonce,
 	__attribute__((unused)) uint64_t *offset)
@@ -398,7 +398,7 @@ void test_jaln_subscriber_send_subscribe_request_succeeds()
 	session->ch_info->type = JALN_RTYPE_AUDIT;
 	jaln_subscriber_send_subscribe_request(session);
 	assert_equals(1, isMsgSent);
-	
+
 	isMsgSent = 0;
 	session->ch_info->type = JALN_RTYPE_LOG;
 	jaln_subscriber_send_subscribe_request(session);
@@ -415,18 +415,18 @@ void test_jaln_subscriber_send_subscribe_request_fails_bad_input()
 	// Test session NULL
 	jaln_subscriber_send_subscribe_request(NULL);
 	assert_equals(0, isMsgSent);
-	
+
 	// Test jaln_ctx NULL
 	assert_equals((void*)NULL, session->jaln_ctx);
 	jaln_subscriber_send_subscribe_request(session);
 	assert_equals(0, isMsgSent);
-	
+
 	// Test sub_callbacks NULL
 	session->jaln_ctx = jaln_context_create();
 	assert_equals((void*)NULL, session->jaln_ctx->sub_callbacks);
 	jaln_subscriber_send_subscribe_request(session);
 	assert_equals(0, isMsgSent);
-	
+
 	// Test ch_info NULL
 	struct jaln_channel_info *ch_info =  session->ch_info;
 	session->ch_info = NULL;
@@ -435,7 +435,7 @@ void test_jaln_subscriber_send_subscribe_request_fails_bad_input()
 	assert_equals(0, isMsgSent);
 	session->ch_info = ch_info;
 	ch_info = NULL;
-	
+
 	// Test rec_chan NULL
 	assert_equals((void*)NULL, session->rec_chan);
 	jaln_subscriber_send_subscribe_request(session);
@@ -447,7 +447,7 @@ void test_jaln_subscriber_send_subscribe_request_fails_internal()
 	session->jaln_ctx = jaln_context_create();
 	session->jaln_ctx->sub_callbacks = jaln_subscriber_callbacks_create();
 	session->rec_chan = (VortexChannel *) 0xbadf00d;
-	
+
 	session->jaln_ctx->sub_callbacks->get_subscribe_request =
 		fake_get_subscribe_request_fail;
 	jaln_subscriber_send_subscribe_request(session);
@@ -484,37 +484,37 @@ void test_jaln_subscriber_create_session_works()
 
 void test_jaln_subscribe_does_not_crash_with_bad_input()
 {
-	assert_pointer_equals((void *) NULL, jaln_subscribe(NULL, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, NULL, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, NULL, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, 0, JALN_ARCHIVE_MODE, NULL));
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_UNKNOWN_MODE, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(NULL, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, NULL, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, NULL, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, 0, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_UNKNOWN_MODE, NULL, 10, 1000, 4));
 }
 
 void test_jaln_subscribe_fails_when_missing_conn_callbacks()
 {
 	jaln_connection_callbacks_destroy(&ctx->conn_callbacks);
-	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
+	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
 }
 
 void test_jaln_subscribe_fails_when_missing_sub_callbacks()
 {
 	jaln_subscriber_callbacks_destroy(&ctx->sub_callbacks);
-	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL));
+	assert_pointer_equals((void *)NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
 }
 
 void test_jaln_subscribe_fails_when_already_connected()
 {
 	ctx->is_connected = axl_true;
-	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL));
+	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
 }
 
 void test_jaln_subscribe_success_for_all_types()
 {
 	replace_function(vortex_connection_set_on_close_full, fake_vortex_connection_set_on_close_full);
 	struct jaln_connection *conn = NULL;
-	
-	conn = jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL);
+
+	conn = jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_ALL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4);
 	assert_not_equals((void *) NULL, conn);
 	jaln_connection_destroy(&conn);
 	restore_function(vortex_connection_set_on_close_full);

@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_handle_init_replies.c This file contains tests for jaln_handle_init_replies.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -88,7 +88,7 @@ static VortexMimeHeader *fake_get_mime_header(
 		return (VortexMimeHeader*) JALN_ENC_XML;
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_DIGEST)) {
-		return (VortexMimeHeader*) JALN_DGST_SHA256;
+		return (VortexMimeHeader*) digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT];
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_AGENT)) {
 
@@ -131,10 +131,7 @@ void setup()
 	const char duplicate_enc[] = JALN_ENC_XML;
 	jaln_register_encoding(sess->jaln_ctx, duplicate_enc);
 
-	struct jal_digest_ctx *digest = jal_sha256_ctx_create();
-	free(digest->algorithm_uri);
-	digest->algorithm_uri = NULL;
-	digest->algorithm_uri = jal_strdup(JALN_DGST_SHA256);
+	struct jal_digest_ctx *digest = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 
 	jaln_register_digest_algorithm(
 		sess->jaln_ctx, digest);
@@ -193,7 +190,7 @@ static VortexMimeHeader *fake_get_mime_header_returns_null_for_agent(
 		return (VortexMimeHeader*) JALN_ENC_XML;
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_DIGEST)) {
-		return (VortexMimeHeader*) JALN_DGST_SHA256;
+		return (VortexMimeHeader*) digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT];
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_AGENT)) {
 
@@ -218,7 +215,7 @@ static VortexMimeHeader *fake_get_mime_header_returns_null_for_encoding(
 		return (VortexMimeHeader*) NULL;
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_DIGEST)) {
-		return (VortexMimeHeader*) JALN_DGST_SHA256;
+		return (VortexMimeHeader*) digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT];
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_AGENT)) {
 
@@ -249,10 +246,10 @@ static VortexMimeHeader *fake_get_mime_header_returns_dgst_for_encoding(
 		return (VortexMimeHeader*) JALN_MSG_INIT_ACK;
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_ENCODING)) {
-		return (VortexMimeHeader*) JALN_DGST_SHA256;
+		return (VortexMimeHeader*) digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT];
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_DIGEST)) {
-		return (VortexMimeHeader*) JALN_DGST_SHA256;
+		return (VortexMimeHeader*) digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT];
 
 	} else if (0 == strcasecmp(header_name, JALN_HDRS_AGENT)) {
 
@@ -631,11 +628,7 @@ void test_jaln_handle_initialize_ack_succeeds_empty_axlLists_good_encoding()
 
 void test_jaln_handle_initialize_ack_fails_empty_axlLists_bad_digest()
 {
-	struct jal_digest_ctx *digest = jal_sha256_ctx_create();
-	free(digest->algorithm_uri);
-	digest->algorithm_uri = NULL;
-	digest->algorithm_uri = jal_strdup(JALN_DGST_SHA256);
-
+	struct jal_digest_ctx *digest = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	axl_list_remove(sess->jaln_ctx->dgst_algs, digest);
 
 	replace_function(vortex_frame_get_mime_header,
@@ -645,17 +638,12 @@ void test_jaln_handle_initialize_ack_fails_empty_axlLists_bad_digest()
 	assert_equals(axl_false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
-	free(digest->algorithm_uri);
-	free(digest);
+	jal_digest_ctx_destroy(&digest);
 }
 
 void test_jaln_handle_initialize_ack_succeeds_empty_axlLists_good_digest()
 {
-	struct jal_digest_ctx *digest = jal_sha256_ctx_create();
-	free(digest->algorithm_uri);
-	digest->algorithm_uri = NULL;
-	digest->algorithm_uri = jal_strdup(JALN_DGST_SHA256);
-
+	struct jal_digest_ctx *digest = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	axl_list_remove(sess->jaln_ctx->dgst_algs, digest);
 
 	replace_function(vortex_frame_get_mime_header,
@@ -665,8 +653,7 @@ void test_jaln_handle_initialize_ack_succeeds_empty_axlLists_good_digest()
 	assert_equals(axl_true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
-	free(digest->algorithm_uri);
-	free(digest);
+	jal_digest_ctx_destroy(&digest);
 }
 
 void test_jaln_handle_initialize_ack_fails_unrecognized_digest()

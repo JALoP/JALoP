@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_publisher.c This file contains tests for jaln_publisher.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -221,7 +221,7 @@ int fake_connection_callbacks_is_valid(struct jaln_connection_callbacks *conn_ca
 }
 
 VortexConnection  *fake_vortex_connection_new(
-		__attribute__((unused)) VortexCtx *ctx,
+		__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *host,
 		__attribute__((unused)) const char *port,
 		__attribute__((unused)) VortexConnectionNew on_connected,
@@ -257,6 +257,16 @@ VortexConnection *fake_vortex_channel_get_connection(
 	return (VortexConnection*)0xbadf00d;
 }
 
+int fake_vortex_frame_get_mime_header_size(__attribute__((unused)) VortexFrame *frame)
+{
+	return 0;
+}
+
+const char *fake_vortex_frame_get_content(__attribute__((unused)) VortexFrame *frame)
+{
+	return NULL;
+}
+
 void setup()
 {
 	replace_function(vortex_channel_finalize_ans_rpy, fake_finalize_ans_rpy);
@@ -270,6 +280,8 @@ void setup()
 	replace_function(vortex_channel_get_connection, fake_vortex_channel_get_connection);
 	replace_function(jaln_publisher_callbacks_is_valid, fake_publisher_callbacks_is_valid);
 	replace_function(jaln_connection_callbacks_is_valid, fake_connection_callbacks_is_valid);
+	replace_function(vortex_frame_get_mime_header_size, fake_vortex_frame_get_mime_header_size);
+	replace_function(vortex_frame_get_content, fake_vortex_frame_get_content);
 	calc_dgsts = jaln_digest_info_list_create();
 	peer_dgsts = jaln_digest_info_list_create();
 	dgst_resp_infos = NULL;
@@ -317,64 +329,64 @@ void teardown()
 
 void test_pub_does_not_crash_with_bad_input()
 {
-	axlList *dgst_resp_infos = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(NULL, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	jaln_pub_notify_digests_and_create_digest_response(sess, NULL, peer_dgsts, &dgst_resp_infos);
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, NULL, &dgst_resp_infos);
+	axlList *curr_dgst_resp_infos = NULL;
+	jaln_pub_notify_digests_and_create_digest_response(NULL, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, NULL, peer_dgsts, &curr_dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, NULL, &curr_dgst_resp_infos);
 	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, NULL);
 
-	dgst_resp_infos = (axlList*) 0xbadf00d;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	dgst_resp_infos = NULL;
+	curr_dgst_resp_infos = (axlList*) 0xbadf00d;
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
+	curr_dgst_resp_infos = NULL;
 
 	sess->jaln_ctx = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
 	sess->jaln_ctx = ctx;
 
 	sess->jaln_ctx->pub_callbacks->peer_digest = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
 	sess->jaln_ctx->pub_callbacks->peer_digest = peer_digest;
 
 	jaln_publisher_callbacks_destroy(&sess->jaln_ctx->pub_callbacks);
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
 
 }
 
 void test_pub_notify_digests_works()
 {
-	axlList *dgst_resp_infos = NULL;
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	assert_not_equals((void*) NULL, dgst_resp_infos);
+	axlList *curr_dgst_resp_infos = NULL;
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
+	assert_not_equals((void*) NULL, curr_dgst_resp_infos);
 	assert_equals(4, peer_digest_call_cnt);
 	assert_equals(0, axl_list_length(calc_dgsts));
 	assert_equals(4, axl_list_length(peer_dgsts));
-	axl_list_free(dgst_resp_infos);
+	axl_list_free(curr_dgst_resp_infos);
 }
 
 void test_pub_notify_digests_works_when_peer_has_extra_dgts()
 {
-	axlList *dgst_resp_infos = NULL;
+	axlList *curr_dgst_resp_infos = NULL;
 	int dgst_val = 0xf005;
 	axl_list_append(peer_dgsts, jaln_digest_info_create("nonce5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	assert_not_equals((void*) NULL, dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
+	assert_not_equals((void*) NULL, curr_dgst_resp_infos);
 	assert_equals(5, peer_digest_call_cnt);
 	assert_equals(0, axl_list_length(calc_dgsts));
 	assert_equals(5, axl_list_length(peer_dgsts));
-	axl_list_free(dgst_resp_infos);
+	axl_list_free(curr_dgst_resp_infos);
 }
 
 void test_pub_notify_digests_works_when_peer_has_missing_dgst()
 {
-	axlList *dgst_resp_infos = NULL;
+	axlList *curr_dgst_resp_infos = NULL;
 	int dgst_val = 0xf005;
 	axl_list_append(calc_dgsts, jaln_digest_info_create("nonce5", (uint8_t*)&dgst_val, sizeof(dgst_val)));
-	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &dgst_resp_infos);
-	assert_not_equals((void*) NULL, dgst_resp_infos);
+	jaln_pub_notify_digests_and_create_digest_response(sess, calc_dgsts, peer_dgsts, &curr_dgst_resp_infos);
+	assert_not_equals((void*) NULL, curr_dgst_resp_infos);
 	assert_equals(4, peer_digest_call_cnt);
 	assert_equals(1, axl_list_length(calc_dgsts));
 	assert_equals(4, axl_list_length(peer_dgsts));
-	axl_list_free(dgst_resp_infos);
+	axl_list_free(curr_dgst_resp_infos);
 }
 
 void test_pub_handle_sync_works()

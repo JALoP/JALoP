@@ -2,7 +2,7 @@
  * @file jaln_subscriber_callbacks_internal.h This file declares internal functions
  * related to jaln_subscriber_callbacks
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

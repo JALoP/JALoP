@@ -3,7 +3,7 @@
  * declarations for internal library functions related to a jaln_session
  * structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -56,7 +56,7 @@ struct jaln_pub_data;
 struct jaln_session_t {
 	VortexMutex lock;                    //!< Mutex to lock the structure
 	VortexMutex wait_lock;               //!< Mutex to lock the structure on wait
-	VortexCond wait;                     //!< Condition variable to wait on	
+	VortexCond wait;                     //!< Condition variable to wait on
 	int ref_cnt;                         //!< Reference count
 	enum jaln_publish_mode mode;         //!< Whether to send messages as archive or live
 
@@ -73,11 +73,12 @@ struct jaln_session_t {
 	axlList *dgst_list;                  //!< A list of jaln_digest_info structures that are calculated as data is sent/received
 	enum jaln_role role;                 //!< The role this context is performing (subscriber or publisher)
 	int dgst_list_max;                   //!< The maximum number of digest entries to keep as a subscriber
-	long dgst_timeout;                   //!< The maximum amount of time to wait before sending a 'digest' message
+	long dgst_timeout;                   //!< The maximum amount of time to wait before sending a 'digest-challenge' message
 	union {
 		struct jaln_sub_data* sub_data;   //!< Data specific to a subscriber
 		struct jaln_pub_data* pub_data;   //!< Data specific to a publisher
 	};
+	int window_size;										//!< BEEP channel window_size
 };
 
 
@@ -205,7 +206,8 @@ void jaln_pub_data_destroy(struct jaln_pub_data **pub_data);
 /**
  * Cache the calculations of a digest to be sent at a later time.
  *
- * @param[in] session The session that the digests are associated with.
+ * @param[in] sess The session that the digests are associated with.
+ * @param[in] dgst_buf The digest buffer
  * @param[in] nonce The nonce of the record
  * @param[in] dgst_len The length of the digest (in bytes).
  *
@@ -219,10 +221,15 @@ enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess,
 /**
  * Flag this session as 'errored'
  *
- * @param[in] ctx The jaln_session that encountered an error;
+ * @param[in] sess The jaln_session that encountered an error;
  */
 void jaln_session_set_errored_no_lock(jaln_session *sess);
 
+/**
+ * Flag this session as 'errored'
+ *
+ * @param[in] sess The jaln_session that encountered an error;
+ */
 void jaln_session_set_errored(jaln_session *sess);
 
 /**
@@ -257,7 +264,7 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel, axlPointe
  * @param[in] channel_num the channel number, -1 if the channel wasn't created
  * @param[in] chan The vortex channel, NULL if the channel wasn't created
  * @param[in] conn The vortex connection
- * @param[in] user_data Expected to be a pointer to a jaln_session. 
+ * @param[in] user_data Expected to be a pointer to a jaln_session.
  *
  * @see vortex_channel_new
  */

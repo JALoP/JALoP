@@ -3,7 +3,7 @@
  * declarations for internal library functions related to a
  * subscribere session
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -65,10 +65,10 @@ void jaln_subscriber_on_connection_close(VortexConnection *conn,
  * Frame handler for a subscriber to deal with the response to an 'init'
  * message.
  *
+ * @param[in] session The session that received the frame
  * @param[in] chan The vortex channel that received the frame
  * @param[in] conn The vortex connection for the channel.
  * @param[in] frame The frame
- * @param[in] user_data This is expected to be a jaln_session.
  */
 void jaln_subscriber_init_reply_frame_handler(jaln_session *session,
 		VortexChannel *chan,
@@ -78,7 +78,7 @@ void jaln_subscriber_init_reply_frame_handler(jaln_session *session,
 /**
  * Frame handler that is used before any messages are sent by the publisher.
  *
- * @param[in] sess The jaln_session
+ * @param[in] session The jaln_session
  * @param[in] chan The vortex channel that received the frame
  * @param[in] conn The vortex connection for the channel.
  * @param[in] frame The frame
@@ -93,10 +93,10 @@ void jaln_subscriber_unexpected_frame_handler(
  * Frame handler for use when the subscriber is expecting 'ANS' frames in
  * response to a 'subscribe'
  *
- * @param[in] session
+ * @param[in] session The jaln_session
  * @param[in] chan The channel that received the frame
- * @param[in] conn The connection that holds the channel.
- * @param[in] frame Teh frame of the message.
+ * @param[in] v_conn The connection that holds the channel.
+ * @param[in] frame The frame of the message.
  */
 void jaln_subscriber_record_frame_handler(jaln_session *session,
 		VortexChannel *chan,
@@ -110,7 +110,7 @@ void jaln_subscriber_record_frame_handler(jaln_session *session,
  *
  * @param[in] chan The vortex channel, this should be the channel to be used as
  * a record channel.
- * @param[in] sess The jaln_session to configure
+ * @param[in] session The jaln_session to configure
  *
  * @return JAL_OK on success, or an error.
  */
@@ -122,7 +122,7 @@ enum jal_status jaln_configure_sub_session(VortexChannel *chan, jaln_session *se
  *
  * @param[in] chan The vortex channel, this should be the channel to be used as
  * a record channel.
- * @param[in] sess The jaln_session to configure
+ * @param[in] session The jaln_session to configure
  *
  * @return JAL_OK on success, or an error.
  */

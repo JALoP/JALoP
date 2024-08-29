@@ -4,7 +4,7 @@
  * structure. The jaln_session tracks the internal state for a peer that is
  * receiving jal records.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -57,7 +57,7 @@ jaln_session *jaln_session_create()
 	sess->mode = JALN_UNKNOWN_MODE;
 	sess->ref_cnt = 1;
 	sess->rec_chan_num = -1;
-	sess->dgst_chan_num = -1; 
+	sess->dgst_chan_num = -1;
 	sess->ch_info = jaln_channel_info_create();
 	sess->dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 	if (!sess->dgst_list) {
@@ -216,17 +216,19 @@ axl_bool jaln_session_on_close_channel(int channel_num,
 		// associated with the channel, so should be safe to close it.
 		return axl_true;
 	}
-	vortex_mutex_lock(&sess->lock);
 	if (channel_num == sess->rec_chan_num) {
+		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
+		vortex_mutex_unlock(&sess->lock);
 	} else if (channel_num == sess->dgst_chan_num) {
+		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->dgst_chan = NULL;
 		sess->dgst_chan_num = -1;
-	} else {
 		vortex_mutex_unlock(&sess->lock);
+	} else {
 		return axl_true;
 	}
 	if (!sess->rec_chan && !sess->dgst_chan) {
@@ -237,7 +239,6 @@ axl_bool jaln_session_on_close_channel(int channel_num,
 			vortex_mutex_unlock(&ctx->lock);
 		}
 	}
-	vortex_mutex_unlock(&sess->lock);
 	jaln_session_unref(sess);
 	return axl_true;
 }
@@ -258,17 +259,19 @@ void jaln_session_notify_close(
 		// shouldn't happen
 		return;
 	}
-	vortex_mutex_lock(&sess->lock);
 	if (channel_num == sess->rec_chan_num) {
+		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
+		vortex_mutex_unlock(&sess->lock);
 	} else if (channel_num == sess->dgst_chan_num) {
+		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->dgst_chan = NULL;
 		sess->dgst_chan_num = -1;
-	} else {
 		vortex_mutex_unlock(&sess->lock);
+	} else {
 		return;
 	}
 	if (!sess->rec_chan && !sess->dgst_chan) {
@@ -279,7 +282,6 @@ void jaln_session_notify_close(
 			vortex_mutex_unlock(&ctx->lock);
 		}
 	}
-	vortex_mutex_unlock(&sess->lock);
 	jaln_session_unref(sess);
 }
 
@@ -291,17 +293,19 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 		// shouldn't happen
 		return;
 	}
-	vortex_mutex_lock(&sess->lock);
 	if (channel == sess->rec_chan) {
+		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
+		vortex_mutex_unlock(&sess->lock);
 	} else if (channel == sess->dgst_chan) {
+		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->dgst_chan = NULL;
 		sess->dgst_chan_num = -1;
-	} else {
 		vortex_mutex_unlock(&sess->lock);
+	} else {
 		return;
 	}
 	if (!sess->rec_chan && !sess->dgst_chan) {
@@ -312,7 +316,6 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 			vortex_mutex_unlock(&ctx->lock);
 		}
 	}
-	vortex_mutex_unlock(&sess->lock);
 	jaln_session_unref(sess);
 }
 
@@ -325,6 +328,7 @@ enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess, char *nonce, u
 
 	vortex_mutex_lock(&sess->lock);
 	axl_list_append(sess->dgst_list, dgst_info);
+
 	if (JALN_ROLE_SUBSCRIBER == sess->role) {
 		axl_bool notify = axl_false;
 		if (axl_list_length(sess->dgst_list) >= sess->dgst_list_max) {

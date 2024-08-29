@@ -3,7 +3,7 @@
  *
  * Public functions for creating and configuring a jaln_context.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -40,6 +40,9 @@ extern "C" {
 
 #include "jaln_strings.h"
 
+/**
+ * Definition of jaln_context type
+ */
 struct jaln_context_t {
 	VortexMutex lock;
 	int ref_cnt;
@@ -47,7 +50,6 @@ struct jaln_context_t {
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_subscriber_callbacks *sub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;
-	struct jal_digest_ctx *sha256_digest;
 	axlList *dgst_algs;
 	axlList *xml_encodings;
 	axlHash *sessions_by_conn;
@@ -57,6 +59,7 @@ struct jaln_context_t {
 	char *public_cert;
 	char *private_key;
 	void *user_data;
+	int debug_flag;
 };
 
 /**

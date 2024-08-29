@@ -3,7 +3,7 @@
  * jaln_init_info structure. The jaln_init_info structure is used
  * to communicate the contents of an init message.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

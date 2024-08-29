@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_push.c This file contains tests for jaln_push.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -87,7 +87,7 @@ void test_jaln_send_record_fails_on_too_large_nonce()
 	char *nonce = BIG_N;
 	enum jal_status ret;
 
-	ret = jaln_send_record(sess, nonce, sys_meta_buf, sys_meta_len, 
+	ret = jaln_send_record(sess, nonce, sys_meta_buf, sys_meta_len,
 				app_meta_buf, app_meta_len, payload_buf, payload_len);
 
 	assert_equals(ret, JAL_E_INVAL_NONCE);

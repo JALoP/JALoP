@@ -2,7 +2,7 @@
 * @file jaln_push.c  This file contains function
 * definitions related to the jal publisher.
 *
-* @section LICENSE
+* ### LICENSE
 *
 * Source code in 3rd-party is licensed and owned by their respective
 * copyright holders.
@@ -43,7 +43,7 @@ enum jal_status jaln_send_record_init(
 			jaln_session *sess,
 			void *nonce,
 			uint8_t *sys_meta_buf,
-			uint64_t sys_meta_len, 
+			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
 			struct jaln_record_info *rec_info)
@@ -93,7 +93,7 @@ enum jal_status jaln_send_record(
 			jaln_session *sess,
 			char *nonce,
 			uint8_t *sys_meta_buf,
-			uint64_t sys_meta_len, 
+			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
 			uint8_t *payload_buf,
@@ -159,7 +159,7 @@ out:
 /*
  * Helper method used to send a record, via a feeder, to the
  * subscriber.
- * 
+ *
  * This method initializes the record information to be sent,
  * reads the payload data from the feeder, and subsequently
  * initiates the process of sending the record to the subscriber.
@@ -170,7 +170,7 @@ enum jal_status jaln_send_record_feeder(
 			jaln_session *sess,
 			char *nonce,
 			uint8_t *sys_meta_buf,
-			uint64_t sys_meta_len, 
+			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
 			uint64_t payload_len,
@@ -218,7 +218,7 @@ enum jal_status jaln_send_record_feeder(
 	offset = 0;
 
 	while (left_to_process != 0) {
-		uint64_t to_copy = (uint64_t) (BUF_SIZE < left_to_process) ? 
+		uint64_t to_copy = (uint64_t) (BUF_SIZE < left_to_process) ?
 			BUF_SIZE : left_to_process;
 		uint64_t tmp = to_copy;
 		ret = feeder->get_bytes(offset, buf, &tmp,
@@ -239,7 +239,7 @@ enum jal_status jaln_send_record_feeder(
 	pub_data->payload_sz = payload_len;
 	pub_data->journal_feeder = *feeder;
 
-	ret = jaln_pub_begin_next_record_ans(sess, &rec_info); 
+	ret = jaln_pub_begin_next_record_ans(sess, &rec_info);
 out:
 	// The library does not assume ownership of the buffers.
 	// Make sure there are no lingering pointers to them.
@@ -267,7 +267,7 @@ enum jal_status jaln_send_journal(
 	return jaln_send_record_feeder(sess,
 					nonce,
 					sys_meta_buf,
-					sys_meta_len, 
+					sys_meta_len,
 					app_meta_buf,
 					app_meta_len,
 					payload_len,

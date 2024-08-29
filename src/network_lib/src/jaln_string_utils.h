@@ -3,7 +3,7 @@
  *
  * APIs for implementing and registering additional digest algorithms
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -59,7 +59,7 @@ axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
  * output is limited to a uint64_t type.
  *
  * @param[in] str The string to convert
- * @param[out] The converted value
+ * @param[out] out The converted value
  * @return axl_true on success, axl_false otherwise
  */
 axl_bool jaln_ascii_to_uint64_t(const char *str, uint64_t *out);

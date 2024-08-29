@@ -1,7 +1,7 @@
 /**
  * @file jaln_subscriber_callbacks.c This file contains jaln_subscriber_callbacks functions
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

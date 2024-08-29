@@ -2,7 +2,7 @@
  * @file test_jaln_connection_request.c This file contains tests for
  * jaln_connection_request structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

@@ -3,7 +3,7 @@
  * definitions for internal library functions related to creating JALoP
  * messages
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -220,9 +220,9 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di)
 	return orig;
 }
 
-enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, uint64_t *msg_len)
+enum jal_status jaln_create_digest_challenge_msg(axlList *dgst_list, int debug_flag, char **msg_out, uint64_t *msg_len)
 {
-#define DGST_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_DIGEST JALN_CRLF \
+#define DGST_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_DIGEST_CHAL JALN_CRLF \
 		JALN_HDRS_COUNT JALN_COLON_SPACE "%d" JALN_CRLF JALN_CRLF
 	if (!dgst_list || !msg_out || *msg_out || !msg_len) {
 		return JAL_E_INVAL;
@@ -261,6 +261,8 @@ enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, uint6
 
 	msg = jal_malloc(len);
 	sprintf(msg, DGST_MSG_HDRS, dgst_cnt);
+
+	BEEP_HEADERS_LOG(debug_flag, msg);
 
 	axl_list_cursor_first(iter);
 	while(axl_list_cursor_has_item(iter)) {
@@ -582,7 +584,7 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
 	return dst;
 }
 
-enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, uint64_t *msg_len)
+enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, int debug_flag, char **msg_out, uint64_t *msg_len)
 {
 #define DGST_RESP_MSG_HDRS JALN_MIME_PREAMBLE JALN_MSG_DIGEST_RESP JALN_CRLF \
 		JALN_HDRS_COUNT JALN_COLON_SPACE "%d" JALN_CRLF JALN_CRLF
@@ -623,6 +625,8 @@ enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **
 
 	msg = jal_malloc(len);
 	sprintf(msg, DGST_RESP_MSG_HDRS, dgst_cnt);
+
+	BEEP_HEADERS_LOG(debug_flag, msg);
 
 	axl_list_cursor_first(iter);
 	while(axl_list_cursor_has_item(iter)) {

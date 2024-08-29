@@ -2,7 +2,7 @@
  * @file jaln_publisher.c  This file contains function
  * definitions related to the jal publisher.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -127,7 +127,7 @@ enum jal_status jaln_publisher_handle_sync(jaln_session *sess,
 	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(chan, msg_no);
 	char *nonce = NULL;
 	enum jal_status ret = JAL_E_INVAL;
-	if (!sess || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks || 
+	if (!sess || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks ||
 			!sess->jaln_ctx->pub_callbacks->sync || !sess->ch_info) {
 		goto out;
 	}
@@ -135,6 +135,7 @@ enum jal_status jaln_publisher_handle_sync(jaln_session *sess,
 	if (ret != JAL_OK) {
 		goto out;
 	}
+	BEEP_HEADERS_LOG_INCOMING(sess->jaln_ctx->debug_flag, frame);
 	sess->jaln_ctx->pub_callbacks->sync(sess, sess->ch_info, sess->ch_info->type, sess->mode, nonce, NULL, sess->jaln_ctx->user_data);
 	free(nonce);
 out:
@@ -157,6 +158,8 @@ enum jal_status jaln_publisher_handle_digest(jaln_session *sess, VortexChannel *
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
+
+	BEEP_HEADERS_LOG_INCOMING(sess->jaln_ctx->debug_flag, frame);
 
 	vortex_mutex_lock(&sess->lock);
 	calc_dgsts = sess->dgst_list;
@@ -184,7 +187,7 @@ enum jal_status jaln_publisher_handle_digest(jaln_session *sess, VortexChannel *
 	axl_list_free(dgst_from_remote);
 	dgst_from_remote = NULL;
 
-	ret = jaln_create_digest_response_msg(resps, &msg, &len);
+	ret = jaln_create_digest_response_msg(resps, sess->jaln_ctx->debug_flag, &msg, &len);
 	axl_list_free(resps);
 	resps = NULL;
 	vortex_channel_send_rpy(chan, msg, len, msg_no);
@@ -212,7 +215,7 @@ void jaln_publisher_digest_and_sync_frame_handler(VortexChannel *chan, VortexCon
 	if (!msg) {
 		goto err_out;
 	}
-	if (0 == strcmp(msg, JALN_MSG_DIGEST)) {
+	if (0 == strcmp(msg, JALN_MSG_DIGEST_CHAL)) {
 		if (JAL_OK != jaln_publisher_handle_digest(sess, chan, frame, msg_no)) {
 			goto err_out;
 		}
@@ -283,6 +286,7 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
+	BEEP_HEADERS_LOG_INCOMING(sess->jaln_ctx->debug_flag, frame);
 
 	sess->pub_data->payload_off = offset;
 	struct jaln_record_info rec_info;
@@ -331,6 +335,7 @@ enum jal_status jaln_pub_handle_subscribe(jaln_session *sess, VortexChannel *cha
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
+	BEEP_HEADERS_LOG_INCOMING(sess->jaln_ctx->debug_flag, frame);
 
 	pd->msg_no = msg_no;
 	ret = cbs->on_subscribe(sess, ch_info, type, sess->mode, NULL, user_data);
@@ -430,6 +435,7 @@ void jaln_publisher_on_channel_create(int channel_num,
 	if (JAL_OK != ret) {
 		goto err_out;
 	}
+	BEEP_HEADERS_LOG(session->jaln_ctx->debug_flag, init_msg);
 	if (!vortex_channel_send_msg(chan, init_msg, init_msg_len, NULL)) {
 		goto err_out;
 	}
@@ -527,6 +533,7 @@ void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
 		if (!jaln_handle_initialize_ack(sess, JALN_ROLE_PUBLISHER, frame)) {
 			goto out;
 		}
+		BEEP_HEADERS_LOG_INCOMING(sess->jaln_ctx->debug_flag, frame);
 		vortex_channel_set_received_handler(chan, jaln_pub_channel_frame_handler, sess);
 
 		int chan_num = vortex_channel_get_number(chan);
@@ -543,6 +550,7 @@ void jaln_publisher_init_reply_frame_handler(VortexChannel *chan,
 				"digest:%d", chan_num);
 	} else if (0 == strcasecmp(msg, JALN_MSG_INIT_NACK)) {
 		jaln_handle_initialize_nack(sess, frame);
+		BEEP_HEADERS_LOG_INCOMING(sess->jaln_ctx->debug_flag, frame);
 	} else {
 		vortex_connection_shutdown(conn);
 	}

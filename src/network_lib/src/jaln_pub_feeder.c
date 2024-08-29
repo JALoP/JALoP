@@ -3,7 +3,7 @@
  * implementation of VortexPayloadFeeder for sending records from a publisher
  * to a subscriber.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -143,7 +143,7 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 		}
 		if (pd->payload_sz == pd->payload_off) {
 			pd->finished_payload = axl_true;
-			size_t dgst_len = sess->dgst->len;
+			unsigned int dgst_len = sess->dgst->len;
 			if (JAL_OK != sess->dgst->final(pd->dgst_inst, pd->dgst, &dgst_len)) {
 				return axl_false;
 			}
@@ -306,6 +306,7 @@ enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
 	if (JAL_OK != ret) {
 		goto out;
 	}
+	BEEP_HEADERS_LOG(sess->jaln_ctx->debug_flag, pd->headers);
 
 	jaln_pub_feeder_calculate_size_for_vortex(sess);
 

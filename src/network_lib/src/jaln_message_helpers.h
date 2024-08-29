@@ -3,7 +3,7 @@
  * declarations for internal library functions related to creating JALoP
  * messages
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -38,13 +38,34 @@
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
 
+#define BEEP_HEADERS_LOG(debug_flag, args...) \
+	if (debug_flag) {\
+		time_t rawtime; \
+		time(&rawtime); \
+		char timestr[26]; \
+		strftime(timestr, 26, "%Y-%m-%dT%H:%M:%S", gmtime(&rawtime)); \
+		fprintf(stdout, "(jaln) %s[%d](%s) ", __FUNCTION__, __LINE__, timestr); \
+		fputs(args, stdout); \
+		fprintf(stdout, "\n"); \
+		fflush(stdout);\
+	}\
+
+#define BEEP_HEADERS_LOG_INCOMING(debug_flag, frame) \
+	BEEP_HEADERS_LOG(debug_flag, "Incoming Headers"); \
+	int headerSize = vortex_frame_get_mime_header_size(frame); \
+	const char *fullContent = vortex_frame_get_content(frame); \
+	char *headerMsg = calloc(headerSize+1, sizeof(char)); \
+	strncpy(headerMsg, fullContent, headerSize); \
+	BEEP_HEADERS_LOG(debug_flag, headerMsg); \
+	free(headerMsg); \
+
 /**
  * Helper function to create a journal_resume_msg
  *
  * @param[in] nonce The nonce to resume
  * @param[in] offset The offset in the journal record to resume data from.
  * @param[out] msg_out This will contain the contents of the initialize message.
- * @param[out] msg_len_out The length of the initialize message
+ * @param[out] msg_out_len The length of the initialize message
  *
  * @return JAL_E_INVAL if there is something wrong with the parameters, or
  * JAL_OK on success
@@ -66,9 +87,8 @@ enum jal_status jaln_create_sync_msg(const char *nonce, char **msg, uint64_t *ms
 /**
  * Helper function to create a 'subscribe' message
  *
- * @param[in] nonce The last nonce to send
  * @param[out] msg_out This will contain the contents of the initialize message.
- * @param[out] msg_len_out The length of the initialize message
+ * @param[out] msg_out_len The length of the initialize message
  *
  * @return JAL_E_INVAL if there is something wrong with the parameters, or
  * JAL_OK on success
@@ -92,13 +112,13 @@ axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
  * jaln_digest_info to a string for sending as part of a digest message.
  *
  * @param[in] di the digest info object.
- * @param return the length of the resulting string, or 0 if an error occurred.
+ * @return the length of the resulting string, or 0 if an error occurred.
  */
 uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
 
 /**
  * Helper function to append a jaln_digest_info as line for a digest message.
- * This works similar to strcat, and appends the string 'dgst=nonce\r\n', i.e.
+ * This works similar to strcat, and appends the string \c "dgst=nonce\r\n", i.e.
  * the digest value (as a hex string with no leading 0x) followed by the equals
  * symbol ('=') followed by the nonce, and finished with a carriage return
  * and line feed.
@@ -113,14 +133,15 @@ uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di);
 char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di);
 
 /**
- * Create the 'digest' message.
+ * Create the 'digest-challenge' message.
  *
- * It is an error to try and create a digest message for an empty list.
+ * It is an error to try and create a digest challenge message for an empty list.
  * It is also an error if any of the digest_info objects in the list are not
  * valid.
  *
  * @param[in] dgst_list The list of jaln_digest_info structures to send in the
  * message.
+* @param[in] debug_flag The context debug flag
  * @param[out] msg_out The resulting message
  * @param[out] msg_len The length of the resulting message
  *
@@ -129,20 +150,20 @@ char *jaln_digest_info_strcat(char *dst, const struct jaln_digest_info *di);
  *  - JAL_OK on success
  *  - JAL_E_INVAL on error
  */
-enum jal_status jaln_create_digest_msg(axlList *dgst_list, char **msg_out, uint64_t *msg_len);
+enum jal_status jaln_create_digest_challenge_msg(axlList *dgst_list, int debug_flag, char **msg_out, uint64_t *msg_len);
 
 /**
  * Helper function to calculate the number of bytes needed to to convert a
  * jaln_digest_resp_info to a string for sending as part of a digest message.
  *
  * @param[in] di the digest_resp_info object.
- * @param return the length of the resulting string, or 0 if an error occurred.
+ * @return the length of the resulting string, or 0 if an error occurred.
  */
 uint64_t jaln_digest_resp_info_strlen(const struct jaln_digest_resp_info *di);
 
 /**
  * Helper function to append a jaln_digest_resp_info as line for a digest message.
- * This works similar to strcat, and appends the string '<status>=nonce\r\n', i.e.
+ * This works similar to strcat, and appends the string \c "<status>=nonce\r\n", i.e.
  * the status (confirmed, invalid, or unknown) followed by the equals
  * symbol ('=') followed by the nonce, and finished with a carriage return
  * and line feed.
@@ -159,8 +180,9 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
  * It is also an error if any of the digest_info objects in the list are not
  * valid.
  *
- * @param[in] dgst_list The list of jaln_digest_resp_info structures to send in the
+ * @param[in] dgst_resp_list The list of jaln_digest_resp_info structures to send in the
  * message.
+ * @param[in] debug_flag The context debug flag
  * @param[out] msg_out The resulting message
  * @param[out] msg_len The length of the resulting message
  *
@@ -168,7 +190,7 @@ char *jaln_digest_resp_info_strcat(char *dst, const struct jaln_digest_resp_info
  *  - JAL_OK on success
  *  - JAL_E_INVAL on error
  */
-enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, char **msg_out, uint64_t *msg_len);
+enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, int debug_flag, char **msg_out, uint64_t *msg_len);
 
 /**
  * Helper function to increment a counter when determining the required number of

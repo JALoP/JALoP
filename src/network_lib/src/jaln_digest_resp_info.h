@@ -1,9 +1,9 @@
 /**
  * @file jaln_digest_resp_info.h This file contains functions related to a
  * jaln_digest_resp_info structure. The jaln_digest_resp_info structure is used
- * to store the response to a 'digest' message.
+ * to store the response to a 'digest-challenge' message.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -35,6 +35,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/**
+ * jaln_digest_resp_info Structure definition
+ */
 struct jaln_digest_resp_info {
 	char *nonce;
 	enum jaln_digest_status status;

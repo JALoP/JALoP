@@ -2,7 +2,7 @@
  * @file jaln_subscriber_state_machine.c This file contains the implementation of a
  * state machine used when receiving JAL records.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -117,7 +117,7 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 	memset(session->sub_data->sm->break_buf, 0, session->sub_data->sm->break_sz);
 	session->sub_data->sm->break_off = 0;
 
-	if (session->sub_data->sm->dgst_inst) {
+	if (session->dgst && session->sub_data->sm->dgst_inst) {
 		session->dgst->destroy(session->sub_data->sm->dgst_inst);
 	}
 
@@ -342,7 +342,7 @@ axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *fram
 	if (!jaln_sub_rec_complete_sanity_check(session, frame, frame_off, more)) {
 		goto err_out;
 	}
-	size_t dgst_len = session->dgst->len;
+	unsigned int dgst_len = session->dgst->len;
 	session->jaln_ctx->sub_callbacks->on_audit(session, session->ch_info, session->sub_data->sm->nonce,
 			session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz, session->jaln_ctx->user_data);
 
@@ -379,7 +379,7 @@ axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame,
 	if (!jaln_sub_rec_complete_sanity_check(session, frame, frame_off, more)) {
 		goto err_out;
 	}
-	size_t dgst_len = session->dgst->len;
+	unsigned int dgst_len = session->dgst->len;
 	session->jaln_ctx->sub_callbacks->on_log(session, session->ch_info, session->sub_data->sm->nonce, session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz, session->jaln_ctx->user_data);
 	if (JAL_OK != session->dgst->update(session->sub_data->sm->dgst_inst, session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz)) {
 		goto err_out;
@@ -411,16 +411,24 @@ axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *fr
 		goto err_out;
 	}
 
-	size_t dgst_len = session->dgst->len;
+	unsigned int dgst_len = session->dgst->len;
 	session->jaln_ctx->sub_callbacks->on_journal(session, session->ch_info, session->sub_data->sm->nonce, NULL, 0, 0, 0, session->jaln_ctx->user_data);
 	if (JAL_OK != session->dgst->final(session->sub_data->sm->dgst_inst, session->sub_data->sm->dgst, &dgst_len)) {
 		goto err_out;
 	}
 	vortex_mutex_lock(&session->lock);
+	if (!session->jaln_ctx || !session->jaln_ctx->sub_callbacks || !session->sub_data->sm) {
+		vortex_mutex_unlock(&session->lock);
+		goto err_out;
+	}
 	session->jaln_ctx->sub_callbacks->notify_digest(session, session->ch_info, session->ch_info->type, session->sub_data->sm->nonce,
 			session->sub_data->sm->dgst, dgst_len, session->jaln_ctx->user_data);
 	vortex_mutex_unlock(&session->lock);
 	jaln_session_add_to_dgst_list(session, session->sub_data->sm->nonce, session->sub_data->sm->dgst, dgst_len);
+
+	if (!session->jaln_ctx || !session->jaln_ctx->sub_callbacks || !session->sub_data->sm) {
+		goto err_out;
+	}
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
@@ -530,6 +538,11 @@ axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *fr
 			info->app_meta_len = session->sub_data->sm->app_meta_sz;
 			info->payload_len = session->sub_data->sm->payload_sz;
 
+			if (!session->jaln_ctx || !session->jaln_ctx->sub_callbacks)
+			{
+				goto err_out;
+			}
+
 			session->jaln_ctx->sub_callbacks->on_record_info(session,
 					session->ch_info, session->ch_info->type,
 					info, NULL,
@@ -603,12 +616,15 @@ void jaln_sub_state_reset(jaln_session *session)
 	sm->break_off = 0;
 	vortex_frame_unref(sm->cached_frame);
 	sm->cached_frame = NULL;
-	if (session->sub_data->sm->dgst_inst) {
+	if (session->sub_data->sm->dgst_inst && session->dgst && sm->dgst_inst) {
 		session->dgst->destroy(sm->dgst_inst);
 	}
 	free(sm->dgst);
 	sm->dgst_inst = session->dgst->create();
 	sm->dgst = (uint8_t*) jal_calloc(1, session->dgst->len);
+
+	//Ensures digest context is initialized after created
+	session->dgst->init(session->sub_data->sm->dgst_inst);
 }
 
 struct jaln_sub_state_machine *jaln_sub_state_create_journal_machine()

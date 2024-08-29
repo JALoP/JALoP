@@ -2,7 +2,7 @@
  * @file jaln_listen.h This file contains function definitions
  * related to listening for a remote peer to connect over the JALoP
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -38,13 +38,28 @@ extern "C" {
 #endif
 
 /**
+ * Vortex Frame Size handler to tell feeder what you prefer the frame size to be.
+ *
+ * @param[in] chan The channel the message will be sent
+ * @param[in] next_seq_no Where the position is in the existing beep window
+ * @param[in] message_size The size of the payload to be sent
+ * @param[in] max_seq_no The size of the beep window
+ * @param[in] user_data Expected to be a pointer to a jaln_session
+ *
+ * @return the calculated size
+ */
+int jal_next_frame_size_handler(VortexChannel * chan, int next_seq_no,
+				int message_size, int max_seq_no,
+				__attribute__((unused)) axlPointer user_data);
+
+/**
  * Helper function called when a new channel is created by the peer and has
- * indicated it's use as a 'digest' channel.
+ * indicated its use as a 'digest' channel.
  *
  * @param[in] ctx The jaln_context to associate with the new channel.
  * @param[in] conn The Vortex connection where the channel was created.
  * @param[in] server_name The name/IP of the remote server
- * @param[in] chan_num The channel number assigned to the new channel.
+ * @param[in] new_chan_num The channel number assigned to the new channel.
  * @param[in] paired_chan_num The channel number (indicated by the peer) to
  * associate this new 'digest' channel with.
  *
@@ -71,7 +86,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan,
 
 /**
  * Helper function called when a new channel is created by the peer and has
- * indicated it's use as a 'digest' channel.
+ * indicated its use as a 'digest' channel.
  *
  * @param[in] ctx The jaln_context to associate with the new channel.
  * @param[in] conn The Vortex connection where the channel was created.
@@ -113,7 +128,7 @@ axl_bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
  *
  * @param[in] profile The profile
  * @param[in] chan_num The channel number for the new channel
- * @param[in] conn The connection where this channel will be created
+ * @param[in] v_conn The connection where this channel will be created
  * @param[in] server_name the name/IP of the peer
  * @param[in] profile_content additional data sent with the message to create
  * the channel.

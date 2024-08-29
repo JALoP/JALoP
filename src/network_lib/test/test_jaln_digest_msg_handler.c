@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_digest_msg_handler.c This file contains tests for jaln_digest_msg_handler.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -162,7 +162,7 @@ static VortexMimeHeader *fake_get_mime_header(VortexFrame *frame, const char *he
 		return NULL;
 	}
 	if (0 == strcasecmp(header_name, "jal-message")) {
-		return (VortexMimeHeader*) "digest";
+		return (VortexMimeHeader*) "digest-challenge";
 	} else if (0 == strcasecmp(header_name, "jal-count")) {
 		return (VortexMimeHeader*) "3";
 	}

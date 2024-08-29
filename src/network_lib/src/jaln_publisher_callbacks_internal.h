@@ -1,8 +1,8 @@
 /**
- * @file jaln_publisher_callbacks_internal.h This file declares functions 
+ * @file jaln_publisher_callbacks_internal.h This file declares functions
  * related to jaln_publisher_callbacks
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

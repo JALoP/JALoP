@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_pub_feeder.c This file contains tests for jaln_pub_feeder.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -206,7 +206,7 @@ void setup()
 	sess = jaln_session_create();
 	sess->jaln_ctx = jaln_context_create();
 	sess->ch_info->type = JALN_RTYPE_LOG;
-	sess->dgst = sess->jaln_ctx->sha256_digest;
+	sess->dgst = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	sess->pub_data = jaln_pub_data_create();
 	sess->role = JALN_ROLE_PUBLISHER;
 	sess->pub_data->headers_sz = strlen(HEADERS);

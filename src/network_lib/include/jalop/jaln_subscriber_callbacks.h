@@ -1,7 +1,7 @@
 /**
  * @file jaln_subscriber_callbacks.h This file defined jaln_subscriber_callbacks
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -52,8 +52,8 @@ struct jaln_subscriber_callbacks {
 	 * nonce. The JNL interprets this as the last record the
 	 * application downloaded and received a 'digest-conf' for. The JNL
 	 * will send a 'subscribe' message indicating that this was the last
-	 * record received.  Applications should use the special strings 
-	 * JALN_NONCE_EPOCH and JALN_NONCE_NOW to specify transfer should 
+	 * record received.  Applications should use the special strings
+	 * JALN_NONCE_EPOCH and JALN_NONCE_NOW to specify transfer should
 	 * start with the oldest records, or only receive new records.
 	 * For audit and log records, the nonce should be set to NULL.
 	 *

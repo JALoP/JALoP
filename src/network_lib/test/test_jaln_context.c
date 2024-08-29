@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_context.c This file contains tests for jaln_context.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -70,7 +70,6 @@ void test_context_create()
 	assert_not_equals((void*) NULL, ctx->xml_encodings);
 	assert_not_equals((void*) NULL, ctx->sessions_by_conn);
 	assert_equals(1, ctx->ref_cnt);
-	assert_not_equals((void*)NULL, ctx->sha256_digest);
 	assert_not_equals((void*)NULL, ctx->vortex_ctx);
 	assert_false(ctx->is_connected);
 }

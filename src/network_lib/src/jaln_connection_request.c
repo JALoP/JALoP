@@ -2,7 +2,7 @@
  * @file jaln_connection_request.c This file contains functions related to a
  * jaln_connect_request structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

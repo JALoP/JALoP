@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_session.c This file contains tests for jaln_session.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -607,7 +607,7 @@ void test_jaln_session_associate_digest_channel_no_lock_fails_when_role_unset()
 
 	VortexChannel *chan = (VortexChannel *)0xdeadbeef;
 	int ch_num = 1;
-	
+
 	sess->role = JALN_ROLE_UNSET;
 	sess->dgst_chan = NULL;
 	sess->dgst_chan_num = 0;

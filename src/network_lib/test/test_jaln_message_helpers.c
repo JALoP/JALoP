@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_message_helpers.c This file contains tests for jaln_message_helpers.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -187,7 +187,7 @@ static char *output_str;
 #define EXPECTED_DGST_MSG \
 	"Content-Type: application/beep+jalop\r\n" \
 	"Content-Transfer-Encoding: binary\r\n"\
-	"JAL-Message: digest\r\n" \
+	"JAL-Message: digest-challenge\r\n" \
 	"JAL-Count: 3\r\n\r\n" \
 	di_1_str \
 	di_2_str \
@@ -305,11 +305,11 @@ void setup()
 	axl_list_append(dgst_list, di_3);
 
 	dgst_algs = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
-	struct jal_digest_ctx *dc_1 = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dc_1 = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	free(dc_1->algorithm_uri);
 	dc_1->algorithm_uri = strdup("sha256");
 
-	struct jal_digest_ctx *dc_2 = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dc_2 = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	free(dc_2->algorithm_uri);
 	dc_2->algorithm_uri = strdup("sha512");
 
@@ -682,7 +682,7 @@ void test_create_digest_message_works()
 {
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
-	assert_equals(JAL_OK, jaln_create_digest_msg(dgst_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_OK, jaln_create_digest_challenge_msg(dgst_list, 0, &msg_out, &msg_out_len));
 
 	assert_equals(0, strcmp(EXPECTED_DGST_MSG, msg_out));
 	assert_equals(strlen(EXPECTED_DGST_MSG), msg_out_len);
@@ -693,14 +693,14 @@ void test_create_returns_error_with_bad_input()
 {
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
-	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(NULL, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_challenge_msg(NULL, 0, &msg_out, &msg_out_len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(dgst_list, NULL, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_challenge_msg(dgst_list, 0, NULL, &msg_out_len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(dgst_list, &msg_out, NULL));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_challenge_msg(dgst_list, 0, &msg_out, NULL));
 
 	msg_out = (char*) 0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(dgst_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_challenge_msg(dgst_list, 0, &msg_out, &msg_out_len));
 
 }
 
@@ -710,7 +710,7 @@ void test_create_returns_error_with_bad_digest_list()
 	uint64_t msg_out_len = 0;
 
 	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
-	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(empty_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_challenge_msg(empty_list, 0, &msg_out, &msg_out_len));
 	axl_list_free(empty_list);
 
 }
@@ -721,7 +721,7 @@ void test_create_returns_error_with_bad_digest_info()
 	uint64_t msg_out_len = 0;
 
 	axl_list_append(dgst_list, NULL);
-	assert_equals(JAL_E_INVAL, jaln_create_digest_msg(dgst_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_challenge_msg(dgst_list, 0, &msg_out, &msg_out_len));
 
 }
 
@@ -831,7 +831,7 @@ void test_create_init_msg_does_not_crash_on_bad_input()
 							xml_encs, &msg_out, &len));
 
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE - 1, type, dgst_algs,
-							xml_encs, &msg_out, &len));	
+							xml_encs, &msg_out, &len));
 
 	assert_equals(JAL_E_INVAL, jaln_create_init_msg(role, JALN_ARCHIVE_MODE, JALN_RTYPE_JOURNAL | JALN_RTYPE_AUDIT,
 							dgst_algs, xml_encs, &msg_out, &len));
@@ -985,7 +985,7 @@ void test_create_digest_resp_message_works()
 {
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
-	assert_equals(JAL_OK, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_OK, jaln_create_digest_response_msg(dgst_resp_list, 0, &msg_out, &msg_out_len));
 
 	assert_equals(0, strcmp(EXPECTED_DGST_RESP_MSG, msg_out));
 	assert_equals(strlen(EXPECTED_DGST_RESP_MSG), msg_out_len);
@@ -996,14 +996,14 @@ void test_create_digest_resp_returns_error_with_bad_input()
 {
 	char *msg_out = NULL;
 	uint64_t msg_out_len = 0;
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(NULL, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(NULL, 0, &msg_out, &msg_out_len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, NULL, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, 0, NULL, &msg_out_len));
 
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, NULL));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, 0, &msg_out, NULL));
 
 	msg_out = (char*) 0xbadf00d;
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, 0, &msg_out, &msg_out_len));
 
 }
 
@@ -1013,7 +1013,7 @@ void test_create_digest_resp_returns_error_with_bad_digest_list()
 	uint64_t msg_out_len = 0;
 
 	axlList *empty_list = axl_list_new(jaln_axl_equals_func_digest_resp_info_nonce, jaln_axl_destroy_digest_resp_info);
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(empty_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(empty_list, 0, &msg_out, &msg_out_len));
 	axl_list_free(empty_list);
 
 }
@@ -1024,7 +1024,7 @@ void test_create_digest_resp_returns_error_with_bad_digest_info()
 	uint64_t msg_out_len = 0;
 
 	axl_list_append(dgst_resp_list, NULL);
-	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, &msg_out, &msg_out_len));
+	assert_equals(JAL_E_INVAL, jaln_create_digest_response_msg(dgst_resp_list, 0, &msg_out, &msg_out_len));
 }
 
 void test_create_init_nack_msg_works_for_unsupported_version()

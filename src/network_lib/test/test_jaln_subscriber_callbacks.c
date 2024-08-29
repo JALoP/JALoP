@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_subscriber_callbacks.c This file contains tests for jaln_subscriber_callbacks.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

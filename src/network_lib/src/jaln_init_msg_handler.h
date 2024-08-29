@@ -3,7 +3,7 @@
  * declarations for helper functions used to process an 'initialize'
  * message.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

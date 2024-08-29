@@ -3,7 +3,7 @@
  *
  * Public types of the JALoP Network Library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -68,10 +68,10 @@ struct jaln_mime_header {
 
 /**
  * Create a jaln_mime_header list.
- *  
+ *
  * @param[in,out] headers The structure will contain the list of
  *       headers. This will be set to NULL.
- *  
+ *
  * @return a newly created jaln_mime_header_list
  */
 struct jaln_mime_header *jaln_mime_header_create(struct jaln_mime_header **headers);
@@ -150,7 +150,7 @@ enum jaln_role {
 	 JALN_ROLE_UNSET = 0,
 	/**
 	 * The peer should act as a subscriber. They are expected to send only
-	 * 'subscribe', 'journal-resume', 'digest', and 'sync' messages.
+	 * 'subscribe', 'journal-resume', 'digest-challenge', and 'sync' messages.
 	 *
 	 * The must be prepared to handle '*-record', and 'digest-response'
 	 * messages.
@@ -161,7 +161,7 @@ enum jaln_role {
 	 * '*-record', and 'digest-response'
 	 *
 	 * They must be prepared to handle 'subscribe', 'journal-recover',
-	 * 'digest', and 'sync' messages.
+	 * 'digest-challenge', and 'sync' messages.
 	 */
 	JALN_ROLE_PUBLISHER
 };
@@ -188,6 +188,14 @@ struct jaln_connect_ack {
 	 * play.
 	 */
 	enum jaln_role mode;
+	/**
+	 * The digest algorithm that this connection has been configured to use
+	 */
+	char *digest_algorithm;
+	/**
+	 * The encoding that this connection has been configured to use
+	 */
+	char *encoding;
 	/**
 	 * This list contains any extra headers, not processed by the JNL. It
 	 * only contains additional headers not included the JALoP spec.

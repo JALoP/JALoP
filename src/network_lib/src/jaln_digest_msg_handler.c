@@ -1,9 +1,9 @@
 /**
  * @file jaln_digest_msg_handler.c This file contains the function
- * definitions for helper functions used to process a 'digest'
+ * definitions for helper functions used to process a 'digest-challenge'
  * message.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -54,7 +54,7 @@ enum jal_status jaln_process_digest(VortexFrame *frame, axlList **dgst_list_out)
 	if (!msg) {
 		goto err_out;
 	}
-	if (0 != strcasecmp(msg, JALN_MSG_DIGEST)) {
+	if (0 != strcasecmp(msg, JALN_MSG_DIGEST_CHAL)) {
 		goto err_out;
 	}
 	const char *cnt_str = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_COUNT);

@@ -2,7 +2,7 @@
  * @file jaln_network.c This file contains function definitions for
  * general public network library functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -90,6 +90,13 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn)
 	while (jal_conn->jaln_ctx->ref_cnt > 1) {
 		sleep(1);
 	}
+
+	return JAL_OK;
+}
+
+enum jal_status jaln_context_set_debug(jaln_context *ctx, int debug_flag) {
+
+	ctx->debug_flag = debug_flag;
 
 	return JAL_OK;
 }

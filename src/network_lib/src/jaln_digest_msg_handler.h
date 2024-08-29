@@ -1,9 +1,9 @@
 /**
  * @file jaln_digest_msg_handler.h This file contains the function
- * declarations for helper functions used to process a 'digest'
+ * declarations for helper functions used to process a 'digest-challenge'
  * message.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -38,9 +38,8 @@
  * This function will create a list of jaln_digest_info structures for a
  * given frame.
  *
- * @param[in] frame The (complete) VortexFrame that contains a digest
- * message.
- * @param[out] dgst_list If the message is valid, this will contain a list
+ * @param[in] frame The (complete) VortexFrame that contains a digest message.
+ * @param[out] dgst_list_out If the message is valid, this will contain a list
  * of jaln_digest_info structures. The caller should free this pointer
  * with axl_list_free().
  *

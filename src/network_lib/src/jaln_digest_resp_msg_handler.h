@@ -3,7 +3,7 @@
  * declarations for helper functions used to process a 'digest-response'
  * message.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -40,7 +40,7 @@
  *
  * @param[in] frame The (complete) VortexFrame that contains a digest-response
  * message.
- * @param[out] dgst_resp_list If the message is valid, this will contain a list
+ * @param[out] dgst_resp_list_out If the message is valid, this will contain a list
  * of jaln_digest_resp_info structures. The caller should free this pointer
  * with axl_list_free().
  *

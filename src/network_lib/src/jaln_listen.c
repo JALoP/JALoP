@@ -2,7 +2,7 @@
  * @file jaln_listen.c This file contains function definitions
  * related to listening for a remote peer to connect over the JALoP
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -72,6 +72,18 @@ axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 	return ret;
 }
 
+int jal_next_frame_size_handler(VortexChannel * chan, int next_seq_no, int message_size, int max_seq_no, __attribute__((unused)) axlPointer user_data){
+	if(!chan)
+	{
+		return -1;
+	}
+	int ret = max_seq_no - next_seq_no + 1;
+	if(message_size<=ret){
+		ret = message_size;
+	}
+	return ret;
+}
+
 axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
 		const char *server_name,
@@ -97,7 +109,7 @@ axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 		jaln_session_unref(session);
 		return axl_false;
 	}
-
+	vortex_channel_set_next_frame_size_handler(session->rec_chan, jal_next_frame_size_handler, session);
 	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(session->rec_chan, 2);
 	vortex_channel_set_serialize(session->rec_chan, axl_true);
@@ -183,8 +195,8 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 	if (!axl_list_lookup(info->encodings, jaln_string_list_case_insensitive_lookup_func, JALN_ENC_XML)) {
 		axl_list_append(info->encodings, jal_strdup(JALN_ENC_XML));
 	}
-	if (!axl_list_lookup(info->digest_algs, jaln_string_list_case_insensitive_lookup_func, JALN_DGST_SHA256)) {
-		axl_list_append(info->digest_algs, jal_strdup(JALN_DGST_SHA256));
+	if (!axl_list_lookup(info->digest_algs, jaln_string_list_case_insensitive_lookup_func, (char *) digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT])) {
+		axl_list_append(info->digest_algs, jal_strdup(digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT]));
 	}
 
 	jaln_axl_string_list_to_array(info->encodings, &conn_req->encodings, &conn_req->enc_cnt);
@@ -238,8 +250,8 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 					conn_req->digests[sel_dgst]);
 			if (!dgst_ctx) {
 				// special case for sha256
-				if (0 == strcasecmp(conn_req->digests[sel_dgst], JALN_DGST_SHA256)) {
-					dgst_ctx = sess->jaln_ctx->sha256_digest;
+				if (0 == strcasecmp(conn_req->digests[sel_dgst], digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT])) {
+					dgst_ctx = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 				} else {
 					err |= JALN_CE_UNSUPPORTED_DIGEST;
 				}
@@ -250,6 +262,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 	int msg_no = vortex_frame_get_msgno(frame);
 	if (JALN_CE_ACCEPT != err) {
 		jaln_create_init_nack_msg(err, &msg, &msg_len);
+		BEEP_HEADERS_LOG(sess->jaln_ctx->debug_flag, msg);
 		vortex_channel_send_err(chan, msg, msg_len, msg_no);
 		goto err_out;
 	}
@@ -280,6 +293,7 @@ void jaln_listener_init_msg_handler(VortexChannel *chan, VortexConnection *conn,
 	sess->mode = info->mode;
 	vortex_mutex_unlock(&sess->lock);
 	jaln_create_init_ack_msg(conn_req->encodings[sel_enc], conn_req->digests[sel_dgst], &msg, &msg_len);
+	BEEP_HEADERS_LOG(sess->jaln_ctx->debug_flag, msg);
 	vortex_channel_send_rpy(chan, msg, msg_len, msg_no);
 	if (JALN_ROLE_SUBSCRIBER == sess->role) {
 		jaln_subscriber_send_subscribe_request(sess);

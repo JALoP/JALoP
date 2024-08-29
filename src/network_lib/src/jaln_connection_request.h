@@ -2,7 +2,7 @@
  * @file jaln_connection_request.h This file contains functions related to a
  * jaln_connect_request structure.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -49,7 +49,7 @@ struct jaln_connect_request *jaln_connect_request_create();
 /**
  * Destroy a jaln_connect_request structure.
  *
- * @param[in,out] dgst_info The dgst_info structure to destroy. This will be
+ * @param[in] conn_req List of connections to destroy
  * set to NULL.
  */
 void jaln_connect_request_destroy(struct jaln_connect_request **conn_req);

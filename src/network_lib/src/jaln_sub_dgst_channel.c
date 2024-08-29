@@ -2,7 +2,7 @@
  * @file jaln_sub_dgst_channel.c This file contains function
  * declarations for functions related to jaln_sub_dgst
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,7 +36,7 @@
 #include "jaln_digest_resp_info.h"
 #include "jaln_digest_resp_msg_handler.h"
 
-#define JALN_DIGEST_RESPONSE_TIMEOUT_USECS 30*1000000 
+#define JALN_DIGEST_RESPONSE_TIMEOUT_USECS 30*1000000
 
 axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 	jaln_session *sess = (jaln_session*) user_data;
@@ -47,11 +47,13 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 			// wait failed? now what... I guess try again?
 			continue;
 		}
+
 		if (sess->errored || sess->closing) {
 			// try to close the channel;
 			if (sess->dgst_chan) {
 				vortex_channel_close_full(sess->dgst_chan, jaln_session_notify_close, sess);
-				continue;
+				vortex_mutex_unlock(&sess->lock);
+				break;
 			} else {
 				vortex_mutex_unlock(&sess->lock);
 				break;
@@ -84,7 +86,7 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	axlListCursor *cursor = NULL;
 
 	int msg_no;
-	if (JAL_OK != jaln_create_digest_msg(dgst_list, &msg, &len)) {
+	if (JAL_OK != jaln_create_digest_challenge_msg(dgst_list, sess->jaln_ctx->debug_flag, &msg, &len)) {
 		goto out;
 	}
 	wait_reply = vortex_channel_create_wait_reply();
@@ -93,8 +95,8 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	}
 
 	if (!vortex_channel_send_msg_and_wait(sess->dgst_chan, msg, len, &msg_no, wait_reply)) {
-		// According the to Vortex docs, you only need to free the wait_reply if 
-		// vortex_channel_send_msg_and_wait fails. Apparently, 
+		// According the to Vortex docs, you only need to free the wait_reply if
+		// vortex_channel_send_msg_and_wait fails. Apparently,
 		// vortex_channel_wait_reply frees  the wait_reply for you....
 		vortex_channel_free_wait_reply(wait_reply);
 		goto out;
@@ -116,10 +118,12 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	if (JAL_OK != jaln_process_digest_resp(frame, &dgst_resp)) {
 		goto out;
 	}
+	BEEP_HEADERS_LOG_INCOMING(sess->jaln_ctx->debug_flag, frame);
+
 	cursor = axl_list_cursor_new(dgst_resp);
 	axl_list_cursor_first(cursor);
 
-	while (axl_list_cursor_has_item(cursor)) {
+	while (axl_list_cursor_has_item(cursor) && !sess->closing) {
 		struct jaln_digest_resp_info *resp_info = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
 
 		if (JAL_OK != sess->jaln_ctx->sub_callbacks->
@@ -137,7 +141,7 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 			if (jaln_create_sync_msg(resp_info->nonce, &msg, &len)) {
 				goto out;
 			}
-
+			BEEP_HEADERS_LOG(sess->jaln_ctx->debug_flag, msg);
 			if (!vortex_channel_send_msg(sess->dgst_chan, msg, len, NULL)) {
 				goto out;
 			}

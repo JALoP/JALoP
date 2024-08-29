@@ -4,7 +4,7 @@
  * to store the calculated/receive digest value and nonce for a
  * record.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,6 +36,9 @@
 #include <stdint.h>
 #include <jalop/jaln_network_types.h>
 
+/**
+ * jaln_init_info structure definition.
+ */
 struct jaln_init_info {
 	enum jaln_role role;
 	enum jaln_publish_mode mode;

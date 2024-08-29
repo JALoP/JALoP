@@ -3,7 +3,7 @@
  *
  * Various string utilities
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -170,7 +170,7 @@ enum jal_status jaln_hex_str_to_bin_buf(const char *hex_buf, uint64_t hex_buf_le
 		res_len += 1;
 		src_mod_check = 1;
 	}
-	
+
 	uint8_t *result = jal_calloc(res_len, sizeof(*result));
 	for (uint64_t src_off = 0; src_off < hex_buf_len; src_off++) {
 		uint8_t val;

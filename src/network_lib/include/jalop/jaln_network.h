@@ -3,7 +3,7 @@
  *
  * Public functions for creating and configuring a jaln_context.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -68,13 +68,13 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx);
  * default TLS handler that checks that the certificate sent by the remote side
  * matches a known certificate.
  *
- * @param[in] jaln_ctx The jaln_ctx to register the TLS profile on.
+ * @param[in] ctx The jaln_ctx to register the TLS profile on.
  * @param[in] private_key The private key that should be used for TLS
  * @param[in] public_cert The public certificate for the private key
  * @param[in] peer_certs A directory containing certificates for remote peers.
  * @return JAL_OK, or an error code.
  */
-enum jal_status jaln_register_tls(jaln_context *jaln_ctx,
+enum jal_status jaln_register_tls(jaln_context *ctx,
 				  const char *private_key,
 				  const char *public_cert,
 				  const char *peer_certs);
@@ -207,7 +207,7 @@ enum jal_status jaln_listener_shutdown(jaln_context *ctx);
  * listener is finished.
  *
  * @param[in] ctx The context to wait on.
- * 
+ *
  * @return JAL_OK on success, or an error.
  */
 enum jal_status jaln_listener_wait(jaln_context *ctx);
@@ -225,6 +225,11 @@ enum jal_status jaln_listener_wait(jaln_context *ctx);
  * @param[in] mode Indicates if the session should be in archive or live mode.
  * @param[in] user_data An address that will be passed into all the callback
  * methods.
+ * @param[in] pending_digest_max Max digests to hold before sending a digest
+ * challenge message for the digests in digest list.
+ * @param[in] pending_digest_timeout Max time to wait even if pending_digest_max
+ * has not reached its limit. Value is in milliseconds.
+ * @param[in] window_size Transmission widow size
  * @return A connection object that represents the link to the remote peer.
  */
 struct jaln_connection *jaln_subscribe(
@@ -233,7 +238,10 @@ struct jaln_connection *jaln_subscribe(
 		const char *port,
 		const int data_classes,
 		enum jaln_publish_mode mode,
-		void *user_data);
+		void *user_data,
+		long long int pending_digest_max,
+		long long int pending_digest_timeout,
+		int window_size);
 
 /**
  * Connect to a remote peer and indicate a desire to send JAL records to the
@@ -298,7 +306,7 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn);
  * still connected. Otherwise, the internal resources can never be reclaimed.
  *
  * @param[in] sess The session containg the connection and subscriber information
- *  
+ *
  * @return JAL_OK if the session is active, or an error if the connection was
  * disconnected.
  */
@@ -405,6 +413,16 @@ enum jal_status jaln_send_log(
  * @return JAL_OK on success or an error otherwise
  */
 enum jal_status jaln_finish(jaln_session *sess);
+
+/**
+ * Set the debug_flag for the context.
+ *
+ * @param [in] ctx The ctx to operate on.
+ * @param [in] debug_flag The debug_flag to set.
+ *
+ * @return JAL_OK on success, or an error.
+ */
+enum jal_status jaln_context_set_debug(jaln_context *ctx, int debug_flag);
 
 #ifdef __cplusplus
 }

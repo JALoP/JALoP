@@ -3,7 +3,7 @@
  * definitions for helper functions used to process an 'initialize'
  * message.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -114,7 +114,7 @@ enum jal_status jaln_process_init(VortexFrame *frame, struct jaln_init_info **in
 		free(cpy);
 		cpy = NULL;
 	} else {
-		axl_list_append(info->digest_algs, jal_strdup(JALN_DGST_SHA256));
+		axl_list_append(info->digest_algs, jal_strdup(digest_str[JAL_DIGEST_ALGORITHM_DEFAULT]));
 	}
 	const char *accept_enc = VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_ACCEPT_ENCODING);
 	if (accept_enc) {

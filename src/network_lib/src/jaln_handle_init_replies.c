@@ -3,7 +3,7 @@
  * definitions for internal library functions related to processing responses
  * to 'initialize' messages (init-ack/init-nack).
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -118,10 +118,10 @@ axl_bool jaln_handle_initialize_ack(jaln_session *session,
 	}
 
 	if (axl_list_is_empty(ctx->dgst_algs)) {
-		if (0 != strcasecmp(digest, JALN_DGST_SHA256)) {
+		if (0 != strcasecmp(digest, digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT])) {
 			goto err_out;
 		}
-		session->dgst = jal_sha256_ctx_create();
+		session->dgst = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 	} else {
 		axlPointer ptr = axl_list_lookup(ctx->dgst_algs, jaln_digest_lookup_func, digest);
 		if (!ptr) {
@@ -143,6 +143,8 @@ axl_bool jaln_handle_initialize_ack(jaln_session *session,
 	ack.addr = session->ch_info->addr;
 	ack.jaln_version = JALN_JALOP_VERSION_ONE;
 	ack.jaln_agent = agent;
+	ack.digest_algorithm = session->ch_info->digest_method;
+	ack.encoding = session->ch_info->encoding;
 	ack.mode = role;
 	session->jaln_ctx->conn_callbacks->connect_ack(&ack, ctx->user_data);
 	goto out;

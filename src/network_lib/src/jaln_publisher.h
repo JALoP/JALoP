@@ -2,7 +2,7 @@
  * @file jaln_publisher.h This file contains function
  * declarations related to publishing records to a remote.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -52,7 +52,7 @@ extern "C" {
  * @param[in] calc_dgsts An axlList of jlan_digest_info structures. This is the
  * digests calculated locally by the network library.
  * @param[in] peer_dgsts An axlList of jaln_digest_info structures. These are
- * the digests calculated by the remote side and sent in a 'digest' message.
+ * the digests calculated by the remote side and sent in a 'digest-challenge' message.
  * @param[out] dgst_resp_infos This will be a list of jaln_digest_resp_info
  * structures. It will contain an entry for each nonce indicated in \p
  * peer_dgsts.
@@ -79,7 +79,7 @@ enum jal_status jaln_publisher_handle_sync(
 		int msg_no);
 
 /**
- * Helper utility to parse and process a 'digest' message.
+ * Helper utility to parse and process a 'digest-challenge' message.
  *
  * @param[in] sess The session
  * @param[in] chan The vortex channel that received the message.
@@ -95,7 +95,7 @@ enum jal_status jaln_publisher_handle_digest(jaln_session *sess,
 		int msg_no);
 
 /**
- * Vortex Frame handler for responding to 'digest' and 'sync' messages.
+ * Vortex Frame handler for responding to 'digest-challenge' and 'sync' messages.
  *
  * @param[in] chan The vortex channel
  * @param[in] conn The vortex connection
@@ -122,7 +122,7 @@ jaln_session *jaln_publisher_create_session(jaln_context *ctx, const char *host,
  * Top level vortex frame handler for the 'record' channel of a session.
  *
  * @param[in] chan The vortex channel
- * @param[in] conn The vortex connection
+ * @param[in] v_conn The vortex connection
  * @param[in] frame The vortex frame
  * @param[in] user_data Expected to be a jaln_session pointer.
  */
@@ -149,6 +149,7 @@ enum jal_status jaln_pub_handle_subscribe(jaln_session *session,
 /**
  * Handle to process a 'journal-resume' message.
  *
+ * @param[in] session The session that received the message
  * @param[in] chan The channel that received the message
  * @param[in] frame The frame containing the message
  * @param[in] msg_no The message number
@@ -164,7 +165,7 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *session,
  * Vortex frame handler to process the replies from an 'init' message.
  *
  * @param[in] chan The vortex channel that received the message
- * @param[in] conn The vortex connection
+ * @param[in] v_conn The vortex connection
  * @param[in] frame The frame containing the message
  * @param[in] user_data Expected to be a pointer to a jaln_session
  */

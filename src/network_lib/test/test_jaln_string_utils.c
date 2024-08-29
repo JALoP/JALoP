@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_string_utils.c This file contains tests for jaln_string_utils.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

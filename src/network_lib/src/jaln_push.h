@@ -3,7 +3,7 @@
  *
  * Functions for sending records from a publisher to a subscriber.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -51,7 +51,7 @@ enum jal_status jaln_send_record_init(
 			jaln_session *sess,
 			void *nonce,
 			uint8_t *sys_meta_buf,
-			uint64_t sys_meta_len, 
+			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
 			struct jaln_record_info *rec_info);
@@ -68,7 +68,7 @@ enum jal_status jaln_send_record(
 			jaln_session *sess,
 			char *nonce,
 			uint8_t *sys_meta_buf,
-			uint64_t sys_meta_len, 
+			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
 			uint8_t *payload_buf,
@@ -77,7 +77,7 @@ enum jal_status jaln_send_record(
 /*
  * Helper method used to send a record, via a feeder, to the
  * subscriber.
- * 
+ *
  * This method initializes the record information to be sent,
  * reads the payload data from the feeder, and subsequently
  * initiates the process of sending the record to the subscriber.
@@ -88,7 +88,7 @@ enum jal_status jaln_send_record_feeder(
 			jaln_session *sess,
 			char *nonce,
 			uint8_t *sys_meta_buf,
-			uint64_t sys_meta_len, 
+			uint64_t sys_meta_len,
 			uint8_t *app_meta_buf,
 			uint64_t app_meta_len,
 			uint64_t payload_len,

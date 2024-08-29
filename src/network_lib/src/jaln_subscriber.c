@@ -3,7 +3,7 @@
  * declarations for internal library functions related to a
  * subscribere session
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -43,6 +43,8 @@
 #include "jaln_subscriber.h"
 #include "jaln_subscriber_callbacks_internal.h"
 #include "jaln_subscriber_state_machine.h"
+
+#define TIME_FACTOR 1000 //milliseconds to microseconds
 
 void jaln_subscriber_on_frame_received(VortexChannel *chan, VortexConnection *conn,
 		VortexFrame *frame, axlPointer user_data)
@@ -110,7 +112,10 @@ struct jaln_connection *jaln_subscribe(
 		const char *port,
 		const int data_classes,
 		enum jaln_publish_mode mode,
-		void *user_data)
+		void *user_data,
+		long long int pending_digest_max,
+		long long int pending_digest_timeout,
+		int window_size)
 {
 	if (!ctx || !host || !port ||
 		!ctx->vortex_ctx ||
@@ -123,6 +128,9 @@ struct jaln_connection *jaln_subscribe(
 	vortex_mutex_lock(&ctx->lock);
 	if (ctx->is_connected) {
 		vortex_mutex_unlock(&ctx->lock);
+		//TODO - find alternate fix for having to do below to make
+		//reconnected work.
+		ctx->is_connected = axl_false;
 		return NULL;
 	}
 
@@ -154,26 +162,38 @@ struct jaln_connection *jaln_subscribe(
 	if (data_classes & JALN_RTYPE_JOURNAL) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_JOURNAL);
 		session->mode = mode;
+		session->window_size = window_size;
+		jaln_session_set_dgst_max(session, pending_digest_max);
+		jaln_session_set_dgst_timeout(session, pending_digest_timeout*TIME_FACTOR);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
 				jaln_subscriber_on_channel_create, session);
+		jaln_ctx_add_session_no_lock(ctx, session);
 	}
 	if (data_classes & JALN_RTYPE_AUDIT) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_AUDIT);
 		session->mode = mode;
+		session->window_size = window_size;
+		jaln_session_set_dgst_max(session, pending_digest_max);
+		jaln_session_set_dgst_timeout(session, pending_digest_timeout*TIME_FACTOR);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
 				jaln_subscriber_on_channel_create, session);
+		jaln_ctx_add_session_no_lock(ctx, session);
 	}
 	if (data_classes & JALN_RTYPE_LOG) {
 		jaln_session* session = jaln_subscriber_create_session(ctx, host, JALN_RTYPE_LOG);
 		session->mode = mode;
+		session->window_size = window_size;
+		jaln_session_set_dgst_max(session, pending_digest_max);
+		jaln_session_set_dgst_timeout(session, pending_digest_timeout*TIME_FACTOR);
 		vortex_channel_new(v_conn, 0, JALN_JALOP_1_0_PROFILE,
 				jaln_session_on_close_channel, session,
 				jaln_subscriber_on_frame_received, session,
 				jaln_subscriber_on_channel_create, session);
+		jaln_ctx_add_session_no_lock(ctx, session);
 	}
 	return jconn;
 }
@@ -200,6 +220,7 @@ void jaln_subscriber_init_reply_frame_handler(jaln_session *session,
 		if (!jaln_handle_initialize_ack(session, JALN_ROLE_SUBSCRIBER, frame)) {
 			goto out;
 		}
+		BEEP_HEADERS_LOG_INCOMING(session->jaln_ctx->debug_flag, frame);
 		jaln_configure_sub_session(chan, session);
 
 		enum jal_status ret = jaln_subscriber_send_subscribe_request(session);
@@ -223,6 +244,7 @@ void jaln_subscriber_init_reply_frame_handler(jaln_session *session,
 				"digest:%d", chan_num);
 	} else if (0 == strcasecmp(msg, JALN_MSG_INIT_NACK)) {
 		jaln_handle_initialize_nack(session, frame);
+		BEEP_HEADERS_LOG_INCOMING(session->jaln_ctx->debug_flag, frame);
 	} else {
 		vortex_connection_shutdown(conn);
 	}
@@ -332,11 +354,13 @@ enum jal_status jaln_subscriber_send_subscribe_request(jaln_session *session)
 		if (JAL_OK != ret) {
 			goto err_out;
 		}
+		BEEP_HEADERS_LOG(session->jaln_ctx->debug_flag, msg);
 	} else {
 		ret = jaln_create_subscribe_msg(&msg, &msg_len);
 		if (JAL_OK != ret) {
 			goto err_out;
 		}
+		BEEP_HEADERS_LOG(session->jaln_ctx->debug_flag, msg);
 	}
 	int msg_no;
 	vortex_channel_set_complete_flag(session->rec_chan, axl_false);
@@ -376,6 +400,9 @@ void jaln_subscriber_on_channel_create(int channel_num,
 	sess->rec_chan = chan;
 	sess->rec_chan_num = channel_num;
 
+	//The window_size parameter passed in from user is in kilobytes.
+	//We need to convert to bytes here for the vortex API.
+	vortex_channel_set_window_size(chan, 1024*sess->window_size);
 	vortex_channel_set_serialize(chan, axl_true);
 
 	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, sess);
@@ -393,6 +420,7 @@ void jaln_subscriber_on_channel_create(int channel_num,
 		// something went terribly wrong...
 		goto err_out;
 	}
+	BEEP_HEADERS_LOG(sess->jaln_ctx->debug_flag, init_msg);
 	sess->sub_data->curr_frame_handler = jaln_subscriber_init_reply_frame_handler;
 	if (!vortex_channel_send_msg(chan, init_msg, init_msg_len, NULL)) {
 		goto err_out;
@@ -401,6 +429,8 @@ void jaln_subscriber_on_channel_create(int channel_num,
 err_out:
 	vortex_channel_close_full(chan, jaln_session_notify_close, sess);
 out:
-	free(init_msg);
+	if(init_msg){
+		free(init_msg);
+	}
 }
 

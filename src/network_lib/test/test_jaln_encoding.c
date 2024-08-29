@@ -1,7 +1,7 @@
 /**
  * @file test_jaln_encoding.c This file contains tests for jaln_encoding.c functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -301,7 +301,7 @@ void test_compare_encoding_case_insensitive_lookup_where_null_vs_null()
 {
 	char *valA = NULL;
 	char *valB = NULL;
-	
+
 	// NULL and NULL are considered the same, therefore expect a true result.
 	assert_equals(axl_true, jaln_string_list_case_insensitive_lookup_func(valA,valB));
 }
