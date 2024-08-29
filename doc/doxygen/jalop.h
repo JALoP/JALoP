@@ -1,14 +1,14 @@
 /**
  * @file jalop.h this file contains the documentation for jalop.h
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (c) 2011-2014 Tresys Technology LLC, Columbia, 
- * Maryland, USA 
+ * Copyright (c) 2011-2014 Tresys Technology LLC, Columbia,
+ * Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -28,7 +28,7 @@
 
 /** \mainpage JALoP Reference Implementation
  *
- * \section intro_sec Introduction
+ * \section jalop_intro_sec Introduction
  *
  * The JALoP Reference Implementation is divided into a number of components:
  *  - \subpage page_jnl
@@ -76,7 +76,7 @@
  *  - \p jalp_test: This is a development tool that can send journal, audit, or
  *  log data to a local store. It is primarily used to test the JPL.
  *  - \p jal_dump: This is a tool used to retrieve
- *     specific sections of one or more JAL records. 
+ *     specific sections of one or more JAL records.
  *  - \p jal_purge: This utility can be used to remove records
  *  from the database.
  *  - \p jaldb_tail: The  jaldb_tail  tool is similar to the

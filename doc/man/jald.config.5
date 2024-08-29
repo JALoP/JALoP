@@ -53,11 +53,6 @@ should obtain/store all the records. This is optional and defaults to
 .I /var/lib/jalop/db/
 .
 .TP
-.B schemas_root
-The full path to the
-.SM JALoP
-schemas. This is optional.
-.TP
 .B host
 The interface to listen on for incoming connections.
 This is a string value and should be an IPv4 address,
@@ -66,11 +61,30 @@ or the string "0.0.0.0" to listen on all interfaces.
 .B port
 A numeric value that indicates the port to listen on for incoming connections.
 .TP
-.B pending_digest_max
-A numeric value that indicates the maximum number of records to receive before sending a "digest" message.
+.B poll_time
+How long to wait, in seconds, before polling for records after finding no records
 .TP
-.B pending_digest_timeout
-A numeric value that indicates the maximum number of seconds to wait before sending a "digest" message.
+.B pid_file
+File storing PID of jald when daemonized.
+.TP
+.B log_dir
+Log directory of jald when daemonized.
+.TP
+.B digest_algorithms
+A list of supported digest algorithms. These algorithms should be ordered by preference in a single double-quoted string with a space separating the algorithms.
+Valid values are "sha256", "sha384", and "sha512"
+.TP
+.B enable_seccomp
+seccomp will restrict the process to the defined system calls.
+.TP
+.B initial_seccomp_rules
+System calls allowed in the setup phase only.
+.TP
+.B both_seccomp_rules
+System calls allowed in all phases.
+.TP
+.B final_seccomp_rules
+System calls allowed in the setup phase and while the process is running.
 .TP
 .B peers
 A list of peer configurations indicating which operations and JAL record types specific remotes are allowed to perform.
@@ -108,19 +122,16 @@ the set of permissions is the union of all permissions granted by all configurat
 .SH EXAMPLES
 .nf
 # the path to the private key, used for TLS negotiation
-private_key = "/etc/jald/cert_and_key";
+private_key = "./test-input/TLS_CA_Signed/server/jal_publisher_v1_server.key.pem";
 
 # the path to the public cert, used for TLS negotiation
-public_cert = "/etc/jald/cert";
+public_cert = "./test-input/TLS_CA_Signed/server/jal_publisher_v1_server.cert.pem";
 
 # directory containing the certificates for the remote peers, used for TLS negotiation
-remote_cert_dir = "/etc/jald/remote_certs/";
+remote_cert_dir = "./test-input/TLS_CA_Signed/server/trust_store_dir";
 
 # path to the root of the database (optional)
 db_root = "/var/lib/jalop/db/";
-
-# path to a directory containing the JALoP schemas (optional)
-schemas_root = "/usr/share/jalop-v1.0/schemas/";
 
 # the port to listen on
 port = 1234L;
@@ -128,11 +139,19 @@ port = 1234L;
 # the IPv4 interface to listen on, or 0.0.0.0 to listen on all interfaces
 host = "0.0.0.0";
 
-# For subscribe, the maximum number of records to send before sending a "digest" message
-pending_digest_max = 10L;
+# How long to wait, in seconds, before polling for records after finding no records
+poll_time = 1L;
 
-# For subscribe, the maximum number of seconds to wait, before sending a "digest" message
-pending_digest_timeout = 100L;
+# file storing PID of jald when daemonized.
+pid_file = "/var/log/jalop/jald-pid.txt";
+
+# Log directory of jald when daemonized.
+log_dir = "./";
+
+# A list of supported digest algorithms. These algorithms should be ordered by preference 
+# in a single double-quoted string with a space separating the algorithms.
+# Valid values are "sha256", "sha384", and "sha512"
+digest_algorithms = "sha256";
 
 # List of peer configurations. This configuration indicates that the hosts with
 # the IP addresses 127.0.0.1 and 192.168.1.5 are allowed to subscribe to
@@ -149,6 +168,23 @@ peers = ( {
 		hosts = ("192.168.1.5");
 		subscriber_allow = ("audit");
 	} );
+
+# seccomp will restrict the jal-local-store process to the defined system calls.
+# When the process is in the setup phase, at startup, it will be restricted to the
+# initial_seccomp_rules, both_seccomp_rules and final_seccomp_rules system call sets. After the setup phase and before the process
+# is doing its routine work, it will be further restricted to only the both_seccomp_rules and final_seccomp_rules system call set.
+#
+enable_seccomp = true;
+seccomp_debug = false;
+# Use these rules for RHEL8/9
+initial_seccomp_rules = ["arch_prctl","bind","brk","execve","getcwd","getrlimit","ioctl","listen","lstat","newfstatat","prctl","readlink","sysinfo","seccomp","set_tid_address","statfs","writev"];
+both_seccomp_rules = ["access","clone","clone3","close","epoll_create","fcntl","fstat","futex","getsockname","lseek","mmap","mprotect","munmap","open","read","rseq","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"];
+final_seccomp_rules = ["accept","clock_nanosleep","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","flock","ftruncate","getpeername","getpid","getrandom","getuid","madvise","nanosleep","openat","poll","pread64","prlimit64","pwrite64","recvfrom","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","shutdown"];
+# RHEL7 doesn't recognize some of the syscalls that are invoked on RHEL9 so it is
+# necessary to use a variant set of syscalls
+#initial_seccomp_rules = ["arch_prctl","bind","brk","execve","getcwd","getrlimit","ioctl","listen","lstat","newfstatat","prctl","readlink","sysinfo","seccomp","set_tid_address","statfs","writev"];
+#both_seccomp_rules = ["access","clone","close","epoll_create","fcntl","fstat","futex","getsockname","lseek","mmap","mprotect","munmap","open","read","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"];
+#final_seccomp_rules = ["accept","clock_nanosleep","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","flock","ftruncate","getpeername","getpid","getrandom","getuid","madvise","nanosleep","openat","poll","pread64","prlimit64","pwrite64","recvfrom","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","shutdown"];
 
 .SH "SEE ALSO"
 .BR jald (8),

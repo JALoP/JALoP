@@ -8,9 +8,7 @@ This file is read by
 .BR jal_subscribe (8)
 and specifies the configuration parameters
 such as the host and port to connect to,
-where to obtain the
-.SM JALoP
-schemas, and the location of the
+and the location of the
 .SM JALoP
 database of records.
 This file follows the format of the libconfig library, where each
@@ -52,11 +50,6 @@ This identifies where
 should obtain/store all the records. This is optional and defaults to
 .IR /var/lib/jalop/db/ .
 .TP
-.B schemas_root
-The full path to the
-.SM JALoP
-schemas. This is optional.
-.TP
 .B host
 The IP or hostname of the remote
 .SM JALoP
@@ -69,7 +62,7 @@ A numeric value that indicates the port to connect to.
 A numeric value that indicates the maximum number of records to receive before sending a 'digest' message.
 .TP
 .B pending_digest_timeout
-A numeric value that indicates the maximum number of seconds to wait before sending a 'digest' message.
+A numeric value that indicates the maximum number of milliseconds to wait before sending a 'digest' message.
 .TP
 .B data_class
 A list of strings that indicates the type(s) of
@@ -80,40 +73,88 @@ The strings may be any combination of "\fIjournal\fR", "\fIaudit\fR", or
 .TP
 .B session_timeout
 Specially formatted string (HH:MM:SS) that specifies the amount of time jal_subscribe will remain connected to the remote publisher.
+.TP
+.B window_size
+Set the window size for beep channels to be this number * 1024. Beep recommends a minimum size of 4096.
+.TP
+.B digest_algorithms
+A bracket enclosed list of any combination of the strings "journal", "audit", and/or "log". Specifies the types of records which the subscriber will accept from the publisher.
+.B enable_seccomp
+If true seccomp will restrict the process to the defined system calls.
+.TP
+.B seccomp_debug
+If true diagnostic information about seccomp policies will be printed to the console as they are interpreted and applied.
+.TP
+.B initial_seccomp_rules
+System calls allowed in the setup phase only.
+.TP
+.B both_seccomp_rules
+System calls allowed in all phases.
+.TP
+.B final_seccomp_rules
+System calls allowed in the setup phase and while the process is running.
 .SH EXAMPLES
 .nf
-# the path to the private key, used for TLS negotiation
-private_key = "/etc/jal_subscribe/cert_and_key";
+# The path to the private key, used for TLS.
+private_key = "./test-input/TLS_CA_Signed/client/jal_subscriber_v1_client.key.pem";
 
-# the path to the public cert, used for TLS negotiation
-public_cert = "/etc/jal_subscribe/cert";
+# The path to the public cert, used for TLS.
+public_cert = "./test-input/TLS_CA_Signed/client/jal_subscriber_v1_client.cert.pem";
 
-# directory containing the certificates for the remote peers, used for TLS negotiation
-remote_cert = "/etc/jal_subscribe/remote_certs/";
+# Directory containing the certificates for the remote peers.
+remote_cert = "./test-input/TLS_CA_Signed/client/trust_store_dir";
 
-# path to the root of the database (optional)
-db_root = "/var/lib/jalop/db/";
+# The path to the root of the database.
+db_root = "./subdb";
 
-# path to a directory containing the JALoP schemas (optional)
-schemas_root = "/usr/share/jalop-v1.0/schemas/";
-
-# Connect on the port 1234
+# The port to connect on.
 port = 1234L;
 
-# Connect to the host at 192.168.1.12
-host = "192.168.1.12";
+# The hostname or IP address of the Publisher to subscribe to.
+host = "127.0.0.1";
 
-# For subscribe, the maximum number of records to send before sending a 'digset' message
+# For subscribe, the maximum number of records to send before sending a 'digest-challenge' message
 pending_digest_max = 10L;
 
-# For subscribe, the maximum number of seconds to wait, before sending a 'digest' message
-pending_digest_timeout = 100L;
+# For subscribe, the maximum number of milliseconds to wait, before sending a 'digest-challenge' message
+# 1000L = 1 second
+pending_digest_timeout = 1000L;
 
-# Subscribe to journal and log records.
-data_class = ("journal", "log");
+# The supported record types.
+data_class = [ "audit", "log", "journal" ];
 
-# Time before jal_subscribe ends. (HH:MM:SS)
-session_timeout = "00:01:00"
+# Mode to request data in.  May be "archive" or "live".
+mode = "archive";
+
+# The time before jal_subscribe ends (HH:MM:SS). Specify 00:00:00 to run continuously.
+session_timeout = "00:00:00";
+
+# This window size for the beep channels created 
+# will be set to this number * 1024 (1k)
+# Beep recommends a minimal size of 4k
+window_size = 4;
+
+# A list of supported digest algorithms. These algorithms should be ordered by preference 
+# in a single double-quoted string with a space separating the algorithms.
+# Valid values are "sha256", "sha384", and "sha512"
+digest_algorithms = "sha256";
+
+# seccomp will restrict the jal-local-store process to the defined system calls.
+# When the process is in the setup phase, at startup, it will be restricted to the
+# initial_seccomp_rules, both_seccomp_rules and final_seccomp_rules system call sets. After the setup phase and before the process
+# is doing its routine work, it will be further restricted to only the both_seccomp_rules and final_seccomp_rules system call set.
+#
+enable_seccomp = true;
+seccomp_debug = false;
+# Use these rules for RHEL8/9
+initial_seccomp_rules = ["access","arch_prctl","bind","brk","execve","faccessat2","flock","fstat","fstatfs","getcwd","lstat","prctl","recvmsg","readlink","rt_sigprocmask","seccomp","set_tid_address"]
+both_seccomp_rules = ["clone","clone3","close","fcntl","getpid","ioctl","lseek","mmap","mprotect","munmap","newfstatat","open","openat","prlimit64","read","rseq","rt_sigaction","set_robust_list","stat","write"]
+final_seccomp_rules = ["clock_nanosleep","connect","epoll_create","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","fsync","ftruncate","futex","getdents","getdents64","getpeername","getppid","getrandom","getrlimit","gettid","getuid","getsockname","madvise","mkdir","nanosleep","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","setsockopt","shutdown","socket","sysinfo"]
+# RHEL7 doesn't recognize some of the syscalls that are invoked on RHEL9 so it is
+# necessary to use a variant set of syscalls
+#initial_seccomp_rules = ["access","arch_prctl","bind","brk","execve","flock","fstatfs","getcwd","lstat","prctl","recvmsg","readlink","rt_sigprocmask","seccomp","set_tid_address"]
+#both_seccomp_rules = ["clone","close","fcntl","fstat","getpid","ioctl","lseek","mmap","mprotect","munmap","newfstatat","open","openat","prlimit64","read","rt_sigaction","set_robust_list","stat","write"]
+#final_seccomp_rules = ["clock_nanosleep","connect","epoll_create","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","fsync","ftruncate","futex","getdents","getdents64","getpeername","getppid","getrandom","getrlimit","gettid","getuid","getsockname","madvise","mkdir","nanosleep","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","setsockopt","shutdown","socket","sysinfo"]
 
 .SH "SEE ALSO"
 .BR jal_subscribe (8),
