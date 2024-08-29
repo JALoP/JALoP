@@ -20,18 +20,47 @@
 #include <exception>
 #include <fstream>
 #include <unistd.h> // sleep()
-#include <getopt.h>
+#include <argp.h>
+#include <sys/stat.h>
 #include <signal.h>
 
 #include "jal_alloc.h"
+#include <jalop/jal_version.h>
 #include <jalop/jal_digest.h>
+#include <jalop/jal_seccomp_enforcer.hpp>
 #include <JalSubscribe.hpp>
+#include "jal_subscribe_config_context.h"
 
-#include "jal_linux_seccomp.h"
 
-static SubscriberConfig process_options(int argc, char **argv);
-void usage();
+// In order to set up the initial seccomp policy as early as possible, we need to
+// create the JalSeccmopEnforcer as soon as we have the config file, but retain the enforcer
+// until we're ready to apply the final policy, so even though it's a little awkward,
+// we're going to pass a unique_ptr reference into process options as an out-param
+static SubscriberConfig process_options(
+	int argc,
+	char **argv,
+	std::unique_ptr<JalSeccompEnforcer>& seccompEnforcer);
 
+// argp
+const char *argp_program_version = JAL_VERSION_AS_STR;
+const char *argp_program_bug_address = 0;
+static char args_doc[] = "--config config_file";
+static char doc[] = "jal_sub_cpp - JALoPv2 Network Store that creates an http server to listen for connections from one or more remote JALoPv2 peers and subscribes for JALoP records.";
+static struct argp_option options[] =
+{
+	{"digest-algorithms", 'a', "algs", 0, "Allowable digest algorithms", 0},
+	{"config", 'c', "file", 0, "REQUIRED: Specify the path to the configuration file.", 0},
+	{"mode", 'm', "mode", 0, "Mode to run on. Valid values are 'archive' or 'live'.", 0},
+	{"home", 'h', "db-root", 0, "Specify the root of the JALoP database.", 0},
+	{"ipaddr", 'i', "ip-address", 0, "IP Address to listen on.", 0},
+	{"port", 't', "port", 0, "Port to listen on.", 0},
+	{"debug", 'd', NULL, 0, "Enable debug output.", 0},
+	{"disable-tls", 's', NULL, 0, "Disable TLS authentication.", 0},
+	{"bdb", 'b', NULL, 0, "Use BerkelyDB storage for received records.", 0},
+	{"fs", 'f', NULL, 0, "Use flat file system storage for received records.", 0},
+	{NULL, 0, NULL, 0, NULL, 0}
+};
+static struct argp argp = {options, jal_subscribe_parse_opt, args_doc, doc, NULL, NULL, NULL};
 static int keep_running = true;
 
 static void sig_handler(int sig)
@@ -66,43 +95,31 @@ static int setup_signals(void)
 	return 0;
 }
 
-
 int main(int argc, char** argv)
 {
 	if(argc == 1)
 	{
-		usage();
+		fprintf(stderr, "ERROR: Not enough arguments. See --usage or --help.\n");
 		return -1;
 	}
 
 	int rc = setup_signals();
 	if(rc != 0)
 	{
-		printf("ERROR: Cannot set up signal handler.\n");
+		fprintf(stderr, "ERROR: Cannot set up signal handler.\n");
 		return -1;
 	}
 
 	try
 	{
-		SubscriberConfig config = process_options(argc, argv);
-		
-		if(seccomp_config.enable_seccomp){
-			if (configureInitialSeccomp()!=0){
-				fprintf(stderr, "%s\n", "Cannot configureInitialSeccomp()");
-				return -1;
-			}
-		}
-		
+		std::unique_ptr<JalSeccompEnforcer> seccompEnforcerPtr = nullptr;
+		SubscriberConfig config = process_options(argc, argv, seccompEnforcerPtr);
+
+		seccompEnforcerPtr->applyInitial();
+
 		JalSubscriber jsub = JalSubscriber(config);
-		
-		if(seccomp_config.enable_seccomp)
-		{
-			if (configureFinalSeccomp() != 0)
-			{
-				fprintf(stderr, "%s\n", "Cannot configureFinalSeccomp()");
-				return -1;
-			}
-		}
+
+		seccompEnforcerPtr->applyFinal();
 
 		while(keep_running)
 		{
@@ -119,114 +136,52 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-
-SubscriberConfig process_options(int argc, char **argv)
+static SubscriberConfig process_options(
+	int argc,
+	char **argv,
+	std::unique_ptr<JalSeccompEnforcer>& seccompEnforcerPtr)
 {
-	int opt = 0;
-	int long_index = 0;
-	char *conf = NULL;
-	char *port = NULL;
-	char *ipaddr = NULL;
-	char *inmode = NULL;
-	char *dbpath = NULL;
-	bool debug = false;
-	bool disableTls = false;
-	char *digest_algorithms = NULL;
-	// BerkeleyDB
-	bool bdb = false;
-	// FileSystem
-	bool fs = false;
-
-	static const char *opt_string = "c:i:t:h:m:dsa:fb";
-
-	static const struct option long_options[] =
-	{
-		{"config", required_argument, NULL, 'c'},
-		{"port", required_argument, NULL, 't'},
-		{"home", required_argument, NULL, 'h'},
-		{"ipaddr", required_argument, NULL, 'i'},
-		{"mode", required_argument, NULL, 'm'},
-		{"debug", no_argument, NULL, 'd'},
-		{"disable-tls", no_argument, NULL, 's'},
-		{"digest-algorithms", required_argument, NULL, 'a'},
-		{"fs", no_argument, NULL, 'f'},
-		{"bdb", no_argument, NULL, 'b'},
-		// Array must end with all NULL row
-		{0, 0, 0, 0}
+	struct jal_subscribe_config_context js_conf_ctx = {
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		0,
+		0,
+		NULL,
+		0,
+		0
 	};
-
-	opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
-
-	while(opt != -1)
+	// Guarantee the drop_config_memory function is called on js_conf_ctx
+	// no matter how we leave this scope
+	struct CtxWrapper
 	{
-		switch (opt)
-		{
-			case 'c':  // this is the only required option
-				conf = optarg;
-				break;
+		struct jal_subscribe_config_context& _ctx;
+		~CtxWrapper() {jal_subscribe_config_drop_memory(&_ctx);}
+	}ctxWrapper{js_conf_ctx};
 
-			case 't':
-				port = optarg;
-				break;
-
-			case 'h':
-				dbpath = optarg;
-				break;
-
-			case 'i':
-				ipaddr = optarg;
-				break;
-
-			case 'm':
-				inmode = optarg;
-				break;
-
-			case 'd':
-				debug = true;
-				break;
-				
-			case 'a':
-				digest_algorithms = optarg;
-				break;
-
-			case 's':
-				disableTls = true;
-				break;
-
-			case 'b':
-				bdb = true;
-				break;
-
-			case 'f':
-				fs = true;
-				break;
-
-			default:
-				usage();
-				throw std::runtime_error("Unrecognized flag: " + std::to_string(opt));
-		}
-		opt = getopt_long(argc, argv, opt_string, long_options, &long_index);
+	int err = argp_parse(&argp, argc, argv, 0, 0, &js_conf_ctx);
+	if(0 != err) {
+		throw std::runtime_error("ERROR: Cannot parse command line arguments.\n");
 	}
 
-	if(conf == NULL)
+	if(js_conf_ctx.conf == NULL)
 	{
-		usage();
 		throw std::runtime_error("Config file is required");
 	}
 
-	if(read_sc_config(conf)!=0){
-		usage();
-		throw std::runtime_error("SECCOMP Config file is corrupted");
-	}
-	
-	SubscriberConfig config = SubscriberConfig(std::string(conf));
+	// let the constructor throw out to main if there's a failure
+	seccompEnforcerPtr = std::make_unique<JalSeccompEnforcer>(js_conf_ctx.conf);
 
-	if(port != NULL)
+	SubscriberConfig config = SubscriberConfig(std::string(js_conf_ctx.conf));
+
+	if(js_conf_ctx.port != NULL)
 	{
 		int portno;
-		int portlen = strlen(port);
+		int portlen = strlen(js_conf_ctx.port);
 		int scanLen;
-		int ret = sscanf(port, "%d%n", &portno, &scanLen);
+		int ret = sscanf(js_conf_ctx.port, "%d%n", &portno, &scanLen);
 
 		if(ret == 1 && portlen == scanLen) // no error
 		{
@@ -234,48 +189,59 @@ SubscriberConfig process_options(int argc, char **argv)
 		}
 		else
 		{
-			throw std::runtime_error("Could not convert port number: " + std::string(port) + 
+			throw std::runtime_error("Could not convert port number: " + std::string(js_conf_ctx.port) +
 				" to integral type");
 		}
 	}
 
-	if(NULL != ipaddr)
+	if(NULL != js_conf_ctx.ipaddr)
 	{
-		config.ipAddr = std::string(ipaddr);
+		config.ipAddr = std::string(js_conf_ctx.ipaddr);
 	}
 
-	if(dbpath != NULL)
+	if(js_conf_ctx.dbpath != NULL)
 	{
-		config.databasePath = std::string(dbpath);
+		//expands file path
+		char *expanded_dbpath = jal_expand_path(js_conf_ctx.dbpath, "db_root");
+
+		if (expanded_dbpath != NULL)
+		{
+			config.databasePath = std::string(expanded_dbpath);
+			free(expanded_dbpath);
+		}
+		else
+		{
+			throw std::runtime_error("Failed to resolve db_root path in config file");
+		}
 	}
 
-	if(inmode != NULL)
+	if(js_conf_ctx.inmode != NULL)
 	{
 		// setMode may throw internally
-		config.mode = modeTypeFromString(std::string(inmode));
+		config.mode = modeTypeFromString(std::string(js_conf_ctx.inmode));
 	}
 
-	config.debug = debug;
-	
-	if(digest_algorithms)
+	config.debug = js_conf_ctx.debug;
+
+	if(js_conf_ctx.digest_algorithms)
 	{
-		config.setDigestAlgorithms(std::string(digest_algorithms));
+		config.setDigestAlgorithms(std::string(js_conf_ctx.digest_algorithms));
 	}
 
-	if(disableTls)
+	if(js_conf_ctx.disableTls)
 	{
 		config.enableTls = false;
 	}
 
-	if(bdb && fs)
+	if(js_conf_ctx.bdb && js_conf_ctx.fs)
 	{
 		throw std::runtime_error("Only one of [-f|-b] may be specified");
 	}
-	else if(bdb)
+	else if(js_conf_ctx.bdb)
 	{
 		config.dbType = DBType::BDB;
 	}
-	else if(fs)
+	else if(js_conf_ctx.fs)
 	{
 		config.dbType = DBType::FS;
 	}
@@ -283,23 +249,5 @@ SubscriberConfig process_options(int argc, char **argv)
 	config.printConfiguration();
 
 	return config;
-}
-
-void usage()
-{
-	static const char *usage =
-	"Usage:\n\
-	-a algs, --digest-algorithms=algs  Supported digest algorithms\n\
-	-b, --bdb                          Use BerkeleyDB storage for received records\n\
-	-c file, --config=file             REQUIRED: Specify the path to the configuration file.\n\
-	-d, --debug                        Enable debug output.\n\
-	-f, --fs                           Use flat file system storage for received records\n\
-	-h H, --home=H                     Specify the root of the JALoP database.\n\
-	-i IP Address, --ipaddr=IP Address Listen IP Address.\n\
-	-m mode, --mode=mode               Mode to run on. Valid values are 'archive' or 'live'.\n\
-	-s, --disable-tls                  Disable TLS authentication.\n\
-	-t port, --port=port               Port to listen on.\n";
-
-	printf("%s\n", usage);
 }
 
