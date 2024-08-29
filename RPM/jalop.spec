@@ -46,10 +46,10 @@ cp ./test-input/jalls_service.cfg			%{buildroot}/etc/jalop
 cp ./test-input/jald_service.cfg			%{buildroot}/etc/jalop
 cp ./test-input/local_store.cfg				%{buildroot}/etc/jalop
 
-mkdir -p %{buildroot}/etc/jalop/schemas
-cp ./schemas/*.xsd			%{buildroot}/etc/jalop/schemas
-cp ./schemas/externalSchemas/*.xsd	%{buildroot}/etc/jalop/schemas
-cp ./schemas/externalSchemas/*.dtd	%{buildroot}/etc/jalop/schemas
+mkdir -p %{buildroot}/usr/share/jalop/schemas
+cp ./schemas/*.xsd			%{buildroot}/usr/share/jalop/schemas
+cp ./schemas/externalSchemas/*.xsd	%{buildroot}/usr/share/jalop/schemas
+cp ./schemas/externalSchemas/*.dtd	%{buildroot}/usr/share/jalop/schemas
 
 mkdir -p %{buildroot}/etc/jalop/TLS_CA_Signed/server/trust_store_dir
 cp -R ./test-input/TLS_CA_Signed/server/*		%{buildroot}/etc/jalop/TLS_CA_Signed/server
@@ -93,7 +93,7 @@ mkdir -p %{buildroot}/var/log/jalop
 /etc/jalop/jalls_service.cfg
 /etc/jalop/jald_service.cfg
 /etc/jalop/local_store.cfg
-/etc/jalop/schemas/*
+/usr/share/jalop/schemas/*
 
 %dir /var/run/jalop/jalls
 %dir /var/log/jalop
