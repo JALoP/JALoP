@@ -2,7 +2,7 @@
  * @file jalp_context.c This file defines functions for dealing
  * with the jalp_context struct.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -79,7 +79,7 @@ void jalp_context_destroy(jalp_context **ctx)
 	free((*ctx)->path);
 	free((*ctx)->hostname);
 	free((*ctx)->app_name);
-	RSA_free((*ctx)->signing_key);
+	EVP_PKEY_free((*ctx)->signing_key);
 	X509_free((*ctx)->signing_cert);
 	free((*ctx)->schema_root);
 	xmlSchemaFreeValidCtxt((*ctx)->jaf_validCtxt);
@@ -109,7 +109,9 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 	if (schema_root) {
 		ctx->schema_root = jal_strdup(schema_root);
 	} else {
-		return JAL_E_INVAL;
+		//Default schema root is needed even if not used since the datataps
+		//can pass in NULL for this
+		ctx->schema_root = jal_strdup(JALP_SCHEMA_ROOT);
 	}
 
 

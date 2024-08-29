@@ -2,7 +2,7 @@
  * @file jalp_param_xml.c This file defines functions to handle
  * converting param list metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

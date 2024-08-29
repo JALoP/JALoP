@@ -1,8 +1,8 @@
 /**
- * @file jalp_connection_internal.h 
+ * @file jalp_connection_internal.h
  * This file contains defines and structures used when connecting to the local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -84,7 +84,7 @@ struct jalp_connection_headers {
 /**
  * Allocate and initialize a #jalp_connection_headers structure.
  *
- * @param[in] message_type The type of this message.  This should be 
+ * @param[in] message_type The type of this message.  This should be
  * one of the #jalp_connection_msg_type enums. It is either a log record,
  * an audit record, a journal record, or a journal record with a file descriptor.
  *
@@ -104,13 +104,12 @@ struct jalp_connection_headers *jalp_connection_headers_create(uint16_t message_
 void jalp_connection_headers_destroy(struct jalp_connection_headers **connection_headers);
 
 /**
- * Allocate and initialize a #msghdr structure.
+ * Allocate and initialize a msghdr structure.
  *
  * This uses jalp_connection_headers() to generate a msghdr structure
  * that can be used with recvmsg() and sendmsg().  This sets the io vectors
  * to the format specified by the JALoP protocol.
  *
- * @param[in,out] msgh The msgh to fill out.
  *
  * @param[in,out] iov The io vector to fill out and attach to the msghdr struct. This should
  * be a 5 element iovec array.
@@ -128,11 +127,11 @@ enum jal_status jalp_connection_fill_out_msghdr(struct iovec *iov,
 		struct jalp_connection_headers *connection_headers, void *data, void *meta);
 
 /**
- * Send a msghdr using the socket in ctx.  Trys to reconnect and send if 
+ * Send a msghdr using the socket in ctx.  Trys to reconnect and send if
  * the first send fails.
  *
  * @param[in] ctx a #jalp_context that will be used to send the \p msgh over.
- * @param[in] msgh The #msghdr that will be passed to sendmsg().
+ * @param[in] msgh The msghdr that will be passed to sendmsg().
  *
  * @return JAL_OK if the message was sent correctly.  JAL_E_INVAL if
  * \p msgh or \p ctx were passed in as NULL.
@@ -140,11 +139,11 @@ enum jal_status jalp_connection_fill_out_msghdr(struct iovec *iov,
 enum jal_status jalp_sendmsg(jalp_context *ctx, struct msghdr *msgh);
 
 /**
- * Send a buffer using jalp_sendmsg(). 
+ * Send a buffer using jalp_sendmsg().
  *
  * @param[in] ctx a #jalp_context that will be used to send the buffer.
  *
- * @param[in] message_type The type of this message.  This should be 
+ * @param[in] message_type The type of this message.  This should be
  * one of the #jalp_connection_msg_type enums. It is either a log record,
  * an audit record, a journal record, or a journal record with a file descriptor.
  *

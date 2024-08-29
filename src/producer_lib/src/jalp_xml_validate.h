@@ -1,7 +1,7 @@
 /**
- * @file jalp_xml_validate.h 
+ * @file jalp_xml_validate.h
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Copyright (C) 2022 The National Security Agency (NSA)
  *
@@ -31,10 +31,18 @@
 #include <jalop/jal_status.h>
 #include "jalp_context_internal.h"
 
-// function to validate an XML document against a specific schema
+/**
+ * Function to validate xml doc against xsd
+ *
+ * @param jalp_ctx Current jalop producer context
+ * @param doc XML doc to be validated
+ * @param xsdFileName Name of XSD file for the schema that the XML file needs to be validated against
+ *
+ * @return 0 if the XML file validates, integer greater than 0 if it doesn't validate, integer less than 0 if error occurs
+ */
 enum jal_status jalp_validate_xml(
-	jalp_context *jalp_ctx, 
-	xmlDocPtr doc, 
+	jalp_context *jalp_ctx,
+	xmlDocPtr doc,
 	const char *xsdFileName);
 
 #endif

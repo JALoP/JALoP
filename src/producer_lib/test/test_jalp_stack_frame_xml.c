@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_stack_frame_xml.c This file contains functions to test jalp_stack_frame_to_elem.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -125,7 +125,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_single_node_list()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
@@ -164,7 +164,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_multiple_node_list()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
@@ -193,7 +193,7 @@ void test_stack_frame_to_elem_correctly_supresses_line_number()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
@@ -201,7 +201,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_caller_name()
 {
 	free(frame->caller_name);
 	frame->caller_name = NULL;
-	
+
 	assert_equals(JAL_OK,
 			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
@@ -223,7 +223,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_caller_name()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
@@ -231,7 +231,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_file_name()
 {
 	free(frame->file_name);
 	frame->file_name = NULL;
-	
+
 	assert_equals(JAL_OK,
 			jalp_stack_frame_to_elem(frame, node, &new_elem));
 	assert_not_equals(NULL, new_elem);
@@ -253,7 +253,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_file_name()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
@@ -283,7 +283,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_class_name()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
@@ -313,7 +313,7 @@ void test_stack_frame_to_elem_returns_valid_element_with_null_method_name()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 
@@ -347,9 +347,9 @@ void test_stack_frame_to_elem_depth_INT_MAX()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
-	
+
 	free(str_int_max);
 }
 
@@ -383,8 +383,8 @@ void test_stack_frame_to_elem_line_number_ULONG_MAX()
 	assert_equals((void*)NULL, temp);
 
 	xmlDocSetRootElement(doc, new_elem);
-	
+
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
-	
+
 	free(str_uint64_max);
 }

@@ -2,7 +2,7 @@
  * @file jalp_log_severity_xml.c This file defines functions to deal with
  * converting log severity metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

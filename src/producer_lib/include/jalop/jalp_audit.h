@@ -2,7 +2,7 @@
  * @file jalp_audit.h This file defines the public API that may interest a
  * program sending JALoP Audit Format (JAF) audit records to the Local Store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

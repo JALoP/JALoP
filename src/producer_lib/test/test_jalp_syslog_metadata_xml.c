@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_syslog_metadata_xml.c This file contains functions to test jalp_syslog_metadata_to_elem.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -484,7 +484,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_severity()
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
-	
+
 	xmlDocSetRootElement(doc, new_elem);
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 	assert_attr_equals(FACILITY_ATTR, FACILITY_VAL_STR, new_elem);
@@ -645,7 +645,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_app_name()
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
-	
+
 	xmlDocSetRootElement(doc, new_elem);
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 	assert_attr_equals(FACILITY_ATTR, FACILITY_VAL_STR, new_elem);
@@ -685,7 +685,7 @@ void test_syslog_metadata_to_elem_returns_valid_element_with_no_message_id()
 	ret = jalp_syslog_metadata_to_elem(syslog, ctx, node, &new_elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
-	
+
 	xmlDocSetRootElement(doc, new_elem);
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 	assert_attr_equals(FACILITY_ATTR, FACILITY_VAL_STR, new_elem);

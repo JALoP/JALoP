@@ -2,7 +2,7 @@
  * @file jalp_app_metadata_xml.c This file defines functions to deal with
  * converting jalp_app_metadata to a DOMDocument.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

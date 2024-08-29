@@ -3,7 +3,7 @@
  * converting the jalp_journal_metadata structure to a DOMElement
  * converting journal metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -168,7 +168,7 @@ void test_jalp_journal_metadata_to_elem_returns_valid_elm_with_valid_input()
 	xmlNodePtr transforms = file_info->next;
 	assert_not_equals(NULL, transforms);
 
-	xmlNodePtr xform1 = jal_get_first_element_child(transforms); 
+	xmlNodePtr xform1 = jal_get_first_element_child(transforms);
 	assert_not_equals(NULL, xform1);
 	assert_attr_equals(ALGORITHM_ATTR, XFORM_ONE_URI, xform1);
 

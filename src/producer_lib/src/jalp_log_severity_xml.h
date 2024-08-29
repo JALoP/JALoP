@@ -2,7 +2,7 @@
  * @file jalp_log_severity_xml.h This file defines functions to deal with
  * converting log severity metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -49,4 +49,4 @@ enum jal_status jalp_log_severity_to_elem(
 		xmlNodePtr *elem);
 
 #endif //_JALP_LOG_SEVERITY_XML_H_
- 
+

@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_file_info_xml.c This file contains functions to test jalp_file_info_to_elem.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -147,7 +147,7 @@ void test_file_info_to_elem_suceeds_with_no_content_type()
 	assert_attr_equals("OriginalSize", "9876", new_elem);
 	assert_attr_equals("Size", "1234", new_elem);
 	assert_attr_equals("ThreatLevel", "safe", new_elem);
-	
+
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_equals((void*)NULL, temp);
 
@@ -178,7 +178,7 @@ void test_file_info_to_elem_suceeds_with_max_size()
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_equals((void*)NULL, temp);
-	
+
 	xmlDocSetRootElement(doc, new_elem);
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 
@@ -207,7 +207,7 @@ void test_file_info_to_elem_suceeds_with_max_original_size()
 
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_equals((void*)NULL, temp);
-	
+
 	xmlDocSetRootElement(doc, new_elem);
 	// assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 

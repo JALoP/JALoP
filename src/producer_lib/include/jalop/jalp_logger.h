@@ -2,7 +2,7 @@
  * @file jalp_logger.h This file defines the public API that may interest a
  * 'logger' program.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

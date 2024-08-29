@@ -2,7 +2,7 @@
  * @file jalp_transform_xml.h This file defines functions to deal with
  * converting a jalp_stransform struct to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -43,7 +43,7 @@
  * @param[in] doc The xmlDocPtr to create the xmlNodePtr from. Maintains the same namespace
  * @param[out] out A pointer to store the new element in. This will get set
  * to NULL on error, otherwise a newly created element.
- * @return 
+ * @return
  *  - JAL_OK on success
  *  - JAL_E_XML_PARSE if there was a problem parsing the block of XML code.
  */
@@ -56,8 +56,8 @@ enum jal_status jalp_transform_to_elem(
  *
  * @param[in,out] transform_elm The xmlNodePtr to add to.
  * @param[in] other_info Structure containing the uri and xml snippet to add
- * to \ptransform_elm
- * @return 
+ * to \p transform_elm
+ * @return
  * - JAL_OK On success
  * - JAL_E_XML_PARSE if there was an error parsing the XML snippet
  * - JAL_E_INVALID_URI If the field is not a valid uri.
@@ -67,7 +67,7 @@ enum jal_status jalp_transform_to_elem_handle_custom(
 		const struct jalp_transform_other_info *other_info);
 /**
  * Helper function to add elements to a transform for the XOR transform. The
- * URI attribute of \ptransform_elm will be set to the URI for XOR and a child
+ * URI attribute of \p transform_elm will be set to the URI for XOR and a child
  * element that contains the XOR key will be appended.
  * @param[in] doc The document to use when creating elements.
  * @param[in,out] transform_elm The transform element to add to for an XOR
@@ -76,7 +76,7 @@ enum jal_status jalp_transform_to_elem_handle_custom(
  * @param[in] enc_info An enc_info structure that must contain a key, but no
  * IV.
  * @return
- *  - JAL_E_INVALID_TRANSFORM if enc_info is NULL, does not contain a key, 
+ *  - JAL_E_INVALID_TRANSFORM if enc_info is NULL, does not contain a key,
  *  contains an IV, or the IV
  *  - JAL_OK On success.
  *
@@ -95,9 +95,9 @@ enum jal_status jalp_transform_to_elem_handle_xor(
  * @param[in] algorithm The algorithm to set as the Algorithm attribute.
  * @param[in] key_size The size, in bytes of the AES key
  * @param[in] enc_info The enc_info to use for this element. If enc_info->key
- *                     is non-null, a "Key" element will be added to the 
- *                     \ptransform_elm. enc_info->vi is non-null, an "IV" 
- *                     element will be added to the \ptransform_elm.
+ *                     is non-null, a "Key" element will be added to the
+ *                     \p transform_elm. enc_info->vi is non-null, an "IV"
+ *                     element will be added to the \p transform_elm.
  */
 enum jal_status jalp_transform_to_elem_handle_aes(
 		xmlDocPtr doc,

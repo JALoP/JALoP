@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_transform.c This file contains tests for jalp_transform functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

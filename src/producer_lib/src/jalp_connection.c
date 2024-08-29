@@ -1,8 +1,8 @@
 /**
- * @file jalp_connection.c 
+ * @file jalp_connection.c
  * This file defines helper functions for making a connection to a local store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -101,7 +101,7 @@ enum jal_status jalp_connection_fill_out_msghdr(struct iovec *iov,
 		i++;
 	}
 
-	// metadata 
+	// metadata
 	iov[i].iov_base = meta;
 	iov[i].iov_len = connection_headers->meta_len;
 	i++;
@@ -198,7 +198,7 @@ enum jal_status jalp_send_buffer(jalp_context *ctx, uint16_t message_type,
 		goto out;
 	}
 
-	// if data_len and meta_len are greater than 0, 
+	// if data_len and meta_len are greater than 0,
 	// then data and meta shouldn't be NULL
 	if (meta_len > 0 && meta == NULL) {
 		status = JAL_E_INVAL;
@@ -209,7 +209,7 @@ enum jal_status jalp_send_buffer(jalp_context *ctx, uint16_t message_type,
 		goto out;
 	}
 
-	// oppositely, if data and meta are not null, 
+	// oppositely, if data and meta are not null,
 	// then data_len and meta_len shouldn't be 0
 	if (meta != NULL && meta_len == 0) {
 		status = JAL_E_INVAL;

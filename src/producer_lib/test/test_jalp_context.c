@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_context.c This file contains tests for jalp_context functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -68,7 +68,7 @@ int fake_update(__attribute__((unused)) void *instance,
 }
 int fake_final(__attribute__((unused)) void *instance,
 		__attribute__((unused)) uint8_t *digest,
-		__attribute__((unused)) size_t *len)
+		__attribute__((unused)) unsigned int *len)
 
 {
 	return JAL_OK;
@@ -96,7 +96,7 @@ int fake_update2(__attribute__((unused)) void *instance,
 }
 int fake_final2(__attribute__((unused)) void *instance,
 		__attribute__((unused)) uint8_t *digest,
-		__attribute__((unused)) size_t *len)
+		__attribute__((unused)) unsigned int *len)
 
 {
 	return JAL_OK;
@@ -443,11 +443,12 @@ void test_jalp_context_init_falls_back_to_pid_if_cannot_read_procfs()
 	jalp_context_destroy(&ctx);
 }
 
-void test_jalp_context_init_returns_error_when_schema_path_is_null()
+void test_jalp_context_init_returns_no_error_when_schema_path_is_null()
 {
+	//Default schema root of /usr/share/jalop/schemas is used if NULL is passed in for schema path.
 	struct jalp_context_t *ctx = jalp_context_create();
 	enum jal_status ret = jalp_context_init(ctx, NULL, NULL, NULL, NULL);
-	assert_equals(JAL_E_INVAL, ret);
+	assert_equals(JAL_OK, ret);
 	jalp_context_destroy(&ctx);
 }
 

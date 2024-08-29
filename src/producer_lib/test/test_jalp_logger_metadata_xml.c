@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_logger_metadata_xml.c This file contains functions to test jalp_logger_metadata_to_elem.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -988,7 +988,7 @@ void test_logger_metadata_to_elem_returns_valid_element_null_app_name()
 	temp = temp->next;
 	assert_not_equals(NULL, temp);
 	assert_tag_equals(JALP_TEST_LMXML_LOCATION_TAG, temp);
-	
+
 	xmlNodePtr temp2 = jal_get_first_element_child(temp);
 	assert_not_equals(NULL, temp2);
 	assert_tag_equals(JALP_TEST_LMXML_STACKFRAME_TAG, temp2);

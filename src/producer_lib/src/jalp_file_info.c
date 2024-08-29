@@ -2,7 +2,7 @@
  * @file jalp_file_info.c This file has functions for creating and destroying
  * jalp_file_info structures.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

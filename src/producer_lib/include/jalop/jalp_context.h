@@ -2,7 +2,7 @@
  * @file jalp_context.h This file defines the public API available to
  * applications for sending JAL data to a JALoP Local Store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -47,6 +47,12 @@ extern "C" {
  * Path to the socket used when making a connection to the JALoP Local Store.
  */
 #define JALP_SOCKET_NAME "/var/run/jalop/jalop.sock"
+
+/**
+ * Path to the schemas
+ */
+#define JALP_SCHEMA_ROOT "/usr/share/jalop/schemas"
+
 
 /**
  * mask to indicate that audit xml payload is to be varified against a schema
@@ -122,11 +128,11 @@ void jalp_context_destroy(jalp_context **ctx);
  *
  * @param[in] ctx The context to attach the RSA keys to.
  * @param[in] keyfile The path to the private key file.
- * @param[in] cb The password callback function used to provide 
- * a password, if needed. If NULL, the default behavior is 
- * determined by the underlying SSL implementation. 
+ * @param[in] cb The password callback function used to provide
+ * a password, if needed. If NULL, the default behavior is
+ * determined by the underlying SSL implementation.
  *
- * @return JAL_OK on success or one of the following possible errors: JAL_E_INVAL, 
+ * @return JAL_OK on success or one of the following possible errors: JAL_E_INVAL,
  * JAL_E_EXISTS, JAL_E_FILE_OPEN, JAL_E_READ_PRIVKEY.
  */
 enum jal_status jalp_context_load_pem_rsa(jalp_context *ctx,
@@ -173,7 +179,7 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 enum jal_status jalp_init();
 
 /**
- * Free data allocated by the Producer Library. Should be called by the 
+ * Free data allocated by the Producer Library. Should be called by the
  * application to clean up resources prior to exit.
  */
 void jalp_shutdown();
@@ -181,7 +187,7 @@ void jalp_shutdown();
 /**
  * Set context flags with flag
  *
- * @param[in] ctx jalp_context_t structure pointer 
+ * @param[in] ctx jalp_context_t structure pointer
  * @param[in] flag the flag to set
  */
 void jalp_context_set_flag(jalp_context *ctx, uint8_t flag);
@@ -189,7 +195,7 @@ void jalp_context_set_flag(jalp_context *ctx, uint8_t flag);
 /**
  * Reset context flags with flag
  *
- * @param[in] ctx jalp_context_t structure pointer 
+ * @param[in] ctx jalp_context_t structure pointer
  * @param[in] flag the flag to reset
  */
 void jalp_context_reset_flag(jalp_context *ctx, uint8_t flag);
@@ -197,8 +203,9 @@ void jalp_context_reset_flag(jalp_context *ctx, uint8_t flag);
 /**
  * Check to see if a particular flag bit is set
  *
- * @param[in] ctx jalp_context_t structure pointer 
+ * @param[in] ctx jalp_context_t structure pointer
  * @param[in] flag the flag to test
+ * @return true if flag is set, otherwise false
  */
 bool jalp_context_flag_isSet(jalp_context *ctx, uint8_t flag);
 
@@ -206,14 +213,12 @@ bool jalp_context_flag_isSet(jalp_context *ctx, uint8_t flag);
 /**
  * Return the flags member of jalp_context_t structure
  *
- * @param[in] ctx jalp_context_t structure pointer 
+ * @param[in] ctx jalp_context_t structure pointer
  *
  * @return flags member of the jalp_context
  */
 uint8_t jalp_context_get_flags(jalp_context *ctx);
 
-
-/** @} */
 #ifdef __cplusplus
 }
 #endif

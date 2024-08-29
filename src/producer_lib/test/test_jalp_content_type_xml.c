@@ -2,7 +2,7 @@
  * @file test_jalp_content_type_xml.c This file contains unit tests for the
  * functions that convert a jalp_content_type struct to a DOM element.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -225,7 +225,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_application()
 	ret_val = xmlNodeGetContent(cur_node);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_VALUE));
 	xmlFree(ret_val);
-	
+
 	// assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 #endif
@@ -281,7 +281,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_audio()
 	ret_val = xmlNodeGetContent(cur_node);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_VALUE));
 	xmlFree(ret_val);
-	
+
 	// assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 #endif
@@ -337,7 +337,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_example()
 	ret_val = xmlNodeGetContent(cur_node);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_VALUE));
 	xmlFree(ret_val);
-	
+
 	// assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 #endif
@@ -393,7 +393,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_image()
 	ret_val = xmlNodeGetContent(cur_node);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_VALUE));
 	xmlFree(ret_val);
-	
+
 	// assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 #endif
@@ -505,7 +505,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_model()
 	ret_val = xmlNodeGetContent(cur_node);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_VALUE));
 	xmlFree(ret_val);
-	
+
 	// assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 #endif
@@ -561,7 +561,7 @@ void test_content_type_to_elem_sets_correct_string_for_media_type_text()
 	ret_val = xmlNodeGetContent(cur_node);
 	assert_equals(0, xmlStrcmp(ret_val, BAD_CAST P3_VALUE));
 	xmlFree(ret_val);
-	
+
 	// assert_equals(0, validate(new_doc, __FUNCTION__, TEST_XML_APP_META_TYPES_SCHEMA, 0));
 }
 #endif

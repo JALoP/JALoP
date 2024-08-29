@@ -1,8 +1,8 @@
 /**
- * @file jalp_stack_frame.c This file contains functions for creating 
+ * @file jalp_stack_frame.c This file contains functions for creating
  * and destroying jalp_stack_frames.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

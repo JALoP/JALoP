@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_context_crypto.c This file contains tests for jalp_context_crypto functions.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

@@ -10,7 +10,8 @@ env = env.Clone()
 #env.Append(CPPPATH='../../../src')
 
 # The test code trigger warnings we'd just assume ignore.
-ccflags = ' -Wno-format-nonliteral -Wno-unreachable-code -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
+# -fcommon needed to restore original gcc behavior in rhel9 to prevent multiple definition linker errors
+ccflags = '-fcommon -Wno-format-nonliteral -Wno-maybe-uninitialized -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
 
 # this is needed for the jalp_config_internal.h.
 env.Append(CPPPATH="#/src/test_utils/src")

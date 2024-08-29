@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_log_severity_xml.c This file contains functions to test jalp_log_severity_to_elem.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

@@ -2,7 +2,7 @@
  * @file jalp_app_metadata.h This file defines the top level public structure
  * used to create application metadata.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -38,9 +38,8 @@ extern "C" {
 #include <jalop/jalp_journal_metadata.h>
 /**
  * @defgroup AppMetadata Application Metadata
- *
- * Structures and functions related to building application metadata.
  * @{
+ * Structures and functions related to building application metadata.
  */
 /**
  * Enum for the type of embedded metadata in the application metadata
@@ -117,7 +116,9 @@ struct jalp_app_metadata *jalp_app_metadata_create(void);
  * NULL.
  */
 void jalp_app_metadata_destroy(struct jalp_app_metadata **app_meta);
-/** @} */
+/**
+* @}
+*/
 #ifdef __cplusplus
 }
 #endif

@@ -2,7 +2,7 @@
  * @file jalp_journal_metadata.h This file defines structures and functions for
  * building the "journalMetadata" section of the application metadata.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -186,6 +186,8 @@ struct jalp_transform {
 	 * elements for the transform.
 	 */
 	enum jalp_transform_type type;
+
+	/** transform union */
 	union {
 		/** Extra encryption info for JALoP recognized algorithms */
 		struct jalp_transform_encryption_info *enc_info;

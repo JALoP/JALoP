@@ -2,7 +2,7 @@
  * @file jalp_xml_validate.c This file defines functions to validate
  * xml files against a schema
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -34,21 +34,12 @@
 
 #include "jalp_xml_validate.h"
 
-/**
- * Function to validate xml doc against xsd
- * 
- * @param jalp_context Current jalop producer context
- * @param doc XML doc to be validated
- * @param xsdFileName Name of XSD file for the schema that the XML file needs to be validated against
- * 
- * @return 0 if the XML file validates, integer greater than 0 if it doesn't validate, integer less than 0 if error occurs
- */
 enum jal_status jalp_validate_xml(jalp_context *jalp_ctx, xmlDocPtr doc, const char *xsdFileName)
 {
 	xmlSchemaParserCtxtPtr parseCtxt = NULL;
 	xmlSchemaPtr jaf_schema = NULL;
 
-	if(jalp_ctx->jaf_validCtxt == NULL) 
+	if(jalp_ctx->jaf_validCtxt == NULL)
 	{
 		if((xsdFileName == NULL) || (strcmp(xsdFileName, "")) == 0) {
 			return JAL_E_INVAL;
@@ -60,7 +51,7 @@ enum jal_status jalp_validate_xml(jalp_context *jalp_ctx, xmlDocPtr doc, const c
 
 		//Setup parser context
 		parseCtxt = xmlSchemaNewParserCtxt(xsdFileName);
-	
+
 		if(parseCtxt == NULL) {
 			return JAL_E_XML_PARSE;
 		}

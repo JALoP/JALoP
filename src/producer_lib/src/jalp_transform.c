@@ -2,7 +2,7 @@
  * @file jalp_transform.c This file has functions for creating and destroying
  * jalp_transform structures.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -119,11 +119,11 @@ void jalp_transform_destroy_one(struct jalp_transform *transform)
 {
 	switch (transform->type) {
 	case JALP_TRANSFORM_AES128:
-		// fall through 
+		// fall through
 	case JALP_TRANSFORM_AES192:
-		// fall through 
+		// fall through
 	case JALP_TRANSFORM_AES256:
-		// fall through 
+		// fall through
 	case JALP_TRANSFORM_XOR:
 		jalp_transform_encryption_info_destroy(&transform->enc_info);
 		break;

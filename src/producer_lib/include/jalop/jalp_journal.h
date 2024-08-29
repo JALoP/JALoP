@@ -2,7 +2,7 @@
  * @file jalp_journal.h This file defines the public API that may interest a
  * a program that is sending journal records to the JALoP Local Store.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -97,7 +97,7 @@ enum jal_status jalp_journal(jalp_context *ctx,
  * @param[in] ctx The context to send the record over.
  * @param[in] app_meta The optional application provided metadata.
  * @param[in] fd The file descriptor of the journal.
- * @return 
+ * @return
  *  - JAL_OK on success
  *  - JAL_E_NOT_SUPPORTED if the underlying system doesn't support SCM_RIGHTS on
  *  a socket
@@ -121,7 +121,7 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
  *
  * @note It is an error to pass NULL for both \p app_meta and \p path.
  *
- * @return 
+ * @return
  *  - JAL_OK if the JPL was successful at opening the file and sending the
  * descriptor to the JALoP Local Store.
  *  - JAL_E_NOT_SUPPORTED if the underlying system doesn't support SCM_RIGHTS on
@@ -133,8 +133,6 @@ enum jal_status jalp_journal_fd(jalp_context *ctx,
 enum jal_status jalp_journal_path(jalp_context *ctx,
 		struct jalp_app_metadata *app_meta,
 		const char *path);
-
-/** @} */
 
 #ifdef __cplusplus
 }

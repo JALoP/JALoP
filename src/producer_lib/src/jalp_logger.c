@@ -1,7 +1,7 @@
 /**
  * @file jalp_logger.c This file defines functions for sending log messages.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

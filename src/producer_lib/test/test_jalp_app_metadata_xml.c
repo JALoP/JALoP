@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_app_metadata_xml.c This file contains functions to test jalp_app_metadata_to_elem().
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -271,7 +271,7 @@ void test_app_metadata_to_elem_works_for_logger()
 	assert_tag_equals(APP_META_TAG, new_elem);
 	xmlDocSetRootElement(doc, new_elem);
 	assert_equals(0, validate(doc, __FUNCTION__, TEST_XML_APP_META_SCHEMA, 0));
-	
+
 	xmlChar *jid = xmlGetProp(new_elem, xml_jid_attr_name);
 	assert_equals(0, strncmp(JID_PREFIX, (char *)jid, strlen(JID_PREFIX)));
 	char *uuidstr = (char *)jid + strlen(JID_PREFIX);

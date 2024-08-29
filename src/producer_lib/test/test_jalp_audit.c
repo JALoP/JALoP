@@ -1,7 +1,7 @@
 /**
  * @file test_jalp_audit.c This file contains functions to test jalp_audit().
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -65,6 +65,7 @@ long buff_len = 0;
 #define TEST_KEY_PASSWORD "pass"
 #define NOT_XML_STRING "WakaWakaWaka"
 #define VALID_XML "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><someNode/>"
+#define OPENSSL_V11_VER 0x1010000fL
 
 int ctx_is_null;
 int message_type_wrong;
@@ -123,10 +124,11 @@ void setup()
 	ret = fseek(f, 0, SEEK_SET);
 	assert_equals(0, ret);
 
-	buffer = (uint8_t *)jal_malloc(buff_len);
+	buffer = (uint8_t *)jal_malloc(buff_len + 1);
 	assert_not_equals(NULL, buffer);
 
 	ret = fread(buffer, buff_len, 1, f);
+	buffer[buff_len] = '\0';
 	assert_not_equals(0, ret);
 
 	fclose(f);
@@ -140,8 +142,13 @@ void setup()
 	fd_is_set = 0;
 	expected_data_len = 0;
 	expected_meta_len = 0;
-	
+
+	//JAL-897 - OPENSSL_init_ssl() replaces SSL_library_init() in openssl v1.1 and higher
+	#if OPENSSL_VERSION_NUMBER < OPENSSL_V11_VER
 	SSL_library_init();
+	#else
+	OPENSSL_init_ssl(0, NULL);
+	#endif
 	xmlSecInit();
 
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");

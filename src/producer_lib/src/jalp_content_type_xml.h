@@ -2,7 +2,7 @@
  * @file jalp_content_type_xml.h This file defines functions to deal with
  * converting the jalp_content_type struct to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.

@@ -2,7 +2,7 @@
  * @file jalp_logger_metadata_xml.h This file defines functions to handle
  * converting logger metadata to XML.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -46,7 +46,7 @@
  * @param[in] parent The xmlNodePtr of the parent to the new element
  * Maintains the same namespace.
  * @param[out] new_elem The xmlNodePtr that holds the new element.
- * 
+ *
  * @return JAL_OK on success, JAL_E_INVAL_* for any invalid structs,
  * and JAL_E_XML_CONVERSION otherwise.
  */

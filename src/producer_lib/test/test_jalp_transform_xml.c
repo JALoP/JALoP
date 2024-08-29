@@ -2,7 +2,7 @@
  * @file test_jalp_transform_xml.c This file contains tests for
  * jal_transform functions
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -797,7 +797,7 @@ void test_transform_to_elem_succeeds_with_deflate()
 	assert_equals(JAL_OK, ret);
 	assert_attr_equals("Algorithm",
 			"http://www.dod.mil/algorithms/compression#deflate", new_elem);
-	
+
 	xmlNodePtr temp = jal_get_first_element_child(new_elem);
 	assert_equals((void*)NULL, temp);
 
