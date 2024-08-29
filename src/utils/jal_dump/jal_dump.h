@@ -1,6 +1,6 @@
 /**
  * @file jal_dump.h This file contains declarations for functions used in jal_dump
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -27,8 +27,6 @@
 
 #ifndef _JAL_DUMP_H_
 #define _JAL_DUMP_H_
-
-#include <libconfig.h>
 
 #include <jalop/jal_status.h>
 

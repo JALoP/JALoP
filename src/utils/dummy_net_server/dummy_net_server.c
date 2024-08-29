@@ -1,7 +1,7 @@
 /**
  * @file dummy_net_server.c This file contains dummy net server functions
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,12 +36,18 @@
 #include <unistd.h>
 #include "jal_base64_internal.h"
 
+/**
+ * \cond DO_NOT_DOCUMENT
+ */
 #define DEBUG_LOG(args...) \
 	do { \
 		fprintf(stderr, "(server) %s[%d] ", __FUNCTION__, __LINE__); \
 		fprintf(stderr, ##args); \
 		fprintf(stderr, "\n"); \
 	} while(0)
+/**
+* \endcond
+*/
 
 #define TEST_INPUT_PATH "test-input/"
 #define AUDIT_PAYLOAD_XML "good_audit_input.xml"
@@ -96,6 +102,8 @@ void on_connect_ack(const struct jaln_connect_ack *ack, void *user_data)
 	DEBUG_LOG("version: %d", ack->jaln_version);
 	DEBUG_LOG("agent: %s", ack->jaln_agent);
 	DEBUG_LOG("role: %s", ack->mode == JALN_ROLE_SUBSCRIBER ? "subscriber" : "publisher");
+	DEBUG_LOG("digest_algorithm: %s", ack->digest_algorithm);
+	DEBUG_LOG("encoding: %s", ack->encoding);
 	user_data = user_data;
 }
 void on_connect_nack(const struct jaln_connect_nack *nack, void *user_data)
@@ -120,7 +128,7 @@ enum jal_status pub_on_journal_resume(
 	return JAL_E_INVAL;
 }
 
-enum jal_status __send_record(jaln_session *sess, char *nonce, uint8_t *buf, uint64_t buf_len, 
+enum jal_status __send_record(jaln_session *sess, char *nonce, uint8_t *buf, uint64_t buf_len,
 			enum jal_status (*send)(jaln_session *, char *, uint8_t *,
 						uint64_t, uint8_t *, uint64_t,
 						uint8_t *, uint64_t))
@@ -516,7 +524,7 @@ int main()
 	sub_cbs->release_journal_feeder = sub_release_journal_feeder;
 
 	enum jal_status err;
-	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
+	struct jal_digest_ctx *dc1 = jal_digest_ctx_create(JAL_DIGEST_ALGORITHM_DEFAULT);
 
 	jaln_register_digest_algorithm(net_ctx, dc1);
 	err = jaln_register_encoding(net_ctx, "xml");

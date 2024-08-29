@@ -2,7 +2,7 @@
 * @file jaldb_tail.cpp This file contains the implementation for the
 * jaldb_tail utility.
 *
-* @section LICENSE
+* ### LICENSE
 *
 * Source code in 3rd-party is licensed and owned by their respective
 * copyright holders.
@@ -27,12 +27,11 @@
 * limitations under the License.
 */
 
-#include <libconfig.h>
 #include <unistd.h>	// sleep
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <getopt.h>
+#include <argp.h>
 #include <stdio.h>
 #include <stdlib.h>	// strtol
 #include <string.h>
@@ -86,12 +85,30 @@ struct global_members_t {
 	enum jaldb_rec_type rtype;
 } gbl;
 
-static void parse_cmdline(int argc, char **argv);
 static int setup_signals();
 static void sig_handler(int sig);
 
-static void print_usage();
-static void print_version();
+// argp
+const char *argp_program_version = jal_version_as_string();
+const char *argp_program_bug_address = 0;
+static char args_doc[] = "";
+static char argp_doc[] =
+	"jaldb_tail - JALoP database tail utility.";
+static error_t parse_opt(int key, char *arg, struct argp_state *state);
+static struct argp_option options[] = {
+	{"follow", 'f', NULL, 0,
+		"Output additional records as the database grows.", 0},
+	{"records", 'n', "K", 0,
+		"Output the most recent K records. Selecting '0' outputs all records.", 0},
+	{"type", 't', "T", 0,
+		"Select JALoP record type to output. T may be: 'j' (journal record), 'a' (audit record), or 'l' (log record). Defaults to log records.", 0},
+	{"data", 'd', "D", 0,
+		"Specifies which section of the data should be outputted, options are 'a' for application metadata, 's' for system metadata, 'p' for the payload (raw journal, audit, or log data), or 'i' for record ID (UUID-Timestamp) only. The default is to output the record ID only. To retrieve all portions of a record, use 'z'.", 0},
+	{"home", 'h', "H", 0, "Specify the root of the JALoP database, defaults to /var/lib/jalop/db.", 0},
+	{NULL, 0, NULL, 0, NULL, 0}
+};
+
+static struct argp argp = {options, parse_opt, args_doc, argp_doc, NULL, NULL, NULL};
 static void print_error(enum jaldb_status error);
 static void print_settings(int follow, long int num_rec, char *type,
 				char *data, char *home);
@@ -108,6 +125,10 @@ static char *get_single_element_string(xmlDoc *doc, char *element);
 static char *get_single_attribute_string(xmlDoc *doc, char *element, char *attr);
 
 int main(int argc, char **argv) {
+	//#885 - Turn off line buffering to prevent payload getting printed to stdout out of
+	//order when redirecting output to a file.
+	setvbuf(stdout, NULL, _IONBF, 0);
+
 	int ret = 0;
 	enum jaldb_status jaldb_ret = JALDB_OK;
 
@@ -118,7 +139,11 @@ int main(int argc, char **argv) {
 	gbl.home = NULL;
 	gbl.data = NULL;
 
-	parse_cmdline(argc, argv);
+	ret = argp_parse(&argp, argc, argv, 0, 0, NULL);
+	if(0 != ret) {
+		fprintf(stderr, "ERROR: Cannot parse command line arguments.\n");
+		goto out;
+	}
 
 	if (exit_flag) {
 		goto out;
@@ -141,7 +166,7 @@ int main(int argc, char **argv) {
 
 	gbl.ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(gbl.ctx, gbl.home, NULL, JDB_READONLY);
+	jaldb_ret = jaldb_context_init(gbl.ctx, gbl.home, JDB_READONLY);
 
 	if (jaldb_ret != JALDB_OK) {
 		printf("\nContext could not be made.\n");
@@ -179,79 +204,62 @@ out:
 	return ret;
 }
 
-static void parse_cmdline(int argc, char **argv)
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
-	static const char *optstring = "fn:vt:h:d:";
-	static const struct option long_options[] = {
-		{"follow", no_argument, NULL, 'f'},
-		{"records", required_argument, NULL, 'n'},
-		{"version", no_argument, NULL, 'v'},
-		{"type", required_argument, NULL, 't'},
-		{"data", required_argument, NULL, 'd'},
-		{"home", required_argument, NULL, 'h'}, {0,0,0,0} };
-
-	int ret_opt;
-	while (EOF != (ret_opt = getopt_long(argc, argv, optstring, long_options, NULL))) {
-		switch (ret_opt) {
-			case 'f':
-				// Set follow flag
-				gbl.follow_flag = 1;
-				break;
-			case 'n':
-				int my_err_no;
-				errno = 0;
-				gbl.num_rec = strtol(optarg, NULL, 10);
-				my_err_no = errno;
-				if ((LONG_MAX == gbl.num_rec || LONG_MIN == gbl.num_rec) &&
-					ERANGE == my_err_no) {
-					printf("Size of number entered was outside of the representable range.\n");
-					exit_flag = 1;
-				}
-				if (0 == gbl.num_rec && my_err_no) {
-					// Probably couldn't convert the value
-					// to a long (errno was set).
-					printf("No valid conversion could be found for \
-					the value entered for the number of records.\n");
-					exit_flag = 1;
-				}
-				if (0 > gbl.num_rec && !my_err_no) {
-					// User probably entered 0 (errno was not set).
-					printf("Number of records should be a positive value.\n");
-					exit_flag = 1;
-				}
-				break;
-			case 't':
-				if (('j' != *optarg) && ('a' != *optarg) && ('l' != *optarg)) {
-					printf("Type invalid\n");
-					goto err_usage;
-				}
-				gbl.type = jal_strdup(optarg);
-				break;
-			case 'd':
-				if (('i' != *optarg) && ('a' != *optarg) && ('s' != *optarg) && ('p' != *optarg) && ('z' != *optarg)) {
-					printf("Data invalid\n");
-					goto err_usage;
-				}
-				gbl.data = jal_strdup(optarg);
-				break;
-			case 'v':
-				// Display Version info and exit
-				print_version();
+	switch (key)
+	{
+		case 'f':
+			// Set follow flag
+			gbl.follow_flag = 1;
+			break;
+		case 'n':
+			int my_err_no;
+			errno = 0;
+			gbl.num_rec = strtol(arg, NULL, 10);
+			my_err_no = errno;
+			if ((LONG_MAX == gbl.num_rec || LONG_MIN == gbl.num_rec) && ERANGE == my_err_no) {
+				fprintf(stderr, "Size of number entered was outside of the representable range.\n");
 				exit_flag = 1;
-				break;
-			case 'h':
-				gbl.home = jal_strdup(optarg);
-				break;
-			default:
+			}
+			if (0 == gbl.num_rec && my_err_no) {
+				// Probably couldn't convert the value
+				// to a long (errno was set).
+				fprintf(stderr, "No valid conversion could be found for \
+				the value entered for the number of records.\n");
+				exit_flag = 1;
+			}
+			if (0 > gbl.num_rec && !my_err_no) {
+				// User probably entered 0 (errno was not set).
+				fprintf(stderr, "Number of records should be a positive value.\n");
+				exit_flag = 1;
+			}
+			break;
+		case 't':
+			if (('j' != *arg) && ('a' != *arg) && ('l' != *arg)) {
+				fprintf(stderr, "Type invalid\n");
 				goto err_usage;
-		}//switch
-	}//while
-	return;
+			}
+			gbl.type = jal_strdup(arg);
+			break;
+		case 'd':
+			if (('i' != *arg) && ('a' != *arg) && ('s' != *arg) && ('p' != *arg) && ('z' != *arg)) {
+				fprintf(stderr, "Data invalid\n");
+				goto err_usage;
+			}
+			gbl.data = jal_strdup(arg);
+			break;
+		case 'h':
+			gbl.home = jal_strdup(arg);
+			break;
+		default:
+			return ARGP_ERR_UNKNOWN;
+	}
+	return 0;
 
 err_usage:
-	print_usage();
+	argp_usage(state);
 	exit_flag = 1;
-	return;
+	return exit_flag;
 }
 
 static int setup_signals()
@@ -283,32 +291,6 @@ static void sig_handler(__attribute__((unused)) int sig)
 {
 	exit_flag = 1;	// Global Flag will cause main
 			// to exit.
-}
-
-static void print_usage()
-{
-	static const char *usage =
-	"Usage:\n\
-	-f, --follow		Output additional records as the database grows.\n\
-	-n K, --records=K	Output the most recent K records. Selecting '0' outputs all records.\n\
-	-v, --version		Output the version information and exit.\n\
-	-t T, --type=T		Select JALoP record type to output.\n\
-				T may be: \"j\" (journal record), \"a\" (audit record), or \"l\" (log record).\n\
-				Defaults to log records.\n\
-	-d D, --data=D		Specifies which section of the data should be outputted, options are \"a\" for application\n\
-				metadata, \"s\" for system metadata, \"p\" for the payload (raw journal, audit, or log\n\
-				data), or \"i\" for record ID (UUID-Timestamp) only. \n\
-				The default is to output the record ID only. To retrieve all portions of a record,\n\
-				use \"z\".\n\
-	-h H, --home=H		Specify the root of the JALoP database,\n\
-				Defaults to /var/lib/jalop/db.\n\n";
-
-	printf("%s\n", usage);
-}
-
-static void print_version()
-{
-	printf("jaldb_tail v%s\n\n", jal_version_as_string());
 }
 
 static void print_error(enum jaldb_status error)
@@ -417,7 +399,7 @@ static void do_work(void *ptr)
 
 		if (ret == JALDB_E_NOT_FOUND) {
 			printf("Warning: Last displayed record not found. Displaying all records.\n");
-		} 
+		}
 
 		if (0 < uuid_list.size()) {
 			display_records(uuid_list, mbrs);

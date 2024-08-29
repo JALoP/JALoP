@@ -2,7 +2,7 @@
  * @file push.c Dummy server as the start to 'real' jalp_push tool. Shows
  * sample use of the network library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -98,7 +98,7 @@ enum jal_status on_journal_resume(
 	DEBUG_LOG("headers: %p", headers);
 	return JAL_E_INVAL;
 }
-enum jal_status __send_record(jaln_session *sess, char *nonce, 
+enum jal_status __send_record(jaln_session *sess, char *nonce,
 			enum jal_status (*send)(jaln_session *, char *, uint8_t *,
 						uint64_t, uint8_t *,uint64_t,
 						uint8_t *, uint64_t))
@@ -321,8 +321,18 @@ int main() {
 	pub_callbacks->peer_digest = notify_peer_digest;
 
 	enum jal_status err;
-	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
-	jaln_register_digest_algorithm(net_ctx, dc1);
+
+	// This could also be set by command line value. Resolves to "sha256 sha384"
+	char digest_algorithms[] = JAL_SHA256_ALGORITHM_STR JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA384_ALGORITHM_STR;
+	enum jal_digest_algorithm *digest_list = (enum jal_digest_algorithm *) malloc(sizeof(enum jal_digest_algorithm));
+	size_t num_digests = 0;
+	err = jal_get_digest_algorithm_list(NULL, digest_algorithms, &digest_list, &num_digests);
+	struct jal_digest_ctx *dctx = NULL;
+	for (size_t i = 0; i < num_digests; i++) {
+		dctx = jal_digest_ctx_create(digest_list[i]);
+		err = jaln_register_digest_algorithm(net_ctx, dctx);
+	}
+
 	err = jaln_register_encoding(net_ctx, "xml");
 
 	//err = jan_register_tls(net_ctx, "priv_key", "pub_cert", "path/to/peer/certs");

@@ -12,14 +12,14 @@ sources = env.Glob("*.cpp")
 
 env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
 
-jal_purge_objs = env.SharedObject(source=sources)
+jaldb_tool_objs = env.SharedObject(source=sources)
 
-jal_purge = env.Program(target='jal_purge', source=jal_purge_objs)
-env.Default(jal_purge)
+jaldb_tool = env.Program(target='jaldb_tool', source=jaldb_tool_objs)
+env.Default(jaldb_tool)
 if env['variant'] == 'release':
 	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
-	env.Alias('install', env.Install(sbindir, jal_purge))
+	env.Alias('install', env.Install(sbindir, jaldb_tool))
 
-install_for_build(env, 'bin', jal_purge)
+install_for_build(env, 'bin', jaldb_tool)
 
-Return("jal_purge")
+Return("jaldb_tool")

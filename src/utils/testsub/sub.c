@@ -2,7 +2,7 @@
  * @file sub.c Dummy server as the start to 'real' jalp_push tool. Shows
  * sample use of the network library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -75,7 +75,7 @@ int sub_on_record_info(
 			record_info->app_meta_len,
 			strlen((char*) application_metadata_buffer),
 			(char*) application_metadata_buffer);
-	DEBUG_LOG("(%s)payload_sz[%"PRIu64"]", record_info->nonce, 
+	DEBUG_LOG("(%s)payload_sz[%"PRIu64"]", record_info->nonce,
 			record_info->payload_len);
 
 
@@ -236,6 +236,8 @@ void on_connect_ack(const struct jaln_connect_ack *ack, void *user_data)
 	DEBUG_LOG("version: %d", ack->jaln_version);
 	DEBUG_LOG("agent: %s", ack->jaln_agent);
 	DEBUG_LOG("role: %s", ack->mode == JALN_ROLE_SUBSCRIBER ? "subscriber" : "publisher");
+	DEBUG_LOG("digest_algorithm: %s", ack->digest_algorithm);
+	DEBUG_LOG("encoding: %s", ack->encoding);
 	user_data = user_data;
 }
 void on_connect_nack(const struct jaln_connect_nack *nack, void *user_data)
@@ -271,8 +273,18 @@ int main() {
 	sub_cbs->release_journal_feeder = sub_release_journal_feeder;
 
 	enum jal_status err;
-	struct jal_digest_ctx *dc1 = jal_sha256_ctx_create();
-	jaln_register_digest_algorithm(net_ctx, dc1);
+
+	// This could also be set by command line value. Resolves to "sha256 sha384"
+	char digest_algorithms[] = JAL_SHA256_ALGORITHM_STR JAL_DIGEST_ALGORITHM_DELIMETER JAL_SHA384_ALGORITHM_STR;
+	enum jal_digest_algorithm *digest_list = (enum jal_digest_algorithm *) malloc(sizeof(enum jal_digest_algorithm));
+	size_t num_digests = 0;
+	err = jal_get_digest_algorithm_list(NULL, digest_algorithms, &digest_list, &num_digests);
+	struct jal_digest_ctx *dctx = NULL;
+	for (size_t i = 0; i < num_digests; i++) {
+		dctx = jal_digest_ctx_create(digest_list[i]);
+		err = jaln_register_digest_algorithm(net_ctx, dctx);
+	}
+
 	//err = jan_register_tls(net_ctx, "priv_key", "pub_cert", "path/to/peer/certs");
 	err = jaln_register_encoding(net_ctx, "xml");
 	err = jaln_register_connection_callbacks(net_ctx, conn_cbs);
@@ -283,12 +295,13 @@ int main() {
 		return -1;
 	}
 	//struct jaln_connection *conn = jaln_subscribe(net_ctx, "192.168.246.156", "55555", JALN_RTYPE_LOG, NULL);
-	struct jaln_connection *conn = jaln_subscribe(net_ctx, "localhost", "55555", JALN_RTYPE_LOG, JALN_ARCHIVE_MODE, NULL);
+	struct jaln_connection *conn = jaln_subscribe(net_ctx, "localhost", "55555", JALN_RTYPE_LOG, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4);
 	DEBUG_LOG("got jal con %p\n", conn);
 	//sleep(120);
 	//err = jaln_disconnect(conn);
 	sleep(600);
 	//err = jaln_shutdown(conn);
 	//jaln_context_destroy(&net_ctx);
+	//free(digest_list);
 	return 0;
 }

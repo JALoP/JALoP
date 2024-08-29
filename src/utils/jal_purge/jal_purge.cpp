@@ -1,6 +1,6 @@
 /**
  * @file jal_purge.cpp This file contains the source for jal_purge
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -25,7 +25,7 @@
  * limitations under the License.
 */
 
-#include <getopt.h>
+#include <argp.h>
 #include <iostream>
 #include <map>
 #include <jalop/jal_version.h>
@@ -75,9 +75,34 @@ static struct global_args_t {
 	char *home;
 } global_args;
 
-static void process_options(int argc, char **argv);
 static void global_args_free();
-static void usage();
+
+// argp
+const char *argp_program_version = jal_version_as_string();
+const char *argp_program_bug_address = 0;
+static char args_doc[] = "[uuid(s)]";
+static char doc[] =
+	"jal_purge - JALoP database purge utility.";
+static error_t parse_opt(int key, char *arg, struct argp_state *state);
+static struct argp_option options[] = {
+	{"type", 't', "T", 0,
+		"Specify the type of JAL record.  'T' may be 'j', 'a', or 'l' for journal, audit, or logging, respectively. When used with the '-u' or '--uuid' options, checks the timestamp, rather than the sequence ID, for record removal.", 0},
+	{"before", 'b', "B", 0,
+		"Remove all records with a timestamp before or equal to B. The timestamp must be specified as an XML schema date, time, or dateTime string. The xmlschema-2 document describes these formats. Only valid if no uuids are specified.", 0},
+	{"delete", 'd', NULL, 0,
+		"Delete the records. The jal_purge tool does not remove records that the JALoP Network Store has not sent to at least one JALoP Network Store.", 0},
+	{"force", 'f', NULL, 0,
+		"When '-d' is given, force the deletion of records even when the JALoP Network Store has not sent them to at least one JALoP Network Store.  When given without '-d', this will report the records that would be deleted.", 0},
+	{"compact", 'c', NULL, 0,
+		"Compact the databases associated to the JAL record type (j/a/l) passed via -t and return empty pages to the filesystem.", 0},
+	{"preserve-history", 'p', NULL, 0,
+		"Don't remove old Berkeley DB log files after purging.  This can be useful if you need to recover from certain error conditions but consumes more disk space.", 0},
+	{"home", 'h', "H", 0, "Specify the root of the JALoP database, defaults to /var/lib/jalop/db.", 0},
+	{"verbose", 'v', NULL, 0, "Output the UUID for each deleted record.", 0},
+	{"detail", 'x', NULL, 0, "Report detailed information about the records jal_purge is reviewing for deletion. This reports the action to be taken (Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed), the outbound state (Unsent, Sent, Synced), the local insertion timestamp, and the local nonce for each record.", 0},
+	{NULL, 0, NULL, 0, NULL, 0}
+};
+static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 
 static int setup_signals();
 static void sig_handler(int sig);
@@ -93,13 +118,22 @@ int main(int argc, char **argv)
 	enum jaldb_status dbret = (enum jaldb_status)-1;
 	enum jaldb_rec_type type = JALDB_RTYPE_UNKNOWN;
 	jaldb_context *ctx = NULL;
+	int err = 0;
 
 	// Perform signal hookups
 	if ( 0 != setup_signals()) {
 		goto out;
 	}
 
-	process_options(argc, argv);
+	err = argp_parse(&argp, argc, argv, 0, 0, NULL);
+	if(0 != err) {
+		fprintf(stderr, "ERROR: Cannot parse command line arguments.\n");
+		goto out;
+	}
+	if ((!global_args.uuids.empty() || global_args.before) && !global_args.type) {
+		fprintf(stderr, "ERROR: -t required if -b specified.\n");
+		goto out;
+	}
 
 	ctx = jaldb_context_create();
 	if (!ctx) {
@@ -107,7 +141,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	dbret = jaldb_context_init(ctx, global_args.home, NULL, JDB_NONE);
+	dbret = jaldb_context_init(ctx, global_args.home, JDB_NONE);
 	if (JALDB_OK != dbret) {
 		fprintf(stderr, "Failed to initialize jaldb context\n");
 		goto out;
@@ -129,7 +163,7 @@ int main(int argc, char **argv)
 
 	if (global_args.detail) {
 		// Output the new detailed format
-		printf("\nJAL_PURGE\n"); 
+		printf("\nJAL_PURGE\n");
 		printf("============\n");
 		printf("SETTINGS:\n");
 
@@ -204,7 +238,7 @@ int main(int argc, char **argv)
 				if (global_args.detail) {
 					// Print status of all records whether to be deleted or not
 					if (global_args.del) {
-						printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce); 
+						printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
 					}
 					else {
 						printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
@@ -300,7 +334,7 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 	if (global_args.detail) {
 		// Print status of all records whether to be deleted or not
 		if (global_args.del) {
-			printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce); 
+			printf("%s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
 		}
 		else {
 			printf("Preview: %s %s %s %26s %s\n", action_str[record_action], recv_str[int(rec->confirmed)], send_str[int(rec->synced)], rec->timestamp, nonce);
@@ -498,9 +532,9 @@ out:
 		ret = jaldb_remove_record(ctx, type, (char*)iter->first.c_str());
 		if (JALDB_OK == ret) {
 			// Remove any on-disk payload file.
-			string path = iter->second;
-			if (!path.empty() && 0 < path.length()) {
-				unlink((char*)path.c_str());
+			string currPath = iter->second;
+			if (!currPath.empty() && 0 < currPath.length()) {
+				unlink((char*)currPath.c_str());
 			}
 			fprintf(stdout, "NONCE: %s Deleted\n", iter->first.c_str());
 		} else {
@@ -516,36 +550,19 @@ out:
         return ret;
 }
 
-static void process_options(int argc, char **argv)
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
-	int opt = 0;
-
-	static const char *opt_string = "s:u:t:b:dfnvxh:pc";
-	static const struct option long_options[] = {
-		{"type", required_argument, NULL, 't'},
-		{"before", required_argument, NULL, 'b'},
-		{"delete", no_argument, NULL, 'd'},
-		{"force", no_argument, NULL, 'f'},
-		{"preserve-history", no_argument, NULL, 'p'},
-		{"home", required_argument, NULL, 'h'},
-		{"version", no_argument, NULL, 'n'},
-		{"verbose", no_argument, NULL, 'v'},
-		{"detail", no_argument, NULL, 'x'},
-		{"compact", no_argument, NULL, 'c'},
-		{0, 0, 0, 0}
-	};
-
-	while (EOF != (opt = getopt_long(argc, argv, opt_string, long_options, NULL))) {
-		switch (opt) {
+	switch (key)
+	{
 		case 't':
-			if ('j' != *optarg && 'a' != *optarg && 'l' != *optarg) {
+			if ('j' != *arg && 'a' != *arg && 'l' != *arg) {
 				fprintf(stderr, "Invalid type\n");
 				goto err_out;
 			}
-			global_args.type = *optarg;
+			global_args.type = *arg;
 			break;
 		case 'b':
-			global_args.before = strdup(optarg);
+			global_args.before = strdup(arg);
 			break;
 		case 'd':
 			global_args.del = 1;
@@ -554,11 +571,8 @@ static void process_options(int argc, char **argv)
 			global_args.force = 1;
 			break;
 		case 'h':
-			global_args.home = strdup(optarg);
+			global_args.home = strdup(arg);
 			break;
-		case 'n':
-			printf("%s", jal_version_as_string());
-			goto version_out;
 		case 'p':
 			global_args.skip_clean = 1;
 			break;
@@ -571,70 +585,23 @@ static void process_options(int argc, char **argv)
 		case 'c':
 			global_args.compact = 1;
 			break;
+		case ARGP_KEY_ARG:
+			global_args.uuids.push_front(string(arg));
+			break;
 		default:
-			goto err_out;
-		}
+			return ARGP_ERR_UNKNOWN;
 	}
+	return 0;
 
-	/* Process UUIDS */
-	while (optind < argc) {
-		global_args.uuids.push_front(string(argv[optind++]));
-	}
-
-	if ((!global_args.uuids.empty() || global_args.before) && !global_args.type) {
-		goto err_out;
-	}
-
-	return;
 err_out:
-	usage();
-version_out:
-	exit(0);
+	argp_usage(state);
+	exit(-1);
 }
 
 static void global_args_free()
 {
 	free(global_args.before);
 	free(global_args.home);
-}
-
-__attribute__((noreturn)) static void usage()
-{
-	static const char *usage =
-	"Usage: jal_purge [options] [uuid(s)]\n\
-	-t, --type=T		Specify the type of JAL record.  'T' may be 'j',\n\
-				'a', or 'l' for journal, audit, or logging, respectively.\n\
-				When used with the '-u' or '--uuid' options, checks\n\
-				the timestamp, rather than the sequence ID, for record\n\
-				removal.\n\
-	-b, --before=B		Remove all records with a timestamp before or equal to B. The\n\
-				timestamp must be specified as an XML schema date,\n\
-				time, or dateTime string.  The xmlschema-2 document\n\
-				describes these formats. Only valid if no uuids are specified.\n\
-	-d, --delete		Delete the records.  The jal_purge tool does not remove\n\
-				records that the JALoP Network Store has not sent to at\n\
-				least one JALoP Network Store.\n\
-	-f, --force		When '-d' is given, force the deletion of records\n\
-				even when the JALoP Network Store has not sent them\n\
-				to at least one JALoP Network Store.  When given\n\
-				without '-d', this will report the records that would be\n\
-				deleted.\n\
-	-c  --compact		Compact the databases associated to the JAL record type (j/a/l)\n\
-				passed via -t and return empty pages to the filesystem.\n\
-	-p, --preserve-history  Don't remove old Berkeley DB log files after purging.  This can\n\
-				be useful if you need to recover from certain error conditions\n\
-				but consumes more disk space\n\
-	-h, --home=H		Specify the root of the JALoP database,\n\
-				defaults to /var/lib/jalop/db\n\
-	-n, --version		Output the version information and exit.\n\
-	-v  --verbose		Output the UUID for each deleted record.\n\
-	-x, --detail		Report detailed information about the records jal_purge is\n\
-				reviewing for deletion. This reports the action to be taken\n\
-				(Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed),\n\
-				the outbound state (Unsent, Sent, Synced), the local insertion timestamp,\n\
-				and the local nonce for each record.\n";
-	fprintf(stderr, "%s", usage);
-	exit(-1);
 }
 
 static int setup_signals()
