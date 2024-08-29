@@ -1,50 +1,78 @@
-Here is an example TLS Setup between JALoPv2.x publisher "jald" & JJNLv2.x subscriber "jnl_test".
+TLS_Self_Signed Certificate Setup
+================================================================================
+The TLS_Self_Signed directory is already populated with test certificates built from:
+	generate_certs.sh with the default selections.
+================================================================================
+If you want to build your own set of certificates you can:
+run ./generate_certs.sh
 
-Publisher (jald) side:
+================================================================================
+The public certificates for server and client are built with alt_names:
+  [ alt_name ]
+  DNS.0 = localhost
+  DNS.1 = jal_publisher_v2_client
+  IP.0 = 127.0.0.1
 
-1. Generate Publisher (jald) Keystore of PKCS12 type -
+  [ alt_name ]
+  DNS.0 = localhost
+  DNS.1 = jal_subscriber_v2_server
+  IP.0 = 127.0.0.1
 
-$ keytool -genkeypair -keyalg RSA -sigalg SHA384withRSA -keystore publisher.jks -noprompt -storepass changeit -keypass changeit -alias pub_key -deststoretype pkcs12 -validity 3650 -dname "CN=127.0.0.1" -ext "SAN=IP:127.0.0.1"
+  So when running publisher and subscriber on different machines you can add
+  entries to their /etc/hosts file.
+  example:
+    192.168.1.100 jal_publisher_v2_client (on server)
+    192.168.1.101 jal_subscriber_v2_server (on client)
+================================================================================
 
-2. Export Publisher (jald) Certificate in PEM format -
 
-$ openssl pkcs12 -in publisher.jks -nokeys -out pub_cert.pem
-Enter Import Password: changeit
+TLS_Self_Signed between jald & jal_subscribe
+================================================================================
 
-3. Export Publisher (jald) Private Key in PEM format -
+Have the following settings in jald.cfg -
+private_key = "./test-input/TLS_Self_Signed/pub-certs/publisher.key";
+public_cert = "./test-input/TLS_Self_Signed/pub-certs/publisher.crt";
+remote_cert_dir = "./test-input/TLS_Self_Signed/pub-certs/trust_store_dir";
 
-$ openssl pkcs12 -in publisher.jks -nodes -nocerts -out pub_key.pem
-Enter Import Password: changeit 
+Have the following settings in jal_subscriber.cfg -
+enableTls = true
+privateKey = "./test-input/TLS_Self_Signed/sub-certs/subscriber.key";
+publicCert = "./test-input/TLS_Self_Signed/sub-certs/subscriber.crt";
+trustStore = "./test-input/TLS_Self_Signed/sub-certs/trust_store_dir/publisher.trusted_certs";
 
-Subscriber (JJNL jnl_test) side:
 
-4. Generate JJNL Subscriber Keystore of PKCS12 type -
+Start C Publisher (jald) with TLS -
+$ ./release/bin/jald -d -c ./jald.cfg --no-daemon
 
-$ keytool -genkeypair -keyalg RSA -sigalg SHA384withRSA -keystore keystore.jks -noprompt -storepass changeit -keypass changeit -alias sub_key -deststoretype pkcs12 -validity 3650 -dname "CN=127.0.0.1" -ext "SAN=IP:127.0.0.1"
+Start C Subscriber (jal_subscribe) with TLS -
+$ ./release/bin/jal_subscribe -d -c ./jal_subscribe.cfg
 
-5. Import jald Publsiher Certificate (pub_cert.pem) into JJNL Susbcriber Keystore -
+Important: If you are running both the publisher (jald) and
+	subscriber (jal_subscribe) on the same host for testing, make sure
+	to use a separate database for jal_subscribe (via db_root in jal_subscribe.cfg)
+	to store the received JAL records.
 
-$ keytool -importcert -keystore keystore.jks -file pub_cert.pem -storepass changeit -keypass changeit -noprompt -alias "pub_key"
 
-6. Export JJNL Subscriber Certificate (PEM) from Keystore -
+TLS_Self_Signed (between jald & JJNL subscriber)
+================================================================================
+Have the following settings in jald.cfg -
+private_key = "./test-input/TLS_Self_Signed/pub-certs/publisher.key";
+public_cert = "./test-input/TLS_Self_Signed/pub-certs/publisher.crt";
+remote_cert_dir = "./test-input/TLS_Self_Signed/pub-certs/trust_store_dir";
 
-$ keytool -exportcert -alias sub_key -storepass changeit -keypass changeit -keystore keystore.jks -rfc -file server.pem
-
-7. Set the following settings in jald.cfg to use these certificate and keys -
-
-private_key = "<path>/pub_key.pem";
-public_cert = "<path>/pub_cert.pem";
-
-In the Subscriber peer section of jald.cfg -
-
-cert_dir = "<directory containing JJNL subscriber keystore.jks from step 4>";
-
-8. Set the folloing settings in subscriber JSON config file -
+Have the following settings in sampleHttpSubcriber.json -
 
   "ssl": {
     "Key Store Passphrase": "changeit",
-    "Key Store": "<path>/keystore.jks",
+    "Key Store": "<absolute path to jalop repo>/test-input/TLS_Self_Signed/sub-certs/jal_subscriber_v2_client.jks",
+
+    "Trust Store Passphrase": "changeit",
+    "Trust Store": "<absolute path to jalop repo>/test-input/TLS_Self_Signed/sub-certs/jal_subscriber_v2_client-remotes.jks",
   }
 
-Note that trust store is not used by the JJNL jnl_test code, so "Trust Store" related settings can be removed from the JSON config file.
+Start C Publisher (jald) with TLS -
+$ ./release/bin/jald -d -c ./jald.cfg --no-daemon
 
+Start JJNL Subscriber (jal_subscribe) with TLS -
+$ cd <jjnl root dir>/jnl_test/target
+$ java -jar <jnl_test*.jar> ../src/test/resources/sampleHttpSubscriber.json

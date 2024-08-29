@@ -20,15 +20,15 @@ The public certificates for server and client are built with alt_names:
 	DNS.0 = localhost
 	DNS.1 = jal_publisher_v2_client
 	IP.0 = 127.0.0.1
-	
+
 	[ alt_name ]
 	DNS.0 = localhost
 	DNS.1 = jal_subscriber_v2_server
 	IP.0 = 127.0.0.1
-	
+
 	So when running publisher and subscriber on different machines you can add
 	entries to their /etc/hosts file.
-	example:	
+	example:
 		192.168.1.100 jal_publisher_v2_client (on server)
 		192.168.1.101 jal_subscriber_v2_server (on client)
 ================================================================================

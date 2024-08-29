@@ -1,0 +1,34 @@
+[ req ]
+default_bits = 2048
+distinguished_name = req_distinguished_name
+string_mask = utf8only
+req_extensions = server_req
+
+[ req_distinguished_name ]
+countryName						= Country
+stateOrProvinceName		= State
+localityName					= City
+organizationName		= Organization
+0.organizationalUnitName	= Department1
+1.organizationalUnitName	= Department2
+commonName						= CN
+emailAddress					= email
+
+countryName_default						= US
+stateOrProvinceName_default		= MD
+localityName_default					= Savage
+organizationName_default		= CTC
+0.organizationalUnitName_default	= ISIS
+1.organizationalUnitName_default	= JALoP
+commonName_default						= jal_subscriber_v2_server
+emailAddress_default					= cds_tech@nsa.gov
+
+[ server_req ]
+basicConstraints = CA:FALSE
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_name
+
+[ alt_name ]
+DNS.0 = localhost
+DNS.1 = jal_subscriber_v2_server
+IP.0 = 127.0.0.1

@@ -35,7 +35,3 @@ keytool -importcert -keystore server/$SERVER_NAME-remotes.jks -storepass $STOREP
 	-file server/trust_store_dir/jalop_ca.cert.pem -alias ca -noprompt
 
 rm -f server/$SERVER_NAME.p12
-
-#keytool -list -v -keystore client/jal_subscriber_v1.jks -storepass $STOREPASS
-
-#keytool -delete -keystore client/jal_subscriber_v1.jks -storepass $STOREPASS -alias mykey

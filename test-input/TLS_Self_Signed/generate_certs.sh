@@ -1,32 +1,34 @@
 #!/bin/bash
-PASSWORD=changeit
-SHA_VERSION=SHA384withRSA
+rm -rf pub-certs sub-certs
 
-rm -fr server client ./*.pem ./*.jks
-################################################################################
-#Generate Publisher (jald) Keystore of PKCS12 type
-keytool -genkeypair -keyalg RSA -keystore publisher.jks -noprompt -sigalg $SHA_VERSION \
-	-storepass changeit -keypass changeit -alias pub_key -deststoretype pkcs12 \
-	-validity 3650 -dname "CN=192.168.137.136" -ext "SAN=IP:192.168.137.136"
+#Generate Publisher key & certificate -
+mkdir -p pub-certs/trust_store_dir
+cd pub-certs/ || exit
+openssl genrsa -out publisher.key 2048
+#  [Change the IP address in the client.cnf to the IP address of the publisher]
+openssl req -new -key publisher.key -out pub.csr -config ../client.cnf  -subj "/C=US/ST=MD/L=Savage/O=publisher/CN=publisher"
+openssl x509 -req -days 730 -in pub.csr -signkey publisher.key -out publisher.crt -extfile ../client.cnf -extensions client_req
 
-#Export Publisher (jald) Certificate in PEM format -
-openssl pkcs12 -in publisher.jks -nokeys -out pub_cert.pem \
-	-passin pass:$PASSWORD -passout pass:$PASSWORD
+cd ../ || exit
 
-#Export Publisher (jald) Private Key in PEM format -
-openssl pkcs12 -in publisher.jks -nodes -nocerts -out pub_key.pem \
-	-passin pass:$PASSWORD -passout pass:$PASSWORD
+#Generate Subscriber key & certificate -
+mkdir -p sub-certs/trust_store_dir
+cd sub-certs/ || exit
+openssl genrsa -out subscriber.key 2048
+#  [Change the IP address in the server.cnf file to the IP address of the subscriber]
+openssl req -new -key subscriber.key -out sub.csr -config ../server.cnf -subj "/C=US/ST=MD/L=Savage/O=subscriber/CN=subscriber"
+openssl x509 -req -days 730 -in sub.csr -signkey subscriber.key -out subscriber.crt -extfile ../server.cnf -extensions server_req
 
-#Subscriber (JJNL jnl_test) side:
-#Generate JJNL Subscriber Keystore of PKCS12 type -
-keytool -genkeypair -keyalg RSA -keystore keystore.jks -noprompt -sigalg $SHA_VERSION \
-	-storepass changeit -keypass changeit -alias sub_key -deststoretype pkcs12 \
-	-validity 3650 -dname "CN=127.0.0.1" -ext "SAN=IP:127.0.0.1"
+cd ../ || exit
 
-#Import jald Publsiher Certificate (pub_cert.pem) into JJNL Susbcriber Keystore -
-keytool -importcert -keystore keystore.jks -file pub_cert.pem \
-	-storepass changeit -keypass changeit -noprompt -alias "pub_key"
+#The public certificate of peers must be stored in the format below -
+#<subject hash>.<index>
 
-#Export JJNL Subscriber Certificate (PEM) from Keystore -
-keytool -exportcert -alias sub_key -storepass changeit -keypass changeit \
-	-keystore keystore.jks -rfc -file server.pem
+#Create links to the certificates in the proper format -
+cp -f sub-certs/subscriber.crt pub-certs/trust_store_dir/subscriber.crt
+cp -f pub-certs/publisher.crt sub-certs/trust_store_dir/publisher.crt
+ln pub-certs/trust_store_dir/subscriber.crt pub-certs/trust_store_dir/"$(openssl x509 -noout -hash -in pub-certs/trust_store_dir/subscriber.crt)".0
+ln sub-certs/trust_store_dir/publisher.crt sub-certs/trust_store_dir/"$(openssl x509 -noout -hash -in sub-certs/trust_store_dir/publisher.crt)".0
+cat pub-certs/publisher.crt >> sub-certs/trust_store_dir/publisher.trusted_certs
+
+./generate_java_keystore.sh
