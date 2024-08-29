@@ -1,7 +1,7 @@
 /**
  * @file xml_test_utils2.h This file contains utilities to help with _to_xml tests.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -42,12 +42,12 @@
  * Validate the given document against a schema
  *
  * @param doc The xmlDocPtr to validate.
- * @param document_name A string used to identify the xmlDocPtr when printing
+ * @param doc_name A string used to identify the xmlDocPtr when printing
  * errors.
  * @param schema_str The schema to load before validating the xmlDocPtr
  * @param debug When debug is true, the function will output more debug
  * information.
- * @return 
+ * @return
  * 	0 if the xmlDocPtr could be validated against the schema,
  * 	-1 if any errors occurred..
  */

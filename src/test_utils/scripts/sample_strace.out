@@ -1,0 +1,2040 @@
+INIT  36
+FINAL  17
+TOTAL 44
+INIT ONLY 27
+initial_seccomp_rules = ["aaCURLY","aaLARRY","aaMOE","access","arch_prctl","bind","brk","clone","fstat","getcwd","getrlimit","getsockname","ioctl","listen","lseek","lstat","mmap","mprotect","open","prctl","read","seccomp","set_tid_address","setsockopt","socket","stat","statfs"]
+BOTH 9
+both_seccomp_rules = ["close","epoll_create","fcntl","futex","munmap","rt_sigaction","rt_sigprocmask","set_robust_list","write"]
+FINAL ONLY 8
+final_seccomp_rules = ["epoll_ctl","epoll_wait","exit","exit_group","madvise","nanosleep","rt_sigreturn","shutdown"]
+
+3431 aaMOE("./release/bin/jald", ["./release/bin/jald", "-c", "./test-input/jald.cfg", "-d", "--no-daemon", "-s"], 0x7ffc49b62db0 /* 58 vars */) = 0
+34310 aaLARRY(NULL)                         = 0x65a000
+343102 aaCURLY(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf4d000
+34310 access("/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or directory)
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/tls/x86_64/libconfig.so.9", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 stat("/home/clipdev/jalop_home/jalop/release/lib/tls/x86_64", 0x7ffe3c6650d0) = -1 ENOENT (No such file or directory)
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/tls/libconfig.so.9", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 stat("/home/clipdev/jalop_home/jalop/release/lib/tls", 0x7ffe3c6650d0) = -1 ENOENT (No such file or directory)
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/x86_64/libconfig.so.9", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 stat("/home/clipdev/jalop_home/jalop/release/lib/x86_64", 0x7ffe3c6650d0) = -1 ENOENT (No such file or directory)
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libconfig.so.9", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 stat("/home/clipdev/jalop_home/jalop/release/lib", {st_mode=S_IFDIR|0775, st_size=124, ...}) = 0
+34310 open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+34310 fstat(3, {st_mode=S_IFREG|0644, st_size=160357, ...}) = 0
+34310 mmap(NULL, 160357, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f0fcaf25000
+34310 close(3)                          = 0
+34310 open("/lib64/libconfig.so.9", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0`/\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=49176, ...}) = 0
+34310 mmap(NULL, 2142984, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fcab21000
+34310 mprotect(0x7f0fcab2c000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fcad2b000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xa000) = 0x7f0fcad2b000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libssl.so.10", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libssl.so.10", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\253\1\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=470328, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf24000
+34310 mmap(NULL, 2560784, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fca8af000
+34310 mprotect(0x7f0fca916000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fcab16000, 45056, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x67000) = 0x7f0fcab16000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libcrypto.so.10", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libcrypto.so.10", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\322\6\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=2520920, ...}) = 0
+34310 mmap(NULL, 4596616, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fca44c000
+34310 mprotect(0x7f0fca683000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fca882000, 167936, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x236000) = 0x7f0fca882000
+34310 mmap(0x7f0fca8ab000, 13192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fca8ab000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libvortex-1.1.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libvortex-1.1.so.0", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\320A\1\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=360584, ...}) = 0
+34310 mmap(NULL, 2455752, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fca1f4000
+34310 mprotect(0x7f0fca24a000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fca44a000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x56000) = 0x7f0fca44a000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libpthread.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\200m\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=142144, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf23000
+34310 mmap(NULL, 2208904, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc9fd8000
+34310 mprotect(0x7f0fc9fef000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fca1ee000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x16000) = 0x7f0fca1ee000
+34310 mmap(0x7f0fca1f0000, 13448, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fca1f0000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libaxl.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libaxl.so.0", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\340\242\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=198416, ...}) = 0
+34310 mmap(NULL, 2293632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc9da8000
+34310 mprotect(0x7f0fc9dd8000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc9fd7000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2f000) = 0x7f0fc9fd7000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libxmlsec1.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libxmlsec1.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0200\1\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=430520, ...}) = 0
+34310 mmap(NULL, 2522800, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc9b40000
+34310 mprotect(0x7f0fc9ba5000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc9da4000, 16384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x64000) = 0x7f0fc9da4000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libltdl.so.7", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libltdl.so.7", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\260$\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=41272, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf22000
+34310 mmap(NULL, 2134728, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc9936000
+34310 mprotect(0x7f0fc993f000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc9b3e000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8000) = 0x7f0fc9b3e000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libxslt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libxslt.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0@\254\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=258400, ...}) = 0
+34310 mmap(NULL, 2351336, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc96f7000
+34310 mprotect(0x7f0fc9733000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc9933000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3c000) = 0x7f0fc9933000
+34310 mmap(0x7f0fc9935000, 232, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc9935000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libz.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0P!\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=90160, ...}) = 0
+34310 mmap(NULL, 2183272, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc94e1000
+34310 mprotect(0x7f0fc94f6000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc96f5000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x14000) = 0x7f0fc96f5000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libdl.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libdl.so.2", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0P\16\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=19248, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf21000
+34310 mmap(NULL, 2109744, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc92dd000
+34310 mprotect(0x7f0fc92df000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc94df000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f0fc94df000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libxml2.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libxml2.so.2", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\20\351\2\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=1509520, ...}) = 0
+34310 mmap(NULL, 3575896, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc8f73000
+34310 mprotect(0x7f0fc90d1000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc92d1000, 40960, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x15e000) = 0x7f0fc92d1000
+34310 mmap(0x7f0fc92db000, 4184, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc92db000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libuuid.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libuuid.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\340\24\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=20064, ...}) = 0
+34310 mmap(NULL, 2113920, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc8d6e000
+34310 mprotect(0x7f0fc8d72000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc8f71000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7f0fc8f71000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libdb-5.3.so", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libdb-5.3.so", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\200\364\2\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=1850600, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf20000
+34310 mmap(NULL, 3927368, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc89af000
+34310 mprotect(0x7f0fc8b64000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc8d64000, 40960, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b5000) = 0x7f0fc8d64000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libjal-common.so", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\2208\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0775, st_size=149760, ...}) = 0
+34310 mmap(NULL, 2140456, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc87a4000
+34310 mprotect(0x7f0fc87ac000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc89ab000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x7000) = 0x7f0fc89ab000
+34310 mmap(0x7f0fc89ad000, 6440, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc89ad000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libjal-db.so", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\300G\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0775, st_size=639104, ...}) = 0
+34310 mmap(NULL, 2168160, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc8592000
+34310 mprotect(0x7f0fc85a3000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc87a2000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x10000) = 0x7f0fc87a2000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libjal-utils.so", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\360\n\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0775, st_size=23584, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf1f000
+34310 mmap(NULL, 2105520, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc838f000
+34310 mprotect(0x7f0fc8391000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc8590000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1000) = 0x7f0fc8590000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libjal-network.so", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\20v\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0775, st_size=445264, ...}) = 0
+34310 mmap(NULL, 2185160, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc8179000
+34310 mprotect(0x7f0fc818e000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc838d000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x14000) = 0x7f0fc838d000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\340\264\5\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=995840, ...}) = 0
+34310 mmap(NULL, 3175456, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc7e71000
+34310 mprotect(0x7f0fc7f5a000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc815a000, 40960, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe9000) = 0x7f0fc815a000
+34310 mmap(0x7f0fc8164000, 82976, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc8164000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libm.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0PS\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=1136944, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf1e000
+34310 mmap(NULL, 3150136, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc7b6f000
+34310 mprotect(0x7f0fc7c70000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc7e6f000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x100000) = 0x7f0fc7e6f000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\320*\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=88720, ...}) = 0
+34310 mmap(NULL, 2184192, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc7959000
+34310 mprotect(0x7f0fc796e000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc7b6d000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x14000) = 0x7f0fc7b6d000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0`&\2\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=2156592, ...}) = 0
+34310 mmap(NULL, 3985920, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc758b000
+34310 mprotect(0x7f0fc774f000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc794e000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1c3000) = 0x7f0fc794e000
+34310 mmap(0x7f0fc7954000, 16896, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc7954000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libgssapi_krb5.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libgssapi_krb5.so.2", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0 \307\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=320720, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf1d000
+34310 mmap(NULL, 2410688, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc733e000
+34310 mprotect(0x7f0fc7388000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc7588000, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4a000) = 0x7f0fc7588000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libkrb5.so.3", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libkrb5.so.3", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0 \\\2\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=967768, ...}) = 0
+34310 mmap(NULL, 3050080, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc7055000
+34310 mprotect(0x7f0fc712e000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc732d000, 69632, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xd8000) = 0x7f0fc732d000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libcom_err.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libcom_err.so.2", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0@\25\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=15856, ...}) = 0
+34310 mmap(NULL, 2109928, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc6e51000
+34310 mprotect(0x7f0fc6e54000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc7053000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f0fc7053000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libk5crypto.so.3", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libk5crypto.so.3", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\320H\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=210784, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf1c000
+34310 mmap(NULL, 2302680, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc6c1e000
+34310 mprotect(0x7f0fc6c4f000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc6e4e000, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x30000) = 0x7f0fc6e4e000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/liblzma.so.5", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/liblzma.so.5", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0`0\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=157440, ...}) = 0
+34310 mmap(NULL, 2249352, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc69f8000
+34310 mprotect(0x7f0fc6a1d000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc6c1c000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x24000) = 0x7f0fc6c1c000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libcap.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libcap.so.2", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\20\26\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=20048, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf1b000
+34310 mmap(NULL, 2114112, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc67f3000
+34310 mprotect(0x7f0fc67f7000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc69f6000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7f0fc69f6000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libcap-ng.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libcap-ng.so.0", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\200\25\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=23968, ...}) = 0
+34310 mmap(NULL, 2118016, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc65ed000
+34310 mprotect(0x7f0fc65f1000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc67f1000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4000) = 0x7f0fc67f1000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libseccomp.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libseccomp.so.2", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\360\361\1\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=266688, ...}) = 0
+34310 mmap(NULL, 2359552, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc63ac000
+34310 mprotect(0x7f0fc63d8000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc65d7000, 90112, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2b000) = 0x7f0fc65d7000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libxmlsec1-openssl.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libxmlsec1-openssl.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0p\344\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=245128, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf1a000
+34310 mmap(NULL, 2342544, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc6170000
+34310 mprotect(0x7f0fc61a8000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc63a7000, 16384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x37000) = 0x7f0fc63a7000
+34310 mmap(0x7f0fc63ab000, 3728, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc63ab000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libvortex-tls-1.1.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libvortex-tls-1.1.so.0", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\2002\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=40424, ...}) = 0
+34310 mmap(NULL, 2135656, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc5f66000
+34310 mprotect(0x7f0fc5f6f000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc616f000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x9000) = 0x7f0fc616f000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libkrb5support.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libkrb5support.so.0", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\360;\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=67104, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf19000
+34310 mmap(NULL, 2160296, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc5d56000
+34310 mprotect(0x7f0fc5d64000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc5f64000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe000) = 0x7f0fc5f64000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libkeyutils.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libkeyutils.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\260\25\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=15688, ...}) = 0
+34310 mmap(NULL, 2109720, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc5b52000
+34310 mprotect(0x7f0fc5b55000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc5d54000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f0fc5d54000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libresolv.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libresolv.so.2", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\2009\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=109976, ...}) = 0
+34310 mmap(NULL, 2202112, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc5938000
+34310 mprotect(0x7f0fc594e000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc5b4e000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x16000) = 0x7f0fc5b4e000
+34310 mmap(0x7f0fc5b50000, 6656, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc5b50000
+34310 close(3)                          = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf18000
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libattr.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libattr.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\320\23\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=19896, ...}) = 0
+34310 mmap(NULL, 2113904, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc5733000
+34310 mprotect(0x7f0fc5737000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc5936000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7f0fc5936000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libselinux.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libselinux.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220j\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=155744, ...}) = 0
+34310 mmap(NULL, 2255216, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc550c000
+34310 mprotect(0x7f0fc5530000, 2093056, PROT_NONE) = 0
+34310 mmap(0x7f0fc572f000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x23000) = 0x7f0fc572f000
+34310 mmap(0x7f0fc5731000, 6512, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f0fc5731000
+34310 close(3)                          = 0
+34310 open("/home/clipdev/jalop_home/jalop/release/lib/libpcre.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+34310 open("/lib64/libpcre.so.1", O_RDONLY|O_CLOEXEC) = 3
+34310 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\360\25\0\0\0\0\0\0"..., 832) = 832
+34310 fstat(3, {st_mode=S_IFREG|0755, st_size=402384, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf17000
+34310 mmap(NULL, 2494984, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f0fc52aa000
+34310 mprotect(0x7f0fc530a000, 2097152, PROT_NONE) = 0
+34310 mmap(0x7f0fc550a000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x60000) = 0x7f0fc550a000
+34310 close(3)                          = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf16000
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf15000
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf14000
+34310 mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf12000
+34310 arch_prctl(ARCH_SET_FS, 0x7f0fcaf12900) = 0
+34310 access("/etc/sysconfig/strcasecmp-nonascii", F_OK) = -1 ENOENT (No such file or directory)
+34310 access("/etc/sysconfig/strcasecmp-nonascii", F_OK) = -1 ENOENT (No such file or directory)
+34310 mprotect(0x7f0fc794e000, 16384, PROT_READ) = 0
+34310 mprotect(0x7f0fca1ee000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc550a000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc94df000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc572f000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc5936000, 4096, PROT_READ) = 0
+34310 access("/etc/sysconfig/strcasecmp-nonascii", F_OK) = -1 ENOENT (No such file or directory)
+34310 access("/etc/sysconfig/strcasecmp-nonascii", F_OK) = -1 ENOENT (No such file or directory)
+34310 mprotect(0x7f0fc5b4e000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc5d54000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc5f64000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc96f5000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fca882000, 114688, PROT_READ) = 0
+34310 mprotect(0x7f0fc7053000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc6e4e000, 8192, PROT_READ) = 0
+34310 mprotect(0x7f0fc732d000, 57344, PROT_READ) = 0
+34310 mprotect(0x7f0fc7588000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fcab16000, 16384, PROT_READ) = 0
+34310 mprotect(0x7f0fc7e6f000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc9b3e000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc6c1c000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc92d1000, 32768, PROT_READ) = 0
+34310 mprotect(0x7f0fc9933000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc9da4000, 12288, PROT_READ) = 0
+34310 mprotect(0x7f0fc63a7000, 12288, PROT_READ) = 0
+34310 mprotect(0x7f0fc65d7000, 86016, PROT_READ) = 0
+34310 mprotect(0x7f0fc67f1000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc69f6000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc7b6d000, 4096, PROT_READ) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf11000
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf10000
+34310 mprotect(0x7f0fc815a000, 32768, PROT_READ) = 0
+34310 mprotect(0x7f0fc8f71000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc89ab000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc838d000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc8590000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fc8d64000, 28672, PROT_READ) = 0
+34310 mprotect(0x7f0fc87a2000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fcad2b000, 4096, PROT_READ) = 0
+34310 mprotect(0x60a000, 4096, PROT_READ) = 0
+34310 mprotect(0x7f0fcaf4e000, 4096, PROT_READ) = 0
+34310 munmap(0x7f0fcaf25000, 160357)    = 0
+34310 set_tid_address(0x7f0fcaf12bd0)   = 34310
+34310 set_robust_list(0x7f0fcaf12be0, 24) = 0
+34310 rt_sigaction(SIGRTMIN, {sa_handler=0x7f0fc9fde860, sa_mask=[], sa_flags=SA_RESTORER|SA_SIGINFO, sa_restorer=0x7f0fc9fe7630}, NULL, 8) = 0
+34310 rt_sigaction(SIGRT_1, {sa_handler=0x7f0fc9fde8f0, sa_mask=[], sa_flags=SA_RESTORER|SA_RESTART|SA_SIGINFO, sa_restorer=0x7f0fc9fe7630}, NULL, 8) = 0
+34310 rt_sigprocmask(SIG_UNBLOCK, [RTMIN RT_1], NULL, 8) = 0
+34310 getrlimit(RLIMIT_STACK, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+34310 statfs("/sys/fs/selinux", {f_type=SELINUX_MAGIC, f_bsize=4096, f_blocks=0, f_bfree=0, f_bavail=0, f_files=0, f_ffree=0, f_fsid={val=[0, 0]}, f_namelen=255, f_frsize=4096, f_flags=ST_VALID|ST_RELATIME}) = 0
+34310 statfs("/sys/fs/selinux", {f_type=SELINUX_MAGIC, f_bsize=4096, f_blocks=0, f_bfree=0, f_bavail=0, f_files=0, f_ffree=0, f_fsid={val=[0, 0]}, f_namelen=255, f_frsize=4096, f_flags=ST_VALID|ST_RELATIME}) = 0
+34310 stat("/sys/fs/selinux", {st_mode=S_IFDIR|0755, st_size=0, ...}) = 0
+34310 brk(NULL)                         = 0x65a000
+34310 brk(0x67b000)                     = 0x67b000
+34310 access("/etc/selinux/config", F_OK) = 0
+34310 open("/etc/pki/tls/legacy-settings", O_RDONLY) = -1 ENOENT (No such file or directory)
+34310 access("/etc/system-fips", F_OK)  = -1 ENOENT (No such file or directory)
+34310 futex(0x7f0fc817696c, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+34310 futex(0x7f0fc8176978, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+34310 rt_sigaction(SIGABRT, {sa_handler=0x4036f0, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f0fc9fe7630}, NULL, 8) = 0
+34310 rt_sigaction(SIGTERM, {sa_handler=0x4036f0, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f0fc9fe7630}, NULL, 8) = 0
+34310 rt_sigaction(SIGINT, {sa_handler=0x4036f0, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f0fc9fe7630}, NULL, 8) = 0
+34310 open("/etc/localtime", O_RDONLY|O_CLOEXEC) = 3
+34310 fstat(3, {st_mode=S_IFREG|0644, st_size=3519, ...}) = 0
+34310 fstat(3, {st_mode=S_IFREG|0644, st_size=3519, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf4c000
+34310 read(3, "TZif2\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\4\0\0\0\4\0\0\0\0"..., 4096) = 3519
+34310 lseek(3, -2252, SEEK_CUR)         = 1267
+34310 read(3, "TZif2\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\5\0\0\0\5\0\0\0\0"..., 4096) = 2252
+34310 close(3)                          = 0
+34310 munmap(0x7f0fcaf4c000, 4096)      = 0
+34310 write(2, "jald main[1127](2023-04-25T22:33"..., 37) = 37
+34310 write(2, "Config Path: ./test-input/jald.c"..., 44) = 44
+34310 write(2, "\n", 1)                 = 1
+34310 open("./test-input/jald.cfg", O_RDONLY) = 3
+34310 ioctl(3, TCGETS, 0x7ffe3c666360)  = -1 ENOTTY (Inappropriate ioctl for device)
+34310 fstat(3, {st_mode=S_IFREG|0664, st_size=1962, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf4c000
+34310 read(3, "# The path to the private key, u"..., 8192) = 1962
+34310 read(3, "", 4096)                 = 0
+34310 read(3, "", 8192)                 = 0
+34310 ioctl(3, TCGETS, 0x7ffe3c665a20)  = -1 ENOTTY (Inappropriate ioctl for device)
+34310 close(3)                          = 0
+34310 munmap(0x7f0fcaf4c000, 4096)      = 0
+34310 write(2, "enable_seccomp: 1\n", 18) = 18
+34310 rt_sigaction(SIGSYS, {sa_handler=0x7f0fc87a8470, sa_mask=[], sa_flags=SA_RESTORER|SA_SIGINFO, sa_restorer=0x7f0fc9fe7630}, NULL, 8) = 0
+34310 write(2, "configureInitialSeccomp \n", 25) = 25
+34310 write(2, "initial syscalls\n[\nprctl-157 arc"..., 165) = 165
+34310 write(2, "from both syscalls\n[\naccess-21 c"..., 254) = 254
+34310 write(2, "from final syscalls\n[\nflock-73 g"..., 284) = 284
+34310 prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) = 0
+34310 seccomp(SECCOMP_SET_MODE_STRICT, 1, NULL) = -1 EINVAL (Invalid argument)
+34310 seccomp(SECCOMP_SET_MODE_FILTER, 0, {len=62, filter=0x668020}) = 0
+34310 write(2, "configureInitialSeccomp DONE \n", 30) = 30
+34310 open("./test-input/jald.cfg", O_RDONLY) = 3
+34310 ioctl(3, TCGETS, 0x7ffe3c666380)  = -1 ENOTTY (Inappropriate ioctl for device)
+34310 fstat(3, {st_mode=S_IFREG|0664, st_size=1962, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf4c000
+34310 read(3, "# The path to the private key, u"..., 8192) = 1962
+34310 read(3, "", 4096)                 = 0
+34310 read(3, "", 8192)                 = 0
+34310 ioctl(3, TCGETS, 0x7ffe3c665a40)  = -1 ENOTTY (Inappropriate ioctl for device)
+34310 close(3)                          = 0
+34310 munmap(0x7f0fcaf4c000, 4096)      = 0
+34310 getcwd("/home/clipdev/jalop_home/jalop", 4096) = 31
+34310 lstat("/home/clipdev/jalop_home/jalop/testdb", {st_mode=S_IFDIR|0775, st_size=4096, ...}) = 0
+34310 getcwd("/home/clipdev/jalop_home/jalop", 4096) = 31
+34310 lstat("/home/clipdev/jalop_home/jalop/schemas", {st_mode=S_IFDIR|0775, st_size=177, ...}) = 0
+34310 fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 1), ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf4c000
+34310 write(1, "cfg for 192.168.137.130, creatin"..., 41) = 41
+34310 write(2, "jald set_global_config[1638](202"..., 50) = 50
+34310 write(2, "cfg for 192.168.137.130, adding "..., 56) = 56
+34310 write(2, "\n", 1)                 = 1
+34310 write(2, "jald set_global_config[1639](202"..., 50) = 50
+34310 write(2, "cfg for 192.168.137.130, was 0 f"..., 53) = 53
+34310 write(2, "\n", 1)                 = 1
+34310 write(1, "\n===\nBEGIN CONFIG VALUES:\n", 26) = 26
+34310 write(1, "===\n", 4)              = 4
+34310 write(1, "!!!!!!!! TLS DISABLED !!!!!!!!\n", 31) = 31
+34310 write(1, "PORT:\t\t\t1234\n", 13) = 13
+34310 write(1, "HOST:\t\t\t0.0.0.0\n", 16) = 16
+34310 write(1, "POLL TIME:\t1\n", 13)   = 13
+34310 write(1, "DB ROOT:\t\t/home/clipdev/jalop_ho"..., 48) = 48
+34310 write(1, "SCHEMAS ROOT:\t\t/home/clipdev/jal"..., 54) = 54
+34310 write(1, "PEERS\n", 6)            = 6
+34310 write(1, "           HOST |      PUBLISH_A"..., 58) = 58
+34310 write(1, "192.168.137.130 |               "..., 81) = 81
+34310 write(1, "===\n", 4)              = 4
+34310 rt_sigaction(SIGPIPE, {sa_handler=0x7f0fca208560, sa_mask=[], sa_flags=SA_RESTORER|SA_INTERRUPT|SA_NODEFER|SA_RESETHAND, sa_restorer=0x7f0fc75c1400}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+34310 mmap(NULL, 8392704, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7f0fc4aa9000
+34310 mprotect(0x7f0fc4aa9000, 4096, PROT_NONE) = 0
+34310 clone(child_stack=0x7f0fc52a8df0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f0fc52a99d0, tls=0x7f0fc52a9700, child_tidptr=0x7f0fc52a99d0) = 34311
+34310 mmap(NULL, 8392704, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0 <unfinished ...>
+34311 set_robust_list(0x7f0fc52a99e0, 24 <unfinished ...>
+34310 <... mmap resumed>)               = 0x7f0fc42a8000
+34311 <... set_robust_list resumed>)    = 0
+34311 getrlimit(RLIMIT_NOFILE, {rlim_cur=1024, rlim_max=4*1024}) = 0
+34310 mprotect(0x7f0fc42a8000, 4096, PROT_NONE <unfinished ...>
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD <unfinished ...>
+34310 <... mprotect resumed>)           = 0
+34311 <... fcntl resumed>)              = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 mmap(NULL, 134217728, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0 <unfinished ...>
+34310 clone( <unfinished ...>
+34311 <... mmap resumed>)               = 0x7f0fbc2a8000
+34311 munmap(0x7f0fbc2a8000, 64323584)  = 0
+34311 munmap(0x7f0fc4000000, 2785280)   = 0
+34311 mprotect(0x7f0fc0000000, 135168, PROT_READ|PROT_WRITE <unfinished ...>
+34312 set_robust_list(0x7f0fc4aa89e0, 24 <unfinished ...>
+34311 <... mprotect resumed>)           = 0
+34310 <... clone resumed>child_stack=0x7f0fc4aa7df0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f0fc4aa89d0, tls=0x7f0fc4aa8700, child_tidptr=0x7f0fc4aa89d0) = 34312
+34311 futex(0x663dcc, FUTEX_WAIT_PRIVATE, 1, NULL <unfinished ...>
+34310 mmap(NULL, 8392704, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0 <unfinished ...>
+34312 <... set_robust_list resumed>)    = 0
+34310 <... mmap resumed>)               = 0x7f0fbf7ff000
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 1, {tv_sec=1682462038, tv_nsec=69587000}, 0xffffffff <unfinished ...>
+34310 mprotect(0x7f0fbf7ff000, 4096, PROT_NONE) = 0
+34310 clone(child_stack=0x7f0fbfffedf0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f0fbffff9d0, tls=0x7f0fbffff700, child_tidptr=0x7f0fbffff9d0) = 34313
+34310 mmap(NULL, 8392704, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7f0fbeffe000
+34313 set_robust_list(0x7f0fbffff9e0, 24 <unfinished ...>
+34310 mprotect(0x7f0fbeffe000, 4096, PROT_NONE) = 0
+34310 clone( <unfinished ...>
+34313 <... set_robust_list resumed>)    = 0
+34310 <... clone resumed>child_stack=0x7f0fbf7fddf0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f0fbf7fe9d0, tls=0x7f0fbf7fe700, child_tidptr=0x7f0fbf7fe9d0) = 34314
+34310 mmap(NULL, 8392704, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7f0fbe7fd000
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 1, {tv_sec=1682462038, tv_nsec=160421000}, 0xffffffff <unfinished ...>
+34310 mprotect(0x7f0fbe7fd000, 4096, PROT_NONE <unfinished ...>
+34314 set_robust_list(0x7f0fbf7fe9e0, 24) = 0
+34310 <... mprotect resumed>)           = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 2, {tv_sec=1682462038, tv_nsec=160728000}, 0xffffffff <unfinished ...>
+34310 clone( <unfinished ...>
+34315 set_robust_list(0x7f0fbeffd9e0, 24 <unfinished ...>
+34310 <... clone resumed>child_stack=0x7f0fbeffcdf0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f0fbeffd9d0, tls=0x7f0fbeffd700, child_tidptr=0x7f0fbeffd9d0) = 34315
+34315 <... set_robust_list resumed>)    = 0
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 3, {tv_sec=1682462038, tv_nsec=161489000}, 0xffffffff <unfinished ...>
+34310 mmap(NULL, 8392704, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7f0fbdffc000
+34310 mprotect(0x7f0fbdffc000, 4096, PROT_NONE) = 0
+34310 clone(child_stack=0x7f0fbe7fbdf0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f0fbe7fc9d0, tls=0x7f0fbe7fc700, child_tidptr=0x7f0fbe7fc9d0) = 34316
+34310 mmap(NULL, 8392704, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7f0fbd7fb000
+34310 mprotect(0x7f0fbd7fb000, 4096, PROT_NONE <unfinished ...>
+34316 set_robust_list(0x7f0fbe7fc9e0, 24 <unfinished ...>
+34310 <... mprotect resumed>)           = 0
+34310 clone(child_stack=0x7f0fbdffadf0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f0fbdffb9d0, tls=0x7f0fbdffb700, child_tidptr=0x7f0fbdffb9d0) = 34317
+34310 stat("/etc/resolv.conf", {st_mode=S_IFREG|0644, st_size=74, ...}) = 0
+34310 open("/etc/host.conf", O_RDONLY|O_CLOEXEC) = 4
+34310 fstat(4, {st_mode=S_IFREG|0644, st_size=9, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf4b000
+34310 read(4, "multi on\n", 4096)       = 9
+34310 read(4, "", 4096)                 = 0
+34310 close(4)                          = 0
+34310 munmap(0x7f0fcaf4b000, 4096)      = 0
+34310 futex(0x7f0fc79569f0, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+34310 open("/etc/resolv.conf", O_RDONLY|O_CLOEXEC) = 4
+34310 fstat(4, {st_mode=S_IFREG|0644, st_size=74, ...}) = 0
+34310 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0fcaf4b000
+34310 read(4, "# Generated by NetworkManager\nse"..., 4096) = 74
+34310 read(4, "", 4096)                 = 0
+34310 close(4)                          = 0
+34310 munmap(0x7f0fcaf4b000, 4096)      = 0
+34310 socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = 4
+34310 setsockopt(4, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+34310 bind(4, {sa_family=AF_INET, sin_port=htons(1234), sin_addr=inet_addr("0.0.0.0")}, 16) = 0
+34310 listen(4, 0)                      = 0
+34310 getsockname(4, {sa_family=AF_INET, sin_port=htons(1234), sin_addr=inet_addr("0.0.0.0")}, [16]) = 0
+34310 setsockopt(4, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+34310 getsockname(4, {sa_family=AF_INET, sin_port=htons(1234), sin_addr=inet_addr("0.0.0.0")}, [16]) = 0
+34310 getsockname(4, {sa_family=AF_INET, sin_port=htons(1234), sin_addr=inet_addr("0.0.0.0")}, [16]) = 0
+34310 futex(0x663dcc, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x663dc8, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1) = 1
+34310 write(2, "Not using restrict_seccomp_F_SET"..., 36) = 36
+34310 write(2, "configureFinalSeccomp \n", 23) = 23
+34310 write(2, "both syscalls\n[\naccess-21 clone-"..., 249) = 249
+34310 write(2, "final syscalls\n[\nflock-73 getpid"..., 279) = 279
+34310 prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) = 0
+34310 seccomp(SECCOMP_SET_MODE_FILTER, 0, {len=49, filter=0x673650}) = 0
+34310 write(2, "configureFinalSeccomp DONE \n", 28) = 28
+34310 open("SECCOMP_PROCESS_IS_DONE_SETTING_UP", O_RDONLY) = -1 ENOENT (No such file or directory)
+34310 write(2, "Initial setup complete.\n", 24) = 24
+34310 rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+34310 rt_sigaction(SIGCHLD, NULL, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+34310 rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+34310 nanosleep({tv_sec=60, tv_nsec=0},  <unfinished ...>
+34317 set_robust_list(0x7f0fbdffb9e0, 24) = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 4, {tv_sec=1682462038, tv_nsec=169256000}, 0xffffffff <unfinished ...>
+34311 <... futex resumed>)              = 0
+34311 futex(0x663da0, FUTEX_WAKE_PRIVATE, 1) = 0
+34311 close(3 <unfinished ...>
+34316 <... set_robust_list resumed>)    = 0
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34311 <... close resumed>)              = 0
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 5, {tv_sec=1682462038, tv_nsec=180818000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 3, {tv_sec=1682462038, tv_nsec=90428000}, 0xffffffff <unfinished ...>
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD)                 = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 epoll_ctl(3, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLPRI, {u32=6731568, u64=6731568}}) = 0
+34311 epoll_wait(3,  <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 5, {tv_sec=1682462038, tv_nsec=105820000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 7, {tv_sec=1682462038, tv_nsec=120367000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 9, {tv_sec=1682462038, tv_nsec=144519000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 11, {tv_sec=1682462038, tv_nsec=161204000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 10, {tv_sec=1682462038, tv_nsec=275624000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 11, {tv_sec=1682462038, tv_nsec=275981000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 12, {tv_sec=1682462038, tv_nsec=276015000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 13, {tv_sec=1682462038, tv_nsec=276019000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 13, {tv_sec=1682462038, tv_nsec=185416000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 13, {tv_sec=1682462038, tv_nsec=275981000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 13, {tv_sec=1682462038, tv_nsec=276015000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 15, {tv_sec=1682462038, tv_nsec=296003000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 15, {tv_sec=1682462038, tv_nsec=205223000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 17, {tv_sec=1682462038, tv_nsec=229752000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 19, {tv_sec=1682462038, tv_nsec=249017000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 21, {tv_sec=1682462038, tv_nsec=273985000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 17, {tv_sec=1682462038, tv_nsec=388589000}, 0xffffffff <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 20, {tv_sec=1682462038, tv_nsec=388589000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 22, {tv_sec=1682462038, tv_nsec=389739000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 23, {tv_sec=1682462038, tv_nsec=389749000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 21, {tv_sec=1682462038, tv_nsec=389725000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 23, {tv_sec=1682462038, tv_nsec=298747000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 23, {tv_sec=1682462038, tv_nsec=389739000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 23, {tv_sec=1682462038, tv_nsec=389725000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 23, {tv_sec=1682462038, tv_nsec=388589000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 25, {tv_sec=1682462038, tv_nsec=404435000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 25, {tv_sec=1682462038, tv_nsec=314072000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 27, {tv_sec=1682462038, tv_nsec=338939000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 29, {tv_sec=1682462038, tv_nsec=363738000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 31, {tv_sec=1682462038, tv_nsec=388535000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 29, {tv_sec=1682462038, tv_nsec=498551000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 30, {tv_sec=1682462038, tv_nsec=498562000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 31, {tv_sec=1682462038, tv_nsec=498568000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 33, {tv_sec=1682462038, tv_nsec=408093000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 31, {tv_sec=1682462038, tv_nsec=498551000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 31, {tv_sec=1682462038, tv_nsec=498562000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 33, {tv_sec=1682462038, tv_nsec=504213000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 35, {tv_sec=1682462038, tv_nsec=520256000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 35, {tv_sec=1682462038, tv_nsec=429233000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 37, {tv_sec=1682462038, tv_nsec=453553000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 39, {tv_sec=1682462038, tv_nsec=478546000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 41, {tv_sec=1682462038, tv_nsec=504368000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 39, {tv_sec=1682462038, tv_nsec=614619000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 40, {tv_sec=1682462038, tv_nsec=614757000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 41, {tv_sec=1682462038, tv_nsec=614773000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 41, {tv_sec=1682462038, tv_nsec=614619000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 41, {tv_sec=1682462038, tv_nsec=614757000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 43, {tv_sec=1682462038, tv_nsec=621155000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 43, {tv_sec=1682462038, tv_nsec=529734000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = 0
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 45, {tv_sec=1682462038, tv_nsec=544016000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 45, {tv_sec=1682462038, tv_nsec=635665000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 47, {tv_sec=1682462038, tv_nsec=568731000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 49, {tv_sec=1682462038, tv_nsec=598841000}, 0xffffffff <unfinished ...>
+34311 <... epoll_wait resumed>[], 1, 500) = 0
+34311 close(3)                          = 0
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD)                 = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 epoll_ctl(3, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLPRI, {u32=6731568, u64=6731568}}) = 0
+34311 epoll_wait(3,  <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 51, {tv_sec=1682462038, tv_nsec=624265000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 50, {tv_sec=1682462038, tv_nsec=730798000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 51, {tv_sec=1682462038, tv_nsec=730808000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 53, {tv_sec=1682462038, tv_nsec=730933000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 52, {tv_sec=1682462038, tv_nsec=730926000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 53, {tv_sec=1682462038, tv_nsec=639726000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 53, {tv_sec=1682462038, tv_nsec=730798000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 53, {tv_sec=1682462038, tv_nsec=730808000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 53, {tv_sec=1682462038, tv_nsec=730926000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 55, {tv_sec=1682462038, tv_nsec=744947000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 55, {tv_sec=1682462038, tv_nsec=653688000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 57, {tv_sec=1682462038, tv_nsec=673704000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 59, {tv_sec=1682462038, tv_nsec=699884000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 61, {tv_sec=1682462038, tv_nsec=723868000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 63, {tv_sec=1682462038, tv_nsec=738089000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 <... futex resumed>)              = 0
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 61, {tv_sec=1682462038, tv_nsec=846308000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 62, {tv_sec=1682462038, tv_nsec=846318000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 65, {tv_sec=1682462038, tv_nsec=755871000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 62, {tv_sec=1682462038, tv_nsec=846308000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 65, {tv_sec=1682462038, tv_nsec=847185000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 63, {tv_sec=1682462038, tv_nsec=847167000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 64, {tv_sec=1682462038, tv_nsec=847179000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 65, {tv_sec=1682462038, tv_nsec=847167000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 65, {tv_sec=1682462038, tv_nsec=847179000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 67, {tv_sec=1682462038, tv_nsec=780792000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 69, {tv_sec=1682462038, tv_nsec=796909000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 71, {tv_sec=1682462038, tv_nsec=821951000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 73, {tv_sec=1682462038, tv_nsec=839255000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 69, {tv_sec=1682462038, tv_nsec=954701000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 70, {tv_sec=1682462038, tv_nsec=954710000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 71, {tv_sec=1682462038, tv_nsec=954715000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 75, {tv_sec=1682462038, tv_nsec=864170000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 71, {tv_sec=1682462038, tv_nsec=954701000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 71, {tv_sec=1682462038, tv_nsec=954710000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 74, {tv_sec=1682462038, tv_nsec=961981000}, 0xffffffff) = -1 EAGAIN (Resource temporarily unavailable)
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 75, {tv_sec=1682462038, tv_nsec=962141000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 75, {tv_sec=1682462038, tv_nsec=961981000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 77, {tv_sec=1682462038, tv_nsec=890192000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 79, {tv_sec=1682462038, tv_nsec=915181000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 81, {tv_sec=1682462038, tv_nsec=939535000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 83, {tv_sec=1682462038, tv_nsec=964487000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 80, {tv_sec=1682462039, tv_nsec=70903000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 81, {tv_sec=1682462039, tv_nsec=70912000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 82, {tv_sec=1682462039, tv_nsec=70917000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 83, {tv_sec=1682462039, tv_nsec=70923000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 85, {tv_sec=1682462038, tv_nsec=980345000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 83, {tv_sec=1682462039, tv_nsec=70903000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 83, {tv_sec=1682462039, tv_nsec=70912000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 83, {tv_sec=1682462039, tv_nsec=70917000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 85, {tv_sec=1682462039, tv_nsec=77086000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 87, {tv_sec=1682462039, tv_nsec=5308000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 89, {tv_sec=1682462039, tv_nsec=31389000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 91, {tv_sec=1682462039, tv_nsec=47709000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 93, {tv_sec=1682462039, tv_nsec=67745000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 91, {tv_sec=1682462039, tv_nsec=183283000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 92, {tv_sec=1682462039, tv_nsec=183407000}, 0xffffffff <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 93, {tv_sec=1682462039, tv_nsec=183417000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 95, {tv_sec=1682462039, tv_nsec=183427000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 94, {tv_sec=1682462039, tv_nsec=183422000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34312 <... futex resumed>)              = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 95, {tv_sec=1682462039, tv_nsec=93400000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 95, {tv_sec=1682462039, tv_nsec=183407000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 95, {tv_sec=1682462039, tv_nsec=183417000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 95, {tv_sec=1682462039, tv_nsec=183422000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34311 <... epoll_wait resumed>[], 1, 500) = 0
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34311 close(3 <unfinished ...>
+34312 <... futex resumed>)              = 0
+34311 <... close resumed>)              = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 97, {tv_sec=1682462039, tv_nsec=115427000}, 0xffffffff <unfinished ...>
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD)                 = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 epoll_ctl(3, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLPRI, {u32=6731568, u64=6731568}}) = 0
+34311 epoll_wait(3,  <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 99, {tv_sec=1682462039, tv_nsec=130363000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 101, {tv_sec=1682462039, tv_nsec=144826000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 103, {tv_sec=1682462039, tv_nsec=159959000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 105, {tv_sec=1682462039, tv_nsec=180214000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 100, {tv_sec=1682462039, tv_nsec=287647000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 101, {tv_sec=1682462039, tv_nsec=287763000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 103, {tv_sec=1682462039, tv_nsec=287787000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 102, {tv_sec=1682462039, tv_nsec=287778000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 103, {tv_sec=1682462039, tv_nsec=287647000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 103, {tv_sec=1682462039, tv_nsec=287763000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 103, {tv_sec=1682462039, tv_nsec=287778000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 105, {tv_sec=1682462039, tv_nsec=301455000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 107, {tv_sec=1682462039, tv_nsec=210966000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 109, {tv_sec=1682462039, tv_nsec=235900000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 111, {tv_sec=1682462039, tv_nsec=260162000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 113, {tv_sec=1682462039, tv_nsec=285324000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 108, {tv_sec=1682462039, tv_nsec=391434000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 109, {tv_sec=1682462039, tv_nsec=391443000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 115, {tv_sec=1682462039, tv_nsec=300973000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 109, {tv_sec=1682462039, tv_nsec=391434000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 112, {tv_sec=1682462039, tv_nsec=403579000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 113, {tv_sec=1682462039, tv_nsec=403624000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 113, {tv_sec=1682462039, tv_nsec=403579000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 115, {tv_sec=1682462039, tv_nsec=418270000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 117, {tv_sec=1682462039, tv_nsec=326556000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 119, {tv_sec=1682462039, tv_nsec=351341000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 121, {tv_sec=1682462039, tv_nsec=375850000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 123, {tv_sec=1682462039, tv_nsec=401052000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 119, {tv_sec=1682462039, tv_nsec=510536000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 121, {tv_sec=1682462039, tv_nsec=510573000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 120, {tv_sec=1682462039, tv_nsec=510556000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 125, {tv_sec=1682462039, tv_nsec=418768000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 121, {tv_sec=1682462039, tv_nsec=510536000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 121, {tv_sec=1682462039, tv_nsec=510556000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 123, {tv_sec=1682462039, tv_nsec=518512000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 125, {tv_sec=1682462039, tv_nsec=532954000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 127, {tv_sec=1682462039, tv_nsec=443047000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 129, {tv_sec=1682462039, tv_nsec=469235000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 131, {tv_sec=1682462039, tv_nsec=491337000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 133, {tv_sec=1682462039, tv_nsec=520141000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 127, {tv_sec=1682462039, tv_nsec=620094000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 130, {tv_sec=1682462039, tv_nsec=620503000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 131, {tv_sec=1682462039, tv_nsec=620509000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 131, {tv_sec=1682462039, tv_nsec=620503000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 133, {tv_sec=1682462039, tv_nsec=621016000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 135, {tv_sec=1682462039, tv_nsec=645914000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 135, {tv_sec=1682462039, tv_nsec=555520000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 137, {tv_sec=1682462039, tv_nsec=577541000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 139, {tv_sec=1682462039, tv_nsec=598185000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 141, {tv_sec=1682462039, tv_nsec=612155000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34311 <... epoll_wait resumed>[], 1, 500) = 0
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34311 close(3 <unfinished ...>
+34312 <... futex resumed>)              = 0
+34311 <... close resumed>)              = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 143, {tv_sec=1682462039, tv_nsec=626259000}, 0xffffffff <unfinished ...>
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD)                 = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 epoll_ctl(3, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLPRI, {u32=6731568, u64=6731568}}) = 0
+34311 epoll_wait(3,  <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 143, {tv_sec=1682462039, tv_nsec=730466000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 140, {tv_sec=1682462039, tv_nsec=730457000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 142, {tv_sec=1682462039, tv_nsec=730464000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 141, {tv_sec=1682462039, tv_nsec=730461000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 145, {tv_sec=1682462039, tv_nsec=640148000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 143, {tv_sec=1682462039, tv_nsec=730457000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 143, {tv_sec=1682462039, tv_nsec=730464000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 143, {tv_sec=1682462039, tv_nsec=730461000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 147, {tv_sec=1682462039, tv_nsec=655350000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 145, {tv_sec=1682462039, tv_nsec=758428000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 149, {tv_sec=1682462039, tv_nsec=668117000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 151, {tv_sec=1682462039, tv_nsec=682157000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 153, {tv_sec=1682462039, tv_nsec=701118000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 155, {tv_sec=1682462039, tv_nsec=724227000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 157, {tv_sec=1682462039, tv_nsec=740264000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 150, {tv_sec=1682462039, tv_nsec=848243000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 151, {tv_sec=1682462039, tv_nsec=848249000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 152, {tv_sec=1682462039, tv_nsec=848251000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 153, {tv_sec=1682462039, tv_nsec=848254000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 159, {tv_sec=1682462039, tv_nsec=757889000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 153, {tv_sec=1682462039, tv_nsec=848243000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 153, {tv_sec=1682462039, tv_nsec=848249000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 153, {tv_sec=1682462039, tv_nsec=848251000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 155, {tv_sec=1682462039, tv_nsec=864312000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 161, {tv_sec=1682462039, tv_nsec=774106000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 163, {tv_sec=1682462039, tv_nsec=791391000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 165, {tv_sec=1682462039, tv_nsec=822860000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 167, {tv_sec=1682462039, tv_nsec=834181000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 169, {tv_sec=1682462039, tv_nsec=848494000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 163, {tv_sec=1682462039, tv_nsec=953824000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 161, {tv_sec=1682462039, tv_nsec=953820000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 160, {tv_sec=1682462039, tv_nsec=953814000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 162, {tv_sec=1682462039, tv_nsec=953822000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 171, {tv_sec=1682462039, tv_nsec=863613000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 163, {tv_sec=1682462039, tv_nsec=953820000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 163, {tv_sec=1682462039, tv_nsec=953814000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 163, {tv_sec=1682462039, tv_nsec=953822000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 165, {tv_sec=1682462039, tv_nsec=966449000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 173, {tv_sec=1682462039, tv_nsec=876272000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 175, {tv_sec=1682462039, tv_nsec=890204000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 177, {tv_sec=1682462039, tv_nsec=913331000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 179, {tv_sec=1682462039, tv_nsec=937574000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 181, {tv_sec=1682462039, tv_nsec=962816000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 171, {tv_sec=1682462040, tv_nsec=67856000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 183, {tv_sec=1682462039, tv_nsec=977691000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 174, {tv_sec=1682462040, tv_nsec=68090000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 173, {tv_sec=1682462040, tv_nsec=68088000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 175, {tv_sec=1682462040, tv_nsec=68092000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 172, {tv_sec=1682462040, tv_nsec=68084000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 175, {tv_sec=1682462040, tv_nsec=68090000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 175, {tv_sec=1682462040, tv_nsec=68088000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 175, {tv_sec=1682462040, tv_nsec=68084000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 185, {tv_sec=1682462040, tv_nsec=2867000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 187, {tv_sec=1682462040, tv_nsec=26498000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 189, {tv_sec=1682462040, tv_nsec=41089000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 191, {tv_sec=1682462040, tv_nsec=55086000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 193, {tv_sec=1682462040, tv_nsec=69075000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 177, {tv_sec=1682462040, tv_nsec=173835000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 195, {tv_sec=1682462040, tv_nsec=83623000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 182, {tv_sec=1682462040, tv_nsec=181918000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 184, {tv_sec=1682462040, tv_nsec=181972000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 185, {tv_sec=1682462040, tv_nsec=181974000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 183, {tv_sec=1682462040, tv_nsec=181967000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 185, {tv_sec=1682462040, tv_nsec=181918000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 185, {tv_sec=1682462040, tv_nsec=181972000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 185, {tv_sec=1682462040, tv_nsec=181967000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 197, {tv_sec=1682462040, tv_nsec=107105000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 199, {tv_sec=1682462040, tv_nsec=121141000}, 0xffffffff <unfinished ...>
+34311 <... epoll_wait resumed>[], 1, 500) = 0
+34311 close(3)                          = 0
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD)                 = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 epoll_ctl(3, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLPRI, {u32=6731568, u64=6731568}}) = 0
+34311 epoll_wait(3,  <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 201, {tv_sec=1682462040, tv_nsec=147402000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 203, {tv_sec=1682462040, tv_nsec=171975000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 187, {tv_sec=1682462040, tv_nsec=288854000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 205, {tv_sec=1682462040, tv_nsec=198765000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 195, {tv_sec=1682462040, tv_nsec=296712000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 193, {tv_sec=1682462040, tv_nsec=296708000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 194, {tv_sec=1682462040, tv_nsec=296710000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 192, {tv_sec=1682462040, tv_nsec=296703000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 195, {tv_sec=1682462040, tv_nsec=296708000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 195, {tv_sec=1682462040, tv_nsec=296710000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 195, {tv_sec=1682462040, tv_nsec=296703000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 207, {tv_sec=1682462040, tv_nsec=212887000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 209, {tv_sec=1682462040, tv_nsec=234478000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 211, {tv_sec=1682462040, tv_nsec=258798000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 213, {tv_sec=1682462040, tv_nsec=277309000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 215, {tv_sec=1682462040, tv_nsec=297278000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 197, {tv_sec=1682462040, tv_nsec=395272000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 205, {tv_sec=1682462040, tv_nsec=411427000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 204, {tv_sec=1682462040, tv_nsec=411422000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 202, {tv_sec=1682462040, tv_nsec=411411000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 203, {tv_sec=1682462040, tv_nsec=411418000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 205, {tv_sec=1682462040, tv_nsec=411422000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 205, {tv_sec=1682462040, tv_nsec=411411000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 205, {tv_sec=1682462040, tv_nsec=411418000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 217, {tv_sec=1682462040, tv_nsec=322018000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 219, {tv_sec=1682462040, tv_nsec=334691000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 221, {tv_sec=1682462040, tv_nsec=349498000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 223, {tv_sec=1682462040, tv_nsec=364462000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 225, {tv_sec=1682462040, tv_nsec=378576000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 227, {tv_sec=1682462040, tv_nsec=402594000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 207, {tv_sec=1682462040, tv_nsec=509813000}, 0xffffffff <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 229, {tv_sec=1682462040, tv_nsec=419887000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 213, {tv_sec=1682462040, tv_nsec=525015000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 214, {tv_sec=1682462040, tv_nsec=525017000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 215, {tv_sec=1682462040, tv_nsec=525019000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 212, {tv_sec=1682462040, tv_nsec=525011000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 231, {tv_sec=1682462040, tv_nsec=434888000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 215, {tv_sec=1682462040, tv_nsec=525015000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 215, {tv_sec=1682462040, tv_nsec=525017000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 215, {tv_sec=1682462040, tv_nsec=525011000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 233, {tv_sec=1682462040, tv_nsec=451020000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 235, {tv_sec=1682462040, tv_nsec=465492000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 237, {tv_sec=1682462040, tv_nsec=479708000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 239, {tv_sec=1682462040, tv_nsec=504657000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 241, {tv_sec=1682462040, tv_nsec=519314000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 217, {tv_sec=1682462040, tv_nsec=625173000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 243, {tv_sec=1682462040, tv_nsec=535654000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 222, {tv_sec=1682462040, tv_nsec=640908000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 223, {tv_sec=1682462040, tv_nsec=640919000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 224, {tv_sec=1682462040, tv_nsec=640924000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 225, {tv_sec=1682462040, tv_nsec=640930000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 245, {tv_sec=1682462040, tv_nsec=550395000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 225, {tv_sec=1682462040, tv_nsec=640908000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 225, {tv_sec=1682462040, tv_nsec=640919000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 225, {tv_sec=1682462040, tv_nsec=640924000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 247, {tv_sec=1682462040, tv_nsec=572076000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 249, {tv_sec=1682462040, tv_nsec=596773000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 251, {tv_sec=1682462040, tv_nsec=620973000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34311 <... epoll_wait resumed>[], 1, 500) = 0
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34311 close(3 <unfinished ...>
+34312 <... futex resumed>)              = 0
+34311 <... close resumed>)              = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 253, {tv_sec=1682462040, tv_nsec=645457000}, 0xffffffff <unfinished ...>
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD)                 = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 epoll_ctl(3, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLPRI, {u32=6731568, u64=6731568}}) = 0
+34311 epoll_wait(3,  <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34317 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 231, {tv_sec=1682462040, tv_nsec=750084000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 234, {tv_sec=1682462040, tv_nsec=750175000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 232, {tv_sec=1682462040, tv_nsec=750167000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 233, {tv_sec=1682462040, tv_nsec=750173000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 255, {tv_sec=1682462040, tv_nsec=659823000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 235, {tv_sec=1682462040, tv_nsec=750270000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 235, {tv_sec=1682462040, tv_nsec=750175000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 235, {tv_sec=1682462040, tv_nsec=750167000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 235, {tv_sec=1682462040, tv_nsec=750173000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 235, {tv_sec=1682462040, tv_nsec=750084000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 257, {tv_sec=1682462040, tv_nsec=674172000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 259, {tv_sec=1682462040, tv_nsec=688706000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 261, {tv_sec=1682462040, tv_nsec=713600000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 263, {tv_sec=1682462040, tv_nsec=738364000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 265, {tv_sec=1682462040, tv_nsec=760447000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 237, {tv_sec=1682462040, tv_nsec=864172000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 242, {tv_sec=1682462040, tv_nsec=866378000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 243, {tv_sec=1682462040, tv_nsec=866389000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 244, {tv_sec=1682462040, tv_nsec=866394000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 245, {tv_sec=1682462040, tv_nsec=867275000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 267, {tv_sec=1682462040, tv_nsec=776095000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 245, {tv_sec=1682462040, tv_nsec=866378000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 245, {tv_sec=1682462040, tv_nsec=866389000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 269, {tv_sec=1682462040, tv_nsec=797015000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 271, {tv_sec=1682462040, tv_nsec=821582000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 273, {tv_sec=1682462040, tv_nsec=846389000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 275, {tv_sec=1682462040, tv_nsec=870670000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 252, {tv_sec=1682462040, tv_nsec=979764000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 251, {tv_sec=1682462040, tv_nsec=979760000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 250, {tv_sec=1682462040, tv_nsec=979725000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 253, {tv_sec=1682462040, tv_nsec=979766000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 253, {tv_sec=1682462040, tv_nsec=979764000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 253, {tv_sec=1682462040, tv_nsec=979760000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 253, {tv_sec=1682462040, tv_nsec=979725000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 255, {tv_sec=1682462040, tv_nsec=981217000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 277, {tv_sec=1682462040, tv_nsec=891151000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 279, {tv_sec=1682462040, tv_nsec=915577000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 281, {tv_sec=1682462040, tv_nsec=939789000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 283, {tv_sec=1682462040, tv_nsec=964928000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 285, {tv_sec=1682462040, tv_nsec=985226000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 261, {tv_sec=1682462041, tv_nsec=90744000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 260, {tv_sec=1682462041, tv_nsec=90734000}, 0xffffffff <unfinished ...>
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 262, {tv_sec=1682462041, tv_nsec=90769000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 263, {tv_sec=1682462041, tv_nsec=90774000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 263, {tv_sec=1682462041, tv_nsec=90769000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 263, {tv_sec=1682462041, tv_nsec=90744000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 263, {tv_sec=1682462041, tv_nsec=90734000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 265, {tv_sec=1682462041, tv_nsec=95535000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 287, {tv_sec=1682462041, tv_nsec=5467000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 289, {tv_sec=1682462041, tv_nsec=38968000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 291, {tv_sec=1682462041, tv_nsec=65125000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 293, {tv_sec=1682462041, tv_nsec=86222000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 268, {tv_sec=1682462041, tv_nsec=201470000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 269, {tv_sec=1682462041, tv_nsec=201474000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 295, {tv_sec=1682462041, tv_nsec=111066000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 269, {tv_sec=1682462041, tv_nsec=201470000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 297, {tv_sec=1682462041, tv_nsec=127121000}, 0xffffffff <unfinished ...>
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 273, {tv_sec=1682462041, tv_nsec=219233000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 274, {tv_sec=1682462041, tv_nsec=219365000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 275, {tv_sec=1682462041, tv_nsec=219494000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 299, {tv_sec=1682462041, tv_nsec=156033000}, 0xffffffff <unfinished ...>
+34311 <... epoll_wait resumed>[], 1, 500) = 0
+34311 close(3)                          = 0
+34311 epoll_create(4096)                = 3
+34311 fcntl(3, F_GETFD)                 = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+34311 epoll_ctl(3, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLPRI, {u32=6731568, u64=6731568}}) = 0
+34311 epoll_wait(3,  <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 301, {tv_sec=1682462041, tv_nsec=170018000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 303, {tv_sec=1682462041, tv_nsec=184182000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 305, {tv_sec=1682462041, tv_nsec=198189000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 278, {tv_sec=1682462041, tv_nsec=302648000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 279, {tv_sec=1682462041, tv_nsec=302655000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 307, {tv_sec=1682462041, tv_nsec=212153000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 279, {tv_sec=1682462041, tv_nsec=302648000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 309, {tv_sec=1682462041, tv_nsec=226630000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 284, {tv_sec=1682462041, tv_nsec=345099000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 285, {tv_sec=1682462041, tv_nsec=345102000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 283, {tv_sec=1682462041, tv_nsec=345094000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 311, {tv_sec=1682462041, tv_nsec=254746000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 285, {tv_sec=1682462041, tv_nsec=345099000}, 0xffffffff <unfinished ...>
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 285, {tv_sec=1682462041, tv_nsec=345094000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 313, {tv_sec=1682462041, tv_nsec=273135000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 315, {tv_sec=1682462041, tv_nsec=298323000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 289, {tv_sec=1682462041, tv_nsec=404409000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 288, {tv_sec=1682462041, tv_nsec=404404000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 317, {tv_sec=1682462041, tv_nsec=314176000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 289, {tv_sec=1682462041, tv_nsec=404404000}, 0xffffffff <unfinished ...>
+34310 <... nanosleep resumed>{tv_sec=56, tv_nsec=748577428}) = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
+34310 --- SIGINT {si_signo=SIGINT, si_code=SI_KERNEL} ---
+34310 rt_sigreturn({mask=[]})           = -1 EINTR (Interrupted system call)
+34310 futex(0x66bb4c, FUTEX_WAIT_PRIVATE, 1, NULL <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 319, {tv_sec=1682462041, tv_nsec=340286000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 321, {tv_sec=1682462041, tv_nsec=355527000}, 0xffffffff <unfinished ...>
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 291, {tv_sec=1682462041, tv_nsec=461668000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 323, {tv_sec=1682462041, tv_nsec=371433000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 293, {tv_sec=1682462041, tv_nsec=462372000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 295, {tv_sec=1682462041, tv_nsec=463508000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 325, {tv_sec=1682462041, tv_nsec=385326000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 327, {tv_sec=1682462041, tv_nsec=397488000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 329, {tv_sec=1682462041, tv_nsec=412158000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 298, {tv_sec=1682462041, tv_nsec=513488000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 299, {tv_sec=1682462041, tv_nsec=513523000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 299, {tv_sec=1682462041, tv_nsec=513488000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 331, {tv_sec=1682462041, tv_nsec=426764000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 333, {tv_sec=1682462041, tv_nsec=450211000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 335, {tv_sec=1682462041, tv_nsec=465059000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x665938, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 303, {tv_sec=1682462041, tv_nsec=569440000}, 0xffffffff <unfinished ...>
+34313 futex(0x665938, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 337, {tv_sec=1682462041, tv_nsec=479169000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 <... futex resumed>)              = 0
+34317 futex(0x665938, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 304, {tv_sec=1682462041, tv_nsec=569830000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 305, {tv_sec=1682462041, tv_nsec=569898000}, 0xffffffff <unfinished ...>
+34313 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 305, {tv_sec=1682462041, tv_nsec=569830000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 339, {tv_sec=1682462041, tv_nsec=493059000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 341, {tv_sec=1682462041, tv_nsec=508466000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 308, {tv_sec=1682462041, tv_nsec=614501000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 309, {tv_sec=1682462041, tv_nsec=614505000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 343, {tv_sec=1682462041, tv_nsec=524292000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 309, {tv_sec=1682462041, tv_nsec=614501000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 345, {tv_sec=1682462041, tv_nsec=546231000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 347, {tv_sec=1682462041, tv_nsec=573441000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34314 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 313, {tv_sec=1682462041, tv_nsec=677701000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 314, {tv_sec=1682462041, tv_nsec=677708000}, 0xffffffff <unfinished ...>
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34313 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 315, {tv_sec=1682462041, tv_nsec=677866000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 349, {tv_sec=1682462041, tv_nsec=587397000}, 0xffffffff <unfinished ...>
+34317 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 315, {tv_sec=1682462041, tv_nsec=677701000}, 0xffffffff <unfinished ...>
+34314 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 315, {tv_sec=1682462041, tv_nsec=677708000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 351, {tv_sec=1682462041, tv_nsec=612569000}, 0xffffffff <unfinished ...>
+34316 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34315 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34312 <... futex resumed>)              = 0
+34316 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 319, {tv_sec=1682462041, tv_nsec=727465000}, 0xffffffff <unfinished ...>
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 318, {tv_sec=1682462041, tv_nsec=727459000}, 0xffffffff <unfinished ...>
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 353, {tv_sec=1682462041, tv_nsec=637128000}, 0xffffffff <unfinished ...>
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 futex(0x66699c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 319, {tv_sec=1682462041, tv_nsec=727459000}, 0xffffffff <unfinished ...>
+34312 <... futex resumed>)              = -1 ETIMEDOUT (Connection timed out)
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1) = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 355, {tv_sec=1682462041, tv_nsec=652563000}, 0xffffffff) = -1 ETIMEDOUT (Connection timed out)
+34311 <... epoll_wait resumed>[], 1, 500) = 0
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34311 futex(0x66bb4c, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x66bb48, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1 <unfinished ...>
+34312 <... futex resumed>)              = 0
+34311 <... futex resumed>)              = 1
+34310 <... futex resumed>)              = 0
+34312 futex(0x66551c, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 357, {tv_sec=1682462041, tv_nsec=672477000}, 0xffffffff <unfinished ...>
+34311 futex(0x66bb20, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34310 futex(0x66bb20, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34311 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34311 close(3 <unfinished ...>
+34310 futex(0x66bb20, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34311 <... close resumed>)              = 0
+34310 <... futex resumed>)              = 0
+34311 epoll_create(4096 <unfinished ...>
+34310 shutdown(4, SHUT_RDWR <unfinished ...>
+34311 <... epoll_create resumed>)       = 3
+34310 <... shutdown resumed>)           = 0
+34311 fcntl(3, F_GETFD <unfinished ...>
+34310 close(4 <unfinished ...>
+34311 <... fcntl resumed>)              = 0
+34310 <... close resumed>)              = 0
+34311 fcntl(3, F_SETFD, FD_CLOEXEC <unfinished ...>
+34310 futex(0x6668ec, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 1, {tv_sec=1682462101, tv_nsec=663958000}, 0xffffffff <unfinished ...>
+34311 <... fcntl resumed>)              = 0
+34311 epoll_wait(3, 0x7f0fc00008f0, 0, 500) = -1 EINVAL (Invalid argument)
+34311 close(3)                          = 0
+34311 futex(0x6668ec, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x6668e8, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1) = 1
+34310 <... futex resumed>)              = 0
+34311 futex(0x6668c0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34310 futex(0x6668c0, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34311 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34311 madvise(0x7f0fc4aa9000, 8368128, MADV_DONTNEED <unfinished ...>
+34310 futex(0x6668c0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34311 <... madvise resumed>)            = 0
+34310 <... futex resumed>)              = 0
+34311 exit(0 <unfinished ...>
+34310 futex(0x7f0fc52a99d0, FUTEX_WAIT, 34311, NULL <unfinished ...>
+34311 <... exit resumed>)               = ?
+34311 +++ exited with 0 +++
+34310 <... futex resumed>)              = 0
+34310 futex(0x66551c, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x665518, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1 <unfinished ...>
+34312 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = 1
+34312 futex(0x6654f0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34310 futex(0x7f0fc4aa89d0, FUTEX_WAIT, 34312, NULL <unfinished ...>
+34312 <... futex resumed>)              = 0
+34312 madvise(0x7f0fc42a8000, 8368128, MADV_DONTNEED) = 0
+34312 exit(0)                           = ?
+34312 +++ exited with 0 +++
+34310 <... futex resumed>)              = 0
+34310 futex(0x66699c, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x666998, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = 1
+34313 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34310 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34310 <... futex resumed>)              = 0
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34310 futex(0x66699c, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x666998, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = 1
+34313 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34310 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... futex resumed>)              = 0
+34313 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34310 <... futex resumed>)              = 0
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34310 futex(0x66699c, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x666998, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1 <unfinished ...>
+34313 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = 1
+34317 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34314 <... futex resumed>)              = 0
+34317 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 madvise(0x7f0fbf7ff000, 8368128, MADV_DONTNEED <unfinished ...>
+34310 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34313 <... madvise resumed>)            = 0
+34310 <... futex resumed>)              = 0
+34314 <... futex resumed>)              = 0
+34317 futex(0x666970, FUTEX_WAKE_PRIVATE, 1) = 0
+34313 exit(0 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34310 futex(0x66699c, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x666998, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1 <unfinished ...>
+34317 madvise(0x7f0fbd7fb000, 8368128, MADV_DONTNEED <unfinished ...>
+34316 <... futex resumed>)              = 0
+34313 <... exit resumed>)               = ?
+34310 <... futex resumed>)              = 1
+34316 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34313 +++ exited with 0 +++
+34310 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34317 <... madvise resumed>)            = 0
+34317 exit(0 <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34314 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = 1
+34317 <... exit resumed>)               = ?
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34314 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34310 futex(0x66699c, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x666998, FUTEX_OP_SET<<28|0<<12|FUTEX_OP_CMP_GT<<24|0x1 <unfinished ...>
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34310 <... futex resumed>)              = 1
+34317 +++ exited with 0 +++
+34316 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34315 futex(0x666970, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+34314 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34310 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34315 <... futex resumed>)              = -1 EAGAIN (Resource temporarily unavailable)
+34310 <... futex resumed>)              = 0
+34314 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34316 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34315 futex(0x666970, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+34310 futex(0x7f0fbf7fe9d0, FUTEX_WAIT, 34314, NULL <unfinished ...>
+34314 <... futex resumed>)              = 0
+34316 <... futex resumed>)              = 0
+34315 <... futex resumed>)              = 0
+34314 madvise(0x7f0fbeffe000, 8368128, MADV_DONTNEED <unfinished ...>
+34316 madvise(0x7f0fbdffc000, 8368128, MADV_DONTNEED <unfinished ...>
+34315 madvise(0x7f0fbe7fd000, 8368128, MADV_DONTNEED <unfinished ...>
+34314 <... madvise resumed>)            = 0
+34316 <... madvise resumed>)            = 0
+34315 <... madvise resumed>)            = 0
+34316 exit(0 <unfinished ...>
+34315 exit(0 <unfinished ...>
+34314 exit(0 <unfinished ...>
+34316 <... exit resumed>)               = ?
+34315 <... exit resumed>)               = ?
+34314 <... exit resumed>)               = ?
+34316 +++ exited with 0 +++
+34315 +++ exited with 0 +++
+34314 +++ exited with 0 +++
+34310 <... futex resumed>)              = 0
+34310 munmap(0x7f0fc4aa9000, 8392704)   = 0
+34310 munmap(0x7f0fc42a8000, 8392704)   = 0
+34310 munmap(0x7f0fbf7ff000, 8392704)   = 0
+34310 exit_group(0)                     = ?
+34310 +++ exited with 0 +++

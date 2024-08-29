@@ -1,7 +1,7 @@
 /**
  * @file xml_test_utils2.c This file defines functions to assist with _to_xml testing.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -36,7 +36,7 @@
 
 int validate(xmlDocPtr doc, const char *document_name, const char *schema_str, int debug)
 {
-	int ret = -1;	
+	int ret = -1;
 	xmlDocPtr schema_doc = NULL;
 	xmlSchemaParserCtxtPtr parser_ctx = NULL;
 	xmlSchemaPtr schema = NULL;
@@ -83,7 +83,11 @@ int validate(xmlDocPtr doc, const char *document_name, const char *schema_str, i
 		fprintf(stdout, "loaded schema: %s\n", schema_str);
 	}
 
-	if (xmlSchemaValidateDoc(valid_ctx, doc)) {
+	int err = xmlSchemaValidateDoc(valid_ctx, doc);
+	if(err) {
+		if(debug) {
+			fprintf(stderr, "failed to validate against schema with error code: %d\n", err);
+		}
 		goto out;
 	}
 
