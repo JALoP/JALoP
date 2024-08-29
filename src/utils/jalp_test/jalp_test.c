@@ -1,7 +1,7 @@
 /**
  * @file jalp_test.c This file contains jalp test functions
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -30,7 +30,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <getopt.h>
+#include <argp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,11 +54,49 @@
 #define JALP_TEST_DEFEAULT_NUM_REPEAT (long) 1
 #define DEFAULT_SCHEMA_DIR "/usr/share/jalop/schemas"
 
-static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, enum jal_digest_algorithm *dgst_alg, char *record_type, char **socket_path, char **schema_path, long int *repeat_cnt, int *validate_xml);
+// argp
+const char *argp_program_version = "2.0";
+const char *argp_program_bug_address = 0;
+static char args_doc[] = "";
+static char doc[] =
+	"jalp_test - JALoP database test utility.";
+static error_t parse_opt(int key, char *arg, struct argp_state *state);
+static struct argp_option options[] = {
+	{"type", 't', "T", 0,
+		"Indicates which type of data to send: 'j' (journal record), 'a' (an audit record), or 'l' (log entry), or 'f' (journal record using file descriptor passing).", 0},
+	{"appmeta", 'a', "path", 0,
+		"(optional) the full, or relative path to a file to use for generating the application metadata.", 0},
+	{"payload", 'p', "path", 0,
+		"The full or relative path to a file that should be used as the payload for this particular record.", 0},
+	{"stdin", 's', NULL, 0,
+		"Indicates the payload should be taken from <stdin>.", 0},
+	{"socket", 'j', "path", 0,
+		"The full or relative path to the JALoP socket.", 0},
+	{"key", 'k', "path", 0,
+		"The full or relative path to a key file to be used for signing. Must also specify '-a'.", 0},
+	{"cert", 'c', "path", 0, " The full or relative path to a certificate file to be used for signing. Requires '-k'.", 0},
+	{"digest", 'd', "D", 0, "Calculates and adds a digest of the payload to the application metadata. Defaults to 'sha256' if no algorithm is provided. Valid values are 'sha256', 'sha384', and 'sha512'. Must also specify '-a'.", 0},
+	{"schemas", 'x', "path", 0, "The full or relative path to the JALoP Schemas.", 0},
+	{"count", 'n', "num", 0, "The number of times to repeat an event. Must be a positive numeric value within the representable range.", 0},
+	{"validate", 'v', NULL, 0, "Validate XML payload against a schema.", 0},
+	{NULL, 0, NULL, 0, NULL, 0}
+};
+static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 
-
-static void print_usage();
+struct jp_config_context {
+	char *app_meta_path;
+	char *payload_path;
+	char *key_path;
+	char *cert_path;
+	int stdin_payload;
+	int calculate_sha;
+	enum jal_digest_algorithm dgst_alg;
+	int validate_xml;
+	char record_type;
+	char *schema_path;
+	char *socket_path;
+	long int repeat_cnt;
+} jp_conf_ctx;
 
 static int build_payload(int payload_fd, uint8_t ** payload_buf, size_t *payload_size);
 
@@ -72,30 +110,28 @@ static const size_t BUF_SIZE = 8192;
 
 int main(int argc, char **argv)
 {
-	char *app_meta_path = NULL;
-	char *payload_path = NULL;
-	char *key_path = NULL;
-	char *cert_path = NULL;
-	int stdin_payload = 0;
-	int calculate_sha = 0;
-	enum jal_digest_algorithm dgst_alg = JAL_DIGEST_ALGORITHM_DEFAULT;
-	int validate_xml = 0;
-	char record_type = 0;
-	char *schema_path = NULL;
-	char *socket_path = NULL;
-	long int repeat_cnt = JALP_TEST_DEFEAULT_NUM_REPEAT;
+	int err = 0;
+	int rc = -1;
+	jp_conf_ctx.app_meta_path = NULL;
+	jp_conf_ctx.payload_path = NULL;
+	jp_conf_ctx.key_path = NULL;
+	jp_conf_ctx.cert_path = NULL;
+	jp_conf_ctx.stdin_payload = 0;
+	jp_conf_ctx.calculate_sha = 0;
+	jp_conf_ctx.dgst_alg = JAL_DIGEST_ALGORITHM_DEFAULT;
+	jp_conf_ctx.validate_xml = 0;
+	jp_conf_ctx.record_type = 0;
+	jp_conf_ctx.schema_path = NULL;
+	jp_conf_ctx.socket_path = NULL;
+	jp_conf_ctx.repeat_cnt = JALP_TEST_DEFEAULT_NUM_REPEAT;
 
-	parse_cmdline(argc, argv, &app_meta_path, &payload_path, &key_path, &cert_path,
-		&stdin_payload, &calculate_sha, &dgst_alg, &record_type, &socket_path, &schema_path, &repeat_cnt, &validate_xml);
 
 	struct jalp_app_metadata *app_meta = NULL;
 	uint8_t *payload_buf = NULL;
 	size_t payload_size = 0;
 	int payload_fd = 0;
-	int send_payload = (stdin_payload || (payload_path));
 
 	int ret;
-	int rc = -1;
 	enum jal_status jalp_ret;
 
 	char *hostname = NULL;
@@ -104,21 +140,29 @@ int main(int argc, char **argv)
 	jalp_context *ctx = NULL;
 	struct jal_digest_ctx *digest_ctx = NULL;
 
+	err = argp_parse(&argp, argc, argv, 0, 0, &jp_conf_ctx);
+	if(0 != err) {
+		fprintf(stderr, "ERROR: Cannot parse command line arguments.\n");
+		goto err_out;
+	}
+
+	int send_payload = (jp_conf_ctx.stdin_payload || (jp_conf_ctx.payload_path));
+
 	jalp_ret = jalp_init();
 	if (jalp_ret != JAL_OK) {
 		goto err_out;
 	}
 
-	ret = generate_app_metadata(app_meta_path, &app_meta, &hostname, &appname);
+	ret = generate_app_metadata(jp_conf_ctx.app_meta_path, &app_meta, &hostname, &appname);
 	if (ret != 0) {
 		printf("parse error\n");
 		goto err_out;
 	}
 
-	if (stdin_payload == 1) {
+	if (jp_conf_ctx.stdin_payload == 1) {
 		payload_fd = STDIN_FILENO;
-	} else if (payload_path) {
-		payload_fd = open(payload_path, O_RDONLY);
+	} else if (jp_conf_ctx.payload_path) {
+		payload_fd = open(jp_conf_ctx.payload_path, O_RDONLY);
 	}
 	if (payload_fd < 0) {
 		printf("file open error\n");
@@ -126,34 +170,34 @@ int main(int argc, char **argv)
 	}
 
 	ctx = jalp_context_create();
-	jalp_ret = jalp_context_init(ctx, socket_path, hostname, appname, schema_path);
+	jalp_ret = jalp_context_init(ctx, jp_conf_ctx.socket_path, hostname, appname, jp_conf_ctx.schema_path);
 	if (jalp_ret != JAL_OK) {
 		printf("error creating jalp context\n");
 		goto err_out;
 	}
 
-	if(validate_xml != 0) {
+	if(jp_conf_ctx.validate_xml != 0) {
 		jalp_context_set_flag(ctx, JAF_VALIDATE_XML);
 	}
 
-	if (key_path) {
-		jalp_ret = jalp_context_load_pem_rsa(ctx, key_path, NULL);
+	if (jp_conf_ctx.key_path) {
+		jalp_ret = jalp_context_load_pem_rsa(ctx, jp_conf_ctx.key_path, NULL);
 		if (jalp_ret != JAL_OK) {
-			printf("error loading key from path: %s\n", key_path);
+			printf("error loading key from path: %s\n", jp_conf_ctx.key_path);
 			goto err_out;
 		}
 	}
 
-	if (cert_path) {
-		jalp_ret = jalp_context_load_pem_cert(ctx, cert_path);
+	if (jp_conf_ctx.cert_path) {
+		jalp_ret = jalp_context_load_pem_cert(ctx, jp_conf_ctx.cert_path);
 		if (jalp_ret != JAL_OK) {
-			printf("error loading cert from path: %s\n", cert_path);
+			printf("error loading cert from path: %s\n", jp_conf_ctx.cert_path);
 			goto err_out;
 		}
 	}
 
-	if(calculate_sha) {
-		digest_ctx = jal_digest_ctx_create(dgst_alg);
+	if(jp_conf_ctx.calculate_sha) {
+		digest_ctx = jal_digest_ctx_create(jp_conf_ctx.dgst_alg);
 		jalp_ret = jalp_context_set_digest_callbacks(ctx, digest_ctx);
 		if (jalp_ret != JAL_OK) {
 			printf("error setting digest callbacks\n");
@@ -161,8 +205,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	for(long int cnt = 0; cnt < repeat_cnt; cnt++) {
-		switch(record_type) {
+	for(long int cnt = 0; cnt < jp_conf_ctx.repeat_cnt; cnt++) {
+		switch(jp_conf_ctx.record_type) {
 		case ('j'):
 			if (send_payload && cnt == 0) {
 				ret = build_payload(payload_fd, &payload_buf, &payload_size);
@@ -225,7 +269,7 @@ int main(int argc, char **argv)
 	rc = 0;
 
 err_out:
-	if(payload_buf && !stdin_payload) {
+	if(payload_buf && !jp_conf_ctx.stdin_payload) {
 		munmap(payload_buf, payload_size);
 	}
 	jalp_app_metadata_destroy(&app_meta);
@@ -233,10 +277,10 @@ err_out:
 	jal_digest_ctx_destroy(&digest_ctx);
 	jalp_shutdown();
 	free(hostname);
-	free(app_meta_path);
+	free(jp_conf_ctx.app_meta_path);
 	free(appname);
-	free(socket_path);
-	free(payload_path);
+	free(jp_conf_ctx.socket_path);
+	free(jp_conf_ctx.payload_path);
 
 	if(payload_fd != STDIN_FILENO) {
 		close(payload_fd);
@@ -245,198 +289,120 @@ err_out:
 	return rc;
 }
 
-static void parse_cmdline(int argc, char **argv, char **app_meta_path, char **payload_path, char **key_path,
-	char **cert_path, int *stdin_payload, int *calculate_sha, enum jal_digest_algorithm *dgst_alg, char *record_type, char **socket_path, 
-	char **schema_path, long int *repeat_cnt, int *validate_xml)
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
-	static const char *optstring = "a:p:st:hj:k:c:d::x:n:vV";
-	static const struct option long_options[] = { 
-		{"type", required_argument, NULL, 't'}, 
-		{"version", no_argument, NULL, 'v'}, 
-		{"appmeta", required_argument, NULL, 'a'}, 
-		{"payload", required_argument, NULL, 'p'}, 
-		{"stdin", no_argument, NULL, 's'}, 
-		{"socket", required_argument, NULL, 'j'}, 
-		{"key", required_argument, NULL, 'k'}, 
-		{"cert", required_argument, NULL, 'c'}, 
-		{"digest", optional_argument, NULL, 'd'}, 
-		{"schemas", required_argument, NULL, 'x'}, 
-		{"count", required_argument, NULL, 'n'}, 
-		{"help", no_argument, NULL, 'h'}, 
-		{"validate", no_argument, NULL, 'V'}, 
-		{NULL, 0, 0, 0} 
-	};
-
-	int ret_opt;
-
-	while(EOF != (ret_opt = getopt_long(argc, argv, optstring, long_options, NULL))) {
-		switch (ret_opt) {
-			case 'a':
-				*app_meta_path = strdup(optarg);
-				break;
-			case 'p':
-				*payload_path = strdup(optarg);
-				break;
-			case 's':
-				if(optarg) {
-					goto err_usage;
-				}
-				*stdin_payload = 1;
-				break;
-			case 't':
-				if(optarg) {
-					*record_type = *optarg;
-				} else {
-					goto err_usage;
-				}
-				break;
-			case 'h':
-				print_usage();
-				exit(0);
-			case 'j':
-				*socket_path = strdup(optarg);
-				break;
-			case 'k':
-				*key_path = strdup(optarg);
-				break;
-			case 'c':
-				*cert_path = strdup(optarg);
-				break;
-			case 'd':
-				*calculate_sha = 1;
-				*dgst_alg = JAL_DIGEST_ALGORITHM_DEFAULT;
-
-				// Because we're using "::" notation in long_options to denote that the argument
-				// is optional, but the argument is expected to appear after the option without
-				// a space separating them. To get around this, we look at the next item in argv
-				// check if the first character is "-". If it is, it's a new argument and the user
-				// did not specify a digest algorithm. Otherwise, we assume it's a digest algorithm.
-				if (!optarg && optind < argc && argv[optind][0] != '-') {
-					optarg = argv[optind++];
-				}
-				// If the digest=ALG format is used, optarg contains the value
-				if (optarg) {
-					enum jal_status status = jal_get_digest_from_str(optarg, dgst_alg);
-					if (JAL_OK != status) {
-						printf("Invalid digest found: %s\n", optarg);
-						goto err_usage;
-					}
-				}
-				break;
-			case 'x':
-				*schema_path = strdup(optarg);
-				break;
-			case 'n':
-				errno = 0;
-				char *end_ptr = NULL; 
-				long int tmp_cnt = strtol(optarg, &end_ptr, 10);
-
-				if(tmp_cnt && (LONG_MAX != tmp_cnt || ERANGE != errno) 
-					&& '\0' == *end_ptr) {
-					*repeat_cnt = tmp_cnt;
-				} else {
-					goto err_usage;
-				}
-				break;
-			case 'v':
-				printf("%s\n", jal_version_as_string());
-				goto version_out;
-				break;
-			case 'V':
-				if(optarg) {
-					goto err_usage;
-				}
-				*validate_xml = 1;
-				break;
-			case ':':
-			case '?':
-			default:
+	struct jp_config_context * conf_ctx = (struct jp_config_context *)(state->input);
+	switch (key)
+	{
+		case 'a':
+			conf_ctx->app_meta_path = strdup(arg);
+			break;
+		case 'p':
+			conf_ctx->payload_path = strdup(arg);
+			break;
+		case 's':
+			if(arg) {
 				goto err_usage;
-		}
-	}
+			}
+			conf_ctx->stdin_payload = 1;
+			break;
+		case 't':
+			if(arg) {
+				conf_ctx->record_type = *arg;
+			} else {
+				goto err_usage;
+			}
+			break;
+		case 'j':
+			conf_ctx->socket_path = strdup(arg);
+			break;
+		case 'k':
+			conf_ctx->key_path = strdup(arg);
+			break;
+		case 'c':
+			conf_ctx->cert_path = strdup(arg);
+			break;
+		case 'd':
+			conf_ctx->calculate_sha = 1;
+			conf_ctx->dgst_alg = JAL_DIGEST_ALGORITHM_DEFAULT;
 
-	//check sanity of usage
-	if (!(*app_meta_path) && ((*key_path) || (*calculate_sha))) {
-		printf("Error: bad usage, must specify an app metadata path to use a key or calculate a sha\n");
-		goto err_usage;
-	}
-	if (!(*key_path) && (*cert_path)) {
-		printf("Error: bad usage, must specify a key path to use a certificate\n");
-		goto err_usage;
-	}
-	if ((*payload_path) && (*stdin_payload)) {
-		printf("Error: bad usage, cannot have both stdin payload and path specified payload\n");
-		goto err_usage;
-	}
-	if ((*record_type) == 0 || ((*record_type) != 'j' && (*record_type) != 'a'
-		&& (*record_type) != 'l' && (*record_type) != 'f')) {
-		printf("Error: bad usage, record type of \'j\', \'a\', \'l\', or \'f\' must be specified\n");
-		goto err_usage;
-	}
-	if ((*record_type == 'f') && (!(*payload_path))) {
-		printf("Error: bad usage, record type of \'f\' requires a payload path\n");
-		goto err_usage;
-	}
-	if ((*record_type == 'j' || *record_type == 'a') && (!(*payload_path)) && (!(*stdin_payload))) {
-		printf("Error: bad usage, record type of \'j\' or \'a\' requires a payload\n");
-		goto err_usage;
-	}
-	if (*repeat_cnt <= 0) {
-		printf("Error: bad usage, the number of times to perform an event must be a positive number.\n");
-		goto err_usage;
-	}
-	if (!(*app_meta_path) && ((*validate_xml) || (*calculate_sha))) {
-		printf("Error: bad usage, must specify an app metadata path to validate XML or calculate a sha\n");
-		goto err_usage;
-	}
-	if(!(*schema_path)) {
-		(*schema_path) = strdup(DEFAULT_SCHEMA_DIR);
-	}
-	return;
+			// If the digest=ALG format is used, arg contains the value
+			if (arg) {
+				enum jal_status status = jal_get_digest_from_str(arg, &(conf_ctx->dgst_alg));
+				if (JAL_OK != status) {
+					printf("Invalid digest found: %s\n", arg);
+					goto err_usage;
+				}
+			}
+			break;
+		case 'x':
+			conf_ctx->schema_path = strdup(arg);
+			break;
+		case 'n':
+			errno = 0;
+			char *end_ptr = NULL;
+			long int tmp_cnt = strtol(arg, &end_ptr, 10);
 
+			if(tmp_cnt && (LONG_MAX != tmp_cnt || ERANGE != errno)
+				&& '\0' == *end_ptr) {
+				conf_ctx->repeat_cnt = tmp_cnt;
+			} else {
+				goto err_usage;
+			}
+			break;
+		case 'v':
+			if(arg) {
+				goto err_usage;
+			}
+			conf_ctx->validate_xml = 1;
+			break;
+		case ARGP_KEY_FINI:
+			//check sanity of usage
+			if (!(conf_ctx->app_meta_path) && ((conf_ctx->key_path) || (conf_ctx->calculate_sha))) {
+				printf("Error: bad usage, must specify an app metadata path to use a key or calculate a sha\n");
+				goto err_usage;
+			}
+			if (!(conf_ctx->key_path) && (conf_ctx->cert_path)) {
+				printf("Error: bad usage, must specify a key path to use a certificate\n");
+				goto err_usage;
+			}
+			if ((conf_ctx->payload_path) && (conf_ctx->stdin_payload)) {
+				printf("Error: bad usage, cannot have both stdin payload and path specified payload\n");
+				goto err_usage;
+			}
+			if ((conf_ctx->record_type) == 0 || ((conf_ctx->record_type) != 'j' && (conf_ctx->record_type) != 'a'
+				&& (conf_ctx->record_type) != 'l' && (conf_ctx->record_type) != 'f')) {
+				printf("Error: bad usage, record type of \'j\', \'a\', \'l\', or \'f\' must be specified\n");
+				goto err_usage;
+			}
+			if ((conf_ctx->record_type == 'f') && (!(conf_ctx->payload_path))) {
+				printf("Error: bad usage, record type of \'f\' requires a payload path\n");
+				goto err_usage;
+			}
+			if ((conf_ctx->record_type == 'j' || conf_ctx->record_type == 'a') && (!(conf_ctx->payload_path)) && (!(conf_ctx->stdin_payload))) {
+				printf("Error: bad usage, record type of \'j\' or \'a\' requires a payload\n");
+				goto err_usage;
+			}
+			if (conf_ctx->repeat_cnt <= 0) {
+				printf("Error: bad usage, the number of times to perform an event must be a positive number.\n");
+				goto err_usage;
+			}
+			if (!(conf_ctx->app_meta_path) && ((conf_ctx->validate_xml) || (conf_ctx->calculate_sha))) {
+				printf("Error: bad usage, must specify an app metadata path to validate XML or calculate a sha\n");
+				goto err_usage;
+			}
+			if(!(conf_ctx->schema_path)) {
+				(conf_ctx->schema_path) = strdup(DEFAULT_SCHEMA_DIR);
+			}
+			break;
+		default:
+			return ARGP_ERR_UNKNOWN;
+	}
+	return 0;
 
 err_usage:
-
-	print_usage();
+	argp_usage(state);
 	exit(-1);
-
-version_out:
-	if (app_meta_path && *app_meta_path)
-		free(*app_meta_path);
-	if (payload_path && *payload_path)
-		free(*payload_path);
-	if (key_path && *key_path)
-		free(*key_path);
-	if (cert_path && *cert_path)
-		free(*cert_path);
-	if (socket_path && *socket_path)
-		free(*socket_path);
-	if (schema_path && *schema_path)
-		free(*schema_path);
-	exit(0);
-}
-
-static void print_usage()
-{
-	static const char *usage =
-	"Usage:\n\
-	-a, --appmeta 	(optional) the full, or relative path to a file to use for generating the application metadata.\n\
-	-p, --payload	The full or relative path to a file that should be used as the payload for this particular record.\n\
-	-s, --stdin	Indicates the payload should be taken from <stdin>.\n\
-	-t, --type=T	Indicates which type of data to send: “j” (journal record), “a” (an audit record),\n\
-		or “l” (log entry), or “f” (journal record using file descriptor passing).\n\
-	-h, --help	Print a summary of options.\n\
-	-j, --socket	The full or relative path to the JALoP socket.\n\
-	-k, --key	The full or relative path to a key file to be used for signing. Must also specify ‘–a’.\n\
-	-c, --cert	The full or relative path to a certificate file to be used for signing. Requires ‘-k’.\n\
-	-d, --digest=D	Calculates and adds a digest of the payload to the application metadata. Defaults to \"sha256\" if no algorithm is provided.\n\
-		Valid values are \"sha256\", \"sha384\", and \"sha512\". Must also specify '-a'.\n\
-	-x, --schemas	The full or relative path to the JALoP Schemas.\n\
-	-n, --count	The number of times to repeat an event. Must be a positive numeric value within the representable range.\n\
-	-v, --version	Print the version number and exit.\n\
-	-V, --Validate	Validate XML payload against a schema.\n.";
-
-	printf("%s\n", usage);
 }
 
 static int build_payload(int payload_fd, uint8_t ** payload_buf, size_t *payload_size)

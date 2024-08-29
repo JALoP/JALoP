@@ -1,6 +1,6 @@
 /**
  * @file jal_dump.cpp This file contains the source for jal_dump
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -30,7 +30,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <getopt.h>
+#include <argp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,10 +60,33 @@
 
 using namespace std;
 
-static void parse_cmdline(int argc, char **argv, char ***uuid, int *num_uuid, char *type,
-	char *data, char **path, char **home);
+// argp
+const char *argp_program_version = jal_version_as_string();
+const char *argp_program_bug_address = 0;
+static char args_doc[] = "";
+static char doc[] = "jal_dump - JALoP database dump utility.";
+static error_t parse_opt(int key, char *arg, struct argp_state *state);
+static struct argp_option options[] =
+{
+  	{"uuid", 'u', "U", 0, "REQUIRED. Search using the UUID 'U'. Specify any number of '-u' options to output multiple records in the order listed.", 0},
+	{"type", 't', "T", 0, "REQUIRED. Search within the specified type. T may be: 'j' (journal record), 'a' (audit record), or 'l' (log record).", 0},
+	{"data", 'd', "D", 0, "Specifies which section of the data should be dumped, options are 'a' for application metadata, 's' for system metadata, or 'p' for the payload (raw journal, audit, or log data). The default is to dump the system metadata. If this option is specified multiple times, the last occurance is used. To retrieve all portions of a record, use 'z'.", 0},
+	{"path", 'p', "P", 0, "Copy the record to the provided path, '/P/'. This will create a sub-directory with the name <record_type>-<UUID>/ where <record_type> is replaced with 'journal', 'audit', or 'log', and <UUID> is replaced with the UUID for the record. This directory will always contain a file named 'system-metadata.xml', which is the system metadata for the record. If the record contains application metadata, the directory will also contain a file named 'application-metadata.xml' Depending on the type of record, this directory may contain a file named 'journal.bin' (for journal records), 'log.bin' (for log records), or 'audit.xml' for audit records. '~' expansion will only work with --path <~path> and not with --path=<~/path>", 0},
+	{"home", 'h', "H", 0, "Specify the root of the JALoP database, defaults to /var/lib/jalop/db. The entered path must immediately follow the option. '~' expansion will only work with --home <~path> and not with --home=<~path>.", 0},
+	{"write", 'w', NULL, 0, "Signals for a list of nonces in the JALoP database to be written to a file for each record type.", 0},
+	{NULL, 0, NULL, 0, NULL, 0}
+};
+static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 
-static void print_usage();
+struct jd_config_context {
+	char **uuid;
+	char data;
+	char type;
+	char *path;
+	char *home;
+	int num_uuid;
+	int uuid_arr_sz;
+};
 
 void print_payload(uint8_t *payload_buf, size_t payload_size);
 
@@ -77,9 +100,9 @@ int dump_records_by_uuid(jaldb_context *ctx, enum jaldb_rec_type rtype, char dat
 /**
  * Utility function to dynamically grow an array as needed.
  * If (*max_elms == elm_count) then the array is grown.
- * @param arr[in,out] The array to grow
- * @param max_elms[in,out] The original and new maximum size of the array
- * @param elm_count[in] The current number of elements in the array.
+ * @param arr [in,out] The array to grow
+ * @param max_elms [in,out] The original and new maximum size of the array
+ * @param elm_count [in] The current number of elements in the array.
  */
 static void ensure_capacity(char ***arr, int *max_elms, int elm_count);
 
@@ -91,18 +114,33 @@ static const size_t BUF_SIZE = 8192;
 static int write_uuid_flag = 0;
 
 int main(int argc, char **argv) {
-	char **uuid = NULL;
-	char data = 0;
-	char type = 0;
-	char *path = NULL;
-	char *home = NULL;
-	int num_uuid = 0;
+	//#884 - Turn off line buffering to prevent payload getting printed to stdout out of
+	//order when redirecting output to a file.
+	setvbuf(stdout, NULL, _IONBF, 0);
+
 	int counter = 0;
 	int ret = 0;
 	enum jaldb_rec_type rtype = JALDB_RTYPE_UNKNOWN;
 
-	parse_cmdline(argc, argv, &uuid, &num_uuid, &type,
-			 &data, &path, &home);
+	struct jd_config_context jd_conf_ctx = {NULL, 0, 0, NULL, NULL, 0, INITIAL_ARRAY_SIZE};
+
+	jd_conf_ctx.uuid = (char **) malloc(jd_conf_ctx.uuid_arr_sz * sizeof(char*));
+	if (!(jd_conf_ctx.uuid)) {
+		printf("Insufficient memory for uuid storage. Closing.\n");
+		exit(-1);
+	}
+
+	int err = argp_parse(&argp, argc, argv, 0, 0, &jd_conf_ctx);
+	if(0 != err) {
+		fprintf(stderr, "ERROR: Cannot parse command line arguments.\n");
+		return -1;
+	}
+	char **uuid = jd_conf_ctx.uuid;
+	char data = jd_conf_ctx.data;
+	char type = jd_conf_ctx.type;
+	char *path = jd_conf_ctx.path;
+	char *home = jd_conf_ctx.home;
+	int num_uuid = jd_conf_ctx.num_uuid;
 
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *ctx = jaldb_context_create();
@@ -368,170 +406,78 @@ out:
 	return ret;
 }
 
-static void parse_cmdline(int argc, char **argv, char ***uuid, int *num_uuid,
-				char *type, char *data, char **path, char **home)
+static error_t parse_opt(int key_in,
+		char *arg, struct argp_state *state)
 {
-
 	int counter = 0;
+	struct jd_config_context * jd_conf_ctx = (struct jd_config_context *)(state->input);
 	static const char *defdir = "/var/lib/jalop/db";
-	static const char *optstring = "s:u:t:d:p:h:v:w";
-	static const struct option long_options[] = {
-			{"type", 1, 0, 't'}, {"uuid",1,0,'u'},
-			{"data",1,0,'d'}, {"path",1,0,'p'},{"home",2,0,'h'},
-			{"version",0,0,'v'},{"write", 0, 0, 'w'}, {0,0,0,0}};
 
-	int uuid_arr_sz = INITIAL_ARRAY_SIZE;
-
-	if (2 == argc) {
-		if ('v' == getopt_long(argc, argv, optstring, long_options, NULL)) {
-			printf("%s\n", jal_version_as_string());
-			exit(0);
-		}
-	}
-	if (4 > argc) {
-		goto err_usage;
-	}
-
-	*uuid = (char **) malloc(uuid_arr_sz * sizeof(char*));
-	if (!(*uuid)) {
-		printf("Insufficient memory for uuid storage. Closing.\n");
-		exit(-1);
-	}
-
-
-	int ret_opt;
-	while (EOF != (ret_opt = getopt_long(argc, argv, optstring, long_options, NULL))) {
-		switch (ret_opt) {
-			case 'u':
-				ensure_capacity(uuid, &uuid_arr_sz, *num_uuid);
-				(*uuid)[*num_uuid] = strdup(optarg);
-				(*num_uuid)++;
-				break;
-			case 't':
-				if (('j' != *optarg) && ('a' != *optarg) && ('l' != *optarg)) {
-					printf("\nType invalid\n");
-					goto err_usage;
-				}
-				*type = *optarg;
-				break;
-			case 'd':
-				if (('a' != *optarg) && ('s' != *optarg) && ('p' != *optarg) && ('z' != *optarg)) {
-					*data = 's';
-				} else {
-					*data = *optarg;
-				}
-				break;
-			case 'p':
-				*path = strdup(optarg);
-				char *new_path;
-				new_path = NULL;
-				if ((*path)[strlen((*path))-1] != '/') {
-					jal_asprintf(&new_path, "%s/", *path);
-					free(*path);
-					*path = new_path;
-				}
-				break;
-			case 'h':
-				if (NULL == optarg) {
-					printf("Optarg was null. Home directory defaulting to /var/lib/jalop/db\n");
-					*home = strdup(defdir);
-				} else {
-					*home = strdup(optarg);
-				}
-				break;
-			case 'w':
-				write_uuid_flag = 1;
-				break;
-			case 'v':
-				printf("%s\n", jal_version_as_string());
-				goto version_out;
-				break;
-			case ':':		//Missing argument
-			case '?':		//Unknown option
-			default:
+	switch (key_in)
+	{
+		case 'u':
+			ensure_capacity(&(jd_conf_ctx->uuid), &(jd_conf_ctx->uuid_arr_sz), jd_conf_ctx->num_uuid);
+			(jd_conf_ctx->uuid)[jd_conf_ctx->num_uuid] = strdup(arg);
+			(jd_conf_ctx->num_uuid)++;
+			break;
+		case 't':
+			if (('j' != *arg) && ('a' != *arg) && ('l' != *arg)) {
+				fprintf(stderr, "\nType invalid\n");
 				goto err_usage;
-		}//switch
-	}//while
-
-	//check usage
-	if (('j' != *type) && ('a' != *type) && ('l' != *type)) {
-		goto err_usage;
+			}
+			jd_conf_ctx->type = *arg;
+			break;
+		case 'd':
+			if (('a' != *arg) && ('s' != *arg) && ('p' != *arg) && ('z' != *arg)) {
+				jd_conf_ctx->data = 's';
+			} else {
+				jd_conf_ctx->data = *arg;
+			}
+			break;
+		case 'p':
+			jd_conf_ctx->path = strdup(arg);
+			char *new_path;
+			new_path = NULL;
+			if ((jd_conf_ctx->path)[strlen((jd_conf_ctx->path))-1] != '/') {
+				jal_asprintf(&new_path, "%s/", jd_conf_ctx->path);
+				free(jd_conf_ctx->path);
+				jd_conf_ctx->path = new_path;
+			}
+			break;
+		case 'h':
+			if (NULL == arg) {
+				fprintf(stderr, "arg was null. Home directory defaulting to /var/lib/jalop/db\n");
+				jd_conf_ctx->home = strdup(defdir);
+			} else {
+				jd_conf_ctx->home = strdup(arg);
+			}
+			break;
+		case 'w':
+			write_uuid_flag = 1;
+			break;
+		case ARGP_KEY_END:
+			break;
+		default:
+			return ARGP_ERR_UNKNOWN;
 	}
-	if (('a' != *data) && ('s' != *data) && ('p' != *data) && ('z' != *data)) {
-		*data = 's';
-	}
-
-	return;
+	return 0;
 
 err_usage:
 
 	printf("\nError: Usage\n");
-	print_usage();
-	for (counter = 0; counter < (*num_uuid); counter++) {
-		free(*(*uuid + counter));
+	for (counter = 0; counter < (jd_conf_ctx->num_uuid); counter++) {
+		free(*(jd_conf_ctx->uuid + counter));
 	}
 
-	free(*uuid);
-	if (path != NULL) {
-		free(*path);
+	free(jd_conf_ctx->uuid);
+	if (jd_conf_ctx->path != NULL) {
+		free(jd_conf_ctx->path);
 	}
-	if ((home != NULL) && (*home != NULL)) {
-		free(*home);
+	if (jd_conf_ctx->home != NULL) {
+		free(jd_conf_ctx->home);
 	}
-
-
+	argp_usage(state);
 	exit(-1);
-
-version_out:
-	for (counter = 0; counter < (*num_uuid); counter++) {
-		free(*(*uuid + counter));
-	}
-
-	free(*uuid);
-	if (path != NULL) {
-		free(*path);
-	}
-	if ((home != NULL) && (*home != NULL)) {
-		free(*home);
-	}
-
-	exit(0);
-}
-
-
-static void print_usage()
-{
-	static const char *usage =
-	"Usage:\n\
-	-u, --uuid	Search using the UUID \"u\". Specify any number of \"-u\" options to output multiple\n\
-			records in the order listed. \n\
-	-t, --type=T	Search within the specified type. T may be: \"j\" (journal record), \"a\" (audit record),\n\
-			or \"l\" (log record).\n\
-	-d, --data=D	Specifies which section of the data should be dumped, options are \"a\" for application\n\
-			metadata, \"s\" for system metadata, or \"p\" for the payload (raw journal, audit, or log\n\
-			data). \n\
-			The default is to dump the system metadata. If this option is specified \n\
-			multiple times, the last occurance is used. To retrieve all portions of a record,\n\
-			use \"z\".\n\
-	-p, --path=P	Copy the record to the provided path, \"/P/\". This will create a sub-directory with\n\
-			the name <record_type>-<UUID>/ where <record_type> is replaced with \"journal\", \n\
-			\"audit\", or \"log\", and <UUID> is replaced with the UUID for the record. \n\
-			This directory will always contain a file named \"system-metadata.xml\", which is the\n\
-			system metadata for the record. If the record contains application metadata, the\n\
-			directory will also contain a file named \"application-metadata.xml\". Depending on the\n\
-			type of record, this directory may contain a file named \"journal.bin\" (for journal\n\
-			records), \"log.bin\" (for log records), or \"audit.xml\" for audit records. '~' expansion\n\
-			will only work with --path <~path> and not with --path=<~/path>\n\
-	-h, --home=H	Specify the root of the JALoP database, defaults to /var/lib/jalop/db. The entered path\n\
-			must immediately follow the option. '~' expansion will only work with --home <~path>\n\
-			and not with --home=<~path>\n\
-	-w, --write	Signals for a list of nonces in the JALoP database to be written\n\
-			to a file for each record type.\n\
-	-v, --version	Outputs the version and exits.\n\
-\n\
-	Type and at least 1 uuid must be specified.\n\n";
-
-	printf("%s\n", usage);
 }
 
 void print_payload(uint8_t *payload_buf, size_t payload_size)

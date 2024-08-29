@@ -11,7 +11,6 @@ env.MergeFlags(env['bdb_ldflags'])
 sources = env.Glob("*.cpp")
 
 env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
-env.MergeFlags("-Wno-shadow")
 
 jal_purge_objs = env.SharedObject(source=sources)
 

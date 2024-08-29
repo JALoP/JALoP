@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-#include <getopt.h>
 #include <iostream>
 #include <map>
 #include <jalop/jal_version.h>
@@ -83,7 +82,7 @@ Config config;
 
 DB * jaldb;
 DB * filedb;
-DBT key, data;
+DBT key, db_data;
 DBC * jalcursor;
 DBC * filecursor;
 DB_ENV *env = NULL;
@@ -139,7 +138,7 @@ int main(int argc, char **argv)
 	}
 	
 	memset(&key, 0, sizeof (DBT));
-	memset(&data, 0, sizeof (DBT));
+	memset(&db_data, 0, sizeof (DBT));
 	setup_jal();
 	setup_stats();
 
@@ -198,10 +197,10 @@ int main(int argc, char **argv)
 			destroy_jal();
 			exit(1);
 		}
-		while ((wret = jalcursor->get(jalcursor, &key, &data, DB_NEXT)) == 0)
+		while ((wret = jalcursor->get(jalcursor, &key, &db_data, DB_NEXT)) == 0)
 		{
-			count_stats(byte_swapped, (uint8_t *) data.data,
-					data.size, &db_stats[x]);
+			count_stats(byte_swapped, (uint8_t *) db_data.data,
+					db_data.size, &db_stats[x]);
 		}
 		print_row(x);
 	}
@@ -263,7 +262,7 @@ void update_flags(unsigned int x)
 	{
 		cout << "Marking flag " << config.flag << " for "
 				<< db_stats[x].db_name << endl;
-		while ((cret = filecursor->get(filecursor, &key, &data, DB_NEXT)) == 0)
+		while ((cret = filecursor->get(filecursor, &key, &db_data, DB_NEXT)) == 0)
 		{
 			ret = mark_sent(
 					(char*) key.data, db_stats[x].record_type, 0);
@@ -277,7 +276,7 @@ void update_flags(unsigned int x)
 	{
 		cout << "Marking flag " << config.flag << " for "
 				<< db_stats[x].db_name << endl;
-		while ((cret = filecursor->get(filecursor, &key, &data, DB_NEXT)) == 0)
+		while ((cret = filecursor->get(filecursor, &key, &db_data, DB_NEXT)) == 0)
 		{
 			ret = mark_sent(
 					(char*) key.data, db_stats[x].record_type, 0);
@@ -293,7 +292,7 @@ void update_flags(unsigned int x)
 	{
 		cout << "Marking flag " << config.flag << " for "
 				<< db_stats[x].db_name << endl;
-		while ((cret = filecursor->get(filecursor, &key, &data, DB_NEXT)) == 0)
+		while ((cret = filecursor->get(filecursor, &key, &db_data, DB_NEXT)) == 0)
 		{
 			ret = mark_sent(
 					(char*) key.data, db_stats[x].record_type, 0);

@@ -12,7 +12,7 @@ ccflags = '-DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT']  + '/schemas/\\"'
 
 env.Append(CCFLAGS=ccflags.split())
 
-env.MergeFlags({'CPPPATH':'#src/producer_lib/include:#src/lib_common/include:.'.split(':')})
+env.MergeFlags({'CPPPATH':'#src/producer_lib/include:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
 env.MergeFlags(env['libxml2_cflags'])
 env.MergeFlags(env['libxml2_ldflags'])
 

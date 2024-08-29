@@ -2,7 +2,7 @@
  * @file push.c Dummy server as the start to 'real' jalp_push tool. Shows
  * sample use of the network library.
  *
- * @section LICENSE
+ * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
@@ -119,7 +119,7 @@ enum jal_status on_journal_resume(
 	return JAL_E_JOURNAL_MISSING;
 }
 
-enum jal_status __send_record(jaln_session *sess, char *nonce, 
+enum jal_status __send_record(jaln_session *sess, char *nonce,
 			enum jal_status (*send)(jaln_session *, char *, uint8_t *,
 						uint64_t, uint8_t *,uint64_t,
 						uint8_t *, uint64_t))
