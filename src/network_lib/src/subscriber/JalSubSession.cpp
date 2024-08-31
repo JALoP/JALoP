@@ -411,7 +411,15 @@ bool Session::validateAndStoreRecordType(const Message& message)
 
 	try
 	{
-		recordType = recordTypeFromString(recordString);
+		RecordType type = recordTypeFromString(recordString);
+		// Verify that this type is on our list of allowed record types
+		if(std::find(config.allowedRecordTypes.begin(), config.allowedRecordTypes.end(), type)
+				== config.allowedRecordTypes.end())
+		{
+			// the requested type, while valid, is not in our list of configured allowed types
+			return false;
+		}
+		recordType = type;
 	}
 	catch(std::runtime_error &e)
 	{

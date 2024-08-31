@@ -40,7 +40,7 @@ struct SubscriberConfig
 	int bufferSize;
 	int sessionLimit;
 	unsigned int httpServerThreadPoolSize;
-	std::vector<std::string> allowedRecordTypes;
+	std::vector<RecordType> allowedRecordTypes;
 	// Default to supporting only the required SHA_256 digest algorithm
 	std::vector<enum jal_digest_algorithm> allowedConfigureDigest =
 		{ JAL_DIGEST_ALGORITHM_DEFAULT };
@@ -58,7 +58,8 @@ struct SubscriberConfig
 	SubscriberConfig(std::string configFilePath);
 
 	void printConfiguration() const;
-	void setDigestAlgorithms(std::string digests);
+	void setDigestAlgorithms(const std::string& digests);
+	void setAllowedRecordTypes(const std::vector<std::string>& recordTypes);
 
 	// Make the no-arg constructor protected
 	// This may be useful for customer-made extensions that want to circumvent the

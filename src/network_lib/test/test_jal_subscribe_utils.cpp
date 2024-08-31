@@ -357,7 +357,7 @@ TestSubscriberConfig::TestSubscriberConfig(std::string dbRoot)
 	bufferSize = 4096;
 	sessionLimit = 100;
 	// httpServerThreadPoolSize unused by the mock http server
-	allowedRecordTypes = { "audit", "log", "journal" };
+	allowedRecordTypes = { RecordType::JAL_AUDIT, RecordType::JAL_LOG, RecordType::JAL_JOURNAL };
 	allowedConfigureDigest = { JAL_DIGEST_ALGORITHM_DEFAULT };
 	databasePath = dbRoot;
 	mode = ModeType::ARCHIVE;

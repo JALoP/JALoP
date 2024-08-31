@@ -47,6 +47,48 @@ static void handleBoolConfigSetting(
 	destination = (CONFIG_TRUE == value);
 }
 
+static void handleStringListConfigSetting(
+	config_setting_t* root, // config root
+	const char* path, // path to the config settings relative to the config root
+	const bool optional, // if false, generates an error if the setting is absent
+	std::vector<std::string>& destination) // reference to the vector of string to update on success
+{
+	int listLen = 0;
+	config_setting_t* settingList = NULL;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_list(
+		root,
+		path,
+		&settingList,
+		&listLen,
+		optional ? JAL_CFG_OPTIONAL : JAL_CFG_REQUIRED))
+	{
+		throw std::runtime_error("Failed to parse config list/array: " + std::string(path));
+	}
+	// If we get here, but settingList isn't set to anything, this setting was optional
+	// Do nothing and return success
+	if(NULL == settingList)
+	{
+		return;
+	}
+
+	// Otherwise, we have a list of some length
+	std::vector<std::string> newList;
+	for(int i = 0; i < listLen; i++)
+	{
+		// This pointer must not be freed by the caller - managed by libConfig
+		const char* listElemStr = config_setting_get_string_elem(settingList, i);
+		if(NULL == listElemStr)
+		{
+			std::string errMsg = "Failed to extract element: " + std::to_string(i)
+				+ " from list for setting: " + path;
+			throw std::runtime_error(errMsg);
+		}
+		newList.push_back(std::string(listElemStr));
+	}
+	// Only if we got all the way through, copy our results to the out-param
+	destination = newList;
+}
+
 static void handleStringConfigSetting(
 	config_setting_t* root, // config root
 	const char* path, // path to the config settings relative to the config root
@@ -106,8 +148,20 @@ static void handleUIntConfigSetting(
 	}
 }
 
+void SubscriberConfig::setAllowedRecordTypes(
+		const std::vector<std::string>& recordTypes)
+{
+	std::vector<RecordType> convertedTypes;
+	for(const auto& type : recordTypes)
+	{
+		// Will throw if we have a string we don't expect - let it
+		convertedTypes.push_back(recordTypeFromString(type));
+	}
+	this->allowedRecordTypes = convertedTypes;
+}
+
 void SubscriberConfig::setDigestAlgorithms(
-	std::string digests)
+	const std::string& digests)
 {
 	if(digests.empty())
 	{
@@ -217,6 +271,15 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		this->dbType = dbTypeFromString(dbTypeStr);
 	}
 
+	std::vector<std::string> recordTypes;
+	handleStringListConfigSetting(root, "record_type", REQUIRED, recordTypes);
+	// Sanity check against an empty but present record_type settings
+	if(0 >= recordTypes.size())
+	{
+		throw std::runtime_error("record_type contains no elements");
+	}
+	this->setAllowedRecordTypes(recordTypes);
+
 	//Expands all file path config entries
 	if (!this->expandAllFilePaths())
 	{
@@ -281,9 +344,17 @@ void SubscriberConfig::printConfiguration() const
 		configuredAllowedAlgorithms += std::string(digest_str[*iter]);
 	}
 
+	std::string configuredAllowedRecordTypes = "[";
+	for(const auto& type : allowedRecordTypes)
+	{
+		configuredAllowedRecordTypes += "\"" + recordTypeToString(type) + "\",";
+	}
+	configuredAllowedRecordTypes += "]";
+
 	printf("address: %s\n", ipAddr.c_str());
 	printf("port: %d\n", listenPort);
 	std::string smode = modeTypeToString(mode);
+	printf("record_type: %s\n", configuredAllowedRecordTypes.c_str());
 	printf("mode: %s\n", smode.c_str());
 	printf("db_root: %s\n", databasePath.c_str());
 	printf("buffer_size: %d\n", bufferSize);
