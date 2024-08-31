@@ -1,4 +1,4 @@
-Summary of release 2.1.0.1 changes (Fri Aug 30 2024) -
+Summary of release 2.2.0.0 changes (Fri Aug 30 2024) -
     - Add RHEL 9 support.
     - Fix deprecated method/function warnings/errors from upgrading to newer versions of openssl and xmlsec1 libraries on RHEL9.
     - Suppressed SIGPIPE signal thrown by libcurl to fix issues of jald closing when closing jal_subscribe.
