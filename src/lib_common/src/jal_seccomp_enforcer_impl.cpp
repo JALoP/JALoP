@@ -101,7 +101,7 @@ static void addRules(
 			if(__NR_SCMP_ERROR == callNumber)
 			{
 				std::string errMsg = "Error: Unable to resolve syscall name: " +
-					std::string(settingName) + ".";
+					std::string(syscallName) + ".";
 				throw std::runtime_error(errMsg);
 			}
 			rules.push_back({std::string(syscallName), callNumber});
@@ -145,7 +145,7 @@ JalSeccompEnforcer::JalSeccompEnforcer(std::string configFile)
 			JAL_CFG_REQUIRED)
 		)
 	{
-		std::string errMsg = "Error: Unable to process: " + std::string(SC_CFG_ENABLE) + 
+		std::string errMsg = "Error: Unable to process: " + std::string(SC_CFG_ENABLE) +
 			" configuration parameter";
 		throw std::runtime_error(errMsg);
 	}
@@ -167,7 +167,7 @@ JalSeccompEnforcer::JalSeccompEnforcer(std::string configFile)
 			JAL_CFG_OPTIONAL)
 		)
 	{
-		std::string errMsg = "Error: Unable to process: " + std::string(SC_CFG_DEBUG) + 
+		std::string errMsg = "Error: Unable to process: " + std::string(SC_CFG_DEBUG) +
 			" configuration parameter";
 		throw std::runtime_error(errMsg);
 	}
@@ -233,7 +233,7 @@ void JalSeccompEnforcer::applyInitial()
 		std::string errMsg = "Error: Failed to create scmp_filter_ctx";
 		throw std::runtime_error(errMsg);
 	}
-	
+
 	// Create a tiny struct to guarantee destrution of the scmp_filter_ctx
 	// no matter how we exit the function
 	struct FilterWrapper
@@ -305,7 +305,7 @@ void JalSeccompEnforcer::applyFinal()
 		std::string errMsg = "Error: Failed to create scmp_filter_ctx";
 		throw std::runtime_error(errMsg);
 	}
-	
+
 	// Create a tiny struct to guarantee destrution of the scmp_filter_ctx
 	// no matter how we exit the function
 	struct FilterWrapper
