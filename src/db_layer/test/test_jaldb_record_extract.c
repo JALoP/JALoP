@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_record_extract.c This file contains functions to test jaldb_record_extract.c.
+ * @file
+ *
+ * @brief This file contains functions to test jaldb_record_extract.c.
  *
  * ### LICENSE
  *

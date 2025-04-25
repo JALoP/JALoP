@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_nonce.c This file contains functions to test
+ * @file
+ *
+ * @brief This file contains functions to test
  * functions related to acquiring a serial id.
  *
  * ### LICENSE

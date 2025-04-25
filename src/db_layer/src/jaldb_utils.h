@@ -1,5 +1,7 @@
 /**
- * @file jaldb_utils.h This file provides some additional utilities for the db
+ * @file
+ *
+ * @brief This file provides some additional utilities for the db
  * layer.
  *
  * ### LICENSE
@@ -103,14 +105,6 @@ enum jaldb_status jaldb_create_file(
 	uuid_t uuid,
 	enum jaldb_rec_type rtype,
 	enum jaldb_data_type dtype);
-
-/**
- * Create a timestamp for the Current time in the XML DateTime format.
- *
- * @return a newly allocated string that contains the current time as an XML
- * DateTime string.
- */
-char *jaldb_gen_timestamp();
 
 /**
  * Generate a primary key for use in the database.  The format is:

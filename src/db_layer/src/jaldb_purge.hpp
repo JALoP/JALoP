@@ -1,5 +1,7 @@
 /**
- * @file jaldb_purge.hpp This file provides the DB doc_info structure.
+ * @file
+ *
+ * @brief This file provides the DB doc_info structure.
  *
  * ### LICENSE
  *
@@ -198,5 +200,40 @@ enum jaldb_status jaldb_purge_journal_by_uuid(
 		std::list<jaldb_doc_info> &doc_list,
 		int force,
 		int del);
+
+/**
+ * Utility function used by jal_purge CLI to iterate over the records in a DB in order by timestamp.
+ *
+ * This function iterates over the database in timestamp order. Operations performed
+ * on each record are dictated by the return value of the callback. Only timestamps
+ * which fulfill <tt> start_time <= current_time <= end_time </tt> are examined. Timestamps are
+ * never negative numbers.
+ *
+ * If the return from \p cb is JALDB_ITER_CONT, continue processing, but do not
+ * modify the current record.
+ *
+ * If the return from \p cb is JALDB_ITER_REMOVE, remove the current record,
+ * and continue processing.
+ *
+ * Any other return value causes processing to halt, the current record is not
+ * removed, and control is returned to the caller.
+ *
+ * @param[in] ctx the jaldb_context
+ * @param[in] type JAL record type.
+ * @param[in] timestamp The end time to stop iterating
+ * @param[in] cb The user specified callback.
+ * @param[in] up A pointer value that is passed un-modified to \p cb as the \p up
+ * parameter.
+ * @param[in] exiting This indicates if CTRL+C is pressed in the calling application.
+ *
+ * @return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_iterate_by_timestamp_purge(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	const char *timestamp,
+	jaldb_iter_cb cb,
+	void *up,
+	int &exiting);
 
 #endif // _JALDB_PURGE_HPP_

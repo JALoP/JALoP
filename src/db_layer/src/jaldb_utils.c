@@ -1,5 +1,7 @@
 /**
- * @file jaldb_utils.c This file provides some additional utilities for the db
+ * @file
+ *
+ * @brief This file provides some additional utilities for the db
  * layer.
  *
  * ### LICENSE
@@ -31,6 +33,7 @@
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
 #include "jal_fs_utils.h"
+#include "jal_ts_utils.h"
 #include "jaldb_context.h"
 #include "jaldb_record_dbs.h"
 
@@ -233,30 +236,6 @@ out:
 	return ret;
 }
 
-char *jaldb_gen_timestamp()
-{
-	char *ftime = (char*)jal_malloc(34);
-	struct tm *tm = (struct tm*)jal_malloc(sizeof(struct tm));
-
-	struct timeval *tv = jal_malloc(sizeof(struct timeval));
-
-	if (gettimeofday(tv,NULL) || !gmtime_r(&tv->tv_sec, tm)) {
-		free(ftime);
-		free(tm);
-		free(tv);
-		return NULL;
-	}
-
-	int bytes = strftime(ftime, 26, "%Y-%m-%dT%H:%M:%S", tm);
-
-	snprintf(ftime + bytes, 8, ".%06ld", tv->tv_usec);
-
-	free(tm);
-	free(tv);
-
-	return ftime;
-}
-
 char *jaldb_gen_primary_key(uuid_t uuid)
 {
 	if (uuid_is_null(uuid)) {
@@ -266,7 +245,7 @@ char *jaldb_gen_primary_key(uuid_t uuid)
 	char uuid_str[UUID_STR_LEN];
 	uuid_unparse(uuid,uuid_str);
 
-	char *ts = jaldb_gen_timestamp();
+	char *ts = jal_gen_timestamp_usec();
 	if (!ts) {
 		return NULL;
 	}

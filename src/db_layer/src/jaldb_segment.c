@@ -1,5 +1,7 @@
 /**
- * @file jaldb_segment.c This file contains functions related to the
+ * @file
+ *
+ * @brief This file contains functions related to the
  * jaldb_segment structure.
  *
  * ### LICENSE

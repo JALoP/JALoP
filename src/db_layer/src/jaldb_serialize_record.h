@@ -1,5 +1,7 @@
 /**
- * @file jaldb_serialize_record.h This file provides the functions headers for
+ * @file
+ *
+ * @brief This file provides the functions headers for
  * serializing/deserializing JALoP Records from a memory buffer.
  *
  * ### LICENSE

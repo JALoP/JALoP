@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record_dbs.h This file provides the structure definition and
+ * @file
+ *
+ * @brief This file provides the structure definition and
  * functions related to jaldb_record_dbs objects.
  *
  * ### LICENSE

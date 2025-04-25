@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_purge.cpp This file contains functions to test
+ * @file
+ *
+ * @brief This file contains functions to test
  * jaldb_purge.cpp.
  *
  * ### LICENSE
@@ -196,8 +198,8 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(context,"1.2.3.4",JALDB_RTYPE_UNKNOWN));
 	assert_equals(JALDB_E_INVAL,jaldb_purge_unconfirmed_records(NULL,"1.2.3.4",JALDB_RTYPE_JOURNAL));
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, rec1, 0, &nonce));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, rec2, 0, &nonce2));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, rec1, 0, &nonce, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, rec2, 0, &nonce2, -1));
 	assert_equals(JALDB_OK, jaldb_mark_confirmed(context, JALDB_RTYPE_LOG, (char*)"NN", &nonce3));
 	assert_string_equals(nonce,nonce3);
 

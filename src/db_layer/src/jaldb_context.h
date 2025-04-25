@@ -1,5 +1,8 @@
 /**
- * @file jaldb_context.h This file defines the DB context management functions.
+ * @file
+ *
+ * @brief This file implements the DB context management
+ * functions using Berkeley DB (BDB).
  *
  * ### LICENSE
  *
@@ -37,17 +40,57 @@
 extern "C" {
 #endif
 
+/**
+* This define indicates that BDB is in use.
+*/
+#define JALDB_TYPE_BDB "bdb"
+
 struct jaldb_record_dbs;
 struct jaldb_segment;
 struct jaldb_context_t;
+
+/**
+* jaldb_context type
+*/
 typedef struct jaldb_context_t jaldb_context;
 
-// Define bit flags to represent settings for the Berkeley DB
+/**
+* Define bit flags to represent settings for the Berkeley DB
+*/
 enum jaldb_flags {
 	JDB_NONE = 0,
 	JDB_READONLY = 1,
-        JDB_DB_RECOVER = 2
+	JDB_DB_RECOVER = 2
 };
+
+
+/**
+* jaldb_iter_status enum
+*/
+enum jaldb_iter_status {
+	JALDB_ITER_CONT,	//!< Continue processing records.
+	JALDB_ITER_REM,		//!< Remove the current record.
+	JALDB_ITER_ABORT,	//!< Stop processing and return control to the caller.
+};
+
+/**
+ * Function callback functions that traversal functions use to make decisions
+ * regarding a specific record.
+ *
+ * This callback is used in a number of functions that can traverse the
+ * database in a variety of ways. The return of this function is used to
+ * determine what (if anything) should happen.
+ *
+ * In most instances, the \p rec should not be modified (or at least, any
+ * modifications are not written to the DB).
+ *
+ * @param[in] nonce The nonce as a hex string (starting with '0x')
+ * @param[in] rec The current record
+ * @param[in] up This is the same pointer that is passed to the traversal
+ *               function, it can be used to store some state information,
+ *               etc.
+ */
+typedef enum jaldb_iter_status (*jaldb_iter_cb)(const char *nonce, struct jaldb_record *rec, void *up);
 
 /**
  * Creates an empty DB context.
@@ -226,10 +269,13 @@ enum jaldb_status jaldb_next_chronological_record(
  * @param[in] rec The record to insert.
  * @param[in] confirmed Whether or not to mark this record as confirmed.
  * @param[out] local_nonce The nonce assigned to the record by the DB
+ * @param[in] record_size_limit The maximum record size allowed to be inserted into the local store.  Any record with
+ * a total size (app metadata, sys metadata, payload) larger than this size will be rejected.  A record_size_limit less than 0 indicates that this
+ * check will be disabled and all record sizes will be allowed.
  *
  * @return JALDB_OK on success, or an error code.
  */
-enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, int confirmed, char **local_nonce);
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, int confirmed, char **local_nonce, long long record_size_limit);
 
 /**
  * Open a segment on disk for reading.
@@ -292,7 +338,7 @@ enum jaldb_status jaldb_get_primary_record_dbs(
  * to recover disk space
  * @param[in] ctx the jaldb_context
  *
- * @ return JALDB_OK on success, or an error
+ * @return JALDB_OK on success, or an error
  */
 enum jaldb_status jaldb_remove_db_logs(
 		jaldb_context *ctx);

@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record_dbs.c This file provides the implementation of
+ * @file
+ *
+ * @brief This file provides the implementation of
  * functions related to jaldb_record_dbs objects.
  *
  * ### LICENSE

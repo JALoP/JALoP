@@ -1,5 +1,7 @@
 /**
- * @file jaldb_segment.h This file provides the structure used to represent a
+ * @file
+ *
+ * @brief This file provides the structure used to represent a
  * single segment of a JALoP record (system meta-data, application meta-data, or
  * payload), as well as functions for allocating/freeing memory associated with
  * the structure.

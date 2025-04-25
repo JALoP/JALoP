@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_segment.c This file contains functions to test
+ * @file
+ *
+ * @brief This file contains functions to test
  * jaldb_segment.c.
  *
  * ### LICENSE

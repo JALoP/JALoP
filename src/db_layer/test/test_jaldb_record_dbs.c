@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_record_dbs.c This file contains unit tests for functions
+ * @file
+ *
+ * @brief This file contains unit tests for functions
  * related to the jaldb_record_dbs structure.
  *
  * ### LICENSE

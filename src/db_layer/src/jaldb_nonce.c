@@ -1,5 +1,7 @@
 /**
- * @file jaldb_nonce.c Implementation of utilties dealing with nonces.
+ * @file
+ *
+ * @brief Implementation of utilities dealing with nonces.
  *
  * ### LICENSE
  *

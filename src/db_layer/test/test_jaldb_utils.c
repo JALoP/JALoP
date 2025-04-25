@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_utils.c This file contains functions to test jaldb_utils.c.
+ * @file
+ *
+ * @brief This file contains functions to test jaldb_utils.c.
  *
  * ### LICENSE
  *
@@ -316,19 +318,4 @@ void test_jaldb_create_file_works()
 
 	free(full_path);
 	free(path);
-}
-
-void test_jaldb_gen_timestamp_works()
-{
-	char *timestamp = jaldb_gen_timestamp();
-	assert_not_equals(NULL,timestamp);
-	struct tm time;
-	int ms;
-
-	char *end_timestamp = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &time);
-
-	assert_not_equals(NULL,end_timestamp);
-
-	assert_equals(1,sscanf(end_timestamp,".%d-%*d:%*d",&ms));
-
 }
