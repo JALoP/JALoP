@@ -1,7 +1,7 @@
 .TH JAL_PURGE 8
 .SH NAME
 .B jal_purge
-\- 
+\-
 .SM JALoP
 database purge utility
 .SH SYNOPSIS
@@ -63,6 +63,18 @@ but consumes more disk space
 \fB\-c\fR, \fB\-\-compact\fR
 Compact the databases associated to the JAL record type (j/a/l) passed via \fB\-\-type\fR (\fB\-t\fR) and return empty pages to the filesystem.
 .TP
+\fB\-e\fR, \fB\-\-batch-size\fR
+LMDB only - Specify the the number of records to purge per transaction. The default is 10000 records if not specified. The minimum value is 1 and maximum is 10000.
+.TP
+\fB\-l\fR, \fB\-\-performance-level\fR
+LMDB only - Specify the LMDB performance level to use. Valid values are '0', 1', '2', '3'.  The default is '2' if not specified.
+.TP
+\fB\-s\fR, \fB\-\-compact-path\fR
+LMDB only - Specify path of where the temporary LMDB database is copied while compacting.
+.TP
+\fB\-a\fR, \fB\-\-skip-process-check\fR
+This skips the JALoP process running check on compact.  WARNING!! Using this setting can result in DB corruption if compact is performed against a database that is in use.
+.TP
 \fB\-h\fR, \fB\-\-home=P\fR
 Specify the root of the JALoP database, defaults to
 .I /var/lib/jalop/db
@@ -75,7 +87,7 @@ Output the UUID for each deleted record.
 .TP
 \fB\-x\fR, \fB\-\-detail\fR
 Report more information about the records \fB jal_purge \fR is reviewing for deletion.
-This reports the action to be taken (Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed), 
+This reports the action to be taken (Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed),
 the outbound state (Unsent, Sent, Synced), the local insertion timestamp, and the local nonce for each record.
 .SH "SEE ALSO"
 .BR jald (8),

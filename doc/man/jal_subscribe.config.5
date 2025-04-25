@@ -79,6 +79,17 @@ Set the window size for beep channels to be this number * 1024. Beep recommends 
 .TP
 .B digest_algorithms
 A bracket enclosed list of any combination of the strings "journal", "audit", and/or "log". Specifies the types of records which the subscriber will accept from the publisher.
+.TP
+.B database_option
+Sets an LMDB database option.  This config option is only used when jald is built against LMDB.  The valid values are: JDB_NONE, JDB_LMDB_PERFORMANCE_LEVEL1,
+JDB_LMDB_PERFORMANCE_LEVEL2, and JDB_LMDB_PERFORMANCE_LEVEL3. This is optional and will default to JDB_NONE if not present.
+.TP
+.B journal_resume_threshold_size
+Specify the minimum size payload for which a journal resume will be attempted
+< 0 disables journal resume
+0 means always attempt a resume (default)
+> 0 means attempt a resume if the size of already received data is greater than this value
+.TP
 .B enable_seccomp
 If true seccomp will restrict the process to the defined system calls.
 .TP
@@ -129,15 +140,40 @@ mode = "archive";
 # The time before jal_subscribe ends (HH:MM:SS). Specify 00:00:00 to run continuously.
 session_timeout = "00:00:00";
 
-# This window size for the beep channels created 
+# This window size for the beep channels created
 # will be set to this number * 1024 (1k)
 # Beep recommends a minimal size of 4k
 window_size = 4;
 
-# A list of supported digest algorithms. These algorithms should be ordered by preference 
+# A list of supported digest algorithms. These algorithms should be ordered by preference
 # in a single double-quoted string with a space separating the algorithms.
 # Valid values are "sha256", "sha384", and "sha512"
 digest_algorithms = "sha256";
+
+#Valid settings for the database_option config setting are the following:
+#JDB_NONE - No LMDB db flags are set.
+#	This is the slowest, but most reliable setting to prevent data loss or db corruption
+#JDB_LMDB_PERFORMANCE_LEVEL1 - Sets MDB_NOMETASYNC
+#	Faster than JDB_NONE. No risk of db corruption, but could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL2 - Sets MDB_NOMETASYNC | MDB_NOSYNC
+#	This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
+#	No risk of db corruption if filesystem preserves write order otherwise db corruption is possible.  Also could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL3 - Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
+#	WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
+#	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
+#	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
+
+#LMDB only, this setting is ignored in BDB builds. This is optional and will default to JDB_NONE if not present.
+database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
+
+# Specify the threshold size at which a journal resume is "worthwhile"
+# If a partial journal record is found during session init that exceeds this threshold
+# then a journal resume will be performed
+# If the partial record is less than this size, the resume will be skipped and the
+# record will be transferred from scratch.
+# The special value 0 means always resume (default)
+# Any negative number disables resume entirely
+journal_resume_threshold_size = 1048576L; #1024*1024 = 1MB (1,048,576 bytes)
 
 # seccomp will restrict the jal-local-store process to the defined system calls.
 # When the process is in the setup phase, at startup, it will be restricted to the

@@ -49,6 +49,10 @@ This identifies where
 should store all the records. This is optional and defaults to
 .IR /var/lib/jalop/db/ .
 .TP
+.B database_option
+Sets an LMDB database option.  This config option is only used when jald is built against LMDB.  The valid values are: JDB_NONE, JDB_LMDB_PERFORMANCE_LEVEL1,
+JDB_LMDB_PERFORMANCE_LEVEL2, and JDB_LMDB_PERFORMANCE_LEVEL3
+.TP
 .B socket
 The full path to use when creating the domain socket.
 .BR jal-local-store (8)
@@ -92,6 +96,18 @@ Default 100
 .B accept_delay_max
 Default 10000000
 .TP
+.B journal_record_size_limit
+The maximum journal record size to allow to be inserted into the local store.  If this is set to less than 0 then all journal records sizes are allowed.
+Default -1L
+.TP
+.B audit_record_size_limit
+The maximum audit record size to allow to be inserted into the local store.  If this is set to less than 0 then all audit records sizes are allowed.
+Default 200000000L
+.TP
+.B log_record_size_limit
+The maximum log record size to allow to be inserted into the local store.  If this is set to less than 0 then all log records sizes are allowed.
+Default 200000000L
+.TP
 .B pid_file
 File storing PID of jal-local-store when daemonized.
 .TP
@@ -133,20 +149,36 @@ system_uuid = "34c90268-57ba-4d4c-a602-bdb30251ec77";
 # will generate a hostname if it is not included in the configuration file.
 hostname = "test.jalop.com";
 
-# This identifies where jal-local-store should store all the records. 
+# This identifies where jal-local-store should store all the records.
 # This is optional and defaults to /var/lib/jalop/db/ .
 db_root = "/var/log/jalop";
+
+#Valid settings for the database_option config setting are the following:
+#JDB_NONE - No LMDB db flags are set.
+#	This is the slowest, but most reliable setting to prevent data loss or db corruption
+#JDB_LMDB_PERFORMANCE_LEVEL1 - Sets MDB_NOMETASYNC
+#	Faster than JDB_NONE. No risk of db corruption, but could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL2 - Sets MDB_NOMETASYNC | MDB_NOSYNC
+#	This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
+#	No risk of db corruption if filesystem preserves write order otherwise db corruption is possible.  Also could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL3 - Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
+#	WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
+#	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
+#	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
+
+#LMDB only, this setting is ignored in BDB builds.
+database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
 
 # The jal-local-store process, at startup, will check if it is
 # running under systemd along with a systemd socket unit file configuration.
 # If so, there is no need to define any socket parameters below, they will be ignored.
-# Systemd will create the socket file for jal-local-store. 
+# Systemd will create the socket file for jal-local-store.
 #
 # If there is no systemd socket, jal-local-store will attempt to create it.
 # Enter the file system path where the socket file will be created
 # socket_owner and socket_group will default to the user and group
 # the jal-local-store process is running as and socket mode will default to 0666.
-socket = "./jal.sock"; 
+socket = "./jal.sock";
 
 # Uncomment to define a socket_owner other then the default (the user the process is running as)
 # The username used must exist on the system.
@@ -168,9 +200,9 @@ socket = "./jal.sock";
 db_recover = false;
 
 # Process will cd to / (root directory),fork, and will run as a daemon.
-# When running the process as daemon, and even though the jal-local-store 
-# will resolve relative paths for you, it is always safer to use 
-# absolute paths for configurations in this file that require file system paths. 
+# When running the process as daemon, and even though the jal-local-store
+# will resolve relative paths for you, it is always safer to use
+# absolute paths for configurations in this file that require file system paths.
 daemon = true;
 
 # Generate a signature block within the system metadata of each record
@@ -184,6 +216,14 @@ manifest_sys_meta = false;
 # Algorithm to use for generating the Manifest
 # Available algorithms: sha256, sha384, sha512
 sys_meta_dgst_alg = "sha256";
+
+# The maximum record size allowed to be inserted into the local store.  Any record with
+# a total size (app metadata, sys metadata, payload) larger than this size will be rejected.
+# A record_size_limit less than 0 indicates that this
+# check will be disabled and all record sizes will be allowed.
+journal_record_size_limit = -1L
+audit_record_size_limit = 200000000L
+log_record_size_limit = 200000000L
 
 # Flow control functionality turned off if accept_delay_thread_count set to zero.
 # Below are the default values if not set.
