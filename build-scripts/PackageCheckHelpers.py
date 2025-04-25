@@ -94,3 +94,28 @@ def CheckBDB(context):
 	ret = context.TryCompile(bdb_source, '.c')
 	context.Result(ret)
 	return ret
+
+lmdb_source = '''
+#include <lmdb.h>
+
+#if defined(MDB_VERSION_MAJOR) && MDB_VERSION_MAJOR >= 0
+	#if MDB_VERSION_MAJOR == 0
+		#if defined(MDB_VERSION_MINOR) && MDB_VERSION_MINOR >= 9
+			#if defined(MDB_VERSION_PATCH) && MDB_VERSION_PATCH >= 22
+			#else
+				#error ""
+			#endif
+		#else
+			#error ""
+		#endif
+	#endif
+#else
+	#error ""
+#endif
+'''
+
+def CheckLMDB(context):
+	context.Message("Checking for LMDB >= 0.9.22...")
+	ret = context.TryCompile(lmdb_source, '.c')
+	context.Result(ret)
+	return ret
