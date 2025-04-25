@@ -1,0 +1,398 @@
+/**
+ * @file
+ *
+ * @brief This file defines the DB context management functions
+ * using Lightning Memory-Mapped Database (LMDB).
+ *
+ * ### LICENSE
+ *
+ * Copyright (C) 2025 The National Security Agency (NSA)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
+#ifndef _JALDB_CONTEXT_H_
+#define _JALDB_CONTEXT_H_
+
+#include "jaldb_record.h"
+#include "jaldb_status.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+* The string representation of no database options in use.
+*/
+#define JDB_NONE_STR "JDB_NONE"
+
+/**
+* This define indicates that LMDB is in use.
+*/
+#define JALDB_TYPE_LMDB "lmdb"
+
+struct jaldb_record_dbs;
+struct jaldb_segment;
+struct jaldb_context_t;
+
+/**
+* jaldb_context type
+*/
+typedef struct jaldb_context_t jaldb_context;
+
+/**
+* The string representation of JDB_LMDB_PERFORMANCE_LEVEL1.
+*/
+#define JDB_LMDB_PERFORMANCE_LEVEL1_STR "JDB_LMDB_PERFORMANCE_LEVEL1"
+/**
+* The string representation of JDB_LMDB_PERFORMANCE_LEVEL2.
+*/
+#define JDB_LMDB_PERFORMANCE_LEVEL2_STR "JDB_LMDB_PERFORMANCE_LEVEL2"
+/**
+* The string representation of JDB_LMDB_PERFORMANCE_LEVEL3.
+*/
+#define JDB_LMDB_PERFORMANCE_LEVEL3_STR "JDB_LMDB_PERFORMANCE_LEVEL3"
+
+/**
+* Define enum to represent settings for LMDB
+*/
+enum jaldb_flags {
+	/**
+	* Sets no LMDB performance flags, this is the slowest, but most reliable setting to prevent data loss or db corruption
+	*/
+	JDB_NONE = 0,
+	JDB_READONLY = 1,
+	/**
+	* Sets MDB_NOMETASYNC
+	* No risk of db corruption, but could lose last transaction
+	*/
+	JDB_LMDB_PERFORMANCE_LEVEL1 = 2,
+	/**
+	* Sets MDB_NOMETASYNC | MDB_NOSYNC
+	* This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
+	* No risk of db corruption if file system preserves write order otherwise db corruption is possible.  Also could lose last transaction.
+	*/
+	JDB_LMDB_PERFORMANCE_LEVEL2 = 3,
+	/**
+	* Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
+	* WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
+	* However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
+	* must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
+	*/
+	JDB_LMDB_PERFORMANCE_LEVEL3 = 4
+};
+
+/**
+* jaldb_iter_status enum
+*/
+enum jaldb_iter_status {
+	JALDB_ITER_CONT,	//!< Continue processing records.
+	JALDB_ITER_REM,		//!< Remove the current record.
+	JALDB_ITER_ABORT,	//!< Stop processing and return control to the caller.
+};
+
+/**
+ * Function callback functions that traversal functions use to make decisions
+ * regarding a specific record.
+ *
+ * This callback is used in a number of functions that can traverse the
+ * database in a variety of ways. The return of this function is used to
+ * determine what (if anything) should happen.
+ *
+ * In most instances, the \p rec should not be modified (or at least, any
+ * modifications are not written to the DB).
+ *
+ * @param[in] nonce The nonce as a hex string (starting with '0x')
+ * @param[in] rec The current record
+ * @param[in] up This is the same pointer that is passed to the traversal
+ *               function, it can be used to store some state information,
+ *               etc.
+ */
+typedef enum jaldb_iter_status (*jaldb_iter_cb)(const char *nonce, struct jaldb_record *rec, void *up);
+
+/**
+ * Creates an empty DB context.
+ *
+ * @return The created empty DB context.
+ *
+ */
+jaldb_context *jaldb_context_create();
+
+/**
+ * Converts the string database flag setting from config file to enum.
+ * @param[in] config_database_flags The string value from the config file.
+ * @param[out] jdb_flags Bit-packed options to be passed to the db. Specify zero
+ * or more options using a bitwise or "|" with the values specified in the
+ * jaldb_flags enum.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jaldb_status jaldb_get_db_flags(
+	const char *config_database_flags,
+	enum jaldb_flags *jdb_flags);
+
+/**
+ * Initializes a DB context.
+ * @param[in] ctx The context to initialize.
+ * @param[in] db_root The root path of the DB Layer's files. If db_root is
+ * NULL, then the default is /var/lib/jalop/db.
+ * @param[in] jdb_flags Bit-packed options to be passed to the db. Specify zero
+ * or more options using a bitwise or "|" with the values specified in the
+ * jaldb_flags enum.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jaldb_status jaldb_context_init(
+	jaldb_context *ctx,
+	const char *db_root,
+	enum jaldb_flags jdb_flags);
+
+/**
+ * Destroys a DB context.
+ * Release all resources associated with this context.
+ *
+ * @param[in,out] ctx The context to destroy. *ctx will be set to NULL.
+ */
+void jaldb_context_destroy(jaldb_context **ctx);
+
+/**
+ * Retrieves a record by nonce.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, log).
+ * @param[in] nonce The nonce of the record being retrieved.
+ * @param[out] rec This will be filled in as a jaldb_record object if the
+ * record is found. Note that any segments located on disk will not be opened
+ * automatically.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+
+enum jaldb_status jaldb_get_record(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *nonce,
+		struct jaldb_record **rec);
+
+
+/**
+ * Retrieves a record by serial UUID.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, log).
+ * @param[in] uuid The UUID of the record to retrieved.
+ * @param[out] nonce The nonce of the retrieved record. The
+ * caller is responsible for freeing this memory.
+ * @param[out] rec This will be filled in as a jaldb_record object if the
+ * record is found. Note that any segments located on disk will not be opened
+ * automatically.
+ *
+ * @return JAL_OK if the function succeeds or a JAL error code if the function
+ * fails.
+ */
+enum jaldb_status jaldb_get_record_by_uuid(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		uuid_t uuid,
+		char **nonce,
+		struct jaldb_record **rec);
+
+/**
+ * Finds a given record and marks the sent to 0 or 1 for the remote archive source.
+ * Note: Is up to the caller to verify valid states for Confirmed and/or Synced before
+ *   calling this function to update the Sent state.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, or log).
+ * @param[in] nonce The nonce of the record to mark.
+ * @param[in] target_state The requested state for the Sent flag.
+ *
+ * @return JALDB_OK on success, or a different JALDB error code on failure.
+ */
+enum jaldb_status jaldb_mark_sent(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		const char *nonce,
+		int target_state);
+
+/**
+ * Finds a given record and marks it as synced with a remote source.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, or log).
+ * @param[in] nonce The nonce of the record to mark.
+ *
+ * @return JALDB_OK on success, or a different JALDB error code on failure.
+ */
+enum jaldb_status jaldb_mark_synced(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		const char *nonce);
+
+/**
+ * Finds a given record and marks it as confirmed by the publisher's digest.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record (journal, audit, or log).
+ * @param[in] network_nonce The secondary index network_nonce of the record to mark.
+ * @param[out] nonce_out Will store the nonce of the confirmed record on success.
+ *
+ * @return JALDB_OK on success, or a different JALDB error code on failure.
+ */
+enum jaldb_status jaldb_mark_confirmed(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		const char *network_nonce,
+		char** nonce_out);
+
+/**
+ * Marks all records in a db that are unsynced as unsent.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record to mark as unsent.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_mark_unsynced_records_unsent(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type);
+
+/**
+ * Retrieves the next un-synced record from the database.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record to retrieve.
+ * @param[out] nonce The nonce for the returned record.
+ * @param[out] rec The record from the DB.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_next_unsynced_record(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	char **nonce,
+	struct jaldb_record **rec);
+
+/**
+ * Retrieves the next chronological record from the database.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record to retrieve.
+ * @param[out] nonce The nonce for the returned record.
+ * @param[out] rec The record from the DB.
+ * @param[in,out] timestamp The timestamp of the last sent record.
+ * 		Overwritten to the new timestamp when a record is returned
+ * 		Calling with a timestamp less than a previous timestamp
+ * 		may result in records being sent multiple times.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_next_chronological_record(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	char **nonce,
+	struct jaldb_record **rec,
+	char** timestamp);
+
+/**
+ * Utility to insert any JALoP record
+ * @param[in] ctx the DB context.
+ * @param[in] rec The record to insert.
+ * @param[in] confirmed Whether or not to mark this record as confirmed.
+ * @param[out] local_nonce The nonce assigned to the record by the DB
+ * @param[in] record_size_limit The maximum record size allowed to be inserted into the local store.  Any record with
+ * a total size (app metadata, sys metadata, payload) larger than this size will be rejected.  A record_size_limit less than 0 indicates that this
+ * check will be disabled and all record sizes will be allowed.
+ *
+ * @return JALDB_OK on success, or an error code.
+ */
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, int confirmed, char **local_nonce, long long record_size_limit);
+
+/**
+ * Open a segment on disk for reading.
+ *
+ * It is an error to try to open a segment whose \p on_disk flag is not 1.
+ * @param[in] ctx The jaldb_context
+ * @param[in,out] s The segment to open. If this segment already has an open
+ * file descriptor, this function is a no-op.
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_segment *s);
+
+/**
+ * Remove a record (by nonce) from the database
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The record type.
+ * @param[in] nonce The nonce of the record being retrieved.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char *nonce);
+
+/**
+ * Utility function to remove all the segments store on disk for a specific
+ * record.
+ * @param[in] ctx the jaldb_context
+ * @param[in] segment the segment to remove.
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_remove_segment_from_disk(jaldb_context *ctx, struct jaldb_segment *segment);
+
+/**
+ * Utility function to remove a single segment from disk.
+ * @param[in] ctx the jaldb_context
+ * @param[in] rec the record whose segemnts should be removed.
+ *
+ * @return JALDB_OK on success, or an error.
+ */
+enum jaldb_status jaldb_remove_segments_from_disk(jaldb_context *ctx, struct jaldb_record *rec);
+
+/**
+ * Get the primary jaldb_record_dbs struct for a given type of data
+ * @param[in] ctx the jaldb_context
+ * @param[in] type the type of data
+ * @param[out] rdbs the primary jaldb_record_dbs struct for that type
+ *
+ * @return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_get_primary_record_dbs(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		struct jaldb_record_dbs **rdbs);
+
+//NOTE Due to a bug in rhel9 doxygen which reports
+//false positive warnings with conflicts in the bdb db_layer, this
+//method name must be different than the jaldb_compact_dbs method in
+//the bdb layer.
+/**
+ * Run compaction (DB->compact) on the primary DB of the given JAL record
+ *
+ * @param[in] ctx the jaldb_context
+ * @param[in] type JAL record type.
+ *
+ * @return JALDB_OK on success, or an error
+ */
+enum jaldb_status jaldb_compact_lmdb(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // _JALDB_CONTEXT_H_

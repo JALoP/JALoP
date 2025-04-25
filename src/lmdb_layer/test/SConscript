@@ -1,0 +1,48 @@
+import os
+import string
+from Utils import add_project_lib
+Import('*')
+
+tests = []
+
+env = env.Clone()
+# The test-dept macros trigger this warning, so disable it for all the test
+# drivers.
+env.Append(CPPPATH='#/src/test_utils/src')
+# -fcommon needed to restore original gcc behavior in rhel9 to prevent multiple definition linker errors
+ccflags = '-fcommon -Wno-format-nonliteral -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
+env.Append(CCFLAGS=ccflags.split())
+env.Append(CXXFLAGS="-Wno-literal-suffix")
+env.Append(RPATH=os.path.dirname(str(lib_common[0])))
+env.Append(LIBS="boost_serialization lmdb".split())
+
+jaldbTranslatorsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_translators.cpp'))
+lmdbTypedObj = db_env.SharedObject(os.path.join('..', 'src', 'lmdb-typed.cpp'))
+lmdbSafeObj = db_env.SharedObject(os.path.join('..', 'src', 'lmdb-safe.cpp'))
+contextObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_context.cpp'))
+recordDbsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record_dbs.cpp'))
+recordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record.cpp'))
+recordXmlObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record_xml.c'))
+segmentObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_segment.cpp'))
+utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.cpp'))
+
+tests.append(env.TestDeptTest('test_jaldb_context.cpp',
+	other_sources=[jaldbTranslatorsObj, lmdbSafeObj, lmdbTypedObj, lib_common, recordObj, recordDbsObj, recordXmlObj, segmentObj, test_utils, utilsObj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_translators.cpp',
+	other_sources=[lmdbSafeObj, lmdbTypedObj, lib_common, recordObj, recordDbsObj, recordXmlObj, segmentObj, test_utils, utilsObj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_purge.cpp',
+	other_sources=[jaldbTranslatorsObj, lmdbSafeObj, lmdbTypedObj, contextObj, lib_common, recordObj, recordDbsObj, recordXmlObj, segmentObj, test_utils, utilsObj])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_record.cpp',
+	other_sources=[lib_common, segmentObj])[0].abspath)
+#tests.append(env.TestDeptTest('test_jaldb_record_dbs.cpp',
+	#other_sources=[datetimeObj, lib_common, recordUuidObj, nonceObj], useProxies=True)[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_record_xml.c',
+	other_sources=[lib_common, recordObj, segmentObj, test_utils])[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_segment.c',
+	other_sources=[lib_common], useProxies=True)[0].abspath)
+tests.append(env.TestDeptTest('test_jaldb_utils.cpp',
+	other_sources=[jaldbTranslatorsObj, lmdbSafeObj, lmdbTypedObj ,lib_common,recordDbsObj,contextObj,recordObj,recordXmlObj,segmentObj,test_utils], useProxies=True)[0].abspath)
+
+db_tests = env.Alias('db_tests', tests, 'test_dept ' + " ".join(tests))
+AlwaysBuild(db_tests)
+env.Depends(all_tests, db_tests)
