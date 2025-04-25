@@ -1,5 +1,7 @@
 /**
- * @file jal_xml_utils.c This file contains utility funtions for dealing
+ * @file
+ *
+ * @brief This file contains utility functions for dealing
  * with XML.
  *
  * ### LICENSE

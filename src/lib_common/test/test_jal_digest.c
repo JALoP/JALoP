@@ -1,5 +1,7 @@
 /**
- * @file test_jal_digest.c This file contains tests to for jal_digest functions.
+ * @file
+ *
+ * @brief This file contains tests to for jal_digest functions.
  *
  * ### LICENSE
  *
@@ -537,10 +539,11 @@ void test_jal_digest_final_handles_error()
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
 		unsigned int len = get_digest_length(i);
-		uint8_t data[len];
+		uint8_t *data = jal_calloc(len, sizeof(*data));
 		replace_final_function(i);
 		enum jal_status ret = digest_ctx_list[i]->final(digest_inst_list[i], data, &len);
 		assert_equals(JAL_E_INVAL, ret);
+		free(data);
 	}
 }
 
@@ -549,9 +552,10 @@ void test_jal_digest_final_returns_invalid_when_len_lt_digest_length()
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
 		unsigned int len = 0;
-		uint8_t data[len];
+		uint8_t *data = jal_calloc(len, sizeof(*data));
 		enum jal_status ret = digest_ctx_list[i]->final(digest_inst_list[i], data, &len);
 		assert_equals(JAL_E_INVAL, ret);
+		free(data);
 	}
 }
 
@@ -561,8 +565,8 @@ void test_jal_digest_full()
 	{
 		void *ctx_inst = digest_inst_list[i];
 		unsigned int len = digest_ctx_list[i]->len;
-		uint8_t data[len];
-		char buf[(len * 2) + 1];
+		uint8_t *data = jal_calloc(len, sizeof(*data));
+		char *buf = jal_calloc((len * 2) + 1, sizeof(*buf));
 		digest_ctx_list[i]->init(ctx_inst);
 		digest_ctx_list[i]->update(ctx_inst, (uint8_t *)HELLO_WORLD, strlen(HELLO_WORLD));
 		digest_ctx_list[i]->final(ctx_inst, data, &len);
@@ -572,6 +576,8 @@ void test_jal_digest_full()
 		}
 		buf[(len * 2)] = 0;
 		assert_string_equals(get_digest_sum(i), buf);
+		free(data);
+		free(buf);
 	}
 }
 
@@ -580,8 +586,8 @@ void test_jal_digest_full_multiple_updates()
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
 		unsigned int len = digest_ctx_list[i]->len;
-		uint8_t data[len];
-		char buf[(len * 2) + 1];
+		uint8_t *data = jal_calloc(len, sizeof(*data));
+		char *buf = jal_calloc((len * 2) + 1, sizeof(*buf));
 		digest_ctx_list[i]->init(digest_inst_list[i]);
 		digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)"Hel", 3);
 		digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)"lo ", 3);
@@ -593,6 +599,8 @@ void test_jal_digest_full_multiple_updates()
 		}
 		buf[(len * 2)] = 0;
 		assert_string_equals(get_digest_sum(i), buf);
+		free(data);
+		free(buf);
 	}
 }
 

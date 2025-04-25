@@ -1,5 +1,7 @@
 /**
- * @file jal_alloc.h This file defines wrappers for malloc, calloc,
+ * @file
+ *
+ * @brief This file defines wrappers for malloc, calloc,
  * and realloc for use by the Producer Library.
  *
  * ### LICENSE

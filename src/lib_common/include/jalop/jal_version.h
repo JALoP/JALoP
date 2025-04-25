@@ -1,5 +1,7 @@
 /**
- * @file jal_version.h This file defines the version number
+ * @file
+ *
+ * @brief This file defines the version number
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
 /**
- * @file jal_config.h This file contains utility functions for reading config
+ * @file
+ *
+ * @brief This file contains utility functions for reading config
  * files.
  *
  * ### LICENSE

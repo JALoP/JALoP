@@ -1,5 +1,7 @@
 /**
- * @file test_jal_byteswap.c This file contains tests for byte swap functions
+ * @file
+ *
+ * @brief This file contains tests for byte swap functions
  *
  * ### LICENSE
  *

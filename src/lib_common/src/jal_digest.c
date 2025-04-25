@@ -1,5 +1,7 @@
 /**
- * @file jal_digest.c This file contains functions for dealing with the
+ * @file
+ *
+ * @brief This file contains functions for dealing with the
  * jal_digest_ctx struct.
  *
  * ### LICENSE

@@ -1,7 +1,7 @@
 /**
- * @file jal_digest.h
+ * @file
  *
- * APIs for implementing and registering additional digest algorithms
+ * @brief APIs for implementing and registering additional digest algorithms
  *
  * ### LICENSE
  *

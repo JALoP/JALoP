@@ -1,5 +1,7 @@
 /**
- * @file test_jal_error_callback.c This file contains tests for the jal error handler.
+ * @file
+ *
+ * @brief This file contains tests for the jal error handler.
  *
  * ### LICENSE
  *

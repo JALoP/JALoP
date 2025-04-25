@@ -1,7 +1,5 @@
 /**
- * @file
- *
- * @brief This file contains tests for jal_base64_enc.
+ * @file test_jal_fs_utils.c This file contains functions to test jal_fs_utils.c.
  *
  * ### LICENSE
  *
@@ -28,30 +26,25 @@
  * limitations under the License.
  */
 
+#include <time.h>
+#include <sys/time.h>
+#include <sys/stat.h>
 #include <test-dept.h>
-#include <stdlib.h>
-#include "jal_base64_internal.h"
 
-void test_jal_base64_enc_null_input()
+#include "jal_ts_utils.h"
+#include "test_utils.h"
+
+void test_jal_gen_timestamp_usec_works()
 {
-	char *inval = jal_base64_enc((unsigned char *)NULL, 10);
-	assert_equals((char *)NULL, inval);
+	char *timestamp = jal_gen_timestamp_usec();
+	assert_not_equals(NULL,timestamp);
+	struct tm time;
+	int ms;
+
+	char *end_timestamp = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &time);
+
+	assert_not_equals(NULL,end_timestamp);
+
+	assert_equals(1,sscanf(end_timestamp,".%d-%*d:%*d",&ms));
 }
 
-void test_jal_base64_enc_bad_lengths()
-{
-	char *inval = jal_base64_enc((unsigned char *)"inval", 0);
-	assert_equals((char *)NULL, inval);
-
-	inval = jal_base64_enc((unsigned char *)"inval", -200);
-	assert_equals((char *)NULL, inval);
-}
-
-void test_jal_base64_enc_encodes()
-{
-	unsigned char bytes[4] = {(unsigned char)'a', (unsigned char)'s',
-				(unsigned char)'d', (unsigned char)'f'};
-	char *valid = jal_base64_enc(bytes, 4);
-	assert_string_equals(valid, "YXNkZg==");
-	free(valid);
-}

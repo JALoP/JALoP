@@ -1,5 +1,7 @@
-/*
- * @file jal_seccomp_enforcer.h This file contains a C-compliant interface
+/**
+ * @file
+ *
+ * @brief This file contains a C-compliant interface
  * for helper functions to load and apply seccomp policies from a libconfig formatted
  * configuration file.
  *
@@ -36,7 +38,7 @@ struct jal_seccomp_enforcer_t;
 /**
  * Create a jal_seccomp_enforcer_t given a path to a valid libconfig formatted
  * configuration file
- * @param[in] config The libconfig file containing the following configuration items
+ * @param[in] config_path The libconfig file containing the following configuration items
  * - enable_seccomp [true|false]
  * - seccomp_debug [true|false]
  * - initial_seccomp_rules

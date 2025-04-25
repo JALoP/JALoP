@@ -1,5 +1,7 @@
 /**
- * @file test_jal_xml_utils.c This file contains unit tests for a
+ * @file
+ *
+ * @brief This file contains unit tests for a
  * variety of utilities dealing with generating XML data.
  *
  * ### LICENSE

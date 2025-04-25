@@ -1,5 +1,7 @@
-/*
- * @file jal_seccomp_enforcer_c_interface.cpp This file contains the implementation
+/**
+ * @file
+ *
+ * @brief This file contains the implementation
  * for C API functions used to load and enforce seccomp policies
  *
  * Copyright (C) 2024 The National Security Agency (NSA)

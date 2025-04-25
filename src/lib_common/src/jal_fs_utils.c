@@ -1,5 +1,7 @@
 /**
- * @file jal_fs_utils.c This file contains general utility functions.
+ * @file
+ *
+ * @brief This file contains general utility functions.
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
-/*
- * @file jal_seccomp_enforcer.hpp This file contains the C++ definitions
+/**
+ * @file
+ *
+ * @brief This file contains the C++ definitions
  * for functions used to load and enforce seccomp policies from a libconfig formatted
  * configuration file.
  *
@@ -48,6 +50,10 @@ struct SeccompRule
 	int callNumber;
 };
 
+
+/**
+ * LogLevel enum
+ */
 enum class LogLevel
 {
 	Debug,
