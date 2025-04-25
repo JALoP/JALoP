@@ -1,5 +1,7 @@
 /**
-* @file jaldb_tail.cpp This file contains the implementation for the
+ * @file
+ *
+ * @brief This file contains the implementation for the
 * jaldb_tail utility.
 *
 * ### LICENSE

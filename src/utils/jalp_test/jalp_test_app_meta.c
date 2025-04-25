@@ -1,5 +1,7 @@
 /**
- * @file jalp_test_app_meta.c This file contains functionsa for generating app metadata
+ * @file
+ *
+ * @brief This file contains functions for generating app metadata
  *
  * ### LICENSE
  *

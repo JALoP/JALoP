@@ -1,5 +1,8 @@
 /**
- * @file jal_dump.cpp This file contains the source for jal_dump
+ * @file
+ *
+ * @brief This file contains the source for jal_dump
+ *
  * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
@@ -38,6 +41,7 @@
 #include <list>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include <jal_alloc.h>
 #include <jal_fs_utils.h>
@@ -50,6 +54,11 @@
 #include "jaldb_record.h"
 #include "jaldb_segment.h"
 #include "jaldb_strings.h"
+
+// For RHEL7 compatibility
+#ifndef UUID_STR_LEN
+constexpr int UUID_STR_LEN = 37;
+#endif
 
 #define INITIAL_ARRAY_SIZE 20
 #define WRITE_MAX 2147479552
@@ -109,6 +118,12 @@ static void ensure_capacity(char ***arr, int *max_elms, int elm_count);
 static void print_uuids(jaldb_context *ctx, char type);
 static void print_list_stdout(const list<string> &p_list);
 static void print_list_file(const list<string> &p_list, const char *p_file_name);
+
+static string get_type(enum jaldb_rec_type type);
+static string get_state(enum jaldb_sync_stat state);
+static string get_string_value(char * char_string);
+static string get_uuid_value(uuid_t uuid);
+static int jal_meta_write(int fd, struct jaldb_record *rec);
 
 static const size_t BUF_SIZE = 8192;
 static int write_uuid_flag = 0;
@@ -286,6 +301,76 @@ ssize_t jal_dump_write(jaldb_context *ctx, int fd, struct jaldb_segment *s)
 	return count;
 }
 
+string get_type(enum jaldb_rec_type type)
+{
+	switch (type)
+	{
+		case (JALDB_RTYPE_JOURNAL):
+			return "JALDB_RTYPE_JOURNAL";
+		case (JALDB_RTYPE_AUDIT):
+			return "JALDB_RTYPE_AUDIT";
+		case (JALDB_RTYPE_LOG):
+			return "JALDB_RTYPE_LOG";
+		default:
+			return "JALDB_RTYPE_UNKNOWN";
+	}
+}
+
+string get_state(enum jaldb_sync_stat state)
+{
+	switch (state)
+	{
+		case (JALDB_NOT_SENT):
+			return "JALDB_NOT_SENT";
+		case (JALDB_SENT):
+			return "JALDB_SENT";
+		case (JALDB_SYNCED):
+			return "JALDB_SYNCED";
+		default:
+			return "UNKNOWN";
+	}
+}
+
+string get_string_value(char * char_string){
+	string value = "";
+	if(char_string!=NULL){
+		value = char_string;
+	}
+	return value;
+}
+string get_uuid_value(uuid_t uuid){
+	char uuid_str[UUID_STR_LEN];
+	uuid_unparse(uuid, uuid_str);
+	return uuid_str;
+}
+int jal_meta_write(int fd, struct jaldb_record *rec)
+{
+	std::stringstream metaout;
+	string confirmed = "false";
+	if(rec->confirmed == 1){
+		confirmed = "true";
+	}
+	metaout << "confirmed: " << confirmed << endl;
+	metaout << "synced: " << get_state(rec->synced) << endl;
+	metaout << "host_uuid: " << get_uuid_value(rec->host_uuid) << endl;
+	metaout << "hostname: " << get_string_value(rec->hostname) << endl;
+	metaout << "network_nonce: " << get_string_value(rec->network_nonce) << endl;
+	metaout << "pid: " << rec->pid << endl;
+	metaout << "uid: " << rec->uid << endl;
+	metaout << "username: " << get_string_value(rec->username) << endl;
+	metaout << "sec_lbl: " << get_string_value(rec->sec_lbl) << endl;
+	metaout << "source: " << get_string_value(rec->source) << endl;
+	metaout << "timestamp: " << get_string_value(rec->timestamp) << endl;
+	metaout << "type: " << get_type(rec->type) << endl;
+	metaout << "record uuid: " << get_uuid_value(rec->uuid) << endl;
+	metaout << "version: " << rec->version << endl;
+	int ret = write(fd, metaout.str().c_str(), metaout.str().length());
+	if (-1 == ret) {
+		return -1;
+	}
+	return ret;
+}
+
 int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct jaldb_record *rec)
 {
 	ssize_t ret = 0;
@@ -293,13 +378,23 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 	int fd_sys = -1;
 	int fd_app = -1;
 	int fd_dat = -1;
+	int fd_meta = -1;
 	char *tmpstr = NULL;
 	char *sysstr = NULL;
 	char *appstr = NULL;
 	char *datstr = NULL;
-
+	char *metastr = NULL;
 	if (!path) {
+		if (('m' == data || 'z' == data)) {
+			printf("\nDatabase Record Metadata\n");
+			printf("------------------------\n");
+			if (0 > jal_meta_write(fileno(stdout), rec)) {
+				ret = -1;
+				goto out;
+			}
+		}
 		if (('a' == data || 'z' == data)) {
+			printf("\napplication metadata\n");
 			if (0 > jal_dump_write(ctx, fileno(stdout), rec->app_meta)) {
 				ret = -1;
 				goto out;
@@ -320,6 +415,7 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 			}
 		}
 	} else {
+
 		switch (rec->type) {
 		case JALDB_RTYPE_JOURNAL:
 			jal_asprintf(&tmpstr, "%sjournal-%s/", path, uuid);
@@ -346,6 +442,20 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 
 		jal_asprintf(&sysstr, "%ssystem-metadata.xml", tmpstr);
 		jal_asprintf(&appstr, "%sapplication-metadata.xml", tmpstr);
+		jal_asprintf(&metastr, "%sdatabase-record-metadata.txt",tmpstr);
+
+		fd_meta = open(metastr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
+		if (fd_meta == -1) {
+			perror("Error Opening Record Metadata Doc");
+			ret = -1;
+			goto out;
+		}
+		if (0 < jal_meta_write(fd_meta, rec)) {
+			printf("Path for record meta data is %s.\n", metastr);
+		} else {
+			ret = -1;
+			goto out;
+		}
 
 		fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 0600);	// Delete existing file(O_TRUNC)?
 		if (fd_sys == -1) {
@@ -393,6 +503,7 @@ out:
 	free(sysstr);
 	free(appstr);
 	free(datstr);
+	free(metastr);
 	if ((0 <= fd_sys) && (-1 == close(fd_sys))) {
 		perror("Error closing system metadata");
 	}
@@ -401,6 +512,9 @@ out:
 	}
 	if ((0 <= fd_dat) && (-1 == close(fd_dat))) {
 		perror("Error closing system metadata");
+	}
+	if ((0 <= fd_meta) && (-1 == close(fd_meta))) {
+		perror("Error closing database record metadata");
 	}
 
 	return ret;
@@ -428,7 +542,7 @@ static error_t parse_opt(int key_in,
 			jd_conf_ctx->type = *arg;
 			break;
 		case 'd':
-			if (('a' != *arg) && ('s' != *arg) && ('p' != *arg) && ('z' != *arg)) {
+			if (('a' != *arg) && ('s' != *arg) && ('p' != *arg) && ('z' != *arg) && ('m' != *arg)) {
 				jd_conf_ctx->data = 's';
 			} else {
 				jd_conf_ctx->data = *arg;
