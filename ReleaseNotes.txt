@@ -1,3 +1,6 @@
+Summary of release 1.3.0.0-beta changes (Fri Apr 25 2025) -
+    - Added LMDB database support to store and manage JAL records.
+
 Summary of release 1.2.0.0 changes (Fri Aug 30 2024)
     - Added RHEL 9 support.
     - Added SECCOMP filters to applications (jal-local-store, jald, jal_subscribe). Allowed system calls can be listed in each application's configuration file. By default, configuration files have SECCOMP filtering disabled.
