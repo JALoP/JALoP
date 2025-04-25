@@ -1,5 +1,7 @@
 /**
- * @file test_utils.c This file defines functions to assist with general testing.
+ * @file
+ *
+ * @brief This file defines functions to assist with general testing.
  *
  * ### LICENSE
  *

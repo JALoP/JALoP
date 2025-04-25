@@ -1,3 +1,8 @@
+##
+# @file
+# @brief A tool to collect system calls for seccomp configuration.
+#
+
 #!/usr/bin/python
 
 import os

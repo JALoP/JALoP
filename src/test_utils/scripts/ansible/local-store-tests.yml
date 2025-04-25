@@ -44,5 +44,5 @@
         chdir: '{{cwd}}'
         cmd: './release/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n 500 -t a'
 #call with this command from jalop home
-##ansible-playbook src/test_utils/scripts/local-store-tests.yml -e cwd=`pwd`
+##ansible-playbook -i src/test_utils/scripts/ansible/ansible_inventory.ini src/test_utils/scripts/ansible/local-store-tests.yml -e cwd=`pwd`
 

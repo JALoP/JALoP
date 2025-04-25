@@ -1,5 +1,7 @@
 /**
- * @file xml_test_utils2.c This file defines functions to assist with _to_xml testing.
+ * @file
+ *
+ * @brief This file defines functions to assist with _to_xml testing.
  *
  * ### LICENSE
  *

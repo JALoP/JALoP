@@ -1,3 +1,8 @@
+##
+# @file
+# @brief A tool to run shellcheck on a directory of files.
+#
+
 #!/usr/local/bin/python3
 import os
 import magic # Must be installed - `pip3 install python-magic`

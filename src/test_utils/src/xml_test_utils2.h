@@ -1,5 +1,7 @@
 /**
- * @file xml_test_utils2.h This file contains utilities to help with _to_xml tests.
+ * @file
+ *
+ * @brief This file contains utilities to help with _to_xml tests.
  *
  * ### LICENSE
  *
