@@ -5,7 +5,7 @@
 .SM JALoP
 Network Store that initiates a connection to remote
 .SM JALoP
-peer and subscribes for 
+peer and subscribes for
 .SM JALoP
 records.
 .SH SYNOPSIS
@@ -26,10 +26,6 @@ Where \fIALGORITHMS\fR is a list of supported digest algorithms. These algorithm
 Valid values are "sha256", "sha384", and "sha512".
 Digest algorithms specified here will overwrite any values specified in the config file.
 .TP
-\fB\-b\fR, \fB\-\-bdb\fR
-Use BerkeleyDB for record storage.
-Incompatible with \-f, \-\-fs
-.TP
 \fB\-c \fICONFIG\fR, \fB\-\-config=\fICONFIG\fR
 Instruct
 .B jal_subscribe
@@ -44,8 +40,7 @@ These command line options will overwrite any options specified in the config fi
 Output debugging information.
 .TP
 \fB\-f\fR, \fB\-\-fs\fR
-Use the file system for record storage.
-Incompatible with \-b, \-\-bdb
+Use the file system for record storage.  This overrides the default of database storage.
 .TP
 \fB\-h \fIDB_ROOT\fR, \fB\-\-home=\fIDB_ROOT\fR
 Specify the path to the root of the database as \fIDB_ROOT\fR

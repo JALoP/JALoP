@@ -70,10 +70,31 @@ An optional list of supported digest algorithms. These algorithms should be in a
 Valid values are "sha256", "sha384", and "sha512".
 If this is not provided and the -a|--digest-algorithms command line flag is not used, sha256 will be used as the default algorithm.
 .TP
+.B database_option
+Sets an LMDB database option.  This config option is only used when jald is built against LMDB.  The valid values are: JDB_NONE, JDB_LMDB_PERFORMANCE_LEVEL1,
+JDB_LMDB_PERFORMANCE_LEVEL2, and JDB_LMDB_PERFORMANCE_LEVEL3. This is optional and will default to JDB_NONE if not present.
+.TP
 .B database_type
 Specify the format that the subscriber should use to store received records.
-Valid values are "fs" (file system) and "bdb" (BerkeleyDB).
-If this is not provided and the -f|--fs or -b|--bdb command line flags are not used, bdb will be used as the default.
+Valid values are "fs" (file system) and "db" (database).
+If this is not provided and the -f|--fs command line flag is not used, db will be used as the default.
+.TP
+.B journal_resume_threshold_size
+Specify the minimum size payload for which a journal resume will be attempted
+< 0 disables journal resume
+0 means always attempt a resume (default)
+> 0 means attempt a resume if the size of already received data is greater than this value
+.TP
+.B client_certificate_validation
+libMicroHttpd does not perform client certificate validation as part of TLS negotiation
+This setting modifies how often the client certificate is checked using
+gnutls_certificate_verify_peers3. The options are:
+
+- never: The client certificate is never verified
+
+- once: The client certificate is verified during the INIT message handshake (recommended)
+
+- always: The client certificate is verified every time an http payload is received
 .TP
 .B http_server_thread_pool_size
 Specify the size of the thread pool used by the http server.
@@ -115,13 +136,46 @@ session_limit = 100;
 # If this is not provided and the -a command line flag is not used, sha256 will be used as the default algorithm.
 # digest_algorithms = "sha256";
 
+#Valid settings for the database_option config setting are the following:
+#JDB_NONE - No LMDB db flags are set.
+#	This is the slowest, but most reliable setting to prevent data loss or db corruption
+#JDB_LMDB_PERFORMANCE_LEVEL1 - Sets MDB_NOMETASYNC
+#	Faster than JDB_NONE. No risk of db corruption, but could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL2 - Sets MDB_NOMETASYNC | MDB_NOSYNC
+#	This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
+#	No risk of db corruption if filesystem preserves write order otherwise db corruption is possible.  Also could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL3 - Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
+#	WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
+#	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
+#	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
+
+#LMDB only, this setting is ignored in BDB builds. This is optional and will default to JDB_NONE if not present.
+database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
+
 # Time in seconds between packets in a single message before the subscriber assumes a connection has been broken
 # 0 for no timeout
 network_timeout = 0;
 
-# Valid values are "fs" (file system) and "bdb" (BerkeleyDB).
-# Defaults to "bdb" if not specified here or by CLI flags
-database_type = "bdb";
+# Valid values are "fs" (file system) and "db" (database).
+# Defaults to "db" if not specified here or by CLI flags
+database_type = "db";
+
+# Specify the threshold size at which a journal resume is "worthwhile"
+# If a partial journal record is found during session init that exceeds this threshold
+# then a journal resume will be performed
+# If the partial record is less than this size, the resume will be skipped and the
+# record will be transferred from scratch.
+# The special value 0 means always resume (default)
+# Any negative number disables resume entirely
+journal_resume_threshold_size = 1048576L; #1024*1024 = 1MB (1,048,576 bytes)
+
+# libMicroHttpd does not perform client certificate validation as part of TLS negotiation
+# This setting modifies how often the client certificate is checked using
+# gnutls_certificate_verify_peers3. The options are:
+# - never: The client certificate is never verified
+# - once: The client certificate is verified during the INIT message handshake (recommended)
+# - always: The client certificate is verified every time an http payload is received
+client_certificate_validation = "always";
 
 # For http server implementations which support thread pools (such as libmicrohttpd)
 # Set the size of the thread pool

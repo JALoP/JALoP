@@ -33,6 +33,13 @@ The path to a PEM formatted public certificate file that
 .BR jald (8)
 will use for TLS negotiations.
 .TP
+.B allow_self_signed_certs
+Set to true to allow
+.BR jald (8)
+to use self-signed certificates for TLS negotiations.
+WARNING!!! this will disable cert validity checks within libcurl and this should only
+be used for testing and not on a live production system.
+.TP
 .B db_root
 This identifies where
 .BR jald (8)
@@ -69,6 +76,10 @@ Log directory of jald when daemonized.
 .B digest_algorithms
 A list of supported digest algorithms. These algorithms should be ordered by preference in a single double-quoted string with a space separating the algorithms.
 Valid values are "sha256", "sha384", and "sha512"
+.TP
+.B database_option
+Sets an LMDB database option.  This config option is only used when jald is built against LMDB.  The valid values are: JDB_NONE, JDB_LMDB_PERFORMANCE_LEVEL1,
+JDB_LMDB_PERFORMANCE_LEVEL2, and JDB_LMDB_PERFORMANCE_LEVEL3. This is optional and will default to JDB_NONE if not present.
 .TP
 .B enable_seccomp
 seccomp will restrict the process to the defined system calls.
@@ -129,6 +140,11 @@ private_key = "/etc/jald/cert_and_key";
 # the path to the PEM formatted public cert, used for TLS negotiation
 public_cert = "/etc/jald/cert";
 
+#Set this config setting to true to enable the use of self signed certs for TLS.
+#WARNING!!! this will disable cert validity checks within libcurl and this should only
+#be used for testing and not on a live production system.
+allow_self_signed_certs = false;
+
 # path to the root of the database (optional)
 db_root = "/var/lib/jalop/db/";
 
@@ -138,6 +154,22 @@ schemas_root = "/usr/share/jalop/schemas/";
 # A list of supported digest algorithms. These algorithms should be ordered by preference in a single double-quoted string with a space separating the algorithms.
 # Valid values are "sha256", "sha384", and "sha512"
 digest_algorithms = "sha256";
+
+#Valid settings for the database_option config setting are the following:
+#JDB_NONE - No LMDB db flags are set.
+#	This is the slowest, but most reliable setting to prevent data loss or db corruption
+#JDB_LMDB_PERFORMANCE_LEVEL1 - Sets MDB_NOMETASYNC
+#	Faster than JDB_NONE. No risk of db corruption, but could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL2 - Sets MDB_NOMETASYNC | MDB_NOSYNC
+#	This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
+#	No risk of db corruption if filesystem preserves write order otherwise db corruption is possible.  Also could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL3 - Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
+#	WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
+#	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
+#	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
+
+#LMDB only, this setting is ignored in BDB builds. This is optional and will default to JDB_NONE if not present.
+database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
 
 # Enable application of seccomp rules
 enable_seccomp = false;

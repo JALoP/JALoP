@@ -54,6 +54,10 @@ The full path to the
 .SM JALoP
 schemas. This is optional.
 .TP
+.B database_option
+Sets an LMDB database option.  This config option is only used when jald is built against LMDB.  The valid values are: JDB_NONE, JDB_LMDB_PERFORMANCE_LEVEL1,
+JDB_LMDB_PERFORMANCE_LEVEL2, and JDB_LMDB_PERFORMANCE_LEVEL3
+.TP
 .B socket
 The full path to use when creating the domain socket.
 .BR jal-local-store (8)
@@ -97,6 +101,18 @@ Default 100
 .B accept_delay_max
 Default 10000000
 .TP
+.B journal_record_size_limit
+The maximum journal record size to allow to be inserted into the local store.  If this is set to less than 0 then all journal records sizes are allowed.
+Default -1L
+.TP
+.B audit_record_size_limit
+The maximum audit record size to allow to be inserted into the local store.  If this is set to less than 0 then all audit records sizes are allowed.
+Default 200000000L
+.TP
+.B log_record_size_limit
+The maximum log record size to allow to be inserted into the local store.  If this is set to less than 0 then all log records sizes are allowed.
+Default 200000000L
+.TP
 .B pid_file
 File storing PID of jal-local-store when daemonized.
 .TP
@@ -137,7 +153,31 @@ db_root = "/var/lib/jalop/db";
 # Set the location of the JALoP Schemas
 schemas_root = "/usr/share/jalop-v1.0/schemas";
 
+#Valid settings for the database_option config setting are the following:
+#JDB_NONE - No LMDB db flags are set.
+#	This is the slowest, but most reliable setting to prevent data loss or db corruption
+#JDB_LMDB_PERFORMANCE_LEVEL1 - Sets MDB_NOMETASYNC
+#	Faster than JDB_NONE. No risk of db corruption, but could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL2 - Sets MDB_NOMETASYNC | MDB_NOSYNC
+#	This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
+#	No risk of db corruption if filesystem preserves write order otherwise db corruption is possible.  Also could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL3 - Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
+#	WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
+#	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
+#	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
+
+#LMDB only, this setting is ignored in BDB builds.
+database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
+
 # Set the path for the socket to use.
 socket = "/var/run/jalop/jalop.sock";
 .SH "SEE ALSO"
 .BR jal-local-store (8)
+
+# The maximum record size allowed to be inserted into the local store.  Any record with
+# a total size (app metadata, sys metadata, payload) larger than this size will be rejected.
+# A record_size_limit less than 0 indicates that this
+# check will be disabled and all record sizes will be allowed.
+journal_record_size_limit = -1L
+audit_record_size_limit = 200000000L
+log_record_size_limit = 200000000L
