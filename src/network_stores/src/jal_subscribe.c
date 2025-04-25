@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber CLI
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,7 +58,6 @@ static struct argp_option options[] =
 	{"port", 't', "port", 0, "Port to listen on.", 0},
 	{"debug", 'd', NULL, 0, "Enable debug output.", 0},
 	{"disable-tls", 's', NULL, 0, "Disable TLS authentication.", 0},
-	{"bdb", 'b', NULL, 0, "Use BerkelyDB storage for received records.", 0},
 	{"fs", 'f', NULL, 0, "Use flat file system storage for received records.", 0},
 	{NULL, 0, NULL, 0, NULL, 0}
 };
@@ -162,7 +167,6 @@ static struct SubscriberConfig_t* process_options(
 		0,
 		0,
 		NULL,
-		0,
 		0
 	};
 
@@ -295,16 +299,8 @@ static struct SubscriberConfig_t* process_options(
 		}
 	}
 
-	if(js_conf_ctx.bdb && js_conf_ctx.fs)
-	{
-		fprintf(stderr, "Only one of [-f|-b] may be specified\n");
-		goto err_out;
-	}
-	else if(js_conf_ctx.bdb)
-	{
-		jal_subscriber_config_set_db_type(config, DB_TYPE_BDB);
-	}
-	else if(js_conf_ctx.fs)
+	//Overrides the database_type config setting with command line flag
+	if(js_conf_ctx.fs)
 	{
 		jal_subscriber_config_set_db_type(config, DB_TYPE_FS);
 	}

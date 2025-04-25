@@ -1,5 +1,7 @@
 /**
- * @file jald.cpp This file contains the implementation of a daemon process that
+ * @file
+ *
+ * @brief This file contains the implementation of a daemon process that
  * listens for subscribe requests from remotes.
  *
  * ### LICENSE
@@ -53,6 +55,7 @@
 #include "jaldb_record.h"
 #include "jaldb_utils.h"
 #include "jal_alloc.h"
+#include "jal_ts_utils.h"
 #include <jalop/jal_seccomp_enforcer.h>
 
 #define VERSION_CALLED 1
@@ -132,6 +135,11 @@ struct global_config_t {
 	char* pid_file;
 	char* log_dir;
 	char* digest_algorithms;
+	char* database_option;
+	jaldb_flags jdb_flags;
+	int allow_self_signed_certs;
+	int http_client_retry_count;
+	int http_client_retry_delay;
 } global_config;
 
 struct global_args_t {
@@ -581,20 +589,6 @@ enum jal_status pub_send_records_feeder(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
 		}
-		// Have to use timestamp since sess->mode is internal to the network library
-		if (!*timestamp) {
-			//Archive mode
-			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 1);
-			pthread_mutex_unlock(sub_lock);
-			if (JALDB_OK != db_ret) {
-				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent: %d", nonce, db_ret);
-				ret = JAL_E_INVAL_NONCE;
-				goto out;
-			} else {
-				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
-			}
-		}
 
 		free(nonce);
 		nonce = NULL;
@@ -732,20 +726,6 @@ enum jal_status pub_send_records(
 		if (JAL_OK != ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
 			goto out;
-		}
-		// Have to use timestamp since sess->mode is internal to the network library
-		if (!*timestamp) {
-			//Archive mode
-			pthread_mutex_lock(sub_lock);
-			db_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 1);
-			pthread_mutex_unlock(sub_lock);
-			if (JALDB_OK != db_ret) {
-				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent", nonce);
-				ret = JAL_E_INVAL_NONCE;
-				goto out;
-			} else {
-				DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
-			}
 		}
 
 		free(nonce);
@@ -902,7 +882,7 @@ enum jal_status pub_on_subscribe(
 	}
 
 	if (JALN_LIVE_MODE == mode) {
-		data->timestamp = jaldb_gen_timestamp();
+		data->timestamp = jal_gen_timestamp_usec();
 		if (!data->timestamp) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Error: Error generating timestamp");
 			ret = JAL_E_INVAL_TIMESTAMP;
@@ -963,13 +943,29 @@ err_out:
 enum jal_status pub_on_record_complete(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
-		__attribute__((unused)) enum jaln_record_type type,
+		enum jaln_record_type type,
 		char *nonce,
 		__attribute__((unused)) void *user_data)
 {
 	DEBUG_LOG_SUB_SESSION(ch_info, "On record complete: %s", nonce);
 	axlHash *hash = NULL;
 	pthread_mutex_t *sub_lock = NULL;
+
+	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
+	switch(type) {
+	case JALN_RTYPE_JOURNAL:
+		db_type = JALDB_RTYPE_JOURNAL;
+		break;
+	case JALN_RTYPE_AUDIT:
+		db_type = JALDB_RTYPE_AUDIT;
+		break;
+	case JALN_RTYPE_LOG:
+		db_type = JALDB_RTYPE_LOG;
+		break;
+	default:
+		DEBUG_LOG_SUB_SESSION(ch_info, "Invalid record type");
+		return JAL_E_INVAL;
+	}
 
 	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock)) {
 		return JAL_E_INVAL;
@@ -981,6 +977,19 @@ enum jal_status pub_on_record_complete(
 	if (!ctx) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
 		return JAL_E_INVAL;
+	}
+
+	enum jaln_publish_mode mode = jaln_session_get_publish_mode(sess);
+	// Only mark the records as sent in archive mode
+	if (mode == JALN_ARCHIVE_MODE) {
+		pthread_mutex_lock(sub_lock);
+		enum jaldb_status jaldb_ret = jaldb_mark_sent(ctx->db_ctx, db_type, nonce, 1);
+		pthread_mutex_unlock(sub_lock);
+		if (JALDB_OK != jaldb_ret) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as sent: %d", nonce, jaldb_ret);
+		} else {
+			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent", nonce);
+		}
 	}
 
 	jaldb_destroy_record(&ctx->rec);
@@ -1399,6 +1408,8 @@ int main(int argc, char **argv)
 			pub_cbs = NULL;
 
 			setNetworkTimeout(jctx, global_config.network_timeout);
+			setRetryConfig(jctx, global_config.http_client_retry_count, global_config.http_client_retry_delay);
+			setAllowSelfSignedCerts(jctx, global_config.allow_self_signed_certs);
 			peer->net_ctx = jctx;
 
 			++peer->retries;
@@ -1535,6 +1546,7 @@ void free_global_config(void)
 	free(global_config.pid_file);
 	free(global_config.log_dir);
 	free(global_config.digest_algorithms);
+	free(global_config.database_option);
 }
 
 void free_peer_config(peer_config_t *peer)
@@ -1610,12 +1622,25 @@ void print_config(void)
 	if (global_args.enable_tls) {
 		printf("PRIVATE KEY:\t\t%s\n", global_config.private_key);
 		printf("PUBLIC CERT:\t\t%s\n", global_config.public_cert);
+
+		printf("SELF SIGNED CERTS ALLOWED:");
+		if (1 == global_config.allow_self_signed_certs)
+		{
+			printf("\ttrue\n");
+		}
+		else
+		{
+			printf("\tfalse\n");
+		}
+
 	} else {
 		printf("!!!!!!!! TLS DISABLED !!!!!!!!\n");
 	}
 	printf("POLL TIME:\t\t%lld\n", global_config.poll_time);
 	printf("RETRY INTERNVAL:\t%lld\n", global_config.retry_interval);
 	printf("NETWORK TIMEOUT:\t%lld\n", global_config.network_timeout);
+	printf("HTTP_CLIENT_RETRY_COUNT:\t%d\n", global_config.http_client_retry_count);
+	printf("HTTP_CLIENT_RETRY_DELAY:\t%d\n", global_config.http_client_retry_delay);
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("SCHEMAS ROOT:\t\t%s\n", global_config.schemas_root);
 	if(global_config.pid_file) {
@@ -1628,6 +1653,13 @@ void print_config(void)
 	if(global_config.digest_algorithms) {
 		printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
 	}
+
+	#ifdef JALDB_TYPE_LMDB
+	if(global_config.database_option) {
+		printf("DATABASE_OPTION:\t%s\n", global_config.database_option);
+	}
+	#endif
+
 	for (int i = 0; i < global_config.num_peers; ++i) {
 		printf("PEER[%d]:\n", i);
 		print_peer_config(global_config.peers + i);
@@ -1809,6 +1841,7 @@ static int parse_record_types(config_setting_t *peer)
 
 		// Get the bit for this string
 		int rtype = rtype_bit_from_str(element);
+		free(element);
 		if (!rtype) {
 			CONFIG_ERROR(
 				peer,
@@ -2176,6 +2209,73 @@ enum jald_status set_global_config(const char* config_path)
 			return JALD_E_CONFIG_LOAD;
 	}
 
+	//Extract allow_self_signed_certs
+	global_config.allow_self_signed_certs = 0;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_bool(
+			root,
+			JALNS_ALLOW_SELF_SIGNED_CERTS,
+			&global_config.allow_self_signed_certs,
+			JAL_CFG_OPTIONAL)
+		)
+	{
+		// Error printed internally
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	// Extract http_client_retry_count
+	global_config.http_client_retry_count = JALN_HTTP_CLIENT_RETRY_COUNT_DEFAULT;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_int(
+		root,
+		JALNS_HTTP_CLIENT_RETRY_COUNT,
+		&global_config.http_client_retry_count,
+		JAL_CFG_OPTIONAL)) {
+			// Error printed internally
+			return JALD_E_CONFIG_LOAD;
+	}
+	//Check http_client_retry_count is less than zero.
+	if (global_config.http_client_retry_count < 0) {
+		CONFIG_ERROR(root, JALNS_HTTP_CLIENT_RETRY_COUNT, "invalid value, less than zero.");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	// Extract http_client_retry_delay
+	global_config.http_client_retry_delay = JALN_HTTP_CLIENT_RETRY_DELAY_DEFAULT;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_int(
+		root,
+		JALNS_HTTP_CLIENT_RETRY_DELAY,
+		&global_config.http_client_retry_delay,
+		JAL_CFG_OPTIONAL)) {
+			// Error printed internally
+			return JALD_E_CONFIG_LOAD;
+	}
+	//Check http_client_retry_delay is less than zero.
+	if (global_config.http_client_retry_delay < 0) {
+		CONFIG_ERROR(root, JALNS_HTTP_CLIENT_RETRY_DELAY, "invalid value, less than zero.");
+		return JALD_E_CONFIG_LOAD;
+	}
+
+	//database_option config setting is only used in the LMDB build
+	#ifdef JALDB_TYPE_LMDB
+
+	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
+		root,
+		JALNS_DATABASE_OPTION,
+		&global_config.database_option,
+		JAL_CFG_OPTIONAL)) {
+			// Error printed internally
+			return JALD_E_CONFIG_LOAD;
+	}
+
+	//Ensure valid entry was in the config file and parse the value
+	if (JALDB_OK != jaldb_get_db_flags(global_config.database_option, &global_config.jdb_flags))
+	{
+		CONFIG_ERROR(root, JALNS_DATABASE_OPTION, "invalid value.");
+		return JALD_E_CONFIG_LOAD;
+	}
+	#else
+	global_config.jdb_flags = JDB_NONE;
+	#endif
+
 	return parse_peer_configs(root);
 }
 
@@ -2184,7 +2284,7 @@ static jaldb_context_t* setup_db_layer(void)
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context_t* db_ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, JDB_NONE);
+	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.jdb_flags);
 
 	if (JALDB_OK != jaldb_ret) {
 		jaldb_context_destroy(&db_ctx);

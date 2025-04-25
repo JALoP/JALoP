@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber config context header
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +30,7 @@ extern "C"
 {
 #endif
 /**
-* Represents the options required to create a Jal_Subscribe config 
+* Represents the options required to create a Jal_Subscribe config
 */
 struct jal_subscribe_config_context {
 	// path to the config file
@@ -43,8 +49,6 @@ struct jal_subscribe_config_context {
 	int disableTls;
 	// allowable digest algorithms
 	char *digest_algorithms;
-	// BerkelyDB storage
-	int bdb;
 	// FileSystem storage
 	int fs;
 };

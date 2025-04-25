@@ -3,8 +3,12 @@ from Utils import add_project_lib
 
 env = env.Clone()
 
-env.MergeFlags({'CPPPATH':('#src/jal_utils/src:#src/db_layer/src:#src/lib_common/include:' +
-	'#src/lib_common/src:#src/network_lib/include').split(':')})
+if env.GetOption("ENABLE_BDB"):
+	env.MergeFlags({'CPPPATH':('#src/jal_utils/src:#src/db_layer/src:#src/lib_common/include:' +
+		'#src/lib_common/src:#src/network_lib/include').split(':')})
+else:
+	env.MergeFlags({'CPPPATH':('#src/jal_utils/src:#src/lmdb_layer/src:#src/lib_common/include:' +
+		'#src/lib_common/src:#src/network_lib/include').split(':')})
 
 env.MergeFlags(env['lfs_cflags'])
 env.MergeFlags(env['libconfig_cflags'])
@@ -19,8 +23,13 @@ env.MergeFlags(env['libxml2_ldflags'])
 env.MergeFlags(env['xmlsec1_cflags'])
 env.MergeFlags(env['xmlsec1_ldflags'])
 env.MergeFlags(env['libuuid_ldflags'])
-env.MergeFlags(env['bdb_cflags'])
-env.MergeFlags(env['bdb_ldflags'])
+
+if env.GetOption("ENABLE_BDB"):
+	env.MergeFlags(env['bdb_cflags'])
+	env.MergeFlags(env['bdb_ldflags'])
+else:
+	env.MergeFlags(env['lmdb_cflags'])
+	env.MergeFlags(env['lmdb_ldflags'])
 
 c_jsub, jsub, jald, net_stores_env = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer network_lib')
 

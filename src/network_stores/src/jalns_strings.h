@@ -1,5 +1,7 @@
 /**
- * @file jalns_strings.h This file contains strings and other defines used by
+ * @file
+ *
+ * @brief This file contains strings and other defines used by
  * the network stores.
  *
  * ### LICENSE
@@ -58,6 +60,10 @@ extern "C" {
 #define JALNS_PID_FILE "pid_file"
 #define JALNS_LOG_DIR "log_dir"
 #define JALNS_DIGEST_ALGORITHMS "digest_algorithms"
+#define JALNS_DATABASE_OPTION "database_option"
+#define JALNS_HTTP_CLIENT_RETRY_COUNT "http_client_retry_count"
+#define JALNS_HTTP_CLIENT_RETRY_DELAY "http_client_retry_delay"
+#define JALNS_ALLOW_SELF_SIGNED_CERTS "allow_self_signed_certs"
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber C++ CLI
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,7 +62,6 @@ static struct argp_option options[] =
 	{"port", 't', "port", 0, "Port to listen on.", 0},
 	{"debug", 'd', NULL, 0, "Enable debug output.", 0},
 	{"disable-tls", 's', NULL, 0, "Disable TLS authentication.", 0},
-	{"bdb", 'b', NULL, 0, "Use BerkelyDB storage for received records.", 0},
 	{"fs", 'f', NULL, 0, "Use flat file system storage for received records.", 0},
 	{NULL, 0, NULL, 0, NULL, 0}
 };
@@ -150,7 +155,6 @@ static SubscriberConfig process_options(
 		0,
 		0,
 		NULL,
-		0,
 		0
 	};
 	// Guarantee the drop_config_memory function is called on js_conf_ctx
@@ -233,15 +237,8 @@ static SubscriberConfig process_options(
 		config.enableTls = false;
 	}
 
-	if(js_conf_ctx.bdb && js_conf_ctx.fs)
-	{
-		throw std::runtime_error("Only one of [-f|-b] may be specified");
-	}
-	else if(js_conf_ctx.bdb)
-	{
-		config.dbType = DBType::BDB;
-	}
-	else if(js_conf_ctx.fs)
+	//Overrides the database_type config setting with command line flag
+	if(js_conf_ctx.fs)
 	{
 		config.dbType = DBType::FS;
 	}
