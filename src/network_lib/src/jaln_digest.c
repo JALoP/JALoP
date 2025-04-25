@@ -1,5 +1,7 @@
 /**
- * @file jaln_digest.c This file contains function definitions for code related
+ * @file
+ *
+ * @brief This file contains function definitions for code related
  * to the digest used during JALoP communications.
  *
  * ### LICENSE

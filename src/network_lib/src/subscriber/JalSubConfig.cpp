@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber config handling class
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -106,8 +112,17 @@ static void handleStringConfigSetting(
 		throw std::runtime_error("Failed to retrieve string for config setting: "
 			+ std::string(path));
 	}
-	destination = std::string(value);
-	free(value);
+
+	//Only set if not null, otherwise default to ""
+	if (NULL != value)
+	{
+		destination = std::string(value);
+		free(value);
+	}
+	else
+	{
+		destination = "";
+	}
 }
 
 static void handleIntConfigSetting(
@@ -118,7 +133,7 @@ static void handleIntConfigSetting(
 {
 	if(JAL_CFG_SUCCESS != jal_config_lookup_int(
 		root,
-		path, 
+		path,
 		&destination,
 		optional ? JAL_CFG_OPTIONAL : JAL_CFG_REQUIRED))
 	{
@@ -145,6 +160,23 @@ static void handleUIntConfigSetting(
 	else
 	{
 		destination = (unsigned int)maybeNegative;
+	}
+}
+
+static void handleLongLongConfigSetting(
+	config_setting_t* root, // config root
+	const char* path, // path to the config setting relative to the config root
+	const bool optional, // if false, generates an error if the setting is absent
+	long long& destination) // reference to the value to update on success
+{
+	if(JAL_CFG_SUCCESS != jal_config_lookup_int64(
+		root,
+		path,
+		&destination,
+		optional ? JAL_CFG_OPTIONAL : JAL_CFG_REQUIRED))
+	{
+		throw std::runtime_error("Failed to retrieve long long for config setting: "
+			+ std::string(path));
 	}
 }
 
@@ -195,6 +227,29 @@ void SubscriberConfig::setDigestAlgorithms(
 	free(digest_list);
 }
 
+void SubscriberConfig::setDatabaseOption(
+	const std::string& database_option)
+{
+	#ifdef JALDB_TYPE_LMDB
+	//Default to JDB_NONE if empty
+	if(database_option.empty())
+	{
+		jdb_flags = JDB_NONE;
+	}
+	else
+	{
+		if(JALDB_OK != jaldb_get_db_flags(database_option.c_str(), &jdb_flags))
+		{
+			std::string errMsg = "Failed to parse database option: " + database_option;
+			throw std::runtime_error(errMsg);
+		}
+	}
+	#else
+	(void)database_option;
+	jdb_flags = JDB_NONE;
+	#endif
+}
+
 SubscriberConfig::SubscriberConfig(std::string configFilePath)
 {
 	// This simply provides a destructor so we guarantee the config object is cleaned up
@@ -242,7 +297,7 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 	handleIntConfigSetting(root, "network_timeout", REQUIRED, networkTimeout);
 	handleUIntConfigSetting(root, "http_server_thread_pool_size",
 		REQUIRED, httpServerThreadPoolSize);
-	// Additional require httpServerThreadPoolSize > 0
+	// Additionally require httpServerThreadPoolSize > 0
 	if(httpServerThreadPoolSize < 1)
 	{
 		std::string errMsg = "http_server_thread_pool_size must be at least 1";
@@ -254,6 +309,9 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		handleStringConfigSetting(root, "private_key", REQUIRED, tlsConfig.privateKey);
 		handleStringConfigSetting(root, "public_cert", REQUIRED, tlsConfig.publicCert);
 		handleStringConfigSetting(root, "trust_store", REQUIRED, tlsConfig.trustStore);
+		std::string clientCertValidationString;
+		handleStringConfigSetting(root, "client_certificate_validation", REQUIRED, clientCertValidationString);
+		tlsConfig.clientCertValidation = clientCertValidationFromString(clientCertValidationString);
 	}
 
 	std::string digests;
@@ -263,12 +321,32 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		this->setDigestAlgorithms(digests);
 	}
 
+	//Parses database option (only in lmdb build)
+	#ifdef JALDB_TYPE_LMDB
+	handleStringConfigSetting(root, "database_option", OPTIONAL, database_option_str);
+
+	//Default to "JDB_NONE" if entry not present in the config file
+	if (database_option_str.empty())
+	{
+		database_option_str = JDB_NONE_STR;
+	}
+
+	#else
+		//In BDB build, the database_option field is not used and is default to "JDB_NONE" by passing in empty string
+		database_option_str = "";
+	#endif
+	this->setDatabaseOption(database_option_str);
+
 	std::string dbTypeStr;
-	// Review note - do we want to have a default setting, or make this required?
+	// Default to database storage if not present
 	handleStringConfigSetting(root, "database_type", OPTIONAL, dbTypeStr);
 	if(!dbTypeStr.empty())
 	{
 		this->dbType = dbTypeFromString(dbTypeStr);
+	}
+	else
+	{
+		this->dbType = DBType::JALDB;
 	}
 
 	std::vector<std::string> recordTypes;
@@ -279,6 +357,9 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		throw std::runtime_error("record_type contains no elements");
 	}
 	this->setAllowedRecordTypes(recordTypes);
+
+	handleLongLongConfigSetting(root, "journal_resume_threshold_size", OPTIONAL,
+		journalResumeThresholdSize);
 
 	//Expands all file path config entries
 	if (!this->expandAllFilePaths())
@@ -366,8 +447,14 @@ void SubscriberConfig::printConfiguration() const
 		printf("Private Key File: %s\n", tlsConfig.privateKey.c_str());
 		printf("Public Cert File: %s\n", tlsConfig.publicCert.c_str());
 		printf("Trust Store File: %s\n", tlsConfig.trustStore.c_str());
+		std::string clientCertValidation = clientCertValidationToString(tlsConfig.clientCertValidation);
+		printf("Client Certificate Validation: %s\n", clientCertValidation.c_str());
 	}
 	printf("digest_algorithms: %s\n", configuredAllowedAlgorithms.c_str());
 	printf("database_type: %s\n", dbTypeToString(dbType).c_str());
+
+	#ifdef JALDB_TYPE_LMDB
+	printf("database_option: %s\n", database_option_str.c_str());
+	#endif
 	printf("http_server_thread_pool_size: %d\n", httpServerThreadPoolSize);
 }

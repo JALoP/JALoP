@@ -1,5 +1,7 @@
 /**
- * @file jaln_context.c This file contains functions related to a jaln_context
+ * @file
+ *
+ * @brief This file contains functions related to a jaln_context
  *
  * Public functions for creating and configuring a jaln_context.
  *
@@ -61,6 +63,8 @@ jaln_context *jaln_context_create(void)
 	}
 
 	ctx->network_timeout = 0L;
+	ctx->http_client_retry_count = JALN_HTTP_CLIENT_RETRY_COUNT_DEFAULT;
+	ctx->http_client_retry_delay = JALN_HTTP_CLIENT_RETRY_DELAY_DEFAULT;
 
 	return ctx;
 }
@@ -224,3 +228,18 @@ void setNetworkTimeout(jaln_context *ctx, const long long int timeout) {
 	ctx->network_timeout = timeout;
 }
 
+void setRetryConfig(jaln_context *ctx, int http_client_retry_count, int http_client_retry_delay) {
+	if (!ctx) {
+		return;
+	}
+	ctx->http_client_retry_count = http_client_retry_count;
+	ctx->http_client_retry_delay = http_client_retry_delay;
+}
+
+void setAllowSelfSignedCerts(jaln_context *ctx, int allow_self_signed_certs)
+{
+	if (!ctx) {
+		return;
+	}
+	ctx->allow_self_signed_certs = allow_self_signed_certs;
+}

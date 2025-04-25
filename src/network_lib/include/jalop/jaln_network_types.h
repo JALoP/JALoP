@@ -1,7 +1,7 @@
 /**
- * @file jaln_network_types.h
+ * @file
  *
- * Public types of the JALoP Network Library.
+ * @brief Public types of the JALoP Network Library.
  *
  * ### LICENSE
  *

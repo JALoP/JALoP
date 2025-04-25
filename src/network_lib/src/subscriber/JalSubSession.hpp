@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber session header
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,9 +89,9 @@ class Session final
 	SubscriberConfig config;
 
 	// Time of creation or last message handled
-	std::chrono::time_point<std::chrono::steady_clock> lastAccess 
+	std::chrono::time_point<std::chrono::steady_clock> lastAccess
 		= std::chrono::steady_clock::now();
-	
+
 	// Information about whether or not this session should request a journal resume
 	std::string resumeId;
 	size_t resumeOffset = 0;

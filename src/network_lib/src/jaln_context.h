@@ -1,7 +1,7 @@
 /**
- * @file jaln_context.h
+ * @file
  *
- * Public functions for creating and configuring a jaln_context.
+ * @brief Public functions for creating and configuring a jaln_context.
  *
  * ### LICENSE
  *
@@ -76,6 +76,9 @@ struct jaln_context_t {
 	void *user_data;
 	char pub_id[37]; // holds textual UUID (32 hex chars, 4 dashes, 1 NUL)
 	long long int network_timeout;
+	int http_client_retry_count;
+	int http_client_retry_delay;
+	int allow_self_signed_certs;
 };
 
 /**

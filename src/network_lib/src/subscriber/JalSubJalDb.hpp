@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber database store header
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +20,8 @@
  * limitations under the License.
  */
 
-#ifndef __JAL__SUB__BERKELEY__DB__DB__H__
-#define __JAL__SUB__BERKELEY__DB__DB__H__
+#ifndef __JAL__SUB__JAL__DB__H__
+#define __JAL__SUB__JAL__DB__H__
 
 #include <vector>
 #include <stdexcept>
@@ -30,7 +36,7 @@
 #include "jaldb_context.h"
 #include "jsub_db_layer.hpp"
 
-class BerkeleyDb : public JalSubDatabase
+class JalDb : public JalSubDatabase
 {
 	private:
 	jaldb_context* db_ctx;
@@ -56,20 +62,20 @@ class BerkeleyDb : public JalSubDatabase
 			catch(...)
 			{
 				throw std::runtime_error("Failed to allocate sufficiently sized buffer for"
-					" insertion of payload to BerkeleyDB");
+					" insertion of payload into the database.");
 			}
 			std::ifstream f(recordInfo.payloadFileName, std::ios::binary);
 			if(!f)
 			{
-				std::string errMsg = "Failed to open payload file: " + recordInfo.payloadFileName + 
-					" for insertion to BerkeleyDB.";
+				std::string errMsg = "Failed to open payload file: " + recordInfo.payloadFileName +
+					" for insertion into the database.";
 				throw std::runtime_error(errMsg);
 			}
 			f.read((char*)payloadCollector, recordInfo.payloadLen);
 			if(!f)
 			{
 				throw std::runtime_error("Failed to completely read payload file for insertion"
-					" to BerkeleyDB");
+					" into the database.");
 			}
 			return payloadCollector;
 		}
@@ -78,14 +84,14 @@ class BerkeleyDb : public JalSubDatabase
 			return recordInfo.payload.data();
 		}
 	}
-	
+
 	public:
-	static std::shared_ptr<JalSubDatabase> berkeleyDbFactory(SubscriberConfig config)
+	static std::shared_ptr<JalSubDatabase> jalDbFactory(SubscriberConfig config)
 	{
-		return std::make_shared<BerkeleyDb>(config);
+		return std::make_shared<JalDb>(config);
 	}
 
-	BerkeleyDb(SubscriberConfig config)
+	JalDb(SubscriberConfig config)
 	{
 		databasePath = config.databasePath;
 		journalPayloadPath = config.databasePath + "/journal";
@@ -95,7 +101,7 @@ class BerkeleyDb : public JalSubDatabase
 			throw std::runtime_error("Failed to create db output directory: " + journalPayloadPath);
 		}
 
-		db_ctx = jsub_setup_db_layer(config.databasePath.c_str());
+		db_ctx = jsub_setup_db_layer(config.databasePath.c_str(), config.jdb_flags);
 		if(!db_ctx)
 		{
 			throw std::runtime_error("Failed to initialize db with path: " + journalPayloadPath);
@@ -104,7 +110,7 @@ class BerkeleyDb : public JalSubDatabase
 		//TODO add call to jsub_flush_stale_data
 	}
 
-	~BerkeleyDb()
+	~JalDb()
 	{
 		if(payloadCollector)
 		{
@@ -132,7 +138,7 @@ class BerkeleyDb : public JalSubDatabase
 
 		if(JAL_OK != jsub_insert_audit(db_ctx,
 			NULL, // Unused
-			sys_meta_ptr, 
+			sys_meta_ptr,
 			recordInfo.sysMetadataLen,
 			app_meta_ptr,
 			recordInfo.appMetadataLen,
@@ -180,7 +186,7 @@ class BerkeleyDb : public JalSubDatabase
 
 		if(JAL_OK != jsub_insert_log(db_ctx,
 			NULL, // Unused
-			sys_meta_ptr, 
+			sys_meta_ptr,
 			recordInfo.sysMetadataLen,
 			app_meta_ptr,
 			recordInfo.appMetadataLen,
@@ -230,7 +236,7 @@ class BerkeleyDb : public JalSubDatabase
 
 		// To match v1, we want to always store the journal payload in a file,
 		// event if falls within our in-memory buffer size contraints
-		
+
 		// Create final payload filename
 		// To match the v1 subscriber, the format of the name shall be
 		// journal/XX/journal_payload_<first 36 of jalId>
@@ -266,17 +272,17 @@ class BerkeleyDb : public JalSubDatabase
 				return false;
 			}
 		}
-		
+
 		// The jsub interface assumes a base path of <db root>/journal, provide only
 		// the subdir and filename
 		std::string relativeFilename = subDir + "/" + filename;
-		// Insert journal metadata, including link 
+		// Insert journal metadata, including link
 		const uint8_t* sys_meta_ptr = recordInfo.sysMetadata.data();
 		const uint8_t* app_meta_ptr = recordInfo.appMetadata.data();
 		if(JAL_OK != jsub_insert_journal_metadata(
 			db_ctx,
 			NULL, //Unused
-			sys_meta_ptr, 
+			sys_meta_ptr,
 			recordInfo.sysMetadataLen,
 			app_meta_ptr,
 			recordInfo.appMetadataLen,

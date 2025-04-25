@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber db layer
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,14 +43,14 @@
 	} while(0)
 
 jaldb_context *jsub_setup_db_layer(
-		const char *db_root)
+		const char *db_root, enum jaldb_flags jdb_flags)
 {
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *db_ctx = jaldb_context_create();
 	if (!db_ctx) {
 		goto err;
 	}
-	jaldb_ret = jaldb_context_init(db_ctx, db_root, JDB_NONE);
+	jaldb_ret = jaldb_context_init(db_ctx, db_root, jdb_flags);
 	if (JALDB_OK == jaldb_ret){
 		goto out;
 	}
@@ -116,7 +122,7 @@ int jsub_insert_audit(
 
 	rec->network_nonce = jal_strdup(nonce_in);
 
-	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce, -1);
 	free(local_nonce);
 	local_nonce = NULL;
 
@@ -185,7 +191,7 @@ int jsub_insert_log(
 
 	rec->network_nonce = jal_strdup(nonce_in);
 
-	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce, -1);
 	free(local_nonce);
 	local_nonce = NULL;
 
@@ -307,7 +313,7 @@ int jsub_insert_journal_metadata(
 
 	rec->network_nonce = jal_strdup(nonce_in);
 
-	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce, -1);
 	free(local_nonce);
 	local_nonce = NULL;
 

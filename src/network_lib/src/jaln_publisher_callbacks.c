@@ -1,5 +1,7 @@
 /**
- * @file jaln_publisher_callbacks.c This file contains jaln_publisher_callback functions
+ * @file
+ *
+ * @brief This file contains jaln_publisher_callback functions
  *
  * ### LICENSE
  *

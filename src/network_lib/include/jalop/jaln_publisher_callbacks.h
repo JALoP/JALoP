@@ -1,5 +1,7 @@
 /**
- * @file jaln_publisher_callbacks.h This file declares jaln_publisher_callbacks
+ * @file
+ *
+ * @brief jaln_publisher_callbacks.h This file declares jaln_publisher_callbacks
  *
  * ### LICENSE
  *

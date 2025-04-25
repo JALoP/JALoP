@@ -1,5 +1,12 @@
-/*
- * Copyright (C) 2023 The National Security Agency (NSA)
+/**
+ * @file
+ *
+ * @brief This file represents a conversion layer between
+ * a C caller and the C++ implementation and so contains all functions a
+ * C user of the JalSubscriber should need to interact with the JalSubscriber
+ * class
+ *
+ * ### LICENSE
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +21,6 @@
  * limitations under the License.
  */
 
-// This file represents a conversion layer between a C caller and the C++ implementation
-// and so contains all functions a C user of the JalSubscriber should need to interact
-// with the JalSubscriber class
-
 #ifndef __C__JAL__SUBSCRIBE__H__
 #define __C__JAL__SUBSCRIBE__H__
 
@@ -31,7 +34,7 @@ extern "C"
  */
 enum DB_Type
 {
-	DB_TYPE_BDB,
+	DB_TYPE_DB,
 	DB_TYPE_FS
 };
 /**
@@ -49,13 +52,13 @@ struct Subscriber_t;
  * Immediately begins listening for incoming http messages
  * Must be destroyed with jal_subscriber_destroy
  * @param[in] config The settings to use for this subscriber
- * @param[in/out] If errBuf is non-NULL and an error occurrs, a description of that error will
+ * @param[in,out] errBuf If errBuf is non-NULL and an error occurs, a description of that error will
  * be allocated and placed at *errBuf. The caller is responsible for freeing this buffer
- * If no error occurrs *errBuf will be set to NULL.
+ * If no error occurs *errBuf will be set to NULL.
  *
  * @return NULL on error, else a valid Subscriber_t*
  */
-struct Subscriber_t* jal_subscriber_create(const struct SubscriberConfig_t*, char** errBuf);
+struct Subscriber_t* jal_subscriber_create(const struct SubscriberConfig_t* config, char** errBuf);
 
 /**
  * Waits for any currently-running threads to close (generally extremely fast) then
@@ -69,9 +72,9 @@ void jal_subscriber_destroy(struct Subscriber_t** subscriber);
  * The caller is responsible for calling jal_subscriber_config_destory on the returned pointer
  * unless that pointer is NULL
  * @param[in] configFile Path to the config file
- * @param[in/out] If errBuf is non-NULL and an error occurrs, a description of that error will
+ * @param[in,out] errBuf If errBuf is non-NULL and an error occurs, a description of that error will
  * be allocated and placed at *errBuf. The caller is responsible for freeing this buffer
- * If no error occurrs *errBuf will be set to NULL.
+ * If no error occurs *errBuf will be set to NULL.
  *
  * @return Null on failure, otherwise a valid SubscriberConfig_t
  */
@@ -84,14 +87,14 @@ struct SubscriberConfig_t* jal_subscriber_config_create(
  * @param[in] subscriberConfig The SubscriberConfig_t to be destroyed
  */
 void jal_subscriber_config_destroy(
-	struct SubscriberConfig_t**);
+	struct SubscriberConfig_t** subscriberConfig);
 
 /**
  * Print the current settings of a SubscriberConfig_t to stdout
- * @param[in] The configuration to print
+ * @param[in] subscriberConfig The configuration to print
  */
 void jal_subscriber_config_print_configuration(
-	const struct SubscriberConfig_t*);
+	const struct SubscriberConfig_t* subscriberConfig);
 
 /**
  * Configure the port the http server listen on for incoming connections
@@ -150,12 +153,12 @@ enum jal_status jal_subscriber_config_set_mode(
  */
 enum jal_status jal_subscriber_config_set_digest_algorithms(
 	struct SubscriberConfig_t* config,
-	const char* modeStr);
+	const char* digest_algorithms);
 
 /**
  * Configures the use of TLS when setting up the http server
- * @param[in] The config to modify
- * @param[in] Indicate whether TLS should be enabled or disabled
+ * @param[in] config The config to modify
+ * @param[in] tlsSetting Indicate whether TLS should be enabled or disabled
  * 0 - Disables TLS
  * Non-0 - Enables TLS
  * @return JAL_E_INVAL if the passed in config object is NULL or otherwise invalid
@@ -175,7 +178,7 @@ enum jal_status jal_subscriber_config_set_tls(
  */
 enum jal_status jal_subscriber_config_set_db_type(
 	struct SubscriberConfig_t* config,
-	enum DB_Type);
+	enum DB_Type dbType);
 
 /**
  * Configure the subscriber to bind to a specific ip address.

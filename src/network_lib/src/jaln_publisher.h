@@ -1,5 +1,7 @@
 /**
- * @file jaln_publisher.h This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * declarations related to publishing records to a remote.
  *
  * ### LICENSE

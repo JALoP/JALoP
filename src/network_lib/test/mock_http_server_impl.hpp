@@ -1,5 +1,7 @@
 /**
- * @file mock_http_server_impl.hpp This file contains a mocked-out implementation
+ * @file
+ *
+ * @brief This file contains a mocked-out implementation
  * of the HttpServer for use in testing
  *
  * ### LICENSE

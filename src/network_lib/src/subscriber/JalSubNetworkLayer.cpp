@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber network layer
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +31,10 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <gnutls/gnutls.h>
+#include <mutex>
+// For sleeping
+#include <chrono>
+#include <thread>
 
 #include "JalSubMessaging.hpp"
 #include "JalSubNetworkLayer.hpp"
@@ -341,8 +351,36 @@ static MHD_Return_Type response_func(
 	// Extract cls values
 	SubscriberCallbacks callbacks = ((ResponseFuncSettings*)cls)->callbacks;
 	bool debug = ((ResponseFuncSettings*)cls)->debug;
-	bool tlsEnabled = ((ResponseFuncSettings*)cls)->tlsEnabled;
 
+	bool tlsEnabled = ((ResponseFuncSettings*)cls)->tlsEnabled;
+	size_t* numActiveConnectionsPtr = &(((ResponseFuncSettings*)cls)->numActiveConnections);
+	std::mutex* numActiveConnectionsMutexPtr =
+		&(((ResponseFuncSettings*)cls)->numActiveConnectionsMutex);
+	ClientCertValidation clientCertValidation = ((ResponseFuncSettings*)cls)->clientCertValidation;
+
+	// Guarantee that we increment the counter in the ResponseFuncSettings before use
+	// and decrement it no matter how we leave this function
+	// This function may be called concurrently from multiple threads, so the mutex
+	// is needed to guard the shared numActiveConnections value
+	struct ConnectionCounterWrapper
+	{
+		size_t* numActiveConnectionsPtr;
+		std::mutex* numActiveConnectionsMutexPtr;
+		ConnectionCounterWrapper(
+			size_t* paramNumActiveConnectionsPtr,
+			std::mutex* paramNumActiveConnectionsMutexPtr)
+			: numActiveConnectionsPtr(paramNumActiveConnectionsPtr),
+			numActiveConnectionsMutexPtr(paramNumActiveConnectionsMutexPtr)
+		{
+			std::lock_guard<std::mutex> lock(*numActiveConnectionsMutexPtr);
+			++(*numActiveConnectionsPtr);
+		}
+		~ConnectionCounterWrapper()
+		{
+			std::lock_guard<std::mutex> lock(*numActiveConnectionsMutexPtr);
+			--(*numActiveConnectionsPtr);
+		}
+	}counterWrapper(numActiveConnectionsPtr, numActiveConnectionsMutexPtr);
 
 	Message* messagePtr;
 	// TODO examine unused params
@@ -356,28 +394,6 @@ static MHD_Return_Type response_func(
 
 	if(NULL == *con_cls)
 	{
-		// For new transactions, verify the client certificate before proceeding
-		// libmicrohttpd should really do this for us, but doesn't, which unfortunately means we're doing
-		// this way more often than should be necessary
-		// TODO: Consider switching to an http server library that is more fully featured
-		// TODO: Determine if it's actually safe to only verify the client cert for new http transactions
-		// or if the certificate should be re-examined for each chunk of a POST message
-		if(tlsEnabled && !validate_client_certificate(conn, debug))
-		{
-			//// Option 1 - form up an http response with error
-			//MHD_Response* mhd_response = MHD_create_response_from_buffer(0, NULL,
-			//	MHD_RESPMEM_PERSISTENT);
-			//// TODO: Is 400 the right response for an invalid client cert? Online docs
-			//// say it shouldn't even reach the server proper, but libmicrohttpd doesn't check
-			//// the certs for us, so we have to do something here.
-			//MHD_queue_response(conn, MHD_HTTP_BAD_REQUEST, mhd_response);
-			//MHD_destroy_response(mhd_response);
-			//return MHD_YES;
-
-			//Option 2 - just break the pipe. curl gets a "no data, no headers" response
-			return MHD_NO;
-		}
-
 		// set con_cls to some state which can be used in subsequent calls to this function
 		// during the same transaction
 		// Free this in the request_complete handler
@@ -413,6 +429,31 @@ static MHD_Return_Type response_func(
 		if(messagePtr->shouldAbort())
 		{
 			return MHD_NO;
+		}
+
+		// For new connections, verify the client certificate based on
+		// ClientCertValidation setting
+		// libmicrohttpd should really do this for us, but doesn't.
+		// TODO: Consider switching to an http server library that is more fully featured
+		if(tlsEnabled)
+		{
+			// If ClientCertValidation is set to ALWAYS, verify the certificate on every
+			// new http connection (i.e. init, record, digest-challenge-response)
+			if((ClientCertValidation::ALWAYS == clientCertValidation)||
+			// If ClientCertValidation is set to ONCE, only verify the certificate
+			// when handling init messages. Trust to the session id and TLS to
+			// keep the connection secure after that
+					((ClientCertValidation::ONCE == clientCertValidation)
+					 && ReceiveMessageType::MSG_INIT == messagePtr->getMessageType()))
+			{
+				// Validate the client cert
+				if(!validate_client_certificate(conn, debug))
+				{
+					// Just break the pipe. curl gets a "no data, no headers" response
+					return MHD_NO;
+				}
+			}
+			// Implicitly, if ClientCertValidation is NEVER, never validate the cert
 		}
 	}
 	else
@@ -499,8 +540,9 @@ static MHD_Return_Type response_func(
 LibMicroHttpdServer::LibMicroHttpdServer(
 	std::vector<std::string> paramAllowedHosts,
 	SubscriberCallbacks callbacks,
-	SubscriberConfig config)
-	: HttpServer(callbacks, config),
+	SubscriberConfig paramConfig)
+	: HttpServer(callbacks, paramConfig),
+	config(paramConfig),
 	allowedHosts(paramAllowedHosts)
 {
 	struct addrinfo hints;
@@ -600,9 +642,24 @@ LibMicroHttpdServer::LibMicroHttpdServer(
 
 LibMicroHttpdServer::~LibMicroHttpdServer()
 {
-	// TODO - I think this call will wait for any currently active threads to join
-	// before shutting down. So we shouldn't get interrupted during our handling, but
-	// this may be worth looking at in more depth
+	// Signal libmicrohttpd to stop accepting new incoming connections
+	MHD_quiesce_daemon(daemon);
+
+	// Wait for any active connections to finish. This shouldn't take long
+	// Just quit if they don't terminate within 5 seconds
+	for(int i = 5; i > 0 && 0 != responseFuncSettings.numActiveConnections; i--)
+	{
+		debugOutput(config.debug, stdout, "Waiting for %zu active connections to finish(%d)\n",
+			responseFuncSettings.numActiveConnections, i);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}
+	if(responseFuncSettings.numActiveConnections > 0)
+	{
+		debugOutput(config.debug, stdout, "%zu connections failed to finish. Exiting anyway.\n",
+			responseFuncSettings.numActiveConnections);
+	}
+
+	// Shut down the libmicrohttpd server instance
 	MHD_stop_daemon(daemon);
 	free(privateKey);
 	free(publicCert);

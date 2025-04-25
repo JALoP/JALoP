@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber enum types
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -203,9 +209,9 @@ DigestStatus digestStatusFromString(std::string str)
 
 std::string dbTypeToString(DBType dbType)
 {
-	if(DBType::BDB == dbType)
+	if(DBType::JALDB == dbType)
 	{
-		return "bdb";
+		return "db";
 	}
 	else
 	{
@@ -215,9 +221,9 @@ std::string dbTypeToString(DBType dbType)
 
 DBType dbTypeFromString(std::string typeStr)
 {
-	if(0 == typeStr.compare("bdb"))
+	if(0 == typeStr.compare("db"))
 	{
-		return DBType::BDB;
+		return DBType::JALDB;
 	}
 	else if(0 == typeStr.compare("fs"))
 	{
@@ -226,5 +232,39 @@ DBType dbTypeFromString(std::string typeStr)
 	else
 	{
 		throw std::runtime_error("Invalid conversion to DBType from string: " + typeStr);
+	}
+}
+
+ClientCertValidation clientCertValidationFromString(std::string authStr) {
+	if(0 == authStr.compare("never"))
+	{
+		return ClientCertValidation::NEVER;
+	}
+	else if(0 == authStr.compare("once"))
+	{
+		return ClientCertValidation::ONCE;
+	}
+	else if(0 == authStr.compare("always"))
+	{
+		return ClientCertValidation::ALWAYS;
+	}
+	else
+	{
+		throw std::runtime_error("Invalid conversion to ClientCertValidation from string: " + authStr);
+	}
+}
+
+std::string clientCertValidationToString(ClientCertValidation authSetting) {
+	if(ClientCertValidation::NEVER == authSetting)
+	{
+		return "never";
+	}
+	else if(ClientCertValidation::ONCE == authSetting)
+	{
+		return "once";
+	}
+	else
+	{
+		return "always";
 	}
 }

@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber messaging class
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -223,7 +229,7 @@ void Message::processHeaders()
 			throw std::runtime_error(errMsg);
 			break;
 	}
-	
+
 	std::string payloadLenStr = getHeader(payloadLenHeader);
 	if(payloadLenHeader.empty() ||
 		!extractSizeT(payloadLenStr, this->info.payloadLen))
@@ -494,7 +500,7 @@ bool Message::prepareForPayload()
 	// Open for append, in case there is already data being resumed
 	parsingState.payloadFile.open(info.payloadFileName,
 		std::ios::app | std::ios::binary);
-	debugOutput(Message::debug, stdout, 
+	debugOutput(Message::debug, stdout,
 		"opening payload file for writing: %s\n", info.payloadFileName.c_str());
 	if(!parsingState.payloadFile.is_open())
 	{
@@ -675,7 +681,7 @@ std::string Message::getDigest() const
 
 // TODO: This is slightly dangerous as the reference could potentially outlive
 // the class and become dangling. Consider alternatives or return a copy
-std::map<std::string, std::string>& MessageBase::getHeaders() 
+std::map<std::string, std::string>& MessageBase::getHeaders()
 {
 	return headers;
 }
@@ -757,7 +763,7 @@ Message::~Message()
 		// We don't bother checking this return. If we can't find the file we want to remove it
 		// apparently doesn't need to be removed.
 		remove(info.payloadFileName.c_str());
-		debugOutput(Message::debug, stdout, 
+		debugOutput(Message::debug, stdout,
 			"~Message Removing file: %s\n", info.payloadFileName.c_str());
 		info.payloadFileName.clear();
 	}

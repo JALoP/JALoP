@@ -1,5 +1,7 @@
 /**
- * @file test_jal_subscribe_utils.hpp This file contains utility functions used by the
+ * @file
+ *
+ * @brief This file contains utility functions used by the
  * tests for the JalSubscriber.
  *
  * ### LICENSE

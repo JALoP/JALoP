@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief Configuration settings for the Subscriber
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +26,7 @@
 #include <string>
 
 #include <jalop/jal_digest.h>
-
+#include "jaldb_context.h"
 #include "JalSubEnumTypes.hpp"
 
 // Configuration settings for the Subscriber
@@ -33,6 +39,7 @@ struct SubscriberConfig
 		std::string privateKey;
 		std::string publicCert;
 		std::string trustStore;
+		ClientCertValidation clientCertValidation = ClientCertValidation::ONCE;
 	} tlsConfig;
 
 	// Config File Settings
@@ -47,18 +54,24 @@ struct SubscriberConfig
 	std::string databasePath;
 	ModeType mode;
 	int networkTimeout;
-	// Default to BerkeleyDB storage
-	DBType dbType = DBType::BDB;
+	// Default to database storage
+	DBType dbType = DBType::JALDB;
 	// Default to listen on all addresses
 	std::string ipAddr = "0.0.0.0";
+	// Resume setting
+	long long int journalResumeThresholdSize = 0;
 
 	// CLI Only Settings
 	bool debug;
+
+	enum jaldb_flags jdb_flags;
+	std::string database_option_str;
 
 	SubscriberConfig(std::string configFilePath);
 
 	void printConfiguration() const;
 	void setDigestAlgorithms(const std::string& digests);
+	void setDatabaseOption(const std::string& database_option);
 	void setAllowedRecordTypes(const std::vector<std::string>& recordTypes);
 
 	// Make the no-arg constructor protected

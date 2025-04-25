@@ -1,5 +1,7 @@
 /**
- * @file jaln_tls.c This file contains function definitions for code related to tls.
+ * @file
+ *
+ * @brief This file contains function definitions for code related to tls.
  *
  * ### LICENSE
  *

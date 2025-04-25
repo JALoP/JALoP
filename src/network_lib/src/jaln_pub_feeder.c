@@ -1,5 +1,7 @@
 /**
- * @file jaln_pub_feeder.c This file contains the functions related to the
+ * @file
+ *
+ * @brief This file contains the functions related to the
  * implementation of a payload feeder for sending records from a publisher
  * to a subscriber.
  *
@@ -36,6 +38,7 @@
 #include "jaln_message_helpers.h"
 #include "jaln_publisher.h"
 #include "jaln_strings.h"
+#include "jal_ts_utils.h"
 
 axl_bool jaln_pub_feeder_get_size(jaln_session *sess, uint64_t *size)
 {
@@ -200,11 +203,11 @@ void jaln_pub_feeder_handler(jaln_session* sess)
 {
 	const long curl_timeout_period = sess->jaln_ctx->network_timeout * 60L;
 
-	CURL *ctx = curl_easy_duphandle(sess->curl_ctx);
+	CURL *ctx = sess->curl_ctx;
 	if (!ctx) {
 		// Error
 		jaln_session_set_errored(sess);
-		goto out;
+		return;
 	}
 
 	struct jaln_response_header_info *info = jaln_response_header_info_create(sess);
@@ -239,6 +242,23 @@ void jaln_pub_feeder_handler(jaln_session* sess)
 	}
 
 	CURLcode res = curl_easy_perform(ctx);
+	if(res==CURLE_COULDNT_CONNECT){ //Retry if CURLE_COULDNT_CONNECT
+		int count = 1;
+		char* ts = jal_gen_timestamp_usec();
+		fprintf(stdout, "jaln_pub_feeder: CURLE_COULDNT_CONNECT. Time: %s\n", ts);
+		free(ts);
+		curl_easy_setopt(ctx, CURLOPT_VERBOSE, 1); // turn on verbose
+		while (res == CURLE_COULDNT_CONNECT && count < sess->jaln_ctx->http_client_retry_count) {
+			res = curl_easy_perform(ctx);
+			if (res == CURLE_COULDNT_CONNECT) {
+				++count;
+				usleep(sess->jaln_ctx->http_client_retry_delay);
+			}
+		}
+		fprintf(stdout, "jaln_pub_feeder: CURLE_COULDNT_CONNECT. Retrying attempts: %d\n", count);
+		curl_easy_setopt(ctx, CURLOPT_VERBOSE, 0);  //turn off verbose
+	}
+
 
 	// The record has either been sent successfully or an error was encountered
 	// Either way, we're finished with it. Invoke the on_record_complete function
@@ -252,7 +272,7 @@ void jaln_pub_feeder_handler(jaln_session* sess)
 		(void)fflush(stderr);
 		jaln_session_set_errored(sess);
 		jaln_response_header_info_destroy(&info);
-		goto out;
+		return;
 	}
 
 
@@ -266,7 +286,7 @@ void jaln_pub_feeder_handler(jaln_session* sess)
 			jaln_session_set_errored(sess);
 		}
 		jaln_response_header_info_destroy(&info);
-		goto out;
+		return;
 	}
 
 	if (JAL_OK != jaln_verify_digest_challenge_headers(info)) {
@@ -275,7 +295,7 @@ void jaln_pub_feeder_handler(jaln_session* sess)
 			jaln_session_set_errored(sess);
 		}
 		jaln_response_header_info_destroy(&info);
-		goto out;
+		return;
 	}
 
 	// Send digest response
@@ -327,9 +347,6 @@ void jaln_pub_feeder_handler(jaln_session* sess)
 	jaln_digest_resp_info_destroy(&resp_info);
 	jaln_digest_info_destroy(&peer_dgst);
 	jaln_response_header_info_destroy(&info);
-
-out:
-	curl_easy_cleanup(ctx);
 }
 
 void jaln_pub_feeder_reset_state(jaln_session *sess)

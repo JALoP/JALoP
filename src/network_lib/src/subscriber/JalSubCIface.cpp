@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber config interface
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -293,9 +299,9 @@ enum jal_status jal_subscriber_config_set_db_type(
 		return JAL_E_INVAL;
 	}
 
-	if(DB_TYPE_BDB == dbType)
+	if(DB_TYPE_DB == dbType)
 	{
-		jalSubConfig->dbType = DBType::BDB;
+		jalSubConfig->dbType = DBType::JALDB;
 	}
 	else if(DB_TYPE_FS == dbType)
 	{

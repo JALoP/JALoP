@@ -1,7 +1,7 @@
 /**
- * @file jaln_string_utils.c
+ * @file
  *
- * Various string utilities
+ * @brief Various string utilities
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_pub_feeder.c This file contains tests for jaln_pub_feeder.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_pub_feeder.c functions.
  *
  * ### LICENSE
  *

@@ -1,10 +1,17 @@
 import os
 import string
+from Utils import add_project_lib
 Import('*')
 
 tests = []
 
 env = env.Clone()
+if env.GetOption("ENABLE_BDB"):
+	env.MergeFlags({'CPPPATH':['#src/db_layer/src']})
+	add_project_lib(env, 'db_layer', 'jal-db')
+else:
+	env.MergeFlags({'CPPPATH':['#src/lmdb_layer/src']})
+	add_project_lib(env, 'lmdb_layer', 'jal-db')
 
 # The test code trigger warnings we'd just assume ignore.
 # -fcommon needed to restore original gcc behavior in rhel9 to prevent multiple definition linker errors

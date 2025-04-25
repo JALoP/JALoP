@@ -1,5 +1,7 @@
 /**
- * @file jaln_message_helpers.c This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * definitions for internal library functions related to creating JALoP
  * messages
  *

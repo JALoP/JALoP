@@ -1,5 +1,7 @@
 /**
- * @file jaln_session.c This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * definitions for internal library functions related to a jaln_session
  * structure. The jaln_session tracks the internal state for a peer that is
  * receiving jal records.
@@ -114,6 +116,14 @@ void jaln_session_set_dgst_max(jaln_session *sess, int max)
 		return;
 	}
 	sess->dgst_list_max = max;
+}
+
+enum jaln_publish_mode jaln_session_get_publish_mode(jaln_session* sess)
+{
+	if(!sess) {
+		return JALN_UNKNOWN_MODE;
+	}
+	return sess->mode;
 }
 
 void jaln_session_destroy(jaln_session **psession) {

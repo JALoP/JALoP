@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber network layer header
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,25 +19,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __JAL__SUB__NETWORK__LAYER__H__
-#define __JAL__SUB__NETWORK__LAYER__H__
+#pragma once
 
 #include <vector>
 #include <string>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include "JalSubMessaging.hpp"
 #include "JalSubCallbacks.hpp"
 #include "JalSubConfig.hpp"
+#include "JalSubEnumTypes.hpp"
 
 struct ResponseFuncSettings
 {
+	// Track active connections to know when it's safe to shutdown
+	std::mutex numActiveConnectionsMutex;
+	size_t numActiveConnections = 0;
+
 	SubscriberCallbacks callbacks;
 	bool debug;
 	bool tlsEnabled;
+	ClientCertValidation clientCertValidation;
 
-	ResponseFuncSettings(SubscriberCallbacks paramCallbacks, bool paramDebug, bool paramTlsEnabled) :
-		callbacks(paramCallbacks), debug(paramDebug), tlsEnabled(paramTlsEnabled)
+	ResponseFuncSettings(SubscriberCallbacks paramCallbacks, bool paramDebug, bool paramTlsEnabled, ClientCertValidation paramClientCertValidation) :
+		callbacks(paramCallbacks), debug(paramDebug), tlsEnabled(paramTlsEnabled), clientCertValidation(paramClientCertValidation)
 		{}
 };
 
@@ -45,7 +57,7 @@ class HttpServer
 	ResponseFuncSettings responseFuncSettings;
 
 	HttpServer(SubscriberCallbacks paramCallbacks, SubscriberConfig paramConfig) :
-		responseFuncSettings(ResponseFuncSettings(paramCallbacks, paramConfig.debug, paramConfig.enableTls))
+		responseFuncSettings(ResponseFuncSettings(paramCallbacks, paramConfig.debug, paramConfig.enableTls, paramConfig.tlsConfig.clientCertValidation))
 	{
 	}
 
@@ -54,6 +66,7 @@ class HttpServer
 
 class LibMicroHttpdServer : public HttpServer
 {
+	SubscriberConfig config;
 	struct MHD_Daemon* daemon;
 	std::vector<std::string> allowedHosts;
 	char* privateKey = NULL;
@@ -73,5 +86,3 @@ class LibMicroHttpdServer : public HttpServer
 
 	~LibMicroHttpdServer();
 };
-
-#endif

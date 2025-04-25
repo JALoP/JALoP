@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber messaging header
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -190,7 +196,7 @@ class Message : public MessageBase
 	bool processPayloadToFile(
 		const uint8_t*& data,
 		size_t& bytesRemaining);
-	
+
 	bool processPayloadToBuffer(
 		const uint8_t*& data,
 		size_t& bytesRemaining);

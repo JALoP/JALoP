@@ -1,5 +1,7 @@
 /**
- * @file jaln_network.c This file contains function definitions for
+ * @file
+ *
+ * @brief This file contains function definitions for
  * general public network library functions.
  *
  * ### LICENSE

@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber session
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +26,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <climits>
 
 #include "JalSubSession.hpp"
 #include "JalSubUtils.hpp"
@@ -242,9 +249,53 @@ bool Session::shouldResume()
 	}
 	resumeFile.close();
 
+	// Finally, check the configuration settings for resume.
+	// We wait until this point to do so because we want to clean up any in-progress
+	// files even if we choose not to resume them, otherwise we could end up with a bunch
+	// of useless in-progress files haning around
+	long long threshold = config.journalResumeThresholdSize;
+
+	// In a degenerate case, the received data (range of size_t) could theoretically be
+	// larger than the range of a long long, which is going to cause comparison problems.
+	// The use of long long (at least 64 bits, signed) here is a restriction of libconfig.
+	// We have no way to indicate larger thresholds than this in the config file
+	// If resume isn't disabled (negative), or already 0 (always resume) go ahead and
+	// assume we want to resume in that case, which we'll indicate by locally
+	// setting threshold to 0 (always resume)
+	if(threshold > 0 && offset > LLONG_MAX)
+	{
+		threshold = 0;
+	}
+
+	// Do not resume if the threshold setting is negative (resume disabled)
+	// Do not resume if the threshold setting is greater than the discovered offset
+	// A threshold of 0 (always resume) will always be less than the offset unless the offset
+	// is also 0, in which case there's nothing to resume anyway.
+	// We shouldn't ever have empty temporary files to discover for resuming
+	// Note: We can only safely do the size_t cast because we first check that threshold
+	// is positiive
+	if(0 > threshold || (size_t)threshold > offset)
+	{
+		if(0 > threshold)
+		{
+			debugOutput(config.debug, stdout, "Journal resume available but ignored. "
+				"Resume configuration was disabled.\n");
+		}
+		else if((size_t)threshold > offset)
+		{
+			debugOutput(config.debug, stdout, "Journal resume avilable but ignored because "
+				"cached data of size: %zu is less than configured threshold: %lld\n",
+				offset, threshold);
+		}
+		// If we choose not to resume, remove the partial
+		remove(resumeFilePath.c_str());
+		return false;
+	}
+
 	// If we got a valid name and offset, use those values for a resume
 	if(0 != offset)
 	{
+		debugOutput(config.debug, stdout, "Attempting Journal Resume\n");
 		resumeId = filename;
 		resumeOffset = offset;
 		return true;
@@ -497,7 +548,7 @@ Response Session::handleJournalMissing(const Message& message)
 			jalId);
 
 		remove(payloadFileName.c_str());
-		debugOutput(config.debug, stdout, 
+		debugOutput(config.debug, stdout,
 			"handleJournalMissing Removing file: %s\n", payloadFileName.c_str());
 	}
 	// In either case, send an empty journal-missing-response message
@@ -564,7 +615,7 @@ Response Session::handleDigestChallengeResponse(const Message& message)
 			inserted = db->insertJournal(currentRecordInfo);
 			break;
 	}
-	
+
 	// Discard the payload file - if any
 	// If the file has been moved by the db interface, the remove will fail, which is fine
 	// as long as the temporary is gone one way or another
@@ -607,9 +658,9 @@ Response Session::handleRecord(const Message& message, RecordType messageRecordT
 	// Note - this invokes a move assignment, stealing the data from the original rather
 	// than copying it. The session is now responsible for cleaning up any temporary
 	// payload files. It must guarantee that if the session ends, or when the digest
-	// challenge response is received, the temporary file is removed regardless of the 
+	// challenge response is received, the temporary file is removed regardless of the
 	// success/fail status of the digest
-	
+
 	// We're going to cheat a little bit - the move constructor violates the constness
 	// of the message, but the const label is useful everywhere else in the chain
 	// Fortunately, we know the underlying storage is always a mutable object, so this is legal
@@ -778,7 +829,7 @@ Response Session::handleMessage(ReceiveMessageType type, const Message& message)
 
 Session::Session(
 	std::string paramUuid,
-	std::weak_ptr<JalSubDatabase> paramJdb, 
+	std::weak_ptr<JalSubDatabase> paramJdb,
 	SubscriberConfig paramConfig) : uuid(paramUuid), jdb(paramJdb), config(paramConfig)
 {
 }

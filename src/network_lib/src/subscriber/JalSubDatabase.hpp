@@ -1,4 +1,11 @@
-/*
+/**
+ * @file
+ *
+ * @brief This header defines the interface any
+ * database implementation must follow to be used by the subscriber
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

@@ -1,7 +1,7 @@
 /**
- * @file jaln_push.h
+ * @file
  *
- * Functions for sending records from a publisher to a subscriber.
+ * @brief Functions for sending records from a publisher to a subscriber.
  *
  * ### LICENSE
  *

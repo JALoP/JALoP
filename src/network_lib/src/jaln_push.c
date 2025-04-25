@@ -1,5 +1,7 @@
 /**
-* @file jaln_push.c  This file contains function
+ * @file
+ *
+ * @brief This file contains function
 * definitions related to the jal publisher.
 *
 * ### LICENSE

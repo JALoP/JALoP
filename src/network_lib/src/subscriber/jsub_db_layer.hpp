@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber db layer header
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,13 +32,14 @@
 /**
  * Initializes the interface to the database.
  * @param[in] db_root The root location of the database.
+ * @param[in] jdb_flags The database flags to set.
  *
  * @return
  *  - A pointer to the context if it was created and initialized successfully
  *	NULL if the process failed.
  */
 jaldb_context *jsub_setup_db_layer(
-		const char *db_root);
+		const char *db_root, enum jaldb_flags jdb_flags);
 
 /**
  * Destroys the database interface.
@@ -137,7 +142,7 @@ int jsub_insert_journal_metadata(
  * Transfer an audit record from the temporary
  * container to the permanent container.
  * @param[in] db_ctx The database context.
- * @param[in] c_source The name of the source of the record.
+ * @param[in] source The name of the source of the record.
  * @param[in] tmp_nonce The nonce of the record located
  * 		      in the temporary container.
  * @param[out] perm_nonce The nonce of the record saved
@@ -154,10 +159,10 @@ int jsub_transfer_audit(
 		std::string &perm_nonce);
 
 /**
- * Transfer a log record from the temporary 
+ * Transfer a log record from the temporary
  * container to the permanent container.
  * @param[in] db_ctx The database context.
- * @param[in] c_source The name of the source of the record.
+ * @param[in] source The name of the source of the record.
  * @param[in] tmp_nonce The nonce of the record located
  * 		      in the temporary container.
  * @param[out] perm_nonce The nonce of the record saved
@@ -174,10 +179,10 @@ int jsub_transfer_log(
 		std::string &perm_nonce);
 
 /**
- * Transfer a journal record from the temporary 
+ * Transfer a journal record from the temporary
  * container to the permanent container.
  * @param[in] db_ctx The database context.
- * @param[in] c_source The name of the source of the record.
+ * @param[in] source The name of the source of the record.
  * @param[in] tmp_nonce The nonce of the record located
  * 	in the temporary container.
  * @param[out] perm_nonce The nonce of the record saved
@@ -199,9 +204,9 @@ int jsub_transfer_journal(
  * @param[in,out] db_payload_path The name of the source of the record.
  * @param[in,out] db_payload_fd The file descriptor used to create/write
  *	to the file.
- * @param[in] buffer The \pbuffer data of the journal payload to write to file.
+ * @param[in] buffer The \p buffer data of the journal payload to write to file.
  * @param[in] buffer_len The length/size of \p buffer.
- * @param[in] processed_len The length/size of the data processed for the 
+ * @param[in] processed_len The length/size of the data processed for the
  * \p payload so far.  Or 0 if the record is complete and the journal resume
  * data should be cleared
  * @param[in] hostname The \p hostname we are receiving the journal from.
@@ -219,7 +224,7 @@ int jsub_write_journal(
 		int *db_payload_fd,
 		uint8_t *buffer,
 		size_t buffer_len,
-		size_t proccessed_len,
+		size_t processed_len,
 		const char *hostname,
 		const char *nonce,
 		int debug);
@@ -347,7 +352,7 @@ void jsub_write_to_stderr_db_status(jaldb_status db_status, char *err_msg);
 /**
  * Flush stale data from the temporary databases
  * @param[in] db_ctx The context to use
- * @param[in] hsot The host to flush
+ * @param[in] host The host to flush
  * @param[in] data_classes The data classes to purge, must be an or'ed
  * @param[in] debug_flag Flag to indicate if log messages should be outputted
  * combination of #jaln_record_type

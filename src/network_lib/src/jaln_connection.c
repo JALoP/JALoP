@@ -1,5 +1,7 @@
 /**
- * @file jaln_connection.c This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * definitions for internal library functions related to a jaln_connection
  * structure.
  *

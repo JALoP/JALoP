@@ -1,5 +1,7 @@
 /**
- * @file jaln_publisher.c  This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * definitions related to the jal publisher.
  *
  * ### LICENSE
@@ -343,6 +345,13 @@ static enum jal_status jaln_setup_session(
 	curl_easy_setopt(curl_ctx, CURLOPT_FAILONERROR, 1L);
 	if (tls)
 	{
+		//JAL-1000 - disable cert validity check and allow self signed certs if enabled
+		//in allow_self_signed_certs config setting in the jald config file.
+		if (1 == ctx->allow_self_signed_certs)
+		{
+			curl_easy_setopt(curl_ctx, CURLOPT_SSL_VERIFYPEER, 0);
+		}
+
 		if (CURLE_OK != curl_easy_setopt(curl_ctx, CURLOPT_SSLKEY, ctx->private_key) ||
 			CURLE_OK != curl_easy_setopt(curl_ctx, CURLOPT_SSLCERT, ctx->public_cert) ||
 			CURLE_OK != curl_easy_setopt(curl_ctx, CURLOPT_CAPATH, ctx->peer_certs)) {

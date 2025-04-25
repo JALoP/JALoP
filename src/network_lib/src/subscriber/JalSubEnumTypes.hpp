@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber enum types header
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __JAL__SUB__ENUM__TYPES__H__
-#define __JAL__SUB__ENUM__TYPES__H__
+#pragma once
 
 #include <string>
 
@@ -82,7 +87,7 @@ DigestStatus digestStatusFromString(std::string);
 
 enum class DBType
 {
-	BDB, // BerkeleyDB
+	JALDB, // Database
 	FS   // Filesystem
 };
 
@@ -90,4 +95,12 @@ std::string dbTypeToString(DBType dbType);
 
 DBType dbTypeFromString(std::string);
 
-#endif
+enum class ClientCertValidation {
+	NEVER,
+	ONCE,
+	ALWAYS,
+};
+
+ClientCertValidation clientCertValidationFromString(std::string);
+
+std::string clientCertValidationToString(ClientCertValidation);

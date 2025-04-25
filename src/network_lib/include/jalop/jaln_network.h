@@ -1,7 +1,7 @@
 /**
- * @file jaln_network.h
+ * @file
  *
- * Public functions for creating and configuring a jaln_context.
+ * @brief Public functions for creating and configuring a jaln_context.
  *
  * ### LICENSE
  *
@@ -39,6 +39,12 @@ extern "C" {
 #include <jalop/jaln_network_types.h>
 #include <jalop/jaln_connection_callbacks.h>
 #include <jalop/jaln_publisher_callbacks.h>
+
+/**The default http client retry count value*/
+#define JALN_HTTP_CLIENT_RETRY_COUNT_DEFAULT 5
+
+/**The default http client retry delay value*/
+#define JALN_HTTP_CLIENT_RETRY_DELAY_DEFAULT 1000000
 
 /**
  * Create and initialize a new jaln_context
@@ -273,6 +279,14 @@ void jaln_connection_destroy(struct jaln_connection **conn);
 enum jal_status jaln_session_is_ok(jaln_session *sess);
 
 /**
+ * Get the session's publish mode
+ * @param[in] sess The jaln_session to get the mode of
+ *
+ * @return The publish mode of the sesssion
+ */
+enum jaln_publish_mode jaln_session_get_publish_mode(jaln_session* sess);
+
+/**
  * Send the journal record to the awaiting subscriber.
  *
  * This method should be called to send a journal record to the awaiting
@@ -381,6 +395,23 @@ enum jal_status jaln_finish(jaln_session *sess);
  * @param[in] timeout Network timeout in minutes.
  */
 void setNetworkTimeout(jaln_context *ctx, const long long int timeout);
+
+/**
+ * Set this clients retry configuration if there is a network disruption.
+ *
+ * @param[in] ctx The jaln context.
+ * @param[in] http_client_retry_count Retry count, 0 for none.
+ * @param[in] http_client_retry_delay Retry delay in micro-seconds.
+ */
+void setRetryConfig(jaln_context *ctx, int http_client_retry_count, int http_client_retry_delay);
+
+/**
+ * Sets whether self signed certs are allowed to be used for TLS
+ *
+ * @param[in] ctx The jaln context.
+ * @param[in] allow_self_signed_certs 0 for self signed certs not allowed, 1 for self signed certs allowed
+ */
+void setAllowSelfSignedCerts(jaln_context *ctx, int allow_self_signed_certs);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,7 @@
 /**
- * @file test_jal_subscribe_utils.hpp This file contains utility functions used by the
+ * @file
+ *
+ * @brief This file contains utility functions used by the
  * tests for the JalSubscriber.
  *
  * ### LICENSE
@@ -362,7 +364,7 @@ TestSubscriberConfig::TestSubscriberConfig(std::string dbRoot)
 	databasePath = dbRoot;
 	mode = ModeType::ARCHIVE;
 	networkTimeout = 0;
-	dbType = DBType::BDB;
+	dbType = DBType::JALDB;
 	ipAddr = "0.0.0.0";
 	debug = false;
 }

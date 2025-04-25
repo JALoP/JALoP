@@ -1,5 +1,7 @@
 /**
- * @file jaln_record_info.h This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * declarations for internal library functions related to a
  * jaln_record_info structure.
  *

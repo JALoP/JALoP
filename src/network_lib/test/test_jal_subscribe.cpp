@@ -1,5 +1,7 @@
 /**
- * @file test_jal_subscribe.cpp This file contains tests for the JalSubscriber.
+ * @file
+ *
+ * @brief This file contains tests for the JalSubscriber.
  *
  * ### LICENSE
  *

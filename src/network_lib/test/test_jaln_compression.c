@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_compression.c This file contains tests for jaln_compression.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_compression.c functions.
  *
  * ### LICENSE
  *

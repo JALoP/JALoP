@@ -1,4 +1,12 @@
-/*
+/**
+ * @file
+ *
+ * @brief This class manages the resources and execution flow of a single
+ * subscriber. It is primarily responsible for serializing requests to
+ * the database, managing the http server, and keeping track of active sessions
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

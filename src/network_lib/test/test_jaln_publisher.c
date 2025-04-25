@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_publisher.c This file contains tests for jaln_publisher.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_publisher.c functions.
  *
  * ### LICENSE
  *

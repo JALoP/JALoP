@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ *
+ * @brief The JAL subscriber implementation
+ *
+ * ### LICENSE
+ *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +28,7 @@
 #include "JalSubscriber.hpp"
 #include "JalSubConfig.hpp"
 #include "JalSubUtils.hpp"
-#include "JalSubBerkeleyDb.hpp"
+#include "JalSubJalDb.hpp"
 #include "JalSubFsDb.hpp"
 
 // TODO: Replace with libuuid or similar
@@ -271,8 +277,8 @@ JalSubscriber::JalSubscriber(
 
 	switch(paramConfig.dbType)
 	{
-		case DBType::BDB:
-			dbFactory = BerkeleyDb::berkeleyDbFactory;
+		case DBType::JALDB:
+			dbFactory = JalDb::jalDbFactory;
 			break;
 		case DBType::FS:
 			dbFactory = FsDb::fsDbFactory;
@@ -312,8 +318,8 @@ JalSubscriber::JalSubscriber(
 	// DB type not specified in this constructor, use option in provided config
 	switch(paramConfig.dbType)
 	{
-		case DBType::BDB:
-			dbFactory = BerkeleyDb::berkeleyDbFactory;
+		case DBType::JALDB:
+			dbFactory = JalDb::jalDbFactory;
 			break;
 		case DBType::FS:
 			dbFactory = FsDb::fsDbFactory;
@@ -350,7 +356,7 @@ void JalSubscriber::constructorImpl(
 	// in some cases
 	if(!dirExists(paramConfig.databasePath))
 	{
-		std::string errMsg = "Selected db_root: " + paramConfig.databasePath 
+		std::string errMsg = "Selected db_root: " + paramConfig.databasePath
 			+ " does not exist.";
 			throw std::runtime_error(errMsg);
 	}
@@ -359,7 +365,7 @@ void JalSubscriber::constructorImpl(
 
 	// Initialize database
 	this->jdb = dbFactory(paramConfig);
-	
+
 	// Initialize httpServer
 	this->httpServer = serverFactory(
 		{}, // parameter currently unused
