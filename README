@@ -1,4 +1,4 @@
-This is a C reference implementation of the Journal, Audit, and Logging Protocol (JALoP) that uses HTTP as the transport layer. This is also known as "JALoP over HTTP" or simply, "JALoP v2.x"
+This is a C reference implementation of the Journal, Audit, and Logging Protocol (JALoP) that uses HTTP/1.1 (Hypertext Transfer Protocol 1.1, RFC 2616) for communications and exchange of data. This is also known as "JALoP over HTTP", or simply, "JALoP v2.x"
 
 It is important to note that -
   Branch 1.x.x.x implements JALoP over BEEP i.e. JALoP v1.x.
@@ -22,12 +22,11 @@ This project makes use of the following libraries:
   site_scons - http://scons.org/
   test-dept - http://code.google.com/p/test-dept/
   Berkeley DB - http://www.oracle.com/us/products/database/berkeley-db/overview/index.html
+  LMDB - www.lmdb.tech/doc, https://www.symas.com/mdb
   libmicrohttpd - http://www.gnu.org/software/libmicrohttpd/
 
 The following libraries are included in the 3rd-party directory:
   axl
-  lcov
-  libconfig
   site_scons
 
 Building and Installing
@@ -37,14 +36,15 @@ Below are the platform-specific versions of python and scons that were used to t
 
   RHEL 7.x: python3.6 (python 3.6.8), scons-3.6
   RHEL 8.x: python3.6 (python 3.6.8), scons-3.6
+  RHEL 9.x: python3.9 (python 3.9.21), scons-4.5
 
-Later versions of Python should work as well, but were not tested.
+Later versions of Python and scons should work as well, but were not tested.
 
-Note, the following commands assume your system installation invokes scons-3.6
-On RHEL7, it may be necessary to invoke "scons-3.6"
+Note: The following commands assume your system directs "scons" to scons version 3.6.
+On RHEL7, it may be necessary to invoke "scons-3.6", if multiple versions exist.
 
 Building requires a C++ compiler with full C++17 capabilities.
-For EL7, use of a devtoolset can provide a capable compiler:
+For CentOS7/RHEL7, use of a devtoolset can provide a capable compiler:
  - Add the repository
   - For CentOS 7:
     - # yum install centos-release-scl
@@ -55,7 +55,7 @@ For EL7, use of a devtoolset can provide a capable compiler:
  - Launch a new shell using Devtoolset 7
   - scl enable devtoolset-7 $SHELL
 
-The version of libmicrohttpd available in the CentOS/RHEL7 packages is not sufficient for this project
+The version of libmicrohttpd available in the CentOS7/RHEL7 packages is not sufficient for this project
 It is necessary to acquire v0.9.59 (or newer) from http://www.gnu.org/software/libmicrohttpd/
 or one of the mirrors - or clone the repo from: https://git.gnunet.org/libmicrohttpd.git
 v0.9.59 is recommended because it is the version available in the CentOS/RHEL8 packages and has
@@ -95,11 +95,15 @@ then run sudo ldconfig to update the cache
 where jal_sub_cpp, jal_subscribe, or other v2 subscriber will be run
 3. Modify the call to ./configure to use a --prefix=PREFIX that will place the library somewhere
 it will be found by the usual means.
-e.g. ./configure --prefix=/usr/ - oddly on CentOS7 this places the lib in /lib, not /usr/lib, but
-it does appear to otherwise work as you would expect and links correctly without other modifications.
+e.g. ./configure --prefix=/usr/ (Note that on CentOS7 /lib is linked to /usr/lib)
 
 To build, simply run 'scons' within the top level directory:
+
 $ scons
+
+By default, it will build src/lmdb_layer to use LMDB database to store JAL records. To build and use Oracle Berkeley DB (BDB) database instead, run the following command -
+
+$ scons --bdb
 
 SCons generates debug and release directories.
 
@@ -108,23 +112,34 @@ platform (e.g. rhel_x86_64):
 
 $ install_<platform>.sh
 
+Running install_rhel_x86_64.sh will install the default LMDB build of JALoP. To install BDB build instead, run the following command -
+
+$ install_bdb_rhel_x86_64.sh
 
 Other Options (these steps do not need to be executed in order to use the JALoP libraries)
 To build the library and execute the unit tests, run
 
 $ scons --no-release tests
 
+This will build and run the default LMDB unit tests. To build and run BDB unit tests instead, run the following command -
+
+$ scons --bdb --no-release tests
+
 To generate code coverage reports, run
 
-$ scons cov
+$ scons --no-release cov  # for the default LMDB build.
+$ scons --bdb --no-release cov  # for BDB build.
 
-code coverage reports will appear in the 'cov' directory in the root of the source tree.
+Code coverage reports will appear in the 'cov' directory in the root of the source tree.
 
 To generate doxygen documentation, run
+
 $ scons doc
+
 The generated documents will appear in the directory doc/doxygen.out
 
 To clean the build output you can simply run
+
 $ scons -c
 
 Scons accepts a '-j' argument for parallel builds, so
@@ -144,26 +159,9 @@ CXX The C++ compiler to use
 LD The linker to use
 CPP The C preprocessor to use
 
-
 All of the source code for the implementation is under the 'src' directory.
 The src directory is divided into different sections based on functionality,
-subdirs such as network_lib, local_store, etc.
-
-A number of patches for external project are included. These patches modify
-existing projects (e.g. log4cxx) to utilize JALoP as an output method. These
-may be found under the 'patches' directory.
-
-This project is built and tested in the following environments:
-  RHEL 6 on x86_64, using gcc version 4.4.5
-  RHEL 7 on x86_64, using gcc version 4.8.5
-
-This project requires GNU awk to build and expects the 'awk' found on the path
-to be GNU awk. If this is not the case, you will need to install GNU awk either
-from source (http://www.gnu.org/s/gawk/), Sunfree (http://www.sunfreeware.com).
-You may also need to modify the 'PATH' enivronment variable to get scons to see
-the right version, i.e.:
-
-$> PATH=/path/to/awk:$PATH scons tests
+subdirs such as network_lib, network_stores, local_store, producer_lib, etc.
 
 KNOWN ISSUES
 -	If the publisher provides the same unique identifier for multiple different records, the subscriber may lose records.
@@ -181,7 +179,7 @@ NOTES
 
   Whenever a process crashes, or returns the error to run DB_RECOVER, stop all
   processes with access to the DB in question, run db_recover, and then restart
-  the processes.
+  the processes. This is applicable only in BDB (Berkeley DB) build.
 
   The Berkeley DB database can be tailored to the user's load requirements
   by adding a DB_CONFIG file, with configuration options, to the directory where
