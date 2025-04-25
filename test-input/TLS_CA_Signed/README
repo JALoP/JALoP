@@ -18,19 +18,19 @@ The server directory has all you need to test:
 The public certificates for server and client are built with alt_names:
 	[ alt_name ]
 	DNS.0 = localhost
-	DNS.1 = jal_publisher_v2_client
+	DNS.1 = jal-publisher-v2-client
 	IP.0 = 127.0.0.1
 
 	[ alt_name ]
 	DNS.0 = localhost
-	DNS.1 = jal_subscriber_v2_server
+	DNS.1 = jal-subscriber-v2-server
 	IP.0 = 127.0.0.1
 
 	So when running publisher and subscriber on different machines you can add
 	entries to their /etc/hosts file.
 	example:
-		192.168.1.100 jal_publisher_v2_client (on server)
-		192.168.1.101 jal_subscriber_v2_server (on client)
+		192.168.1.100 jal-publisher-v2-client (on server)
+		192.168.1.101 jal-subscriber-v2-server (on client)
 ================================================================================
 If you want to build your own set of certificates you can alter these files:
 	-ca.cnf (the DN variables)

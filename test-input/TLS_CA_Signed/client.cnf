@@ -20,7 +20,7 @@ localityName_default					= Savage
 organizationName_default		= CTC
 0.organizationalUnitName_default	= ISIS
 1.organizationalUnitName_default	= JALoP
-commonName_default						= jal_publisher_v2_client
+commonName_default						= jal-publisher-v2-client
 emailAddress_default					= cds_tech@nsa.gov
 
 [ client_req ]
@@ -30,5 +30,5 @@ subjectAltName = @alt_name
 
 [ alt_name ]
 DNS.0 = localhost
-DNS.1 = jal_publisher_v2_client
+DNS.1 = jal-publisher-v2-client
 IP.0 = 127.0.0.1
