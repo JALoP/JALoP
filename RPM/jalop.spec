@@ -4,6 +4,26 @@ Release:1.0.2
 ExclusiveArch:x86_64
 Summary:JALoP binary installation
 License:Apache License, Version 2.0
+Requires: boost-filesystem
+Requires: boost-serialization
+Requires: boost-system
+Requires: axl
+Requires: vortex
+Requires: openssl
+Requires: xmlsec1-openssl
+Requires: xmlsec1-gcrypt
+Requires: xmlsec1-gnutls
+Requires: xmlsec1-nss
+Requires: libdb
+Requires: libdb-utils
+Requires: libuuid
+Requires: libxml2
+Requires: libconfig
+Requires: glib2
+Requires: apr
+Requires: apr-util
+Requires: lmdb
+Requires: lmdb-libs
 
 %description
 JALoP binary installation
@@ -34,20 +54,19 @@ cp ./release/lib/libjal-producer.so	%{buildroot}/usr/lib64
 cp ./release/lib/libjal-utils.so	%{buildroot}/usr/lib64
 
 mkdir -p %{buildroot}/etc/systemd/system
-cp ./test-input/jalls.service		%{buildroot}/etc/systemd/system
-cp ./test-input/jalls.socket		%{buildroot}/etc/systemd/system
-cp ./test-input/jald.service		%{buildroot}/etc/systemd/system
-cp ./test-input/jal_subscribe.service	%{buildroot}/etc/systemd/system
+cp ./test-input/SYSTEMD/jalls.service		%{buildroot}/etc/systemd/system
+cp ./test-input/SYSTEMD/jalls.socket		%{buildroot}/etc/systemd/system
+cp ./test-input/SYSTEMD/jald.service		%{buildroot}/etc/systemd/system
+cp ./test-input/SYSTEMD/jal_subscribe.service	%{buildroot}/etc/systemd/system
 
 mkdir -p %{buildroot}/etc/jalop
 cp ./test-input/TLS_Unit_Test_Files/cert			%{buildroot}/etc/jalop
 cp ./test-input/TLS_Unit_Test_Files/cert_and_key		%{buildroot}/etc/jalop
 cp ./test-input/TLS_Unit_Test_Files/rsa_key			%{buildroot}/etc/jalop
 cp ./test-input/jald.cfg			%{buildroot}/etc/jalop
-cp ./test-input/jalls_service.cfg		%{buildroot}/etc/jalop
-cp ./test-input/jald_service.cfg		%{buildroot}/etc/jalop
-cp ./test-input/jal_subscribe_service.cfg	%{buildroot}/etc/jalop
-cp ./test-input/local_store.cfg			%{buildroot}/etc/jalop
+cp ./test-input/SYSTEMD/jalls_service.cfg		%{buildroot}/etc/jalop
+cp ./test-input/SYSTEMD/jald_service.cfg		%{buildroot}/etc/jalop
+cp ./test-input/SYSTEMD/jal_subscribe_service.cfg	%{buildroot}/etc/jalop
 
 mkdir -p %{buildroot}/usr/share/jalop/schemas
 cp ./schemas/*.xsd			%{buildroot}/usr/share/jalop/schemas
@@ -62,6 +81,7 @@ cp -R ./test-input/TLS_CA_Signed/client/*		%{buildroot}/etc/jalop/TLS_CA_Signed/
 
 mkdir -p %{buildroot}/var/run/jalop/jalls
 mkdir -p %{buildroot}/var/log/jalop
+mkdir -p %{buildroot}/var/log/jalop_sub
 
 %files
 /usr/bin/jal-local-store
@@ -94,11 +114,11 @@ mkdir -p %{buildroot}/var/log/jalop
 /etc/jalop/jalls_service.cfg
 /etc/jalop/jald_service.cfg
 /etc/jalop/jal_subscribe_service.cfg
-/etc/jalop/local_store.cfg
 /usr/share/jalop/schemas/*
 
 %dir /var/run/jalop/jalls
 %dir /var/log/jalop
+%dir /var/log/jalop_sub
 
 %pre
 %post
@@ -125,6 +145,16 @@ groupmems -g jalop		-a jaltester
 
 chgrp jalop /var/log/jalop
 chmod 770   /var/log/jalop
+chgrp jalop /var/log/jalop_sub
+chmod 770   /var/log/jalop_sub
+
+systemctl enable jalls.service
+systemctl enable jald.service
+systemctl enable jal_subscribe.service
+
+systemctl start jalls.service
+systemctl start jald.service
+systemctl start jal_subscribe.service
 
 %preun
 systemctl stop jalls.service
@@ -143,4 +173,5 @@ groupdel jalop
 
 rm -fr /var/run/jalop
 rm -fr /var/log/jalop
+rm -fr /var/log/jalop_sub
 
