@@ -1,0 +1,59 @@
+/**
+ * @file
+ *
+ * @brief This file defines return codes used by the JAL DB Layer.
+ *
+ * ### LICENSE
+ *
+ * Copyright (C) 2025 The National Security Agency (NSA)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+#ifndef _JALDB_STATUS_H_
+#define _JALDB_STATUS_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Enumeration for error codes returned by DB layer calls.
+ */
+enum jaldb_status {
+	JALDB_E_INVAL = -1024,
+	JALDB_E_UNKNOWN,
+	JALDB_E_DB,
+	JALDB_E_ALREADY_CONFED,
+	JALDB_E_NO_MEM,
+	JALDB_E_UNINITIALIZED,
+	JALDB_E_INTERNAL_ERROR,
+	JALDB_E_INITIALIZED,
+	JALDB_E_CORRUPTED,
+	JALDB_E_NONCE,
+	JALDB_E_NOT_FOUND,
+	JALDB_E_READ_ONLY,
+	JALDB_E_QUERY_EVAL,
+	JALDB_E_NOT_IMPL,
+	JALDB_E_SIZE,
+	JALDB_E_REJECT,
+	JALDB_E_LAYOUT_VERSION_UNKNOWN,
+	JALDB_E_NETWORK_DISCONNECTED,
+	JALDB_E_INVAL_TIMESTAMP,
+	JALDB_E_INVAL_RECORD_TYPE,
+	JALDB_OK = 0,
+};
+
+#ifdef __cplusplus
+}
+#endif
+#endif // _JALDB_STATUS_H_
