@@ -1,0 +1,19 @@
+To run a batch of tests.
+-------------------------------------------------
+-configure figure one to many tests in test.cfg
+	-comments will not work. TODO
+	-no blank lines. TODO
+	-payload size will only work for 1K or 32K. TODO
+-run ssh-copy-id to the publisher machine.
+-configure in testme_sub.sh
+	-SSH_USER_PUB
+	-JALOP_HOME_PUB
+-configure
+	-test-input/jald.cfg with proper IPs or hostnames
+	-test-input/jal_subscribe.cfg with proper IPs or hostnames
+-For JJNL 
+	-copy your jar into test-input/PERF-TEST/JJNL
+	-configure test-input/PERF-TEST/JJNL/sampleSubscriber.json
+	-in your test.cfg tls=on|off, the program will toggle "configureTLS" in the .json file
+-run from the subscriber jalop home directory
+	-.test-input/PERF-TEST/testme_sub.sh .test-input/PERF-TEST/test.cfg
