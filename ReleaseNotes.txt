@@ -1,3 +1,6 @@
+Summary of release 2.3.0.0-beta changes (Fri Apr 25 2025) -
+    - Added LMDB database support to store and manage JAL records.
+
 Summary of release 2.2.0.0 changes (Fri Aug 30 2024) -
     - Add RHEL 9 support.
     - Fix deprecated method/function warnings/errors from upgrading to newer versions of openssl and xmlsec1 libraries on RHEL9.
