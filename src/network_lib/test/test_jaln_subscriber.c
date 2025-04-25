@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_subscriber.c This file contains tests for jaln_subscriber.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_subscriber.c functions.
  *
  * ### LICENSE
  *

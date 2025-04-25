@@ -1,5 +1,7 @@
 /**
- * @file jalls_handle_log.hpp This file contains functions to handle a log
+ * @file
+ *
+ * @brief This file contains functions to handle a log
  * to the jal local store.
  *
  * ### LICENSE

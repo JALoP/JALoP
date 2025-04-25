@@ -1,5 +1,7 @@
 /**
- * @file jaln_session.c This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * definitions for internal library functions related to a jaln_session
  * structure. The jaln_session tracks the internal state for a peer that is
  * receiving jal records.
@@ -163,8 +165,8 @@ void jaln_session_destroy(jaln_session **psession) {
 	if (sess->dgst_list) {
 		axl_list_free(sess->dgst_list);
 	}
-	jaln_channel_info_destroy(&sess->ch_info);
 	jaln_ctx_remove_session(sess->jaln_ctx, sess);
+	jaln_channel_info_destroy(&sess->ch_info);
 	jaln_ctx_unref(sess->jaln_ctx);
 	free(sess);
 	*psession = NULL;
@@ -222,6 +224,7 @@ axl_bool jaln_session_on_close_channel(int channel_num,
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
+		vortex_cond_signal(&sess->wait);
 	} else if (channel_num == sess->dgst_chan_num) {
 		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
@@ -266,6 +269,9 @@ void jaln_session_notify_close(
 		sess->rec_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
 	} else if (channel_num == sess->dgst_chan_num) {
+		// Before closing the digest channel, let it try to run once to clean
+		// out any outstanding sync messages
+		vortex_cond_signal(&sess->sub_data->dgst_list_cond);
 		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->dgst_chan = NULL;
@@ -299,7 +305,11 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
+		vortex_cond_signal(&sess->wait);
 	} else if (channel == sess->dgst_chan) {
+		// Before closing the digest channel, let it try to run once to clean
+		// out any outstanding sync messages
+		vortex_cond_signal(&sess->sub_data->dgst_list_cond);
 		vortex_mutex_lock(&sess->lock);
 		sess->closing = axl_true;
 		sess->dgst_chan = NULL;

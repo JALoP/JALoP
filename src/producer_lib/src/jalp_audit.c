@@ -1,5 +1,7 @@
 /**
- * @file jalp_audit.c Function to send audit records to the local store.
+ * @file
+ *
+ * @brief Function to send audit records to the local store.
  *
  * ### LICENSE
  *
@@ -71,7 +73,7 @@ enum jal_status jalp_audit(jalp_context *ctx,
 	// Only if schema validation is requested, expect that the
 	// input data is xml and attempt to parse into a document
 	if(JAF_VALIDATE_XML & flags) {
-		validated_doc = xmlReadMemory((const char *)audit_buffer, strlen((const char *)audit_buffer), "", NULL, 0);
+		validated_doc = xmlReadMemory((const char *)audit_buffer, audit_buffer_size, "", NULL, 0);
 		if(NULL == validated_doc) {
 			// If we expected XML and don't get XML, report a parse failure
 			status = JAL_E_XML_PARSE;

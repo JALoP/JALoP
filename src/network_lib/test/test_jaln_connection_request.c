@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_connection_request.c This file contains tests for
+ * @file
+ *
+ * @brief This file contains tests for
  * jaln_connection_request structure.
  *
  * ### LICENSE

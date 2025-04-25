@@ -1,7 +1,7 @@
 /**
- * @file jaln_network.h
+ * @file
  *
- * Public functions for creating and configuring a jaln_context.
+ * @brief Public functions for creating and configuring a jaln_context.
  *
  * ### LICENSE
  *
@@ -415,6 +415,29 @@ enum jal_status jaln_send_log(
 enum jal_status jaln_finish(jaln_session *sess);
 
 /**
+ * Notify the library that the caller is using the specified
+ * session and that it must not be destroyed.
+ *
+ * Increments the reference counter internal to the session. Ensure that
+ * for every jaln_add_session_ref, a matching jaln_remove_session_ref
+ * is invoked once the session is no longer needed by the current scope.
+ *
+ * @param[in] sess The session to add a reference to
+ */
+void jaln_add_session_ref(jaln_session *sess);
+
+/**
+ * Notify the library that the caller is finished using the specified
+ * session.
+ *
+ * The counter part to jaln_add_sesion_ref. Decrements the reference counter
+ * internal to the session.
+ *
+ * @param[in] sess The session to remove a reference from
+ */
+void jaln_remove_session_ref(jaln_session *sess);
+
+/**
  * Set the debug_flag for the context.
  *
  * @param [in] ctx The ctx to operate on.
@@ -423,6 +446,39 @@ enum jal_status jaln_finish(jaln_session *sess);
  * @return JAL_OK on success, or an error.
  */
 enum jal_status jaln_context_set_debug(jaln_context *ctx, int debug_flag);
+
+/**
+ * Set the journal_resume_threshold_size for the context.
+ *
+ * @param [in] ctx The ctx to operate on.
+ * @param [in] threshold The threshold to set.
+ *
+ * @return JAL_OK
+ */
+enum jal_status jaln_context_set_resume_threshold(jaln_context *ctx, const long long threshold);
+
+/**
+ * Get the configured journal_resume_threshold_size from the jaln_context_t associated
+ * with a jaln_session
+ *
+ * @param[in] sess The session to use to retrieve the threshold size
+ * @return -1 indicating resume should be disabled, or an error retrieving the configuration
+ *         0 indicating resume should always be performed
+ *         > 0 indicating the configured threshold
+ * In the last case, a journal resume should be performed if the already received data
+ * is larger than the threshold value (in bytes)
+ */
+long long jaln_session_get_resume_threshold(jaln_session* sess);
+
+
+/**
+ * Helper to determine if the session is in the process of closing
+ *
+ * @param[in] session The session to associate with.
+ *
+ * @return 1 if the session is closing, 0 otherwise
+ */
+int jaln_session_is_closing(jaln_session *session);
 
 #ifdef __cplusplus
 }

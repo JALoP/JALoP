@@ -1,5 +1,7 @@
 /**
- * @file jaln_subscriber_state_machine.c This file contains the implementation of a
+ * @file
+ *
+ * @brief This file contains the implementation of a
  * state machine used when receiving JAL records.
  *
  * ### LICENSE

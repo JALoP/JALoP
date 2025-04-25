@@ -1,5 +1,7 @@
 /**
- * @file sub.c Dummy server as the start to 'real' jalp_push tool. Shows
+ * @file
+ *
+ * @brief Dummy server as the start to 'real' jalp_push tool. Shows
  * sample use of the network library.
  *
  * ### LICENSE

@@ -1,5 +1,7 @@
 /**
- * @file jalp_log_severity.c This file defines functions to deal with log
+ * @file
+ *
+ * @brief This file defines functions to deal with log
  * severity metadata.
  *
  * ### LICENSE

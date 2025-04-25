@@ -1,5 +1,7 @@
 /**
- * @file test_jal_config.c This file contains functions to test
+ * @file
+ *
+ * @brief This file contains functions to test
  * the libconfig wrapper functions
  *
  * ### LICENSE

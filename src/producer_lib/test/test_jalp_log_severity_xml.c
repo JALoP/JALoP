@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_log_severity_xml.c This file contains functions to test jalp_log_severity_to_elem.
+ * @file
+ *
+ * @brief This file contains functions to test jalp_log_severity_to_elem.
  *
  * ### LICENSE
  *

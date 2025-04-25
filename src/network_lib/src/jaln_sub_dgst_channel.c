@@ -1,5 +1,7 @@
 /**
- * @file jaln_sub_dgst_channel.c This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * declarations for functions related to jaln_sub_dgst
  *
  * ### LICENSE
@@ -48,6 +50,15 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 			continue;
 		}
 
+		// no point sending empty digest/sync messages
+		if (!sess->errored && axl_list_length(sess->dgst_list) > 0) {
+			axlList *dgst_list = sess->dgst_list;
+			sess->dgst_list =
+				axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
+			jaln_send_digest_and_sync_no_lock(sess, dgst_list);
+			axl_list_free(dgst_list);
+		}
+
 		if (sess->errored || sess->closing) {
 			// try to close the channel;
 			if (sess->dgst_chan) {
@@ -58,14 +69,6 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 				vortex_mutex_unlock(&sess->lock);
 				break;
 			}
-		}
-		// no point sending empty digest/sync messages
-		if (axl_list_length(sess->dgst_list) > 0) {
-			axlList *dgst_list = sess->dgst_list;
-			sess->dgst_list =
-				axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
-			jaln_send_digest_and_sync_no_lock(sess, dgst_list);
-			axl_list_free(dgst_list);
 		}
 	}
 	return NULL;
@@ -123,7 +126,7 @@ void jaln_send_digest_and_sync_no_lock(jaln_session *sess, axlList *dgst_list)
 	cursor = axl_list_cursor_new(dgst_resp);
 	axl_list_cursor_first(cursor);
 
-	while (axl_list_cursor_has_item(cursor) && !sess->closing) {
+	while (axl_list_cursor_has_item(cursor)) {
 		struct jaln_digest_resp_info *resp_info = (struct jaln_digest_resp_info*) axl_list_cursor_get(cursor);
 
 		if (JAL_OK != sess->jaln_ctx->sub_callbacks->

@@ -1,5 +1,7 @@
 /**
- * @file jalp_transform.c This file has functions for creating and destroying
+ * @file
+ *
+ * @brief This file has functions for creating and destroying
  * jalp_transform structures.
  *
  * ### LICENSE

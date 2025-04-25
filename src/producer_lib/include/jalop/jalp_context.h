@@ -1,5 +1,7 @@
 /**
- * @file jalp_context.h This file defines the public API available to
+ * @file
+ *
+ * @brief This file defines the public API available to
  * applications for sending JAL data to a JALoP Local Store.
  *
  * ### LICENSE

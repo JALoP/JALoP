@@ -1,5 +1,7 @@
 /**
- * @file jaldb_nonce.h This file deals with C function declarations related
+ * @file
+ *
+ * @brief This file deals with C function declarations related
  * to nonces for the DB Layer.
  *
  * ### LICENSE

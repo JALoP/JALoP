@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_subscriber_state_machine.c This file contains tests for the subscriber state machine.
+ * @file
+ *
+ * @brief This file contains tests for the subscriber state machine.
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
 /**
- * @file jalp_send_helper.c This file contains functions for sending an xml buffer.
+ * @file
+ *
+ * @brief This file contains functions for sending an xml buffer.
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
-/*
- * @file jal_seccomp_enforcer.hpp This file contains the C++ definitions
+/**
+ * @file
+ *
+ * @brief This file contains the C++ definitions
  * used to load and enforcing seccomp policies
  *
  * Copyright (C) 2022 The National Security Agency (NSA)
@@ -46,6 +48,9 @@ struct SeccompRule
 	int callNumber;
 };
 
+/**
+ * LogLevel enum
+ */
 enum class LogLevel
 {
 	Debug,

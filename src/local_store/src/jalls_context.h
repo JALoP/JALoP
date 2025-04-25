@@ -1,5 +1,7 @@
 /**
- * @file jalls_context.h This file contains structs to deal with passing data
+ * @file
+ *
+ * @brief This file contains structs to deal with passing data
  * to local store worker threads.
  *
  * ### LICENSE
@@ -88,6 +90,19 @@ struct jalls_context {
 	int accept_delay_max;
 	/** Digest algorithm to use in system metadata */
 	enum jal_digest_algorithm sys_meta_dgst_alg;
+
+	/**The size in bytes of largest record size (app metadata, sys metadata, payload) for each record type to allow to be inserted into the local store.
+	Any record larger than this limit will not be inserted.  A value of -1 indicates that this check is disabled
+	and all record sizes are inserted. */
+	long long journal_record_size_limit;
+	long long audit_record_size_limit;
+	long long log_record_size_limit;
+
+	/**This setting is used by LMDB builds only and is the LMDB flags set by the database_option config setting*/
+	enum jaldb_flags jdb_flags;
+
+	/**Stores the string value for the database_option config setting**/
+	char *database_option;
 };
 
 struct jalls_thread_context { /* the worker thread should never write to or free any of the jalls_thread_context fields */
@@ -105,6 +120,16 @@ struct jalls_thread_context { /* the worker thread should never write to or free
 	EVP_PKEY *signing_key;
 	/** The certificate used for signing the system metadata */
 	X509 *signing_cert;
+
+	/**The size in bytes of largest record size (app metadata, sys metadata, payload) for each record type to allow to be inserted into the local store.
+	Any record larger than this limit will not be inserted.  A value of -1 indicates that this check is disabled
+	and all record sizes are inserted. */
+	long long journal_record_size_limit;
+	long long audit_record_size_limit;
+	long long log_record_size_limit;
+
+	/** Allow the thread to signal that it is finished so jalls can stop tracking it */
+	int finished;
 };
 
 

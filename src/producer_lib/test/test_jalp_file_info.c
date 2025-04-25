@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_file_info.c This file contains tests for jalp_file_info functions.
+ * @file
+ *
+ * @brief This file contains tests for jalp_file_info functions.
  *
  * ### LICENSE
  *

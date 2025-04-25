@@ -1,5 +1,7 @@
 /**
- * @file jalls_handler.h This file contains functions to handle a connection
+ * @file
+ *
+ * @brief This file contains functions to handle a connection
  * to the jalop local store.
  *
  * ### LICENSE

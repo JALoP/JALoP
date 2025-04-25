@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_structured_data_xml.c This file contains tests for jalp_structured_data_to_elem
+ * @file
+ *
+ * @brief This file contains tests for jalp_structured_data_to_elem
  *
  * ### LICENSE
  *

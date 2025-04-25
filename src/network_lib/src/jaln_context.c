@@ -1,5 +1,7 @@
 /**
- * @file jaln_context.c This file contains functions related to a jaln_context
+ * @file
+ *
+ * @brief This file contains functions related to a jaln_context
  *
  * Public functions for creating and configuring a jaln_context.
  *
@@ -53,6 +55,8 @@ jaln_context *jaln_context_create(void)
 	ctx->ref_cnt = 1;
 
 	jaln_context_set_debug(ctx, 0);
+
+	ctx->journal_resume_threshold_size = 0;
 
 	ctx->dgst_algs = axl_list_new(jaln_digest_list_equal_func, jaln_digest_list_destroy);
 	if (!ctx->dgst_algs) {

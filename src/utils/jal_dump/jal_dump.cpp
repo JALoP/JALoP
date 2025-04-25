@@ -1,5 +1,8 @@
 /**
- * @file jal_dump.cpp This file contains the source for jal_dump
+ * @file
+ *
+ * @brief This file contains the source for jal_dump
+ *
  * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
@@ -49,6 +52,11 @@
 #include "jaldb_record.h"
 #include "jaldb_segment.h"
 #include "jaldb_strings.h"
+
+// For RHEL7 compatibility
+#ifndef UUID_STR_LEN
+constexpr int UUID_STR_LEN = 37;
+#endif
 
 #define INITIAL_ARRAY_SIZE 20
 #define WRITE_MAX 2147479552

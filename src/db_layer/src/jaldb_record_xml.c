@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record_xml.c This file defines functions to deal with
+ * @file
+ *
+ * @brief This file defines functions to deal with
  * converting jaldb_record to a system meta-data document.
  *
  * ### LICENSE
@@ -86,7 +88,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 		return JALDB_E_INVAL;
 	}
 
-	if (JALDB_OK != jaldb_record_sanity_check(rec)) {
+	if (JALDB_OK != jaldb_record_sanity_check(rec, -1)) {
 		return JALDB_E_INVAL;
 	}
 

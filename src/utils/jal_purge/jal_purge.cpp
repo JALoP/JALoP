@@ -1,5 +1,8 @@
 /**
- * @file jal_purge.cpp This file contains the source for jal_purge
+ * @file
+ *
+ * @brief This file contains the source for jal_purge
+ *
  * ### LICENSE
  *
  * Source code in 3rd-party is licensed and owned by their respective
@@ -27,6 +30,10 @@
 
 #include <argp.h>
 #include <iostream>
+#include <algorithm>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <fstream>
 #include <map>
 #include <jalop/jal_version.h>
 #include <string>
@@ -36,10 +43,9 @@
 #include <signal.h>
 
 #include "jaldb_context.hpp"
+#include "jaldb_purge.hpp"
 #include "jaldb_record_dbs.h"
-#include "jaldb_serialize_record.h"
 #include "jaldb_utils.h"
-#include "jaldb_traverse.h"
 #include "jaldb_status.h"
 #include "jaldb_strings.h"
 #include "jaldb_record.h"
@@ -61,6 +67,15 @@ const char *recv_str[] = { "UNCONF", " CONF " };
 const char *action_str[] = {"Keep  ", "Delete", "Force "};
 static int exiting = 0;
 
+const char LMDB_PERFORMANCE_NONE = '0';
+const char LMDB_PERFORMANCE_LEVEL_1 = '1';
+const char LMDB_PERFORMANCE_LEVEL_2 = '2';
+const char LMDB_PERFORMANCE_LEVEL_3 = '3';
+const int MAX_PURGE_BATCH_SIZE = 10000;
+
+//These are the jal processes to check if running before doing a db compact operation
+const std::vector<std::string> jal_process_list = {"jal-local-store", "jald", "jal_subscribe", "jal_sub_cpp"};
+
 static struct global_args_t {
 	int del;
 	int force;
@@ -68,6 +83,10 @@ static struct global_args_t {
 	int detail;
 	int skip_clean;
 	int compact;
+	int skip_process_check;
+	char *compact_path;
+	char performance_level;
+	char *batch_size;
 	char *nonce;
 	list<string> uuids;
 	char type;
@@ -95,8 +114,19 @@ static struct argp_option options[] = {
 		"When '-d' is given, force the deletion of records even when the JALoP Network Store has not sent them to at least one JALoP Network Store.  When given without '-d', this will report the records that would be deleted.", 0},
 	{"compact", 'c', NULL, 0,
 		"Compact the databases associated to the JAL record type (j/a/l) passed via -t and return empty pages to the filesystem.", 0},
+	#ifdef JALDB_TYPE_BDB
 	{"preserve-history", 'p', NULL, 0,
 		"Don't remove old Berkeley DB log files after purging.  This can be useful if you need to recover from certain error conditions but consumes more disk space.", 0},
+	#else
+	{"batch-size", 'e', "E", 0,
+			"Specify the the number of records to purge per transaction. The default is 10000 records if not specified. The minimum value is 1 and maximum is 10000.", 0},
+	{"performance-level", 'l', "L", 0,
+			"Specify the LMDB performance level to use. Valid values are '0', 1', '2', '3'.  The default is '2' if not specified.", 0},
+	{"compact-path", 's', "S", 0,
+			"Specify path of where the temporary LMDB database is copied while compacting.", 0},
+	#endif
+	{"skip-process-check", 'a', NULL, 0,
+			"This skips the JALoP process running check on compact.  WARNING!! Using this setting can result in DB corruption if compact is performed against a database that is in use.", 0},
 	{"home", 'h', "H", 0, "Specify the root of the JALoP database, defaults to /var/lib/jalop/db.", 0},
 	{"verbose", 'v', NULL, 0, "Output the UUID for each deleted record.", 0},
 	{"detail", 'x', NULL, 0, "Report detailed information about the records jal_purge is reviewing for deletion. This reports the action to be taken (Delete, Forced Delete, Keep), the inbound state (Confirmed or Unconfirmed), the outbound state (Unsent, Sent, Synced), the local insertion timestamp, and the local nonce for each record.", 0},
@@ -108,10 +138,78 @@ static int setup_signals();
 static void sig_handler(int sig);
 
 extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record *rec, void *up);
-enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
-                enum jaldb_rec_type type,
-                const char *timestamp,
-                jaldb_iter_cb cb, void *up);
+
+bool isNotNumber(char c)
+{
+    return !(isdigit(c));
+}
+
+bool isNumber(const std::string& currDirName)
+{
+    return find_if(currDirName.begin(), currDirName.end(), isNotNumber) == currDirName.end();
+}
+
+bool checkForRunningProcess(const std::vector<std::string> &procNames, bool &isRunning)
+{
+	isRunning = false;
+
+	std::string dirPath = "/proc";
+	try
+	{
+		if (!boost::filesystem::exists(dirPath) || !boost::filesystem::is_directory(dirPath)) {
+			fprintf(stderr, "ERROR: Failed to check for running JALoP process.\n");
+			return false;
+		}
+
+		//Loop through all process id dirs in /proc and check if process listed in procName vector is running
+		boost::filesystem::directory_iterator end_itr;
+		for (boost::filesystem::directory_iterator dir_itr(dirPath); dir_itr != end_itr; ++dir_itr)
+		{
+			//Only process number directories
+			std::string currDirName = dir_itr->path().filename().string();
+
+			if (boost::filesystem::is_directory(dir_itr->path()) && isNumber(currDirName))
+			{
+				//Read contents of comm file in process subdir and check if it is one of the process names
+				//provided in the procNames vector
+				std::string currCommFile = dirPath + "/" + currDirName + "/comm";
+				std::ifstream commFile(currCommFile);
+
+				if (commFile.is_open())
+				{
+					std::string currCommand;
+					while(std::getline(commFile, currCommand))
+					{
+						if (std::find(procNames.begin(), procNames.end(), currCommand) != procNames.end())
+						{
+							isRunning = true;
+							break;
+						}
+					}
+
+					commFile.close();
+
+					if (true == isRunning)
+					{
+						break;
+					}
+				}
+			}
+		}
+	}
+	catch (std::exception &err)
+	{
+		fprintf(stderr, "ERROR: Failed to check for running JALoP process: %s\n", err.what());
+		return false;
+	}
+	catch (...)
+	{
+		fprintf(stderr, "ERROR: Failed to check for running JALoP process - unknown error occurred\n");
+		return false;
+	}
+
+	return true;
+}
 
 int main(int argc, char **argv)
 {
@@ -141,7 +239,127 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	dbret = jaldb_context_init(ctx, global_args.home, JDB_NONE);
+	jaldb_flags jdb_flags;
+	#ifdef JALDB_TYPE_LMDB
+	if (global_args.compact) {
+		//Ensure compact path was provided
+		if (NULL == global_args.compact_path)
+		{
+			fprintf(stdout, "Compact path (-s) is required when compacting the database (-c)\n");
+			global_args_free();
+			jaldb_context_destroy(&ctx);
+			return -1;
+		}
+
+		ctx->db_root = new std::string(global_args.home);
+		ctx->compact_path = new std::string(global_args.compact_path);
+	}
+	else
+	{
+		//If not compact, disallow compact only args
+		if (NULL != global_args.compact_path)
+		{
+			fprintf(stdout, "ERROR: Compact path (-s) is only valid when when compacting the database (-c)\n");
+			global_args_free();
+			jaldb_context_destroy(&ctx);
+			return -1;
+		}
+	}
+
+	//Sets performance level if specified
+	if (LMDB_PERFORMANCE_NONE == global_args.performance_level)
+	{
+		jdb_flags = JDB_NONE;
+	}
+	else if (LMDB_PERFORMANCE_LEVEL_1 == global_args.performance_level)
+	{
+		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL1;
+	}
+	else if (LMDB_PERFORMANCE_LEVEL_2 == global_args.performance_level)
+	{
+		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
+	}
+	else if (LMDB_PERFORMANCE_LEVEL_3 == global_args.performance_level)
+	{
+		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL3;
+	}
+	else //Default to performance level 2
+	{
+		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
+	}
+
+	//Sets batch_size if specified, otherwise default to no batching (1)
+	ctx->batch_size = 1;
+
+	if (NULL != global_args.batch_size)
+	{
+		std::string batch_size_str(global_args.batch_size);
+		long curr_batch_size = 1;
+		size_t pos;
+		try
+		{
+			curr_batch_size = std::stol(batch_size_str, &pos);
+		}
+		catch(const std::invalid_argument& ia)
+		{
+			fprintf(stderr, "ERROR: Invalid batch_size argument.\n");
+			goto out;
+		}
+		catch(const std::out_of_range& oor)
+		{
+			fprintf(stderr, "ERROR: batch_size argument out of range.\n");
+			goto out;
+		}
+
+		if (curr_batch_size < 1)
+		{
+			fprintf(stderr, "ERROR: batch_size argument must be not be less than 1.\n");
+			goto out;
+		}
+
+		ctx->batch_size = curr_batch_size;
+	}
+
+	#else
+	jdb_flags = JDB_NONE;
+	#endif
+
+	if (global_args.compact) {
+		//Ensure that jalop processes are not running (if skip process check not true)
+		if (1 != global_args.skip_process_check)
+		{
+			bool isRunning = false;
+			if (!checkForRunningProcess(jal_process_list, isRunning))
+			{
+				//Error occurred checking for process name, and error was printed
+				//in method above.
+				global_args_free();
+				jaldb_context_destroy(&ctx);
+				return -1;
+			}
+
+			if (true == isRunning)
+			{
+				std::string jal_process_list_str =  boost::algorithm::join(jal_process_list, ",");
+				fprintf(stdout, "ERROR: compact cannot be performed due to one or more of the following JALoP processes are running: %s \n", jal_process_list_str.c_str());
+				global_args_free();
+				jaldb_context_destroy(&ctx);
+				return -1;
+			}
+		}
+	}
+	else
+	{
+		if (1 == global_args.skip_process_check)
+		{
+			fprintf(stdout, "ERROR: Skip process check (-a) is only valid when when compacting the database (-c)\n");
+			global_args_free();
+			jaldb_context_destroy(&ctx);
+			return -1;
+		}
+	}
+
+	dbret = jaldb_context_init(ctx, global_args.home, jdb_flags);
 	if (JALDB_OK != dbret) {
 		fprintf(stderr, "Failed to initialize jaldb context\n");
 		goto out;
@@ -186,6 +404,38 @@ int main(int argc, char **argv)
 		} else {
 			printf("Synced records only\n");
 		}
+
+		#ifdef JALDB_TYPE_LMDB
+		if (LMDB_PERFORMANCE_NONE == global_args.performance_level)
+		{
+			printf("LMDB Performance Level: JDB_NONE\n");
+		}
+		else if (LMDB_PERFORMANCE_LEVEL_1 == global_args.performance_level)
+		{
+			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL1\n");
+		}
+		else if (LMDB_PERFORMANCE_LEVEL_2 == global_args.performance_level)
+		{
+			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL2\n");
+		}
+		else if (LMDB_PERFORMANCE_LEVEL_3 == global_args.performance_level)
+		{
+			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL3\n");
+		}
+		else //Default to performance level 2
+		{
+			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL2\n");
+		}
+
+		if (global_args.batch_size)
+		{
+			printf("Batch Size: %s\n", global_args.batch_size);
+		}
+		else
+		{
+			printf("Batch Size: %d\n", MAX_PURGE_BATCH_SIZE);
+		}
+		#endif
 
 	} else {
 		// Otherwise output the old format that works with the test harness
@@ -272,7 +522,7 @@ int main(int argc, char **argv)
 		if (global_args.detail) {
 			printf("Records before: %s\n\n", global_args.before);
 		}
-		dbret = iterate_by_timestamp(ctx, type, global_args.before, iter_cb, &global_args);
+		dbret = jaldb_iterate_by_timestamp_purge(ctx, type, global_args.before, iter_cb, &global_args, exiting);
 		goto out;
 	} else {
 		fprintf(stderr, "ERROR: Purging without a before time or uuid specified is currently not supported.\n");
@@ -282,9 +532,12 @@ int main(int argc, char **argv)
 	}
 
 out:
+	//Remove db logs only applies to BDB
+	#ifdef JALDB_TYPE_BDB
 	if (!global_args.skip_clean) {
 		jaldb_remove_db_logs(ctx);
 	}
+	#endif
 
 	if (global_args.detail) {
 		printf("\n");
@@ -293,16 +546,20 @@ out:
 	jaldb_status rc = JALDB_OK;
 	if (global_args.compact) {
 		fprintf(stdout, "Running DB->compact\n");
+		#ifdef JALDB_TYPE_BDB
 		rc = jaldb_compact_dbs(ctx, type);
+		#else
+		rc = jaldb_compact_lmdb(ctx, type);
+		#endif
 		if (JALDB_OK != rc) {
-			fprintf(stderr, "ERROR: Compact failed on one or more databases.");
+			fprintf(stderr, "ERROR: Compact failed on one or more databases.\n");
 		}
 	}
 
 	global_args_free();
 	jaldb_context_destroy(&ctx);
 
-        if (JALDB_OK != dbret || JALDB_OK != rc) {
+	if (JALDB_OK != dbret || JALDB_OK != rc) {
 		return -1;
 	}
 }
@@ -358,198 +615,6 @@ extern "C" enum jaldb_iter_status iter_cb(const char *nonce, struct jaldb_record
 	return ret_val;
 }
 
-enum jaldb_status iterate_by_timestamp(jaldb_context *ctx,
-                enum jaldb_rec_type type,
-                const char *timestamp,
-                jaldb_iter_cb cb, void *up)
-{
-        enum jaldb_status ret = JALDB_E_INVAL;
-        struct tm target_time, record_time;
-        memset(&target_time, 0, sizeof(target_time));
-        memset(&record_time, 0, sizeof(record_time));
-        int target_ms = 0;
-        int record_ms = 0;
-        char *tmp_time = NULL;
-        struct jaldb_record *rec = NULL;
-        int byte_swap = 0;
-        struct jaldb_record_dbs *rdbs = NULL;
-        int db_ret = 0;
-        DBT key;
-        DBT pkey;
-        DBT val;
-        DBC *cursor = NULL;
-        memset(&key, 0, sizeof(key));
-        memset(&pkey, 0, sizeof(pkey));
-        memset(&val, 0, sizeof(val));
-        key.flags = DB_DBT_REALLOC;
-        val.flags = DB_DBT_REALLOC;
-        time_t target_secs = 0;
-        map<string, string> purge_map;
-        char *path = NULL;
-
-        tmp_time = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &target_time);
-        if (!tmp_time) {
-                fprintf(stderr, "ERROR: Invalid time format specified.\n");
-                ret = JALDB_E_INVAL_TIMESTAMP;
-                goto out;
-        }
-
-        if (!sscanf(tmp_time,".%d-%*d:%*d", &target_ms)) {
-                fprintf(stderr, "ERROR: Invalid time format specified.\n");
-                ret = JALDB_E_INVAL_TIMESTAMP;
-                goto out;
-        }
-        // Calculate the target time in secs once before we start looping
-        target_secs = mktime(&target_time);
-
-        if (!ctx || !cb) {
-                ret = JALDB_E_UNINITIALIZED;
-                goto out;
-        }
-
-        switch(type) {
-        case JALDB_RTYPE_JOURNAL:
-                rdbs = ctx->journal_dbs;
-                break;
-        case JALDB_RTYPE_AUDIT:
-                rdbs = ctx->audit_dbs;
-                break;
-        case JALDB_RTYPE_LOG:
-                rdbs = ctx->log_dbs;
-                break;
-        default:
-                ret = JALDB_E_INVAL_RECORD_TYPE;
-                goto out;
-        }
-
-        if (!rdbs) {
-                ret = JALDB_E_UNINITIALIZED;
-                goto out;
-        }
-
-        // Use the record creation time database
-        db_ret = rdbs->timestamp_idx_db->get_byteswapped(rdbs->timestamp_idx_db, &byte_swap);
-        if (0 != db_ret) {
-                ret = JALDB_E_INVAL;
-                goto out;
-        }
-
-        db_ret = rdbs->timestamp_idx_db->cursor(rdbs->timestamp_idx_db, NULL, &cursor, DB_DEGREE_2);
-        if (0 != db_ret) {
-                JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
-                ret = JALDB_E_INVAL;
-                goto out;
-        }
-
-        while(0 == db_ret) {
-                db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_NEXT);
-                if (0 != db_ret) {
-                        if (DB_NOTFOUND == db_ret) {
-                                ret = JALDB_OK;
-                        } else {
-                                JALDB_DB_ERR(rdbs->timestamp_idx_db, db_ret);
-                                ret = JALDB_E_INVAL;
-                        }
-                        goto out;
-                }
-
-                // mktime() like to set things like timezone to system timezone -
-                // need to clean out the tm struct before each call
-                memset(&record_time, 0, sizeof(record_time));
-
-                tmp_time = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &record_time);
-                if (!tmp_time) {
-                        fprintf(stderr, "ERROR: Cannot get strptime from record\n");
-                        ret = JALDB_E_INVAL_TIMESTAMP;
-                        goto out;
-                }
-
-                if (!sscanf(tmp_time,".%d-%*d:%*d", &record_ms)) {
-                        ret = JALDB_E_INVAL_TIMESTAMP;
-                        goto out;
-                }
-
-                double delta = difftime(target_secs,mktime(&record_time));
-                if (delta < 0) {
-                        // record_time is > target_time, so break out
-                        goto out;
-                }
-
-                if (delta == 0) {
-                        if (record_ms > target_ms) {
-                                goto out;
-                        }
-                }
-
-                ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
-                if (ret != JALDB_OK) {
-                        goto out;
-                }
-
-                switch (cb((char*) pkey.data, rec, up)) {
-                case JALDB_ITER_CONT:
-                        break;
-                case JALDB_ITER_REM:
-			if (JALDB_RTYPE_JOURNAL == type) {
-				jaldb_segment *segment = rec->payload;
-				if (segment && segment->on_disk) {
-					jal_asprintf(&path, "%s/%s", ctx->journal_root, (char*)segment->payload);
-				}
-			}
-			// Insert record nonce and payload path into purge map.
-			if (path) {
-                        	purge_map[string((const char*)(pkey.data))] = string((const char*)(path));
-				free(path);
-				path = NULL;
-			} else {
-                        	purge_map[string((const char*)(pkey.data))] = string("");
-			}
-                        break;
-                default:
-                        goto out;
-                }
-
-                jaldb_destroy_record(&rec);
-
-		if (exiting) {
-			break;
-		}
-        }
-
-out:
-        if (cursor) {
-                cursor->c_close(cursor);
-        }
-        cursor = NULL;
-
-        // Remove records that are in the purge_map.
-	map<string, string>::iterator iter;
-	for (iter = purge_map.begin(); iter != purge_map.end(); iter++) {
-		if (exiting) {
-			break;
-		}
-
-		ret = jaldb_remove_record(ctx, type, (char*)iter->first.c_str());
-		if (JALDB_OK == ret) {
-			// Remove any on-disk payload file.
-			string currPath = iter->second;
-			if (!currPath.empty() && 0 < currPath.length()) {
-				unlink((char*)currPath.c_str());
-			}
-			fprintf(stdout, "NONCE: %s Deleted\n", iter->first.c_str());
-		} else {
-			fprintf(stderr, "ERROR: failed to remove record: %s\n", iter->first.c_str());
-		}
-	}
-
-        jaldb_destroy_record(&rec);
-
-        free(key.data);
-        free(val.data);
-        purge_map.clear();
-        return ret;
-}
-
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
 	switch (key)
@@ -573,8 +638,29 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		case 'h':
 			global_args.home = strdup(arg);
 			break;
+		#ifdef JALDB_TYPE_BDB
 		case 'p':
 			global_args.skip_clean = 1;
+			break;
+		#endif
+		#ifdef JALDB_TYPE_LMDB
+		case 'l':
+			if (LMDB_PERFORMANCE_NONE != *arg && LMDB_PERFORMANCE_LEVEL_1 != *arg &&
+				LMDB_PERFORMANCE_LEVEL_2 != *arg && LMDB_PERFORMANCE_LEVEL_3 != *arg) {
+				fprintf(stderr, "Invalid performance level\n");
+				goto err_out;
+			}
+			global_args.performance_level = *arg;
+			break;
+		case 's':
+			global_args.compact_path = strdup(arg);
+			break;
+		case 'e':
+			global_args.batch_size = strdup(arg);
+			break;
+		#endif
+		case 'a':
+			global_args.skip_process_check = 1;
 			break;
 		case 'v':
 			global_args.verbose = 1;
@@ -602,6 +688,8 @@ static void global_args_free()
 {
 	free(global_args.before);
 	free(global_args.home);
+	free(global_args.compact_path);
+	free(global_args.batch_size);
 }
 
 static int setup_signals()

@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_syslog_metadata.c This file contains functions to test jalp_syslog_metadata functions.
+ * @file
+ *
+ * @brief This file contains functions to test jalp_syslog_metadata functions.
  *
  * ### LICENSE
  *

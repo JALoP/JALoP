@@ -1,5 +1,7 @@
 /**
- * @file jaln_digest_msg_handler.c This file contains the function
+ * @file
+ *
+ * @brief This file contains the function
  * definitions for helper functions used to process a 'digest-challenge'
  * message.
  *

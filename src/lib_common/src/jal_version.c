@@ -1,5 +1,7 @@
 /**
- * @file jal_version.c This file contains a function for getting the
+ * @file
+ *
+ * @brief This file contains a function for getting the
  * JALoP verions as a string
  *
  * ### LICENSE

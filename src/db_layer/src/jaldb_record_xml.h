@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record_xml.h This file declares functions to deal with
+ * @file
+ *
+ * @brief This file declares functions to deal with
  * converting jaldb_record to a system meta-data document.
  *
  * ### LICENSE

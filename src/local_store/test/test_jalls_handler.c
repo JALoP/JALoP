@@ -1,5 +1,7 @@
 /**
- * @file test_jalls_handler.c This file contains tests for jalls_handler functions.
+ * @file
+ *
+ * @brief This file contains tests for jalls_handler functions.
  *
  * ### LICENSE
  *

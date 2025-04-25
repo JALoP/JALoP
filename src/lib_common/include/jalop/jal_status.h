@@ -1,5 +1,7 @@
 /**
- * @file jal_status.h This file defines return codes used by the JAL libraries.
+ * @file
+ *
+ * @brief This file defines return codes used by the JAL libraries.
  *
  * ### LICENSE
  *

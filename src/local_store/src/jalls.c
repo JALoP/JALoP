@@ -1,5 +1,7 @@
 /**
- * @file jalls.c This file contains functions the main function of the
+ * @file
+ *
+ * @brief This file contains functions the main function of the
  * jal local store
  *
  * ### LICENSE
@@ -89,7 +91,6 @@ extern volatile int should_exit;
 static int setup_signals();
 static void sig_handler(int sig);
 static void delete_socket(const char *socket_path, int debug);
-static int get_thread_count();
 
 static int systemd_sockfd;
 static int get_sockfd_from_systemd();
@@ -107,7 +108,9 @@ static struct argp_option options[] =
 	{"socket-owner", 'o', "owner", 0, "jal-local-store socket owner", 0},
 	{"socket-group", 'g', "group", 0, "jal-local-store socket group", 0},
 	{"socket-mode", 'm', "mode", 0, "jal-local-store socket file mode ex:0420", 0},
+#ifdef JALDB_TYPE_BDB
 	{"run-db_recover", 'r', NULL, 0, "run db_recover before opening DB", 0},
+#endif
 	{"no-daemon", 'n', NULL, 0, "do not run jal-local-store as daemon process", 0},
 	{0}
 };
@@ -132,6 +135,12 @@ int main(int argc, char **argv) {
 	int sock = -1;
 	int old_socket_exist = 0;
 	char * absolute_path = NULL;
+
+	typedef struct JallsThreadStruct {
+		struct jalls_thread_context* context;
+		pthread_t thread;
+	} JallsThread;
+	JallsThread* thread_array = NULL;
 
 	// Perform signal hookups
 	if ( 0 != setup_signals()) {
@@ -244,13 +253,18 @@ int main(int argc, char **argv) {
 
 	db_ctx = jaldb_context_create();
 	enum jaldb_flags db_flags = JDB_NONE;
+
+	#ifdef JALDB_TYPE_LMDB
+		db_flags = jalls_ctx->jdb_flags;
+	#else
 	if (jalls_ctx->db_recover==1){
 		dfprintf(stderr, "Setting DB_RECOVER flag.\n");
 		db_flags |= JDB_DB_RECOVER;
 	}
 	else{
-	    dfprintf(stderr, "Not setting DB_RECOVER flag.\n");
+		dfprintf(stderr, "Not setting DB_RECOVER flag.\n");
 	}
+	#endif
 	enum jaldb_status jaldb_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, db_flags);
 
 	if (jaldb_err != JALDB_OK) {
@@ -421,6 +435,13 @@ int main(int argc, char **argv) {
 		absolute_path = NULL;
 	}
 
+	#ifdef JALDB_TYPE_LMDB
+	if (jalls_ctx->database_option)
+	{
+		dfprintf(stderr, "database_option:%s \n", jalls_ctx->database_option);
+	}
+	#endif
+
 	if (jalls_ctx->daemon) {
 		dfprintf(stderr, "daemonizing...\n");
 		err = jalu_daemonize(jalls_ctx->log_dir, jalls_ctx->pid_file);
@@ -444,6 +465,12 @@ int main(int argc, char **argv) {
 	if(sock==systemd_sockfd){
 		sd_notify(0, "READY=1");
 	}
+
+	// In order to track currently running threads, we'll make a poor man's map
+	size_t tracked_thread_array_size = 10;
+	size_t thread_count = 0;
+	thread_array = calloc(tracked_thread_array_size, sizeof(JallsThread));
+
 	dfprintf(stderr, "Ready to accept connections\n");
 	while (!should_exit) {
 		struct jalls_thread_context *thread_ctx = calloc(1, sizeof(*thread_ctx));
@@ -453,18 +480,17 @@ int main(int argc, char **argv) {
 			}
 			goto err_out;
 		}
-		int thread_count = 0;
 
 		/* Flow control functionality turned off if min_thread_count_intervention
 		* set to zero in the jal-local-store configuration file
 		*/
 		if (0 < min_thread_count_intervention) {
-			thread_count = get_thread_count();
-			dfprintf(stderr, "Thread_count: %d\n", thread_count);
+			dfprintf(stderr, "Thread_count: %zu\n", thread_count);
 		}
 
 		if (0 < min_thread_count_intervention &&
-			thread_count > min_thread_count_intervention) {
+			// We guard against negative values, so the cast to size_t is safe
+			thread_count > (size_t)min_thread_count_intervention) {
 
 			int delay_count = thread_count - min_thread_count_intervention;
 			int64_t accept_delay = min_accept_delay;
@@ -481,32 +507,129 @@ int main(int argc, char **argv) {
 		}
 
 		if (should_exit) {
+			free(thread_ctx);
 			break;
 		}
 
 		thread_ctx->fd = accept(sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
+		if(-1 == thread_ctx->fd) {
+			free(thread_ctx);
+			// This is normal in the case of a ctrl-C command.
+			// Only print an error if errno is something other than EINTR
+			if(EINTR != errno) {
+				dfprintf(stderr, "Failed to accept: %s\n", strerror(errno));
+			}
+			// This is non-fatal but we don't have anything to connect to right now
+			// Jump back to the top of the loop
+			continue;
+		}
+
+		// The accept call is blocking, so make sure a kill signal didn't arrive while
+		// we were waiting before we create the new thread
 		if (should_exit) {
+			free(thread_ctx);
 			break;
 		}
+
+		// Pointer assignments are fast - there's no new memory being created here
 		thread_ctx->signing_key = key;
 		thread_ctx->signing_cert = cert;
 		thread_ctx->db_ctx = db_ctx;
 		thread_ctx->ctx = jalls_ctx;
-		int my_errno = errno;
-		if (-1 != thread_ctx->fd) {
-			pthread_t new_thread;
-			err = pthread_create(&new_thread, NULL, jalls_handler, thread_ctx);
-			my_errno = errno;
-			if (err < -1 && debug) {
-				fprintf(stderr, "Failed to create pthread: %s\n", strerror(my_errno));
+		thread_ctx->journal_record_size_limit = jalls_ctx->journal_record_size_limit;
+		thread_ctx->audit_record_size_limit = jalls_ctx->audit_record_size_limit;
+		thread_ctx->log_record_size_limit = jalls_ctx->log_record_size_limit;
+
+		// Walk the array from 0..thread_count-1
+		// Check for any finished threads
+		// If a thread has finished, call join to free any pthread resources
+		// then pull the "last" thread in the array forward to take its slot, keeping
+		// the array compact
+		for(size_t i = 0; i < thread_count; i++) {
+			// If this thread slot has not been initialized, we are in an error state. Abort
+			if(NULL == thread_array[i].context || 0 == thread_array[i].thread) {
+				fprintf(stderr, "Corruption of thread handles detected: uninitialized thread. Exiting.");
+				free(thread_ctx);
+				goto err_out;
 			}
-		} else {
+
+			// If a thread has finished...
+			if(thread_array[i].context->finished) {
+				// Call join to free its resources.
+				// This should return immediately
+				void* retval = NULL;
+				int join_err = pthread_join(thread_array[i].thread, &retval);
+				if(0 != join_err) {
+					fprintf(stderr, "Failed to join thread with error: %d\n", join_err);
+				}
+				// Free our context associated with the finished thread
+				free(thread_array[i].context);
+
+				// If and only if the thread_array contains more than one thread
+				// AND this isn't the last thread
+				if(thread_count > 1 && i < thread_count-1) {
+					// This slot is now open. Promote the "last" thread to this slot
+					// and zero out the slot we're promoting from
+					thread_array[i].thread = thread_array[thread_count-1].thread;
+					thread_array[i].context = thread_array[thread_count-1].context;
+					thread_array[thread_count-1].thread = 0;
+					thread_array[thread_count-1].context = NULL;
+				}
+				thread_count -= 1;
+				fprintf(stderr, "thread removed, count now: %zu\n", thread_count);
+				// Go back to the top of the loop - decrementing i by one since we need
+				// to re-examine the thread we've just placed into slot i
+				i -= 1;
+				continue;
+			}
+		}
+
+		// Now that we've walked our entire array compacting it, we can place our new thread
+		// at thread_array[thread_count]
+		// But first, make sure we have room
+		if(thread_count > tracked_thread_array_size) {
+			// This shouldn't be possible unless there's a logical error nearby
+				fprintf(stderr, "Corruption of thread handles detected: Array overrun. Exiting.");
+				free(thread_ctx);
+				goto err_out;
+		}
+		if(thread_count == tracked_thread_array_size) {
+			// TODO - We never shrink this back down. This is unlikely to get so
+			// large to need to be shrunk since we re-fill empty slots before
+			// making new ones, but someone eventually might want this.
+			//
+			// Realloc our array, doubling its size
+			JallsThread* new_array = realloc(thread_array, tracked_thread_array_size*2*sizeof(JallsThread));
+			if(NULL == new_array) {
+				fprintf(stderr, "Failed to increase thread array size with error: %s. "
+					"Aborting new thread creation\n", strerror(errno));
+				free(thread_ctx);
+				continue;
+			}
+			thread_array = new_array;
+
+			// Zero out all the new memory so our NULL checks will work correctly on new slots
+			// Since we're doubling the size, both our offset and length happen to be
+			// tracked_thread_array_size (prior to doubling it)
+			memset(&thread_array[tracked_thread_array_size], 0, tracked_thread_array_size * sizeof(JallsThread));
+
+			tracked_thread_array_size = tracked_thread_array_size*2;
+			fprintf(stderr, "Reallocated thread pool to size: %zu\n", tracked_thread_array_size);
+		}
+
+		// Create our new thread in the array slot
+		int pthread_err = pthread_create(&thread_array[thread_count].thread, NULL, jalls_handler, thread_ctx);
+		if (0 != pthread_err) {
+			fprintf(stderr, "Failed to create pthread: %s\n", strerror(errno));
 			free(thread_ctx);
-			dfprintf(stderr, "Failed to accept: %s\n", strerror(my_errno));
+			thread_array[thread_count].thread = 0;
+			continue;
 		}
-		if (should_exit) {
-			break;
-		}
+
+		// Attach our context to this thread slot
+		thread_array[thread_count].context = thread_ctx;
+		thread_count += 1;
+		fprintf(stderr, "thread added, count now: %zu\n", thread_count);
 	}
 
 err_out:
@@ -515,6 +638,22 @@ err_out:
 		close(sock);
 		delete_socket(jalls_ctx->socket, jalls_ctx->debug);
 	}
+
+	// Send a kill signal to each thread which has not finished, then wait for it to join
+	// And destroy any associated contexts
+	if(thread_array) {
+		for(size_t i = 0; i < thread_count; i++) {
+			if(0 != thread_array[i].thread && NULL != thread_array[i].context) {
+				if(!thread_array[i].context->finished) {
+					pthread_kill(thread_array[i].thread, SIGINT);
+				}
+				pthread_join(thread_array[i].thread, NULL);
+				free(thread_array[i].context);
+			}
+		}
+		free(thread_array);
+	}
+
 	EVP_PKEY_free(key);
 	X509_free(cert);
 	jalls_shutdown();
@@ -576,100 +715,6 @@ static void delete_socket(const char *p_socket_path, int p_debug)
 	else {
 		fprintf(stderr,"Removed jal.sock socket: %s\n", p_socket_path);
 	}
-}
-
-static int get_thread_count()
-{
-	FILE *self_status_file = NULL;
-
-	const char *self_status_file_path = "/proc/self/status";
-	const char *threads_token = "Threads:";
-	size_t thread_token_length = strlen(threads_token);
-	int thread_count = 0;
-	char one_line [100];
-	const int line_length = sizeof(one_line);
-	char *fgets_status = NULL;
-	int strncmp_result = 0;
-	static bool file_error_reported = false;
-
-	/* Determine if a regular file before opening. */
-
-	struct stat stat_buffer;
-	if (-1 == stat(self_status_file_path, &stat_buffer)) {
-		if (!file_error_reported) {
-			file_error_reported = true;
-			fprintf(stderr, "%s(): Stat of file to read thread count failed:\n    ", __func__);
-			perror(self_status_file_path);
-		}
-		return thread_count;
-	}
-
-	if (!S_ISREG(stat_buffer.st_mode)) {
-		if (!file_error_reported) {
-			file_error_reported = true;
-			fprintf(stderr, "%s(): File to read thread count is not a regular file:\n", __func__);
-			fprintf(stderr, "   %s\n" ,self_status_file_path);
-		}
-		return thread_count;
-	}
-
-	self_status_file = fopen(self_status_file_path, "r");
-
-	if (NULL == self_status_file && !file_error_reported) {
-		file_error_reported = true;
-		fprintf(stderr, "%s(): Open of file to read thread count failed:\n    ", __func__);
-		perror(self_status_file_path);
-	}
-
-	/* Find the line starting with 'Threads:' */
-
-	for(int line_number=1;NULL != self_status_file;line_number++)
-	{
-		fgets_status = fgets(one_line, line_length, self_status_file);
-		if (NULL == fgets_status) {
-			if (!file_error_reported) {
-				file_error_reported = true;
-				fprintf(stderr, "%s(): No line found starting with \"%s\";\n",
-					__func__, threads_token);
-				fprintf(stderr, "  attempting to read line number: %d; from: \"%s\"\n",
-					line_number, self_status_file_path);
-				if (0 != ferror(self_status_file)) {
-					perror("    Error reported by read of process self status file");
-				}
-			}
-			break;
-		}
-		/* See if the line starts with 'Threads:' */
-		strncmp_result = strncmp(threads_token, one_line, thread_token_length);
-		if (0 != strncmp_result) {
-			continue;
-		}
-		/* Found the line containing the 'Threads:' token. */
-
-		/* Make sure the location after the token is not zero */
-		fgets_status += thread_token_length;
-		if ( '\0' == *fgets_status ) {
-			break;
-		}
-
-		thread_count = atoi(fgets_status);
-		if (0 > thread_count) {
-			thread_count = 0; // don't allow negative numbers
-		}
-		if (0 == thread_count && !file_error_reported) {
-			file_error_reported = true;
-			fprintf(stderr, "%s(): no integer string was converted after \"%s\" was found;\n",
-				__func__, threads_token);
-			fprintf(stderr, "  looking for a positive integer on line #%d; from: \"%s\"\n",
-				line_number, self_status_file_path);
-		}
-		break;
-	}
-
-	if (NULL != self_status_file) {
-		(void) fclose(self_status_file);
-	}
-	return thread_count;
 }
 
 static int get_sockfd_from_systemd()
@@ -854,4 +899,7 @@ static void print_configuration(const struct jalls_context* ctx)
 	printf("accept_delay_increment: %d\n", ctx->accept_delay_increment);
 	printf("accept_delay_max: %d\n", ctx->accept_delay_max);
 	printf("sys_meta_dgst_alg: %s\n", digest_str[ctx->sys_meta_dgst_alg]);
+	printf("journal_record_size_limit: %lld\n", ctx->journal_record_size_limit);
+	printf("audit_record_size_limit: %lld\n", ctx->audit_record_size_limit);
+	printf("log_record_size_limit: %lld\n", ctx->log_record_size_limit);
 }

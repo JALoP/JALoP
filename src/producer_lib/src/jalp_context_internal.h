@@ -1,5 +1,7 @@
 /**
- * @file jalp_context_internal.h This file defines the private structures and
+ * @file
+ *
+ * @brief This file defines the private structures and
  * APIs for the jalp_producer context
  *
  * ### LICENSE

@@ -1,5 +1,7 @@
 /**
- * @file jaln_connection_callbacks.c This file contains jaln_connection_callback functions
+ * @file
+ *
+ * @brief This file contains jaln_connection_callback functions
  *
  * ### LICENSE
  *

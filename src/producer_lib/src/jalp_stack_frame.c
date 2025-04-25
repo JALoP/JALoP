@@ -1,5 +1,7 @@
 /**
- * @file jalp_stack_frame.c This file contains functions for creating
+ * @file
+ *
+ * @brief This file contains functions for creating
  * and destroying jalp_stack_frames.
  *
  * ### LICENSE

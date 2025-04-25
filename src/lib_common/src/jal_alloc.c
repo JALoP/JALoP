@@ -1,5 +1,7 @@
 /**
- * @file jal_alloc.c This file contains wrappers for malloc,
+ * @file
+ *
+ * @brief This file contains wrappers for malloc,
  * calloc, and realloc.
  *
  * ### LICENSE

@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_digest_audit_xml.c This file contains unit tests for jalp_digest_audit.
+ * @file
+ *
+ * @brief This file contains unit tests for jalp_digest_audit.
  *
  * ### LICENSE
  *

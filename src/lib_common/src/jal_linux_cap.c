@@ -1,5 +1,7 @@
-/*
- * @file jal_linux_cap.c This file contains general utility functions.
+/**
+ * @file
+ *
+ * @brief This file contains general utility functions.
  *
  * Copyright (C) 2022 The National Security Agency (NSA)
  *
@@ -116,7 +118,7 @@ int performChown(char* path, uid_t uid, gid_t group)
     }
 }
 int performChmod(char* path, mode_t mode)
-{ 
+{
     int chmodResult = chmod((char*)path, mode);
 
     if (chmodResult != 0)
@@ -131,11 +133,11 @@ int performChmod(char* path, mode_t mode)
 
 int get_userid_from_username(char* username)
 {
-    int pw_uid = -1;   
+    int pw_uid = -1;
     struct passwd *p;
     p = getpwnam(username);
     if(!p)
-    { 
+    {
         return -1;
     }
     pw_uid =  p->pw_uid;

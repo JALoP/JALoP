@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_journal_resume_msg_handler.c This file contains tests for jaln_journal_resume_msg_handler.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_journal_resume_msg_handler.c functions.
  *
  * ### LICENSE
  *

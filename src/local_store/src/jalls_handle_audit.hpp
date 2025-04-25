@@ -1,5 +1,7 @@
 /**
- * @file jalls_handle_audit.hpp This file contains functions to handle an audit
+ * @file
+ *
+ * @brief This file contains functions to handle an audit
  * to the jal local store.
  *
  * ### LICENSE

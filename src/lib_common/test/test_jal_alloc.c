@@ -1,5 +1,7 @@
 /**
- * @file test_jal_alloc.c This file contains tests for jal_alloc functions.
+ * @file
+ *
+ * @brief This file contains tests for jal_alloc functions.
  *
  * ### LICENSE
  *

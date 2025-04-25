@@ -1,5 +1,7 @@
 /**
- * @file jalp_structured_data.h This file defines structures and functions to
+ * @file
+ *
+ * @brief This file defines structures and functions to
  * deal with structured_data elements of the syslog and logger metadata.
  *
  * ### LICENSE

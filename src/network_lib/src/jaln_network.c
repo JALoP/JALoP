@@ -1,5 +1,7 @@
 /**
- * @file jaln_network.c This file contains function definitions for
+ * @file
+ *
+ * @brief This file contains function definitions for
  * general public network library functions.
  *
  * ### LICENSE
@@ -99,4 +101,23 @@ enum jal_status jaln_context_set_debug(jaln_context *ctx, int debug_flag) {
 	ctx->debug_flag = debug_flag;
 
 	return JAL_OK;
+}
+
+enum jal_status jaln_context_set_resume_threshold(jaln_context *ctx, const long long threshold) {
+
+	ctx->journal_resume_threshold_size = threshold;
+
+	return JAL_OK;
+}
+
+long long jaln_session_get_resume_threshold(jaln_session* sess) {
+	if(NULL == sess || NULL == sess->jaln_ctx) {
+		return -1;
+	} else {
+		return sess->jaln_ctx->journal_resume_threshold_size;
+	}
+}
+
+int jaln_session_is_closing(jaln_session *sess) {
+	return (axl_true == sess->closing) ? 1 : 0;
 }

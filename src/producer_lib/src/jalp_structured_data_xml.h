@@ -1,5 +1,7 @@
 /**
- * @file jalp_structured_data_xml.h This file defines functions to handle
+ * @file
+ *
+ * @brief This file defines functions to handle
  * converting structured data to XML.
  *
  * ### LICENSE

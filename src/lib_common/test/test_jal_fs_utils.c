@@ -1,5 +1,7 @@
 /**
- * @file test_jal_fs_utils.c This file contains functions to test jal_fs_utils.c.
+ * @file
+ *
+ * @brief This file contains functions to test jal_fs_utils.c.
  *
  * ### LICENSE
  *

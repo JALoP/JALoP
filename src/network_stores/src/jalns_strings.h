@@ -1,5 +1,7 @@
 /**
- * @file jalns_strings.h This file contains strings and other defines used by
+ * @file
+ *
+ * @brief This file contains strings and other defines used by
  * the network stores.
  *
  * ### LICENSE
@@ -50,6 +52,7 @@ extern "C" {
 #define JALNS_PID_FILE "pid_file"
 #define JALNS_LOG_DIR "log_dir"
 #define JALNS_DIGEST_ALGORITHMS "digest_algorithms"
+#define JALNS_DATABASE_OPTION "database_option"
 
 #ifdef __cplusplus
 }

@@ -1,31 +1,33 @@
 /**
-* @file jsub_callbacks.cpp This file contains handlers for the
-* Network Library subscriber callbacks.
-*
-* ### LICENSE
-*
-* Source code in 3rd-party is licensed and owned by their respective
-* copyright holders.
-*
-* All other source code is copyright Tresys Technology and licensed as below.
-*
-* Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
-*
-* This software was developed by Tresys Technology LLC
-* with U.S. Government sponsorship.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * @file
+ *
+ * @brief This file contains handlers for the
+ * Network Library subscriber callbacks.
+ *
+ * ### LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <inttypes.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -34,6 +36,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <jalop/jaln_network_types.h>
 #include "jsub_callbacks.hpp"
 #include "jsub_db_layer.hpp"
 #include "jal_alloc.h"
@@ -147,7 +150,7 @@ void jsub_connect_nack(
 }
 
 int jsub_get_subscribe_request(
-		__attribute__((unused)) jaln_session *session,
+		jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		enum jaln_record_type type,
 		char **nonce,
@@ -160,33 +163,39 @@ int jsub_get_subscribe_request(
 		DEBUG_LOG("host_name: %s", ch_info->hostname);
 	}
 
-	/***
-	switch (type)
-	{
-		case JALN_RTYPE_JOURNAL:
-			rec_type = JALDB_RTYPE_JOURNAL;
-			break;
-		case JALN_RTYPE_AUDIT:
-			rec_type = JALDB_RTYPE_AUDIT;
-			break;
-		case JALN_RTYPE_LOG:
-			rec_type = JALDB_RTYPE_LOG;
-			break;
-		default:
-			rec_type = JALDB_RTYPE_UNKNOWN;
-			break;
-	}
-	***/
-
 	std::string nonce_out;
 	if (type == JALN_RTYPE_JOURNAL) {
+		// Check configuration for journal resume threshold
+		long long threshold = jaln_session_get_resume_threshold(session);
 		// Retrieve offset if it exists
 		char *full_payload_path = NULL;
 		ret = jsub_get_journal_resume(jsub_db_ctx,
 					ch_info->hostname,
 					nonce,
 					&db_payload_path, *offset);
-		if (0 != ret) {
+		// In a degenerate case, the received data (range of size_t) could theoretically be
+		// larger than the range of a long long, which is going to cause comparison problems.
+		// The use of long long (at least 64 bits, signed) here is a restriction of libconfig.
+		// We have no way to indicate larger thresholds than this in the config file
+		// If resume isn't disabled (negative), or already 0 (always resume) go ahead and
+		// assume we want to resume in that case, which we'll indicate by locally
+		// setting threshold to 0 (always resume)
+		if(threshold > 0 && *offset > LLONG_MAX) {
+			threshold = 0;
+		}
+		// Skip the attempt to resume if
+		// a) no resume entry exists in the db
+		// b) the threshold was negative (journal_resume disabled), or could not be fetched
+		// c) the amount of previously received data is below the configured threshold
+		// Note: We can only safely do the size_t cast because we first check that threshold is positive
+		if (0 != ret || 0 > threshold || (*offset) < (size_t)threshold) {
+			if(0 == ret && 0 > threshold) {
+				DEBUG_LOG("Journal resume available but ignored. Resume configuration was disabled "
+					"or not accessible in associated jaln_context.");
+			} else if(0 == ret && *offset < (size_t)threshold) {
+				DEBUG_LOG("Journal resume avilable but ignored because cached data of size: %zu "
+					"is less than configured threshold: %lld", *offset, threshold);
+			}
 			// Default
 			*offset = 0;
 			db_payload_path = NULL;
@@ -201,7 +210,7 @@ int jsub_get_subscribe_request(
 			free(full_payload_path);
 		}
 		if ((0 != ret) && jsub_debug) {
-			DEBUG_LOG("failed to retrieve a journal resume for host: %s",
+			DEBUG_LOG("No resume found for host: %s",
 				  ch_info->hostname);
 		}
 		if ((0 == ret) && jsub_debug) {
@@ -215,6 +224,12 @@ int jsub_get_subscribe_request(
 		DEBUG_LOG("record_type: %d nonce: %s",
 			  type, nonce_out.c_str());
 	}
+
+	// In all cases, purge the stored journal resume data for this host
+	// either we're consuming it, or there was an error retrieving it
+	// In the worst case, this will result in a full retransmission on the next
+	// connection attempt
+	jsub_clear_journal_resume(jsub_db_ctx, ch_info->hostname);
 
 	return ret;
 }
@@ -275,6 +290,13 @@ int jsub_on_audit(
 		const uint32_t cnt,
 		void *user_data)
 {
+	// If the session is closing, skip writing. The sync message isn't going
+	// to make it back to the publisher, and we'll end up with duplicates when
+	// the connection is resumed
+	if(jaln_session_is_closing(session)) {
+		return JAL_OK;
+	}
+
 	if (jsub_debug) {
 		DEBUG_LOG("ON_AUDIT");
 		DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
@@ -288,13 +310,20 @@ int jsub_on_audit(
 }
 
 int jsub_on_log(
-		__attribute__((unused)) jaln_session *session,
+		jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		const char *nonce,
 		const uint8_t *buffer,
 		const uint32_t cnt,
 		void *user_data)
 {
+	// If the session is closing, skip writing. The sync message isn't going
+	// to make it back to the publisher, and we'll end up with duplicates when
+	// the connection is resumed
+	if(jaln_session_is_closing(session)) {
+		return JAL_OK;
+	}
+
 	if (jsub_debug) {
 		DEBUG_LOG("ON_LOG");
 		DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
@@ -309,7 +338,7 @@ int jsub_on_log(
 }
 
 int jsub_on_journal(
-		__attribute__((unused)) jaln_session *session,
+		jaln_session *session,
 		const struct jaln_channel_info *ch_info,
 		const char *nonce,
 		const uint8_t *buffer,
@@ -318,12 +347,20 @@ int jsub_on_journal(
 		const int more,
 		void *user_data)
 {
+	// If the session is closing, skip writing. The sync message isn't going
+	// to make it back to the publisher, and we'll end up with duplicates when
+	// the connection is resumed
+	if(jaln_session_is_closing(session)) {
+		return JAL_OK;
+	}
+
 	if (jsub_debug) {
 		DEBUG_LOG("ON_JOURNAL");
 		DEBUG_LOG("more: %d", more);
 		DEBUG_LOG("ch info:%p nonce:%s buf: %p cnt:%d ud:%p\n",
 			  ch_info, nonce, buffer, cnt, user_data);
 	}
+
 	// Write data to disk until there is no more data to write.
 	// Then write the system/application metadata to DB.
 	if (0 == more) {

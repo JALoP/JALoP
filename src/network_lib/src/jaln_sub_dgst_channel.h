@@ -1,5 +1,7 @@
 /**
- * @file jaln_sub_dgst_channel.h This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * declarations for internal library functions related to the 'subscriber'
  * channel that sends 'digest-challenge' and 'sync' messages.
  *

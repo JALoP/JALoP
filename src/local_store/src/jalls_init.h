@@ -1,5 +1,7 @@
 /**
- * @file jalls_init.h This file contains functions to initialize/cleanup
+ * @file
+ *
+ * @brief This file contains functions to initialize/cleanup
  * libraries used by the local store.
  *
  * ### LICENSE

@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record.h This file provides the structure used to insert &
+ * @file
+ *
+ * @brief This file provides the structure used to insert &
  * retrieve records from the database, as well as functions for allocating/
  * freeing memory associated with the structure.
  *
@@ -41,7 +43,6 @@ extern "C" {
 #endif
 
 #define JALDB_RECORD_VERSION 1
-#define JALDB_MAX_REC_LENGTH 200000000
 
 struct jaldb_segment;
 
@@ -119,9 +120,12 @@ void jaldb_destroy_record(struct jaldb_record **pprecord);
  * any schema validation checks.
  *
  * @param[in] rec The jaldb_record object to check;
+ * @param[in] record_size_limit The maximum record size allowed to be inserted into the local store.  Any record with
+ * a total size (app metadata, sys metadata, payload) larger than this size will be rejected.  A record_size_limit less than 0 indicates that this
+ * check will be disabled and all record sizes will be allowed.
  * @return JALDB_OK on success, or JALDB_EINVAL on error.
  */
-enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec);
+enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec, long long record_size_limit);
 
 #ifdef __cplusplus
 }

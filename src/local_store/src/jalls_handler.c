@@ -1,5 +1,7 @@
 /**
- * @file jalls_handler.c This file contains functions to handle a connection
+ * @file
+ *
+ * @brief This file contains functions to handle a connection
  * to the jalp local store.
  *
  * ### LICENSE
@@ -30,14 +32,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
 #include <sys/un.h>
-#include <signal.h>
 
 #ifdef SCM_UCRED
 #include <ucred.h>
@@ -70,13 +69,7 @@ void *jalls_handler(void *thread_ctx_p) {
 	pid_t *pid = NULL;
 	uid_t *uid = NULL;
 	int debug = thread_ctx->ctx->debug;
-	int err = pthread_detach(pthread_self());
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "Failed to detach the thread\n");
-		}
-		goto out;
-	}
+	int err;
 
 	while (!should_exit) {
 
@@ -200,6 +193,7 @@ void *jalls_handler(void *thread_ctx_p) {
 			if (debug) {
 				fprintf(stderr, "received protocol version != 1\n");
 			}
+			thread_ctx->finished = 1;
 			return NULL;
 		}
 
@@ -239,10 +233,7 @@ void *jalls_handler(void *thread_ctx_p) {
 
 out:
 	close(thread_ctx->fd);
-	free(thread_ctx);
-	if (should_exit) {
-		kill(getpid(), SIGTERM);
-	}
+	thread_ctx->finished = 1;
 	return NULL;
 }
 

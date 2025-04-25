@@ -1,31 +1,33 @@
 /**
-* @file jsub_db_layer.cpp This file provides the function calls to the DB
-* Layer.
-*
-* ### LICENSE
-*
-* Source code in 3rd-party is licensed and owned by their respective
-* copyright holders.
-*
-* All other source code is copyright Tresys Technology and licensed as below.
-*
-* Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
-*
-* This software was developed by Tresys Technology LLC
-* with U.S. Government sponsorship.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * @file
+ *
+ * @brief This file provides the function calls to the DB
+ * Layer.
+ *
+ * ### LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <jalop/jal_status.h>
 #include <openssl/pem.h>
@@ -51,14 +53,14 @@
 	} while(0)
 
 jaldb_context *jsub_setup_db_layer(
-		const char *db_root)
+		const char *db_root, enum jaldb_flags jdb_flags)
 {
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *db_ctx = jaldb_context_create();
 	if (!db_ctx) {
 		goto err;
 	}
-	jaldb_ret = jaldb_context_init(db_ctx, db_root, JDB_NONE);
+	jaldb_ret = jaldb_context_init(db_ctx, db_root, jdb_flags);
 	if (JALDB_OK == jaldb_ret){
 		goto out;
 	}
@@ -130,7 +132,7 @@ int jsub_insert_audit(
 
 	rec->network_nonce = jal_strdup(nonce_in);
 
-	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce, -1);
 	free(local_nonce);
 	local_nonce = NULL;
 
@@ -199,7 +201,7 @@ int jsub_insert_log(
 
 	rec->network_nonce = jal_strdup(nonce_in);
 
-	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce, -1);
 	free(local_nonce);
 	local_nonce = NULL;
 
@@ -321,7 +323,7 @@ int jsub_insert_journal_metadata(
 
 	rec->network_nonce = jal_strdup(nonce_in);
 
-	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce);
+	ret = jaldb_insert_record(db_ctx, rec, 0, &local_nonce, -1);
 	free(local_nonce);
 	local_nonce = NULL;
 

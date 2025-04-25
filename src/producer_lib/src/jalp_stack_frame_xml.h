@@ -1,5 +1,7 @@
 /**
- * @file jalp_stack_frame_xml.h This file defines functions to deal with
+ * @file
+ *
+ * @brief This file defines functions to deal with
  * converting jalp_stack_frame to XML.
  *
  * ### LICENSE

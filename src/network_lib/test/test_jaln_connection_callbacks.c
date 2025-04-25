@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_connection_callbacks.c This file contains tests for jaln_connection_callbacks.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_connection_callbacks.c functions.
  *
  * ### LICENSE
  *

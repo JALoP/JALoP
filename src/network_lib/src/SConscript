@@ -8,6 +8,14 @@ env = env.Clone()
 sources = []
 sources = env.Glob("*.c")
 
+
+if env.GetOption("ENABLE_BDB"):
+	env.MergeFlags({'CPPPATH':['#src/db_layer/src']})
+	add_project_lib(env, 'db_layer', 'jal-db')
+else:
+	env.MergeFlags({'CPPPATH':['#src/lmdb_layer/src']})
+	add_project_lib(env, 'lmdb_layer', 'jal-db')
+
 add_project_lib(env, 'lib_common', 'jal-common')
 
 network_lib = env.SharedLibrary(target='jal-network', source=[sources])

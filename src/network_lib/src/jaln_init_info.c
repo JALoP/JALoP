@@ -1,5 +1,7 @@
 /**
- * @file jaln_init_info.c This file contains functions related to a
+ * @file
+ *
+ * @brief This file contains functions related to a
  * jaln_init_info structure. The jaln_init_info structure is used
  * to communicate the contents of an init message.
  *

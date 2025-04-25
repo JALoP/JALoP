@@ -1,5 +1,7 @@
 /**
- * @file jalp_logger.c This file defines functions for sending log messages.
+ * @file
+ *
+ * @brief This file defines functions for sending log messages.
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
 /**
- * @file jalls_init.cpp This file contains the definition of functions to
+ * @file
+ *
+ * @brief This file contains the definition of functions to
  * initialize/cleanup libraries used by the local store.
  *
  * ### LICENSE

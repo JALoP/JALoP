@@ -1,5 +1,7 @@
 /**
- * @file jsub_db_layer.hpp This file provides the function calls to the DB
+ * @file
+ *
+ * @brief This file provides the function calls to the DB
  * Layer.
  *
  * ### LICENSE
@@ -41,13 +43,14 @@
 /**
  * Initializes the interface to the database.
  * @param[in] db_root The root location of the database.
+ * @param[in] jdb_flags The database flags.
  *
  * @return
  *  - A pointer to the context if it was created and initialized successfully
  *	NULL if the process failed.
  */
 jaldb_context *jsub_setup_db_layer(
-		const char *db_root);
+		const char *db_root, enum jaldb_flags jdb_flags);
 
 /**
  * Destroys the database interface.

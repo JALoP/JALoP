@@ -1,5 +1,7 @@
 /**
- * @file jal_error_callback.h This file defines functions to deal with
+ * @file
+ *
+ * @brief This file defines functions to deal with
  * fatal errors.
  *
  * ### LICENSE

@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record.c This file contains functions related to the
+ * @file
+ *
+ * @brief This file contains functions related to the
  * jaldb_record structure.
  *
  * ### LICENSE
@@ -26,6 +28,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <sys/socket.h>
 
 #include "jal_alloc.h"
 
@@ -62,7 +65,7 @@ void jaldb_destroy_record(struct jaldb_record **pprecord)
 	*pprecord = NULL;
 }
 
-enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec)
+enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec, long long record_size_limit)
 {
 	uint64_t total_seg_size = 0;
 	enum jaldb_status ret;
@@ -80,9 +83,11 @@ enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec)
 		return JALDB_E_INVAL;
 	}
 
+#ifdef SO_PEERCRED
 	if (!rec->username) {
 		return JALDB_E_INVAL;
 	}
+#endif
 
 	ret = jaldb_sanity_check_segment(rec->sys_meta);
 	if (JALDB_OK != ret) {
@@ -122,18 +127,18 @@ enum jaldb_status jaldb_record_sanity_check(struct jaldb_record *rec)
 		if (!rec->payload) {
 			return JALDB_E_INVAL;
 		}
-		if (total_seg_size > JALDB_MAX_REC_LENGTH) {
-			return JALDB_E_REJECT;
-		}
 		break;
 	case JALDB_RTYPE_LOG:
 		if (!rec->payload && !rec->app_meta) {
 			return JALDB_E_INVAL;
 		}
-		if (total_seg_size > JALDB_MAX_REC_LENGTH) {
-			return JALDB_E_REJECT;
-		}
 		break;
 	}
+
+	//Check for if the record size exceeds the limit
+	if (record_size_limit > -1 && total_seg_size > (uint64_t)record_size_limit) {
+		return JALDB_E_REJECT;
+	}
+
 	return JALDB_OK;
 }

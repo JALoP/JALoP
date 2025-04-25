@@ -1,5 +1,7 @@
 /**
- * @file test_utils.h This file contains utilities to help with general testing.
+ * @file
+ *
+ * @brief This file contains utilities to help with general testing.
  *
  * ### LICENSE
  *

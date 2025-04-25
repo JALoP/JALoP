@@ -1,5 +1,7 @@
 /**
- * @file jaln_tls.c This file contains function definitions for code related to tls.
+ * @file
+ *
+ * @brief This file contains function definitions for code related to tls.
  *
  * ### LICENSE
  *
@@ -111,10 +113,12 @@ enum jal_status jaln_register_tls(jaln_context *ctx,
 	vortex_mutex_lock(&ctx->lock);
 
 	if (!ctx->vortex_ctx || !private_key || !public_cert || !peer_certs) {
+		vortex_mutex_unlock(&ctx->lock);
 		return JAL_E_INVAL;
 	}
 
 	if (ctx->private_key || ctx->public_cert || ctx->peer_certs) {
+		vortex_mutex_unlock(&ctx->lock);
 		return JAL_E_INVAL;
 	}
 
@@ -123,6 +127,7 @@ enum jal_status jaln_register_tls(jaln_context *ctx,
 	ctx->peer_certs = jal_strdup(peer_certs);
 
 	if (!vortex_tls_init(ctx->vortex_ctx)) {
+		vortex_mutex_unlock(&ctx->lock);
 		return JAL_E_INVAL;
 	}
 

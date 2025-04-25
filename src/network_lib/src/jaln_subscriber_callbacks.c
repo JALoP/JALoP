@@ -1,5 +1,7 @@
 /**
- * @file jaln_subscriber_callbacks.c This file contains jaln_subscriber_callbacks functions
+ * @file
+ *
+ * @brief This file contains jaln_subscriber_callbacks functions
  *
  * ### LICENSE
  *

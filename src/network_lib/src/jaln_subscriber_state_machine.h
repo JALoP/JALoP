@@ -1,5 +1,7 @@
 /**
- * @file jaln_subscriber_state_machine.h This file contains the declaration for a
+ * @file
+ *
+ * @brief This file contains the declaration for a
  * state machine used when receiving JAL records.
  *
  * ### LICENSE

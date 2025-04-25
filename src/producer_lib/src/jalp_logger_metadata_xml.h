@@ -1,5 +1,7 @@
 /**
- * @file jalp_logger_metadata_xml.h This file defines functions to handle
+ * @file
+ *
+ * @brief This file defines functions to handle
  * converting logger metadata to XML.
  *
  * ### LICENSE

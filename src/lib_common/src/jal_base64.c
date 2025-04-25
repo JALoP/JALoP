@@ -1,6 +1,7 @@
 /**
- * @file jal_base64.c
- * Defines base64 encoding function.
+ * @file
+ *
+ * @brief Defines base64 encoding function.
  *
  * ### LICENSE
  *

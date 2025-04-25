@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_session.c This file contains tests for jaln_session.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_session.c functions.
  *
  * ### LICENSE
  *
@@ -124,6 +126,12 @@ axl_bool fake_connection_is_ok_success(
 	return axl_true;
 }
 
+void fake_vortex_cond_signal(
+		__attribute__((unused))VortexCond* cond)
+{
+	return;
+}
+
 void setup()
 {
 	sess = jaln_session_create();
@@ -143,6 +151,7 @@ void setup()
 	replace_function(jaln_create_sub_digest_channel_thread_no_lock, fake_create_sub_digest_channel_thread_no_lock);
 	replace_function(vortex_channel_get_connection, fake_channel_get_connection);
 	replace_function(vortex_connection_is_ok, fake_connection_is_ok_success);
+	replace_function(vortex_cond_signal, fake_vortex_cond_signal);
 }
 
 void teardown()
@@ -153,8 +162,10 @@ void teardown()
 	free(nonce);
 	free(dgst_buf);
 	restore_function(vortex_thread_create);
+	restore_function(jaln_create_sub_digest_channel_thread_no_lock);
 	restore_function(vortex_channel_get_connection);
 	restore_function(vortex_connection_is_ok);
+	restore_function(vortex_cond_signal);
 }
 
 void test_session_destroy_unrefs_jaln_ctx()

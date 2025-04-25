@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_record_xml.c This file contains functions to test
+ * @file
+ *
+ * @brief This file contains functions to test
  * jaldb_record_xml.
  *
  * ### LICENSE
@@ -252,7 +254,9 @@ void test_to_system_works_with_signing_key()
 	FILE *fp = fopen(TEST_RSA_KEY, "r");
 	assert_not_equals(NULL, fp);
 	key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+
 	fclose(fp);
+
 	VERIFY_DOC(log, 1, 1, 1);
 }
 

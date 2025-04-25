@@ -1,5 +1,7 @@
 /**
- * @file jalp_test_app_meta.h This file contains delcarations for generating
+ * @file
+ *
+ * @brief This file contains delcarations for generating
  * application metadata
  *
  * ### LICENSE

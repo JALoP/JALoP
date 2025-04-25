@@ -1,5 +1,7 @@
 /**
- * @file jal_byteswap.h This file contains macros for performing byteswaps.
+ * @file
+ *
+ * @brief This file contains macros for performing byteswaps.
  * When possible, the macros use existing library functions/macros.
  *
  * ### LICENSE

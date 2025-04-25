@@ -1,6 +1,7 @@
 /**
- * @file jalp_connection_internal.h
- * This file contains defines and structures used when connecting to the local store.
+ * @file
+ *
+ * @brief This file contains defines and structures used when connecting to the local store.
  *
  * ### LICENSE
  *

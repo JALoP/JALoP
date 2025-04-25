@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_sub_dgst_channel.c This file contains tests for jaln_sub_dgst_channel.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_sub_dgst_channel.c functions.
  *
  * ### LICENSE
  *

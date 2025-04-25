@@ -1,5 +1,7 @@
 /**
- * @file jalp_content_type.c This file defines functions to deal adding
+ * @file
+ *
+ * @brief This file defines functions to deal adding
  * "content-type" information.
  *
  * ### LICENSE

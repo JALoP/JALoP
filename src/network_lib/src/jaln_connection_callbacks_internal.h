@@ -1,5 +1,7 @@
 /**
- * @file jaln_connection_callbacks_internal.h This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * declarations for internal library functions related to connection
  * creation/configuration.
  *

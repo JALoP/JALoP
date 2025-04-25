@@ -1,5 +1,7 @@
 /**
- * @file jald.cpp This file contains the implementation of a daemon process that
+ * @file
+ *
+ * @brief This file contains the implementation of a daemon process that
  * listens for subscribe requests from remotes.
  *
  * ### LICENSE
@@ -40,6 +42,10 @@
 #include <unistd.h>
 #include <time.h>
 
+#include <netdb.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
 #include <jalop/jal_version.h>
 
 #include "jal_base64_internal.h"
@@ -51,6 +57,7 @@
 #include "jaldb_record.h"
 #include "jaldb_utils.h"
 #include "jal_alloc.h"
+#include "jal_ts_utils.h"
 
 #include "jal_seccomp_enforcer.h"
 
@@ -107,8 +114,20 @@ struct peer_config_t {
 	enum jaln_record_type sub_allow;
 };
 struct session_ctx_t {
-	struct jaldb_record *rec;
-	jaldb_context_t *db_ctx;
+	// The record in progress
+	struct jaldb_record *rec = NULL;
+	// Handle to the db instance
+	jaldb_context_t *db_ctx = NULL;
+	// Flag indicating this session has been closed in response
+	// to a network trigger (on_channel_closed or an error during sending a record)
+	bool channel_closed = false;
+	// Number of records which have been sent but for which we have not received
+	// a sync messge in response
+	int num_outstanding_syncs = 0;
+	// Set in pub_on_journal_resume to indicate a resume has been started
+	// Used to ensure we don't reject the session in the subsequent on_subscribe
+	// callback
+	bool is_resume = false;
 };
 
 struct global_config_t {
@@ -123,6 +142,8 @@ struct global_config_t {
 	long long int port;
 	long long int poll_time;
 	char *digest_algorithms;
+	char* database_option;
+	jaldb_flags jdb_flags;
 } global_config;
 
 struct global_args_t {
@@ -255,18 +276,19 @@ void on_channel_close(
 	}
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Session is closing");
-
+	pthread_mutex_lock(sub_lock);
 	struct session_ctx_t* ctx = NULL;
 	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	// If we closed the channel from our side, this is to be expected
+	// Only throw the warning if we aren't in the exiting state
 	if(!ctx || !ctx->db_ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or BDB context associated with closing channel");
+		if(!exiting) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or BDB context associated with closing channel");
+		}
 	}
 	else {
-		jaldb_context_destroy(&ctx->db_ctx);
+		ctx->channel_closed = true;
 	}
-
-	pthread_mutex_lock(sub_lock);
-	axl_hash_remove(hash, ch_info->hostname);
 	pthread_mutex_unlock(sub_lock);
 }
 
@@ -321,6 +343,9 @@ enum jal_status pub_on_journal_resume(
 	pthread_mutex_unlock(&gs_journal_sub_lock);
 	ctx->rec = NULL;
 	ctx->db_ctx = setup_db_layer();
+	// Indicate we are doing a resume for this sesssion, skip the "already exists" check
+	// in the on_subscribe callback
+	ctx->is_resume = true;
 	if(NULL == ctx->db_ctx) {
 		return JAL_E_INVAL;
 	}
@@ -393,8 +418,14 @@ enum jaldb_status pub_get_next_record(
 				sleep(global_config.poll_time);
 
 			}
-			if (exiting || (JAL_OK != jaln_session_is_ok(sess))) {
+			// Check if the session has gone down (usually a graceless remote disconnect)
+			if (JAL_OK != jaln_session_is_ok(sess)) {
 				ret = JALDB_E_NETWORK_DISCONNECTED;
+				goto out;
+			}
+			// or if we have commanded jald to stop
+			else if(exiting) {
+				ret = JALDB_OK;
 				goto out;
 			}
 		}
@@ -541,6 +572,13 @@ enum jal_status pub_send_records_feeder(
 					hash,
 					sub_lock,
 					db_type);
+
+		// Break out of this loop without handling the record if jald has been commanded to stop
+		if(exiting) {
+			ret = JAL_OK;
+			goto out;
+		}
+
 		if (JALDB_OK != db_ret) {
 			if (JALDB_E_NOT_FOUND == db_ret) {
 				ret = JAL_OK;
@@ -580,8 +618,11 @@ enum jal_status pub_send_records_feeder(
 		nonce = NULL;
 	} while (JALDB_OK == db_ret);
 
-	ret = jaln_finish(sess);
 out:
+	if(JALDB_E_NETWORK_DISCONNECTED == db_ret || JAL_E_NOT_CONNECTED == ret) {
+		ret = jaln_finish(sess);
+		ctx->channel_closed = true;
+	}
 	free(nonce);
 	return ret;
 }
@@ -686,6 +727,12 @@ enum jal_status pub_send_records(
 					sub_lock,
 					db_type);
 
+		// Break out of this loop without handling the record if jald has been commanded to stop
+		if(exiting) {
+			ret = JAL_OK;
+			goto out;
+		}
+
 		if (JALDB_OK != db_ret) {
 			if (JALDB_E_NOT_FOUND == db_ret) {
 				ret = JAL_OK;
@@ -726,8 +773,11 @@ enum jal_status pub_send_records(
 
 	} while (JALDB_OK == db_ret);
 
-	ret = jaln_finish(sess);
 out:
+	if(JALDB_E_NETWORK_DISCONNECTED == db_ret || JAL_E_NOT_CONNECTED == ret) {
+		ret = jaln_finish(sess);
+		ctx->channel_closed = true;
+	}
 	free(nonce);
 	return ret;
 }
@@ -759,7 +809,9 @@ void *pub_send_journal(__attribute__((unused)) void *args)
 		journal_timestamp = jal_strdup(data->timestamp);
 	}
 
+	jaln_add_session_ref(sess);
 	*ret = pub_send_records_feeder(sess, ch_info, &data->timestamp, hash, sub_lock, &jaln_send_journal);
+	jaln_remove_session_ref(sess);
 
 	free(journal_timestamp);
 
@@ -787,7 +839,9 @@ void *pub_send_audit(void *args)
 		audit_timestamp = jal_strdup(data->timestamp);
 	}
 
+	jaln_add_session_ref(sess);
 	*ret = pub_send_records(sess, ch_info, &audit_timestamp, hash, sub_lock, &jaln_send_audit);
+	jaln_remove_session_ref(sess);
 
 	free(audit_timestamp);
 
@@ -815,7 +869,9 @@ void *pub_send_log(void *args)
 		log_timestamp = jal_strdup(data->timestamp);
 	}
 
+	jaln_add_session_ref(sess);
 	*ret = pub_send_records(sess, ch_info, &log_timestamp, hash, sub_lock, &jaln_send_log);
+	jaln_remove_session_ref(sess);
 
 	free(log_timestamp);
 
@@ -824,104 +880,198 @@ void *pub_send_log(void *args)
 
 enum jal_status pub_on_subscribe(
 		jaln_session *sess,
-		const struct jaln_channel_info *ch_info,
+		const struct jaln_channel_info *ch_info_param,
 		enum jaln_record_type type,
 		enum jaln_publish_mode mode,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
-	enum jal_status ret = JAL_E_INVAL;
-	pthread_t journal_thread;
-	pthread_t audit_thread;
-	pthread_t log_thread;
-	pthread_attr_t attr;
+	// Under some exit conditions (for instance if the subscriber and publisher
+	// both receive a ctrl-C very close to the same time) the jaln_network
+	// closes down very quickly and rips the ch_info data out from under us.
+	// Save a copy and use that, using a C++ destructor to guarantee the
+	// copy is freed
+	// Also use this object to ensure we increment and decrement our thread count
+	// no matter how we leave this function
+	struct ChInfo {
+		struct jaln_channel_info ch_info = {NULL, NULL, NULL, NULL, JALN_RTYPE_JOURNAL};
+		ChInfo(const struct jaln_channel_info* param) {
+			if(param->hostname) ch_info.hostname = strdup(param->hostname);
+			if(param->addr) ch_info.addr = strdup(param->addr);
+			if(param->encoding) ch_info.encoding = strdup(param->encoding);
+			if(param->digest_method) ch_info.digest_method = strdup(param->digest_method);
+			ch_info.type = param->type;
+
+			pthread_mutex_lock(&exit_count_lock);
+			threads_to_exit += 1;
+			pthread_mutex_unlock(&exit_count_lock);
+		}
+		~ChInfo() {
+			free(ch_info.hostname);
+			free(ch_info.addr);
+			free(ch_info.encoding);
+			free(ch_info.digest_method);
+			pthread_mutex_lock(&exit_count_lock);
+			threads_to_exit -= 1;
+			pthread_mutex_unlock(&exit_count_lock);
+		}
+	} ch_info_container(ch_info_param);
+	const struct jaln_channel_info* ch_info = &(ch_info_container.ch_info);
+
+	// Get the appropriate hash/lock and ensure this subscription doesn't already exist
+	// This can happen if the subscriber is restarted very quickly before we finish
+	// tearing down this thread
+	axlHash* hash = NULL;
+	pthread_mutex_t* sub_lock = NULL;
+	if(JAL_OK != select_channel(ch_info, &hash, &sub_lock)) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Unable to get channel to check subscription validity");
+		return JAL_E_INVAL;
+	}
+	// Lock this chanel until we're finished setting up
+	pthread_mutex_lock(sub_lock);
+
+	struct session_ctx_t* ctx = NULL;
+	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+	if(ctx) {
+		// If this is a resume, it is valid (and expected) for the session to already exist
+		// in our hash map
+		if(!ctx->is_resume) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: Subscription to host: %s already in use", ch_info->hostname);
+			pthread_mutex_unlock(sub_lock);
+			return JAL_E_INVAL;
+		}
+		// Once we have handled the resume once, we don't want to allow any additional sessions
+		// of this type to this host, so mark is_resume false
+		ctx->is_resume = false;
+	}
+
 	struct thread_data data;
-	void *status = NULL;
-	int rc = 0;
-
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-	pthread_mutex_lock(&exit_count_lock);
-	threads_to_exit += 1;
-	pthread_mutex_unlock(&exit_count_lock);
-
 	data.sess = sess;
 	data.ch_info = ch_info;
 	data.timestamp = NULL;
 
 	if (JALN_LIVE_MODE == mode) {
-		data.timestamp = jaldb_gen_timestamp();
+		data.timestamp = jal_gen_timestamp_usec();
 		if (!data.timestamp) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Error: Error generating timestamp");
+			pthread_mutex_unlock(sub_lock);
 			return JAL_E_INVAL_TIMESTAMP;
 		}
 	} else if (JALN_ARCHIVE_MODE != mode) {
 		// Bad mode
 		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: Bad mode");
+		pthread_mutex_unlock(sub_lock);
 		return JAL_E_INVAL;
 	}
+
+	// Select send function to execute based on record type
+	void*(*send_func_ptr)(void*) = NULL;
 
 	switch (type) {
-	case JALN_RTYPE_JOURNAL:
-		if(0 != pthread_create(&journal_thread, &attr, pub_send_journal, &data)) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
+		case JALN_RTYPE_JOURNAL:
+			send_func_ptr = pub_send_journal;
+				break;
+		case JALN_RTYPE_AUDIT:
+				send_func_ptr = pub_send_audit;
+				break;
+		case JALN_RTYPE_LOG:
+				send_func_ptr = pub_send_log;
+				break;
+		default:
+			DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
+			pthread_mutex_unlock(sub_lock);
 			return JAL_E_INVAL;
-		}
+	}
 
-		pthread_attr_destroy(&attr);
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-		rc = pthread_join(journal_thread, &status);
-		if (rc) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: return code from pthread_create() is %d\n", rc);
-			free(status);
-			return JAL_E_INVAL;
-		}
-		break;
-	case JALN_RTYPE_AUDIT:
-		if(0 != pthread_create(&audit_thread, &attr, pub_send_audit, &data)) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
-			return JAL_E_INVAL;
-		}
+	pthread_t thread;
+	int create_status = pthread_create(&thread, &attr, send_func_ptr, &data);
+	pthread_attr_destroy(&attr);
 
-		pthread_attr_destroy(&attr);
-
-		rc = pthread_join(audit_thread, &status);
-		if (rc) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Error while joining thread (%d)\n", rc);
-			free(status);
-			return JAL_E_INVAL;
-		}
-		break;
-	case JALN_RTYPE_LOG:
-		if (0 != pthread_create(&log_thread, &attr, pub_send_log, &data)) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
-			return JAL_E_INVAL;
-		}
-
-		pthread_attr_destroy(&attr);
-
-		rc = pthread_join(log_thread, &status);
-		if (rc) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Error while joining thread (%d)\n", rc);
-			free(status);
-			return JAL_E_INVAL;
-		}
-		break;
-	default:
-		DEBUG_LOG_SUB_SESSION(ch_info, "Illegal Record Type");
+	if(0 != create_status) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR creating a thread");
+		pthread_mutex_unlock(sub_lock);
 		return JAL_E_INVAL;
 	}
 
-	ret = *((enum jal_status *) status);
-	free(status);
+	void* thread_status = NULL;
+	// Thread is fully set up and ready, unlock our mutex and let it run
+	pthread_mutex_unlock(sub_lock);
+
+	// Wait for thread to terminate
+	int join_status = pthread_join(thread, &thread_status);
+	if (join_status) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: return code from pthread_join() is %d\n",
+			join_status);
+		free(thread_status);
+		return JAL_E_INVAL;
+	}
+
+	// Once every second until either the session vanishes (shouldn't be possible)
+	// or the channel_closed value is set, refresh our handle to the session ctx
+	// and check again
+	while(true) {
+		pthread_mutex_lock(sub_lock);
+		// Refesh handle to session, just in case
+		ctx = NULL;
+		ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
+
+		// If the session handle has gone bad, fail out, there's nothing more we can do
+		if(!ctx || !ctx->db_ctx) {
+			DEBUG_LOG_SUB_SESSION(ch_info, "No context or BDB context associated with closing channel");
+			pthread_mutex_unlock(sub_lock);
+			return JAL_E_INVAL;
+		}
+		// If the session has closed by the remote host break out of the loop and move on
+		// We will receive no more incoming messages
+		else if(ctx->channel_closed) {
+			break;
+		}
+		// If we're closing from our side, wait for up to 5 seconds to collect any outstanding
+		// record responses
+		else if(exiting) {
+			const int SLEEP_MAX = 5;
+			for(int i = 0; i < SLEEP_MAX; i++) {
+				if(ctx->num_outstanding_syncs > 0) {
+					DEBUG_LOG_SUB_SESSION(ch_info, "Waiting for channel to quiesce: %d.", i);
+					// Unlock the mutex while asleep so callbacks can fire
+					pthread_mutex_unlock(sub_lock);
+					sleep(1);
+					pthread_mutex_lock(sub_lock);
+				} else {
+					break;
+				}
+			}
+
+			if(ctx->num_outstanding_syncs > 0 ) {
+				// After 5 seconds, break out even if we didn't get all the syncs we expected,
+				// but display a warning
+				DEBUG_LOG_SUB_SESSION(ch_info,
+					"Didn't receive all expected syncs. Num oustanding: %d.",
+					ctx->num_outstanding_syncs);
+			}
+			break;
+		}
+		// Otherwise, release the mutex and wait 1 second
+		else {
+			pthread_mutex_unlock(sub_lock);
+			sleep(1);
+		}
+	}
+
+	jaldb_context_destroy(&ctx->db_ctx);
+
+	axl_hash_remove(hash, ch_info->hostname);
+	pthread_mutex_unlock(sub_lock);
+
+	enum jal_status ret = *((enum jal_status *) thread_status);
+	free(thread_status);
 	if (JAL_OK != ret && JAL_E_NOT_CONNECTED != ret) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Failed while sending records to subscriber");
 	}
-
-	pthread_mutex_lock(&exit_count_lock);
-	threads_to_exit -= 1;
-	pthread_mutex_unlock(&exit_count_lock);
 
 	return ret;
 }
@@ -944,13 +1094,15 @@ enum jal_status pub_on_record_complete(
 
 	pthread_mutex_lock(sub_lock);
 	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
-	pthread_mutex_unlock(sub_lock);
 	if (!ctx) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		pthread_mutex_unlock(sub_lock);
 		return JAL_E_INVAL;
 	}
 
 	jaldb_destroy_record(&ctx->rec);
+	ctx->num_outstanding_syncs++;
+	pthread_mutex_unlock(sub_lock);
 	return JAL_OK;
 }
 
@@ -978,9 +1130,9 @@ void pub_sync(
 
 	pthread_mutex_lock(sub_lock);
 	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
-	pthread_mutex_unlock(sub_lock);
 	if (!ctx) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		pthread_mutex_unlock(sub_lock);
 		return;
 	}
 
@@ -996,19 +1148,24 @@ void pub_sync(
 		break;
 	default:
 		// shouldn't happen.
+		pthread_mutex_unlock(sub_lock);
 		return;
 	}
 
 	if (mode == JALN_ARCHIVE_MODE) {
-		pthread_mutex_lock(sub_lock);
 		jaldb_ret = jaldb_mark_synced(ctx->db_ctx, db_type, nonce);
-		pthread_mutex_unlock(sub_lock);
 		if (JALDB_OK != jaldb_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to mark %s as synced: %d", nonce, jaldb_ret);
 		} else {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as synced", nonce);
 		}
 	}
+	if(ctx->num_outstanding_syncs > 0) {
+		ctx->num_outstanding_syncs--;
+	} else {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Unexpected sync with ID: %s", nonce);
+	}
+	pthread_mutex_unlock(sub_lock);
 }
 
 void pub_notify_digest(
@@ -1049,9 +1206,9 @@ void pub_peer_digest(
 
 	pthread_mutex_lock(sub_lock);
 	struct session_ctx_t *ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
-	pthread_mutex_unlock(sub_lock);
 	if (!ctx) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Couldn't find session context");
+		pthread_mutex_unlock(sub_lock);
 		return;
 	}
 
@@ -1068,6 +1225,7 @@ void pub_peer_digest(
 	default:
 		// shouldn't happen.
 		db_type = JALDB_RTYPE_UNKNOWN;
+		pthread_mutex_unlock(sub_lock);
 		return;
 	}
 
@@ -1108,6 +1266,7 @@ error:
 
 out:
 	// No status returned by callback function
+	pthread_mutex_unlock(sub_lock);
 	return;
 }
 
@@ -1355,6 +1514,7 @@ out:
 	jaln_context_destroy(&jctx);
 	jaln_publisher_callbacks_destroy(&pub_cbs);
 	config_destroy(&config);
+	free(digest_list);
 	jal_seccomp_enforcer_destroy(&seccomp_enforcer);
 
 	return rc;
@@ -1494,11 +1654,37 @@ void print_config(void)
 	if (global_config.digest_algorithms) {
 		printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
 	}
+
+	#ifdef JALDB_TYPE_LMDB
+	if(global_config.database_option) {
+		printf("DATABASE_OPTION:\t%s\n", global_config.database_option);
+	}
+	#endif
 	printf("PEERS\n%15s | %18s | %18s\n", "HOST", "PUBLISH_ALLOW", "SUBSCRIBE_ALLOW");
 	axl_hash_foreach(global_config.peers, print_peer_cfg, NULL);
 	printf("\n===\nEND CONFIG VALUES:\n===\n");
 }
 
+std::string get_ipv4(std::string hostname){
+	std::string result = "";
+	struct addrinfo hints = {};
+	struct addrinfo* results = NULL;
+	struct sockaddr_in addr = {};
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = 0;
+	hints.ai_protocol = 0;
+	int ret = getaddrinfo(hostname.c_str(), NULL, &hints, &results);
+	if (ret==0 ){
+		if (results->ai_addrlen <= sizeof(addr)){
+			memcpy(&addr, results->ai_addr, results->ai_addrlen);
+			result = std::string(inet_ntoa(addr.sin_addr));
+		}
+	}
+	if (results){
+		freeaddrinfo(results);
+	}
+	return result;
+}
 enum jald_status set_global_config(config_t *config)
 {
 	int rc;
@@ -1594,6 +1780,27 @@ enum jald_status set_global_config(config_t *config)
 		}
 	}
 
+	//database_option config setting is only used in the LMDB build
+	#ifdef JALDB_TYPE_LMDB
+
+	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
+		root,
+		JALNS_DATABASE_OPTION,
+		&global_config.database_option,
+		JAL_CFG_OPTIONAL)) {
+			error_seen |= JAL_CFG_FAILURE;
+	}
+
+	//Ensure valid entry was in the config file and parse the value
+	if (JALDB_OK != jaldb_get_db_flags(global_config.database_option, &global_config.jdb_flags))
+	{
+		error_seen |= JAL_CFG_FAILURE;
+		CONFIG_ERROR(root, JALNS_DATABASE_OPTION, "invalid value.");
+	}
+	#else
+	global_config.jdb_flags = JDB_NONE;
+	#endif
+
 	error_seen |= jal_config_lookup_string(root, JALNS_DIGEST_ALGORITHMS, &global_config.digest_algorithms, JAL_CFG_OPTIONAL);
 
 	config_setting_t *peers;
@@ -1634,6 +1841,16 @@ enum jald_status set_global_config(config_t *config)
 			if (JAL_CFG_SUCCESS != rc) {
 				error_seen |= JAL_CFG_FAILURE;
 				continue;
+			}
+			
+			std::string check_key = get_ipv4(key);
+			if (check_key.empty()){
+				printf("Unable to resolve host entry: %s \n", key);
+				error_seen |= JAL_CFG_FAILURE;
+				continue;
+			}
+			else{
+				key = strcpy(key, check_key.c_str());
 			}
 
 			struct peer_config_t *peer_cfg = (struct peer_config_t*) axl_hash_get(global_config.peers, key);
@@ -1711,7 +1928,7 @@ jaldb_context_t* setup_db_layer(void)
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context_t* db_ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, JDB_NONE);
+	jaldb_ret = jaldb_context_init(db_ctx, global_config.db_root, global_config.jdb_flags);
 
 	if (JALDB_OK != jaldb_ret) {
 		jaldb_context_destroy(&db_ctx);

@@ -1,6 +1,7 @@
 /**
- * @file jal_asprintf_internal.h
- * Declares the jal_asprintf function
+ * @file
+ *
+ * @brief Declares the jal_asprintf function
  *
  * ### LICENSE
  *

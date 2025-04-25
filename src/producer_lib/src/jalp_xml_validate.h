@@ -1,5 +1,8 @@
 /**
- * @file jalp_xml_validate.h
+ * @file
+ *
+ * @brief This file defines functions to validate
+ * xml files against a schema
  *
  * ### LICENSE
  *

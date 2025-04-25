@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record_extract.h Declaration of utilties related to the record
+ * @file
+ *
+ * @brief Declaration of utilities related to the record
  * UUID stored with the JALoP record in the database.
  *
  * ### LICENSE

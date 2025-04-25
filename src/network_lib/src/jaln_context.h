@@ -1,7 +1,7 @@
 /**
- * @file jaln_context.h
+ * @file
  *
- * Public functions for creating and configuring a jaln_context.
+ * @brief Public functions for creating and configuring a jaln_context.
  *
  * ### LICENSE
  *
@@ -60,6 +60,13 @@ struct jaln_context_t {
 	char *private_key;
 	void *user_data;
 	int debug_flag;
+	// Specify journal resume behavior
+	// If a resume "offset" pulled from the db is less than the threshold size
+	// i.e. less than "journal_resume_threshold_size" in bytes has already been stored
+	// the resume will be skipped
+	// < 0 will disable the journal resume feature
+	// 0 will always attempt to resume
+	long long journal_resume_threshold_size;
 };
 
 /**

@@ -1,5 +1,6 @@
 /**
- * @file dummy_net_server.c This file contains dummy net server functions
+ * @file dummy_net_server.c 
+ * @brief This file contains dummy net server functions.
  *
  * ### LICENSE
  *

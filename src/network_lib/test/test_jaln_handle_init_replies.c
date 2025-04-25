@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_handle_init_replies.c This file contains tests for jaln_handle_init_replies.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_handle_init_replies.c functions.
  *
  * ### LICENSE
  *

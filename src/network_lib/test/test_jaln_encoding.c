@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_encoding.c This file contains tests for jaln_encoding.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_encoding.c functions.
  *
  * ### LICENSE
  *

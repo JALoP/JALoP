@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_listen.c This file contains tests for jaln_listen.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_listen.c functions.
  *
  * ### LICENSE
  *

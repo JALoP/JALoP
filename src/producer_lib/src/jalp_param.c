@@ -1,5 +1,7 @@
 /**
- * @file jalp_param.c This file implements functions to
+ * @file
+ *
+ * @brief This file implements functions to
  * deal with the jalp_param data structure.
  *
  * ### LICENSE

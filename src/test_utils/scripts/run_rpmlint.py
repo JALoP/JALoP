@@ -1,3 +1,8 @@
+##
+# @file
+# @brief A tool to run rpmlint on a RPMs directory.
+#
+
 #!/usr/local/bin/python3
 import os
 import subprocess

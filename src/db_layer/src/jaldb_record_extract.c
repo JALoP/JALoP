@@ -1,5 +1,7 @@
 /**
- * @file jaldb_record_extract.c Implementation of utilties related to the record
+ * @file
+ *
+ * @brief Implementation of utilities related to the record
  * UUID stored with the JALoP record in the database.
  *
  * ### LICENSE
@@ -87,6 +89,9 @@ int jaldb_extract_record_sent_flag(__attribute__((unused)) DB *secondary, __attr
 
 int jaldb_extract_record_network_nonce(__attribute__((unused)) DB *secondary, __attribute__((unused)) const DBT *key, const DBT *data, DBT *result)
 {
+	char *nnString = NULL;
+	size_t nnLen = 0;
+
 	struct jaldb_serialize_record_headers *headers = NULL;
 
 	if (!data || !result || !data->data || (sizeof(headers) > data->size + JALDB_TIMESTAMP_LENGTH + 1)) {
@@ -101,10 +106,13 @@ int jaldb_extract_record_network_nonce(__attribute__((unused)) DB *secondary, __
 		return -1;
 	}
 
-        char * nn = (char*)buffer + JALDB_RECORD_HEADERS_LENGTH + JALDB_TIMESTAMP_LENGTH + 1;
+	// Skip the headers and timestamp string (including null terminator).
+	buffer += sizeof(*headers) + JALDB_TIMESTAMP_LENGTH + 1;
+	nnString = (char*)buffer;
+	nnLen = strlen(nnString);
 
-        result->data = jal_strdup(nn);
-	result->size = strlen(nn)+1; // keep the null terminator
+	result->data = jal_strdup(nnString);
+	result->size = nnLen + 1; // keep the null terminator
 
 	result->flags = DB_DBT_APPMALLOC;
 

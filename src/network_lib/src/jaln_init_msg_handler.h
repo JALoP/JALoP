@@ -1,5 +1,7 @@
 /**
- * @file jaln_init_msg_handler.h This file contains the function
+ * @file
+ *
+ * @brief This file contains the function
  * declarations for helper functions used to process an 'initialize'
  * message.
  *

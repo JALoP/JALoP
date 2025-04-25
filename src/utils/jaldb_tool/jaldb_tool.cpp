@@ -1,5 +1,7 @@
-/*
- * @file jaldb_tool.cpp
+/**
+ * @file
+ *
+ * @brief The jaldb_tool can be used to retrieve record counts and update record status
  *
  * Copyright (C) 2023 The National Security Agency (NSA)
  *
@@ -25,25 +27,21 @@
 #include <string.h>
 #include <signal.h>
 
-#include <db.h>
-#include <jaldb_serialize_record.h>
-#include <jaldb_record.h>
-#include <jaldb_segment.h>
 #include "jaldb_context.h"
 #include "jaldb_context.hpp"
-#include "jaldb_record_dbs.h"
 
 #include <argp.h>
 #include <vector>
-using namespace std;
-
-jaldb_context * ctx;
+#include <ctime>
+#include <cstring>
+#include <iostream>
+#include <iomanip>
 
 const char *argp_program_version = "1";
 const char *argp_program_bug_address = "";
 static char args_doc[] = "";
 static char doc[] =
-		"jal-record-update -- A program to update JALoP record values for testing.";
+"jal-record-update -- A program to update JALoP record values for testing.";
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 static struct argp_option options[] = {
 	{"record-type", 't', "type", 0,
@@ -52,351 +50,343 @@ static struct argp_option options[] = {
 		"mark record type [unsent | u ], [sent | s ], [synced | y ]", 0},
 	{"db-home", 'h', "db_dir", 0,
 		"database home directory, default: testdb", 0},
-	{"show-confirmed", 'c', NULL, 0,
-		"show confirmed count, default: testdb", 0},
+	{"show_times", 's', NULL, 0,
+		"show timestamps, default: false", 0},
+	#ifdef JALDB_TYPE_BDB
 	{"run-db_recover", 'r', NULL, 0,
 		"run db_recover before opening DB, default: false", 0},
+	#endif
 	{NULL, 0, NULL, 0, NULL, 0}
 };
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 
-class Config
+enum class MarkOperation
 {
-public:
-
-	Config()
-	{
-		record_type = "log";
-		run_db_recover = false;
-		db_home = "testdb";
-		flag = "";
-		show_confirmed = false;
-	}
-	string record_type;
-	string flag;
-	bool run_db_recover;
-	bool show_confirmed;
-	string db_home;
+	NONE,
+	UNSENT,
+	SENT,
+	SYNC,
 };
-Config config;
 
-DB * jaldb;
-DB * filedb;
-DBT key, db_data;
-DBC * jalcursor;
-DBC * filecursor;
-DB_ENV *env = NULL;
-int counter = 0;
-int ret = 0;
-
-class DB_Stat
+enum class RecordSelection
 {
-public:
-
-	DB_Stat()
-	{
-		count = 0;
-		not_sent_count = 0;
-		sent_count = 0;
-		synced_count = 0;
-		confirmed_count = 0;
-		failed_count = 0;
-	}
-	string db_name;
-	string db_location;
-	int count;
-	int not_sent_count;
-	int sent_count;
-	int synced_count;
-	int confirmed_count;
-	int failed_count;
-	enum jaldb_rec_type record_type;
+	JOURNAL,
+	AUDIT,
+	LOG,
+	ALL,
 };
-DB_Stat journal_stat;
-DB_Stat audit_stat;
-DB_Stat log_stat;
-vector<DB_Stat> db_stats;
 
-void count_stats(int byte_swapped, uint8_t * data, int size, DB_Stat * stat);
-void setup_jal(void);
-int mark_sent(string nonce, jaldb_rec_type rt, int mark_sent);
-int mark_synced(string nonce, jaldb_rec_type rt);
-void destroy_jal(void);
-void setup_stats();
-void update_flags(unsigned int x);
+struct StatContainer{
+	JaldbStat stats;
+	enum jaldb_rec_type type;
+	bool show;
+
+	time_t latest = 0;
+	time_t earliest = 0;
+	time_t diff_time = 0;
+};
+
+struct Config
+{
+	RecordSelection recordSelection = RecordSelection::LOG;
+	MarkOperation operation = MarkOperation::NONE;
+	bool run_db_recover = false;
+	std::string db_home = std::string("testdb");
+	bool show_times = false;
+} config;
+
+jaldb_context* setup_jal(void);
+enum jaldb_status update_flags(
+	jaldb_context* ctx,
+	MarkOperation op,
+	RecordSelection rSelect);
 void print_headers();
-void print_row(unsigned int x);
+void print_row(StatContainer& s);
+void print_time_headers();
+void print_time_row(StatContainer& s);
 
 int byte_swapped = 0;
 
 int main(int argc, char **argv)
 {
-	int err = argp_parse(&argp, argc, argv, 0, 0, NULL);
-	if (err != 0)
+	// Parse command line options and populate global Config
+	if(0 != argp_parse(&argp, argc, argv, 0, 0, NULL))
 	{
-		cout << "ARGP_ERR_UNKNOWN " << ARGP_ERR_UNKNOWN << endl;
+		std::cout << "ARGP_ERR_UNKNOWN " << ARGP_ERR_UNKNOWN << std::endl;
 	}
 
-	memset(&key, 0, sizeof (DBT));
-	memset(&db_data, 0, sizeof (DBT));
-	setup_jal();
-	setup_stats();
+	// Create jaldb_context or exit
+	jaldb_context* ctx = setup_jal();
+	if(NULL == ctx) {
+		return -1;
+	}
+
+	// If an update operation has been requested, perform the update now
+	if(JALDB_OK != update_flags(ctx, config.operation, config.recordSelection))
+	{
+		return -1;
+	}
+
+	// Create storage for stats to be returned from get_stats
+	std::vector<StatContainer> dbStats =
+	{
+		{ {}, JALDB_RTYPE_JOURNAL, false},
+		{ {}, JALDB_RTYPE_AUDIT, false},
+		{ {}, JALDB_RTYPE_LOG, false},
+	};
+	switch(config.recordSelection)
+	{
+		case RecordSelection::JOURNAL:
+			dbStats[0].show = true;
+			break;
+		case RecordSelection::AUDIT:
+			dbStats[1].show = true;
+			break;
+		case RecordSelection::LOG:
+			dbStats[2].show = true;
+			break;
+		case RecordSelection::ALL:
+			dbStats[0].show = true;
+			dbStats[1].show = true;
+			dbStats[2].show = true;
+			break;
+	}
 
 	print_headers();
 
-	unsigned int x;
-	for (x = 0; x < db_stats.size(); ++x)
+	for (auto & statContainer : dbStats)
 	{
-		if (db_stats[x].db_name.compare("log")==0){
-			jaldb = ctx->log_dbs->primary_db;
+		if(!statContainer.show) {
+			continue;
 		}
-		else if (db_stats[x].db_name.compare("audit")==0){
-			jaldb = ctx->audit_dbs->primary_db;
-		}
-		else if (db_stats[x].db_name.compare("journal")==0){
-			jaldb = ctx->journal_dbs->primary_db;
-		}
-		if (jaldb==NULL)
+		enum jaldb_status status = get_stats(ctx, statContainer.stats, statContainer.type);
+		if (JALDB_OK != status)
 		{
-			cout << "db null: " << db_stats[x].db_name << endl;
-			destroy_jal();
-			exit(1);
+			std::cout << "Failed to get db stats with error code: " << status << std::endl;
+			jaldb_context_destroy(&ctx);
+			return status;
 		}
-		ret = jaldb->cursor(jaldb, NULL, &jalcursor, 0);
-		if (ret != 0)
-		{
-			cout << "Error getting cursor for " << db_stats[x].db_location
-					<< " return: " << ret << endl;
-			destroy_jal();
-			exit(1);
-		}
-		ret = jaldb->get_byteswapped(jaldb, &byte_swapped);
-		if (ret != 0)
-		{
-			cout << "Error getting byte swapped for " << db_stats[x].db_location
-					<< " return: " << ret << endl;
-			destroy_jal();
-			exit(1);
-		}
-		int wret;
-		if ((config.flag.size() > 0) && (config.record_type.compare("all") == 0 ||
-				config.record_type.compare(db_stats[x].db_name) == 0))
-		{
-			update_flags(x);
-		}
-
-		ret = jaldb->cursor(jaldb, NULL, &jalcursor, 0);
-		if(jalcursor==NULL)
-		{
-			cout << "jalcursor null" << endl;
-		}
-		if (ret != 0)
-		{
-			cout << "Error getting cursor for "
-					<< db_stats[x].db_location << " return: " << ret << endl;
-			destroy_jal();
-			exit(1);
-		}
-		while ((wret = jalcursor->get(jalcursor, &key, &db_data, DB_NEXT)) == 0)
-		{
-			count_stats(byte_swapped, (uint8_t *) db_data.data,
-					db_data.size, &db_stats[x]);
-		}
-		print_row(x);
+		print_row(statContainer);
 	}
 
-	destroy_jal();
+	// Finished with the context
+	jaldb_context_destroy(&ctx);
+
+	if (config.show_times)
+	{
+		print_time_headers();
+		time_t min_time = 0;
+		time_t max_time = 0;
+		int counter = 0;
+		for (auto & statContainer : dbStats)
+		{
+			if(!statContainer.show) {
+				continue;
+			}
+			statContainer.stats.latest_time = statContainer.stats.latest_time.substr(0, 19);
+			statContainer.stats.earliest_time = statContainer.stats.earliest_time.substr(0, 19);
+
+			//2025-02-20T14:28:46.198517
+			std::string format = "%Y-%m-%dT%H:%M:%S";
+
+			struct tm latestStruct;
+			latestStruct.tm_isdst = 0;
+			strptime(statContainer.stats.latest_time.c_str(), format.c_str(), &latestStruct);
+			struct tm earliestStruct;
+			earliestStruct.tm_isdst = 0;
+			strptime(statContainer.stats.earliest_time.c_str(), format.c_str(), &earliestStruct);
+			statContainer.latest = mktime(&latestStruct);
+			statContainer.earliest = mktime(&earliestStruct);
+			statContainer.diff_time = difftime(statContainer.latest, statContainer.earliest);
+
+			print_time_row(statContainer);
+
+			++counter;
+			if (counter == 1)
+			{
+				min_time = statContainer.earliest;
+				max_time = statContainer.latest;
+			}
+			else
+			{
+				if (statContainer.earliest < min_time)
+				{
+					min_time = statContainer.earliest;
+				}
+				if (statContainer.latest > max_time)
+				{
+					max_time = statContainer.latest;
+				}
+			}
+		}
+		time_t total_time = 0;
+		total_time = max_time - min_time;
+		int hours = (total_time / 3600);
+		int minutes = (total_time % 3600) / 60;
+		int seconds = total_time % 60;
+		std::cout << std::endl << "Total Time ";
+		std::cout << std::setw(2) << std::setfill('0') << hours << ":";
+		std::cout << std::setw(2) << std::setfill('0') << minutes << ":";
+		std::cout << std::setw(2) << std::setfill('0') << seconds << std::endl << std::endl;
+	}
 
 	return 0;
 }
+
 void print_headers()
 {
-	cout << "-------\t-------\t-------\t-------\t-------\t";
-	if(config.show_confirmed)
-	{
-		cout << "-------\t";
-	}
-	cout << "-------" << endl;
-	cout << "db name\t count \t unsent\t  sent \tsynced \t";
-	if(config.show_confirmed)
-	{
-		cout << "confirm\t";
-	}
-	cout << "failed " << endl;
-	cout << "-------\t-------\t-------\t-------\t-------\t";
-	if(config.show_confirmed)
-	{
-		cout << "-------\t";
-	}
-	cout << "-------" << endl;
+	std::cout << std::endl << "\tDatabase Home " << config.db_home << std::endl;
+	std::cout << "-------\t-------\t-------\t-------\t-------\t-------\t-------"<< std::endl;
+	std::cout << "db name\t count \t unsent\t  sent \tsynced \tconfirm\tfailed "<< std::endl;
+	std::cout << "-------\t-------\t-------\t-------\t-------\t-------\t-------"<< std::endl;
 }
-void print_row(unsigned int x)
+
+void print_time_headers()
 {
-	cout << db_stats[x].db_name << "\t";
-	cout << db_stats[x].count << "\t";
-	cout << db_stats[x].not_sent_count << "\t";
-	cout << db_stats[x].sent_count << "\t";
-	cout << db_stats[x].synced_count << "\t";
-	if(config.show_confirmed)
-	{
-		cout << db_stats[x].confirmed_count << "\t";
-	}
-	cout << db_stats[x].failed_count << endl;
+	std::cout << "-------\t-------------------\t--------------------\t----------"<< std::endl;
+	std::cout << "db name\t    first_time     \t      last_time     \tdiff_time" << std::endl;
+	std::cout << "-------\t-------------------\t--------------------\t---------- "<< std::endl;
 }
-void update_flags(unsigned int x)
-{
-	int cret;
-	db_create(&filedb, NULL, 0);
-	ret = filedb->open(filedb, NULL, db_stats[x].db_location.c_str(), NULL,
-	DB_BTREE, DB_CREATE, 0);
-	ret = filedb->cursor(filedb, NULL, &filecursor, 0);
-	if (ret != 0)
+
+void print_time_row(StatContainer& s){
+	switch (s.type)
 	{
-		cout << "Error getting cursor for " << db_stats[x].db_location
-				<< " return: " << ret << endl;
-		filedb->close(filedb, 0);
-		exit(1);
+		case JALDB_RTYPE_JOURNAL:
+			std::cout << "journal\t";
+			break;
+		case JALDB_RTYPE_AUDIT:
+			std::cout << "audit\t";
+			break;
+		case JALDB_RTYPE_LOG:
+			std::cout << "log\t";
+			break;
+		case JALDB_RTYPE_UNKNOWN:
+			std::cout << "unknown\t";
+			break;
 	}
 
-	if (config.flag.compare("unsent") == 0)
+	std::cout << s.stats.earliest_time << "\t" << s.stats.latest_time << "\t";
+	int hours = (s.diff_time/3600);
+	int minutes = (s.diff_time % 3600) / 60;
+	int seconds = s.diff_time % 60;
+	std::cout << std::setw(2) << std::setfill('0') << hours << ":";
+	std::cout << std::setw(2) << std::setfill('0') << minutes << ":";
+	std::cout << std::setw(2) << std::setfill('0') << seconds << std::endl;
+}
+
+void print_row(StatContainer& s)
+{
+	switch(s.type)
 	{
-		cout << "Marking flag " << config.flag << " for "
-				<< db_stats[x].db_name << endl;
-		while ((cret = filecursor->get(filecursor, &key, &db_data, DB_NEXT)) == 0)
-		{
-			ret = mark_sent(
-					(char*) key.data, db_stats[x].record_type, 0);
-			if (ret != 0)
-			{
-				break;
-			}
-		}
-	}
-	else if (config.flag.compare("sent") == 0)
-	{
-		cout << "Marking flag " << config.flag << " for "
-				<< db_stats[x].db_name << endl;
-		while ((cret = filecursor->get(filecursor, &key, &db_data, DB_NEXT)) == 0)
-		{
-			ret = mark_sent(
-					(char*) key.data, db_stats[x].record_type, 0);
-			ret = mark_sent(
-					(char*) key.data, db_stats[x].record_type, 1);
-			if (ret != 0)
-			{
-				break;
-			}
-		}
-	}
-	else if (config.flag.compare("synced") == 0)
-	{
-		cout << "Marking flag " << config.flag << " for "
-				<< db_stats[x].db_name << endl;
-		while ((cret = filecursor->get(filecursor, &key, &db_data, DB_NEXT)) == 0)
-		{
-			ret = mark_sent(
-					(char*) key.data, db_stats[x].record_type, 0);
-			ret = mark_sent(
-					(char*) key.data, db_stats[x].record_type, 1);
-			ret = mark_synced(
-					(char*) key.data, db_stats[x].record_type);
-			if (ret != 0)
-			{
-				break;
-			}
-		}
+		case JALDB_RTYPE_JOURNAL:
+			std::cout << "journal\t";
+			break;
+		case JALDB_RTYPE_AUDIT:
+			std::cout << "audit\t";
+			break;
+		case JALDB_RTYPE_LOG:
+			std::cout << "log\t";
+			break;
+		case JALDB_RTYPE_UNKNOWN:
+			std::cout << "unknown\t";
+			break;
 	}
 
-	if (ret != 0)
-	{
-		cout << "Error marking flag " << config.flag << " for "
-				<< db_stats[x].db_location
-				<< " return: "
-				<< ret << endl;
-		destroy_jal();
-		exit(1);
-	}
+	std::cout << s.stats.count << "\t";
+	std::cout << s.stats.not_sent_count << "\t";
+	std::cout << s.stats.sent_count << "\t";
+	std::cout << s.stats.synced_count << "\t";
+	std::cout << s.stats.confirmed_count << "\t";
+	std::cout << s.stats.failed_count << std::endl;
 }
-void setup_jal()
+
+// Helper to avoid repeating this logic twice in update_flags
+static enum jaldb_status mark(jaldb_context* ctx, enum jaldb_sync_stat desiredState, std::string stateStringForm, enum jaldb_rec_type type, std::string typeStringForm)
 {
-	ctx = jaldb_context_create();
+	std::cout << "Marking records of type: " << typeStringForm << " with state:  " << stateStringForm << std::endl;
+	enum jaldb_status status = mark_all_records(ctx, type, desiredState);
+	if(JALDB_OK != status)
+	{
+		std::cout << "Jaldb Status Code: " << status << " encountered while updating record of type: " << typeStringForm << " to state: " << stateStringForm << std::endl;
+	}
+	return status;
+}
+
+enum jaldb_status update_flags(
+	jaldb_context* ctx,
+	MarkOperation op,
+	RecordSelection rSelect)
+{
+	enum jaldb_sync_stat desiredState;
+	std::string stateStringForm;
+	switch(op)
+	{
+		case MarkOperation::UNSENT:
+			desiredState = JALDB_NOT_SENT;
+			stateStringForm = "UNSENT";
+			break;
+		case MarkOperation::SENT:
+			desiredState = JALDB_SENT;
+			stateStringForm = "SENT";
+			break;
+		case MarkOperation::SYNC:
+			desiredState = JALDB_SYNCED;
+			stateStringForm = "SYNC";
+			break;
+		default:
+			return JALDB_OK;
+	}
+
+	enum jaldb_status status = JALDB_OK;
+	switch(rSelect)
+	{
+		case RecordSelection::JOURNAL:
+			status = mark(ctx, desiredState, stateStringForm, JALDB_RTYPE_JOURNAL, "journal");
+			break;
+		case RecordSelection::AUDIT:
+			status = mark(ctx, desiredState, stateStringForm, JALDB_RTYPE_AUDIT, "audit");
+			break;
+		case RecordSelection::LOG:
+			status = mark(ctx, desiredState, stateStringForm, JALDB_RTYPE_LOG, "log");
+			break;
+		case RecordSelection::ALL:
+			status = mark(ctx, desiredState, stateStringForm, JALDB_RTYPE_JOURNAL, "journal");
+			// A dirty hack to skip susequent calls to mark if 0 a.k.a. JALDB_OK != status
+			status || (status = mark(ctx, desiredState, stateStringForm, JALDB_RTYPE_AUDIT, "audit"));
+			status || (status = mark(ctx, desiredState, stateStringForm, JALDB_RTYPE_LOG, "log"));
+			break;
+		// Unreachable
+		default:
+			status = JALDB_E_INVAL;
+	}
+	return status;
+}
+
+jaldb_context* setup_jal()
+{
+	jaldb_context* ctx = jaldb_context_create();
 	enum jaldb_flags db_flags;
+
+	#ifdef JALDB_TYPE_BDB
 	if (config.run_db_recover)
 	{
-		cout << "Setting DB_RECOVER flag." << endl;
+		std::cout << "Setting DB_RECOVER flag." << std::endl;
 		db_flags = (enum jaldb_flags)(JDB_NONE | JDB_DB_RECOVER);
 	}
 	else
 	{
 		db_flags = JDB_NONE;
 	}
-	ret = jaldb_context_init(ctx, config.db_home.c_str(), db_flags);
+	#else
+		db_flags = JDB_NONE;
+	#endif
+	enum jaldb_status ret = jaldb_context_init(ctx, config.db_home.c_str(), db_flags);
 	if (ret != 0)
 	{
-		cout << "Setup jal: " << config.db_home << " ret: " << ret << endl;
-		exit(1);
+		std::cout << "Failed to initialize jaldb_context with status: " << ret << std::endl;
+		return NULL;
 	}
-}
-
-int mark_sent(string nonce, jaldb_rec_type rt, int mark_sent)
-{
-	return jaldb_mark_sent(ctx, rt, (const char *) nonce.c_str(), mark_sent);
-}
-
-int mark_synced(string nonce, jaldb_rec_type rt)
-{
-	return jaldb_mark_synced(ctx, rt, (const char *) nonce.c_str());
-}
-
-void destroy_jal()
-{
-	jaldb_context_destroy(&ctx);
-}
-
-void setup_stats()
-{
-	journal_stat.db_name = "journal";
-	journal_stat.db_location = config.db_home + "/journal_records.db";
-	journal_stat.record_type = JALDB_RTYPE_JOURNAL;
-	audit_stat.db_name = "audit";
-	audit_stat.db_location = config.db_home + "/audit_records.db";
-	audit_stat.record_type = JALDB_RTYPE_AUDIT;
-	log_stat.db_name = "log";
-	log_stat.db_location = config.db_home + "/log_records.db";
-	log_stat.record_type = JALDB_RTYPE_LOG;
-	db_stats.push_back(journal_stat);
-	db_stats.push_back(audit_stat);
-	db_stats.push_back(log_stat);
-}
-
-void count_stats(int byte_swapped_in, uint8_t * data_in, int size, DB_Stat * stat)
-{
-	struct jaldb_record * record = NULL;
-	int jal_ret = jaldb_deserialize_record(byte_swapped_in, data_in, size, &record);
-	if (jal_ret != 0)
-	{
-		stat->failed_count++;
-		return;
-	}
-	if (record->synced == JALDB_NOT_SENT)
-	{
-		stat->not_sent_count++;
-	}
-	if (record->synced == JALDB_SENT)
-	{
-		stat->sent_count++;
-	}
-	if (record->synced == JALDB_SYNCED)
-	{
-		stat->synced_count++;
-	}
-	if(record->confirmed && (int)record->confirmed == 1){
-		stat->confirmed_count++;
-		//cout << "confirmed: " << (int)record->confirmed << endl;
-	}
-	jaldb_destroy_record(&record);
-	stat->count++;
-
+	return ctx;
 }
 
 static error_t parse_opt(int key_in,
@@ -404,80 +394,61 @@ static error_t parse_opt(int key_in,
 {
 	switch (key_in)
 	{
+		// Command to update "mark" records
 		case 'm':
-			config.flag = arg;
-			if (config.flag.compare("unsent") == 0 ||
-					config.flag.compare("sent") == 0 ||
-					config.flag.compare("synced") == 0)
+			// Mark unsent
+			if(0 == strcmp(arg, "unsent") || 0 == strcmp(arg, "u"))
 			{
-				break;
+				config.operation = MarkOperation::UNSENT;
 			}
-			if (config.flag.compare("u") == 0 ||
-					config.flag.compare("s") == 0 ||
-					config.flag.compare("y") == 0)
+			else if(0 == strcmp(arg, "sent") || 0 == strcmp(arg, "s"))
 			{
-
-				if (config.flag.compare("u") == 0)
-				{
-					config.flag = "unsent";
-				}
-				else if (config.flag.compare("s") == 0)
-				{
-					config.flag = "sent";
-				}
-				else if (config.flag.compare("y") == 0)
-				{
-					config.flag = "synced";
-				}
-				break;
+				config.operation = MarkOperation::SENT;
 			}
-			argp_failure(state, 1, 0, "unknown flag type");
-			argp_usage(state);
+			else if(0 == strcmp(arg, "sync") || 0 == strcmp(arg, "y"))
+			{
+				config.operation = MarkOperation::SYNC;
+			}
+			else
+			{
+				argp_failure(state, 1, 0, "unknown flag type");
+				argp_usage(state);
+			}
 			break;
 		case 'h':
 			config.db_home = arg;
 			break;
 		case 't':
-			config.record_type = arg;
-			if (config.record_type.compare("journal") == 0 ||
-					config.record_type.compare("audit") == 0 ||
-					config.record_type.compare("log") == 0 ||
-					config.record_type.compare("all") == 0)
+			if(0 == strcmp(arg, "journal") || 0 == strcmp(arg, "j"))
 			{
-				break;
+				config.recordSelection = RecordSelection::JOURNAL;
 			}
-			if (config.record_type.compare("j") == 0 ||
-					config.record_type.compare("a") == 0 ||
-					config.record_type.compare("l") == 0 ||
-					config.record_type.compare("z") == 0)
+			else if(0 == strcmp(arg, "audit") || 0 == strcmp(arg, "a"))
 			{
-				if (config.record_type.compare("j") == 0)
-				{
-					config.record_type = "journal";
-				}
-				else if (config.record_type.compare("a") == 0)
-				{
-					config.record_type = "audit";
-				}
-				else if (config.record_type.compare("l") == 0)
-				{
-					config.record_type = "log";
-				}
-				else if (config.record_type.compare("z") == 0)
-				{
-					config.record_type = "all";
-				}
-				break;
+				config.recordSelection = RecordSelection::AUDIT;
 			}
-			argp_failure(state, 1, 0, "unknown record type");
-			argp_usage(state);
+			else if(0 == strcmp(arg, "log") || 0 == strcmp(arg, "l"))
+			{
+				config.recordSelection = RecordSelection::LOG;
+			}
+			else if(0 == strcmp(arg, "all") || 0 == strcmp(arg, "z"))
+			{
+				config.recordSelection = RecordSelection::ALL;
+			}
+			else
+			{
+				argp_failure(state, 1, 0, "unknown record type");
+				argp_usage(state);
+			}
 			break;
+		case 's':
+			config.show_times = true;
+			break;
+		#ifdef JALDB_TYPE_BDB
 		case 'r':
 			config.run_db_recover = true;
 			break;
-		case 'c':
-			config.show_confirmed = true;
-			break;
+		#endif
 		case ARGP_KEY_END:
 			break;
 		default:
@@ -485,4 +456,3 @@ static error_t parse_opt(int key_in,
 	}
 	return 0;
 }
-

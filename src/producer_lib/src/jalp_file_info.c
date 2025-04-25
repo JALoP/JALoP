@@ -1,5 +1,7 @@
 /**
- * @file jalp_file_info.c This file has functions for creating and destroying
+ * @file
+ *
+ * @brief This file has functions for creating and destroying
  * jalp_file_info structures.
  *
  * ### LICENSE

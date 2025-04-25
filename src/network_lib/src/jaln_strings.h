@@ -1,5 +1,7 @@
 /**
- * @file jaln_strings.h This file contains various strings used by the network
+ * @file
+ *
+ * @brief This file contains various strings used by the network
  * library.
  *
  * ### LICENSE

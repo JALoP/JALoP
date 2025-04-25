@@ -1,5 +1,7 @@
 /**
- * @file jaln_publisher.c  This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * definitions related to the jal publisher.
  *
  * ### LICENSE
@@ -324,6 +326,11 @@ enum jal_status jaln_pub_handle_subscribe(jaln_session *sess, VortexChannel *cha
 		return JAL_E_INVAL;
 	}
 
+	// jald doesn't return from the on subscribe callback until the session ends.
+	// Guarantee the session doesn't self-destruct while we're holding
+	// a pointer to it that we may want to use, even if the channel is closed
+	jaln_session_ref(sess);
+
 	enum jal_status ret = JAL_E_INVAL;
 	struct jaln_publisher_callbacks *cbs = sess->jaln_ctx->pub_callbacks;
 	struct jaln_pub_data *pd = sess->pub_data;
@@ -349,6 +356,7 @@ err_out:
 	vortex_channel_finalize_ans_rpy(chan, msg_no);
 	jaln_session_set_errored(sess);
 out:
+	jaln_session_unref(sess);
 	return ret;
 }
 
@@ -363,10 +371,10 @@ void jaln_finish_session_helper(axlList* sessions,
 	for (i = 0; i < sess_list_length; i++) {
 		sess = (jaln_session *) axl_list_get_nth(sessions, i);
 
-		vortex_mutex_lock(&sess->lock);
 		if (!sess || !sess->pub_data) {
 			continue;
 		}
+		vortex_mutex_lock(&sess->lock);
 
 		vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
 		vortex_cond_signal(&sess->wait);

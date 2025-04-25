@@ -1,5 +1,7 @@
 /**
- * @file jaldb_serialize_record.c This file contains to seriailze/deserialize a
+ * @file
+ *
+ * @brief This file contains to serialize/deserialize a
  * jaldb_record to/from a raw memory buffer.
  *
  * ### LICENSE

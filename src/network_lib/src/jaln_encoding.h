@@ -1,5 +1,7 @@
 /**
- * @file jaln_encoding.h This file contains function declarations for code related
+ * @file
+ *
+ * @brief This file contains function declarations for code related
  * to the xml encodings.
  *
  * ### LICENSE

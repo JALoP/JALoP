@@ -1,6 +1,8 @@
 /**
- * @file jaldb_context.cpp This file implements the DB context management
- * functions.
+ * @file
+ *
+ * @brief This file implements the DB context management
+ * functions using Berkeley DB (BDB).
  *
  * ### LICENSE
  *
@@ -265,130 +267,293 @@ std::string jaldb_make_temp_db_name(const string &id, const string &suffix)
         return o.str();
 }
 
+enum class MarkType {
+	NOT_SENT,
+	SENT,
+	SYNC,
+	NOT_CONFIRM,
+	CONFIRM,
+};
+
+
+// When MarkType::CONFIRM != markType, nonce_out must be NULL.
+//
+// When MarkType::CONFIRM == markType, nonce_out must be non-NULL
+//  and (*nonce_out) must be NULL. In this case, *nonce_out will
+//  be used to return the updated network_nonce value and must be
+//  freed by the caller.
+static enum jaldb_status jaldb_mark(
+	jaldb_context *ctx,
+	enum jaldb_rec_type type,
+	const char *nonce,
+	MarkType markType,
+	char** nonce_out)
+{
+	// Size of the jaldb_serialze_record_headers struct
+	// a.k.a. offset of the record->timestamp string
+	constexpr size_t header_bytes = sizeof(jaldb_serialize_record_headers);
+	// Size of the headers + size of the timestamp (including NULL terminator)
+	// a.k.a. offset of the network_nonce
+	constexpr size_t timestamp_bytes = header_bytes + JALDB_TIMESTAMP_LENGTH + 1;
+	// Size of headers + timestamp + NULL + max size of network_nonce + NULL
+	// a.k.a. size of data to get/put when updating both headers and the nonce
+	constexpr size_t network_nonce_bytes = timestamp_bytes + JALDB_MAX_NETWORK_NONCE_LENGTH + 1;
+
+	enum jaldb_status ret = JALDB_OK;
+	struct jaldb_serialize_record_headers *header_ptr = NULL;
+	DB_TXN *txn = NULL;
+
+	if (!ctx || !type || !nonce) {
+		return JALDB_E_INVAL;
+	}
+
+	// If we are doing a confirm, nonce_out must be non-NULL and *nonce_out must be NULL
+	if(MarkType::CONFIRM == markType && (!nonce_out || *nonce_out)) {
+		return JALDB_E_INVAL;
+	}
+	// Otherwise, nonce_out is unused and should be NULL
+	else if (MarkType::CONFIRM != markType && nonce_out) {
+		return JALDB_E_INVAL;
+	}
+
+	struct jaldb_record_dbs *rdbs = NULL;
+	int db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (JALDB_OK != db_ret || !rdbs || !rdbs->primary_db || !rdbs->network_nonce_idx_db) {
+		return JALDB_E_INVAL;
+	}
+
+	// The real primary key is based on the network_nonce generated on insertion
+	// If we're doing anything other than CONFIRM, we can just use nonce as our primary key
+	// HOWEVER
+	// In the CONFIRM case, we need to search the network_nonce_idx_db for the provided
+	// nonce and the primary key will be extracted using pget
+	DBT search_key;
+	memset(&search_key, 0, sizeof(search_key));
+	search_key.flags = DB_DBT_REALLOC;
+	search_key.size = strlen(nonce)+1;
+	search_key.data = jal_strdup(nonce);
+
+	// If we use the secondary db, this pkey will be filled by pget
+	// Otherwise, we just won't use it
+	DBT pkey;
+	memset(&pkey, 0, sizeof(pkey));
+	pkey.flags = DB_DBT_REALLOC;
+
+	// The use of DB_DBT_PARTIAL indicates that we want to fetch and/or put only the first
+	// <dlen> bytes, starting from an offset of <doff> (although in our case <doff> is always 0).
+	// In most cases, we want to get and fetch just the headers, which makes our dlen
+	// <header_bytes>.
+	// When doing the CONFIRM operation, however, we're going to modify the network nonce
+	// Reminder that the db_layout is:
+	//
+	// headers
+	// record->timestamp
+	// network_nonce
+	// other stuff
+	//
+	// So to modify the network_nonce (don't ever change record->timestamp here) we need to
+	// get/put header_bytes + timestamp len + network_nonce len
+	DBT val;
+	memset(&val, 0, sizeof(val));
+	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+	val.doff = 0;
+	if(MarkType::CONFIRM == markType) {
+		val.size = network_nonce_bytes;
+		val.data = jal_malloc(network_nonce_bytes);
+		val.dlen = network_nonce_bytes;
+	} else {
+		val.size = header_bytes;
+		val.data = jal_malloc(header_bytes);
+		val.dlen = header_bytes;
+	}
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			// No recovery from this, skip db error handling
+			ret = JALDB_E_DB;
+			goto out;
+		}
+
+		// Special case - in the CONFIRM case, get from the network_nonce_idx_db instead
+		// of the primary db
+		if(MarkType::CONFIRM == markType) {
+			db_ret = rdbs->network_nonce_idx_db->pget(rdbs->network_nonce_idx_db,
+				txn, &search_key, &pkey, &val, 0);
+		} else {
+			// Otherwise just use the primary_db
+			db_ret = rdbs->primary_db->get(rdbs->primary_db, txn, &search_key, &val, DB_DEGREE_2);
+		}
+		if(0 != db_ret) {
+			goto db_err;
+		}
+
+		header_ptr = (struct jaldb_serialize_record_headers *)val.data;
+		// Ensure the header layout version in the retrieved data matches
+		// the version this lib was built against
+		if (header_ptr->version != JALDB_DB_LAYOUT_VERSION) {
+			txn->abort(txn);
+			ret = JALDB_E_INVAL;
+			goto out;
+		}
+
+		// Operation varies based on markType
+		switch(markType) {
+			case MarkType::NOT_SENT:
+				if((0 == (header_ptr->flags & JALDB_RFLAGS_SENT))
+					&& (0 == (header_ptr->flags & JALDB_RFLAGS_SYNCED))) {
+					txn->abort(txn);
+					ret = JALDB_OK;
+					goto out;
+				}
+				else {
+					// MarkType::NOT_SENT implies both JALDB_RFLAGS_SENT and JALDB_RFLAGS_SYNCED are 0
+					header_ptr->flags &= ~JALDB_RFLAGS_SENT;
+					header_ptr->flags &= ~JALDB_RFLAGS_SYNCED;
+				}
+				break;
+			case MarkType::SENT:
+				if((0 != (header_ptr->flags & JALDB_RFLAGS_SENT))
+					&& (0 == (header_ptr->flags & JALDB_RFLAGS_SYNCED))) {
+					txn->abort(txn);
+					ret = JALDB_OK;
+					goto out;
+				}
+				else {
+					// MarkType::SENT implies JALDB_RFLAGS_SENT is 1 and JALDB_RFLAGS_SYNCED is 0
+					header_ptr->flags |= JALDB_RFLAGS_SENT;
+					header_ptr->flags &= ~JALDB_RFLAGS_SYNCED;
+				}
+				break;
+			case MarkType::SYNC:
+				if((0 != (header_ptr->flags & JALDB_RFLAGS_SENT))
+					&& (0 != (header_ptr->flags & JALDB_RFLAGS_SYNCED))) {
+					txn->abort(txn);
+					ret = JALDB_OK;
+					goto out;
+				}
+				else {
+					// MarkType::SYNC implies JALDB_RFLAGS_SENT is 1 and JALDB_RFLAGS_SYNCED is 1
+					header_ptr->flags |= JALDB_RFLAGS_SENT;
+					header_ptr->flags |= JALDB_RFLAGS_SYNCED;
+				}
+				break;
+			case MarkType::CONFIRM:
+				if(0 != (header_ptr->flags & JALDB_RFLAGS_CONFIRMED)) {
+					txn->abort(txn);
+					ret = JALDB_OK;
+					goto out;
+				}
+
+				header_ptr->flags |= JALDB_RFLAGS_CONFIRMED;
+				// Special case when confirming a record
+				// The expectation is that this only occurs when a record transmitted to a
+				// subscriber is finalized (i.e. before transmitting the SYNC signal to the
+				// publisher). When inserting locally, the jaldb_insert_record is simply called
+				// with the confirmed parameter set to 1 and this code is not executed.
+				//
+				// Up to this point, the network_nonce in the data (and therefore
+				// used as the network_nonce_idx as its index) has been the nonce provided by
+				// the publisher as the JalId. This is necessary to correlate in-progress records
+				//
+				// Now that the transmission is finished, update the network nonce to reflect
+				// the "real" network_nonce generated at the time of insertion to this network store
+				// which is our primary key
+				//
+				// First, walk a pointer to the destination
+				{ // Scope nonce_to_overwrite or the compiler throws warnings
+					// Skip over the headers and the timestamp to point to the nonce
+					uint8_t* nonce_to_overwrite = (uint8_t *) header_ptr + timestamp_bytes;
+
+					// Copy from the primary key to the network_nonce, omitting NULL terminator
+					memcpy(nonce_to_overwrite, pkey.data, pkey.size - 1);
+					// Advance out pointer to one past the data we wrote
+					nonce_to_overwrite += (pkey.size - 1);
+
+					// Fill the rest with NULLs. This gives us our null terminator and zeroes out any
+					// old data if the new nonce is shorter than the old
+					memset(nonce_to_overwrite, '\0', (JALDB_MAX_NETWORK_NONCE_LENGTH - pkey.size + 1));
+				}
+				break;
+			case MarkType::NOT_CONFIRM:
+				// Not currently used
+				// Might cause weirdness if a record is later re-confirmed given the network_nonce
+				// double-meaning when confirming, but SHOULD just overwrite
+				// network_nonce with the same value
+				if(0 == (header_ptr->flags & JALDB_RFLAGS_CONFIRMED)) {
+					txn->abort(txn);
+					ret = JALDB_OK;
+					goto out;
+				}
+				else {
+					header_ptr->flags &= ~JALDB_RFLAGS_CONFIRMED;
+				}
+				break;
+			default:
+				txn->abort(txn);
+				ret = JALDB_E_INVAL;
+				goto out;
+		}
+
+		// Use the discovered pkey if doing CONFIRM, or just the original search_key otherwise
+		if(MarkType::CONFIRM == markType) {
+			db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &pkey, &val, 0);
+		} else {
+			db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &search_key, &val, 0);
+		}
+		if(0 != db_ret) {
+			goto db_err;
+		}
+
+		db_ret = txn->commit(txn, 0);
+		if (0 == db_ret) {
+			// Only when CONFIRMing, update nonce_out, stealing it from pkey.data
+			if(MarkType::CONFIRM == markType) {
+				*nonce_out = (char*) pkey.data;
+				pkey.data = NULL;
+				ret = JALDB_OK;
+			}
+			goto out;
+		}
+		// else, goto db_err, but we're there anyway
+
+		db_err:
+		txn->abort(txn);
+		// Retry in the case of a db deadlock
+		if (DB_LOCK_DEADLOCK == db_ret) {
+			continue;
+		}
+		// specific error for DB_NOTFOUND
+		else if(DB_NOTFOUND == db_ret) {
+			ret = JALDB_E_NOT_FOUND;
+		}
+		// Generic error otherwise
+		else {
+			ret = JALDB_E_DB;
+		}
+		goto out;
+	}
+
+out:
+	free(search_key.data);
+	free(pkey.data);
+	free(val.data);
+	return ret;
+}
+
 enum jaldb_status jaldb_mark_sent(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
 	const char *nonce,
 	int target_state)
 {
-	enum jaldb_status ret = JALDB_OK;
-	int db_ret;
-
-	struct jaldb_record_dbs *rdbs = NULL;
-
-	int byte_swap;
-
-	struct jaldb_serialize_record_headers *header_ptr = NULL;
-	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
-	DB_TXN *txn = NULL;
-	DBT key;
-	DBT val;
-
-	if (!ctx || !type || !nonce) {
+	if(0 == target_state) {
+		return jaldb_mark(ctx, type, nonce, MarkType::NOT_SENT, NULL);
+	} else if(1 == target_state) {
+		return jaldb_mark(ctx, type, nonce, MarkType::SENT, NULL);
+	} else {
 		return JALDB_E_INVAL;
 	}
-
-	memset(&key, 0, sizeof(key));
-	memset(&val, 0, sizeof(val));
-
-	switch (type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	if (!rdbs || !rdbs->record_id_idx_db) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	key.flags = DB_DBT_REALLOC;
-	key.size = strlen(nonce)+1;
-	key.data = jal_strdup(nonce);
-
-	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
-	val.dlen = header_bytes;
-	val.size = header_bytes;
-	val.doff = 0;
-	val.data = jal_malloc(header_bytes);
-
-	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
-	if (0 != db_ret){
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	while (1) {
-		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
-		if (0 != db_ret) {
-			ret = JALDB_E_DB;
-			goto out;
-		}
-
-		db_ret = rdbs->primary_db->get(rdbs->primary_db, txn, &key, &val, DB_DEGREE_2);
-		if (0 == db_ret) {
-			header_ptr = (struct jaldb_serialize_record_headers *)val.data;
-			if (header_ptr->version != JALDB_DB_LAYOUT_VERSION) {
-				txn->abort(txn);
-				ret = JALDB_E_INVAL;
-				goto out;
-			// Check to see if state matches target - nothing to do if they match
-			} else if (((header_ptr->flags & JALDB_RFLAGS_SENT) ? 1 : 0) == target_state) {
-				txn->abort(txn);
-				goto out;
-			// Update the state
-			} else {
-				if (1 == target_state) {
-					// Set the flag
-					header_ptr->flags |= JALDB_RFLAGS_SENT;
-				}
-				else if (0 == target_state){
-					// Clear the flag
-					header_ptr->flags &= ~JALDB_RFLAGS_SENT;
-					header_ptr->flags &= ~JALDB_RFLAGS_SYNCED;
-				} else {
-					txn->abort(txn);
-					goto out;
-				}
-
-				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, 0);
-				if (0 == db_ret) {
-					db_ret = txn->commit(txn, 0);
-					if (0 == db_ret) {
-						break;
-					} else {
-						continue;
-					}
-				}
-			}
-		}
-
-		txn->abort(txn);
-		if (DB_LOCK_DEADLOCK == db_ret) {
-			continue;
-		} else if (DB_NOTFOUND == db_ret) {
-			ret = JALDB_E_NOT_FOUND;
-			goto out;
-		}
-
-		/* Something else went wrong... */
-		ret = JALDB_E_DB;
-		goto out;
-	}
-
-out:
-	free(key.data);
-	free(val.data);
-	return ret;
 }
 
 enum jaldb_status jaldb_mark_synced(
@@ -396,116 +561,7 @@ enum jaldb_status jaldb_mark_synced(
 	enum jaldb_rec_type type,
 	const char *nonce)
 {
-	enum jaldb_status ret = JALDB_OK;
-	int db_ret;
-
-	struct jaldb_record_dbs *rdbs = NULL;
-
-	int byte_swap;
-
-	struct jaldb_serialize_record_headers *header_ptr = NULL;
-	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
-
-	DB_TXN *txn = NULL;
-	DBT key;
-	DBT val;
-
-	if (!ctx || !type || !nonce) {
-		return JALDB_E_INVAL;
-	}
-
-	memset(&key, 0, sizeof(key));
-	memset(&val, 0, sizeof(val));
-
-	switch (type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	if (!rdbs || !rdbs->record_id_idx_db) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	key.flags = DB_DBT_REALLOC;
-	key.size = strlen(nonce)+1;
-	key.data = jal_strdup(nonce);
-
-	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
-	val.dlen = header_bytes;
-	val.size = header_bytes;
-	val.doff = 0;
-	val.data = jal_malloc(header_bytes);
-
-	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
-	if (0 != db_ret){
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	while (1) {
-		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
-		if (0 != db_ret) {
-			ret = JALDB_E_DB;
-			goto out;
-		}
-
-		db_ret = rdbs->primary_db->get(rdbs->primary_db, txn, &key, &val, DB_DEGREE_2);
-		if (0 == db_ret) {
-			header_ptr = (struct jaldb_serialize_record_headers *)val.data;
-			if (header_ptr->version != JALDB_DB_LAYOUT_VERSION) {
-				txn->abort(txn);
-				ret = JALDB_E_INVAL;
-				goto out;
-
-			} else if (header_ptr->flags & JALDB_RFLAGS_SYNCED) {
-				txn->abort(txn);
-				goto out;
-
-			} else {
-				header_ptr->flags |= JALDB_RFLAGS_SYNCED;
-
-				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, 0);
-
-				if (0 == db_ret) {
-					db_ret = txn->commit(txn, 0);
-
-					if (0 == db_ret) {
-						break;
-					} else {
-						continue;
-					}
-				}
-			}
-		}
-
-		txn->abort(txn);
-		if (DB_LOCK_DEADLOCK == db_ret) {
-			continue;
-		} else if (DB_NOTFOUND == db_ret) {
-			ret = JALDB_E_NOT_FOUND;
-			goto out;
-		}
-
-		/* Something else went wrong... */
-		ret = JALDB_E_DB;
-		goto out;
-	}
-
-out:
-	free(key.data);
-	free(val.data);
-	return ret;
+	return jaldb_mark(ctx, type, nonce, MarkType::SYNC, NULL);
 }
 
 
@@ -515,133 +571,7 @@ enum jaldb_status jaldb_mark_confirmed(
 	const char *network_nonce,
 	char** nonce_out)
 {
-	enum jaldb_status ret = JALDB_OK;
-	int db_ret;
-
-	struct jaldb_record_dbs *rdbs = NULL;
-	size_t timestamp_bytes;
-	size_t network_nonce_bytes;
-
-	int byte_swap;
-
-	struct jaldb_serialize_record_headers *header_ptr = NULL;
-	size_t header_bytes = sizeof(jaldb_serialize_record_headers);
-	DB_TXN *txn = NULL;
-	DBT skey;
-	DBT pkey;
-	DBT val;
-
-	if (!ctx || !type || !network_nonce || !nonce_out || *nonce_out) {
-		return JALDB_E_INVAL;
-	}
-
-	memset(&skey, 0, sizeof(skey));
-	memset(&pkey, 0, sizeof(pkey));
-	memset(&val, 0, sizeof(val));
-
-	switch (type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	if (!rdbs || !rdbs->record_id_idx_db) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	timestamp_bytes = header_bytes + 1 + JALDB_TIMESTAMP_LENGTH + 1;
-	network_nonce_bytes = timestamp_bytes + JALDB_MAX_NETWORK_NONCE_LENGTH + 1;
-
-	skey.flags = DB_DBT_REALLOC;
-	skey.size = strlen(network_nonce)+1;
-	skey.data = jal_strdup(network_nonce);
-
-	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
-	val.dlen = network_nonce_bytes;
-	val.size = network_nonce_bytes;
-	val.doff = 0;
-	val.data = jal_malloc(network_nonce_bytes);
-
-	pkey.flags = DB_DBT_REALLOC;
-
-	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
-	if (0 != db_ret){
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	while (1) {
-		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
-		if (0 != db_ret) {
-			ret = JALDB_E_DB;
-			goto out;
-		}
-
-		db_ret = rdbs->network_nonce_idx_db->pget(rdbs->network_nonce_idx_db,
-									txn, &skey, &pkey, &val, 0);
-		if (0 == db_ret) {
-			header_ptr = (struct jaldb_serialize_record_headers *)val.data;
-			if (header_ptr->version != JALDB_DB_LAYOUT_VERSION) {
-				txn->abort(txn);
-				ret = JALDB_E_INVAL;
-				goto out;
-
-			} else if (header_ptr->flags & JALDB_RFLAGS_CONFIRMED) {
-				txn->abort(txn);
-				ret = JALDB_E_INTERNAL_ERROR;
-				goto out;
-
-			} else {
-				header_ptr->flags |= JALDB_RFLAGS_CONFIRMED;
-
-				// Update the network nonce.
-				memcpy((char*)val.data + JALDB_RECORD_HEADERS_LENGTH +
-						JALDB_TIMESTAMP_LENGTH + 1, pkey.data, pkey.size-1);
-
-				db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &pkey, &val, 0);
-
-				if (0 == db_ret) {
-					db_ret = txn->commit(txn, 0);
-
-					if (0 == db_ret) {
-						*nonce_out = (char*) pkey.data;
-						pkey.data = NULL;
-						break;
-					} else {
-						continue;
-					}
-				}
-			}
-		}
-
-		txn->abort(txn);
-		if (DB_LOCK_DEADLOCK == db_ret) {
-			continue;
-		} else if (DB_NOTFOUND == db_ret) {
-			ret = JALDB_E_NOT_FOUND;
-			goto out;
-		}
-
-		/* Something else went wrong... */
-		ret = JALDB_E_DB;
-		goto out;
-	}
-
-out:
-	free(pkey.data);
-	free(skey.data);
-	free(val.data);
-	return ret;
+	return jaldb_mark(ctx, type, network_nonce, MarkType::CONFIRM, nonce_out);
 }
 
 enum jaldb_status jaldb_store_journal_resume(
@@ -679,7 +609,7 @@ enum jaldb_status jaldb_store_journal_resume(
 	memset(&nonce_val, 0, sizeof(nonce_val));
 
 	db_ret = jaldb_get_primary_record_dbs(ctx, JALDB_RTYPE_JOURNAL, &rdbs);
-	if (0 != db_ret) {
+	if (JALDB_OK != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -793,7 +723,7 @@ enum jaldb_status jaldb_clear_journal_resume(
 	memset(&nonce_key, 0, sizeof(nonce_key));
 
 	db_ret = jaldb_get_primary_record_dbs(ctx, JALDB_RTYPE_JOURNAL, &rdbs);
-	if (0 != db_ret) {
+	if (JALDB_OK != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -900,7 +830,7 @@ enum jaldb_status jaldb_get_journal_resume(
 	memset(&nonce_val, 0, sizeof(nonce_val));
 
 	db_ret = jaldb_get_primary_record_dbs(ctx, JALDB_RTYPE_JOURNAL, &rdbs);
-	if (0 != db_ret || !rdbs || !rdbs->metadata_db) {
+	if (JALDB_OK != db_ret || !rdbs || !rdbs->metadata_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1055,21 +985,8 @@ enum jaldb_status jaldb_get_last_k_records(
 		goto out;
 	}
 
-	switch(type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
-		return JALDB_E_INVAL;
-	}
-
-	if (!rdbs) {
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (JALDB_OK != db_ret || !rdbs) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1165,21 +1082,8 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 		goto out;
 	}
 
-	switch(type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
-		return JALDB_E_INVAL;
-	}
-
-	if (!rdbs) {
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (JALDB_OK != db_ret || !rdbs) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1234,7 +1138,7 @@ out:
 	return ret;
 }
 
-enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, int confirmed, char **local_nonce)
+enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *rec, int confirmed, char **local_nonce, long long record_size_limit)
 {
 	int byte_swap;
 	enum jaldb_status ret;
@@ -1260,24 +1164,15 @@ enum jaldb_status jaldb_insert_record(jaldb_context *ctx, struct jaldb_record *r
 	memset(&key, 0, sizeof(key));
 	memset(&val, 0, sizeof(val));
 
-	ret = jaldb_record_sanity_check(rec);
+	ret = jaldb_record_sanity_check(rec, record_size_limit);
 	if (ret != JALDB_OK) {
 		goto out;
 	}
 
 	rec->confirmed = confirmed ? 1 : 0;
 
-	switch(rec->type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
+	db_ret = jaldb_get_primary_record_dbs(ctx, rec->type, &rdbs);
+	if (JALDB_OK != db_ret || !rdbs || !rdbs->primary_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1595,7 +1490,7 @@ enum jaldb_status jaldb_remove_record(jaldb_context *ctx,
 	struct jaldb_record_dbs *rdbs = NULL;
 
 	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
-	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+	if (JALDB_OK != db_ret || !rdbs || !rdbs->primary_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1719,17 +1614,8 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 		goto out;
 	}
 
-	switch(type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (JALDB_OK != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1813,17 +1699,8 @@ enum jaldb_status jaldb_next_unsynced_record(
 		goto out;
 	}
 
-	switch(type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		break;
-	default:
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (JALDB_OK != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -1927,6 +1804,27 @@ out:
 	return ret;
 }
 
+static enum jaldb_status jaldb_parse_timestamp(const char *timestamp, time_t *time, int *microseconds)
+{
+	enum jaldb_status ret = JALDB_E_INVAL;
+	struct tm tm_;
+	memset(&tm_,0,sizeof(tm_));
+	char *end_timestamp = strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &tm_);
+	if (!end_timestamp) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	*time = mktime(&tm_);
+
+	if (!sscanf(end_timestamp,".%d-%*d:%*d",microseconds)) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+	ret = JALDB_OK;
+out:
+	return ret;
+}
+
 enum jaldb_status jaldb_next_chronological_record(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
@@ -1936,10 +1834,8 @@ enum jaldb_status jaldb_next_chronological_record(
 {
 	enum jaldb_status ret = JALDB_E_INVAL;
 	struct jaldb_record *rec = NULL;
-	struct tm search_time, current_time;
+	time_t search_time, current_time;
 	int search_microseconds, cur_microseconds;
-	memset(&search_time,0,sizeof(search_time));
-	memset(&current_time,0,sizeof(current_time));
 	int byte_swap;
 	struct jaldb_record_dbs *rdbs = NULL;
 	int db_ret;
@@ -1955,15 +1851,10 @@ enum jaldb_status jaldb_next_chronological_record(
 	key.flags = DB_DBT_REALLOC;
 	val.flags = DB_DBT_REALLOC;
 
-	char *end_timestamp = strptime(*timestamp, "%Y-%m-%dT%H:%M:%S", &search_time);
+	ret = jaldb_parse_timestamp(*timestamp, &search_time, &search_microseconds);
 
-	if (!end_timestamp) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
 
-	if (!sscanf(end_timestamp,".%d-%*d:%*d",&search_microseconds)) {
-		ret = JALDB_E_INVAL;
+	if (ret != JALDB_OK) {
 		goto out;
 	}
 
@@ -1973,19 +1864,22 @@ enum jaldb_status jaldb_next_chronological_record(
 	}
 
 	switch(type) {
-	case JALDB_RTYPE_JOURNAL:
-		rdbs = ctx->journal_dbs;
-		seen_records = ctx->seen_journal_records;
-		break;
-	case JALDB_RTYPE_AUDIT:
-		rdbs = ctx->audit_dbs;
-		seen_records = ctx->seen_audit_records;
-		break;
-	case JALDB_RTYPE_LOG:
-		rdbs = ctx->log_dbs;
-		seen_records = ctx->seen_log_records;
-		break;
-	default:
+		case JALDB_RTYPE_JOURNAL:
+			seen_records = ctx->seen_journal_records;
+			break;
+		case JALDB_RTYPE_AUDIT:
+			seen_records = ctx->seen_audit_records;
+			break;
+		case JALDB_RTYPE_LOG:
+			seen_records = ctx->seen_log_records;
+			break;
+		default:
+			ret = JALDB_E_INVAL;
+			goto out;
+	}
+
+	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
+	if (JALDB_OK != db_ret) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -2020,28 +1914,35 @@ enum jaldb_status jaldb_next_chronological_record(
 		goto out;
 	}
 
-	end_timestamp = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
+	ret = jaldb_parse_timestamp((char*) key.data, &current_time, &cur_microseconds);
 
-	if (!end_timestamp) {
-		ret = JALDB_E_INVAL;
-		goto out;
-	}
-
-	if (!sscanf(end_timestamp,".%d-%*d:%*d",&cur_microseconds)) {
-		ret = JALDB_E_INVAL;
+	if (ret != JALDB_OK) {
 		goto out;
 	}
 
 	nonce_string = (char *)pkey.data;
 
-	while (difftime(mktime(&search_time), mktime(&current_time)) == 0 &&
+	// It's possible that multiple records have exactly the same timestamp
+	// we will always end up examining the "first" of these when re-entering this function
+	// thanks to the use of DB_RANGE when acquiring the cursor
+	// Loop until either we "next" our way to a new timestamp or we find a record which we
+	// have not "seen" in this loop so far
+	// Note that seen_records persists across function calls
+	//
+	// If the YYYY-MM-DDThh:mm:ss portion of the timestamp matches &&
+	// the .ssssss portion matches
+	while (difftime(search_time, current_time) == 0 &&
 			search_microseconds == cur_microseconds) {
+
 		// Check to see if we already got a record at this time
 		if (seen_records->count(nonce_string) == 0) {
-			//Haven't seen it
+			// We have not seen this nonce before, add this record to our "seen" list and stop searching
 			seen_records->insert(nonce_string);
 			break;
 		} else {
+			// We have seen this particular nonce before, advance to the next record
+			// This will continue until the while test fails, we hit the if clause,
+			// or an error causes early termination
 			db_ret = cursor->c_pget(cursor, &key, &pkey, &val, DB_NEXT);
 			if (0 != db_ret) {
 				if (DB_NOTFOUND == db_ret) {
@@ -2053,18 +1954,18 @@ enum jaldb_status jaldb_next_chronological_record(
 			}
 			nonce_string = (char *)pkey.data;
 		}
-		end_timestamp = strptime((char*) key.data, "%Y-%m-%dT%H:%M:%S", &current_time);
-		if (!end_timestamp) {
-			ret = JALDB_E_INVAL;
-			goto out;
-		}
-		if (!sscanf(end_timestamp,".%d-%*d:%*d",&cur_microseconds)) {
-			ret = JALDB_E_INVAL;
+		ret = jaldb_parse_timestamp((char*) key.data, &current_time, &cur_microseconds);
+
+		if(ret != JALDB_OK) {
 			goto out;
 		}
 	}
 
-	if (difftime(mktime(&search_time), mktime(&current_time)) != 0 ||
+	// If the "current" item's timestamp is no longer equal to the "search" timestamp,
+	// we have advanced to a new time index. Clean up the seen_records list and update the
+	// timestamp in-out parameter accordingly. Note that *timestamp is taking ownership of the
+	// key.data field.
+	if (difftime(search_time, current_time) != 0 ||
 			search_microseconds != cur_microseconds) {
 		free(*timestamp);
 		*timestamp = (char*)key.data;
@@ -2073,6 +1974,7 @@ enum jaldb_status jaldb_next_chronological_record(
 		seen_records->insert(nonce_string);
 	}
 
+	// If we reach this line, we have found a "new" record, extract the relevant data from the db
 	ret = jaldb_deserialize_record(byte_swap, (uint8_t*) val.data, val.size, &rec);
 	if (ret != JALDB_OK) {
 		goto out;
@@ -2121,9 +2023,6 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 {
 	if (!ctx || !rdbs) {
 		return JALDB_E_INVAL;
-	}
-	if (ctx->db_read_only) {
-		return JALDB_E_READ_ONLY;
 	}
 	switch (type) {
 	case JALDB_RTYPE_JOURNAL:
@@ -2231,7 +2130,7 @@ enum jaldb_status jaldb_compact_primary_db(
 	string db_name;
 
 	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
-	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+	if (JALDB_OK != db_ret || !rdbs || !rdbs->primary_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -2256,7 +2155,7 @@ enum jaldb_status jaldb_compact_dbs(
 	string db_name;
 
 	db_ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
-	if (0 != db_ret || !rdbs || !rdbs->primary_db) {
+	if (JALDB_OK != db_ret || !rdbs || !rdbs->primary_db) {
 		ret = JALDB_E_INVAL;
 		goto out;
 	}
@@ -2347,4 +2246,163 @@ enum jaldb_status jaldb_compact_dbs(
 	}
 out:
 	return ret;
+}
+
+enum jaldb_status get_stats(jaldb_context *ctx, JaldbStat& stat, enum jaldb_rec_type type)
+{
+	DB * jaldb = NULL;
+	DBC * jalcursor = NULL;
+	DBT key, db_data;
+	memset(&key, 0, sizeof (DBT));
+	memset(&db_data, 0, sizeof (DBT));
+	int byte_swapped = 0;
+
+	if (JALDB_RTYPE_LOG == type)
+	{
+		jaldb = ctx->log_dbs->primary_db;
+	}
+	else if (JALDB_RTYPE_AUDIT == type)
+	{
+		jaldb = ctx->audit_dbs->primary_db;
+	}
+	else if (JALDB_RTYPE_JOURNAL == type)
+	{
+		jaldb = ctx->journal_dbs->primary_db;
+	}
+	else
+	{
+		return JALDB_E_INVAL;
+	}
+
+	int byte_swap = 0;
+	DBC * timecursor = NULL;
+	DBT timekey, pkey, val;
+	memset(&pkey, 0, sizeof(pkey));
+	memset(&timekey, 0, sizeof(timekey));
+	memset(&val, 0, sizeof(val));
+	pkey.flags = DB_DBT_REALLOC;
+	timekey.flags = DB_DBT_REALLOC;
+	val.flags = DB_DBT_REALLOC | DB_DBT_PARTIAL;
+	struct jaldb_record_dbs *rdbs = NULL;
+	switch(type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		return JALDB_E_INVAL;
+	}
+	int status = rdbs->nonce_timestamp_db->get_byteswapped(rdbs->nonce_timestamp_db, &byte_swap);
+	status = rdbs->nonce_timestamp_db->cursor(rdbs->nonce_timestamp_db, NULL, &timecursor, DB_DEGREE_2);
+	if (status == 0){
+		status = timecursor->c_pget(timecursor, &timekey, &pkey, &val, DB_FIRST);
+		if (status == 0){
+			stat.earliest_time = (char *)timekey.data;
+			status = timecursor->c_pget(timecursor, &timekey, &pkey, &val, DB_LAST);
+			stat.latest_time = (char *)timekey.data;
+		}
+	}
+	if (timecursor) {
+		timecursor->c_close(timecursor);
+	}
+
+	if (JALDB_OK != jaldb->cursor(jaldb, NULL, &jalcursor, 0))
+	{
+		return JALDB_E_INVAL;
+	}
+
+	if (JALDB_OK != jaldb->get_byteswapped(jaldb, &byte_swapped))
+	{
+		return JALDB_E_INVAL;
+	}
+
+	if (JALDB_OK != jaldb->cursor(jaldb, NULL, &jalcursor, 0) || NULL == jalcursor)
+	{
+		return JALDB_E_INVAL;
+	}
+
+	while (jalcursor->get(jalcursor, &key, &db_data, DB_NEXT) == 0)
+	{
+		struct jaldb_record * record = NULL;
+		int jal_ret = jaldb_deserialize_record(byte_swapped, (uint8_t*) db_data.data, db_data.size, &record);
+		if (jal_ret != 0)
+		{
+			stat.failed_count++;
+			continue;
+		}
+
+		if (JALDB_NOT_SENT == record->synced)
+		{
+			stat.not_sent_count++;
+		}
+		else if(JALDB_SENT == record->synced)
+		{
+			stat.sent_count++;
+		}
+		else if(JALDB_SYNCED == record->synced)
+		{
+			stat.synced_count++;
+		}
+		else
+		{
+			stat.failed_count++;
+		}
+
+		if (1 == (int) record->confirmed)
+		{
+			stat.confirmed_count++;
+		}
+		jaldb_destroy_record(&record);
+		stat.count++;
+	}
+	if (jalcursor) {
+		jalcursor->c_close(jalcursor);
+	}
+	return JALDB_OK;
+}
+
+enum jaldb_status mark_all_records(jaldb_context *ctx, jaldb_rec_type type, enum jaldb_sync_stat state)
+{
+	list<string> *doc_list = NULL;
+	int db_ret = 0;
+	enum jaldb_status status = jaldb_get_all_records(ctx, &doc_list, type);
+	if (JALDB_OK != status)
+	{
+		return JALDB_E_INVAL;
+	}
+	else
+	{
+		list<string>::const_iterator i;
+		for (i = doc_list->begin(); i != doc_list->end(); ++i)
+		{
+			std::string key = (string) * i;
+			if (state == JALDB_NOT_SENT)
+			{
+				db_ret = jaldb_mark_sent(ctx, type, (char *) key.c_str(), JALDB_NOT_SENT);
+			}
+			else if (state == JALDB_SENT)
+			{
+				// TODO: JALOP-984 To support legacy behavior and some odd jald behavior
+				// marking a record as SENT will be ignored if the record is currently SYNCED
+				// First set the record to NOT_SENT to ensure it can be set to SENT
+				db_ret = jaldb_mark_sent(ctx, type, (char *) key.c_str(), JALDB_NOT_SENT);
+				db_ret = jaldb_mark_sent(ctx, type, (char *) key.c_str(), JALDB_SENT);
+			}
+			else if (state == JALDB_SYNCED)
+			{
+				db_ret = jaldb_mark_synced(ctx, type, (char *) key.c_str());
+			}
+		}
+		if (JALDB_OK != db_ret)
+		{
+			return JALDB_E_INVAL;
+		}
+	}
+
+	return JALDB_OK;
 }

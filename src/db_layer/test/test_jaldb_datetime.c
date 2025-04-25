@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_datetime.c This file contains functions to test XML
+ * @file
+ *
+ * @brief This file contains functions to test XML
  * DateTime related functions.
  *
  * ### LICENSE

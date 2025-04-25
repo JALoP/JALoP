@@ -1,5 +1,7 @@
 /**
- * @file jaln_pub_feeder.h This file contains the functions related to the
+ * @file
+ *
+ * @brief This file contains the functions related to the
  * implementation of VortexPayloadFeeder for sending records from a publisher
  * to a subscriber.
  *

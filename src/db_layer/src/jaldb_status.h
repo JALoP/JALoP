@@ -1,5 +1,7 @@
 /**
- * @file jaldb_status.h This file defines return codes used by the JAL DB Layer.
+ * @file
+ *
+ * @brief This file defines return codes used by the JAL DB Layer.
  *
  * ### LICENSE
  *

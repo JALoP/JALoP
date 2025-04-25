@@ -9,8 +9,7 @@ env = env.Clone()
 # drivers.
 env.Append(CPPPATH='#/src/test_utils/src')
 # -fcommon needed to restore original gcc behavior in rhel9 to prevent multiple definition linker errors
-# Ignore openssl deprecated warnings on rhel9
-ccflags = ' -fcommon -Wno-format-nonliteral -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
+ccflags = '-fcommon -Wno-format-nonliteral -DSCHEMAS_ROOT=\\"' + env['SOURCE_ROOT'] + '/schemas/\\" -DTEST_INPUT_ROOT=\\"' + env['SOURCE_ROOT'] + '/test-input/\\" '
 env.Append(CCFLAGS=ccflags.split())
 env.Append(RPATH=os.path.dirname(str(lib_common[0])))
 
@@ -23,7 +22,6 @@ recordXmlObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_record_xml.c
 segmentObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_segment.c'))
 nonceObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_nonce.c'))
 serializeRecordObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_serialize_record.c'))
-traversObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_traverse.cpp'))
 utilsObj = db_env.SharedObject(os.path.join('..', 'src', 'jaldb_utils.c'))
 
 tests.append(env.TestDeptTest('test_jaldb_context.cpp',
@@ -46,7 +44,6 @@ tests.append(env.TestDeptTest('test_jaldb_nonce.c',
 	other_sources=[lib_common])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_serialize_record.c',
 	other_sources=[lib_common, recordObj, segmentObj])[0].abspath)
-tests.append(env.TestDeptTest('test_jaldb_traverse.cpp', other_sources=[lib_common, contextObj, datetimeObj, recordObj, recordDbsObj, recordUuidObj, recordXmlObj, nonceObj, serializeRecordObj, segmentObj, test_utils, utilsObj])[0].abspath)
 tests.append(env.TestDeptTest('test_jaldb_utils.c',
 	other_sources=[lib_common,recordDbsObj,contextObj,datetimeObj,recordObj,recordUuidObj,recordXmlObj,nonceObj,serializeRecordObj,segmentObj,test_utils], useProxies=True)[0].abspath)
 

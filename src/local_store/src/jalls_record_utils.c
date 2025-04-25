@@ -1,5 +1,7 @@
 /**
- * @file jalls_record_utils.c Functions for obtained various hunks of metadata
+ * @file
+ *
+ * @brief Functions for obtained various hunks of metadata
  * for JALoP Records
  *
  * ### LICENSE
@@ -30,6 +32,7 @@
 #include "jal_alloc.h"
 #include "jalls_record_utils.h"
 #include "jaldb_utils.h"
+#include "jal_ts_utils.h"
 
 #include <pwd.h>
 #include <string.h>
@@ -89,7 +92,7 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 		return -1;
 	}
 
-	char *timestamp = jaldb_gen_timestamp();
+	char *timestamp = jal_gen_timestamp_usec();
 	if (!timestamp) {
 		return -1;
 	}

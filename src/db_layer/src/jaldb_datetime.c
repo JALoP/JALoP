@@ -1,5 +1,7 @@
 /**
- * @file jaldb_datetime.c Implementation of utilties related to XML DateTime
+ * @file
+ *
+ * @brief Implementation of utilties related to XML DateTime
  * strings within the JALoP DBs.
  *
  * ### LICENSE

@@ -1,5 +1,7 @@
-/*
- * @file jal_linux_cap.h This file contains general utility functions.
+/**
+ * @file
+ *
+ * @brief This file contains general utility functions.
  *
  * Copyright (C) 2022 The National Security Agency (NSA)
  *

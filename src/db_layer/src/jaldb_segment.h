@@ -1,5 +1,7 @@
 /**
- * @file jaldb_segment.h This file provides the structure used to represent a
+ * @file
+ *
+ * @brief This file provides the structure used to represent a
  * single segment of a JALoP record (system meta-data, application meta-data, or
  * payload), as well as functions for allocating/freeing memory associated with
  * the structure.
@@ -69,9 +71,9 @@ struct jaldb_segment *jaldb_create_segment();
  * Function to destroy a jaldb_segment.
  * This will call close the file descriptor (if it's valid) & call free on the
  * other members.
- * @param [in,out] ppsegmennt The jaldb_segment to destroy. This will be set to NULL.
+ * @param [in,out] ppsegment The jaldb_segment to destroy. This will be set to NULL.
  */
-void jaldb_destroy_segment(struct jaldb_segment **ppsegmennt);
+void jaldb_destroy_segment(struct jaldb_segment **ppsegment);
 
 /**
  * Helper function to sanity check a segment before inserting into the DB.

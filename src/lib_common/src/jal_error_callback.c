@@ -1,5 +1,7 @@
 /**
- * @file jal_error_callback.c This file contains functions to handle fatal
+ * @file
+ *
+ * @brief This file contains functions to handle fatal
  * errors encountered by the Producer Library.
  *
  * ### LICENSE

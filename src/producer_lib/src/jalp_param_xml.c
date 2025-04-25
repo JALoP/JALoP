@@ -1,5 +1,7 @@
 /**
- * @file jalp_param_xml.c This file defines functions to handle
+ * @file
+ *
+ * @brief This file defines functions to handle
  * converting param list metadata to XML.
  *
  * ### LICENSE

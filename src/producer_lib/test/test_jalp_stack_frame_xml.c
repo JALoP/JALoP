@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_stack_frame_xml.c This file contains functions to test jalp_stack_frame_to_elem.
+ * @file
+ *
+ * @brief This file contains functions to test jalp_stack_frame_to_elem.
  *
  * ### LICENSE
  *

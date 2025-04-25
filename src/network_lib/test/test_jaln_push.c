@@ -1,5 +1,7 @@
 /**
- * @file test_jaln_push.c This file contains tests for jaln_push.c functions.
+ * @file
+ *
+ * @brief This file contains tests for jaln_push.c functions.
  *
  * ### LICENSE
  *

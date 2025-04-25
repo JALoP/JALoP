@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_record_dbs.c This file contains unit tests for functions
+ * @file
+ *
+ * @brief This file contains unit tests for functions
  * related to the jaldb_record_dbs structure.
  *
  * ### LICENSE
@@ -74,7 +76,7 @@ static int mock_primary_db_close(__attribute__((unused)) DB *db, __attribute__((
 }
 
 static int set_bt_compare_fails(__attribute__((unused)) DB *db,
-    __attribute__((unused)) int (*bt_compare_fcn)(DB *db, __attribute__((unused)) const DBT *dbt1, __attribute__((unused)) const DBT *dbt2))
+    __attribute__((unused)) int (*bt_compare_fcn)(DB *db, const DBT *dbt1, const DBT *dbt2))
 {
 	return EINVAL;
 }

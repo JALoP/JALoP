@@ -1,5 +1,7 @@
 /**
- * @file jalp_transform_internal.h This file defines the private apis and helper
+ * @file
+ *
+ * @brief This file defines the private apis and helper
  * functions for the transform structure.
  *
  * ### LICENSE

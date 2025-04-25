@@ -1,5 +1,7 @@
 /**
- * @file jalp_journal.h This file defines the public API that may interest a
+ * @file
+ *
+ * @brief This file defines the public API that may interest a
  * a program that is sending journal records to the JALoP Local Store.
  *
  * ### LICENSE

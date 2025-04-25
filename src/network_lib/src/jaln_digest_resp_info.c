@@ -1,5 +1,7 @@
 /**
- * @file jaln_digest_resp_info.c This file contains functions related to a
+ * @file
+ *
+ * @brief This file contains functions related to a
  * jaln_digest_resp_info structure. The jaln_digest_resp_info structure is used
  * to store the calculated/receive digest value and nonce for a
  * record.

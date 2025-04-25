@@ -1,5 +1,7 @@
 /**
- * @file jalp_test.c This file contains jalp test functions
+ * @file
+ *
+ * @brief This file contains jalp test functions
  *
  * ### LICENSE
  *

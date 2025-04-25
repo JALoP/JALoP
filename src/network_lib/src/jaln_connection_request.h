@@ -1,5 +1,7 @@
 /**
- * @file jaln_connection_request.h This file contains functions related to a
+ * @file
+ *
+ * @brief This file contains functions related to a
  * jaln_connect_request structure.
  *
  * ### LICENSE

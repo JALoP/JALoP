@@ -1,31 +1,33 @@
 /**
-* @file jaln_push.c  This file contains function
-* definitions related to the jal publisher.
-*
-* ### LICENSE
-*
-* Source code in 3rd-party is licensed and owned by their respective
-* copyright holders.
-*
-* All other source code is copyright Tresys Technology and licensed as below.
-*
-* Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
-*
-* This software was developed by Tresys Technology LLC
-* with U.S. Government sponsorship.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * @file
+ *
+ * @brief This file contains function
+ * definitions related to the jal publisher.
+ *
+ * ### LICENSE
+ *
+ * Source code in 3rd-party is licensed and owned by their respective
+ * copyright holders.
+ *
+ * All other source code is copyright Tresys Technology and licensed as below.
+ *
+ * Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
+ *
+ * This software was developed by Tresys Technology LLC
+ * with U.S. Government sponsorship.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <jalop/jaln_network.h>
 #include <vortex.h>
@@ -339,5 +341,25 @@ enum jal_status jaln_finish(jaln_session *sess)
 		return JAL_E_COMM;
 	}
 
+	if (!vortex_channel_close_full(sess->dgst_chan, NULL, NULL)) {
+		return JAL_E_COMM;
+	}
+
 	return JAL_OK;
+}
+
+void jaln_add_session_ref(jaln_session* sess)
+{
+	if(NULL == sess) {
+		return;
+	}
+	jaln_session_ref(sess);
+}
+
+void jaln_remove_session_ref(jaln_session* sess)
+{
+	if(NULL == sess) {
+		return;
+	}
+	jaln_session_unref(sess);
 }

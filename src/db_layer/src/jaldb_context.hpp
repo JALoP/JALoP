@@ -1,6 +1,8 @@
 /**
- * @file jaldb_context.hpp This file provides the DB context structure and
- * constants for use by the DB Layer.
+ * @file
+ *
+ * @brief This file provides the DB context structure and
+ * constants for use by the DB Layer using Berkeley DB (BDB).
  *
  * ### LICENSE
  *
@@ -38,19 +40,58 @@
 
 struct jaldb_record_dbs;
 
+/**
+* The main structure to store the jal database references.
+*/
 struct jaldb_context_t {
-	char *journal_root; 				//!< The journal record root path.
-	DB_ENV *env; 					//!< The Berkeley DB Environment.
-	struct jaldb_record_dbs *log_dbs; 		//!< The DBs associated with log records
-	struct jaldb_record_dbs *audit_dbs; 		//!< The DBs associated with audit records
-	struct jaldb_record_dbs *journal_dbs; 		//!< The DBs associated with journal records
-	DB *journal_conf_db; 				//!< The database for conf'ed journal records
-	DB *audit_conf_db; 				//!< The database for conf'ed audit records
-	DB *log_conf_db; 				//!< The database for conf'ed log records
-	int db_read_only; 				//!< Whether or not to open the databases read only
-	std::set<std::string> *seen_journal_records;	//<! Journal records already seen in live mode
-	std::set<std::string> *seen_audit_records;	//<! Audit records already seen in live mode
-	std::set<std::string> *seen_log_records;	//<! Log records already seen in live mode
+	/**
+	* The journal record root path.
+	*/
+	char *journal_root;
+	/**
+	* The Berkeley DB Environment.
+	*/
+	DB_ENV *env;
+	/**
+	* The DBs associated with log records
+	*/
+	struct jaldb_record_dbs *log_dbs;
+	/**
+	* The DBs associated with audit records
+	*/
+	struct jaldb_record_dbs *audit_dbs;
+	/**
+	* The DBs associated with journal records
+	*/
+	struct jaldb_record_dbs *journal_dbs;
+	/**
+	* The database for conf'ed journal records
+	*/
+	DB *journal_conf_db;
+	/**
+	* The database for conf'ed audit records
+	*/
+	DB *audit_conf_db;
+	/**
+	* The database for conf'ed log records
+	*/
+	DB *log_conf_db;
+	/**
+	* Whether or not to open the databases read only
+	*/
+	int db_read_only;
+	/**
+	* Journal records already seen in live mode
+	*/
+	std::set<std::string> *seen_journal_records;
+	/**
+	* Audit records already seen in live mode
+	*/
+	std::set<std::string> *seen_audit_records;
+	/**
+	* Log records already seen in live mode
+	*/
+	std::set<std::string> *seen_log_records;
 };
 
 /**
@@ -273,5 +314,81 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 		char *last_nonce,
 		std::list<std::string> &nonce_list,
 		enum jaldb_rec_type type);
+
+/**
+* JaldbStat class used by jaldb_tool
+*/
+class JaldbStat
+{
+public:
+
+	JaldbStat()
+	{
+		count = 0;
+		not_sent_count = 0;
+		sent_count = 0;
+		synced_count = 0;
+		confirmed_count = 0;
+		failed_count = 0;
+	}
+	/**
+	* Total count of the record type.
+	*/
+	int count;
+	/**
+	* Total not_sent_count of the record type.
+	*/
+	int not_sent_count;
+	/**
+	* Total sent_count of the record type.
+	*/
+	int sent_count;
+	/**
+	* Total synced_count of the record type.
+	*/
+	int synced_count;
+	/**
+	* Total confirmed_count of the record type.
+	*/
+	int confirmed_count;
+	/**
+	* Total failed_count of the record type. If db value is corrupt on retrieving the record
+	*/
+	int failed_count;
+	/**
+	* The earliest time network nonce timestamp of the record type.
+	*/
+	std::string earliest_time;
+	/**
+	* The latest time network nonce timestamp of the record type.
+	*/
+	std::string latest_time;
+};
+
+ /**
+ * Retrieve statistics on a record type.
+ *
+ * @param[in] ctx the context to use.
+ * @param[out] stat the JaldbStat class that will be filled in with the statistics.
+ * @param[in] type the record type to gather stats for
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_* - Other error occurred in database.
+ */
+enum jaldb_status get_stats(jaldb_context *ctx, JaldbStat& stat, enum jaldb_rec_type type);
+
+ /**
+ * Mark all records to a sync_stat.
+ *
+ * @param[in] ctx the context to use.
+ * @param[in] record_type JALDB_RTYPE_JOURNAL, JALDB_RTYPE_AUDIT, or JALDB_RTYPE_LOG.
+ * @param[in] sync_stat JALDB_NOT_SENT, JALDB_SENT, or JALDB_SYNCED.
+ *
+ * @return 	JALDB_OK - success
+ *		JALDB_E_INVAL - invalid parameter.
+ *		JALDB_E_DB - Error occurred in database.
+ */
+enum jaldb_status mark_all_records(jaldb_context *ctx, jaldb_rec_type record_type, enum jaldb_sync_stat sync_stat);
 
 #endif // _JALDB_CONTEXT_HPP_

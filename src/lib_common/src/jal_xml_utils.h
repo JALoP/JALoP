@@ -1,5 +1,7 @@
 /**
- * @file jal_xml_utils.h This file defines helper functions for dealing with
+ * @file
+ *
+ * @brief This file defines helper functions for dealing with
  * creating/reading XML data.
  *
  * ### LICENSE

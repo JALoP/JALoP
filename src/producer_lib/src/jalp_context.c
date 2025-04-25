@@ -1,5 +1,7 @@
 /**
- * @file jalp_context.c This file defines functions for dealing
+ * @file
+ *
+ * @brief This file defines functions for dealing
  * with the jalp_context struct.
  *
  * ### LICENSE

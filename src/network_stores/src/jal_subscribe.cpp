@@ -1,5 +1,7 @@
 /**
- * @file jal_subscribe.cpp This file contains functions the main function of the
+ * @file
+ *
+ * @brief This file contains functions the main function of the
  * jal_subscribe program.
  *
  * ### LICENSE
@@ -60,6 +62,8 @@
 #define WINDOW_SIZE "window_size"
 #define DB_ROOT "db_root"
 #define DIGEST_ALGORITHMS "digest_algorithms"
+#define JOURNAL_RESUME_THRESHOLD "journal_resume_threshold_size"
+#define DATABASE_OPTION "database_option"
 #define MAX_PORT_LENGTH 10
 #define VERSION_CALLED 1
 
@@ -97,6 +101,14 @@ struct global_config_t {
 	int data_classes;
 	int window_size;
 	const char *digest_algorithms;
+	long long int resume_threshold;
+
+	/**This setting is used by LMDB builds only and is the LMDB flags set by the database_option config setting*/
+	enum jaldb_flags jdb_flags;
+
+	/**Stores the string value for the database_option config setting**/
+	char *database_option;
+
 } global_config;
 
 struct global_args_t {
@@ -228,7 +240,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 	print_config();
-	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root);
+	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root, global_config.jdb_flags);
 	if (!jsub_db_ctx) {
 		if (global_args.debug_flag) {
 			DEBUG_LOG("DBLayer Setup Failed!");
@@ -402,6 +414,7 @@ void init_global_config(void)
 	global_config.data_classes = 0;
 	global_config.window_size = DEFAULT_WINDOW_SIZE;
 	global_config.digest_algorithms = NULL;
+	global_config.database_option = NULL;
 }
 
 void free_global_args(void)
@@ -449,7 +462,15 @@ void print_config(void)
 	printf("DB ROOT:\t\t%s\n", global_config.db_root);
 	printf("WINDOW_SIZE:\t\t%d\n", global_config.window_size);
 	printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
-	printf("\n===\nEND CONFIG VALUES:\n===");
+	printf("RESUME THRESHOLD:\t%lld\n", global_config.resume_threshold);
+
+	#ifdef JALDB_TYPE_LMDB
+	if (global_config.database_option)
+	{
+		printf("DATABASE OPTION:\t%s\n", global_config.database_option);
+	}
+	#endif
+	printf("\n===\nEND CONFIG VALUES:\n===\n");
 }
 
 int set_global_config(config_t *config)
@@ -478,6 +499,7 @@ int set_global_config(config_t *config)
 		else {
 			rc |= JAL_CFG_FAILURE;
 		}
+		free(config_string);
 		config_string = NULL;
 
 		rc |= jal_config_lookup_string(root, PUBLIC_CERT, &config_string, JAL_CFG_REQUIRED);
@@ -488,6 +510,7 @@ int set_global_config(config_t *config)
 		else {
 			rc |= JAL_CFG_FAILURE;
 		}
+		free(config_string);
 		config_string = NULL;
 
 		rc |= jal_config_lookup_string(root, REMOTE_CERT, &config_string, JAL_CFG_REQUIRED);
@@ -498,6 +521,7 @@ int set_global_config(config_t *config)
 		else {
 			rc |= JAL_CFG_FAILURE;
 		}
+		free(config_string);
 		config_string = NULL;
 	}
 
@@ -534,6 +558,8 @@ int set_global_config(config_t *config)
 
 	rc |= jal_config_lookup_int64(root, PENDING_DIGEST_MAX, &global_config.pending_digest_max, JAL_CFG_REQUIRED);
 	rc |= jal_config_lookup_int64(root, PENDING_DIGEST_TIMEOUT, &global_config.pending_digest_timeout, JAL_CFG_REQUIRED);
+	global_config.resume_threshold = 0;
+	rc |= jal_config_lookup_int64(root, JOURNAL_RESUME_THRESHOLD, &global_config.resume_threshold, JAL_CFG_OPTIONAL);
 	rc |= jal_config_lookup_list(root, DATA_CLASS, &global_config.data_class, &global_config.len_data_class, JAL_CFG_REQUIRED);
 
 	// Iterate through the data classes and create the
@@ -562,6 +588,7 @@ int set_global_config(config_t *config)
 			DEBUG_LOG("data_class: \"%s\" not recognized. "
 				"Allowed data classes are: \"journal\", \"audit\", and \"log\".", value);
 		}
+		free(value);
 	}
 
 	// OPTIONAL CONFIG VALUES
@@ -592,6 +619,7 @@ int set_global_config(config_t *config)
 				rc |= JAL_CFG_FAILURE;
 			}
 		}
+		free(config_string);
 		config_string = NULL;
 	}
 
@@ -615,6 +643,23 @@ int set_global_config(config_t *config)
 		global_config.digest_algorithms = config_string;
 		config_string = NULL;
 	}
+
+	//Database option setting, only valid in lmdb builds otherwise defaults to JDB_NONE
+	#ifdef JALDB_TYPE_LMDB
+	rc |= jal_config_lookup_string(root, DATABASE_OPTION, &config_string, JAL_CFG_OPTIONAL);
+	global_config.database_option = config_string;
+	config_string = NULL;
+
+	//Ensure valid entry was in the config file and parse the value
+	if (JALDB_OK != jaldb_get_db_flags(global_config.database_option, &global_config.jdb_flags))
+	{
+		rc |= JAL_CFG_FAILURE;
+		DEBUG_LOG("Error: failed to validate database_option\n");
+	}
+	#else
+	global_config.database_option = NULL;
+	global_config.jdb_flags = JDB_NONE;
+	#endif
 
 	return rc;
 }
@@ -705,6 +750,7 @@ void *subscriber_do_work(void *ptr)
 		cfg = cfg;
 		jaln_context *net_ctx = jaln_context_create();
 		jaln_context_set_debug(net_ctx, global_args.debug_flag);
+		jaln_context_set_resume_threshold(net_ctx, cfg->resume_threshold);
 		enum jal_status err;
 		enum jaln_publish_mode mode = JALN_UNKNOWN_MODE;
 

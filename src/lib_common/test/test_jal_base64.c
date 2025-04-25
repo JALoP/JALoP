@@ -1,5 +1,7 @@
 /**
- * @file test_jal_base64.c This file contains tests for jal_base64_enc.
+ * @file
+ *
+ * @brief This file contains tests for jal_base64_enc.
  *
  * ### LICENSE
  *

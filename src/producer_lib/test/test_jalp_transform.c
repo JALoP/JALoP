@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_transform.c This file contains tests for jalp_transform functions.
+ * @file
+ *
+ * @brief This file contains tests for jalp_transform functions.
  *
  * ### LICENSE
  *

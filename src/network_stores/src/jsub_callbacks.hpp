@@ -1,5 +1,7 @@
- /**
- * @file jsub_callbacks.hpp This file provides the function calls
+/**
+ * @file
+ *
+ * @brief This file provides the function calls
  * to be executed by the network library callback handler.
  *
  * ### LICENSE

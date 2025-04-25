@@ -1,5 +1,7 @@
 /**
- * @file jal_byteswap.c This file is really only here for the unit tests.
+ * @file
+ *
+ * @brief This file is really only here for the unit tests.
  * Byteswaps are implemented as macros, so they don't need a source file.
  *
  * ### LICENSE

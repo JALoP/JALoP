@@ -1,5 +1,7 @@
 /**
- * @file jalp_journal_metadata_xml.c This file defines functions to handle
+ * @file
+ *
+ * @brief This file defines functions to handle
  * converting journal metadata to XML.
  *
  * ### LICENSE

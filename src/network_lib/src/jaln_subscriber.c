@@ -1,5 +1,7 @@
 /**
- * @file jaln_subscriber.c This file contains function
+ * @file
+ *
+ * @brief This file contains function
  * declarations for internal library functions related to a
  * subscribere session
  *

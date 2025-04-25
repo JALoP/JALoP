@@ -68,7 +68,7 @@ extern "C" void setup()
 		}
 		closedir(dir);
 	}
-	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT);
+	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT, JDB_NONE);
 }
 
 extern "C" void teardown()

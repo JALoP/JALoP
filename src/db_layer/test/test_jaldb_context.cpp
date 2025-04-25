@@ -1,5 +1,7 @@
 /**
- * @file test_jaldb_context.cpp This file contains functions to test
+ * @file
+ *
+ * @brief This file contains functions to test
  * jaldb_context.cpp.
  *
  * ### LICENSE
@@ -53,10 +55,15 @@ extern "C" {
 #include <inttypes.h>
 #include <stdlib.h>
 #include "jal_alloc.h"
+#include "jal_ts_utils.h"
 #include "jaldb_context.hpp"
 #include "jaldb_strings.h"
 #include "jaldb_segment.h"
 #include "jaldb_utils.h"
+
+#include "jaldb_record.h"
+#include "jaldb_record_dbs.h"
+#include "jaldb_serialize_record.h"
 
 using namespace std;
 
@@ -191,7 +198,7 @@ extern "C" void test_remove_by_nonce()
 
 	char *nonce = NULL;
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	assert_equals(JALDB_OK, jaldb_remove_record(context, JALDB_RTYPE_LOG, nonce));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 
@@ -202,7 +209,7 @@ extern "C" void test_remove_by_nonce()
 extern "C" void test_remove_by_nonce_returns_error_when_not_found()
 {
 	char *nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_remove_record(context, JALDB_RTYPE_LOG, (char*)"2"));
 	free(nonce);
 	nonce = NULL;
@@ -211,7 +218,7 @@ extern "C" void test_remove_by_nonce_returns_error_when_not_found()
 extern "C" void test_mark_record_synced_succeeds_if_not_marked_sent()
 {
 	char *nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 	free(nonce);
 	nonce = NULL;
@@ -220,7 +227,7 @@ extern "C" void test_mark_record_synced_succeeds_if_not_marked_sent()
 extern "C" void test_mark_record_synced_returns_error_when_nonce_not_found()
 {
 	char *nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_synced(context, JALDB_RTYPE_LOG, (const char*)"2"));
 	free(nonce);
 	nonce = NULL;
@@ -230,7 +237,7 @@ extern "C" void test_mark_record_sent()
 {
 	struct jaldb_record *rec = NULL;
 	char *nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 	assert_equals(0, rec->synced);
@@ -258,7 +265,7 @@ extern "C" void test_mark_record_sent_and_synced()
 {
 	struct jaldb_record *rec = NULL;
 	char *nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 
@@ -276,8 +283,8 @@ extern "C" void test_marking_record_synced_doesnt_affect_sent_ordering()
 	char *nonce1 = NULL;
 	char *nonce2 = NULL;
 	char *nonce3 = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2, -1));
 	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce1, 1));
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce1));
 
@@ -302,7 +309,7 @@ extern "C" void test_marking_record_synced_doesnt_affect_sent_ordering()
 extern "C" void test_mark_record_sent_returns_error_when_nonce_not_found()
 {
 	char *nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	assert_equals(JALDB_E_NOT_FOUND, jaldb_mark_sent(context, JALDB_RTYPE_LOG, (const char*)"2", 1));
 	free(nonce);
 	nonce = NULL;
@@ -316,10 +323,10 @@ extern "C" void test_next_mark_unsynced_records_unsent_works()
 	char *nonce2 = NULL;
 	char *nonce3 = NULL;
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce0));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce1));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce2));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce3));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce0, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce1, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce2, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce3, -1));
 
 	// All unsynced
 	assert_equals(JALDB_OK, jaldb_mark_unsynced_records_unsent(context, JALDB_RTYPE_LOG));
@@ -396,16 +403,16 @@ extern "C" void test_next_unsynced_works()
 {
 	struct jaldb_record *rec = NULL;
 	char *nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
 
@@ -473,15 +480,15 @@ extern "C" void test_next_unsynced_skips_unconfirmed_records()
 	struct jaldb_record *rec = NULL;
 	char *nonce = NULL;
 	char *nonce1 = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 0, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 0, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 0, &nonce1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 0, &nonce1, -1));
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
 
@@ -541,28 +548,28 @@ extern "C" void test_next_chronological_works()
 	char *start_time = NULL;
 	char *end_time = NULL;
 
-	start_time = jaldb_gen_timestamp();
+	start_time = jal_gen_timestamp_usec();
 	assert_not_equals(NULL, start_time);
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce));
-	free(nonce);
-	nonce = NULL;
-
-	sleep(2);
-
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce));
-	free(nonce);
-	nonce = NULL;
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce, -1));
 	free(nonce);
 	nonce = NULL;
 
 	sleep(2);
 
-	end_time = jaldb_gen_timestamp();
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce, -1));
+	free(nonce);
+	nonce = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce, -1));
+	free(nonce);
+	nonce = NULL;
+
+	sleep(2);
+
+	end_time = jal_gen_timestamp_usec();
 	assert_not_equals(NULL,end_time);
 
 	assert_equals(JALDB_OK, jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time));
@@ -606,6 +613,224 @@ extern "C" void test_next_chronological_works()
 
 }
 
+// Helper for creating a network_nonce with a fixed timestamp
+char *jaldb_gen_primary_key_with_timestamp(uuid_t uuid, char* ts)
+{
+	if (uuid_is_null(uuid) || !ts) {
+		return NULL;
+	}
+
+	const int UUID_LEN = 37;
+	char *uuid_str = (char*)jal_calloc(UUID_LEN,sizeof(char));
+	uuid_unparse(uuid,uuid_str);
+
+	pid_t pid = getpid();
+	pthread_t tid = pthread_self();//portable
+	char *key = NULL;
+
+	int len = snprintf(NULL, 0, "%s_%s_%d_%lu", uuid_str, ts, pid, tid);
+	key = (char*)malloc(len);
+	sprintf(key, "%s_%s_%d_%lu", uuid_str, ts, pid, tid);
+
+	free(uuid_str);
+	return key;
+}
+
+// Helper for inserting a record with a given timestamp instead of the system timestamp
+enum jaldb_status jaldb_insert_record_force_time(jaldb_context *ctx, struct jaldb_record *rec, int confirmed, char **local_nonce, char* ts)
+{
+	int byte_swap;
+	enum jaldb_status ret;
+	size_t buf_size = 0;
+	struct jaldb_record_dbs *rdbs = NULL;
+	uint8_t* buffer = NULL;
+	int db_ret;
+	int update_network_nonce = 0;
+	DBT key;
+	DBT val;
+	DB_TXN *txn;
+
+	if (!ctx || !rec || !local_nonce || *local_nonce) {
+		return JALDB_E_INVAL;
+	}
+	if (!rec->source) {
+		rec->source = jal_strdup("localhost");
+	}
+	if (!rec->network_nonce) {
+		update_network_nonce = 1;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&val, 0, sizeof(val));
+
+	ret = jaldb_record_sanity_check(rec, -1);
+	if (ret != JALDB_OK) {
+		goto out;
+	}
+
+	rec->confirmed = confirmed ? 1 : 0;
+
+	switch(rec->type) {
+	case JALDB_RTYPE_JOURNAL:
+		rdbs = ctx->journal_dbs;
+		break;
+	case JALDB_RTYPE_AUDIT:
+		rdbs = ctx->audit_dbs;
+		break;
+	case JALDB_RTYPE_LOG:
+		rdbs = ctx->log_dbs;
+		break;
+	default:
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	db_ret = rdbs->primary_db->get_byteswapped(rdbs->primary_db, &byte_swap);
+	if (0 != db_ret) {
+		ret = JALDB_E_INVAL;
+		goto out;
+	}
+
+	while (1) {
+		db_ret = ctx->env->txn_begin(ctx->env, NULL, &txn, 0);
+		if (0 != db_ret) {
+			ret = JALDB_E_INTERNAL_ERROR;
+			goto out;
+		}
+
+		char *primary_key = jaldb_gen_primary_key_with_timestamp(rec->uuid, ts);
+		if (NULL == primary_key) {
+			ret = JALDB_E_INVAL;
+			goto out;
+		}
+
+		key.data = primary_key;
+		key.size = strlen(primary_key) + 1;
+		key.flags = DB_DBT_REALLOC;
+
+		if (update_network_nonce) {
+			free(rec->network_nonce);
+			rec->network_nonce = jal_strdup(primary_key);
+		}
+
+		ret = jaldb_serialize_record(byte_swap, rec, &buffer, &buf_size);
+		if (ret != JALDB_OK) {
+			goto out;
+		}
+		val.data = buffer;
+		val.size = buf_size;
+
+		db_ret = rdbs->primary_db->put(rdbs->primary_db, txn, &key, &val, DB_NOOVERWRITE);
+		if (0 == db_ret) {
+			db_ret = txn->commit(txn, 0);
+		} else {
+			txn->abort(txn);
+		}
+		if (0 == db_ret) {
+			ret = JALDB_OK;
+			break;
+		}
+		if (DB_LOCK_DEADLOCK == db_ret || DB_KEYEXIST == db_ret) {
+			free(buffer);
+			buffer = NULL;
+			continue;
+		} else {
+			ret = JALDB_E_DB;
+			break;
+		}
+	}
+
+out:
+	*local_nonce = (char *)key.data;
+	free(val.data);
+	return ret;
+}
+
+// Demonstrate a bug encountered by GD-MS
+// Multiple records inserted with the same timestamp appear to cause a DST related hang
+// when mktime "fixes" the time struct passed to it
+// Note that this only seems to occur when DST is in effect, since that is what triggers
+// the "fixup" of the time struct
+extern "C" void test_jalop_805_duplicate_timestamp_records_failure()
+{
+	struct jaldb_record *rec = NULL;
+	char *nonce = NULL;
+
+	enum jaldb_status jdstat;
+	char* start_time = strdup("2023-08-02T09:24:10.000000");
+	assert_not_equals(NULL, start_time);
+
+	// Create three records with the same timestamp
+	records[0]->timestamp = strdup(start_time);
+	records[1]->timestamp = strdup(start_time);
+	records[2]->timestamp = strdup(start_time);
+
+	// Insert the three records, forcing the network_nonce and db timestamps to match our start_time
+	char* nonce0 = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record_force_time(context, records[0], 1, &nonce0, start_time));
+
+	char* nonce1 = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record_force_time(context, records[1], 1, &nonce1, start_time));
+
+	char* nonce2 = NULL;
+	assert_equals(JALDB_OK, jaldb_insert_record_force_time(context, records[2], 1, &nonce2, start_time));
+
+	sleep(2);
+
+	// Get the first record - this works as one would expect
+	jdstat = jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time);
+	assert_equals(JALDB_OK, jdstat);
+	assert_string_equals(nonce0, nonce);
+
+	// Cleanup between records
+	jaldb_destroy_record(&rec);
+	rec = NULL;
+	free(nonce);
+	nonce = NULL;
+
+	// Get the second records - prior to the 805 fix this works, but for the wrong reason
+	// The second record appears to have a different timestamp, so the records of all "seen" records
+	// with that timestamp is cleared out
+	jdstat = jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time);
+	assert_equals(JALDB_OK, jdstat);
+	assert_string_equals(nonce1, nonce);
+
+	// Cleanup between records
+	jaldb_destroy_record(&rec);
+	rec = NULL;
+	free(nonce);
+	nonce = NULL;
+
+	// Get the third record
+	// Prior to 805, this retrieves the first record again and the nonce mismatches
+	// After the 805 fix, this test passes
+	jdstat = jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time);
+	assert_equals(JALDB_OK, jdstat);
+	assert_string_equals(nonce2, nonce);
+
+	// Cleanup between records
+	jaldb_destroy_record(&rec);
+	rec = NULL;
+	free(nonce);
+	nonce = NULL;
+
+	// Get the non-existant fourth record
+	// Prior to 805, this (if the prior failure is suppressed) retrieves the 2nd record again
+	// After 805, it returns JALDB_E_NOT_FOUND as is expected
+	jdstat = jaldb_next_chronological_record(context, JALDB_RTYPE_LOG, &nonce, &rec, &start_time);
+	assert_equals(JALDB_E_NOT_FOUND, jdstat);
+
+	free(nonce);
+	nonce = NULL;
+	rec = NULL;
+
+	// Drop local allocations
+	free(nonce0);
+	free(nonce1);
+	free(nonce2);
+	free(start_time);
+}
+
 extern "C" void test_jaldb_get_last_k_records_works()
 {
 	enum jaldb_status ret;
@@ -617,10 +842,10 @@ extern "C" void test_jaldb_get_last_k_records_works()
 	char *nonce4 = NULL;
 
 	// Timestamp index is based on timestamp extract from record. Time order will be nonce 2, 3, 4, 1
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce3));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce4));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce3, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce4, -1));
 
 	// Test getting n records, less than current number
 	ret = jaldb_get_last_k_records(context, 3, nonce_list, JALDB_RTYPE_LOG, false);
@@ -692,10 +917,10 @@ extern "C" void test_jaldb_get_records_since_last_nonce_works()
 	char *nonce4 = NULL;
 
 	// Timestamp index is based on timestamp extract from record. Time order will be nonce 2, 3, 4, 1
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce3));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce4));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 1, &nonce3, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 1, &nonce4, -1));
 
 	ret = jaldb_get_records_since_last_nonce(context, nonce2, nonce_list, JALDB_RTYPE_LOG);
 	assert_equals(JALDB_OK, ret);
@@ -726,10 +951,10 @@ extern "C" void test_jaldb_get_records_since_last_nonce_returns_error_with_missi
 	char last_nonce[] =  "11111111-AAAA-BBBB-2222-333333CCCCCC";
 
 	// Timestamp index is based on timestamp extract from record. Time order will be nonce 2, 3, 4, 1
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 2, &nonce2));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 2, &nonce3));
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 3, &nonce4));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 2, &nonce2, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[2], 2, &nonce3, -1));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[3], 3, &nonce4, -1));
 
 	// If last nonce not found, then check for flag and all records returned
 	ret = jaldb_get_records_since_last_nonce(context, last_nonce, nonce_list, JALDB_RTYPE_LOG);
@@ -765,7 +990,7 @@ extern "C" void test_jaldb_mark_confirmed_works()
 
 	records[0]->network_nonce = jal_strdup("1");
 
-	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 0, &nonce));
+	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 0, &nonce, -1));
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 	assert_equals(0, rec->confirmed);
 	assert_equals(JALDB_OK, jaldb_mark_confirmed(context, JALDB_RTYPE_LOG, (char*)"1",&nonce2));

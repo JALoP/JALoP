@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_structured_data.c This file contains tests for jalp_structured_data functions.
+ * @file
+ *
+ * @brief This file contains tests for jalp_structured_data functions.
  *
  * ### LICENSE
  *

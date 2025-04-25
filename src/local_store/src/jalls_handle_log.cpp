@@ -1,5 +1,7 @@
 /**
- * @file jalls_handle_log.cpp This file contains functions to handle a log
+ * @file
+ *
+ * @brief This file contains functions to handle a log
  * to the jal local store.
  *
  * ### LICENSE
@@ -206,7 +208,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		goto out;
 	}
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce, thread_ctx->log_record_size_limit);
 	free(nonce);
 	nonce = NULL;
 
@@ -214,7 +216,7 @@ extern "C" int jalls_handle_log(struct jalls_thread_context *thread_ctx, uint64_
 		fprintf(stderr, "failed to insert log record\n");
 		switch (db_err) {
 			case JALDB_E_REJECT:
-				fprintf(stderr, "record was too large and was rejected\n");
+				fprintf(stderr, "Log record rejected due to record being larger than record size limit of %lld\n", thread_ctx->log_record_size_limit);
 				break;
 			case JALDB_E_INTERNAL_ERROR:
 				ret = JALDB_E_INTERNAL_ERROR;

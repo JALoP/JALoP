@@ -1,5 +1,7 @@
 /**
- * @file jalp_logger_metadata.h This file defines structures related to 'logger'
+ * @file
+ *
+ * @brief This file defines structures related to 'logger'
  * metadata.
  *
  * ### LICENSE

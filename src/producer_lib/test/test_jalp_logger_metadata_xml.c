@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_logger_metadata_xml.c This file contains functions to test jalp_logger_metadata_to_elem.
+ * @file
+ *
+ * @brief This file contains functions to test jalp_logger_metadata_to_elem.
  *
  * ### LICENSE
  *

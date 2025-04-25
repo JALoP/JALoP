@@ -1,6 +1,7 @@
 /**
- * @file jal_asprintf.c
- * Defines the jal_asprintf function and jal_vasprintf functions
+ * @file
+ *
+ * @brief Defines the jal_asprintf function and jal_vasprintf functions
  *
  * ### LICENSE
  *

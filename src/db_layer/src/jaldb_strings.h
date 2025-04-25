@@ -1,5 +1,7 @@
 /**
- * @file jaldb_strings.h This file provides defines for a number of strings
+ * @file
+ *
+ * @brief This file provides defines for a number of strings
  * used in various portions of the DB Layer.
  *
  * ### LICENSE
