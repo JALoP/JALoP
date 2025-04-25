@@ -1,5 +1,7 @@
 /**
- * @file jalls_record_utils.h Function declarations for obtaining various hunks
+ * @file
+ *
+ * @brief Function declarations for obtaining various hunks
  * of metadata.
  *
  * ### LICENSE

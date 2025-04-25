@@ -1,5 +1,7 @@
 /**
- * @file jalls_handle_journal_fd.hpp This file contains functions to handle a journal
+ * @file
+ *
+ * @brief This file contains functions to handle a journal
  * to the jal local store.
  *
  * ### LICENSE

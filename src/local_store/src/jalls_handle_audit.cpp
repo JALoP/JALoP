@@ -1,5 +1,7 @@
 /**
- * @file jalls_handle_audit.cpp This file contains functions to handle an audit
+ * @file
+ *
+ * @brief This file contains functions to handle an audit
  * to the jal local store.
  *
  * ### LICENSE
@@ -208,14 +210,14 @@ extern "C" int jalls_handle_audit(struct jalls_thread_context *thread_ctx, uint6
 		goto err_out;
 	}
 
-	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce);
+	db_err = jaldb_insert_record(thread_ctx->db_ctx, rec, 1, &nonce, thread_ctx->audit_record_size_limit);
 	free(nonce);
 	nonce = NULL;
 	if (JALDB_OK != db_err) {
 		fprintf(stderr, "could not insert audit record into database\n");
 		switch (db_err) {
 			case JALDB_E_REJECT:
-				fprintf(stderr, "record was too large and was rejected\n");
+				fprintf(stderr, "Audit record rejected due to record being larger than record size limit of %lld\n", thread_ctx->audit_record_size_limit);
 				break;
 			case JALDB_E_INTERNAL_ERROR:
 				ret = JALDB_E_INTERNAL_ERROR;

@@ -1,5 +1,7 @@
 /**
- * @file test_jalls_msg.c This file contains tests for jalls_msg functions.
+ * @file
+ *
+ * @brief This file contains tests for jalls_msg functions.
  *
  * ### LICENSE
  *

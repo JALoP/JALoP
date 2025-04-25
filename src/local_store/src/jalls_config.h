@@ -1,5 +1,7 @@
 /**
- * @file jalls_config.h This file contains functions for parsing the local store
+ * @file
+ *
+ * @brief This file contains functions for parsing the local store
  * config file.
  *
  * ### LICENSE
@@ -39,6 +41,9 @@
 #define JALLS_CFG_ACCEPT_DELAY_THREAD_COUNT_DEFAULT 10
 #define JALLS_CFG_ACCEPT_DELAY_INCREMENT_DEFAULT 100
 #define JALLS_CFG_ACCEPT_DELAY_MAX_DEFAULT 10000000
+#define JALLS_CFG_AUDIT_RECORD_SIZE_LIMIT_DEFAULT 200000000
+#define JALLS_CFG_LOG_RECORD_SIZE_LIMIT_DEFAULT 200000000
+#define JALLS_CFG_JOURNAL_RECORD_SIZE_LIMIT_DEFAULT -1
 
 #define JALLS_CFG_PRIVATE_KEY_FILE "private_key_file"
 #define JALLS_CFG_PUBLIC_CERT_FILE "public_cert_file"
@@ -60,6 +65,10 @@
 #define JALLS_CFG_ACCEPT_DELAY_INCREMENT "accept_delay_increment"
 #define JALLS_CFG_ACCEPT_DELAY_MAX "accept_delay_max"
 #define JALLS_CFG_SYS_META_DGST_ALG "sys_meta_dgst_alg"
+#define JALLS_CFG_JOURNAL_RECORD_SIZE_LIMIT "journal_record_size_limit"
+#define JALLS_CFG_AUDIT_RECORD_SIZE_LIMIT "audit_record_size_limit"
+#define JALLS_CFG_LOG_RECORD_SIZE_LIMIT "log_record_size_limit"
+#define JALLS_CFG_DATABASE_OPTION "database_option"
 
 /**
  * Parses the config file and fills out the jalls_context struct.

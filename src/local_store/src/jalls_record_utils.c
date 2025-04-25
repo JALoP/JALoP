@@ -1,5 +1,7 @@
 /**
- * @file jalls_record_utils.c Functions for obtained various hunks of metadata
+ * @file
+ *
+ * @brief Functions for obtained various hunks of metadata
  * for JALoP Records
  *
  * ### LICENSE
@@ -26,8 +28,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <sys/socket.h>
 
 #include "jal_alloc.h"
+#include "jal_ts_utils.h"
 #include "jalls_record_utils.h"
 #include "jaldb_utils.h"
 
@@ -93,7 +97,7 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 		return -1;
 	}
 
-	char *timestamp = jaldb_gen_timestamp();
+	char *timestamp = jal_gen_timestamp_usec();
 	if (!timestamp) {
 		return -1;
 	}
@@ -105,21 +109,17 @@ int jalls_create_record(enum jaldb_rec_type rec_type, struct jalls_thread_contex
 	rec->pid = thread_ctx->peer_pid;
 	rec->have_uid = 1;
 	rec->uid = thread_ctx->peer_uid;
-#endif
-	rec->hostname = jal_strdup(thread_ctx->ctx->hostname);
-	rec->timestamp = timestamp;
-#ifdef SO_PEERCRED
 	rec->username = jalls_get_user_id_str(thread_ctx->peer_uid);
-#endif
-	rec->sec_lbl = jalls_get_security_label(thread_ctx->fd);
-	uuid_copy(rec->host_uuid, thread_ctx->ctx->system_uuid);
-	uuid_generate(rec->uuid);
-#ifdef SO_PEERCRED
 	if (rec->username == NULL) {
 		jaldb_destroy_record(&rec);
 		return -1;
 	}
 #endif
+	rec->hostname = jal_strdup(thread_ctx->ctx->hostname);
+	rec->timestamp = timestamp;
+	rec->sec_lbl = jalls_get_security_label(thread_ctx->fd);
+	uuid_copy(rec->host_uuid, thread_ctx->ctx->system_uuid);
+	uuid_generate(rec->uuid);
 
 	*prec = rec;
 	return 0;

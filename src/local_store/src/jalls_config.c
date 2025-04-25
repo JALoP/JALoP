@@ -1,5 +1,7 @@
 /**
- * @file jalls_config.c This file contains functions for parsing the
+ * @file
+ *
+ * @brief This file contains functions for parsing the
  * local store config file.
  *
  * ### LICENSE
@@ -38,6 +40,7 @@
 #include "jal_config.h"
 #include "jalls_config.h"
 #include "jalls_context.h"
+#include "jaldb_context.h"
 
 int jalls_parse_config(const char *config_file_path, struct jalls_context **jalls_ctx) {
 
@@ -79,6 +82,11 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	int *accept_delay_increment = &((*jalls_ctx)->accept_delay_increment);
 	int *accept_delay_max = &((*jalls_ctx)->accept_delay_max);
 	enum jal_digest_algorithm *sys_meta_dgst_alg = &((*jalls_ctx)->sys_meta_dgst_alg);
+	long long *journal_record_size_limit = &((*jalls_ctx)->journal_record_size_limit);
+	long long *audit_record_size_limit = &((*jalls_ctx)->audit_record_size_limit);
+	long long *log_record_size_limit = &((*jalls_ctx)->log_record_size_limit);
+	enum jaldb_flags *jdb_flags=&((*jalls_ctx)->jdb_flags);
+	char **database_option = &((*jalls_ctx)->database_option);
 
 	config_t jalls_config;
 	if(JAL_CFG_SUCCESS != jal_config_init(&jalls_config))
@@ -141,11 +149,51 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		goto err_out;
 	}
 
+	// Database option setting, only valid in lmdb builds otherwise defauls to JDB_NONE
+	#ifdef JALDB_TYPE_LMDB
+	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
+		root,
+		JALLS_CFG_DATABASE_OPTION,
+		database_option,
+		JAL_CFG_OPTIONAL))
+	{
+		goto err_out;
+	}
+
+	//Ensure valid entry was in the config file and parse the value
+	if (JALDB_OK != jaldb_get_db_flags(*database_option, jdb_flags))
+	{
+		fprintf(stderr, "Error: failed to validate database_option\n");
+		goto err_out;
+	}
+	#else
+	*database_option = NULL;
+	*jdb_flags = JDB_NONE;
+	#endif
+
 	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
 		root,
 		JALLS_CFG_HOSTNAME,
 		hostname,
 		JAL_CFG_OPTIONAL))
+	{
+		goto err_out;
+	}
+
+	*journal_record_size_limit = JALLS_CFG_JOURNAL_RECORD_SIZE_LIMIT_DEFAULT;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_int64(root, JALLS_CFG_JOURNAL_RECORD_SIZE_LIMIT, journal_record_size_limit, JAL_CFG_OPTIONAL))
+	{
+		goto err_out;
+	}
+
+	*audit_record_size_limit = JALLS_CFG_AUDIT_RECORD_SIZE_LIMIT_DEFAULT;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_int64(root, JALLS_CFG_AUDIT_RECORD_SIZE_LIMIT, audit_record_size_limit, JAL_CFG_OPTIONAL))
+	{
+		goto err_out;
+	}
+
+	*log_record_size_limit = JALLS_CFG_LOG_RECORD_SIZE_LIMIT_DEFAULT;
+	if(JAL_CFG_SUCCESS != jal_config_lookup_int64(root, JALLS_CFG_LOG_RECORD_SIZE_LIMIT, log_record_size_limit, JAL_CFG_OPTIONAL))
 	{
 		goto err_out;
 	}
@@ -271,6 +319,8 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		goto err_out;
 	}
 
+	//db_recover is only valid in then BDB build
+	#ifdef JALDB_TYPE_BDB
 	if(JAL_CFG_SUCCESS != jal_config_lookup_bool(
 		root,
 		JALLS_CFG_DB_RECOVER,
@@ -279,6 +329,9 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	{
 		goto err_out;
 	}
+	#else
+		*db_recover = 0;
+	#endif
 
 	// If there is no daemon config setting, default to true (daemonize).
 	*daemon = 1;
@@ -400,6 +453,7 @@ err_out:
 	free((*jalls_ctx)->hostname);
 	free((*jalls_ctx)->schemas_root);
 	free((*jalls_ctx)->db_root);
+	free((*jalls_ctx)->database_option);
 	free((*jalls_ctx)->socket);
 	free((*jalls_ctx)->socket_owner);
 	free((*jalls_ctx)->socket_group);
