@@ -19,6 +19,10 @@ AddOption('--no-selinux', dest='DISABLE_SELINUX',
 AddOption('--no-release', dest='DISABLE_RELEASE',
 		action='store_true', default=False,
 		help='Disable optimized release builds.')
+AddOption('--bdb', dest='ENABLE_BDB',
+		action='store_true', default=False,
+		help='Enables Berkeley DB (BDB) support.')
+
 # Update package version here, add actual checks below
 pkg_config_version = '0.21'
 
@@ -106,20 +110,12 @@ debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env['HAVE_SELINUX'] = False;
 debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 
-if platform.system() == 'SunOS':
-	debug_env.Replace(RPATHPREFIX = '-Wl,-R')
-	debug_env.PrependENVPath('PKG_CONFIG_PATH',
-			'/usr/local/ssl/lib/pkgconfig:/usr/local/lib/pkgconfig')
-	debug_env.MergeFlags({'LINKFLAGS':'-L/usr/local/lib -Wl,-R,/usr/local/lib -Wl,-R,/usr/local/ssl/lib'.split()})
-	debug_env.PrependENVPath('PATH', '/usr/sfw/bin')
-	debug_env.MergeFlags('-lsocket')
-	debug_env["bdb_cflags"] = "-I/usr/local/BerkeleyDB.4.7/include".split()
-	debug_env["bdb_ldflags"] = "-L/usr/local/BerkeleyDB.4.7/lib \
-					-Wl,-R,/usr/local/BerkeleyDB.4.7/lib \
-					-ldb".split()
-else:
+if debug_env.GetOption("ENABLE_BDB"):
 	debug_env["bdb_ldflags"] = "-ldb"
 	debug_env["bdb_cflags"] = ""
+else:
+	debug_env["lmdb_ldflags"] = "-llmdb"
+	debug_env["lmdb_cflags"] = ""
 
 def merge_with_os_env(env):
 	if 'LIBPATH' in os.environ:
@@ -202,14 +198,29 @@ this is want you want, this is OK, re-run scons with the \
 	conf.Finish()
 
 	checkEnv = debug_env.Clone()
-	checkEnv.MergeFlags(checkEnv['bdb_cflags'])
-	checkEnv.MergeFlags(checkEnv['bdb_ldflags'])
-	bdbconf = Configure(checkEnv, custom_tests = {
-						'CheckBDB': PackageCheckHelpers.CheckBDB
-						 })
-	if not bdbconf.CheckBDB():
-		Exit(-1)
-	bdbconf.Finish()
+	if checkEnv.GetOption("ENABLE_BDB"):
+		checkEnv.MergeFlags(checkEnv['bdb_cflags'])
+		checkEnv.MergeFlags(checkEnv['bdb_ldflags'])
+		bdbconf = Configure(checkEnv, custom_tests = {
+							'CheckBDB': PackageCheckHelpers.CheckBDB
+							 })
+		if not bdbconf.CheckBDB():
+			Exit(-1)
+		bdbconf.Finish()
+	else:
+		checkEnv["lmdb_ldflags"] = "-llmdb -lboost_serialization"
+		checkEnv["lmdb_cflags"] = "-llmdb -lboost_serialization"
+
+		checkEnv.MergeFlags(checkEnv['lmdb_cflags'])
+		checkEnv.MergeFlags(checkEnv['lmdb_ldflags'])
+
+		lmdbconf = Configure(checkEnv, custom_tests = {
+							'CheckLMDB': PackageCheckHelpers.CheckLMDB
+							 })
+		if not lmdbconf.CheckLMDB():
+			Exit(-1)
+		lmdbconf.Finish()
+
 
 	for key, (pkg, version) in packages_at_least.items():
 		def addCFLAGS(debug_env, cmd, unique=1):
@@ -219,6 +230,11 @@ this is want you want, this is OK, re-run scons with the \
 
 		debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
 		debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
+
+		if not debug_env.GetOption("ENABLE_BDB"):
+			debug_env["lmdb_ldflags"] = "-llmdb -lboost_serialization"
+			debug_env["lmdb_cflags"] = "-llmdb -lboost_serialization"
+
 else:
 	for key, _ in packages_at_least.items():
 		debug_env[key + "_cflags"] = ""
