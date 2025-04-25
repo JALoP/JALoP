@@ -1,5 +1,7 @@
 /**
- * @file jalp_transform_xml.h This file defines functions to deal with
+ * @file
+ *
+ * @brief This file defines functions to deal with
  * converting a jalp_stransform struct to XML.
  *
  * ### LICENSE

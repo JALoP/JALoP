@@ -1,5 +1,7 @@
 /**
- * @file jalp_journal.c Contains jalp journal functions
+ * @file
+ *
+ * @brief Contains jalp journal functions
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
 /**
- * @file jalp_journal_metadata.h This file defines structures and functions for
+ * @file
+ *
+ * @brief This file defines structures and functions for
  * building the "journalMetadata" section of the application metadata.
  *
  * ### LICENSE

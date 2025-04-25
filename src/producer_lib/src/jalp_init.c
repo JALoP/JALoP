@@ -1,5 +1,7 @@
 /**
- * @file jalp_init.c This file defines the Producer Library
+ * @file
+ *
+ * @brief This file defines the Producer Library
  * init and shutdown functions.
  *
  * ### LICENSE

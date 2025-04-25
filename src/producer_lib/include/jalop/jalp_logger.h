@@ -1,5 +1,7 @@
 /**
- * @file jalp_logger.h This file defines the public API that may interest a
+ * @file
+ *
+ * @brief This file defines the public API that may interest a
  * 'logger' program.
  *
  * ### LICENSE

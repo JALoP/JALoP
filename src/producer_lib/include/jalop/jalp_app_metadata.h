@@ -1,5 +1,7 @@
 /**
- * @file jalp_app_metadata.h This file defines the top level public structure
+ * @file
+ *
+ * @brief This file defines the top level public structure
  * used to create application metadata.
  *
  * ### LICENSE

@@ -1,5 +1,7 @@
 /**
- * @file jalp_file_info_xml.c This file defines functions to deal with
+ * @file
+ *
+ * @brief This file defines functions to deal with
  * converting the jalp_file_info struct to XML.
  *
  * ### LICENSE

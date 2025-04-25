@@ -1,5 +1,7 @@
 /**
- * @file jalp_audit_helper.h C interface to helper functions for generating the
+ * @file
+ *
+ * @brief C interface to helper functions for generating the
  * application metadata XML related to an audit record.
  *
  * ### LICENSE

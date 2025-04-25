@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_app_metadata.c This file contains tests for jalp_app_metadata functions.
+ * @file
+ *
+ * @brief This file contains tests for jalp_app_metadata functions.
  *
  * ### LICENSE
  *

@@ -1,5 +1,7 @@
 /**
- * @file jalp_logger_metadata.c This file contains functions related to
+ * @file
+ *
+ * @brief This file contains functions related to
  * the jalp_logger_metadata struct.
  *
  * ### LICENSE

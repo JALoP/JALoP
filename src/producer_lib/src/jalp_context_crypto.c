@@ -1,5 +1,7 @@
 /**
- * @file jalp_context_crypto.c This file defines the JALoP context crypto
+ * @file
+ *
+ * @brief This file defines the JALoP context crypto
  * functions.
  *
  * ### LICENSE

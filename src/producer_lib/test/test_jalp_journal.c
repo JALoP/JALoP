@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_journal.c This file contains functions to test
+ * @file
+ *
+ * @brief This file contains functions to test
  * jalp_journal_* functions.
  *
  * ### LICENSE

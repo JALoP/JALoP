@@ -1,5 +1,7 @@
 /**
- * @file jalp_structured_data.c This file defines functions to
+ * @file
+ *
+ * @brief This file defines functions to
  * deal with structured_data elements
  *
  * ### LICENSE

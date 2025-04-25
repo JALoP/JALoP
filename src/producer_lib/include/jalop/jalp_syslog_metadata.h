@@ -1,5 +1,7 @@
 /**
- * @file jalp_syslog_metadata.h This file defines structures and functions to
+ * @file
+ *
+ * @brief This file defines structures and functions to
  * deal with syslog style application metadata.
  *
  * ### LICENSE

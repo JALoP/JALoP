@@ -1,5 +1,7 @@
 /**
- * @file jalp_app_metadata.c This file contains functions to handle the
+ * @file
+ *
+ * @brief This file contains functions to handle the
  * application metadata document.
  *
  * ### LICENSE

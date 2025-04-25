@@ -1,5 +1,7 @@
 /**
- * @file jalp_app_metadata_xml.h This file defines functions to deal with
+ * @file
+ *
+ * @brief This file defines functions to deal with
  * converting jalp_app_metadata to a DOMDocument.
  *
  * ### LICENSE

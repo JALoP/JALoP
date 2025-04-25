@@ -1,6 +1,7 @@
 /**
- * @file jalp_connection.c
- * This file defines helper functions for making a connection to a local store.
+ * @file
+ *
+ * @brief This file defines helper functions for making a connection to a local store.
  *
  * ### LICENSE
  *

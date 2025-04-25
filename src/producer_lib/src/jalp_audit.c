@@ -1,5 +1,7 @@
 /**
- * @file jalp_audit.c Function to send audit records to the local store.
+ * @file
+ *
+ * @brief Function to send audit records to the local store.
  *
  * ### LICENSE
  *

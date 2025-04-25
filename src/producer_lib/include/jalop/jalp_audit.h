@@ -1,5 +1,7 @@
 /**
- * @file jalp_audit.h This file defines the public API that may interest a
+ * @file
+ *
+ * @brief This file defines the public API that may interest a
  * program sending JALoP Audit Format (JAF) audit records to the Local Store.
  *
  * ### LICENSE

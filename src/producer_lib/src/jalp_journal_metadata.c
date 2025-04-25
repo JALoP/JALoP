@@ -1,5 +1,7 @@
 /**
- * @file jalp_journal_metadata.c This file contains functions
+ * @file
+ *
+ * @brief This file contains functions
  * for jalp_journal_metadata
  *
  * ### LICENSE

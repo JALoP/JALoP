@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_audit.c This file contains functions to test jalp_audit().
+ * @file
+ *
+ * @brief This file contains functions to test jalp_audit().
  *
  * ### LICENSE
  *

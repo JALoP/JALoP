@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_transform_xml.c This file contains tests for
+ * @file
+ *
+ * @brief This file contains tests for
  * jal_transform functions
  *
  * ### LICENSE

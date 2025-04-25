@@ -1,5 +1,7 @@
 /**
- * @file jalp_syslog_metadata_xml.c This file defines functions to handle
+ * @file
+ *
+ * @brief This file defines functions to handle
  * converting syslog metadata to XML.
  *
  * ### LICENSE

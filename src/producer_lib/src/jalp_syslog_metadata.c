@@ -1,5 +1,7 @@
 /**
- * @file jalp_syslog_metadata.c This file contains constructors
+ * @file
+ *
+ * @brief This file contains constructors
  * and destructors for the syslog_metadata structure.
  *
  * ### LICENSE

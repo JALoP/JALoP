@@ -1,5 +1,7 @@
 /**
- * @file jalp_log_severity_xml.h This file defines functions to deal with
+ * @file
+ *
+ * @brief This file defines functions to deal with
  * converting log severity metadata to XML.
  *
  * ### LICENSE

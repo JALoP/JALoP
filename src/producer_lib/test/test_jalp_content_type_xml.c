@@ -1,5 +1,7 @@
 /**
- * @file test_jalp_content_type_xml.c This file contains unit tests for the
+ * @file
+ *
+ * @brief This file contains unit tests for the
  * functions that convert a jalp_content_type struct to a DOM element.
  *
  * ### LICENSE
