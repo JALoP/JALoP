@@ -36,11 +36,6 @@ extern "C" {
 */
 #define JDB_NONE_STR "JDB_NONE"
 
-/**
-* This define indicates that LMDB is in use.
-*/
-#define JALDB_TYPE_LMDB "lmdb"
-
 struct jaldb_record_dbs;
 struct jaldb_segment;
 struct jaldb_context_t;
@@ -375,10 +370,6 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 		enum jaldb_rec_type type,
 		struct jaldb_record_dbs **rdbs);
 
-//NOTE Due to a bug in rhel9 doxygen which reports
-//false positive warnings with conflicts in the bdb db_layer, this
-//method name must be different than the jaldb_compact_dbs method in
-//the bdb layer.
 /**
  * Run compaction (DB->compact) on the primary DB of the given JAL record
  *
@@ -387,7 +378,7 @@ enum jaldb_status jaldb_get_primary_record_dbs(
  *
  * @return JALDB_OK on success, or an error
  */
-enum jaldb_status jaldb_compact_lmdb(
+enum jaldb_status jaldb_compact_dbs(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type);
 
