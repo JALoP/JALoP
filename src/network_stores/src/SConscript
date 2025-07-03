@@ -10,10 +10,7 @@ for source in (env.Glob("jsub*.cpp") + env.Glob("jal_subscribe.cpp")):
 
 sources.append("jal_subscribe_config_context.c");
 add_project_lib(env, 'lib_common', 'jal-common')
-if env.GetOption("ENABLE_BDB"):
-	add_project_lib(env, 'db_layer', 'jal-db')
-else:
-	add_project_lib(env, 'lmdb_layer', 'jal-db')
+add_project_lib(env, 'lmdb_layer', 'jal-db')
 
 add_project_lib(env, 'jal_utils', 'jal-utils')
 add_project_lib(env, 'network_lib', 'jal-network')

@@ -283,7 +283,7 @@ void on_channel_close(
 	// Only throw the warning if we aren't in the exiting state
 	if(!ctx || !ctx->db_ctx) {
 		if(!exiting) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or BDB context associated with closing channel");
+			DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or DB context associated with closing channel");
 		}
 	}
 	else {
@@ -1021,7 +1021,7 @@ enum jal_status pub_on_subscribe(
 
 		// If the session handle has gone bad, fail out, there's nothing more we can do
 		if(!ctx || !ctx->db_ctx) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "No context or BDB context associated with closing channel");
+			DEBUG_LOG_SUB_SESSION(ch_info, "No context or DB context associated with closing channel");
 			pthread_mutex_unlock(sub_lock);
 			return JAL_E_INVAL;
 		}
@@ -1655,11 +1655,9 @@ void print_config(void)
 		printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
 	}
 
-	#ifdef JALDB_TYPE_LMDB
 	if(global_config.database_option) {
 		printf("DATABASE_OPTION:\t%s\n", global_config.database_option);
 	}
-	#endif
 	printf("PEERS\n%15s | %18s | %18s\n", "HOST", "PUBLISH_ALLOW", "SUBSCRIBE_ALLOW");
 	axl_hash_foreach(global_config.peers, print_peer_cfg, NULL);
 	printf("\n===\nEND CONFIG VALUES:\n===\n");
@@ -1780,9 +1778,7 @@ enum jald_status set_global_config(config_t *config)
 		}
 	}
 
-	//database_option config setting is only used in the LMDB build
-	#ifdef JALDB_TYPE_LMDB
-
+	//database_option config setting
 	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
 		root,
 		JALNS_DATABASE_OPTION,
@@ -1797,9 +1793,6 @@ enum jald_status set_global_config(config_t *config)
 		error_seen |= JAL_CFG_FAILURE;
 		CONFIG_ERROR(root, JALNS_DATABASE_OPTION, "invalid value.");
 	}
-	#else
-	global_config.jdb_flags = JDB_NONE;
-	#endif
 
 	error_seen |= jal_config_lookup_string(root, JALNS_DIGEST_ALGORITHMS, &global_config.digest_algorithms, JAL_CFG_OPTIONAL);
 
@@ -1842,7 +1835,7 @@ enum jald_status set_global_config(config_t *config)
 				error_seen |= JAL_CFG_FAILURE;
 				continue;
 			}
-			
+
 			std::string check_key = get_ipv4(key);
 			if (check_key.empty()){
 				printf("Unable to resolve host entry: %s \n", key);

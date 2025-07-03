@@ -464,12 +464,11 @@ void print_config(void)
 	printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
 	printf("RESUME THRESHOLD:\t%lld\n", global_config.resume_threshold);
 
-	#ifdef JALDB_TYPE_LMDB
 	if (global_config.database_option)
 	{
 		printf("DATABASE OPTION:\t%s\n", global_config.database_option);
 	}
-	#endif
+
 	printf("\n===\nEND CONFIG VALUES:\n===\n");
 }
 
@@ -644,8 +643,7 @@ int set_global_config(config_t *config)
 		config_string = NULL;
 	}
 
-	//Database option setting, only valid in lmdb builds otherwise defaults to JDB_NONE
-	#ifdef JALDB_TYPE_LMDB
+	//Database option setting
 	rc |= jal_config_lookup_string(root, DATABASE_OPTION, &config_string, JAL_CFG_OPTIONAL);
 	global_config.database_option = config_string;
 	config_string = NULL;
@@ -656,10 +654,6 @@ int set_global_config(config_t *config)
 		rc |= JAL_CFG_FAILURE;
 		DEBUG_LOG("Error: failed to validate database_option\n");
 	}
-	#else
-	global_config.database_option = NULL;
-	global_config.jdb_flags = JDB_NONE;
-	#endif
 
 	return rc;
 }
