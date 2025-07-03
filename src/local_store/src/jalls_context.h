@@ -70,8 +70,6 @@ struct jalls_context {
 	char *socket_group;
 	/** The unix dac permissions of the socket file */
 	char *socket_mode;
-        /** A boolean for whether the DB_REVCOVER flag should be set when opening the DB */
-	int db_recover;
 	/** A boolean for whether the process should be daemonized */
 	int daemon;
 	/** A boolean for whether to sign the system metadata for data received from the producer library. */
