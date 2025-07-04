@@ -1,0 +1,142 @@
+---
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+  - name: stop processes
+    shell: |
+      killall {{cwd}}/release/bin/jal-local-store || true
+      killall {{cwd}}/release/bin/jal_subscribe || true
+      killall {{cwd}}/release/bin/jald || true
+
+  - name: clear local store database
+    file:
+        path: '{{cwd}}/testdb'
+        state: absent
+
+  - name: clear subscriber database
+    file:
+        path: '{{cwd}}/subdb'
+        state: absent
+
+  - name: remove socket
+    file:
+        path: '{{cwd}}/jal.sock'
+        state: absent
+
+  - name: make local store database directory
+    file:
+        path: '{{cwd}}/testdb'
+        state: directory
+
+  - name: make subscriber database directory
+    file:
+        path: '{{cwd}}/subdb'
+        state: directory
+
+  - name: start local store
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./release/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2</dev/null 1</dev/null &
+
+  - name: start subscriber
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./release/bin/jal_subscribe -c ./test-input/jal_subscribe.cfg 2</dev/null 1</dev/null &
+
+  - name: check subscriber database directory exists
+    stat:
+        path: '{{cwd}}/subdb/lock.mdb'
+    register: subscriber_stat
+
+  - name: Fail if file does not exists
+    fail:
+      msg: 'jal_subscriber did not start correctly'
+    when: subscriber_stat.stat.exists == False
+
+  - name: start jald
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    command:
+      chdir: '{{cwd}}'
+      cmd: ./release/bin/jald -c ./test-input/jald.cfg
+
+  - name: send logs
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    async: 45
+    poll: 0
+    command:
+        chdir: '{{cwd}}'
+        cmd: './release/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n 10 -t l'
+
+  - name: send journals
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: './release/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n 10 -t j'
+
+  - name: send audits
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: './release/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n 10 -t a'
+
+  - name: sleep 2
+    shell: sleep 2
+
+  - name: jaldb_tool testdb
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./release/bin/jaldb_tool -h testdb -d db
+    register: jaldb_tool_testdb_output
+
+  - name: jaldb_tool subdb
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/release/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./release/bin/jaldb_tool -h subdb -d db
+    register: jaldb_tool_subdb_output
+
+  - name: jaldb_tool output
+    shell: |
+      cd '{{cwd}}'
+      echo '{{ jaldb_tool_testdb_output.stdout }}' > jaldb_tool_output.txt
+      echo '{{ jaldb_tool_subdb_output.stdout }}' >> jaldb_tool_output.txt
+
+  - name: jaldb_tail
+    shell: |
+      cd '{{cwd}}'
+      ./release/bin/jaldb_tail -h testdb/ -t l|grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
+    register: jaldb_tail_output
+
+  - name: jal_dump
+    shell: |
+      cd '{{cwd}}'
+      ./release/bin/jal_dump -h testdb/ -u '{{ jaldb_tail_output.stdout }}' -d m -t l
+    register: jal_dump_output
+
+  - name: jal_dump output
+    shell: |
+      cd '{{cwd}}'
+      echo '{{ jal_dump_output.stdout }}' >> jaldb_tool_output.txt
+
+  - name: end processes
+    shell: |
+      killall {{cwd}}/release/bin/jal-local-store || true
+      killall {{cwd}}/release/bin/jald || true
+      killall {{cwd}}/release/bin/jal_subscribe || true
+#call with this command from jalop home
+##ansible-playbook -i src/test_utils/scripts/ansible/ansible_inventory.ini src/test_utils/scripts/ansible/local-store-pub-sub-tests.yml -e cwd=`pwd`
+
