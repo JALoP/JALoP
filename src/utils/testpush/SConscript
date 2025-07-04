@@ -5,12 +5,8 @@ env = env.Clone()
 env.MergeFlags(env['vortex_cflags'])
 env.MergeFlags(env['vortex_ldflags'])
 
-if env.GetOption("ENABLE_BDB"):
-	env.MergeFlags({'CPPPATH':'#src/network_lib/src:#src/lib_common/include:#src/network_lib/include:#src/lib_common/src:#src/db_layer/src/:.'.split(':')})
-	add_project_lib(env, 'db_layer', 'jal-db')
-else:
-	env.MergeFlags({'CPPPATH':'#src/network_lib/src:#src/lib_common/include:#src/network_lib/include:#src/lib_common/src:#src/lmdb_layer/src/:.'.split(':')})
-	add_project_lib(env, 'lmdb_layer', 'jal-db')
+env.MergeFlags({'CPPPATH':'#src/network_lib/src:#src/lib_common/include:#src/network_lib/include:#src/lib_common/src:#src/lmdb_layer/src/:.'.split(':')})
+add_project_lib(env, 'lmdb_layer', 'jal-db')
 
 testpush = env.Program(target='dummy_push', source=["push.c", lib_common, network_lib])
 

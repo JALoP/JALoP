@@ -114,17 +114,12 @@ static struct argp_option options[] = {
 		"When '-d' is given, force the deletion of records even when the JALoP Network Store has not sent them to at least one JALoP Network Store.  When given without '-d', this will report the records that would be deleted.", 0},
 	{"compact", 'c', NULL, 0,
 		"Compact the databases associated to the JAL record type (j/a/l) passed via -t and return empty pages to the filesystem.", 0},
-	#ifdef JALDB_TYPE_BDB
-	{"preserve-history", 'p', NULL, 0,
-		"Don't remove old Berkeley DB log files after purging.  This can be useful if you need to recover from certain error conditions but consumes more disk space.", 0},
-	#else
 	{"batch-size", 'e', "E", 0,
 			"Specify the the number of records to purge per transaction. The default is 10000 records if not specified. The minimum value is 1 and maximum is 10000.", 0},
 	{"performance-level", 'l', "L", 0,
 			"Specify the LMDB performance level to use. Valid values are '0', 1', '2', '3'.  The default is '2' if not specified.", 0},
 	{"compact-path", 's', "S", 0,
 			"Specify path of where the temporary LMDB database is copied while compacting.", 0},
-	#endif
 	{"skip-process-check", 'a', NULL, 0,
 			"This skips the JALoP process running check on compact.  WARNING!! Using this setting can result in DB corruption if compact is performed against a database that is in use.", 0},
 	{"home", 'h', "H", 0, "Specify the root of the JALoP database, defaults to /var/lib/jalop/db.", 0},
@@ -240,7 +235,6 @@ int main(int argc, char **argv)
 	}
 
 	jaldb_flags jdb_flags;
-	#ifdef JALDB_TYPE_LMDB
 	if (global_args.compact) {
 		//Ensure compact path was provided
 		if (NULL == global_args.compact_path)
@@ -319,10 +313,6 @@ int main(int argc, char **argv)
 
 		ctx->batch_size = curr_batch_size;
 	}
-
-	#else
-	jdb_flags = JDB_NONE;
-	#endif
 
 	if (global_args.compact) {
 		//Ensure that jalop processes are not running (if skip process check not true)
@@ -405,7 +395,6 @@ int main(int argc, char **argv)
 			printf("Synced records only\n");
 		}
 
-		#ifdef JALDB_TYPE_LMDB
 		if (LMDB_PERFORMANCE_NONE == global_args.performance_level)
 		{
 			printf("LMDB Performance Level: JDB_NONE\n");
@@ -435,7 +424,6 @@ int main(int argc, char **argv)
 		{
 			printf("Batch Size: %d\n", MAX_PURGE_BATCH_SIZE);
 		}
-		#endif
 
 	} else {
 		// Otherwise output the old format that works with the test harness
@@ -532,13 +520,6 @@ int main(int argc, char **argv)
 	}
 
 out:
-	//Remove db logs only applies to BDB
-	#ifdef JALDB_TYPE_BDB
-	if (!global_args.skip_clean) {
-		jaldb_remove_db_logs(ctx);
-	}
-	#endif
-
 	if (global_args.detail) {
 		printf("\n");
 	}
@@ -546,11 +527,7 @@ out:
 	jaldb_status rc = JALDB_OK;
 	if (global_args.compact) {
 		fprintf(stdout, "Running DB->compact\n");
-		#ifdef JALDB_TYPE_BDB
 		rc = jaldb_compact_dbs(ctx, type);
-		#else
-		rc = jaldb_compact_lmdb(ctx, type);
-		#endif
 		if (JALDB_OK != rc) {
 			fprintf(stderr, "ERROR: Compact failed on one or more databases.\n");
 		}
@@ -638,12 +615,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		case 'h':
 			global_args.home = strdup(arg);
 			break;
-		#ifdef JALDB_TYPE_BDB
-		case 'p':
-			global_args.skip_clean = 1;
-			break;
-		#endif
-		#ifdef JALDB_TYPE_LMDB
 		case 'l':
 			if (LMDB_PERFORMANCE_NONE != *arg && LMDB_PERFORMANCE_LEVEL_1 != *arg &&
 				LMDB_PERFORMANCE_LEVEL_2 != *arg && LMDB_PERFORMANCE_LEVEL_3 != *arg) {
@@ -658,7 +629,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		case 'e':
 			global_args.batch_size = strdup(arg);
 			break;
-		#endif
 		case 'a':
 			global_args.skip_process_check = 1;
 			break;

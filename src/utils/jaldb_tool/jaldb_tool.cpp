@@ -36,6 +36,10 @@
 #include <cstring>
 #include <iostream>
 #include <iomanip>
+#include <dirent.h>
+#include <ftw.h>
+#include <sys/stat.h>
+#include <json-c/json.h>
 
 const char *argp_program_version = "1";
 const char *argp_program_bug_address = "";
@@ -50,12 +54,6 @@ static struct argp_option options[] = {
 		"mark record type [unsent | u ], [sent | s ], [synced | y ]", 0},
 	{"db-home", 'h', "db_dir", 0,
 		"database home directory, default: testdb", 0},
-	{"show_times", 's', NULL, 0,
-		"show timestamps, default: false", 0},
-	#ifdef JALDB_TYPE_BDB
-	{"run-db_recover", 'r', NULL, 0,
-		"run db_recover before opening DB, default: false", 0},
-	#endif
 	{NULL, 0, NULL, 0, NULL, 0}
 };
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
@@ -76,23 +74,61 @@ enum class RecordSelection
 	ALL,
 };
 
+class JalTime{
+public:
+	struct tm timeStruct;
+	std::string timestamp;
+	std::string timestampNoDecimal;
+	time_t unixSeconds = 0;
+	double microSeconds = 0;
+	int nanoSeconds = 0;
+	double doubleSeconds = 0;
+	std::string format = "%Y-%m-%dT%H:%M:%S";
+
+	void figureWithTimestamp(){
+		if (timestamp.size()>0){
+			char *endptr;
+			microSeconds = strtod(timestamp.substr(19, 7).c_str(), &endptr);
+			//std::cout << timestamp.substr(19, 7) << " micro " << microSeconds << std::endl;
+			timestampNoDecimal = timestamp.substr(0, 19);
+			timeStruct.tm_isdst = 0;
+			strptime(timestampNoDecimal.c_str(), format.c_str(), &timeStruct);
+			unixSeconds = mktime(&timeStruct);
+			doubleSeconds = unixSeconds + microSeconds;
+		}
+	}
+	void figureWithSeconds(){
+		if(unixSeconds>0){
+			timeStruct.tm_isdst = 0;
+			struct tm *timeStructP = gmtime(&unixSeconds);
+			std::stringstream ss;
+			ss << timeStructP->tm_year+1900 << "-";
+			ss << std::setw(2) << std::setfill('0') << timeStructP->tm_mon+1 << "-";
+			ss << std::setw(2) << std::setfill('0') << timeStructP->tm_mday << "T";
+			ss << std::setw(2) << std::setfill('0') << timeStructP->tm_hour << ":";
+			ss << std::setw(2) << std::setfill('0') << timeStructP->tm_min << ":";
+			ss << std::setw(2) << std::setfill('0') << timeStructP->tm_sec << ".";
+			ss << nanoSeconds;
+			timestamp = ss.str();
+		}
+	}
+};
 struct StatContainer{
 	JaldbStat stats;
 	enum jaldb_rec_type type;
 	bool show;
 
-	time_t latest = 0;
-	time_t earliest = 0;
+	JalTime latest;
+	JalTime earliest;
 	time_t diff_time = 0;
 };
 
 struct Config
 {
-	RecordSelection recordSelection = RecordSelection::LOG;
+	RecordSelection recordSelection = RecordSelection::ALL;
 	MarkOperation operation = MarkOperation::NONE;
-	bool run_db_recover = false;
 	std::string db_home = std::string("testdb");
-	bool show_times = false;
+	std::string db_type = std::string("");
 } config;
 
 jaldb_context* setup_jal(void);
@@ -100,12 +136,48 @@ enum jaldb_status update_flags(
 	jaldb_context* ctx,
 	MarkOperation op,
 	RecordSelection rSelect);
-void print_headers();
-void print_row(StatContainer& s);
-void print_time_headers();
-void print_time_row(StatContainer& s);
+
+void print_structured_data(std::vector<StatContainer> dbStats);
+bool get_fs_stats(StatContainer& s);
 
 int byte_swapped = 0;
+StatContainer *currentContainer;
+
+bool get_fs_type()
+{
+	struct stat stats;
+	std::string db_file;
+	std::string db_directory;
+
+	if (stat(config.db_home.c_str(), &stats)!=0)
+	{
+		std::cout << "db_home '" << config.db_home << "' does not exist." << std::endl;
+		return false;
+	}
+	if ((stats.st_mode & S_IFMT) != S_IFDIR)
+	{
+		std::cout << " db_home '" << config.db_home << "' is not a directory. " << std::endl;
+		return false;
+	}
+	// log_records.mdb(lmdb) log_records.db(bdb) log(fs)
+	db_directory = config.db_home + "/log";
+	if (stat(db_directory.c_str(), &stats)==0 && (stats.st_mode & S_IFMT) == S_IFDIR)
+	{
+		config.db_type = "fs";
+		return true;
+	}
+	else
+	{
+		db_file = config.db_home + "/log_records.mdb";
+		if (stat(db_file.c_str(), &stats)==0 && (stats.st_mode & S_IFMT) == S_IFREG)
+		{
+			config.db_type = "lmdb";
+			return true;
+		}
+	}
+	std::cout << "db_home '" << config.db_home << "' database type cannot be determined." << std::endl;
+	return false;
+}
 
 int main(int argc, char **argv)
 {
@@ -115,24 +187,35 @@ int main(int argc, char **argv)
 		std::cout << "ARGP_ERR_UNKNOWN " << ARGP_ERR_UNKNOWN << std::endl;
 	}
 
-	// Create jaldb_context or exit
-	jaldb_context* ctx = setup_jal();
-	if(NULL == ctx) {
+	if (get_fs_type()==false)
+	{
 		return -1;
 	}
 
-	// If an update operation has been requested, perform the update now
-	if(JALDB_OK != update_flags(ctx, config.operation, config.recordSelection))
-	{
+	jaldb_context* ctx = NULL;
+	if (config.db_type.compare("fs")!=0){
+		// Create jaldb_context or exit
+		ctx = setup_jal();
+		if(NULL == ctx) {
+			return -1;
+		}
+		// If an update operation has been requested, perform the update now
+		if(JALDB_OK != update_flags(ctx, config.operation, config.recordSelection))
+		{
+			return -1;
+		}
+	}
+	if (config.db_type.compare("fs")==0 && config.operation!=MarkOperation::NONE){
+		std::cout << "Marking records for this database type is not available at this time." << std::endl;
 		return -1;
 	}
 
 	// Create storage for stats to be returned from get_stats
 	std::vector<StatContainer> dbStats =
 	{
-		{ {}, JALDB_RTYPE_JOURNAL, false},
-		{ {}, JALDB_RTYPE_AUDIT, false},
-		{ {}, JALDB_RTYPE_LOG, false},
+		{ {}, JALDB_RTYPE_JOURNAL, false, {}, {} },
+		{ {}, JALDB_RTYPE_AUDIT, false, {}, {} },
+		{ {}, JALDB_RTYPE_LOG, false, {}, {} },
 	};
 	switch(config.recordSelection)
 	{
@@ -152,162 +235,218 @@ int main(int argc, char **argv)
 			break;
 	}
 
-	print_headers();
-
-	for (auto & statContainer : dbStats)
+	for (StatContainer & statContainer : dbStats)
 	{
 		if(!statContainer.show) {
 			continue;
 		}
-		enum jaldb_status status = get_stats(ctx, statContainer.stats, statContainer.type);
-		if (JALDB_OK != status)
-		{
-			std::cout << "Failed to get db stats with error code: " << status << std::endl;
-			jaldb_context_destroy(&ctx);
-			return status;
+		if(config.db_type.compare("fs")!=0){
+			enum jaldb_status status = get_stats(ctx, statContainer.stats, statContainer.type);
+			if (JALDB_OK != status)
+			{
+				std::cout << "Failed to get db stats with error code: " << status << std::endl;
+				jaldb_context_destroy(&ctx);
+				return status;
+			}
+			statContainer.earliest.timestamp=statContainer.stats.earliest_time;
+			statContainer.latest.timestamp=statContainer.stats.latest_time;
 		}
-		print_row(statContainer);
+		else
+		{
+			bool ret = get_fs_stats(statContainer);
+			if(ret != true)
+			{
+				std::cout << "Failed to get db stats from file system." << std::endl;
+				ret = -1;
+			}
+		}
 	}
-
 	// Finished with the context
 	jaldb_context_destroy(&ctx);
 
-	if (config.show_times)
-	{
-		print_time_headers();
-		time_t min_time = 0;
-		time_t max_time = 0;
-		int counter = 0;
-		for (auto & statContainer : dbStats)
-		{
-			if(!statContainer.show) {
-				continue;
-			}
-			statContainer.stats.latest_time = statContainer.stats.latest_time.substr(0, 19);
-			statContainer.stats.earliest_time = statContainer.stats.earliest_time.substr(0, 19);
-
-			//2025-02-20T14:28:46.198517
-			std::string format = "%Y-%m-%dT%H:%M:%S";
-
-			struct tm latestStruct;
-			latestStruct.tm_isdst = 0;
-			strptime(statContainer.stats.latest_time.c_str(), format.c_str(), &latestStruct);
-			struct tm earliestStruct;
-			earliestStruct.tm_isdst = 0;
-			strptime(statContainer.stats.earliest_time.c_str(), format.c_str(), &earliestStruct);
-			statContainer.latest = mktime(&latestStruct);
-			statContainer.earliest = mktime(&earliestStruct);
-			statContainer.diff_time = difftime(statContainer.latest, statContainer.earliest);
-
-			print_time_row(statContainer);
-
-			++counter;
-			if (counter == 1)
-			{
-				min_time = statContainer.earliest;
-				max_time = statContainer.latest;
-			}
-			else
-			{
-				if (statContainer.earliest < min_time)
-				{
-					min_time = statContainer.earliest;
-				}
-				if (statContainer.latest > max_time)
-				{
-					max_time = statContainer.latest;
-				}
-			}
-		}
-		time_t total_time = 0;
-		total_time = max_time - min_time;
-		int hours = (total_time / 3600);
-		int minutes = (total_time % 3600) / 60;
-		int seconds = total_time % 60;
-		std::cout << std::endl << "Total Time ";
-		std::cout << std::setw(2) << std::setfill('0') << hours << ":";
-		std::cout << std::setw(2) << std::setfill('0') << minutes << ":";
-		std::cout << std::setw(2) << std::setfill('0') << seconds << std::endl << std::endl;
-	}
+	print_structured_data(dbStats);
 
 	return 0;
 }
 
-void print_headers()
+int get_dir_count(__attribute__ ((unused))const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf)
 {
-	std::cout << std::endl << "\tDatabase Home " << config.db_home << std::endl;
-	std::cout << "-------\t-------\t-------\t-------\t-------\t-------\t-------"<< std::endl;
-	std::cout << "db name\t count \t unsent\t  sent \tsynced \tconfirm\tfailed "<< std::endl;
-	std::cout << "-------\t-------\t-------\t-------\t-------\t-------\t-------"<< std::endl;
+	double file_mtime;
+	if (tflag == FTW_D && ftwbuf->level == 1)
+	{
+		currentContainer->stats.confirmed_count++;
+		currentContainer->stats.count++;
+		currentContainer->stats.not_sent_count++;
+		file_mtime = sb->st_mtime + (sb->st_mtim.tv_nsec / 1e9);
+		if (file_mtime < currentContainer->earliest.doubleSeconds)
+		{
+			currentContainer->earliest.doubleSeconds = file_mtime;
+			currentContainer->earliest.unixSeconds = sb->st_mtime;
+			currentContainer->earliest.nanoSeconds = sb->st_mtim.tv_nsec;
+		}
+		if (file_mtime > currentContainer->latest.doubleSeconds)
+		{
+			currentContainer->latest.doubleSeconds = file_mtime;
+			currentContainer->latest.unixSeconds = sb->st_mtime;
+			currentContainer->latest.nanoSeconds = sb->st_mtim.tv_nsec;
+		}
+		return FTW_CONTINUE;
+	}
+	else
+	{
+		return FTW_CONTINUE;
+	}
 }
 
-void print_time_headers()
+bool get_fs_stats(StatContainer& s)
 {
-	std::cout << "-------\t-------------------\t--------------------\t----------"<< std::endl;
-	std::cout << "db name\t    first_time     \t      last_time     \tdiff_time" << std::endl;
-	std::cout << "-------\t-------------------\t--------------------\t---------- "<< std::endl;
-}
-
-void print_time_row(StatContainer& s){
+	std::string log_type;
 	switch (s.type)
 	{
 		case JALDB_RTYPE_JOURNAL:
-			std::cout << "journal\t";
+			log_type = "journal";
 			break;
 		case JALDB_RTYPE_AUDIT:
-			std::cout << "audit\t";
+			log_type = "audit";
 			break;
 		case JALDB_RTYPE_LOG:
-			std::cout << "log\t";
+			log_type = "log";
 			break;
-		case JALDB_RTYPE_UNKNOWN:
-			std::cout << "unknown\t";
-			break;
+		default:
+			return false;
 	}
+	currentContainer = &s;
+	s.earliest.doubleSeconds = 9999999999999;
+	s.latest.doubleSeconds = 0;
+	std::string directory = config.db_home + "/" + log_type;
+	nftw(directory.c_str(), get_dir_count, 20, FTW_ACTIONRETVAL);
 
-	std::cout << s.stats.earliest_time << "\t" << s.stats.latest_time << "\t";
-	int hours = (s.diff_time/3600);
-	int minutes = (s.diff_time % 3600) / 60;
-	int seconds = s.diff_time % 60;
-	std::cout << std::setw(2) << std::setfill('0') << hours << ":";
-	std::cout << std::setw(2) << std::setfill('0') << minutes << ":";
-	std::cout << std::setw(2) << std::setfill('0') << seconds << std::endl;
+	return true;
 }
 
-void print_row(StatContainer& s)
+std::string getRecordType(jaldb_rec_type log_type)
 {
-	switch(s.type)
+	switch (log_type)
 	{
 		case JALDB_RTYPE_JOURNAL:
-			std::cout << "journal\t";
+			return "journal";
 			break;
 		case JALDB_RTYPE_AUDIT:
-			std::cout << "audit\t";
+			return "audit";
 			break;
 		case JALDB_RTYPE_LOG:
-			std::cout << "log\t";
+			return "log";
 			break;
-		case JALDB_RTYPE_UNKNOWN:
-			std::cout << "unknown\t";
-			break;
+		default:
+			return "unknown";
+	}
+}
+
+void print_structured_data(std::vector<StatContainer> dbStats)
+{
+	double min_time = 9999999999;
+	double max_time = 0;
+	std::string latest_time_stamp;
+	std::string earliest_time_stamp;
+	int total_records = 0;
+	struct json_object * all = json_object_new_object();
+	json_object_object_add(all, "db_home", json_object_new_string(config.db_home.c_str()));
+	json_object_object_add(all, "db_type", json_object_new_string(config.db_type.c_str()));
+	for (StatContainer & s : dbStats)
+	{
+		if (!s.show)
+		{
+			continue;
+		}
+		struct json_object * result = json_object_new_object();
+
+		if (config.db_type.compare("fs") != 0)
+		{
+			s.latest.figureWithTimestamp();
+			s.earliest.figureWithTimestamp();
+		}
+		else
+		{
+			s.latest.figureWithSeconds();
+			s.earliest.figureWithSeconds();
+		}
+
+		s.diff_time = difftime(s.latest.unixSeconds, s.earliest.unixSeconds);
+
+		json_object_object_add(result, "count", json_object_new_int(s.stats.count));
+		json_object_object_add(result, "unsent", json_object_new_int(s.stats.not_sent_count));
+		json_object_object_add(result, "sent", json_object_new_int(s.stats.sent_count));
+		json_object_object_add(result, "synced", json_object_new_int(s.stats.synced_count));
+		json_object_object_add(result, "confirmed", json_object_new_int(s.stats.confirmed_count));
+		json_object_object_add(result, "failed", json_object_new_int(s.stats.failed_count));
+		json_object_object_add(result, "latest_timestamp", json_object_new_string(s.latest.timestamp.c_str()));
+		json_object_object_add(result, "earliest_timestamp", json_object_new_string(s.earliest.timestamp.c_str()));
+
+		json_object_object_add(all, getRecordType(s.type).c_str(), result);
+
+		if (s.stats.count > 0)
+		{
+			total_records += s.stats.count;
+			if (s.earliest.doubleSeconds < min_time)
+			{
+				min_time = s.earliest.doubleSeconds;
+				earliest_time_stamp = s.earliest.timestamp;
+			}
+			if (s.latest.doubleSeconds > max_time)
+			{
+				max_time = s.latest.doubleSeconds;
+				latest_time_stamp = s.latest.timestamp;
+			}
+		}
 	}
 
-	std::cout << s.stats.count << "\t";
-	std::cout << s.stats.not_sent_count << "\t";
-	std::cout << s.stats.sent_count << "\t";
-	std::cout << s.stats.synced_count << "\t";
-	std::cout << s.stats.confirmed_count << "\t";
-	std::cout << s.stats.failed_count << std::endl;
+	double total_time = 0;
+	total_time = max_time - min_time;
+	if (total_time > 0)
+	{
+		int hours = total_time / 3600;
+		int minutes = ((int) total_time % 3600) / 60;
+		double seconds = total_time - (minutes * 60) - (hours * 3600);
+
+		std::stringstream stime;
+		stime << std::setw(2) << std::setfill('0') << hours << ":";
+		stime << std::setw(2) << std::setfill('0') << minutes << ":";
+		if(seconds<10){
+			stime << 0;
+		}
+		stime << std::setw(2) << std::setfill('0') << seconds;
+
+		struct json_object * summary = json_object_new_object();
+
+		json_object_object_add(summary, "total_records", json_object_new_int(total_records));
+		json_object_object_add(summary, "latest_timestamp", json_object_new_string(latest_time_stamp.c_str()));
+		json_object_object_add(summary, "earliest_timestamp", json_object_new_string(earliest_time_stamp.c_str()));
+		json_object_object_add(summary, "total_time", json_object_new_string(stime.str().c_str()));
+
+		json_object_object_add(all, "summary", summary);
+	}
+
+	std::string output = json_object_to_json_string_ext(all, JSON_C_TO_STRING_PRETTY);
+	std::cout << output << std::endl;
 }
 
 // Helper to avoid repeating this logic twice in update_flags
 static enum jaldb_status mark(jaldb_context* ctx, enum jaldb_sync_stat desiredState, std::string stateStringForm, enum jaldb_rec_type type, std::string typeStringForm)
 {
-	std::cout << "Marking records of type: " << typeStringForm << " with state:  " << stateStringForm << std::endl;
-	enum jaldb_status status = mark_all_records(ctx, type, desiredState);
-	if(JALDB_OK != status)
+	enum jaldb_status status;
+	if (config.db_type.compare("fs")!=0)
 	{
-		std::cout << "Jaldb Status Code: " << status << " encountered while updating record of type: " << typeStringForm << " to state: " << stateStringForm << std::endl;
+		std::cout << "Marking records of type: " << typeStringForm << " with state:  " << stateStringForm << std::endl;
+		status = mark_all_records(ctx, type, desiredState);
+		if(JALDB_OK != status)
+		{
+			std::cout << "Jaldb Status Code: " << status << " encountered while updating record of type: " << typeStringForm << " to state: " << stateStringForm << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "Marking records for this database type is not available at this time." << std::endl;
+		status = JALDB_E_NOT_IMPL;
 	}
 	return status;
 }
@@ -366,20 +505,8 @@ jaldb_context* setup_jal()
 {
 	jaldb_context* ctx = jaldb_context_create();
 	enum jaldb_flags db_flags;
+	db_flags = JDB_NONE;
 
-	#ifdef JALDB_TYPE_BDB
-	if (config.run_db_recover)
-	{
-		std::cout << "Setting DB_RECOVER flag." << std::endl;
-		db_flags = (enum jaldb_flags)(JDB_NONE | JDB_DB_RECOVER);
-	}
-	else
-	{
-		db_flags = JDB_NONE;
-	}
-	#else
-		db_flags = JDB_NONE;
-	#endif
 	enum jaldb_status ret = jaldb_context_init(ctx, config.db_home.c_str(), db_flags);
 	if (ret != 0)
 	{
@@ -441,14 +568,6 @@ static error_t parse_opt(int key_in,
 				argp_usage(state);
 			}
 			break;
-		case 's':
-			config.show_times = true;
-			break;
-		#ifdef JALDB_TYPE_BDB
-		case 'r':
-			config.run_db_recover = true;
-			break;
-		#endif
 		case ARGP_KEY_END:
 			break;
 		default:

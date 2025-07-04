@@ -4,21 +4,14 @@ from Utils import add_project_lib
 
 env = env.Clone()
 
-if env.GetOption("ENABLE_BDB"):
-	env.MergeFlags(env['bdb_cflags'])
-	env.MergeFlags(env['bdb_ldflags'])
-else:
-	env.MergeFlags(env['lmdb_cflags'])
-	env.MergeFlags(env['lmdb_ldflags'])
+env.MergeFlags(env['lmdb_cflags'])
+env.MergeFlags(env['lmdb_ldflags'])
 
 sources = env.Glob("*.cpp")
+add_project_lib(env,'json_c','json-c')
 
-if env.GetOption("ENABLE_BDB"):
-	env.MergeFlags({'CPPPATH':'#src/db_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
-	add_project_lib(env, 'db_layer', 'jal-db')
-else:
-	env.MergeFlags({'CPPPATH':'#src/lmdb_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
-	add_project_lib(env, 'lmdb_layer', 'jal-db')
+env.MergeFlags({'CPPPATH':'#src/lmdb_layer/src:#src/lib_common/include:#src/lib_common/src/:.'.split(':')})
+add_project_lib(env, 'lmdb_layer', 'jal-db')
 
 jaldb_tool_objs = env.SharedObject(source=sources)
 
