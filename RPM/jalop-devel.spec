@@ -18,7 +18,7 @@ tar -xf ../SOURCES/jalop-devel.tar
 
 %install
 mkdir -p %{buildroot}/usr/include/jalop
-cp ./src/db_layer/src/*.h		%{buildroot}/usr/include/jalop
+cp ./src/lmdb_layer/src/*.h		%{buildroot}/usr/include/jalop
 cp ./src/lib_common/include/jalop/*.h	%{buildroot}/usr/include/jalop
 cp ./src/lib_common/src/*.h		%{buildroot}/usr/include/jalop
 cp ./src/network_lib/include/jalop/*.h	%{buildroot}/usr/include/jalop

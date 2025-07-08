@@ -12,7 +12,7 @@ mkdir $RPMDIR/BUILDROOT
 mkdir $RPMDIR/RPMS
 mkdir $RPMDIR/SRPMS
 
-tar -cf jalop-devel.tar ../src/db_layer ../src/lib_common ../src/network_lib ../src/producer_lib
+tar -cf jalop-devel.tar ../src/lmdb_layer ../src/lib_common ../src/network_lib ../src/producer_lib
 
 cp jalop-devel.spec $RPMDIR/SPECS
 cp jalop-devel.tar  $RPMDIR/SOURCES
