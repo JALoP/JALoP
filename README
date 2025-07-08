@@ -23,7 +23,6 @@ This project makes use of the following libraries:
   openssl - http://www.openssl.org/
   site_scons - http://scons.org/
   test-dept - http://code.google.com/p/test-dept/
-  Berkeley DB - http://www.oracle.com/us/products/database/berkeley-db/overview/index.html
   LMDB - www.lmdb.tech/doc, https://www.symas.com/mdb
 
 The following libraries are included in the 3rd-party directory:
@@ -61,9 +60,7 @@ To build, simply run 'scons' within the top level directory:
 
 $ scons
 
-By default, it will build src/lmdb_layer to use LMDB database to store JAL records. To build and use Oracle Berkeley DB (BDB) database instead, run the following command -
-
-$ scons --bdb
+This will use the LMDB database to store JAL records.
 
 SCons generates debug and release directories.
 
@@ -72,23 +69,18 @@ platform (e.g. rhel_x86_64):
 
 $ install_<platform>.sh
 
-Running install_rhel_x86_64.sh will install the default LMDB build of JALoP. To install BDB build instead, run the following command -
-
-$ install_bdb_rhel_x86_64.sh
+Running install_rhel_x86_64.sh will install the default LMDB build of JALoP.
 
 Other Options (these steps do not need to be executed in order to use the JALoP libraries)
 To build the library and execute the unit tests, run
 
 $ scons --no-release tests
 
-This will build and run the default LMDB unit tests. To build and run BDB unit tests instead, run the following command -
-
-$ scons --bdb --no-release tests
+This will build and run the default LMDB unit tests.
 
 To generate code coverage reports, run
 
 $ scons --no-release cov  # for the default LMDB build.
-$ scons --bdb --no-release cov  # for BDB build.
 
 Code coverage reports will appear in the 'cov' directory in the root of the source tree.
 
@@ -103,7 +95,7 @@ $ scons -c
 
 Scons accepts a '-j' argument for parallel builds, so
 
-$ scons -j6 
+$ scons -j6
 will run 6 worker threads in parallel.
 
 
@@ -136,34 +128,3 @@ NOTES
   records and possible system limitations, large files should be sent as
   journals and passed by file descriptor (i.e. using the jalp_journal_fd()
   function).
-
-  Whenever a process crashes, or returns the error to run DB_RECOVER, stop all
-  processes with access to the DB in question, run db_recover, and then restart
-  the processes. This is applicable only in BDB (Berkeley DB) build.
-
-  The Berkeley DB database can be tailored to the user's load requirements
-  by adding a DB_CONFIG file, with configuration options, to the directory where
-  the database is to be created.
-
-  Example DB_CONFIG:
-
-  set_lk_max_locks    400000
-  set_lk_max_lockers  400000
-  set_lg_regionmax    400000
-  set_tx_max          400000
-  set_cachesize 1 0 4
-  mutex_set_max       400000
-  mutex_set_increment 400000
-
-  A sample DB_CONFIG file is provided within the test-input directory.
-
-  Before running the local store or either of the network stores, the directory
-  that is to contain the database should be created and the sample DB_CONFIG file
-  should be placed within it.
-
-  http://docs.oracle.com/cd/E17076_02/html/programmer_reference/env_db_config.html
-
-  Berkeley DB tools must be used to periodically checkpoint and archive DB log files, to prevent the database files from filling the available disk space.
-
-  http://docs.oracle.com/cd/E17275_01/html/api_reference/C/db_checkpoint.html
-  http://docs.oracle.com/cd/E17275_01/html/api_reference/C/db_archive.html
