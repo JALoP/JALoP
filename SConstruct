@@ -19,9 +19,6 @@ AddOption('--no-selinux', dest='DISABLE_SELINUX',
 AddOption('--no-release', dest='DISABLE_RELEASE',
 		action='store_true', default=False,
 		help='Disable optimized release builds.')
-AddOption('--bdb', dest='ENABLE_BDB',
-		action='store_true', default=False,
-		help='Enables Berkeley DB (BDB) support.')
 
 # Update package version here, add actual checks below
 pkg_config_version = '0.21'
@@ -110,12 +107,8 @@ debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env['HAVE_SELINUX'] = False;
 debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 
-if debug_env.GetOption("ENABLE_BDB"):
-	debug_env["bdb_ldflags"] = "-ldb"
-	debug_env["bdb_cflags"] = ""
-else:
-	debug_env["lmdb_ldflags"] = "-llmdb"
-	debug_env["lmdb_cflags"] = ""
+debug_env["lmdb_ldflags"] = "-llmdb"
+debug_env["lmdb_cflags"] = ""
 
 def merge_with_os_env(env):
 	if 'LIBPATH' in os.environ:
@@ -198,29 +191,19 @@ this is want you want, this is OK, re-run scons with the \
 	conf.Finish()
 
 	checkEnv = debug_env.Clone()
-	if checkEnv.GetOption("ENABLE_BDB"):
-		checkEnv.MergeFlags(checkEnv['bdb_cflags'])
-		checkEnv.MergeFlags(checkEnv['bdb_ldflags'])
-		bdbconf = Configure(checkEnv, custom_tests = {
-							'CheckBDB': PackageCheckHelpers.CheckBDB
-							 })
-		if not bdbconf.CheckBDB():
-			Exit(-1)
-		bdbconf.Finish()
-	else:
-		checkEnv["lmdb_ldflags"] = "-llmdb -lboost_serialization"
-		checkEnv["lmdb_cflags"] = "-llmdb -lboost_serialization"
 
-		checkEnv.MergeFlags(checkEnv['lmdb_cflags'])
-		checkEnv.MergeFlags(checkEnv['lmdb_ldflags'])
+	checkEnv["lmdb_ldflags"] = "-llmdb -lboost_serialization"
+	checkEnv["lmdb_cflags"] = "-llmdb -lboost_serialization"
 
-		lmdbconf = Configure(checkEnv, custom_tests = {
-							'CheckLMDB': PackageCheckHelpers.CheckLMDB
-							 })
-		if not lmdbconf.CheckLMDB():
-			Exit(-1)
-		lmdbconf.Finish()
+	checkEnv.MergeFlags(checkEnv['lmdb_cflags'])
+	checkEnv.MergeFlags(checkEnv['lmdb_ldflags'])
 
+	lmdbconf = Configure(checkEnv, custom_tests = {
+						'CheckLMDB': PackageCheckHelpers.CheckLMDB
+							})
+	if not lmdbconf.CheckLMDB():
+		Exit(-1)
+	lmdbconf.Finish()
 
 	for key, (pkg, version) in packages_at_least.items():
 		def addCFLAGS(debug_env, cmd, unique=1):
@@ -231,10 +214,8 @@ this is want you want, this is OK, re-run scons with the \
 		debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
 		debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
 
-		if not debug_env.GetOption("ENABLE_BDB"):
-			debug_env["lmdb_ldflags"] = "-llmdb -lboost_serialization"
-			debug_env["lmdb_cflags"] = "-llmdb -lboost_serialization"
-
+		debug_env["lmdb_ldflags"] = "-llmdb -lboost_serialization"
+		debug_env["lmdb_cflags"] = "-llmdb -lboost_serialization"
 else:
 	for key, _ in packages_at_least.items():
 		debug_env[key + "_cflags"] = ""
@@ -271,15 +252,18 @@ lcov_output_dir = "cov"
 lcov_output_file = "app.info"
 lcov_output_path = os.path.join(lcov_output_dir, lcov_output_file)
 
+cwd = os.getcwd()
 coverage = debug_env.Alias(target=lcov_output_dir, source=None,
 		action=["mkdir -p ${TARGET}",
 			"lcov -q --directory ${TARGET}/.. -b ${TARGET}/.. --capture --output-file %s" % lcov_output_path,
 			"lcov -q --remove %s /usr/\* --output-file %s" % (lcov_output_path, lcov_output_path),
-			"lcov -q --remove %s 3rd-party/\* --output-file %s" % (lcov_output_path, lcov_output_path),
-			"lcov -q --remove %s src/\*/test/\* --output-file %s" % (lcov_output_path, lcov_output_path),
-			"lcov -q --remove %s src/test_utils/\* --output-file %s" % (lcov_output_path, lcov_output_path),
+			"lcov -q --remove %s %s/3rd-party/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
+			"lcov -q --remove %s %s/src/\*/test/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
+			"lcov -q --remove %s %s/src/test_utils/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
+			"lcov -q --remove %s %s/debug/\*/test/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
 			"cd ${TARGET} && genhtml --show-details -k %s" % (lcov_output_file),
 			])
+
 debug_env.AlwaysBuild(coverage)
 
 debug_env.Clean(coverage, ['#cov'])
