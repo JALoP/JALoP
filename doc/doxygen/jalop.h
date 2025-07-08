@@ -101,7 +101,7 @@
  *  - Vortex/AXL for BEEP over TCP.
  *  - Libuuid to generate a UUID that is added to the application and system metadata.
  *  - libconfig for configuration file parsing.
- *  - Berkeley DB for storing JALoP records.
+ *  - LMDB for storing JALoP records.
  *  - test_dept (for running unit tests)
  *
  * RPMs are provided for some of the packages under the 3rd-party directory:
