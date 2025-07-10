@@ -196,8 +196,6 @@ extern "C" void test_jaldb_purge_unconfirmed_records()
 	assert_equals(JALDB_OK, jaldb_insert_record(context, rec1, 0, &nonce, -1));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, rec2, 0, &nonce2, -1));
 	assert_equals(JALDB_OK, jaldb_mark_confirmed(context, JALDB_RTYPE_LOG, (char*)NONCE1, &nonce3));
-	// In bdb, jaldb_mark_confirmed updated the nonce in the record to match the primary key
-	// which was itself modified during the insert call
 	// In lmdb, jaldb_mark_confirmed performs this update. We should expect the nonce to be
 	// changed and get calls after this point must use the new nonce
 	assert_not_equals(0, strcmp(nonce,nonce3));

@@ -1031,9 +1031,6 @@ extern "C" void test_jaldb_mark_confirmed_works()
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
 	assert_equals(0, rec->confirmed);
 
-	// With BDB, the primary key is modified during insert, so the nonce remains
-	// unchanged by jaldb_mark_confirmed while the record's network_nonce value
-	// is updated to match the primary key
 	// With LMDB, there isn't a separate nonce vs primary key, so the update done
 	// by mark_confirmed changes the nonce_out
 	assert_equals(JALDB_OK, jaldb_mark_confirmed(context, JALDB_RTYPE_LOG, nonce,&nonce2));

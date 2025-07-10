@@ -2,6 +2,11 @@ Import('*')
 from Utils import install_for_build
 from Utils import add_project_lib
 
+if env['variant'] == 'release':
+	incdir = env['DESTDIR'] + env.subst(env['INCLUDEDIR'])
+	env.Alias('install', env.Install(incdir + '/jalop/', "jaldb_context.h"))
+	env.Alias('install', env.Install(incdir + '/jalop/', "jaldb_context.hpp"))
+
 env = env.Clone()
 
 sources = env.Glob("*.c") + env.Glob("*.cpp")

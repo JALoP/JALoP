@@ -1483,12 +1483,20 @@ enum jaldb_status jaldb_next_unsynced_record(
 		LmdbDbROTransaction txn = rdbs->primary_db->getROTransaction();
 
 		// This function is used for archive mode, which sends all the unsynced records
-		// that are confirmed (skips unconfirmed records)
-		// Loop through and find first unsynced and confirmed record
+		// that are confirmed (skips unconfirmed records).
+		// Get the "first" unsynced record in a loop, and abort the loop if we run out
+		// of records which have ->synced equal to JALDB_NOT_SENT.
+		// This is marginally faster than equal_range in large dbs,
+		// particularly when we will almost always take the first result.
+		// The only time we should ever encounter a record which is JALDB_NOT_SENT and also
+		// not confirmed is in the only partially supported case of a subscriber db also
+		// being used as the source for another publisher. In that case, this should still be
+		// no worse than using equal_range, and probably still slightly faster.
 		bool found = false;
-		auto range = txn.equal_range<LmdbDbIndex::IDX_SENT>(JALDB_NOT_SENT);
-		for(auto iter = std::move(range.first); iter != range.second; ++iter) {
-
+		for(auto iter = txn.find<LmdbDbIndex::IDX_SENT>(JALDB_NOT_SENT);
+			(iter != txn.end()) && (JALDB_NOT_SENT == iter->synced);
+			++iter)
+		{
 			// Skip unconfirmed records
 			if(true != iter->confirmed)
 			{
@@ -1650,7 +1658,7 @@ enum jaldb_status jaldb_get_primary_record_dbs(
 	return JALDB_OK;
 }
 
-enum jaldb_status jaldb_compact_lmdb(
+enum jaldb_status jaldb_compact_dbs(
 		jaldb_context *ctx,
 		enum jaldb_rec_type type)
 {
