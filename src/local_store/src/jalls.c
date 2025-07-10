@@ -106,9 +106,6 @@ static struct argp_option options[] =
 	{"socket-owner", 'o', "owner", 0, "jal-local-store socket owner", 0},
 	{"socket-group", 'g', "group", 0, "jal-local-store socket group", 0},
 	{"socket-mode", 'm', "mode", 0, "jal-local-store socket file mode ex:0420", 0},
-#ifdef JALDB_TYPE_BDB
-	{"run-db_recover", 'r', NULL, 0, "run db_recover before opening DB", 0},
-#endif
 	{"no-daemon", 'n', NULL, 0, "do not run jal-local-store as daemon process", 0},
 	{0}
 };
@@ -149,7 +146,6 @@ int main(int argc, char **argv) {
 	}
 
 	debug = 0;
-	cli_jalls_ctx.db_recover = -1;
 	cli_jalls_ctx.daemon = -1;
 	int err = argp_parse(&argp, argc, argv, 0, 0, &cli_jalls_ctx);
 	if(err!=0){
@@ -245,21 +241,8 @@ int main(int argc, char **argv) {
 	absolute_path = NULL;
 
 	db_ctx = jaldb_context_create();
-	enum jaldb_flags db_flags = JDB_NONE;
 
-	#ifdef JALDB_TYPE_LMDB
-		db_flags = jalls_ctx->jdb_flags;
-	#else
-	if (jalls_ctx->db_recover==1){
-		dfprintf(stderr, "Setting DB_RECOVER flag.\n");
-		db_flags |= JDB_DB_RECOVER;
-	}
-	else{
-		dfprintf(stderr, "Not setting DB_RECOVER flag.\n");
-	}
-	#endif
-
-	enum jaldb_status jaldb_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, db_flags);
+	enum jaldb_status jaldb_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, jalls_ctx->jdb_flags);
 
 	if (jaldb_err != JALDB_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
@@ -440,9 +423,7 @@ int main(int argc, char **argv) {
 	dfprintf(stderr, "private_key_file:%s \npublic_cert_file:%s \ndb_root:%s \nschemas_root:%s \nsocket:%s \nlog_dir:%s\n",
 		jalls_ctx->private_key_file, jalls_ctx->public_cert_file, jalls_ctx->db_root, jalls_ctx->schemas_root, jalls_ctx->socket, jalls_ctx->log_dir);
 
-	#ifdef JALDB_TYPE_LMDB
 	dfprintf(stderr, "database_option:%s \n", jalls_ctx->database_option);
-	#endif
 
 	if (jalls_ctx->daemon) {
 		dfprintf(stderr, "daemonizing...\n");
@@ -791,9 +772,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 				cli_ctx->socket_mode = arg;
 			}
 			break;
-		case 'r':
-			cli_ctx->db_recover = 1;
-			break;
 		case 'n':
 			cli_ctx->daemon = 0;
 			break;
@@ -851,10 +829,6 @@ void merge_jal_contexts(struct jalls_context cli_ctx, struct jalls_context *out_
 			free(out_ctx->socket_mode);
 		}
 		out_ctx->socket_mode = jal_strdup(cli_ctx.socket_mode);
-	}
-	if (cli_ctx.db_recover>-1)
-	{
-		out_ctx->db_recover = cli_ctx.db_recover;
 	}
 	if (cli_ctx.daemon>-1)
 	{

@@ -74,7 +74,6 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	char **socket_owner = &((*jalls_ctx)->socket_owner);
 	char **socket_group = &((*jalls_ctx)->socket_group);
 	char **socket_mode = &((*jalls_ctx)->socket_mode);
-	int *db_recover = &((*jalls_ctx)->db_recover);
 	int *daemon = &((*jalls_ctx)->daemon);
 	int *sign_sys_meta = &((*jalls_ctx)->sign_sys_meta);
 	int *manifest_sys_meta = &((*jalls_ctx)->manifest_sys_meta);
@@ -149,8 +148,7 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		goto err_out;
 	}
 
-	// Database option setting, only valid in lmdb builds otherwise defauls to JDB_NONE
-	#ifdef JALDB_TYPE_LMDB
+	// Database option setting
 	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
 		root,
 		JALLS_CFG_DATABASE_OPTION,
@@ -166,10 +164,6 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 		fprintf(stderr, "Error: failed to validate database_option\n");
 		goto err_out;
 	}
-	#else
-	*database_option = NULL;
-	*jdb_flags = JDB_NONE;
-	#endif
 
 	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
 		root,
@@ -318,20 +312,6 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	{
 		goto err_out;
 	}
-
-	//db_recover is only valid in then BDB build
-	#ifdef JALDB_TYPE_BDB
-	if(JAL_CFG_SUCCESS != jal_config_lookup_bool(
-		root,
-		JALLS_CFG_DB_RECOVER,
-		db_recover,
-		JAL_CFG_OPTIONAL))
-	{
-		goto err_out;
-	}
-	#else
-		*db_recover = 0;
-	#endif
 
 	// If there is no daemon config setting, default to true (daemonize).
 	*daemon = 1;
