@@ -6,25 +6,22 @@
 
   tasks:
   - name: stop jal-local-store
-    shell: 
+    shell:
       cmd: 'killall {{cwd}}/release/bin/jal-local-store || true'
   - name: clear database
     file:
         path: '{{cwd}}/testdb'
         state: absent
   - name: remove socket
-    file: 
-        path: '{{cwd}}/jal.sock' 
+    file:
+        path: '{{cwd}}/jal.sock'
         state: absent
   - name: make database directory
     file:
         path: '{{cwd}}/testdb'
         state: directory
-  - name: copy DB_CONFIG
-    shell: 
-        cmd: 'cp {{cwd}}/test-input/DB_CONFIG {{cwd}}/testdb || true'
   - name: start jal-local-store
-    command: 
+    command:
         chdir: '{{cwd}}'
         cmd:  './release/bin/jal-local-store -c ./test-input/local_store.cfg -d '
   - name: send logs
