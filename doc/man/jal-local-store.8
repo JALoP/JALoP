@@ -12,7 +12,6 @@
 [\fI\-\-socket-group=<groupname>\fR]
 [\fI\-\-socket-mode=<mode>\fR]
 [\fI\-\-no-daemon\fR]
-[\fI\-\-run-db_recover\fR]
 .I --config config_file
 .SH "DESCRIPTION"
 .B jal-local-store
@@ -54,9 +53,6 @@ Disable daemonizing of the jal-local-store process. You may want to do this when
 .TP
 \fB\-c\fR, \fB\-\-config\fR
 The file system path of where the jal-local-store configuration file is located (This is required to run).
-.TP
-\fB\-r\fR, \fB\-\-run-db_recover\fR
-Run db_recover before opening the database at startup.
 .TP
 \fB\  \fR  \fB\-\-usage\fR
 Short display of the various options.

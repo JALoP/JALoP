@@ -75,9 +75,6 @@ Enter an existing linux group that will have group privilege of the socket file.
 .B socket-mode
 Enter unix dac permissions to set on socket file. Most secure is 0420. Defaults to 0666.
 .TP
-.B db_recover
-Run db_recover before opening the DB.
-.TP
 .B daemon
 Run process as a daemon. Process will cd to / (root directory),fork, and will run as a daemon. When running the process as daemon, and even though the jal-local-store will resolve relative paths for you, it is always safer to use absolute paths for configurations in this file that require file system paths.
 .TP
@@ -166,7 +163,7 @@ schemas_root = "/usr/share/jalop-v1.0/schemas";
 #	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
 #	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
 
-#LMDB only, this setting is ignored in BDB builds.
+#This is optional and will default to JDB_NONE if not present.
 database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
 
 # Set the path for the socket to use.

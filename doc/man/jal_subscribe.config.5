@@ -57,7 +57,7 @@ If a record payload exceeds this size, it will be dumped to the filesystem durin
 A high value here puts more demand on system memory, but can improve performance considerably by eliminating use of disk.
 A low value will result in more records being written to disk.
 Each session (up to 3 per JALoP publisher) may simultaneously consume up to bufferSize memory for processing record data.
-NOTE: This applies only to generic message handling. A specific db interface (BerkeleyDB for audit and log types for instance) may not respect this setting
+NOTE: This applies only to generic message handling. A specific db interface (LMDB for audit and log types for instance) may not respect this setting
 .TP
 .B session_limit
 The maximum number of active sessions allowed at once
@@ -149,7 +149,7 @@ session_limit = 100;
 #	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
 #	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
 
-#LMDB only, this setting is ignored in BDB builds. This is optional and will default to JDB_NONE if not present.
+#This is optional and will default to JDB_NONE if not present.
 database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
 
 # Time in seconds between packets in a single message before the subscriber assumes a connection has been broken
