@@ -1,7 +1,7 @@
 /**
  * @file jal_ts_utils.c This file contains general timestamp utility functions.
  *
- * Copyright (C) 2025 The National Security Agency (NSA)
+ * Copyright (C) 2025 Concurrent Technologies Corporation.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

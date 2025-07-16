@@ -5,7 +5,7 @@
  * for functions used to load and enforce seccomp policies from a libconfig formatted
  * configuration file.
  *
- * Copyright (C) 2024 The National Security Agency (NSA)
+ * Copyright (C) 2024 Concurrent Technologies Corporation.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
