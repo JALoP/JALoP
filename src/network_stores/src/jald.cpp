@@ -225,7 +225,7 @@ void on_channel_close(
 	struct session_ctx_t* ctx = NULL;
 	ctx = (struct session_ctx_t*)axl_hash_get(hash, ch_info->hostname);
 	if(!ctx || !ctx->db_ctx) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or BDB context associated with closing channel");
+		DEBUG_LOG_SUB_SESSION(ch_info, "ERROR: No context or DB context associated with closing channel");
 	}
 	else {
 		jaldb_context_destroy(&ctx->db_ctx);
@@ -1654,11 +1654,9 @@ void print_config(void)
 		printf("DIGEST ALGORITHMS:\t%s\n", global_config.digest_algorithms);
 	}
 
-	#ifdef JALDB_TYPE_LMDB
 	if(global_config.database_option) {
 		printf("DATABASE_OPTION:\t%s\n", global_config.database_option);
 	}
-	#endif
 
 	for (int i = 0; i < global_config.num_peers; ++i) {
 		printf("PEER[%d]:\n", i);
@@ -2254,9 +2252,7 @@ enum jald_status set_global_config(const char* config_path)
 		return JALD_E_CONFIG_LOAD;
 	}
 
-	//database_option config setting is only used in the LMDB build
-	#ifdef JALDB_TYPE_LMDB
-
+	//database_option config setting
 	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
 		root,
 		JALNS_DATABASE_OPTION,
@@ -2272,9 +2268,6 @@ enum jald_status set_global_config(const char* config_path)
 		CONFIG_ERROR(root, JALNS_DATABASE_OPTION, "invalid value.");
 		return JALD_E_CONFIG_LOAD;
 	}
-	#else
-	global_config.jdb_flags = JDB_NONE;
-	#endif
 
 	return parse_peer_configs(root);
 }
