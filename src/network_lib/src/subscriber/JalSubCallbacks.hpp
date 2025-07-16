@@ -6,7 +6,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ struct SubscriberCallbacks
 	std::function<std::string(Message&)> getPublisherId;
 	std::function<ModeType(Message&)> getReceiveMode;
 	std::function<void(Message&)> notifyTimeout;
+	std::function<bool(Message&)> getShouldChallengeDigest;
 };
 
 #endif

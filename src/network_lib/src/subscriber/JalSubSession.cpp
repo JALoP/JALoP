@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,6 +78,11 @@ static std::string selectSupportedOption(
 	return "";
 }
 
+bool Session::getShouldChallengeDigest()
+{
+	return shouldChallengeDigest;
+}
+
 enum jal_digest_algorithm Session::getDigestAlgorithm()
 {
 	return digestAlgorithm;
@@ -134,6 +139,16 @@ Response Session::generateSyncFailure()
 	response.addHeader(HEADER_JAL_ERROR_MESSAGE_TYPE, JAL_SYNC_FAILURE);
 	return response;
 }
+
+Response Session::generateSync()
+{
+	debugOutput(config.debug, stderr, "generating sync\n");
+	Response response;
+	response.addHeader(HEADER_JAL_ID_TYPE, currentRecordInfo.jalId);
+	response.addHeader(HEADER_MESSAGE_TYPE, MSG_SYNC_STR);
+	return response;
+}
+
 
 // Check if an in-progress journal payload already exists for the publisherId
 // with which this session was initialized
@@ -505,30 +520,6 @@ bool Session::validateMode(const Message& message)
 	return true;
 }
 
-Response Session::handleAuditMessage(const Message& message)
-{
-	(void)message;
-	//Always print
-	fprintf(stdout, "Sending digest challenge for type: audit sessionId: %s\n", uuid.c_str());
-	return generateDigestChallenge();
-}
-
-Response Session::handleLogMessage(const Message& message)
-{
-	(void)message;
-	//Always print
-	fprintf(stdout, "Sending digest challenge for type: log sessionId: %s\n", uuid.c_str());
-	return generateDigestChallenge();
-}
-
-Response Session::handleJournalMessage(const Message& message)
-{
-	(void)message;
-	//Always print
-	fprintf(stdout, "Sending digest challenge for type: journal sessionId: %s\n", uuid.c_str());
-	return generateDigestChallenge();
-}
-
 Response Session::handleJournalMissing(const Message& message)
 {
 	// Extract headers
@@ -555,6 +546,47 @@ Response Session::handleJournalMissing(const Message& message)
 	Response response;
 	response.addHeader(HEADER_MESSAGE_TYPE, MSG_JOURNAL_MISSING_RESP_STR);
 	return response;
+}
+
+bool Session::insertRecord()
+{
+	auto db = jdb.lock();
+	if(!db)
+	{
+		// This would be extremely unusual and probably implies state corruption of the
+		// Subscriber class which contains the db and Sessions
+		fprintf(stderr, "Failed to get handle to db interface \n");
+		return false;
+	}
+
+	bool inserted = false;
+	switch(recordType)
+	{
+		case RecordType::JAL_AUDIT:
+			debugOutput(config.debug, stdout, "calling insert audit\n");
+			inserted = db->insertAudit(currentRecordInfo);
+			break;
+		case RecordType::JAL_LOG:
+			debugOutput(config.debug, stdout, "calling insert log\n");
+			inserted = db->insertLog(currentRecordInfo);
+			break;
+		case RecordType::JAL_JOURNAL:
+			debugOutput(config.debug, stdout, "calling insert journal\n");
+			inserted = db->insertJournal(currentRecordInfo);
+			break;
+	}
+
+	// Discard the payload file - if any
+	// If the file has been moved by the db interface, the remove will fail, which is fine
+	// as long as the temporary is gone one way or another
+	if(!currentRecordInfo.payloadFileName.empty())
+	{
+		remove(currentRecordInfo.payloadFileName.c_str());
+		debugOutput(config.debug, stdout, "handle digestChallengeResponse removing file: %s\n",
+			currentRecordInfo.payloadFileName.c_str());
+		currentRecordInfo.payloadFileName.clear();
+	}
+	return inserted;
 }
 
 Response Session::handleDigestChallengeResponse(const Message& message)
@@ -589,57 +621,16 @@ Response Session::handleDigestChallengeResponse(const Message& message)
 		return generateRecordFailure(JAL_INVALID_DIGEST, jalId);
 	}
 
-	auto db = jdb.lock();
-	if(!db)
-	{
-		// This would be extremely unusual and probably implies state corruption of the
-		// Subscriber class which contains the db and Sessions
-		fprintf(stderr, "Failed to get handle to db interface\n");
-		return generateRecordFailure(JAL_RECORD_FAILURE, currentRecordInfo.jalId);
-	}
-
-
-	bool inserted = false;
-	switch(recordType)
-	{
-		case RecordType::JAL_AUDIT:
-			debugOutput(config.debug, stdout, "calling insert audit\n");
-			inserted = db->insertAudit(currentRecordInfo);
-			break;
-		case RecordType::JAL_LOG:
-			debugOutput(config.debug, stdout, "calling insert log\n");
-			inserted = db->insertLog(currentRecordInfo);
-			break;
-		case RecordType::JAL_JOURNAL:
-			debugOutput(config.debug, stdout, "calling insert journal\n");
-			inserted = db->insertJournal(currentRecordInfo);
-			break;
-	}
-
-	// Discard the payload file - if any
-	// If the file has been moved by the db interface, the remove will fail, which is fine
-	// as long as the temporary is gone one way or another
-	if(!currentRecordInfo.payloadFileName.empty())
-	{
-		remove(currentRecordInfo.payloadFileName.c_str());
-		debugOutput(config.debug, stdout, "handle digestChallengeResponse removing file: %s\n",
-			currentRecordInfo.payloadFileName.c_str());
-		currentRecordInfo.payloadFileName.clear();
-	}
-
-	if(false == inserted)
+	if(!insertRecord())
 	{
 		// Always print
 		fprintf(stdout, "Sending SYNC failure for jalId: %s\n", currentRecordInfo.jalId.c_str());
 		return generateSyncFailure();
 	}
 
-	Response response;
-	response.addHeader(HEADER_JAL_ID_TYPE, currentRecordInfo.jalId);
-	response.addHeader(HEADER_MESSAGE_TYPE, MSG_SYNC_STR);
 	// Always print
 	fprintf(stdout, "Sending SYNC for jalId: %s\n", currentRecordInfo.jalId.c_str());
-	return response;
+	return generateSync();
 }
 
 Response Session::handleRecord(const Message& message, RecordType messageRecordType)
@@ -653,7 +644,7 @@ Response Session::handleRecord(const Message& message, RecordType messageRecordT
 	// in the network layer for efficiency reasons and will already be present in
 	// the message recordInfo if we made it this far. See Message::addData(...)
 	// The pre-processed headers include: jalId, messageType, and metadata/payload lengths
-	// Capture the recordInfo generated by this process
+	// Capture the recordInfo generated by this process with .getInfo()
 	//
 	// Note - this invokes a move assignment, stealing the data from the original rather
 	// than copying it. The session is now responsible for cleaning up any temporary
@@ -666,29 +657,41 @@ Response Session::handleRecord(const Message& message, RecordType messageRecordT
 	// Fortunately, we know the underlying storage is always a mutable object, so this is legal
 	currentRecordInfo = (const_cast<Message&>(message)).getInfo();
 
-	// Set some values based on the type we're dealing with
-	std::function<Response(const Message&)> messageHandler;
-	switch(messageRecordType)
+	// Ensure the record we received matches the record type we expect for this session
+	// From now on we can just look at the session's record type
+	if(messageRecordType != this->recordType)
 	{
-		case RecordType::JAL_AUDIT:
-			messageHandler = std::bind(&Session::handleAuditMessage, this, std::placeholders::_1);
-			break;
-		case RecordType::JAL_LOG:
-			messageHandler = std::bind(&Session::handleLogMessage, this, std::placeholders::_1);
-			break;
-		case RecordType::JAL_JOURNAL:
-			messageHandler = std::bind(&Session::handleJournalMessage, this, std::placeholders::_1);
-			break;
-		default:
-			// Shouldn't be possible to reach
-			fprintf(stderr, "Unreachable code reached in Session::handleRecord. "
-				"Generating Record Failure response\n");
-			return generateRecordFailure(JAL_UNSUPPORTED_RECORD_TYPE, currentRecordInfo.jalId);
-			break;
+		fprintf(stderr, "Error: Session of type: %s received message of type: %s\n",
+			recordTypeToString(messageRecordType).c_str(),
+			recordTypeToString(this->recordType).c_str());
+		return generateRecordFailure(JAL_UNSUPPORTED_RECORD_TYPE, currentRecordInfo.jalId);
 	}
 
-	// Defer to the appropriate specific function based on message type
-	return messageHandler(message);
+	// If digest challenge is enabled, send a digest challenge
+	if(shouldChallengeDigest)
+	{
+		//Always print
+		fprintf(stdout, "Sending digest challenge for type: %s sessionId: %s\n",
+			recordTypeToString(recordType).c_str(),
+			uuid.c_str());
+		return generateDigestChallenge();
+	}
+	// If digest challenge is not enabled, store the record to the db and generate a sync response
+	else 
+	{
+		if(insertRecord())
+		{
+			// Always print
+			fprintf(stdout, "Sending SYNC for jalId: %s\n", currentRecordInfo.jalId.c_str());
+			return generateSync();
+		}
+		else
+		{
+			// Always print
+			fprintf(stdout, "Sending SYNC failure for jalId: %s\n", currentRecordInfo.jalId.c_str());
+			return generateSyncFailure();
+		}
+	}
 }
 
 Response Session::handleInitMessage(const Message& message)

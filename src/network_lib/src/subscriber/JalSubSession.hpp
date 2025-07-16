@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,11 +111,7 @@ class Session final
 
 	bool validateMode(const Message& message);
 
-	Response handleAuditMessage(const Message& message);
-
-	Response handleLogMessage(const Message& message);
-
-	Response handleJournalMessage(const Message& message);
+	bool insertRecord();
 
 	Response handleJournalMissing(const Message& message);
 
@@ -131,9 +127,13 @@ class Session final
 
 	Response generateSyncFailure();
 
+	Response generateSync();
+
 	bool shouldResume();
 
 	public:
+	bool getShouldChallengeDigest();
+
 	enum jal_digest_algorithm getDigestAlgorithm();
 
 	std::string getPublisherId();

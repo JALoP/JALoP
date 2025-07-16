@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,7 +230,6 @@ void SubscriberConfig::setDigestAlgorithms(
 void SubscriberConfig::setDatabaseOption(
 	const std::string& database_option)
 {
-	#ifdef JALDB_TYPE_LMDB
 	//Default to JDB_NONE if empty
 	if(database_option.empty())
 	{
@@ -244,10 +243,6 @@ void SubscriberConfig::setDatabaseOption(
 			throw std::runtime_error(errMsg);
 		}
 	}
-	#else
-	(void)database_option;
-	jdb_flags = JDB_NONE;
-	#endif
 }
 
 SubscriberConfig::SubscriberConfig(std::string configFilePath)
@@ -321,8 +316,7 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		this->setDigestAlgorithms(digests);
 	}
 
-	//Parses database option (only in lmdb build)
-	#ifdef JALDB_TYPE_LMDB
+	//Parses database option
 	handleStringConfigSetting(root, "database_option", OPTIONAL, database_option_str);
 
 	//Default to "JDB_NONE" if entry not present in the config file
@@ -331,10 +325,6 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		database_option_str = JDB_NONE_STR;
 	}
 
-	#else
-		//In BDB build, the database_option field is not used and is default to "JDB_NONE" by passing in empty string
-		database_option_str = "";
-	#endif
 	this->setDatabaseOption(database_option_str);
 
 	std::string dbTypeStr;
@@ -452,9 +442,6 @@ void SubscriberConfig::printConfiguration() const
 	}
 	printf("digest_algorithms: %s\n", configuredAllowedAlgorithms.c_str());
 	printf("database_type: %s\n", dbTypeToString(dbType).c_str());
-
-	#ifdef JALDB_TYPE_LMDB
 	printf("database_option: %s\n", database_option_str.c_str());
-	#endif
 	printf("http_server_thread_pool_size: %d\n", httpServerThreadPoolSize);
 }

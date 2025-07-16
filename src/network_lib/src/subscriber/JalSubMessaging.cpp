@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,7 +303,10 @@ bool Message::processMetadata(
 	if(parsingState.segmentOffset == metadataLen)
 	{
 		// Feed the metadata segment to the digest calculator
-		parsingState.digestCalculator.addData(destVec);
+		if(parsingState.shouldChallenge)
+		{
+			parsingState.digestCalculator.addData(destVec);
+		}
 		parsingState.transitionState(nextRecordSegment);
 	}
 	return true;
@@ -377,7 +380,10 @@ bool Message::processPayloadToBuffer(const uint8_t*& data, size_t& bytesRemainin
 	if(parsingState.segmentOffset == info.payloadLen)
 	{
 		// Feed the payload buffer to the digest calculator
-		parsingState.digestCalculator.addData(info.payload);
+		if(parsingState.shouldChallenge)
+		{
+			parsingState.digestCalculator.addData(info.payload);
+		}
 		parsingState.transitionState(ParsingState::RecordSegment::BREAK3);
 	}
 	return true;
@@ -408,7 +414,10 @@ bool Message::processPayloadToFile(const uint8_t*&data, size_t& bytesRemaining)
 	}
 
 	// Feed this portion of the payload to the digest calculator
-	parsingState.digestCalculator.addData(data, bytesToWrite);
+	if(parsingState.shouldChallenge)
+	{
+		parsingState.digestCalculator.addData(data, bytesToWrite);
+	}
 	bytesRemaining -= bytesToWrite;
 	data += bytesToWrite;
 	parsingState.segmentOffset += bytesToWrite;
@@ -435,27 +444,30 @@ bool Message::resumeJournal()
 		"Attempting to resume payload file: %s\n", info.payloadFileName.c_str());
 
 	// The file exists, run all the data it contains through the digest algorithm to
-	// "catch up" before proceeding
-	uint8_t* buffer = new uint8_t[bufferSize];
-	do
+	// "catch up" before proceeding but only if digest challenge is enabled
+	if(parsingState.shouldChallenge)
 	{
-		existingPayloadFile.read((char*)buffer, bufferSize);
-		size_t byteCount = existingPayloadFile.gcount();
-		if(byteCount > 0)
+		uint8_t* buffer = new uint8_t[bufferSize];
+		do
 		{
-			try
+			existingPayloadFile.read((char*)buffer, bufferSize);
+			size_t byteCount = existingPayloadFile.gcount();
+			if(byteCount > 0)
 			{
-				parsingState.digestCalculator.addData(buffer, byteCount);
+				try
+				{
+					parsingState.digestCalculator.addData(buffer, byteCount);
+				}
+				catch(...)
+				{
+					fprintf(stderr, "Failed to add journal resume data to digest calculator\n");
+					setError(MSG_RECORD_FAILURE_STR, JAL_RECORD_FAILURE);
+					return false;
+				}
 			}
-			catch(...)
-			{
-				fprintf(stderr, "Failed to add journal resume data to digest calculator\n");
-				setError(MSG_RECORD_FAILURE_STR, JAL_RECORD_FAILURE);
-				return false;
-			}
-		}
-	} while(existingPayloadFile); // eof and fail bits get set when we run out of data
-	delete[] buffer;
+		} while(existingPayloadFile); // eof and fail bits get set when we run out of data
+		delete[] buffer;
+	}
 	return true;
 }
 
@@ -630,7 +642,10 @@ void Message::addData(const uint8_t* messageData, size_t* size)
 	if(ParsingState::RecordSegment::DONE == parsingState.currentSegment
 		&& 0 == remainingLen && parseOk)
 	{
-		this->info.digest = parsingState.digestCalculator.finalizeDigest();
+		if(parsingState.shouldChallenge)
+		{
+			this->info.digest = parsingState.digestCalculator.finalizeDigest();
+		}
 		parsingState.messageComplete = true;
 	}
 
@@ -676,7 +691,14 @@ void Message::finalizeData()
 
 std::string Message::getDigest() const
 {
-	return info.digest;
+	if(parsingState.shouldChallenge)
+	{
+		return info.digest;
+	}
+	else
+	{
+		return "";
+	}
 }
 
 // TODO: This is slightly dangerous as the reference could potentially outlive
@@ -701,9 +723,10 @@ bool Message::messageIsComplete()
 	return parsingState.messageComplete;
 }
 
-void Message::setDigestAlgorithm(enum jal_digest_algorithm algorithm)
+void Message::setDigestAlgorithm(bool should_challenge, enum jal_digest_algorithm algorithm)
 {
 	parsingState.digestAlgorithm = algorithm;
+	parsingState.shouldChallenge = should_challenge;
 	parsingState.digestCalculator.changeAlgorithm(algorithm);
 }
 

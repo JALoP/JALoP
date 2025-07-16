@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,8 +190,8 @@ static bool get_ip_and_hostname(const struct sockaddr* sa, std::string& addr_str
 	}
 
 	// Attempt to translate the resolved ip address into a hostname
-	char local_hostname_string[NI_MAXSERV + 1];
-	if(0 == getnameinfo(sa, addr_struct_size, local_hostname_string, NI_MAXSERV, NULL, 0, NI_NAMEREQD))
+	char local_hostname_string[NI_MAXHOST + 1];
+	if(0 == getnameinfo(sa, addr_struct_size, local_hostname_string, NI_MAXHOST, NULL, 0, NI_NAMEREQD))
 	{
 		hostname_string = std::string(local_hostname_string);
 	}
@@ -476,7 +476,9 @@ static MHD_Return_Type response_func(
 		{
 			try
 			{
-				messagePtr->setDigestAlgorithm(callbacks.getDigestAlgorithm(*messagePtr));
+				messagePtr->setDigestAlgorithm(
+					callbacks.getShouldChallengeDigest(*messagePtr),
+					callbacks.getDigestAlgorithm(*messagePtr));
 				messagePtr->setPublisherId(callbacks.getPublisherId(*messagePtr));
 				messagePtr->setReceiveMode(callbacks.getReceiveMode(*messagePtr));
 			}

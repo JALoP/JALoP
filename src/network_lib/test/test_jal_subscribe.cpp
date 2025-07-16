@@ -125,7 +125,7 @@ extern "C" void test_init()
 		+ DIGEST_ALGORITHM_SHA_384 + ","
 		+ DIGEST_ALGORITHM_SHA_512, // acceptDigest
 		"on,off", // acceptConfigureDigestChallenge
-		recordTypeToString(RecordType::JAL_AUDIT), // record type
+		recordTypeToString(RecordType::JAL_LOG), // record type
 		modeTypeToString(ModeType::ARCHIVE)); // mode
 
 	// Stimulate subscriber with init message, capture init_ack

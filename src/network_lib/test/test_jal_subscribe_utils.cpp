@@ -224,7 +224,7 @@ bool compareHeader(
 	if(response.getHeader(header) != expectedValue)
 	{
 		fprintf(stderr, "Context: %s:%d. Expected header: %s with value: %s, found %s\n",
-			filename, lineNo, header.c_str(), response.getHeader(header).c_str(), expectedValue.c_str());
+			filename, lineNo, header.c_str(), expectedValue.c_str(), response.getHeader(header).c_str());
 		return false;
 	}
 	return true;

@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ struct SubscriberConfig
 	long long int journalResumeThresholdSize = 0;
 
 	// CLI Only Settings
-	bool debug;
+	bool debug = false;
 
 	enum jaldb_flags jdb_flags;
 	std::string database_option_str;

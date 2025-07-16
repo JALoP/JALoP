@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +121,18 @@ Response generateSessFailure(
 		response.addHeader(HEADER_JAL_ID_TYPE, id);
 	}
 	return response;
+}
+
+// This callback is used by the httpServer to associate a given incoming message with
+// the configureDigestChallange option to use during payload receipt
+// Throws out_of_range if there is no matching session or the HEADER_JAL_SESSION_ID_TYPE
+// header is missing
+bool JalSubscriber::getShouldChallengeDigest(const Message& message)
+{
+	std::string uuid = message.getHeader(HEADER_JAL_SESSION_ID_TYPE);
+	// Obtain a read-lock on the session list.
+	std::shared_lock lock(sessionsMutex);
+	return activeSessions.at(uuid).getShouldChallengeDigest();
 }
 
 // This callback is used by the httpServer to associate a given incoming message with
@@ -379,6 +391,8 @@ void JalSubscriber::constructorImpl(
 			std::bind(&JalSubscriber::getReceiveMode,
 			this, std::placeholders::_1),
 			std::bind(&JalSubscriber::notifyTimeout,
+			this, std::placeholders::_1),
+			std::bind(&JalSubscriber::getShouldChallengeDigest,
 			this, std::placeholders::_1)
 		},
 		paramConfig);

@@ -5,7 +5,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2023 The National Security Agency (NSA)
+ * Copyright (C) 2023 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,7 @@ class Message : public MessageBase
 	// Container for state information used during pre-processing of record data
 	struct ParsingState
 	{
+		bool shouldChallenge;
 		DigestCalculator digestCalculator{digestAlgorithm};
 		// Track which segment we're currently processing
 		enum class RecordSegment
@@ -244,7 +245,7 @@ class Message : public MessageBase
 
 	bool messageIsComplete();
 
-	void setDigestAlgorithm(enum jal_digest_algorithm alg);
+	void setDigestAlgorithm(bool should_challenge, enum jal_digest_algorithm alg);
 
 	void setPublisherId(std::string id);
 
