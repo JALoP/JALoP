@@ -11,7 +11,7 @@
  *
  * All other source code is copyright Tresys Technology and licensed as below.
  *
- * Copyright (C) 2022 The National Security Agency (NSA)
+ * Copyright (C) 2022 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

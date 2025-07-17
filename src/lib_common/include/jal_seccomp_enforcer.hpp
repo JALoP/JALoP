@@ -4,7 +4,7 @@
  * @brief This file contains the C++ definitions
  * used to load and enforcing seccomp policies
  *
- * Copyright (C) 2022 The National Security Agency (NSA)
+ * Copyright (C) 2022 Concurrent Technologies Corporation.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
