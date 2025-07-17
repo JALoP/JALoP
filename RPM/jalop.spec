@@ -13,8 +13,6 @@ Requires: xmlsec1-openssl
 Requires: xmlsec1-gcrypt
 Requires: xmlsec1-gnutls
 Requires: xmlsec1-nss
-Requires: libdb
-Requires: libdb-utils
 Requires: libcurl
 Requires: libuuid
 Requires: libxml2
