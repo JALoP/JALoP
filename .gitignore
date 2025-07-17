@@ -7,4 +7,8 @@ debug/
 /doc/doxygen.out
 /doc/devel-doxygen.out
 /cov
-*.sw?
+/cov_integration
+testdb
+subdb
+*.log
+nbproject
