@@ -19,10 +19,7 @@ if env.GetOption('clean'):
 test_utils = env.SConscript('test_utils/SConscript', exports='env')
 lib_common = env.SConscript('lib_common/SConscript', exports='env all_tests test_utils')
 
-if GetOption("ENABLE_BDB"):
-	db_layer = env.SConscript('db_layer/SConscript', exports='env all_tests lib_common test_utils')
-else:
-	db_layer = env.SConscript('lmdb_layer/SConscript', exports='env all_tests lib_common test_utils')
+db_layer = env.SConscript('lmdb_layer/SConscript', exports='env all_tests lib_common test_utils')
 
 producer_lib = env.SConscript('producer_lib/SConscript', exports='env all_tests test_utils lib_common')
 network_lib = env.SConscript('network_lib/SConscript', exports='env all_tests lib_common test_utils')
