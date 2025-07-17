@@ -1,3 +1,8 @@
+Summary of release 2.3.0.0 changes (Fri Jul 11 2025) -
+    - Added LMDB database support to store and manage JAL records.
+    - Removed Berkeley DB (BDB) support. Note that RHEL 10 will not support BDB either.
+    - Updated jaldb_tool to support file-system based database (created by jal_subscribe C and jnl_test Java Subscribers).
+
 Summary of release 2.3.0.0-beta changes (Fri Apr 25 2025) -
     - Added LMDB database support to store and manage JAL records.
 
