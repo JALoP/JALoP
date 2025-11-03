@@ -62,7 +62,7 @@ void test_jaln_ascii_to_uint64_succeeds()
 
 void test_jaln_ascii_to_uint64_fails_when_not_ascii()
 {
-	axl_bool ret = axl_false;
+	bool ret = false;
 	uint64_t out = 0;
 	ret = jaln_ascii_to_uint64(NOT_VALID_NUMERIC_STRING, &out);
 	assert_false(ret);
@@ -70,7 +70,7 @@ void test_jaln_ascii_to_uint64_fails_when_not_ascii()
 
 void test_jaln_ascii_to_uint64_fails_when_string_causing_overflow()
 {
-	axl_bool ret = axl_false;
+	bool ret = false;
 	uint64_t out = 0;
 	ret = jaln_ascii_to_uint64(longer_than_max, &out);
 	assert_false(ret);
@@ -78,19 +78,19 @@ void test_jaln_ascii_to_uint64_fails_when_string_causing_overflow()
 
 void test_jaln_ascii_to_uint64_t_succeeds()
 {
-	axl_bool ret = axl_false;
+	bool ret = false;
 	uint64_t out = 0;
 	ret = jaln_ascii_to_uint64_t(VALID_NUMERIC_STRING, &out);
-	assert_equals(axl_true, ret);
+	assert_equals(true, ret);
 	assert_equals(65, out);
 }
 
 void test_jaln_ascii_to_uint64_t_fails_with_invalid_input()
 {
-	axl_bool ret = axl_false;
+	bool ret = false;
 	uint64_t out = 0;
 	ret = jaln_ascii_to_uint64_t(NOT_VALID_NUMERIC_STRING, &out);
-	assert_equals(axl_false, ret);
+	assert_equals(false, ret);
 }
 
 void test_jaln_ascii_to_uint64_fails_with_null_inputs()

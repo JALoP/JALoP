@@ -93,13 +93,13 @@ axlList *jaln_digest_info_list_create()
 	return infos;
 }
 
-axl_bool jaln_digests_are_equal(struct jaln_digest_info *a, struct jaln_digest_info *b)
+bool jaln_digests_are_equal(struct jaln_digest_info *a, struct jaln_digest_info *b)
 {
 	if (!a || !a->digest || !b || !b->digest) {
-		return axl_false;
+		return false;
 	}
 	if (a->digest_len != b->digest_len) {
-		return axl_false;
+		return false;
 	}
 	return 0 == memcmp(a->digest, b->digest, a->digest_len);
 }

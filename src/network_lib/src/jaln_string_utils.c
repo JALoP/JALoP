@@ -39,15 +39,15 @@
 #include "jal_alloc.h"
 #include "jaln_string_utils.h"
 
-axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out)
+bool jaln_ascii_to_uint64(const char *str, uint64_t *out)
 {
 	if (!str || !out) {
-		return axl_false;
+		return false;
 	}
 	char *tmp = strdup(str);
 	axl_stream_trim(tmp);
 	char *end;
-	axl_bool ret = axl_false;
+	bool ret = false;
 	if ('0' > tmp[0] || '9' < tmp[0]) {
 		goto out;
 	}
@@ -69,24 +69,24 @@ axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out)
 		goto out;
 	}
 	*out = (uint64_t) val;
-	ret = axl_true;
+	ret = true;
 out:
 	free(tmp);
 	return ret;
 }
 
-axl_bool jaln_ascii_to_uint64_t(const char *str, uint64_t *out)
+bool jaln_ascii_to_uint64_t(const char *str, uint64_t *out)
 {
 	uint64_t tmp_out;
 	if (!jaln_ascii_to_uint64(str, &tmp_out)) {
-		return axl_false;
+		return false;
 	}
 	if (tmp_out > SIZE_MAX) {
 		// overflow...
-		return axl_false;
+		return false;
 	}
 	*out = (uint64_t) tmp_out;
-	return axl_true;
+	return true;
 }
 
 enum jal_status jaln_hex_to_bin(char c, uint8_t *out)

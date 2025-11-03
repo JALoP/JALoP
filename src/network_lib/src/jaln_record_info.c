@@ -49,16 +49,16 @@ void jaln_record_info_destroy(struct jaln_record_info **rec_info) {
 	*rec_info = NULL;
 }
 
-axl_bool jaln_record_info_is_valid(struct jaln_record_info *rec_info)
+bool jaln_record_info_is_valid(struct jaln_record_info *rec_info)
 {
 	if (!rec_info) {
-		return axl_false;
+		return false;
 	}
 	if (0 == rec_info->sys_meta_len) {
-		return axl_false;
+		return false;
 	}
 	if (NULL == rec_info->nonce) {
-		return axl_false;
+		return false;
 	}
 	switch (rec_info->type) {
 	case JALN_RTYPE_JOURNAL:
@@ -68,17 +68,17 @@ axl_bool jaln_record_info_is_valid(struct jaln_record_info *rec_info)
 		break;
 	case JALN_RTYPE_AUDIT:
 		if (0 == rec_info->payload_len) {
-			return axl_false;
+			return false;
 		}
 		break;
 	case JALN_RTYPE_LOG:
 		if ((0 == rec_info->payload_len) && (0 == rec_info->app_meta_len)) {
-			return axl_false;
+			return false;
 		}
 		break;
 	default:
-		return axl_false;
+		return false;
 	}
-	return axl_true;;
+	return true;;
 }
 

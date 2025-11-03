@@ -415,7 +415,7 @@ struct jaln_connection *jaln_publish(
 		return NULL;
 	}
 
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	ctx->user_data = user_data;
 
 

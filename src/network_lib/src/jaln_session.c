@@ -46,7 +46,7 @@ jaln_session *jaln_session_create()
 	jaln_session *sess = jal_calloc(1, sizeof(*sess));
 	sess->mode = JALN_UNKNOWN_MODE;
 	sess->ref_cnt = 1;
-	sess->dgst_on = axl_true;  // digest challenge enabled by default
+	sess->dgst_on = true;  // digest challenge enabled by default
 	sess->ch_info = jaln_channel_info_create();
 	sess->dgst_list = axl_list_new(jaln_axl_equals_func_digest_info_nonce, jaln_axl_destroy_digest_info);
 	if (!sess->dgst_list) {
@@ -54,7 +54,7 @@ jaln_session *jaln_session_create()
 	}
 	sess->dgst_list_max = JALN_SESSION_DEFAULT_DGST_LIST_MAX;
 	sess->dgst_timeout = JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS;
-	sess->errored = axl_false;
+	sess->errored = false;
 	return sess;
 }
 
@@ -91,7 +91,7 @@ void jaln_session_set_errored_no_lock(jaln_session *sess)
 	if (!sess) {
 		return;
 	}
-	sess->errored = axl_true;
+	sess->errored = true;
 }
 
 void jaln_session_set_errored(jaln_session *sess)

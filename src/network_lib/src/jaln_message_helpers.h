@@ -42,11 +42,11 @@
 
 struct jaln_response_header_info {
 	jaln_session *sess;
-	axl_bool content_type_valid;
-	axl_bool message_type_valid;
+	bool content_type_valid;
+	bool message_type_valid;
 	char *last_message;
-	axl_bool version_valid;
-	axl_bool id_valid;
+	bool version_valid;
+	bool id_valid;
 	uint8_t *peer_dgst;
 	uint64_t peer_dgst_len;
 	char *expected_nonce;
@@ -409,11 +409,11 @@ enum jal_status jaln_create_digest_response_msg(char *session_id, struct jaln_di
  *
  * @param[in,out] base On success, base will be equal to (base + inc)
  * @param[in] inc The increment to add
- * @return axl_true if the addition was performed
- * axl_false if the addition was NOT performed. The only time the addition will
+ * @return true if the addition was performed
+ * false if the addition was NOT performed. The only time the addition will
  * not happen is when \p base is NULL, or *base + inc would overflow uint64_t.
  */
-axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
+bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
 
 /*
  * Helper function to create an 'initialize' message

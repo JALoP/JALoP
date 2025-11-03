@@ -101,7 +101,7 @@ class JalDb : public JalSubDatabase
 			throw std::runtime_error("Failed to create db output directory: " + journalPayloadPath);
 		}
 
-		db_ctx = jsub_setup_db_layer(config.databasePath.c_str(), config.jdb_flags);
+		db_ctx = jsub_setup_db_layer(config.databasePath.c_str(), config.jdb_flags, config.map_size);
 		if(!db_ctx)
 		{
 			throw std::runtime_error("Failed to initialize db with path: " + journalPayloadPath);

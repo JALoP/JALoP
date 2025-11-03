@@ -61,13 +61,13 @@ struct jaln_session_t {
 
 	jaln_context *jaln_ctx;              //!< The context we belong to.
 	struct jal_digest_ctx *dgst;         //!< A copy of the digest to use.
-	axl_bool dgst_on;                    //!< Whether digest challenging is configured to be on
+	bool dgst_on;                    //!< Whether digest challenging is configured to be on
 	CURL *curl_ctx;                      //!< The libcurl context used for sending messages via HTTP.
 	struct jaln_channel_info *ch_info;   //!< Additional information about the channel
 	char *id;                            //!< Session ID added to messages to associate them with this session
 
-	axl_bool closing;                    //!< Flag that indicates this
-	axl_bool errored;                    //!< Flag that indicates an error occurred within the session
+	bool closing;                    //!< Flag that indicates this
+	bool errored;                    //!< Flag that indicates an error occurred within the session
 	axlList *dgst_list;                  //!< A list of jaln_digest_info structures that are calculated as data is sent/received
 	enum jaln_role role;                 //!< The role this context is performing (subscriber or publisher)
 	int dgst_list_max;                   //!< The maximum number of digest entries to keep as a subscriber
@@ -102,13 +102,13 @@ struct jaln_pub_data {
 	uint64_t payload_off;                       //!< The current offset into jaln_pub_data::payload, or the journal record.
 	uint64_t break_off;                           //!< The current offset used when writing the "BREAK" string between segments.
 
-	axl_bool finished_headers;                  //!< Indicates the headers have been sent.
-	axl_bool finished_sys_meta;                 //!< Indicates the system metadata has been sent.
-	axl_bool finished_sys_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
-	axl_bool finished_app_meta;                 //!< Indicates the application metadata has been sent.
-	axl_bool finished_app_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
-	axl_bool finished_payload;                  //!< Indicates the payload has been sent
-	axl_bool finished_payload_break;            //!< Indicates the "BREAK" following the payload has been sent.
+	bool finished_headers;                  //!< Indicates the headers have been sent.
+	bool finished_sys_meta;                 //!< Indicates the system metadata has been sent.
+	bool finished_sys_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
+	bool finished_app_meta;                 //!< Indicates the application metadata has been sent.
+	bool finished_app_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
+	bool finished_payload;                  //!< Indicates the payload has been sent
+	bool finished_payload_break;            //!< Indicates the "BREAK" following the payload has been sent.
 
 	void *dgst_inst;                            //!< An instance of a digest_ctx for a particular record.
 	uint8_t *dgst;                              //!< A buffer to hold the final contents of a digest

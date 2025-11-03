@@ -46,6 +46,7 @@ struct SubscriberConfig
 	int listenPort;
 	int bufferSize;
 	int sessionLimit;
+	int map_size;
 	unsigned int httpServerThreadPoolSize;
 	std::vector<RecordType> allowedRecordTypes;
 	// Default to supporting only the required SHA_256 digest algorithm
@@ -72,6 +73,7 @@ struct SubscriberConfig
 	void printConfiguration() const;
 	void setDigestAlgorithms(const std::string& digests);
 	void setDatabaseOption(const std::string& database_option);
+	void setMapSize(int curr_map_size);
 	void setAllowedRecordTypes(const std::vector<std::string>& recordTypes);
 
 	// Make the no-arg constructor protected

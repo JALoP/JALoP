@@ -27,6 +27,7 @@
 
 #include <jalop/jal_digest.h>
 #include <jal_config.h>
+#include "jaldb_config.h"
 
 #include "JalSubEnumTypes.hpp"
 #include "JalSubConfig.hpp"
@@ -230,19 +231,17 @@ void SubscriberConfig::setDigestAlgorithms(
 void SubscriberConfig::setDatabaseOption(
 	const std::string& database_option)
 {
-	//Default to JDB_NONE if empty
-	if(database_option.empty())
+	if(JALDB_OK != jaldb_get_db_flags(database_option.c_str(), &jdb_flags))
 	{
-		jdb_flags = JDB_NONE;
+		std::string errMsg = "Failed to parse database option: " + database_option;
+		throw std::runtime_error(errMsg);
 	}
-	else
-	{
-		if(JALDB_OK != jaldb_get_db_flags(database_option.c_str(), &jdb_flags))
-		{
-			std::string errMsg = "Failed to parse database option: " + database_option;
-			throw std::runtime_error(errMsg);
-		}
-	}
+}
+
+void SubscriberConfig::setMapSize(
+	int curr_map_size)
+{
+	map_size = curr_map_size;
 }
 
 SubscriberConfig::SubscriberConfig(std::string configFilePath)
@@ -316,16 +315,36 @@ SubscriberConfig::SubscriberConfig(std::string configFilePath)
 		this->setDigestAlgorithms(digests);
 	}
 
-	//Parses database option
-	handleStringConfigSetting(root, "database_option", OPTIONAL, database_option_str);
+	//Attempts to load optional LMDB_CONFIG file in db_root
+	//If present, this will override the lmdb performance level
+	//and lmdb map size, otherwise default values will be used.
+	jaldb_config *jdb_config = NULL;
+	enum jaldb_config_status rc = get_jaldb_config(databasePath.c_str(), &jdb_config);
+	if (rc != JALDB_CONFIG_OK && rc != JALDB_CONFIG_E_NOTFOUND) {
+		std::string errMsg = "Failed to load LMDB_CONFIG in db_root: " + databasePath;
+		throw std::runtime_error(errMsg);
+	}
 
-	//Default to "JDB_NONE" if entry not present in the config file
-	if (database_option_str.empty())
+	//Only override map size if present in config
+	int curr_map_size = DEFAULT_LMDB_MAP_SIZE;
+	database_option_str = std::string(JDB_LMDB_PERFORMANCE_LEVEL2_STR);
+	if (rc != JALDB_CONFIG_E_NOTFOUND)
 	{
-		database_option_str = JDB_NONE_STR;
+		if (jdb_config->map_size != 0)
+		{
+			curr_map_size = jdb_config->map_size;
+		}
+
+		//Only override database option if present in config
+		if (NULL != jdb_config->database_option)
+		{
+			database_option_str = std::string(jdb_config->database_option);
+		}
+		free_jaldb_config(&jdb_config);
 	}
 
 	this->setDatabaseOption(database_option_str);
+	this->setMapSize(curr_map_size);
 
 	std::string dbTypeStr;
 	// Default to database storage if not present
@@ -443,5 +462,6 @@ void SubscriberConfig::printConfiguration() const
 	printf("digest_algorithms: %s\n", configuredAllowedAlgorithms.c_str());
 	printf("database_type: %s\n", dbTypeToString(dbType).c_str());
 	printf("database_option: %s\n", database_option_str.c_str());
+	printf("lmdb_map_size (GB): %d\n", map_size);
 	printf("http_server_thread_pool_size: %d\n", httpServerThreadPoolSize);
 }

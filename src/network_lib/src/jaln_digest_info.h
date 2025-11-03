@@ -94,9 +94,9 @@ int jaln_axl_equals_func_digest_info_nonce(axlPointer a, axlPointer b);
  * @param[in] a The first digest_info
  * @param[in] b The second digest_info
  *
- * @return axl_true if both digest values are the same.
+ * @return true if both digest values are the same.
  */
-axl_bool jaln_digests_are_equal(struct jaln_digest_info *a, struct jaln_digest_info *b);
+bool jaln_digests_are_equal(struct jaln_digest_info *a, struct jaln_digest_info *b);
 
 /**
  * Create an axlLIst suitable for storing struct jaln_digest_info objects

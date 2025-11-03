@@ -46,11 +46,11 @@ static struct jaln_payload_feeder zeroed_feeder;
 static char *nonce = NULL;
 static uint8_t *dgst_buf = NULL;
 static uint64_t dgst_len;
-static axl_bool cond_signal_called;
+static bool cond_signal_called;
 
 int fake_cond_signal(__attribute__((unused)) pthread_cond_t *cond)
 {
-	cond_signal_called = axl_true;
+	cond_signal_called = true;
 	return 0;
 }
 
@@ -66,7 +66,7 @@ void setup()
 	dgst_buf[1] = 0x1;
 	dgst_buf[2] = 0xb;
 	dgst_buf[3] = 0x0;
-	cond_signal_called = axl_false;
+	cond_signal_called = false;
 }
 
 void teardown()

@@ -852,15 +852,15 @@ void test_verify_init_ack_headers()
 	enum jal_status rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->content_type_valid = axl_true;
+	info->content_type_valid = true;
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->message_type_valid = axl_true;
+	info->message_type_valid = true;
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->version_valid = axl_true;
+	info->version_valid = true;
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -876,7 +876,7 @@ void test_verify_init_ack_headers()
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_OK, rc);
 /*
-	info->content_type_valid = axl_false;
+	info->content_type_valid = false;
 	rc = jaln_verify_init_ack_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 */ // TODO: is content type required?
@@ -903,7 +903,7 @@ void test_verify_sync_headers()
 	enum jal_status rc = jaln_verify_sync_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->message_type_valid = axl_true;
+	info->message_type_valid = true;
 	rc = jaln_verify_sync_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -911,7 +911,7 @@ void test_verify_sync_headers()
 	rc = jaln_verify_sync_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->id_valid = axl_true;
+	info->id_valid = true;
 	rc = jaln_verify_sync_headers(info);
 	assert_equals(JAL_OK, rc);
 
@@ -922,7 +922,7 @@ void test_verify_sync_failure_headers()
 	enum jal_status rc = jaln_verify_sync_failure_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->message_type_valid = axl_true;
+	info->message_type_valid = true;
 	rc = jaln_verify_sync_failure_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -930,7 +930,7 @@ void test_verify_sync_failure_headers()
 	rc = jaln_verify_sync_failure_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->id_valid = axl_true;
+	info->id_valid = true;
 	rc = jaln_verify_sync_failure_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -944,11 +944,11 @@ void test_verify_failed_digest_headers()
 	enum jal_status rc = jaln_verify_failed_digest_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->message_type_valid = axl_true;
+	info->message_type_valid = true;
 	rc = jaln_verify_failed_digest_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
-	info->id_valid = axl_true;
+	info->id_valid = true;
 	rc = jaln_verify_failed_digest_headers(info);
 	assert_equals(JAL_E_INVAL, rc);
 
@@ -980,7 +980,7 @@ void test_parse_init_ack_header_record_id()
 
 	assert_not_equals(NULL, sess->pub_data->nonce);
 	assert_string_equals(SAMPLE_UUID, sess->pub_data->nonce);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 }
 
 void test_parse_init_ack_header_offset()
@@ -992,7 +992,7 @@ void test_parse_init_ack_header_offset()
 
 	assert_true(sess->pub_data->payload_off > 0);
 	assert_equals(SAMPLE_OFFSET_VAL, sess->pub_data->payload_off);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 }
 
 void test_parse_init_ack_offset_in_live()
@@ -1001,7 +1001,7 @@ void test_parse_init_ack_offset_in_live()
 	sess->ch_info->type = JALN_RTYPE_JOURNAL;
 	sess->mode = JALN_LIVE_MODE;
 	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
-	assert_equals(axl_true, sess->errored);
+	assert_equals(true, sess->errored);
 }
 
 void test_parse_init_ack_offset_with_audit()
@@ -1009,7 +1009,7 @@ void test_parse_init_ack_offset_with_audit()
 	sess->pub_data = jaln_pub_data_create();
 	sess->ch_info->type = JALN_RTYPE_AUDIT;
 	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
-	assert_equals(axl_true, sess->errored);
+	assert_equals(true, sess->errored);
 }
 
 void test_parse_init_ack_offset_with_log()
@@ -1017,70 +1017,70 @@ void test_parse_init_ack_offset_with_log()
 	sess->pub_data = jaln_pub_data_create();
 	sess->ch_info->type = JALN_RTYPE_LOG;
 	jaln_parse_init_ack_header(SAMPLE_OFFSET, strlen(SAMPLE_OFFSET), info);
-	assert_equals(axl_true, sess->errored);
+	assert_equals(true, sess->errored);
 }
 
 void test_parse_init_ack_header_content_type_valid()
 {
 	char ct_valid[] = "Content-Type: application/http+jalop\r\n";
 	jaln_parse_init_ack_header(ct_valid, strlen(ct_valid), info);
-	assert_equals(axl_false, sess->errored);
-	assert_equals(axl_true, info->content_type_valid);
+	assert_equals(false, sess->errored);
+	assert_equals(true, info->content_type_valid);
 }
 
 void test_parse_init_ack_header_content_type_invalid()
 {
 	char ct_invalid[] = "Content-Type: text/json\r\n";
 	jaln_parse_init_ack_header(ct_invalid, strlen(ct_invalid), info);
-	assert_equals(axl_true, sess->errored);
-	assert_equals(axl_false, info->content_type_valid);
+	assert_equals(true, sess->errored);
+	assert_equals(false, info->content_type_valid);
 }
 
 void test_parse_init_ack_header_message_ack()
 {
 	char ack[] = "JAL-Message: initialize-ack\r\n";
 	jaln_parse_init_ack_header(ack, strlen(ack), info);
-	assert_equals(axl_false, sess->errored);
-	assert_equals(axl_true, info->message_type_valid);
+	assert_equals(false, sess->errored);
+	assert_equals(true, info->message_type_valid);
 }
 
 void test_parse_init_ack_header_message_nack()
 {
 	char nack[] = "JAL-Message: initialize-nack\r\n";
 	jaln_parse_init_ack_header(nack, strlen(nack), info);
-	assert_equals(axl_false, sess->errored);
-	assert_equals(axl_true, info->message_type_valid);
+	assert_equals(false, sess->errored);
+	assert_equals(true, info->message_type_valid);
 }
 
 void test_parse_init_ack_header_message_invalid()
 {
 	char invalid[] = "JAL-Message: foo\r\n";
 	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
-	assert_equals(axl_true, sess->errored);
-	assert_equals(axl_false, info->message_type_valid);
+	assert_equals(true, sess->errored);
+	assert_equals(false, info->message_type_valid);
 }
 
 void test_parse_init_ack_header_version_valid()
 {
 	char vers[] = "JAL-Version: 2.0.0.0\r\n";
 	jaln_parse_init_ack_header(vers, strlen(vers), info);
-	assert_equals(axl_false, sess->errored);
-	assert_equals(axl_true, info->version_valid);
+	assert_equals(false, sess->errored);
+	assert_equals(true, info->version_valid);
 }
 
 void test_parse_init_ack_header_version_invalid()
 {
 	char invalid[] = "JAL-Version: 127.0.0.1\r\n";
 	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
-	assert_equals(axl_true, sess->errored);
-	assert_equals(axl_false, info->message_type_valid);
+	assert_equals(true, sess->errored);
+	assert_equals(false, info->message_type_valid);
 }
 
 void test_parse_init_ack_header_compression_valid()
 {
 	char comp[] = "JAL-XML-Compression: xml_cmp_1\r\n";
 	jaln_parse_init_ack_header(comp, strlen(comp), info);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_string_equals("xml_cmp_1", sess->ch_info->compression);
 }
 
@@ -1088,7 +1088,7 @@ void test_parse_init_ack_header_compression_invalid()
 {
 	char invalid[] = "JAL-XML-Compression: fake\r\n";
 	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
-	assert_equals(axl_true, sess->errored);
+	assert_equals(true, sess->errored);
 	assert_pointer_equals(NULL, sess->ch_info->compression);
 }
 
@@ -1096,7 +1096,7 @@ void test_parse_init_ack_header_digest_valid()
 {
 	char dgst[] = "JAL-Digest: sha256\r\n";
 	jaln_parse_init_ack_header(dgst, strlen(dgst), info);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_not_equals(NULL, sess->dgst);
 	assert_string_equals("sha256", sess->ch_info->digest_method);
 }
@@ -1105,7 +1105,7 @@ void test_parse_init_ack_header_digest_invalid()
 {
 	char invalid[] = "JAL-Digest: fakehash\r\n";
 	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
-	assert_equals(axl_true, sess->errored);
+	assert_equals(true, sess->errored);
 	assert_pointer_equals(NULL, sess->dgst);
 	assert_pointer_equals(NULL, sess->ch_info->digest_method);
 }
@@ -1115,8 +1115,8 @@ void test_parse_init_ack_config_dc_on()
 	ctx.digest_challenge = JALN_DC_PREF_ON;
 	char dc[] = "JAL-Configure-Digest-Challenge: on\r\n";
 	jaln_parse_init_ack_header(dc, strlen(dc), info);
-	assert_equals(axl_false, sess->errored);
-	assert_equals(axl_true, sess->dgst_on);
+	assert_equals(false, sess->errored);
+	assert_equals(true, sess->dgst_on);
 }
 
 void test_parse_init_ack_config_dc_off()
@@ -1124,8 +1124,8 @@ void test_parse_init_ack_config_dc_off()
 	ctx.digest_challenge = JALN_DC_PREF_ON;
 	char dc[] = "JAL-Configure-Digest-Challenge: off\r\n";
 	jaln_parse_init_ack_header(dc, strlen(dc), info);
-	assert_equals(axl_false, sess->errored);
-	assert_equals(axl_false, sess->dgst_on);
+	assert_equals(false, sess->errored);
+	assert_equals(false, sess->dgst_on);
 }
 
 void test_parse_init_ack_config_dc_invalid()
@@ -1133,14 +1133,14 @@ void test_parse_init_ack_config_dc_invalid()
 	ctx.digest_challenge = JALN_DC_PREF_ON;
 	char invalid[] = "JAL-Configure-Digest-Challenge: foo\r\n";
 	jaln_parse_init_ack_header(invalid, strlen(invalid), info);
-	assert_equals(axl_true, sess->errored);
+	assert_equals(true, sess->errored);
 }
 
 void test_parse_init_ack_session_id()
 {
 	char id[] = "JAL-Session-Id: " SAMPLE_UUID "\r\n";
 	jaln_parse_init_ack_header(id, strlen(id), info);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_string_equals(SAMPLE_UUID, sess->id);
 }
 
@@ -1148,7 +1148,7 @@ void test_parse_init_ack_nack_errors_valid()
 {
 	char errs[] = "JAL-Error-Message: AAA|BBB\r\n";
 	jaln_parse_init_ack_header(errs, strlen(errs), info);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_equals(2, info->error_cnt);
 	assert_string_equals("AAA", info->error_list[0]);
 	assert_string_equals("BBB", info->error_list[1]);
@@ -1158,7 +1158,7 @@ void test_parse_init_ack_nack_errors_invalid()
 {
         char invalid[] = "JAL-Error-Message: \r\n";
         jaln_parse_init_ack_header(invalid, strlen(invalid), info);
-        assert_equals(axl_true, sess->errored);
+        assert_equals(true, sess->errored);
 }
 
 void test_parse_journal_missing_response()
@@ -1167,17 +1167,17 @@ void test_parse_journal_missing_response()
 	enum jal_status rc = jaln_parse_journal_missing_response(SAMPLE_JOURNAL_MISSING_RESP_MSG, strlen(SAMPLE_JOURNAL_MISSING_RESP_MSG), sess);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 
 	rc = jaln_parse_journal_missing_response(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), sess);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 
 	rc = jaln_parse_journal_missing_response(SAMPLE_INIT_ACK_MSG, strlen(SAMPLE_INIT_ACK_MSG), sess);
 
 	assert_equals(JAL_E_INVAL, rc);
-	assert_equals(axl_true, sess->errored);
+	assert_equals(true, sess->errored);
 }
 
 void test_parse_digest_challenge_header()
@@ -1196,12 +1196,12 @@ void test_parse_digest_challenge_header()
 	rc = jaln_parse_digest_challenge_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(info->id_valid, axl_true);
+	assert_equals(info->id_valid, true);
 
 	rc = jaln_parse_digest_challenge_header(SAMPLE_DGST_VAL_MSG, strlen(SAMPLE_DGST_VAL_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 }
 
 void test_parse_digest_challenge_header_rec_fail()
@@ -1211,13 +1211,13 @@ void test_parse_digest_challenge_header_rec_fail()
 	enum jal_status rc = jaln_parse_digest_challenge_header(SAMPLE_REC_FAIL_MSG, strlen(SAMPLE_REC_FAIL_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_string_equals(JALN_MSG_RECORD_FAILURE, info->last_message);
 
 	rc = jaln_parse_digest_challenge_header(SAMPLE_ERROR_MSG, strlen(SAMPLE_ERROR_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_equals(1, info->error_cnt);
 	assert_not_equals(NULL, info->error_list);
 	assert_string_equals(JALN_ERROR_MSG_INVALID_DIGEST, info->error_list[0]);
@@ -1236,7 +1236,7 @@ void test_parse_sync_header()
 	rc = jaln_parse_digest_challenge_header(SAMPLE_RECORD_ID, strlen(SAMPLE_RECORD_ID), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(info->id_valid, axl_true);
+	assert_equals(info->id_valid, true);
 }
 
 void test_parse_sync_header_sync_fail()
@@ -1246,7 +1246,7 @@ void test_parse_sync_header_sync_fail()
 	enum jal_status rc = jaln_parse_sync_header(SAMPLE_SYNC_FAIL_MSG, strlen(SAMPLE_SYNC_FAIL_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_string_equals(JALN_MSG_SYNC_FAILURE, info->last_message);
 }
 
@@ -1257,13 +1257,13 @@ void test_parse_sync_header_rec_fail()
 	enum jal_status rc = jaln_parse_sync_header(SAMPLE_REC_FAIL_MSG, strlen(SAMPLE_REC_FAIL_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_string_equals(JALN_MSG_RECORD_FAILURE, info->last_message);
 
 	rc = jaln_parse_sync_header(SAMPLE_ERROR_MSG, strlen(SAMPLE_ERROR_MSG), info);
 
 	assert_equals(JAL_OK, rc);
-	assert_equals(axl_false, sess->errored);
+	assert_equals(false, sess->errored);
 	assert_equals(1, info->error_cnt);
 	assert_not_equals(NULL, info->error_list);
 	assert_string_equals(JALN_ERROR_MSG_INVALID_DIGEST, info->error_list[0]);

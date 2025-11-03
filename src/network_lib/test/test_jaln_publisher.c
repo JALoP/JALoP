@@ -344,7 +344,7 @@ void test_publish_fails_when_missing_pub_id()
 void test_publish_fails_when_already_connected()
 {
 	struct jaln_connection *conn = NULL;
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 
 	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);

@@ -59,7 +59,7 @@
 #define EXPECTED_MSG SYS_META "BREAK" APP_META "BREAK" PAYLOAD "BREAK"
 #define EXPECTED_MSG_MAX_OFFSET SYS_META "BREAK" APP_META "BREAKBREAK"
 
-static axl_bool finalized_called;
+static bool finalized_called;
 
 struct curl_slist * fake_create_record_ans_rpy_headers(
 		__attribute__((unused)) struct jaln_record_info *rec_info,
@@ -203,7 +203,7 @@ void setup()
 
 	sess->jaln_ctx->pub_callbacks = pub_cbs;
 
-	finalized_called = axl_false;
+	finalized_called = false;
 
 	// The jaln_context owns the digest algorithm, so don't keep a
 	// reference to it.
@@ -252,7 +252,7 @@ void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
 void test_pub_feeder_is_finished_returns_true_if_errored()
 {
 	int fin = 0;
-	sess->errored = axl_true;
+	sess->errored = true;
 	assert_true(jaln_pub_feeder_is_finished(sess, &fin));
 	assert_true(fin);
 }
@@ -260,7 +260,7 @@ void test_pub_feeder_is_finished_returns_true_if_errored()
 void test_pub_feeder_is_finished_returns_true_after_payload_break_is_written()
 {
 	int fin = 0;
-	sess->pub_data->finished_payload_break = axl_true;
+	sess->pub_data->finished_payload_break = true;
 	assert_true(jaln_pub_feeder_is_finished(sess, &fin));
 	assert_true(fin);
 }
@@ -268,7 +268,7 @@ void test_pub_feeder_is_finished_returns_true_after_payload_break_is_written()
 void test_pub_feeder_is_finished_returns_false_before_payload_break_is_written()
 {
 	int fin = 1;
-	sess->pub_data->finished_payload_break = axl_false;
+	sess->pub_data->finished_payload_break = false;
 	assert_false(jaln_pub_feeder_is_finished(sess, &fin));
 	assert_false(fin);
 }
@@ -277,7 +277,7 @@ void test_pub_feeder_get_size_returns_cached_size()
 {
 	uint64_t sz = 0;
 	sess->pub_data->feeder_sz = 24;
-	sess->pub_data->finished_payload_break = axl_false;
+	sess->pub_data->finished_payload_break = false;
 	sess->pub_data->payload_off = 0;
 	assert_true(jaln_pub_feeder_get_size(sess, &sz));
 	assert_equals(24, sz);

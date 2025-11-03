@@ -40,7 +40,7 @@
 
 void jaln_mark_closing(jaln_session *sess)
 {
-	sess->closing = axl_true;
+	sess->closing = true;
 }
 
 enum jal_status jaln_disconnect(struct jaln_connection *jal_conn)

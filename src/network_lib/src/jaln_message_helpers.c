@@ -174,9 +174,9 @@ out:
 
 enum jal_status jaln_verify_init_ack_headers(struct jaln_response_header_info *info) {
 
-	if (axl_true /*== info->content_type_valid*/ // subscriber not sending //TODO:required?
-	    && axl_true == info->message_type_valid
-	    && axl_true /*== info->version_valid*/ // subscriber not sending //TODO: required?
+	if (true /*== info->content_type_valid*/ // subscriber not sending //TODO:required?
+	    && true == info->message_type_valid
+	    && true /*== info->version_valid*/ // subscriber not sending //TODO: required?
 	    && NULL != info->sess->dgst
 	    && NULL != info->sess->ch_info->compression
 	    && NULL != info->sess->id
@@ -190,8 +190,8 @@ enum jal_status jaln_verify_init_ack_headers(struct jaln_response_header_info *i
 
 enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header_info *info) {
 
-	if (axl_true == info->message_type_valid
-	    && axl_true == info->id_valid
+	if (true == info->message_type_valid
+	    && true == info->id_valid
 	    && NULL != info->peer_dgst
 	    && 0 == info->error_cnt
 	) {
@@ -202,10 +202,10 @@ enum jal_status jaln_verify_digest_challenge_headers(struct jaln_response_header
 }
 
 enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *info) {
-	if (axl_true == info->message_type_valid
+	if (true == info->message_type_valid
 	    && info->last_message
 	    && !strcasecmp(JALN_MSG_SYNC, info->last_message)
-	    && axl_true == info->id_valid
+	    && true == info->id_valid
 	    && 0 == info->error_cnt
 	) {
 		return JAL_OK;
@@ -216,7 +216,7 @@ enum jal_status jaln_verify_sync_headers(struct jaln_response_header_info *info)
 static enum jal_status jaln_verify_failure_headers(
 		struct jaln_response_header_info *info,
 		const char *msg_type) {
-	if (axl_true == info->message_type_valid
+	if (true == info->message_type_valid
 	    && info->last_message
 	    && !strcasecmp(msg_type, info->last_message)
 	    && info->id_valid
@@ -286,7 +286,7 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_STR_CT_JALOP));
 		if (JAL_OK == rc) {
-			info->content_type_valid = axl_true;
+			info->content_type_valid = true;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_MESSAGE))) {
 		const size_t name_len = strlen(JALN_HDRS_MESSAGE);
@@ -294,11 +294,11 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
 				JALN_STR_W_LEN(JALN_MSG_INIT_ACK)))) {
-			info->message_type_valid = axl_true;
+			info->message_type_valid = true;
 			info->last_message = JALN_MSG_INIT_ACK;
 		} else if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
 				JALN_STR_W_LEN(JALN_MSG_INIT_NACK)))) {
-			info->message_type_valid = axl_true;
+			info->message_type_valid = true;
 			info->last_message = JALN_MSG_INIT_NACK;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_VERSION))) {
@@ -307,7 +307,7 @@ void jaln_parse_init_ack_header(char *content, size_t len, struct jaln_response_
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc =  jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_VERSION));
 		if (JAL_OK == rc) {
-			info->version_valid = axl_true;
+			info->version_valid = true;
 		}
 	} else if (jaln_header_name_match(content, len, JALN_STR_W_LEN(JALN_HDRS_COMPRESSION))) {
 		rc = jaln_parse_xml_compression_header(content, len, sess);
@@ -484,12 +484,12 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_DIGEST_CHALLENGE));
 		if (JAL_OK == rc) {
 			header_info->last_message = JALN_MSG_DIGEST_CHALLENGE;
-			header_info->message_type_valid = axl_true;
+			header_info->message_type_valid = true;
 		} else {
 			rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE));
 			if (JAL_OK == rc) {
 				header_info->last_message = JALN_MSG_RECORD_FAILURE;
-				header_info->message_type_valid = axl_true;
+				header_info->message_type_valid = true;
 			} else {
 				header_info->last_message = NULL;
 				jaln_session_set_errored(sess);
@@ -501,7 +501,7 @@ enum jal_status jaln_parse_digest_challenge_header(char *content, size_t len, st
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
 		if (JAL_OK == rc) {
-			header_info->id_valid = axl_true;
+			header_info->id_valid = true;
 		} else {
 			jaln_session_set_errored(sess);
 		}
@@ -542,16 +542,16 @@ enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_re
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_SYNC));
 		if (JAL_OK == rc) {
 			header_info->last_message = JALN_MSG_SYNC;
-			header_info->message_type_valid = axl_true;
+			header_info->message_type_valid = true;
 		} else {
 			rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_SYNC_FAILURE));
 			if (JAL_OK == rc) {
 				header_info->last_message = JALN_MSG_SYNC_FAILURE;
-				header_info->message_type_valid = axl_true;
+				header_info->message_type_valid = true;
 			} else if (JAL_OK == (rc = jaln_header_value_match(value_start, value_len,
 					JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE)))) {
 				header_info->last_message = JALN_MSG_RECORD_FAILURE;
-				header_info->message_type_valid = axl_true;
+				header_info->message_type_valid = true;
 			} else {
 				header_info->last_message = NULL;
 				jaln_session_set_errored(sess);
@@ -563,7 +563,7 @@ enum jal_status jaln_parse_sync_header(char *content, size_t len, struct jaln_re
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
 		if (JAL_OK == rc) {
-			header_info->id_valid = axl_true;
+			header_info->id_valid = true;
 		} else {
 			jaln_session_set_errored(sess);
 		}
@@ -587,7 +587,7 @@ enum jal_status jaln_parse_record_failure_header(char *content, size_t len, stru
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(JALN_MSG_RECORD_FAILURE));
 		if (JAL_OK == rc) {
 			header_info->last_message = JALN_MSG_RECORD_FAILURE;
-			header_info->message_type_valid = axl_true;
+			header_info->message_type_valid = true;
 		} else {
 			header_info->last_message = NULL;
 			jaln_session_set_errored(sess);
@@ -598,7 +598,7 @@ enum jal_status jaln_parse_record_failure_header(char *content, size_t len, stru
 		const size_t value_len = (size_t)(strstr(content, JALN_CRLF) - value_start);
 		rc = jaln_header_value_match(value_start, value_len, JALN_STR_W_LEN(header_info->expected_nonce));
 		if (JAL_OK == rc) {
-			header_info->id_valid = axl_true;
+			header_info->id_valid = true;
 		} else {
 			jaln_session_set_errored(sess);
 		}
@@ -729,13 +729,13 @@ out:
 
 }
 
-axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
+bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 {
 	if (!base || (*base > (SIZE_MAX - inc))) {
-		return axl_false;
+		return false;
 	}
 	*base += inc;
-	return axl_true;
+	return true;
 }
 
 enum jal_status jaln_create_init_msg(enum jaln_publish_mode mode, enum jaln_record_type type,
@@ -968,9 +968,9 @@ out:
 	return ret;
 }
 
-axl_bool add_header(const char *prefix, const char *val, struct curl_slist **headers)
+bool add_header(const char *prefix, const char *val, struct curl_slist **headers)
 {
-	axl_bool ret;
+	bool ret;
 	size_t prefix_len = strlen(prefix);
 	size_t colon_space_len = strlen(JALN_COLON_SPACE);
 	size_t val_len = strlen(val);
@@ -983,10 +983,10 @@ axl_bool add_header(const char *prefix, const char *val, struct curl_slist **hea
 	if (!tmp) {
 		curl_slist_free_all(*headers);
 		*headers = NULL;
-		ret = axl_false;
+		ret = false;
 	} else {
 		*headers = tmp;
-		ret = axl_true;
+		ret = true;
 	}
 	free(header_str);
 	return ret;
@@ -1167,33 +1167,33 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
 	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT_NACK JALN_CRLF;
 	uint64_t msg_size = strlen(preamble) + 1;
 	char *msg = NULL;
-	axl_bool errors_listed = axl_false;
+	bool errors_listed = false;
 	if (err_codes & JALN_CE_UNSUPPORTED_VERSION) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_VERSION JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNSUPPORTED_COMPRESSION) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_COMPRESSION JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNSUPPORTED_DIGEST) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_DIGEST JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNSUPPORTED_MODE) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_MODE JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNAUTHORIZED_MODE) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNAUTHORIZED_MODE JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
@@ -1251,12 +1251,11 @@ enum jal_status jaln_create_init_ack_msg(const char *compression, const char *di
 void jaln_send_close_session(jaln_session *sess)
 {
 	CURL *curl = sess->curl_ctx;
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
-
-	// Unset header function and ensure header data is set so that headers
-	// are passed to write function
-	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, NULL);
-	curl_easy_setopt(curl, CURLOPT_HEADERDATA, sess);
+	// We don't actually care about this response, reset
+	// all settings to default to make sure we don't try to use some other callback
+	// function to process it - the relevant memory may not be valid - and drop
+	// it on the floor.
+	curl_easy_reset(curl);
 
 	struct curl_slist *headers = NULL;
 	if (add_header(JALN_HDRS_CONTENT_TYPE, JALN_STR_CT_JALOP, &headers) &&

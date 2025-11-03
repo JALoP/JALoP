@@ -63,7 +63,7 @@ struct jaln_context_t {
 	pthread_mutex_t lock;
 	int ref_cnt;
 	int sess_cnt; // Count of open sessions. Need to know when to call on_connection_close
-	axl_bool is_connected;
+	bool is_connected;
 	struct jaln_connection *conn; // Connection to pass to on_connection_close
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;

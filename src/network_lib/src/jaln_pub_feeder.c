@@ -40,11 +40,11 @@
 #include "jaln_strings.h"
 #include "jal_ts_utils.h"
 
-axl_bool jaln_pub_feeder_get_size(jaln_session *sess, uint64_t *size)
+bool jaln_pub_feeder_get_size(jaln_session *sess, uint64_t *size)
 {
 	// expect that the pub_data is already filled out...
 	*size = sess->pub_data->feeder_sz - sess->pub_data->payload_off;
-	return axl_true;
+	return true;
 }
 
 size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *userdata) {
@@ -73,24 +73,24 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	}
 
 	if (!pd->finished_sys_meta && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->sys_meta, pd->sys_meta_sz, &pd->sys_meta_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->sys_meta, pd->sys_meta_sz, &pd->sys_meta_off, true);
 		if (pd->sys_meta_sz == pd->sys_meta_off) {
-			pd->finished_sys_meta = axl_true;
+			pd->finished_sys_meta = true;
 		}
 	}
 
 	if (!pd->finished_sys_meta_break && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
-			pd->finished_sys_meta_break = axl_true;
+			pd->finished_sys_meta_break = true;
 			pd->break_off = 0;
 		}
 	}
 
 	if (!pd->finished_app_meta && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->app_meta, pd->app_meta_sz, &pd->app_meta_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->app_meta, pd->app_meta_sz, &pd->app_meta_off, true);
 		if (pd->app_meta_off == pd->app_meta_sz) {
-			pd->finished_app_meta = axl_true;
+			pd->finished_app_meta = true;
 			pd->sys_meta = NULL;
 			pd->sys_meta_off = 0;
 			pd->sys_meta_sz = 0;
@@ -101,9 +101,9 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	}
 
 	if (!pd->finished_app_meta_break && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
-			pd->finished_app_meta_break = axl_true;
+			pd->finished_app_meta_break = true;
 			pd->break_off = 0;
 		}
 	}
@@ -113,7 +113,7 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 		case JALN_RTYPE_AUDIT:
 		case JALN_RTYPE_LOG: {
 			uint64_t tmp_offset = pd->payload_off;
-			jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->payload, pd->payload_sz, &tmp_offset, axl_true);
+			jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->payload, pd->payload_sz, &tmp_offset, true);
 			pd->payload_off = tmp_offset;
 			break;
 		}
@@ -145,7 +145,7 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 			goto out;
 		}
 		if (pd->payload_sz == pd->payload_off) {
-			pd->finished_payload = axl_true;
+			pd->finished_payload = true;
 			unsigned int dgst_len = sess->dgst->len;
 			if (JAL_OK != sess->dgst->final(pd->dgst_inst, pd->dgst, &dgst_len)) {
 				curl_ret = CURL_READFUNC_ABORT;
@@ -159,9 +159,9 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	}
 
 	if (!pd->finished_payload_break && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
-			pd->finished_payload_break = axl_true;
+			pd->finished_payload_break = true;
 			pd->break_off = 0;
 		}
 	}
@@ -171,7 +171,7 @@ out:
 	return curl_ret;
 }
 
-axl_bool jaln_pub_feeder_is_finished(jaln_session *sess, int *finished)
+bool jaln_pub_feeder_is_finished(jaln_session *sess, int *finished)
 {
 	*finished = sess->errored || sess->pub_data->finished_payload_break;
 	return *finished;
@@ -372,13 +372,13 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	pd->payload_off = 0;
 	pd->break_off = 0;
 
-	pd->finished_headers = axl_false;
-	pd->finished_sys_meta = axl_false;
-	pd->finished_sys_meta_break = axl_false;
-	pd->finished_app_meta = axl_false;
-	pd->finished_app_meta_break = axl_false;
-	pd->finished_payload = axl_false;
-	pd->finished_payload_break = axl_false;
+	pd->finished_headers = false;
+	pd->finished_sys_meta = false;
+	pd->finished_sys_meta_break = false;
+	pd->finished_app_meta = false;
+	pd->finished_app_meta_break = false;
+	pd->finished_payload = false;
+	pd->finished_payload_break = false;
 
 	if (!pd->dgst_inst) {
 		pd->dgst_inst = sess->dgst->create();
@@ -424,18 +424,18 @@ void jaln_pub_feeder_calculate_size(jaln_session *sess)
 	jaln_pub_feeder_safe_add_size(&pd->feeder_sz, 3 * strlen(JALN_STR_BREAK));
 }
 
-axl_bool jaln_pub_feeder_safe_add_size(int64_t *cnt, const uint64_t to_add)
+bool jaln_pub_feeder_safe_add_size(int64_t *cnt, const uint64_t to_add)
 {
 	if (INT64_MAX < to_add) {
 		*cnt = INT64_MAX;
-		return axl_false;
+		return false;
 	}
 	if ((INT64_MAX - to_add) < (uint64_t) *cnt) {
 		*cnt = INT64_MAX;
-		return axl_false;
+		return false;
 	}
 	*cnt += to_add;
-	return axl_true;
+	return true;
 }
 
 enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,
@@ -482,11 +482,11 @@ void jaln_pub_feeder_on_finished(jaln_session *sess)
 	return;
 }
 
-axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_off,
-		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, axl_bool more)
+bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_off,
+		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, bool more)
 {
 	if (!dst || !pdst_off || !src || !psrc_off) {
-		return axl_false;
+		return false;
 	}
 	uint64_t dst_off = *pdst_off;
 	uint64_t src_off = *psrc_off;
@@ -495,7 +495,7 @@ axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_of
 
 	if ((dst_sz < dst_off) ||
 		(src_sz < src_off)) {
-		return axl_false;
+		return false;
 	}
 
 	uint64_t dst_bytes_left = dst_sz - dst_off;
@@ -504,12 +504,12 @@ axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_of
 	int need_more_frames = src_bytes_left < dst_bytes_left;
 
 	if (need_more_frames && !more) {
-		return axl_false;
+		return false;
 	}
 
 	uint64_t bytes_to_copy = need_more_frames ? src_bytes_left : dst_bytes_left;
 	memcpy(dst, src, bytes_to_copy);
 	*psrc_off = src_off + bytes_to_copy;
 	*pdst_off = dst_off + bytes_to_copy;
-	return axl_true;
+	return true;
 }
