@@ -1,0 +1,198 @@
+use crate::queue::BackPressureQueue;
+use crate::subscriber::TokenId;
+use async_trait::async_trait;
+use jalop_actors::actor::{Actor, ActorRef, Protocol, Receiver};
+use jalop_actors::system::ActorContext;
+use jalop_actors::ActorError;
+use jalop_sys::record_data::{IoData, RecordData};
+use jalop_sys::RecordType;
+use log::{error, trace, warn};
+use nix::sys::socket::{sendmsg, ControlMessage, MsgFlags, UnixAddr};
+use std::os::fd::AsRawFd;
+use std::os::unix::net::UnixStream;
+use std::sync::Arc;
+use tokio::sync::mpsc;
+
+/// An [Actor] that owns a [UnixStream] that sends records to JALoP.
+pub struct SenderActor {
+    rt: RecordType,
+    bpq: Arc<BackPressureQueue<TokenId>>,
+    stream: Arc<UnixStream>,
+}
+
+impl SenderActor {
+    /// Create a new sender for the [RecordType] using the [UnixStream].
+    /// The sender will backpressure when the specified capacity is met on the socket.
+    /// Capacity is measured in number of records on the socket, not in total bytes.
+    pub fn new(rt: RecordType, stream: UnixStream, capacity: usize) -> Self {
+        Self {
+            rt,
+            bpq: Arc::new(BackPressureQueue::new(capacity)),
+            stream: Arc::new(stream),
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum SenderBehavior {
+    #[default]
+    Starting,
+    Initialized(ActorRef<SendWorker>),
+}
+
+#[async_trait]
+impl Actor for SenderActor {
+    type Behavior = SenderBehavior;
+
+    async fn pre_start(&mut self, ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+        let worker = ctx
+            .spawn(
+                "worker",
+                SendWorker {
+                    rt: self.rt,
+                    bpq: self.bpq.clone(),
+                    stream: self.stream.clone(),
+                },
+            )
+            .await?;
+        ctx.becomes(SenderBehavior::Initialized(worker));
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub enum SenderMsg {
+    Send(TokenId, RecordData),
+    Sent(TokenId, String),
+    Evict(String),
+    EvictAll(TokenId),
+}
+
+pub type SendNotify = mpsc::Sender<SendResp>;
+pub type SendReceipt = mpsc::Receiver<SendResp>;
+pub type AcceptedNotify = mpsc::Sender<()>;
+pub type AcceptedReceipt = mpsc::Receiver<()>;
+
+pub enum SendResp {
+    Pending(AcceptedReceipt, SendReceipt),
+    Success,
+    Failure(String),
+}
+
+#[async_trait]
+impl Protocol for SenderMsg {
+    type Response = Result<SendResp, ActorError>;
+}
+
+#[async_trait]
+impl Receiver<SenderMsg> for SenderActor {
+    async fn receive(
+        &mut self,
+        msg: SenderMsg,
+        ctx: &mut ActorContext<Self::Behavior>,
+    ) -> Result<SendResp, ActorError> {
+        match ctx.behavior() {
+            SenderBehavior::Initialized(worker) => match msg {
+                SenderMsg::Sent(token, nonce) => {
+                    self.bpq.evict(&nonce).await;
+                    trace!("evict {nonce} from {:?} sender queue for subscriber {token}", self.rt);
+                    Ok(SendResp::Success)
+                }
+                SenderMsg::Send(token, rec) => {
+                    let (accepted_tx, accepted_rx) = mpsc::channel(1);
+                    let (sent_tx, sent_rx) = mpsc::channel(1);
+                    let _ = worker.tell(WorkerMsg::new(token, rec, accepted_tx, sent_tx)).await?;
+                    Ok(SendResp::Pending(accepted_rx, sent_rx))
+                }
+                SenderMsg::Evict(nonce) => {
+                    self.bpq.evict(&nonce).await;
+                    trace!("evict {nonce} from {:?} sender queue", self.rt);
+                    Ok(SendResp::Success)
+                }
+                SenderMsg::EvictAll(id) => {
+                    trace!("evict all from {:?} sender queue for subscriber {id}", self.rt);
+                    self.bpq.evict_values(id).await;
+                    Ok(SendResp::Success)
+                }
+            },
+            _ => {
+                warn!("invalid sender behavior state");
+                ctx.stop();
+                Err(ActorError::ActorStopped)
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+struct WorkerMsg {
+    id: TokenId,
+    record: RecordData,
+    accepted: AcceptedNotify,
+    sent: SendNotify,
+}
+
+impl WorkerMsg {
+    fn new(id: u16, record: RecordData, accepted: AcceptedNotify, sent: SendNotify) -> Self {
+        Self {
+            id,
+            record,
+            accepted,
+            sent,
+        }
+    }
+}
+
+impl Protocol for WorkerMsg {
+    type Response = Result<(), ActorError>;
+}
+
+pub struct SendWorker {
+    rt: RecordType,
+    bpq: Arc<BackPressureQueue<TokenId>>,
+    stream: Arc<UnixStream>,
+}
+
+#[async_trait]
+impl Actor for SendWorker {
+    type Behavior = ();
+}
+
+#[async_trait]
+impl Receiver<WorkerMsg> for SendWorker {
+    async fn receive(&mut self, msg: WorkerMsg, _ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+        let fd = self.stream.as_raw_fd();
+        let nonce = msg.record.nonce.clone();
+        self.bpq.insert(&nonce, msg.id).await.map_err(|_| ActorError::ActorStopped)?;
+        trace!("added {nonce} to {:?} sender queue for subscriber {}", self.rt, msg.id);
+        let _ = msg.accepted.send(()).await;
+        let send = tokio::task::spawn_blocking(move || {
+            let io_data: IoData = IoData::new(msg.record.into(), msg.id);
+            let iovs = io_data.vectors();
+            let mut cmsgs = vec![];
+
+            // this construct transfers ownership of the fd reference to the outer context
+            let fd_array;
+            if let Some(fd) = io_data.fd.clone() {
+                fd_array = [fd.as_raw_fd()];
+                cmsgs.push(ControlMessage::ScmRights(&fd_array))
+            }
+            sendmsg(fd, &iovs, &cmsgs, MsgFlags::empty(), None::<&UnixAddr>)
+        });
+        match send.await {
+            Ok(Ok(n)) => {
+                trace!("{:?} uds send success {n} - {nonce}", self.rt);
+                let _ = msg.sent.send(SendResp::Success).await;
+            }
+            Ok(Err(e)) => {
+                let _ = msg.sent.send(SendResp::Failure(nonce)).await;
+                error!("socket-tx: {:?} uds send failed: {e:?}", self.rt)
+            }
+            Err(e) => {
+                let _ = msg.sent.send(SendResp::Failure(nonce)).await;
+                error!("socket-tx: {:?} uds send thread join failed: {e:?}", self.rt)
+            }
+        }
+        Ok(())
+    }
+}

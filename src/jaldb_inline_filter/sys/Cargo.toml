@@ -1,0 +1,21 @@
+[package]
+name = "jalop-sys"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+bindgen = { version = "0.69", optional = true, default-features = false, features = ["logging", "prettyplease"] }
+anyhow = "1"
+
+[dependencies]
+anyhow = "1"
+thiserror = "2"
+log = "0.4"
+libc = "0.2"
+
+
+[features]
+default = []
+rhel9 = ["bindgen"]
+rhel8 = []
+rhel7 = []
