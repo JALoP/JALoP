@@ -283,6 +283,7 @@ err_out:
 	free(appname);
 	free(jp_conf_ctx.socket_path);
 	free(jp_conf_ctx.payload_path);
+	free(jp_conf_ctx.schema_path);
 
 	if(payload_fd != STDIN_FILENO) {
 		close(payload_fd);

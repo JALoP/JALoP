@@ -51,6 +51,7 @@
 #include <jaldb_status.h>
 #include "jal_dump.h"
 #include "jaldb_context.hpp"
+#include "jaldb_config.h"
 #include "jaldb_record.h"
 #include "jaldb_segment.h"
 #include "jaldb_strings.h"
@@ -135,6 +136,7 @@ int main(int argc, char **argv) {
 
 	int counter = 0;
 	int ret = 0;
+	int map_size = DEFAULT_LMDB_MAP_SIZE;
 	enum jaldb_rec_type rtype = JALDB_RTYPE_UNKNOWN;
 
 	struct jd_config_context jd_conf_ctx = {NULL, 0, 0, NULL, NULL, 0, INITIAL_ARRAY_SIZE};
@@ -160,7 +162,26 @@ int main(int argc, char **argv) {
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(ctx, home, JDB_READONLY);
+	//Attempts to load optional LMDB_CONFIG file in db_root
+	//If present, this will override the lmdb map size, otherwise the default value will be used.
+	jaldb_config *jdb_config = NULL;
+	enum jaldb_config_status jcs = get_jaldb_config(home, &jdb_config);
+	if (jcs != JALDB_CONFIG_OK && jcs != JALDB_CONFIG_E_NOTFOUND) {
+		fprintf(stderr, "ERROR: Failed to load the LMDB_CONFIG file in db_root: %s", home);
+		goto err_out;
+	}
+
+	//Only override map size if present in config
+	if (jcs != JALDB_CONFIG_E_NOTFOUND)
+	{
+		if (jdb_config->map_size != 0)
+		{
+			map_size = jdb_config->map_size;
+		}
+
+		free_jaldb_config(&jdb_config);
+	}
+	jaldb_ret = jaldb_context_init(ctx, home, JDB_READONLY, map_size);
 
 	if (jaldb_ret != JALDB_OK) {
 		printf("\nContext could not be made.\n");
@@ -204,6 +225,9 @@ err_out:
 	ret = -1;
 	printf("You have hit error out. Closing out.\n");
 out:
+
+	free((char *)argp_program_version);
+	
 	for (counter = 0; counter < (num_uuid); counter++) {
 	}
 	for (counter = 0; counter < (num_uuid); counter++) {

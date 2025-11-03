@@ -58,6 +58,7 @@
 #include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
 #include "jaldb_segment.h"
+#include "jaldb_config.h"
 
 #define JALDB_TAIL_THREAD_SLEEP_SECONDS 1
 #define JALDB_TAIL_DEFAULT_NUM_RECORDS 20
@@ -86,6 +87,7 @@ struct global_members_t {
 	char *home;
 	jaldb_context *ctx;
 	enum jaldb_rec_type rtype;
+	int map_size;
 } gbl;
 
 static int setup_signals();
@@ -114,7 +116,7 @@ static struct argp argp = {options, parse_opt, args_doc, argp_doc, NULL, NULL, N
 
 static void print_error(enum jaldb_status error);
 static void print_settings(int follow, long int num_rec, char *type,
-				char *data, char *home);
+				char *data, char *home, int map_size);
 static void do_work(void *ptr);
 static void display_records(list<string> &uuid_list, struct global_members_t *mbrs);
 
@@ -132,7 +134,10 @@ int main(int argc, char **argv) {
 	//order when redirecting output to a file.
 	setvbuf(stdout, NULL, _IONBF, 0);
 	int ret = 0;
+
 	enum jaldb_status jaldb_ret = JALDB_OK;
+	jaldb_config *jdb_config = NULL;
+	enum jaldb_config_status jcs = JALDB_CONFIG_OK;
 
 	gbl.ctx = NULL;
 	gbl.follow_flag = 0;
@@ -140,6 +145,7 @@ int main(int argc, char **argv) {
 	gbl.type = NULL;
 	gbl.home = NULL;
 	gbl.data = NULL;
+	gbl.map_size = DEFAULT_LMDB_MAP_SIZE;
 
 	ret = argp_parse(&argp, argc, argv, 0, 0, NULL);
 	if(0 != ret) {
@@ -164,11 +170,29 @@ int main(int argc, char **argv) {
 		gbl.data = jal_strdup(JALDB_TAIL_DEFAULT_DATA);
 	}
 
-	print_settings(gbl.follow_flag, gbl.num_rec, gbl.type, gbl.data, gbl.home);
-
 	gbl.ctx = jaldb_context_create();
 
-	jaldb_ret = jaldb_context_init(gbl.ctx, gbl.home, JDB_READONLY);
+	//Attempts to load optional LMDB_CONFIG file in db_root
+	//If present, this will override the lmdb map size, otherwise the default value will be used.
+	jcs = get_jaldb_config(gbl.home, &jdb_config);
+	if (jcs != JALDB_CONFIG_OK && jcs != JALDB_CONFIG_E_NOTFOUND) {
+		fprintf(stderr, "ERROR: Failed to load the LMDB_CONFIG file in db_root: %s", gbl.home);
+		goto err_out;
+	}
+
+	//Only override map size if present in config
+	if (jcs != JALDB_CONFIG_E_NOTFOUND)
+	{
+		if (jdb_config->map_size != 0)
+		{
+			gbl.map_size = jdb_config->map_size;
+		}
+
+		free_jaldb_config(&jdb_config);
+	}
+
+	print_settings(gbl.follow_flag, gbl.num_rec, gbl.type, gbl.data, gbl.home, gbl.map_size);
+	jaldb_ret = jaldb_context_init(gbl.ctx, gbl.home, JDB_READONLY, gbl.map_size);
 
 	if (jaldb_ret != JALDB_OK) {
 		printf("\nContext could not be made.\n");
@@ -191,6 +215,9 @@ err_out:
 	printf("You have hit error out. Closing out.\n");
 out:
 	// Clean-up
+	
+	free((char *)argp_program_version);
+
 	if (gbl.type) {
 		free(gbl.type);
 	}
@@ -342,17 +369,18 @@ static void print_error(enum jaldb_status error)
 	printf("\n");
 }
 
-static void print_settings(int follow, long int num_rec, char *type, char *data, char *home)
+static void print_settings(int follow, long int num_rec, char *type, char *data, char *home, int map_size)
 {
 	std::string s_true = "true";
 	std::string s_false = "false";
 	printf("\nJALDB_TAIL\n====\nSETTINGS:\n");
-	printf("\tFollow:\t\t%s\n",
+	printf("\tFollow:\t\t\t%s\n",
 		follow == 1 ? s_true.c_str() : s_false.c_str());
-	printf("\tRecords:\t%ld\n", num_rec);
-	printf("\tType:\t\t%s\n", type);
-	printf("\tData:\t\t%s\n", data);
-	printf("\tHome:\t\t%s\n", home);
+	printf("\tRecords:\t\t%ld\n", num_rec);
+	printf("\tType:\t\t\t%s\n", type);
+	printf("\tData:\t\t\t%s\n", data);
+	printf("\tHome:\t\t\t%s\n", home);
+	printf("\tLMDB Map Size (GB):\t%d\n", map_size);
 	printf("\n\n");
 }
 

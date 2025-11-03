@@ -50,6 +50,7 @@
 #include "jaldb_strings.h"
 #include "jaldb_record.h"
 #include "jaldb_segment.h"
+#include "jaldb_config.h"
 
 #include "jal_alloc.h"
 #include "jal_asprintf_internal.h"
@@ -67,10 +68,6 @@ const char *recv_str[] = { "UNCONF", " CONF " };
 const char *action_str[] = {"Keep  ", "Delete", "Force "};
 static int exiting = 0;
 
-const char LMDB_PERFORMANCE_NONE = '0';
-const char LMDB_PERFORMANCE_LEVEL_1 = '1';
-const char LMDB_PERFORMANCE_LEVEL_2 = '2';
-const char LMDB_PERFORMANCE_LEVEL_3 = '3';
 const int MAX_PURGE_BATCH_SIZE = 10000;
 
 //These are the jal processes to check if running before doing a db compact operation
@@ -85,7 +82,6 @@ static struct global_args_t {
 	int compact;
 	int skip_process_check;
 	char *compact_path;
-	char performance_level;
 	char *batch_size;
 	char *nonce;
 	list<string> uuids;
@@ -116,8 +112,6 @@ static struct argp_option options[] = {
 		"Compact the databases associated to the JAL record type (j/a/l) passed via -t and return empty pages to the filesystem.", 0},
 	{"batch-size", 'e', "E", 0,
 			"Specify the the number of records to purge per transaction. The default is 10000 records if not specified. The minimum value is 1 and maximum is 10000.", 0},
-	{"performance-level", 'l', "L", 0,
-			"Specify the LMDB performance level to use. Valid values are '0', 1', '2', '3'.  The default is '2' if not specified.", 0},
 	{"compact-path", 's', "S", 0,
 			"Specify path of where the temporary LMDB database is copied while compacting.", 0},
 	{"skip-process-check", 'a', NULL, 0,
@@ -212,6 +206,11 @@ int main(int argc, char **argv)
 	enum jaldb_rec_type type = JALDB_RTYPE_UNKNOWN;
 	jaldb_context *ctx = NULL;
 	int err = 0;
+	enum jaldb_flags jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
+	std::string database_option = std::string(JDB_LMDB_PERFORMANCE_LEVEL2_STR);
+	int map_size = DEFAULT_LMDB_MAP_SIZE;
+	jaldb_config *jdb_config = NULL;
+	enum jaldb_config_status jcs = JALDB_CONFIG_OK;
 
 	// Perform signal hookups
 	if ( 0 != setup_signals()) {
@@ -234,7 +233,6 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	jaldb_flags jdb_flags;
 	if (global_args.compact) {
 		//Ensure compact path was provided
 		if (NULL == global_args.compact_path)
@@ -258,28 +256,6 @@ int main(int argc, char **argv)
 			jaldb_context_destroy(&ctx);
 			return -1;
 		}
-	}
-
-	//Sets performance level if specified
-	if (LMDB_PERFORMANCE_NONE == global_args.performance_level)
-	{
-		jdb_flags = JDB_NONE;
-	}
-	else if (LMDB_PERFORMANCE_LEVEL_1 == global_args.performance_level)
-	{
-		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL1;
-	}
-	else if (LMDB_PERFORMANCE_LEVEL_2 == global_args.performance_level)
-	{
-		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
-	}
-	else if (LMDB_PERFORMANCE_LEVEL_3 == global_args.performance_level)
-	{
-		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL3;
-	}
-	else //Default to performance level 2
-	{
-		jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
 	}
 
 	//Sets batch_size if specified, otherwise default to no batching (1)
@@ -349,7 +325,34 @@ int main(int argc, char **argv)
 		}
 	}
 
-	dbret = jaldb_context_init(ctx, global_args.home, jdb_flags);
+	//Attempts to load optional LMDB_CONFIG file in db_root
+	//If present, this will override the lmdb performance level
+	//and lmdb map size, otherwise default values will be used.
+	jcs = get_jaldb_config(global_args.home, &jdb_config);
+	if (jcs != JALDB_CONFIG_OK && jcs != JALDB_CONFIG_E_NOTFOUND) {
+		global_args_free();
+		jaldb_context_destroy(&ctx);
+		return -1;
+	}
+
+	//Only override map size if present in config
+	if (jcs != JALDB_CONFIG_E_NOTFOUND)
+	{
+		if (jdb_config->map_size != 0)
+		{
+			map_size = jdb_config->map_size;
+		}
+
+		//Only override database option if present in config
+		if (NULL != jdb_config->database_option)
+		{
+			jdb_flags = jdb_config->jdb_flags;
+			database_option = std::string(jdb_config->database_option);
+		}
+		free_jaldb_config(&jdb_config);
+	}
+
+	dbret = jaldb_context_init(ctx, global_args.home, jdb_flags, map_size);
 	if (JALDB_OK != dbret) {
 		fprintf(stderr, "Failed to initialize jaldb context\n");
 		goto out;
@@ -395,27 +398,6 @@ int main(int argc, char **argv)
 			printf("Synced records only\n");
 		}
 
-		if (LMDB_PERFORMANCE_NONE == global_args.performance_level)
-		{
-			printf("LMDB Performance Level: JDB_NONE\n");
-		}
-		else if (LMDB_PERFORMANCE_LEVEL_1 == global_args.performance_level)
-		{
-			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL1\n");
-		}
-		else if (LMDB_PERFORMANCE_LEVEL_2 == global_args.performance_level)
-		{
-			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL2\n");
-		}
-		else if (LMDB_PERFORMANCE_LEVEL_3 == global_args.performance_level)
-		{
-			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL3\n");
-		}
-		else //Default to performance level 2
-		{
-			printf("LMDB Performance Level: JDB_LMDB_PERFORMANCE_LEVEL2\n");
-		}
-
 		if (global_args.batch_size)
 		{
 			printf("Batch Size: %s\n", global_args.batch_size);
@@ -424,6 +406,9 @@ int main(int argc, char **argv)
 		{
 			printf("Batch Size: %d\n", MAX_PURGE_BATCH_SIZE);
 		}
+
+		printf("Database Option: %s\n", database_option.c_str());
+		printf("LMDB Map Size (GB): %d\n", map_size);
 
 	} else {
 		// Otherwise output the old format that works with the test harness
@@ -534,6 +519,7 @@ out:
 		}
 	}
 
+	free((char *)argp_program_version);
 	global_args_free();
 	jaldb_context_destroy(&ctx);
 
@@ -615,14 +601,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 			break;
 		case 'h':
 			global_args.home = strdup(arg);
-			break;
-		case 'l':
-			if (LMDB_PERFORMANCE_NONE != *arg && LMDB_PERFORMANCE_LEVEL_1 != *arg &&
-				LMDB_PERFORMANCE_LEVEL_2 != *arg && LMDB_PERFORMANCE_LEVEL_3 != *arg) {
-				fprintf(stderr, "Invalid performance level\n");
-				goto err_out;
-			}
-			global_args.performance_level = *arg;
 			break;
 		case 's':
 			global_args.compact_path = strdup(arg);
