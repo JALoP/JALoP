@@ -100,7 +100,8 @@ enum jaldb_status jaldb_get_db_flags(
 enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
-	enum jaldb_flags jdb_flags)
+	enum jaldb_flags jdb_flags,
+	int map_size)
 {
 	if (!ctx) {
 		return JALDB_E_INVAL;
@@ -155,20 +156,20 @@ enum jaldb_status jaldb_context_init(
 
 	try
 	{
-		lmdb_env = getMDBEnv(db_root, env_flags, 0600);
+		lmdb_env = getMDBEnv(db_root, env_flags, 0640, map_size);
 
 		if(JALDB_OK != jaldb_create_primary_dbs_with_indices(
-				db_root, lmdb_env, "log", env_flags, &ctx->log_dbs)) {
+				db_root, lmdb_env, "log", env_flags, &ctx->log_dbs, map_size)) {
 			return JALDB_E_INVAL;
 		}
 
 		if(JALDB_OK != jaldb_create_primary_dbs_with_indices(
-				db_root, lmdb_env, "audit", env_flags, &ctx->audit_dbs)) {
+				db_root, lmdb_env, "audit", env_flags, &ctx->audit_dbs, map_size)) {
 			return JALDB_E_INVAL;
 		}
 
 		if(JALDB_OK != jaldb_create_primary_dbs_with_indices(
-				db_root, lmdb_env, "journal", env_flags, &ctx->journal_dbs)) {
+				db_root, lmdb_env, "journal", env_flags, &ctx->journal_dbs, map_size)) {
 			return JALDB_E_INVAL;
 		}
 	}
@@ -257,6 +258,7 @@ static enum jaldb_status jaldb_mark(
 	struct jaldb_record_dbs *rdbs = NULL;
 	ret = jaldb_get_primary_record_dbs(ctx, type, &rdbs);
 	if (JALDB_OK != ret || !rdbs || !rdbs->primary_db) {
+		printf("NO jaldb_get_primary_record_dbs\n");
 		return JALDB_E_INVAL;
 	}
 
@@ -282,6 +284,7 @@ static enum jaldb_status jaldb_mark(
 		if(0 == recordId)
 		{
 			txn.abort();
+			fprintf(stderr, "Found no matching record for specified nonce: %s\n", nonce);
 			return  JALDB_E_NOT_FOUND;
 		}
 
@@ -328,7 +331,8 @@ static enum jaldb_status jaldb_mark(
 			break;
 			case MarkType::CONFIRM:
 				// No change, skip db write
-				if(rec.confirmed)
+				// Confirm only makes sense on a record that is currently JALDB_NOT_CONFIRMED
+				if(JALDB_NOT_CONFIRMED != rec.synced)
 				{
 					txn.abort();
 				}
@@ -343,7 +347,7 @@ static enum jaldb_status jaldb_mark(
 				// sure it will be picked up by a live-mode publisher
 				else {
 					txn.modify(recordId, [nonce_out](JaldbRecordTranslator& r) {
-						r.confirmed = true;
+						r.synced = JALDB_NOT_SENT;
 						// may throw std::runtime_error
 						r.regenNetworkNonce();
 						if(nonce_out) {
@@ -998,8 +1002,8 @@ enum jaldb_status jaldb_insert_record(
 	if (ret != JALDB_OK) {
 		return ret;
 	}
-
 	rec->confirmed = confirmed ? 1 : 0;
+	rec->synced = JALDB_NOT_SENT;
 
 	struct jaldb_record_dbs *rdbs = NULL;
 	ret = jaldb_get_primary_record_dbs(ctx, rec->type, &rdbs);
@@ -1073,7 +1077,7 @@ enum jaldb_status jaldb_insert_record(
 enum jaldb_status jaldb_get_record(
 	jaldb_context *ctx,
 	enum jaldb_rec_type type,
-	char *nonce,
+	const char *nonce,
 	struct jaldb_record **recpp)
 {
 	struct jaldb_record *rec = NULL;
@@ -1199,7 +1203,9 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
 	if (s->fd != -1) {
 		return JALDB_OK;
 	}
-	jal_asprintf(&path, "%s/%s", ctx->journal_root, (char*)s->payload);
+
+	jal_asprintf(&path, "%s/%s", ctx->journal_root, (char *)s->payload);
+
 	fd = open(path, O_RDONLY);
 	free(path);
 	path = NULL;
@@ -1483,36 +1489,22 @@ enum jaldb_status jaldb_next_unsynced_record(
 		LmdbDbROTransaction txn = rdbs->primary_db->getROTransaction();
 
 		// This function is used for archive mode, which sends all the unsynced records
-		// that are confirmed (skips unconfirmed records).
-		// Get the "first" unsynced record in a loop, and abort the loop if we run out
-		// of records which have ->synced equal to JALDB_NOT_SENT.
-		// This is marginally faster than equal_range in large dbs,
-		// particularly when we will almost always take the first result.
-		// The only time we should ever encounter a record which is JALDB_NOT_SENT and also
-		// not confirmed is in the only partially supported case of a subscriber db also
-		// being used as the source for another publisher. In that case, this should still be
-		// no worse than using equal_range, and probably still slightly faster.
-		bool found = false;
-		for(auto iter = txn.find<LmdbDbIndex::IDX_SENT>(JALDB_NOT_SENT);
-			(iter != txn.end()) && (JALDB_NOT_SENT == iter->synced);
-			++iter)
+		// that are JALDB_NOT_SENT (i.e., not yet sent but also not JALDB_NOT_CONFIRMED).
+
+		JaldbRecordTranslator recT;
+		// Iterators are dangerous and unstable when the MDB_NOLOCK mode is specified
+		// so we need to avoid using them.
+		// Search for the "first" hit in the IDX_SENT index with a value of JALDB_NOT_SENT
+		auto id = txn.get<IDX_SENT>(JALDB_NOT_SENT, recT);
+
+		// Special id value of 0 means there was no record to find
+		if(0 == id)
 		{
-			// Skip unconfirmed records
-			if(true != iter->confirmed)
-			{
-				continue;
-			}
-			rec = iter->generateCStruct();
-			*network_nonce = strdup(iter->networkNonce.c_str());
-			found = true;
-			break;
+			return JALDB_E_NOT_FOUND;
 		}
 
-		if (true != found)
-		{
-			ret = JALDB_E_NOT_FOUND;
-			return ret;
-		}
+		rec = recT.generateCStruct();
+		*network_nonce = strdup(recT.networkNonce.c_str());
 
 		*rec_out = rec;
 		rec = NULL;
@@ -1521,7 +1513,8 @@ enum jaldb_status jaldb_next_unsynced_record(
 	catch (std::exception &err)
 	{
 		fprintf(stderr, "ERROR: jaldb_next_unsynced_record - exception: %s\n", err.what());
-		return JALDB_E_DB;
+		fprintf(stderr, "Continuing\n");
+		return JALDB_E_NOT_FOUND;
 	}
 	catch (...)
 	{
@@ -1760,16 +1753,23 @@ enum jaldb_status get_stats(jaldb_context *ctx, JaldbStat& stat, enum jaldb_rec_
 			if (counter==txnSize){
 				stat.latest_time = iter->nonceTimestamp;
 			}
-			if (JALDB_NOT_SENT == iter->synced)
+			if (JALDB_NOT_CONFIRMED == iter->synced)
 			{
+				// Increment nothing
+			}
+			else if (JALDB_NOT_SENT == iter->synced)
+			{
+				stat.confirmed_count++;
 				stat.not_sent_count++;
 			}
 			else if (JALDB_SENT == iter->synced)
 			{
+				stat.confirmed_count++;
 				stat.sent_count++;
 			}
 			else if(JALDB_SYNCED == iter->synced)
 			{
+				stat.confirmed_count++;
 				stat.synced_count++;
 			}
 			else
@@ -1778,10 +1778,6 @@ enum jaldb_status get_stats(jaldb_context *ctx, JaldbStat& stat, enum jaldb_rec_
 				stat.failed_count++;
 			}
 
-			if (iter->confirmed)
-			{
-				stat.confirmed_count++;
-			}
 			stat.count++;
 		}
 	}

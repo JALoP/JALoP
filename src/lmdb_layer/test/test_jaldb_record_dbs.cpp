@@ -26,7 +26,6 @@
 extern "C" {
 #include <test-dept.h>
 }
-#include <db.h>
 #include <errno.h>
 #include <libxml/xmlschemastypes.h>
 #include <stdlib.h>

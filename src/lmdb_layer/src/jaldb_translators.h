@@ -75,7 +75,6 @@ struct JaldbRecordTranslator {
 	int version;
 	enum jaldb_rec_type  type;            //!< The type of the record
 	enum jaldb_sync_stat synced;          //!< Indicates the outbound record status.
-	bool                 confirmed = false;       //!< Indicates whether the inbound record has been confirmed as valid via digest_response from the publisher.
 	bool                 haveUid = false;        //!< Indicates if the uid filed is valid.
 	uuid_t               hostUuid;       //!< The UUID of the machine that created the record.
 	uuid_t               uuid;            //!< The UUID of the record.
@@ -151,7 +150,6 @@ void serialize(Archive& ar, JaldbRecordTranslator& g, const unsigned int version
 	ar & g.version;
 	ar & g.type;
 	ar & g.synced;
-	ar & g.confirmed;
 	ar & g.haveUid;
 	ar & g.hostUuid;
 	ar & g.uuid;

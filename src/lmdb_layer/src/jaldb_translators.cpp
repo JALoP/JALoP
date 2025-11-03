@@ -48,7 +48,7 @@ JaldbSegmentTranslator JaldbSegmentTranslator::fromCStruct(const jaldb_segment& 
 	// its on disk or in the payload field
 	size_t payloadLen;
 	if(1 == s.on_disk) {
-		payloadLen = strlen((char*)s.payload);
+		payloadLen = strlen((char*)s.payload)+1; //add one for NULL character
 	} else {
 		payloadLen = s.length;
 	}
@@ -105,9 +105,19 @@ jaldb_record* JaldbRecordTranslator::generateCStruct() const {
 	ret->username = strdup(username.c_str());
 	ret->sec_lbl = strdup(securityLabel.c_str());
 	ret->version = version;
-	ret->synced = synced;
+
+	// The C struct has synced and the confirmed boolean split out
+	if (JALDB_NOT_CONFIRMED == synced)
+	{
+		ret->synced = JALDB_NOT_SENT;
+		ret->confirmed = 0;
+	}
+	else
+	{
+		ret->synced = synced;
+		ret->confirmed = 1;
+	}
 	ret->type = type;
-	ret->confirmed = confirmed ? 1 : 0;
 	ret->have_uid = haveUid ? 1 : 0;
 	uuid_copy(ret->host_uuid, hostUuid);
 	uuid_copy(ret->uuid, uuid);
@@ -161,8 +171,16 @@ JaldbRecordTranslator JaldbRecordTranslator::fromCStruct(const struct jaldb_reco
 	if(r.sec_lbl) { ret.securityLabel = std::string(r.sec_lbl); }
 	ret.version = r.version;
 	ret.type = r.type;
-	ret.synced = r.synced;
-	ret.confirmed = (1 == r.confirmed);
+
+	// The database combines the concept of confirmed and synced for filtering purposes
+	if (!r.confirmed)
+	{
+		ret.synced = JALDB_NOT_CONFIRMED;
+	}
+	else
+	{
+		ret.synced = r.synced;
+	}
 	ret.haveUid = (1 == r.have_uid);
 	uuid_copy(ret.hostUuid, r.host_uuid);
 	uuid_copy(ret.uuid, r.uuid);

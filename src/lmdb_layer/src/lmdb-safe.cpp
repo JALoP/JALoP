@@ -52,10 +52,19 @@ MDBDbi::MDBDbi(__attribute__((unused)) MDB_env* env, MDB_txn* txn, const string_
   // Database names are keys in the unnamed database, and may be read but not written.
 }
 
-MDBEnv::MDBEnv(const char* fname, int flags, int mode)
+//map_size is in gigabytes (GB)
+MDBEnv::MDBEnv(const char* fname, int flags, int mode, int map_size)
 {
+  //Ensure initial map size is not less than 1
+  if (map_size < 1)
+  {
+    map_size = 1;  //Results in a default map_size of 1 GB
+  }
+
+  //Convert map_size GB to bytes
+  size_t final_map_size = (size_t)map_size * (size_t)1024 * (size_t)1024 * (size_t)1024;
   mdb_env_create(&d_env);
-  if(mdb_env_set_mapsize(d_env, 16ULL*8196*244140ULL)) // 4GB
+  if(mdb_env_set_mapsize(d_env, final_map_size))
     throw std::runtime_error("setting map size");
     /*
 Various other options may also need to be set before opening the handle, e.g. mdb_env_set_mapsize(), mdb_env_set_maxreaders(), mdb_env_set_maxdbs(),
@@ -107,13 +116,19 @@ int MDBEnv::getROTX()
 }
 
 
-std::shared_ptr<MDBEnv> getMDBEnv(const char* fname, int flags, int mode)
+std::shared_ptr<MDBEnv> getMDBEnv(const char* fname, int flags, int mode, int map_size)
 {
   struct Value
   {
     weak_ptr<MDBEnv> wp;
     int flags;
   };
+
+  //Default to 1 if any value less than 1 is passed in
+  if (map_size < 1)
+  {
+    map_size = 1; //Results in a final default map size of 1 GB.
+  }
 
   static std::map<tuple<dev_t, ino_t>, Value> s_envs;
   static std::mutex mut;
@@ -124,7 +139,7 @@ std::shared_ptr<MDBEnv> getMDBEnv(const char* fname, int flags, int mode)
       throw std::runtime_error("Unable to stat prospective mdb database: "+string(strerror(errno)));
     else {
       std::lock_guard<std::mutex> l(mut);
-      auto fresh = std::make_shared<MDBEnv>(fname, flags, mode);
+      auto fresh = std::make_shared<MDBEnv>(fname, flags, mode, map_size);
       if(stat(fname, &statbuf))
         throw std::runtime_error("Unable to stat prospective mdb database: "+string(strerror(errno)));
       auto key = std::tie(statbuf.st_dev, statbuf.st_ino);
@@ -149,7 +164,7 @@ std::shared_ptr<MDBEnv> getMDBEnv(const char* fname, int flags, int mode)
     }
   }
 
-  auto fresh = std::make_shared<MDBEnv>(fname, flags, mode);
+  auto fresh = std::make_shared<MDBEnv>(fname, flags, mode, map_size);
   s_envs[key] = {fresh, flags};
 
   return fresh;

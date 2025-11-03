@@ -61,9 +61,10 @@ enum jaldb_data_type {
 };
 
 enum jaldb_sync_stat {
-	JALDB_NOT_SENT = 0,	//!< Indicates the record has not been sent outbound */
-	JALDB_SENT = 1,		//!< Indicates the record has been sent outbound to at least one remote client */
-	JALDB_SYNCED = 2,	//!< Indicates the record has been synced by at least one outbound remote client */
+	JALDB_NOT_CONFIRMED = 0, // Indicates the record is not completely inserted/received
+	JALDB_NOT_SENT = 1,	// Indicates the record has not been sent outbound
+	JALDB_SENT = 2,		// Indicates the record has been sent outbound to at least one remote client
+	JALDB_SYNCED = 3,	// Indicates the record has been synced by at least one outbound remote client
 };
 
 /**

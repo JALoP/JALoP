@@ -57,7 +57,7 @@ extern "C" {
 
 #define OTHER_DB_ROOT "./testdb/"
 
-constexpr int ITEMS_IN_DB = 3;
+constexpr int ITEMS_IN_DB = 4;
 struct jaldb_record *records[ITEMS_IN_DB];
 LmdbDbType* db = NULL;
 
@@ -102,7 +102,17 @@ static void compare_record_contents(const struct jaldb_record* r1, const struct 
 	safe_strcmp(r1->sec_lbl, r2->sec_lbl);
 	assert_equals(r1->version, r2->version);
 	assert_equals(r1->type, r2->type);
-	assert_equals(r1->synced, r2->synced);
+
+	//Special case for JALDB_NOT_CONFIRMED getting changed to JALDB_NOT_SENT when
+	//generating c struct
+	if (r1->synced == JALDB_NOT_CONFIRMED)
+	{
+		assert_equals(JALDB_NOT_SENT, r2->synced);
+	}
+	else
+	{
+		assert_equals(r1->synced, r2->synced);
+	}
 	assert_equals(r1->confirmed, r2->confirmed);
 	assert_equals(r1->have_uid, r2->have_uid);
 	assert_equals(0, uuid_compare(r1->host_uuid, r2->host_uuid));
@@ -237,9 +247,52 @@ static void create_records(struct jaldb_record** recs)
 	recs[2]->version = 1;
 	recs[2]->type = JALDB_RTYPE_AUDIT;
 	recs[2]->synced = JALDB_SENT;//JALDB_NOT_SENT, JALDB_SENT, JALDB_SYNCED
-	recs[2]->confirmed = 0;
+	recs[2]->confirmed = 1;
 	recs[2]->have_uid = 1;
 	assert_equals(0, uuid_parse("FFFFFFFF-89AB-CDEF-0123-456789ABCDEF", recs[2]->host_uuid));
+
+	// Record 3
+	recs[3] = jaldb_create_record();
+
+	assert_equals(0, uuid_parse("BAAAAAAA-89AB-CDEF-0123-456789ABCDEF", recs[3]->uuid));
+	primary_key = jaldb_gen_primary_key(recs[3]->uuid);
+	assert_not_equals(NULL, primary_key);
+	recs[3]->network_nonce = primary_key;
+	recs[3]->pid = 1;
+	recs[3]->uid = 1;
+
+	recs[3]->sys_meta = jaldb_create_segment();
+	recs[3]->sys_meta->length = 5;
+	recs[3]->sys_meta->payload = (uint8_t*)jal_calloc(recs[3]->sys_meta->length,sizeof(uint8_t));
+	memcpy(recs[3]->sys_meta->payload, segment_data, recs[3]->sys_meta->length);
+	recs[3]->sys_meta->fd = -1;
+	recs[3]->sys_meta->on_disk = 0;
+
+	recs[3]->app_meta = jaldb_create_segment();
+	recs[3]->app_meta->length = 4;
+	recs[3]->app_meta->payload = (uint8_t*)jal_calloc(recs[3]->app_meta->length,sizeof(uint8_t));
+	memcpy(recs[3]->app_meta->payload, segment_data, recs[3]->app_meta->length);
+	recs[3]->app_meta->fd = -1;
+	recs[3]->app_meta->on_disk = 0;
+
+	recs[3]->payload = jaldb_create_segment();
+	recs[3]->payload->length = 3;
+	recs[3]->payload->payload = (uint8_t*)jal_calloc(recs[3]->payload->length,sizeof(uint8_t));
+	memcpy(recs[3]->payload->payload, segment_data, recs[3]->payload->length);
+	recs[3]->payload->fd = -1;
+	recs[3]->payload->on_disk = 0;
+
+	recs[3]->source = strdup("source3");
+	recs[3]->hostname = strdup("hostname3");
+	recs[3]->timestamp = strdup("timestamp3");
+	recs[3]->username = strdup("username3");
+	recs[3]->sec_lbl = strdup("sec_lbl3");
+	recs[3]->version = 1;
+	recs[3]->type = JALDB_RTYPE_LOG;
+	recs[3]->synced = JALDB_NOT_CONFIRMED;
+	recs[3]->confirmed = 0;
+	recs[3]->have_uid = 1;
+	assert_equals(0, uuid_parse("CBBBBBBB-89AB-CDEF-0123-456789ABCDEF", recs[3]->host_uuid));
 
 	// IF ADDING A NEW RECORD, OR REMOVIG A RECORD, REMEMBER TO UPDATE ITEMS_IN_DB
 }
@@ -252,7 +305,7 @@ extern "C" void setup()
 	create_records(records);
 
 	// Create multi-index DB
-	db = new LmdbDbType(getMDBEnv((std::string(OTHER_DB_ROOT) + "test_jaldb_translators_db").c_str(), MDB_NOSUBDIR, 0600), "records");
+	db = new LmdbDbType(getMDBEnv((std::string(OTHER_DB_ROOT) + "test_jaldb_translators_db").c_str(), MDB_NOSUBDIR, 0600, 5), "records");
 }
 
 extern "C" void teardown()
@@ -388,11 +441,10 @@ extern "C" void  test_insert_and_get_by_confirmed()
 	// not marked as confirmed, so that's weird
 	// In that case you would thing .begin() would just give us all the records in the
 	// subindex, but that doesn't work either.
-	for(auto iter = rotxn.find<LmdbDbIndex::IDX_CONFIRMED>(true); iter != rotxn.end(); ++iter)
+	for(auto iter = rotxn.find<LmdbDbIndex::IDX_SENT>(JALDB_NOT_SENT); iter != rotxn.end(); ++iter)
 	{
 		recordsFound++;
-		// Sanity check - are we actually looping over records with the confirmed flag set?
-		assert_equals(true, iter->confirmed);
+
 		// The iterator overloads -> to return a pointer to the record struct type
 		// which is handy for things like iter->networkNonce
 		//
@@ -413,12 +465,12 @@ extern "C" void  test_insert_and_get_by_confirmed()
 		compare_record_contents(cRec, records[matchingRecordIdx]);
 		jaldb_destroy_record(&cRec);
 	}
-	// Assure we got 2 results
-	if(2 != recordsFound) {
+	// Assure we got 3 results
+	if(3 != recordsFound) {
 		// Better error message if the following assert would fire
-		fprintf(stderr, "Expected 2 records from .find, received %d\n", recordsFound);
+		fprintf(stderr, "Expected 3 records from .find, received %d\n", recordsFound);
 	}
-	assert_equals(2, recordsFound);
+	assert_equals(3, recordsFound);
 }
 
 extern "C" void  test_insert_and_get_by_sent()
@@ -467,7 +519,7 @@ extern "C" void  test_insert_and_get_by_sent()
 		compare_record_contents(cRec, records[matchingRecordIdx]);
 		jaldb_destroy_record(&cRec);
 	}
-	// Assure we got 2 results
+	// Assure we got 1 results
 	if(1 != recordsFound) {
 		// Better error message if the following assert would fire
 		fprintf(stderr, "Expected 1 records from .find, received %d\n", recordsFound);

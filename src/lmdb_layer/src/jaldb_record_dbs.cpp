@@ -58,7 +58,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		std::shared_ptr<MDBEnv> &env,
 		const char *prefix,
 		const u_int32_t db_flags,
-		struct jaldb_record_dbs **pprdbs)
+		struct jaldb_record_dbs **pprdbs, int map_size)
 {
 	if (!pprdbs || *pprdbs) {
 		return JALDB_E_INVAL;
@@ -73,7 +73,7 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 	try
 	{
 		// Open the Primary DB. The Primary DB keys are nonces
-		rdbs->primary_db = new LmdbDbType(getMDBEnv(primary_path.c_str(), MDB_NOSUBDIR | db_flags, 0600), "records");
+		rdbs->primary_db = new LmdbDbType(getMDBEnv(primary_path.c_str(), MDB_NOSUBDIR | db_flags, 0640, map_size), "records");
 
 		// Open the metadata DB. This is for tracking metadata and is *NOT* a
 		// secondary index into the primary db

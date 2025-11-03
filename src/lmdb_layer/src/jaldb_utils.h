@@ -35,6 +35,15 @@ extern "C" {
 #define JALDB_STR_HELPER(x) #x
 #define JALDB_STR(x) JALDB_STR_HELPER(x)
 
+//sample:  d2/journal_payload_d2c62dcf-2eab-4141-a102-221ba9be5513
+#define UUID_STRING_REP_LEN 36
+// First two hexidecimal characters of UUID as directory + /
+#define DIRPATH_LEN 3
+//TYPE_LEN is long enough to hold "_journal_sys_meta", which is the longest type name
+#define TYPE_LEN 16
+#define FILENAME_LEN UUID_STRING_REP_LEN + TYPE_LEN
+#define REL_PATH_LEN DIRPATH_LEN + FILENAME_LEN
+
 /**
  * Helper utility to compare to nonces.
  * @param[in] nonce1 The first string to compare
