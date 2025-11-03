@@ -67,7 +67,6 @@
 #define JALLS_CFG_JOURNAL_RECORD_SIZE_LIMIT "journal_record_size_limit"
 #define JALLS_CFG_AUDIT_RECORD_SIZE_LIMIT "audit_record_size_limit"
 #define JALLS_CFG_LOG_RECORD_SIZE_LIMIT "log_record_size_limit"
-#define JALLS_CFG_DATABASE_OPTION "database_option"
 
 /**
  * Parses the config file and fills out the jalls_context struct.

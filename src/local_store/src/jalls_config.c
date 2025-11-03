@@ -84,8 +84,6 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	long long *journal_record_size_limit = &((*jalls_ctx)->journal_record_size_limit);
 	long long *audit_record_size_limit = &((*jalls_ctx)->audit_record_size_limit);
 	long long *log_record_size_limit = &((*jalls_ctx)->log_record_size_limit);
-	enum jaldb_flags *jdb_flags=&((*jalls_ctx)->jdb_flags);
-	char **database_option = &((*jalls_ctx)->database_option);
 
 	config_t jalls_config;
 	if(JAL_CFG_SUCCESS != jal_config_init(&jalls_config))
@@ -145,23 +143,6 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	if(-1 == uuid_parse(system_uuid_str, *system_uuid))
 	{
 		fprintf(stderr, "Error: failed to validate uuid\n");
-		goto err_out;
-	}
-
-	// Database option setting
-	if(JAL_CFG_SUCCESS != jal_config_lookup_string(
-		root,
-		JALLS_CFG_DATABASE_OPTION,
-		database_option,
-		JAL_CFG_OPTIONAL))
-	{
-		goto err_out;
-	}
-
-	//Ensure valid entry was in the config file and parse the value
-	if (JALDB_OK != jaldb_get_db_flags(*database_option, jdb_flags))
-	{
-		fprintf(stderr, "Error: failed to validate database_option\n");
 		goto err_out;
 	}
 
@@ -433,7 +414,6 @@ err_out:
 	free((*jalls_ctx)->hostname);
 	free((*jalls_ctx)->schemas_root);
 	free((*jalls_ctx)->db_root);
-	free((*jalls_ctx)->database_option);
 	free((*jalls_ctx)->socket);
 	free((*jalls_ctx)->socket_owner);
 	free((*jalls_ctx)->socket_group);

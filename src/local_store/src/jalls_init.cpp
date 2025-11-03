@@ -66,6 +66,14 @@ void jalls_shutdown()
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 	#endif
+	
+	xmlSecCryptoShutdown();
+	xmlSecCryptoAppShutdown();
+	xmlSecShutdown();
+
+	#ifndef XMLSEC_NO_XSLT
+		xsltCleanupGlobals();
+	#endif
 
 	xmlCleanupParser();
 	xmlCleanupGlobals();
