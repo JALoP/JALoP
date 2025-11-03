@@ -60,13 +60,33 @@ extern "C" {
 #define JALNS_PID_FILE "pid_file"
 #define JALNS_LOG_DIR "log_dir"
 #define JALNS_DIGEST_ALGORITHMS "digest_algorithms"
-#define JALNS_DATABASE_OPTION "database_option"
 #define JALNS_HTTP_CLIENT_RETRY_COUNT "http_client_retry_count"
 #define JALNS_HTTP_CLIENT_RETRY_DELAY "http_client_retry_delay"
 #define JALNS_ALLOW_SELF_SIGNED_CERTS "allow_self_signed_certs"
+#define JALNS_USE_FILTER "use_filter"
+#define JALNS_FILTER_SOCKET_BASENAME "filter_socket_basename"
+#define JALNS_FILTER_SOCKET "filter_socket"
+#define JALNS_MARK_UNSENT "mark_unsent"
+#define JALNS_ARCHIVE_MODE "archive_mode"
 
 #ifdef __cplusplus
 }
 #endif
+enum jaldb_mark {
+	MARK_UNSYNCED_RECORDS_UNSENT = 1,
+	MARK_SENT = 2,
+	MARK_SYNCED = 3,
+	MARK_UNSENT = 4,
+	MARK_ERROR = -1,
+	MARK_SUCCESS = 0
+};
+//sample nonce
+//74c27f93-7722-4cd9-89b0-764eb631e6a8_2025-05-16T14:17:56.171210_1312388_3393181440
+struct mark_request{
+	enum jaldb_mark mark;
+	enum jaldb_rec_type record_type;
+	char nonce[128];
+	enum jaldb_mark response;
+};
 
 #endif // _JALNS_STRINGS_H_
