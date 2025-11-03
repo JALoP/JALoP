@@ -31,7 +31,7 @@ if len(sys.argv) < 2:
 	exit()
 
 dir = os.getcwd()
-path = dir + "/" + sys.argv[1]
+path = sys.argv[1]
 print (path)
 
 if not os.path.exists(path):
@@ -46,6 +46,7 @@ sfile.close()
 init_syscalls = set()
 final_syscalls = set()
 break_point_found = 0
+init_syscalls.add("seccomp")
 for line in lines :
     if line.find("SECCOMP_PROCESS_IS_DONE_SETTING_UP")>0:
         break_point_found = 1

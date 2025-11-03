@@ -1,0 +1,107 @@
+---
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  no_log: false
+  vars:
+    jalls_socket: /var/run/jalop/jalls/socket/jalls.sock
+    #jalls_socket: ./jal.sock
+
+  tasks:
+  - name: stop processes
+    systemd_service:
+      name: '{{ item }}'
+      state: stopped
+    with_items:
+      - jal_subscribe
+      - jaldb_inline_filter
+      - jald
+      - jalls
+  
+  - name: clear database
+    shell: |
+      rm -fr /var/log/jalop/*
+      rm -fr /var/log/jalop_sub/*
+  
+  - name: start processes
+    systemd_service:
+      name: '{{ item }}'
+      state: started
+    with_items:
+      - jalls
+      - jaldb_inline_filter
+      - jald
+      - jal_subscribe
+
+  - name: send logs
+    async: 1000
+    poll: 0
+    command:
+        cmd: 'jalp_test -j {{ jalls_socket }} -a /etc/jalop/test-input/sample2.cfg -p /etc/jalop/test-input/good_audit_input.xml -n {{count}} -t l'
+
+  - name: send audits
+    async: 1000
+    poll: 0
+    command:
+        cmd: 'jalp_test -j {{ jalls_socket }} -a /etc/jalop/test-input/sample2.cfg -p /etc/jalop/test-input/good_audit_input.xml -n {{count}} -t a'
+
+  - name: send journals
+    async: 1000
+    poll: 0
+    command:
+        cmd: 'jalp_test -j {{ jalls_socket }} -a /etc/jalop/test-input/sample2.cfg -p /etc/jalop/test-input/big_payload.txt -n {{count}} -t j'
+
+  - name: send journals FDs
+    async: 1000
+    poll: 0
+    command:
+        cmd: 'jalp_test -j {{ jalls_socket }} -a /etc/jalop/test-input/sample2.cfg -p /etc/jalop/test-input/big_payload.txt -n {{count}} -t f'
+
+  - name: sleep
+    shell: |
+      #sleep 7200
+      PID=`/usr/sbin/pidof jald`
+      PID2=`/usr/sbin/pidof jald_marker`
+      (( cpu="10" ))
+      (( cpu2="10" ))
+      (( retry_count=0 ))
+      while [[ $cpu != "0.0" ]] || [[ $cpu2 != "0.0" ]]
+      do
+        sleep 1
+        cpu=`top -b -n 1 -p $PID | grep -P -m 7 $PID | awk '{print $9}'`
+        cpu2=`top -b -n 1 -p $PID2 | grep -P -m 7 $PID2 | awk '{print $9}'`
+      done
+      exit 0
+
+  - name: jaldb_tool testdb
+    command:
+        cmd: jaldb_tool -h /var/log/jalop
+    register: jaldb_tool_testdb_output
+    
+  - name: jaldb_tool subdb
+    command:
+        cmd: jaldb_tool -h /var/log/jalop_sub
+    register: jaldb_tool_subdb_output
+        
+  - name: jaldb_tool output
+    shell: |
+      echo '{{ jaldb_tool_testdb_output.stdout }}' > jaldb_tool_output.txt
+      echo '{{ jaldb_tool_subdb_output.stdout }}' >> jaldb_tool_output.txt
+
+  - name: jaldb_tail
+    shell: |
+      jaldb_tail -h /var/log/jalop -t l|grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
+    register: jaldb_tail_output
+    
+  - name: jal_dump
+    shell: |
+      jal_dump -h /var/log/jalop -u '{{ jaldb_tail_output.stdout }}' -d m -t l
+    register: jal_dump_output
+  
+  - name: jal_dump output
+    shell: |
+      echo '{{ jal_dump_output.stdout }}' >> jaldb_tool_output.txt
+ 
+#call with this command from jalop home
+##ansible-playbook -i src/test_utils/scripts/ansible/ansible_inventory.ini src/test_utils/scripts/ansible/local-store-pub-sub-tests_debug.yml -e cwd=`pwd` -e mode=debug

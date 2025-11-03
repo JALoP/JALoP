@@ -1,0 +1,349 @@
+---
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    marker: "{{ lookup('env', 'marker') | default('none', true) | lower | trim }}"
+    types: alj
+    tear_down: true
+    max_send_time: 360000
+    pre_sleep: 0
+    post_sleep: 0
+    mode: "{{ lookup('env', 'marker') | default('debug', true) }}"
+    marker_bin: "{{ lookup('env', 'marker_bin') | default('./' ~ mode ~ '/bin', true) }}"
+
+  tasks:
+  - name: stop processes
+    shell: |
+      killall -9 jal-local-store || true
+      killall -9 jal_subscribe || true
+      killall -9 jald_marker_rs || true
+      killall -9 jald_marker || true
+      killall -9 jald || true
+      #rm -f {{cwd}}/jald_record_socket
+      rm -f {{cwd}}/jald_filter_socket*
+      rm -f {{cwd}}/*.sock
+  
+  - name: clear local store database
+    file:
+        path: '{{cwd}}/testdb'
+        state: absent
+  
+  - name: clear subscriber database
+    file:
+        path: '{{cwd}}/subdb'
+        state: absent
+
+  - name: clear subscriber2 database
+    file:
+        path: '{{cwd}}/subdb2'
+        state: absent
+
+  - name: clear subscriber3 database
+    file:
+        path: '{{cwd}}/subdb3'
+        state: absent
+
+  - name: make local store database directory
+    file:
+        path: '{{cwd}}/testdb'
+        state: directory
+  
+  - name: make subscriber database directory
+    file:
+        path: '{{cwd}}/subdb'
+        state: directory
+
+  - name: make subscriber2 database directory
+    file:
+        path: '{{cwd}}/subdb2'
+        state: directory
+
+  - name: make subscriber3 database directory
+    file:
+        path: '{{cwd}}/subdb3'
+        state: directory
+  
+  - name: copy DB_CONFIG 1
+    copy: 
+        mode: 0640
+        src:  '{{cwd}}/test-input/LMDB_CONFIG'
+        dest: '{{cwd}}/subdb'
+  
+  - name: copy DB_CONFIG 2
+    copy: 
+        mode: 0640
+        src:  '{{cwd}}/test-input/LMDB_CONFIG'
+        dest: '{{cwd}}/testdb'
+
+  - name: copy DB_CONFIG 3
+    copy: 
+        mode: 0640
+        src:  '{{cwd}}/test-input/LMDB_CONFIG'
+        dest: '{{cwd}}/subdb2'
+
+  - name: copy DB_CONFIG 3
+    copy: 
+        mode: 0640
+        src:  '{{cwd}}/test-input/LMDB_CONFIG'
+        dest: '{{cwd}}/subdb3'
+
+  - name: pre-sleep
+    shell: |
+      sleep {{ pre_sleep }}
+  
+  - name: start local store
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      umask 027
+      ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>./ls.err 1>./ls.out &
+
+  - name: start CPP marker
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      #valgrind --log-file=valgrind-out-filter.txt ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
+      #valgrind --leak-check=full --show-leak-kinds=all --verbose --fair-sched=yes --log-file=valgrind-out.txt ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
+      #gdb -batch -ex "run" -ex "bt" --args ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
+      ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
+    when: marker == 'cpp'
+
+  - name: start Rust marker ({{marker_bin}}/jald_marker_rs) 
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>./jald_filter.err 1>./jald_filter.out &
+    when: marker == 'rust'
+
+  - name: start jald
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -s -d -f  2>./jald.err 1>./jald.out &
+
+  - name: start subscriber
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./{{mode}}/bin/jal_subscribe -c ./test-input/jal_subscribe1.cfg -d 2>./subd.err 1>./subd.out &
+
+  - name: start subscriber 2
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./{{mode}}/bin/jal_subscribe -c ./test-input/jal_subscribe2.cfg -d 2>./subd2.err 1>./subd2.out &
+
+  - name: start subscriber 3
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./{{mode}}/bin/jal_subscribe -c ./test-input/jal_subscribe3.cfg -d 2>./subd3.err 1>./subd3.out &
+
+  - name: sleep
+    shell: |
+      sleep 5
+
+  - name: send logs
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    async: '{{ max_send_time }}'
+    poll: 0
+    command:
+        chdir: '{{cwd}}'
+        cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
+    when: '"l" in types'
+ 
+  - name: send journals
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    async: '{{ max_send_time }}'
+    poll: 0
+    command:
+        chdir: '{{cwd}}'
+        cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t j'
+    when: '"j" in types'
+
+  # - name: stop processes force resume
+  #   shell: |     
+  #     sleep 3
+  #     killall -9 jal_subscribe || true
+  #     # killall -9 jald_marker_rs || true
+  #     # killall -9 jald_marker || true
+  #     # killall -9 jald || true
+  #     # killall -9 jal-local-store || true
+  #     # #rm -f {{cwd}}/jald_record_socket
+  #     # rm -f {{cwd}}/jald_filter_socket*
+  #     # rm -f {{cwd}}/*.sock
+  #   when: resume == 'no'
+
+  # - name: end script
+  #   meta: end_play
+
+  - name: send journal FDs
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    async: '{{ max_send_time }}'
+    poll: 0
+    command:
+        chdir: '{{cwd}}'
+        cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t f'
+    when: '"f" in types'
+
+  - name: send audits
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    async: '{{ max_send_time }}'
+    poll: 0
+    command:
+        chdir: '{{cwd}}'
+        cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t a'
+    when: '"a" in types'
+    
+  - name: sleep
+    shell: |
+      sleep 5
+      PID=`/usr/sbin/pidof ./{{mode}}/bin/jald`
+      (( cpu="10" ))
+      (( retry_count=0 ))
+      while [ $cpu != "0.0" ]
+      do
+        sleep 1
+        cpu=`top -b -n 1 -p $PID | grep -P -m 7 $PID | awk '{print $9}'`
+        if [[ $cpu == "0.0" ]] && [[ $retry_count < 5 ]]; then
+          (( cpu="10" ))
+          (( retry_count=$retry_count + 1 ))
+        else
+          (( retry_count=0 ))
+        fi
+      done
+      exit 0
+    when: tear_down | bool
+
+  - name: post-sleep
+    shell: |
+      sleep {{ post_sleep }}
+
+  - name: jaldb_tool testdb
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./{{mode}}/bin/jaldb_tool -h testdb
+    register: jaldb_tool_testdb_output
+    when: tear_down | bool
+    
+  - name: jaldb_tool subdb
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./{{mode}}/bin/jaldb_tool -h subdb
+    register: jaldb_tool_subdb_output
+    when: tear_down | bool
+
+  - name: jaldb_tool subdb2
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./{{mode}}/bin/jaldb_tool -h subdb2
+    register: jaldb_tool_subdb2_output
+    when: tear_down | bool
+
+  - name: jaldb_tool subdb3
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./{{mode}}/bin/jaldb_tool -h subdb3
+    register: jaldb_tool_subdb3_output
+    when: tear_down | bool
+        
+  - name: jaldb_tool output
+    shell: |
+      cd '{{cwd}}'
+      echo '{{ jaldb_tool_testdb_output.stdout }}' > jaldb_tool_output.txt
+      echo '{{ jaldb_tool_subdb_output.stdout }}' >> jaldb_tool_output.txt
+      echo '{{ jaldb_tool_subdb2_output.stdout }}' >> jaldb_tool_output.txt
+      echo '{{ jaldb_tool_subdb3_output.stdout }}' >> jaldb_tool_output.txt
+    when: tear_down | bool
+
+# hexdump -n 225505704  subdb/journal/0000000001/payload
+# echo -ne \\xFF | dd conv=notrunc bs=225505704 count=1 of=<file>
+
+  # - name: jaldb_tail
+  #   environment:
+  #     LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+  #   shell: |
+  #     cd '{{cwd}}'
+  #     ./{{mode}}/bin/jaldb_tail -h testdb/ -t j|grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
+  #   register: jaldb_tail_output
+  #   when: tear_down | bool
+    
+  # - name: jal_dump
+  #   environment:
+  #     LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+  #   shell: |
+  #     cd '{{cwd}}'
+  #     #valgrind --log-file=valgrind-out.txt ./{{mode}}/bin/jal_dump -h testdb/ -u '{{ jaldb_tail_output.stdout }}' -d p -t j
+  #     ./{{mode}}/bin/jal_dump -h testdb/ -u '{{ jaldb_tail_output.stdout }}' -d m -t j
+  #   register: jal_dump_output
+  #   when: tear_down | bool
+  
+  # - name: jal_dump output
+  #   shell: |
+  #     cd '{{cwd}}'
+  #     echo '{{ jal_dump_output.stdout }}' >> jaldb_tool_output.txt
+  #   when: tear_down | bool
+      
+  - name: end processes
+    shell: |
+      killall jal-local-store || true
+      killall jal_subscribe || true
+      killall jald_marker_rs || true
+      killall jald_marker || true
+      killall jald || true
+      rm -f {{cwd}}/jald_record_socket_*
+      rm -f {{cwd}}/jald_filter_socket
+      rm -f {{cwd}}/*.sock
+    when: tear_down | bool
+     
+  # - name: build cov report
+  #   shell: |      
+  #     cd '{{cwd}}'
+  #     echo '{{cwd}}' >> jaldb_tool_output.txt
+  #     mkdir cov_integration
+  #     rm -fr cov_integration/*
+  #     lcov -q -t JalopIntegrationTest --directory debug -b '{{cwd}}' --capture --output-file cov_integration/app.info
+  #     lcov -q --remove cov_integration/app.info /usr/\* --output-file cov_integration/app.info
+  #     lcov -q --remove cov_integration/app.info '{{cwd}}'/debug/src/\*/test/\* --output-file cov_integration/app.info
+  #     lcov -q --remove cov_integration/app.info '{{cwd}}'/src/\*/test/\* --output-file cov_integration/app.info
+  #     cd cov_integration
+  #     genhtml --show-details -k app.info
+  #   when: mode == "debug"
+
+    # "latest_timestamp":"2025-10-09T20:11:36.455169",
+    # "earliest_timestamp":"2025-10-09T20:11:24.278982",
+    # "total_records":12004,
+    # "total_time":"00:00:12.1762",
+    # "records\/second":986
+
+    # "latest_timestamp":"2025-10-09T20:11:36.962732",
+    # "earliest_timestamp":"2025-10-09T20:11:24.279696",
+    # "total_records":12004,
+    # "total_time":"00:00:12.683",
+    # "records\/second":946
+
+    #   "latest_timestamp":"2025-10-09T20:11:36.962732"
+    # "earliest_timestamp":"2025-10-09T20:11:24.278982"
+
+    #                                        12.683750
