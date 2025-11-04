@@ -96,6 +96,38 @@ where jal_sub_cpp, jal_subscribe, or other v2 subscriber will be run
 it will be found by the usual means.
 e.g. ./configure --prefix=/usr/ (Note that on CentOS7 /lib is linked to /usr/lib)
 
+Initialize Git Large File storage (LFS) for the JALoP git repo.
+
+yum install git-lfs
+cd <JALoP git root>
+
+If TLS cert verification is not desired, run -
+$ git config --global http.sslVerify false
+
+git lfs install
+git lfs env
+git lfs pull
+
+This project uses Rust and requires the following steps to setup the required dependencies:
+
+yum install <JALoP git root>/3rd-party/rust/RHEL<rhel version>/*.x86_64.rpm
+
+NOTE: The following 3 steps below can be skipped if the JALoP rust dependency rpm was successfully installed
+in the step above.
+
+1. On a RHEL 9 machine/vm, run the following script to package all of the dependencies needed on RHEL 7/8/9.
+
+sudo sh create_cargo_vendor_files.sh
+
+2. Copy the resulting "vendor-cargo-<rhel version>.tar.gz" file to the JALoP git root dir on the machine building
+the specific RHEL version of JALoP.
+
+3. Run the following command in the JALoP git root dir to install the rust dependencies for specific version of RHEL.
+
+sudo sh install_cargo_vendor_files.sh
+
+JALoP Build:
+
 To build, simply run 'scons' within the top level directory:
 
 $ scons
