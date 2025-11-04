@@ -19,3 +19,17 @@ def add_project_lib(env, libdir, libname):
 def install_for_build(env, dest, target):
 	variant = env['variant']
 	env.Default(env.Install("%s/%s/%s" % (env['SOURCE_ROOT'], variant, dest), target))
+
+def rhel_version():
+    with open('/etc/os-release', 'r') as f:
+        kv = {}
+        for line in f:
+            line = line.strip()
+            if not line or '=' not in line:
+                continue
+            k, v = line.split('=', 1)
+            kv[k] = v.strip().strip('"')
+    if kv.get('ID') == 'rhel' or kv.get('ID') == 'centos':
+        return int(kv.get('VERSION_ID', '').split('.')[0])
+    else:
+        raise ValueError(f"invalid os: {kv.get('ID')}")
