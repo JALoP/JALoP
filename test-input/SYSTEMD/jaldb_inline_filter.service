@@ -1,0 +1,11 @@
+[Unit]
+Description=JALoP Jaldb Filter Service
+
+[Service]
+Type=simple
+User=jalls
+Group=jalop
+ExecStart=/usr/sbin/jaldb_inline_filter -c /etc/jalop/jaldb_inline_filter_service.cfg
+
+[Install]
+WantedBy=multi-user.target

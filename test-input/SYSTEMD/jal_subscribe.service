@@ -5,7 +5,7 @@ Description=JALoP Subscriber Service
 Type=simple
 User=jal_subscribe
 Group=jalop
-ExecStart=/usr/bin/jal_subscribe -c /etc/jalop/jal_subscribe_service.cfg
+ExecStart=/usr/sbin/jal_subscribe -c /etc/jalop/jal_subscribe_service.cfg
 
 [Install]
 WantedBy=multi-user.target

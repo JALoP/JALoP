@@ -3,9 +3,9 @@ Description=JALoP Publishing Service
 
 [Service]
 Type=simple
-User=jalls
+User=jald
 Group=jalop
-ExecStart=/usr/bin/jald -c /etc/jalop/jald_service.cfg --no-daemon
+ExecStart=/usr/sbin/jald -c /etc/jalop/jald_service.cfg -f --no-daemon
 
 [Install]
 WantedBy=multi-user.target
