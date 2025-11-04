@@ -74,7 +74,9 @@ where
         let mut queue = self.queue.lock().await;
         let original = queue.len();
         queue.retain(|_, existing| v != *existing);
-        original - queue.len()
+        let evicted = original - queue.len();
+        self.semaphore.add_permits(evicted);
+        evicted
     }
 
     // take an item out of the bpq, waiting if empty
@@ -207,6 +209,26 @@ mod tests {
         drop(tx);
         join_all(evictor_tasks).await;
         assert_eq!(expected, actual.load(Ordering::Relaxed));
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_evict_all() {
+        let q = BackPressureQueue::new(2);
+        q.insert("a", 0).await.unwrap();
+        q.insert("b", 0).await.unwrap();
+        let insert = tokio::spawn({
+            let q = q.clone();
+            async move {
+                q.insert("c", 1).await.unwrap();
+            }
+        });
+        let cnt = q.evict_values(0).await;
+        tokio::select! {
+            _ = sleep(Duration::from_secs(1)) => assert!(false),
+            _ = insert => {}
+        }
+        assert_eq!(cnt, 2);
+        assert_eq!(q.len().await, 1);
     }
 
     // demonstrate that many threads can produce and many threads can evict
@@ -375,21 +397,21 @@ mod tests {
     // demonstrate that evict_all will remove entries that match the specified value
     #[tokio::test]
     async fn test_evict_values() {
-        let q = BackPressureQueue::new(10);
+        let q = BackPressureQueue::new(2);
         q.insert("a", 0).await.unwrap();
         q.insert("b", 0).await.unwrap();
         let cnt = q.evict_values(0).await;
         assert_eq!(cnt, 2);
         assert_eq!(q.len().await, 0);
 
-        let q = BackPressureQueue::new(10);
+        let q = BackPressureQueue::new(2);
         q.insert("a", 0).await.unwrap();
         q.insert("b", 1).await.unwrap();
         let cnt = q.evict_values(0).await;
         assert_eq!(cnt, 1);
         assert_eq!(q.len().await, 1);
 
-        let q = BackPressureQueue::new(10);
+        let q = BackPressureQueue::new(3);
         q.insert("a", 0).await.unwrap();
         q.insert("b", 0).await.unwrap();
         q.insert("c", 1).await.unwrap();
