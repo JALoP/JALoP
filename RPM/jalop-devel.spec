@@ -1,9 +1,9 @@
-Name:JALoP-devel
-Version:2
-Release:1.0.1
-ExclusiveArch:x86_64
-Summary:JALoP binary installation
-License:Apache License, Version 2.0
+Name:    JALoP-devel
+Version: 2.3.1.0
+Release: 1%{?dist}
+ExclusiveArch: x86_64
+Summary: JALoP binary installation
+License: Apache License, Version 2.0
 Requires: JALoP
 
 %description

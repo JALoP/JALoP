@@ -1,26 +1,31 @@
 #!/bin/bash
 RPMDIR=rpmbuild
-TOPDIR=$(pwd)/$RPMDIR
+PKG_NAME=jalop
+TAR_CONTENTS="../release/bin/ ../release/lib ../test-input ../schemas"
 
-rm -fr $RPMDIR
+function makerpm() {
+    TOPDIR=$(pwd)/$RPMDIR
 
-mkdir $RPMDIR
-mkdir $RPMDIR/SOURCES
-mkdir $RPMDIR/SPECS
-mkdir $RPMDIR/BUILD
-mkdir $RPMDIR/BUILDROOT
-mkdir $RPMDIR/RPMS
-mkdir $RPMDIR/SRPMS
+    rm -fr $RPMDIR
+    mkdir -p $RPMDIR/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
-tar -cf jalop.tar ../release/bin/ ../release/lib ../test-input ../schemas
+    tar -cf $PKG_NAME.tar $TAR_CONTENTS
 
-cp jalop.spec $RPMDIR/SPECS
-cp jalop.tar  $RPMDIR/SOURCES
+    cp $PKG_NAME.spec $RPMDIR/SPECS/
+    cp $PKG_NAME.tar  $RPMDIR/SOURCES/
 
-cd "$TOPDIR" && rpmbuild --define "_topdir $TOPDIR" -bb SPECS/jalop.spec
+    if [[ "$PATCH_VERSION" != "" ]]; then
+        spec_file="$RPMDIR/SPECS/$PKG_NAME.spec"
+        spec_version=$(grep "Version: " $spec_file | tr -s ' ' | cut -d' ' -f2)
+        patched_version="${spec_version}~${PATCH_VERSION}"
+        sed -i "s#Version:\s*${spec_version}#Version: ${patched_version}#" $spec_file
+    fi
 
-cd ../ || exit
+    cd "$TOPDIR" && rpmbuild --define "_topdir $TOPDIR" -bb SPECS/$PKG_NAME.spec
+    cd ../ || exit
+    cp $RPMDIR/RPMS/x86_64/*.rpm ./
+}
 
-cp $RPMDIR/RPMS/x86_64/*.rpm ./
-
-#echo "Hello World"|jalp_test -j /var/run/jalop/jalls/socket/jalls.sock -s -n 10 -t l
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    makerpm
+fi
