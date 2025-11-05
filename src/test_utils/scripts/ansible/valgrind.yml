@@ -1,0 +1,289 @@
+---
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    log_dir: '{{cwd}}/test_logs'
+    valgrind_out_dir: '{{log_dir}}/valgrind'
+    #valgrind_options: "--leak-check=full --show-leak-kinds=all --verbose --fair-sched=yes"
+    valgrind_options: "--leak-check=full --show-leak-kinds=all --fair-sched=yes --xml=yes --track-origins=yes"
+    #valgrind_options: "--show-leak-kinds=all --fair-sched=yes"
+    marker: "{{ lookup('env', 'marker') | default('none', true) | lower | trim }}"
+    types: alj
+    tear_down: true
+    max_send_time: 3600
+    pre_sleep: 0
+    post_sleep: 0
+    mode: "{{ lookup('env', 'marker') | default('debug', true) }}"
+    marker_bin: "{{ lookup('env', 'marker_bin') | default('./' ~ mode ~ '/bin', true) }}"
+
+  tasks:
+  - name: stop processes
+    shell: |
+      killall -9 jal-local-store || true
+      killall -9 jal_subscribe || true
+      killall -9 jaldb_inline_filter || true
+      killall -9 jald_marker || true
+      killall -9 jald || true
+      killall -9 memcheck-amd64- || true
+      #rm -f {{cwd}}/jald_record_socket
+      rm -f {{cwd}}/jald_filter_socket*
+      rm -f {{cwd}}/*.sock
+      rm -fr {{log_dir}}
+      mkdir -p {{valgrind_out_dir}}/tool_output
+  
+  - name: clear local store database
+    file:
+        path: '{{cwd}}/testdb'
+        state: absent
+  
+  - name: clear subscriber database
+    file:
+        path: '{{cwd}}/subdb'
+        state: absent
+  
+  - name: make local store database directory
+    file:
+        path: '{{cwd}}/testdb'
+        state: directory
+  
+  - name: make subscriber database directory
+    file:
+        path: '{{cwd}}/subdb'
+        state: directory
+  
+  - name: copy DB_CONFIG 1
+    copy: 
+        mode: 0640
+        src:  '{{cwd}}/test-input/LMDB_CONFIG'
+        dest: '{{cwd}}/subdb'
+  
+  - name: copy DB_CONFIG 2
+    copy: 
+        mode: 0640
+        src:  '{{cwd}}/test-input/LMDB_CONFIG'
+        dest: '{{cwd}}/testdb'
+
+  - name: pre-sleep
+    shell: |
+      sleep {{ pre_sleep }}
+  
+  - name: start local store
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      umask 027
+      valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-localstore.xml ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
+      #./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
+
+  - name: start CPP marker
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-cpp-filter.xml ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
+      #gdb -batch -ex "run" -ex "bt" --args ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
+      #./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
+    when: marker == 'cpp'
+
+  - name: start Rust marker ({{marker_bin}}/jaldb_inline_filter)
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      RUST_LOG={{rust_log}} valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-rust-filter.xml {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
+      #RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb -f {{perf}} --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
+    when: marker == 'rust'
+
+  - name: start subscriber
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      valgrind {{valgrind_options}} --suppressions='{{cwd}}/src/test_utils/scripts/valgrind/subscriber.supp' --xml-file={{valgrind_out_dir}}/valgrind-subscriber.xml ./{{mode}}/bin/jal_subscribe -c ./test-input/jal_subscribe.cfg -d 2>{{log_dir}}/subscriber.err 1>{{log_dir}}/subscriber.out &
+      #./{{mode}}/bin/jal_subscribe -c ./test-input/jal_subscribe.cfg -d 2>{{log_dir}}/subscriber.err 1>{{log_dir}}/subscriber.out &
+
+  - name: start jald
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-publisher.xml ./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -d -f  2>{{log_dir}}/jald.err 1>{{log_dir}}/jald.out &
+      #./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -d -f 2>{{log_dir}}/jald.err 1>{{log_dir}}/jald.out &
+
+  - name: sleep
+    shell: |
+      sleep 15
+
+  - name: send logs
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+        #async: "{{ max_send_time }}"
+        #poll: 0
+    command:
+        chdir: '{{cwd}}'
+        cmd: 'valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-producer-log.xml ./{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
+        #cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
+    when: '"l" in types'
+  
+  - name: send journals
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+        #async: "{{ max_send_time }}"
+        #poll: 0
+    command:
+        chdir: '{{cwd}}'
+        #cmd: 'valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-producer-journal.xml ./{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t j'
+        cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t j'
+    when: '"j" in types'
+
+  - name: send journal FDs
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+        #async: "{{ max_send_time }}"
+        #poll: 0
+    command:
+        chdir: '{{cwd}}'
+        #cmd: 'valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-producer-journal-fd.xml ./{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t f'
+        cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t f'
+    when: '"f" in types'
+
+  - name: send audits
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+        #async: "{{ max_send_time }}"
+        #poll: 0
+    command:
+        chdir: '{{cwd}}'
+        #cmd: 'valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-producer-audit.xml ./{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t a'
+        cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t a'
+    when: '"a" in types'
+
+  - name: sleep
+    shell: |
+      sleep 25
+      PID=`/usr/sbin/pidof ./{{mode}}/bin/jald`
+      (( cpu="10" ))
+      (( retry_count=0 ))
+      while [ $cpu != "0.0" ]
+      do
+        sleep 1
+        cpu=`top -b -n 1 -p $PID | grep -P -m 7 $PID | awk '{print $9}'`
+        if [[ $cpu == "0.0" ]] && [[ $retry_count < 5 ]]; then
+          (( cpu="10" ))
+          (( retry_count=$retry_count + 1 ))
+        else
+          (( retry_count=0 ))
+        fi
+      done
+      exit 0
+    when: tear_down | bool
+
+  - name: post-sleep
+    shell: |
+      sleep {{ post_sleep }}
+
+  - name: jaldb_tool testdb
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-jaldb_tool.xml ./{{mode}}/bin/jaldb_tool -h testdb
+    register: jaldb_tool_testdb_output
+    when: tear_down | bool
+    
+  - name: jaldb_tool subdb
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./{{mode}}/bin/jaldb_tool -h subdb
+    register: jaldb_tool_subdb_output
+    when: tear_down | bool
+        
+  - name: jaldb_tool output
+    shell: |
+      cd '{{cwd}}'
+      echo '{{ jaldb_tool_testdb_output.stdout }}' > {{log_dir}}/jaldb_tool_output.json
+      echo '{{ jaldb_tool_subdb_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
+    when: tear_down | bool
+
+  - name: jaldb_tail
+    shell: |
+      cd '{{cwd}}'
+      valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-jaldb_tail.xml ./{{mode}}/bin/jaldb_tail -h testdb/ -t j > out_tail
+      cat out_tail | grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
+    register: jaldb_tail_output
+    when: tear_down | bool
+    
+  - name: jal_dump
+    shell: |
+      cd '{{cwd}}'
+      rm -f out_tail
+      valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-jal_dump.xml ./{{mode}}/bin/jal_dump -h testdb/ -u '{{ jaldb_tail_output.stdout }}' -d m -t j
+    register: jal_dump_output
+    when: tear_down | bool
+  
+  - name: jal_dump output
+    shell: |
+      cd '{{cwd}}'
+      echo '{{ jal_dump_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
+    when: tear_down | bool
+
+  - name: end process
+    shell: |
+      SPID=`ps aux | grep valgrind | grep jald.cfg | awk '{print $2}'`
+      kill $SPID || true
+      exit 0
+    ignore_errors: true
+    when: tear_down | bool
+
+  - name: end processes
+    shell: |
+      killall jal-local-store || true
+      killall jal_subscribe || true
+      killall jaldb_inline_filter || true
+      killall jald_marker || true
+      killall jald || true
+      sleep 20
+      killall memcheck-amd64- || true
+      sleep 20
+      rm -f {{cwd}}/jald_record_socket_*
+      rm -f {{cwd}}/jald_filter_socket
+      rm -f {{cwd}}/*.sock
+    when: tear_down | bool
+
+  - name: jal_purge
+    shell: |
+      cd '{{cwd}}'
+      rm -f out_tail
+      valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-jal_purge.xml ./{{mode}}/bin/jal_purge -h testdb/ -t l -b 2025-12-29T00:00:00 -d
+    when: tear_down | bool
+
+  - name: combine valgrind xml
+    shell: |
+      cd '{{cwd}}'
+      sleep 5
+      '{{cwd}}/src/test_utils/scripts/valgrind/create_html.py' '{{cwd}}/src/test_utils/scripts/valgrind/valgrind-xml-html.xslt' '{{cwd}}/test_logs/valgrind' 1> '{{valgrind_out_dir}}/tool_output/valgrind_errors_v1.xml'
+
+  - name: build valgrind html
+    shell: |
+      cd '{{cwd}}'
+      xsltproc '{{cwd}}/src/test_utils/scripts/valgrind/all-valgrind-xml-html.xslt' '{{valgrind_out_dir}}/tool_output/valgrind_errors_v1.xml' 1> '{{valgrind_out_dir}}/tool_output/valgrind_errors_v1.html'
+     
+  - name: build cov report
+    shell: |      
+      cd '{{cwd}}'
+      mkdir cov_integration
+      rm -fr cov_integration/*
+      lcov -q -t JalopIntegrationTest --directory debug -b '{{cwd}}' --capture --output-file cov_integration/app.info
+      lcov -q --remove cov_integration/app.info /usr/\* --output-file cov_integration/app.info
+      lcov -q --remove cov_integration/app.info '{{cwd}}'/debug/src/\*/test/\* --output-file cov_integration/app.info
+      lcov -q --remove cov_integration/app.info '{{cwd}}'/src/\*/test/\* --output-file cov_integration/app.info
+      cd cov_integration
+      genhtml --show-details -k app.info
+    when: mode == "debug"
+
+#--gen-suppressions=all
