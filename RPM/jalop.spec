@@ -1,6 +1,6 @@
 Name:JALoP
-Version:1
-Release:1.0.2
+Version:1.3.1.0
+Release:1%{?dist}
 ExclusiveArch:x86_64
 Summary:JALoP binary installation
 License:Apache License, Version 2.0
@@ -34,15 +34,15 @@ tar -xf ../SOURCES/jalop.tar
 # Do nothing here
 
 %install
-mkdir -p %{buildroot}/usr/bin
-cp ./release/bin/jal-local-store	%{buildroot}/usr/bin
-cp ./release/bin/jald			%{buildroot}/usr/bin
-cp ./release/bin/jal_subscribe		%{buildroot}/usr/bin
-cp ./release/bin/jaldb_tail		%{buildroot}/usr/bin
-cp ./release/bin/jaldb_tool		%{buildroot}/usr/bin
-cp ./release/bin/jal_dump		%{buildroot}/usr/bin
-cp ./release/bin/jalp_test		%{buildroot}/usr/bin
-cp ./release/bin/jal_purge		%{buildroot}/usr/bin
+mkdir -p %{buildroot}/usr/sbin
+cp ./release/bin/jal-local-store	%{buildroot}/usr/sbin
+cp ./release/bin/jald			%{buildroot}/usr/sbin
+cp ./release/bin/jal_subscribe		%{buildroot}/usr/sbin
+cp ./release/bin/jaldb_tail		%{buildroot}/usr/sbin
+cp ./release/bin/jaldb_tool		%{buildroot}/usr/sbin
+cp ./release/bin/jal_dump		%{buildroot}/usr/sbin
+cp ./release/bin/jalp_test		%{buildroot}/usr/sbin
+cp ./release/bin/jal_purge		%{buildroot}/usr/sbin
 
 mkdir -p %{buildroot}/usr/lib64
 cp ./release/lib/libjal-common.so	%{buildroot}/usr/lib64
@@ -79,17 +79,22 @@ cp -R ./test-input/TLS_CA_Signed/client/*		%{buildroot}/etc/jalop/TLS_CA_Signed/
 
 mkdir -p %{buildroot}/var/run/jalop/jalls
 mkdir -p %{buildroot}/var/log/jalop
+mkdir -p %{buildroot}/var/log/jalop/db-data
+mkdir -p %{buildroot}/var/log/jalop/db-logs
+
 mkdir -p %{buildroot}/var/log/jalop_sub
+mkdir -p %{buildroot}/var/log/jalop_sub/db-data
+mkdir -p %{buildroot}/var/log/jalop_sub/db-logs
 
 %files
-/usr/bin/jal-local-store
-/usr/bin/jald
-/usr/bin/jal_subscribe
-/usr/bin/jaldb_tail
-/usr/bin/jaldb_tool
-/usr/bin/jal_dump
-/usr/bin/jalp_test
-/usr/bin/jal_purge
+/usr/sbin/jal-local-store
+/usr/sbin/jald
+/usr/sbin/jal_subscribe
+/usr/sbin/jaldb_tail
+/usr/sbin/jaldb_tool
+/usr/sbin/jal_dump
+/usr/sbin/jalp_test
+/usr/sbin/jal_purge
 
 /usr/lib64/libjal-common.so
 /usr/lib64/libjal-db.so
@@ -117,12 +122,16 @@ mkdir -p %{buildroot}/var/log/jalop_sub
 %dir /var/run/jalop/jalls
 %dir /var/log/jalop
 %dir /var/log/jalop_sub
+%dir /var/log/jalop_sub/db-data
+%dir /var/log/jalop_sub/db-logs
+%dir /var/log/jalop/db-data
+%dir /var/log/jalop/db-logs
 
 %pre
 %post
 ldconfig
 systemctl daemon-reload
-setcap cap_chown,cap_dac_override+p /usr/bin/jal-local-store
+setcap cap_chown,cap_dac_override+p /usr/sbin/jal-local-store
 
 useradd -M -N -s /sbin/nologin jalls
 useradd -M -N -s /sbin/nologin jald
@@ -150,14 +159,27 @@ systemctl enable jalls.service
 systemctl enable jald.service
 systemctl enable jal_subscribe.service
 
-systemctl start jalls.service
-systemctl start jald.service
-systemctl start jal_subscribe.service
+chown jalls:jalop /var/log/jalop/db-data
+chmod 750   /var/log/jalop/db-data
+chown jal_subscribe:jalop /var/log/jalop_sub/db-data
+chmod 750   /var/log/jalop_sub/db-data
+
+chown jalls:jalop /var/log/jalop/db-logs
+chmod 700   /var/log/jalop/db-logs
+chown jal_subscribe:jalop /var/log/jalop_sub/db-logs
+chmod 700   /var/log/jalop_sub/db-logs
+
+chmod 755 /usr/sbin/jal*
+chmod 755 /usr/lib64/libjal-*
+
+#systemctl enable jalls.service
+#systemctl enable jald.service
+#systemctl enable jal_subscribe.service
 
 %preun
-systemctl stop jalls.service
-systemctl stop jald.service
-systemctl stop jal_subscribe.service
+#systemctl stop jalls.service
+#systemctl stop jald.service
+#systemctl stop jal_subscribe.service
 %postun
 userdel jalls
 userdel jald
