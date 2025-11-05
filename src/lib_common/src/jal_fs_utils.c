@@ -50,7 +50,7 @@ enum jal_status jal_create_dirs(const char *path)
 	while(*curr) {
 		if (*curr == '/' && curr != lpath) {
 			*curr = '\0';
-			if (-1 == mkdir(lpath, 0700) && errno != EEXIST) {
+			if (-1 == mkdir(lpath, 0750) && errno != EEXIST) {
 				goto out;
 			}
 			*curr = '/';
