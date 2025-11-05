@@ -29,6 +29,7 @@
 
 #include "jaldb_context.h"
 #include "jaldb_context.hpp"
+#include "jaldb_config.h"
 
 #include <argp.h>
 #include <vector>
@@ -40,12 +41,13 @@
 #include <ftw.h>
 #include <sys/stat.h>
 #include <json-c/json.h>
+#include <math.h>
 
 const char *argp_program_version = "1";
 const char *argp_program_bug_address = "";
 static char args_doc[] = "";
 static char doc[] =
-"jal-record-update -- A program to update JALoP record values for testing.";
+"jaldb_tool -- A program to view JALoP record counts and update record values for testing.";
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 static struct argp_option options[] = {
 	{"record-type", 't', "type", 0,
@@ -418,16 +420,20 @@ void print_structured_data(std::vector<StatContainer> dbStats)
 
 		struct json_object * summary = json_object_new_object();
 
-		json_object_object_add(summary, "total_records", json_object_new_int(total_records));
 		json_object_object_add(summary, "latest_timestamp", json_object_new_string(latest_time_stamp.c_str()));
 		json_object_object_add(summary, "earliest_timestamp", json_object_new_string(earliest_time_stamp.c_str()));
+		json_object_object_add(summary, "total_records", json_object_new_int(total_records));
 		json_object_object_add(summary, "total_time", json_object_new_string(stime.str().c_str()));
 
+		int rate = round(total_records / total_time);
+		json_object_object_add(summary, "records/second", json_object_new_int(rate));
 		json_object_object_add(all, "summary", summary);
 	}
 
 	std::string output = json_object_to_json_string_ext(all, JSON_C_TO_STRING_PRETTY);
 	std::cout << output << std::endl;
+	json_object_put(all);
+
 }
 
 // Helper to avoid repeating this logic twice in update_flags
@@ -503,11 +509,39 @@ enum jaldb_status update_flags(
 
 jaldb_context* setup_jal()
 {
-	jaldb_context* ctx = jaldb_context_create();
-	enum jaldb_flags db_flags;
-	db_flags = JDB_NONE;
+	//Attempts to load optional LMDB_CONFIG file in db_root
+	//If present, this will override the lmdb performance level
+	//and lmdb map size, otherwise default values will be used.
+	jaldb_config *jdb_config = NULL;
+	enum jaldb_config_status jcs = get_jaldb_config(config.db_home.c_str(), &jdb_config);
+	if (jcs != JALDB_CONFIG_OK && jcs != JALDB_CONFIG_E_NOTFOUND) {
+		return NULL;
+	}
 
-	enum jaldb_status ret = jaldb_context_init(ctx, config.db_home.c_str(), db_flags);
+	//Only override map size if present in config
+	enum jaldb_flags jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
+	std::string database_option = std::string(JDB_LMDB_PERFORMANCE_LEVEL2_STR);
+	int map_size = DEFAULT_LMDB_MAP_SIZE;
+
+	if (jcs != JALDB_CONFIG_E_NOTFOUND)
+	{
+		if (jdb_config->map_size != 0)
+		{
+			map_size = jdb_config->map_size;
+		}
+
+		//Only override database option if present in config
+		if (NULL != jdb_config->database_option)
+		{
+			jdb_flags = jdb_config->jdb_flags;
+			database_option = std::string(jdb_config->database_option);
+		}
+		free_jaldb_config(&jdb_config);
+	}
+
+	jaldb_context* ctx = jaldb_context_create();
+
+	enum jaldb_status ret = jaldb_context_init(ctx, config.db_home.c_str(), jdb_flags, map_size);
 	if (ret != 0)
 	{
 		std::cout << "Failed to initialize jaldb_context with status: " << ret << std::endl;
