@@ -1,3 +1,6 @@
+Summary of release 1.3.1.0-beta changes (Fri Oct 31 2025) -
+    - Added the new "jaldb_inline_filter" component developed in the Rust programming language. This is an inline filter process that shall perform syntactic and symantic validation of each message from the 'JALD' publisher to the JALDB database. The goal is to protect the JALDB database from a potentially compromised 'JALD' publisher that interacts with external entities. With this new inline filter process in place, the 'JALD' publisher no longer has direct Read/Write access to the JALDB database. Pre-built RPMs with Rust dependencies (crates) for RHEL 7/8/9 are included in <JALoP>/3rd-Party/rust/ within the repository. Details can be found in the README and JALoP User Guide.
+
 Summary of release 1.3.0.0 changes (Fri Jul 11 2025) -
     - Added LMDB database support to store and manage JAL records.
     - Removed Berkeley DB (BDB) support. Note that RHEL 10 will not support BDB either.

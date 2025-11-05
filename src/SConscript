@@ -1,5 +1,6 @@
 import os
 from Utils import recursive_glob
+from Utils import install_for_build
 
 Import('*')
 
@@ -11,6 +12,7 @@ subdirs = """
 
 AlwaysBuild(all_tests)
 
+variant = env['variant']
 matches = recursive_glob('.', '*.gcda')
 env.Clean(all_tests, matches)
 if env.GetOption('clean'):
@@ -27,5 +29,10 @@ jal_utils = env.SConscript('jal_utils/SConscript', exports='env')
 
 for d in subdirs:
 	env.SConscript('%s/SConscript' % d, exports='env all_tests test_utils lib_common producer_lib db_layer jal_utils network_lib')
+
+install_for_build(env, 'src', Dir('.').srcnode().abspath + "/jaldb_inline_filter")
+jaldb_inline_filter = env.SConscript('jaldb_inline_filter/SConscript', exports='env db_layer')
+install_for_build(env, 'bin', f"jaldb_inline_filter/target/{variant}/jaldb_inline_filter")
+
 
 

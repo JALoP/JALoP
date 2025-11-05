@@ -107,7 +107,7 @@ debug_env['SOURCE_ROOT'] = str(os.getcwd())
 debug_env['HAVE_SELINUX'] = False;
 debug_env.MergeFlags(' -D_POSIX_C_SOURCE=200112L ')
 
-debug_env["lmdb_ldflags"] = "-llmdb"
+debug_env["lmdb_ldflags"] = "-llmdb -lconfig -lboost_serialization"
 debug_env["lmdb_cflags"] = ""
 
 def merge_with_os_env(env):
@@ -192,8 +192,8 @@ this is want you want, this is OK, re-run scons with the \
 
 	checkEnv = debug_env.Clone()
 
-	checkEnv["lmdb_ldflags"] = "-llmdb -lboost_serialization"
-	checkEnv["lmdb_cflags"] = "-llmdb -lboost_serialization"
+	checkEnv["lmdb_ldflags"] = "-llmdb -lconfig -lboost_serialization"
+	checkEnv["lmdb_cflags"] = "-llmdb -lconfig -lboost_serialization"
 
 	checkEnv.MergeFlags(checkEnv['lmdb_cflags'])
 	checkEnv.MergeFlags(checkEnv['lmdb_ldflags'])
@@ -214,8 +214,8 @@ this is want you want, this is OK, re-run scons with the \
 		debug_env.ParseConfig('pkg-config --cflags %s' % pkg, function=addCFLAGS)
 		debug_env.ParseConfig('pkg-config --libs %s' % pkg, function=addLDFLAGS)
 
-		debug_env["lmdb_ldflags"] = "-llmdb -lboost_serialization"
-		debug_env["lmdb_cflags"] = "-llmdb -lboost_serialization"
+		debug_env["lmdb_ldflags"] = "-llmdb -lconfig -lboost_serialization"
+		debug_env["lmdb_cflags"] = "-llmdb -lconfig -lboost_serialization"
 else:
 	for key, _ in packages_at_least.items():
 		debug_env[key + "_cflags"] = ""
