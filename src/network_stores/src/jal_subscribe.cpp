@@ -39,6 +39,7 @@
 #include <jalop/jaln_network.h>
 #include <jalop/jal_version.h>
 #include "jaldb_context.hpp"
+#include "jaldb_config.h"
 #include "jal_config.h"
 #include "jalu_daemonize.h"
 #include "jsub_db_layer.hpp"
@@ -63,7 +64,6 @@
 #define DB_ROOT "db_root"
 #define DIGEST_ALGORITHMS "digest_algorithms"
 #define JOURNAL_RESUME_THRESHOLD "journal_resume_threshold_size"
-#define DATABASE_OPTION "database_option"
 #define MAX_PORT_LENGTH 10
 #define VERSION_CALLED 1
 
@@ -109,6 +109,9 @@ struct global_config_t {
 	/**Stores the string value for the database_option config setting**/
 	char *database_option;
 
+	/***Store the lmdb map_size in gigabytes (GB) ***/
+	int map_size;
+
 } global_config;
 
 struct global_args_t {
@@ -145,6 +148,7 @@ static struct argp argp = {options, jal_subscribe_parse_opt, args_doc, doc, NULL
 
 static int process_options(int argc, char **argv);
 static void init_global_config(void);
+static void free_global_config(void);
 static void free_global_args(void);
 static void print_config(void);
 static int set_global_config(config_t *config);
@@ -240,7 +244,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 	print_config();
-	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root, global_config.jdb_flags);
+	jsub_db_ctx = jsub_setup_db_layer(global_config.db_root, global_config.jdb_flags, global_config.map_size);
 	if (!jsub_db_ctx) {
 		if (global_args.debug_flag) {
 			DEBUG_LOG("DBLayer Setup Failed!");
@@ -282,6 +286,7 @@ int main(int argc, char **argv)
 	}
 out:
 	free_global_args();
+	free_global_config();
 	jsub_teardown_db_layer(&jsub_db_ctx);
 	config_destroy(&config);
 	if (global_args.debug_flag) {
@@ -306,6 +311,20 @@ void init_global_args(void)
 	global_args.debug_flag = 0;
 	global_args.enable_tls = true;
 	global_args.window_size = 0;
+}
+
+void free_global_config(void)
+{
+	free((void *)global_config.private_key);
+	free((void *)global_config.public_cert);
+	free((void *)global_config.remote_cert);
+	free((void *)global_config.session_timeout);
+	//free((void *)global_config.data_class); //this is handled by libconfig
+	free((void *)global_config.host);
+	free((void *)global_config.mode);
+	free((void *)global_config.db_root);
+	free((void *)global_config.database_option);
+	free((void *)global_config.digest_algorithms);
 }
 
 int process_options(int argc, char **argv)
@@ -468,7 +487,7 @@ void print_config(void)
 	{
 		printf("DATABASE OPTION:\t%s\n", global_config.database_option);
 	}
-
+	printf("LMDB_MAP_SIZE (GB):\t%d\n", global_config.map_size);
 	printf("\n===\nEND CONFIG VALUES:\n===\n");
 }
 
@@ -643,16 +662,38 @@ int set_global_config(config_t *config)
 		config_string = NULL;
 	}
 
-	//Database option setting
-	rc |= jal_config_lookup_string(root, DATABASE_OPTION, &config_string, JAL_CFG_OPTIONAL);
-	global_config.database_option = config_string;
-	config_string = NULL;
-
-	//Ensure valid entry was in the config file and parse the value
-	if (JALDB_OK != jaldb_get_db_flags(global_config.database_option, &global_config.jdb_flags))
-	{
+	//Attempts to load optional LMDB_CONFIG file in db_root
+	//If present, this will override the lmdb performance level
+	//and lmdb map size, otherwise default values will be used.
+	jaldb_config *jdb_config = NULL;
+	enum jaldb_config_status jcs = get_jaldb_config(global_config.db_root, &jdb_config);
+	if (jcs != JALDB_CONFIG_OK && jcs != JALDB_CONFIG_E_NOTFOUND) {
 		rc |= JAL_CFG_FAILURE;
-		DEBUG_LOG("Error: failed to validate database_option\n");
+	}
+	else
+	{
+		//Only override map size if present in config
+		global_config.jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
+		global_config.database_option = strdup(JDB_LMDB_PERFORMANCE_LEVEL2_STR);
+		global_config.map_size = DEFAULT_LMDB_MAP_SIZE;
+
+		if (jcs != JALDB_CONFIG_E_NOTFOUND)
+		{
+			if (jdb_config->map_size != 0)
+			{
+				global_config.map_size = jdb_config->map_size;
+			}
+
+			//Only override database option if present in config
+			if (NULL != jdb_config->database_option)
+			{
+
+				global_config.jdb_flags = jdb_config->jdb_flags;
+				free(global_config.database_option);
+				global_config.database_option = strdup(jdb_config->database_option);
+			}
+			free_jaldb_config(&jdb_config);
+		}
 	}
 
 	return rc;

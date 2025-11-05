@@ -44,6 +44,7 @@ extern "C" {
 
 #include "jsub_db_layer.hpp"
 #include "jaldb_context.hpp"
+#include "jaldb_config.h"
 
 #define OTHER_DB_ROOT "./jsbu_testdb/"
 #define OTHER_SCHEMA_ROOT "./schemas/"
@@ -68,7 +69,7 @@ extern "C" void setup()
 		}
 		closedir(dir);
 	}
-	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT, JDB_NONE);
+	db_ctx = jsub_setup_db_layer(OTHER_DB_ROOT, JDB_NONE, DEFAULT_LMDB_MAP_SIZE);
 }
 
 extern "C" void teardown()

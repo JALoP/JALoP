@@ -53,14 +53,14 @@
 	} while(0)
 
 jaldb_context *jsub_setup_db_layer(
-		const char *db_root, enum jaldb_flags jdb_flags)
+		const char *db_root, enum jaldb_flags jdb_flags, int map_size)
 {
 	enum jaldb_status jaldb_ret = JALDB_OK;
 	jaldb_context *db_ctx = jaldb_context_create();
 	if (!db_ctx) {
 		goto err;
 	}
-	jaldb_ret = jaldb_context_init(db_ctx, db_root, jdb_flags);
+	jaldb_ret = jaldb_context_init(db_ctx, db_root, jdb_flags, map_size);
 	if (JALDB_OK == jaldb_ret){
 		goto out;
 	}

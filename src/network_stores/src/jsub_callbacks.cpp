@@ -49,14 +49,14 @@
 		time(&rawtime); \
 		char timestr[26]; \
 		strftime(timestr, 26, "%Y-%m-%dT%H:%M:%S", gmtime(&rawtime)); \
-		fprintf(stdout, "(jal_subscribe) %s[%d](%s) ", __FUNCTION__, __LINE__, timestr); \
-		fprintf(stdout, ##args); \
-		fprintf(stdout, "\n"); \
+		fprintf(stderr, "(jal_subscribe) %s[%d](%s) ", __FUNCTION__, __LINE__, timestr); \
+		fprintf(stderr, ##args); \
+		fprintf(stderr, "\n"); \
 	} while(0)
 
 #define JSUB_INITIAL_NONCE "0"
 
-volatile bool jsub_is_conn_closed = false;
+volatile bool jsub_is_conn_closed = true;
 volatile int jsub_debug = 0;
 static struct jaln_subscriber_callbacks *sub_cbs =  NULL;
 static struct jaln_connection_callbacks *cb = NULL;
