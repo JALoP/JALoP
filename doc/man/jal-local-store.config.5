@@ -49,10 +49,6 @@ This identifies where
 should store all the records. This is optional and defaults to
 .IR /var/lib/jalop/db/ .
 .TP
-.B database_option
-Sets an LMDB database option.  This config option is only used when jald is built against LMDB.  The valid values are: JDB_NONE, JDB_LMDB_PERFORMANCE_LEVEL1,
-JDB_LMDB_PERFORMANCE_LEVEL2, and JDB_LMDB_PERFORMANCE_LEVEL3
-.TP
 .B socket
 The full path to use when creating the domain socket.
 .BR jal-local-store (8)
@@ -149,21 +145,6 @@ hostname = "test.jalop.com";
 # This identifies where jal-local-store should store all the records.
 # This is optional and defaults to /var/lib/jalop/db/ .
 db_root = "/var/log/jalop";
-
-#Valid settings for the database_option config setting are the following:
-#JDB_NONE - No LMDB db flags are set.
-#	This is the slowest, but most reliable setting to prevent data loss or db corruption
-#JDB_LMDB_PERFORMANCE_LEVEL1 - Sets MDB_NOMETASYNC
-#	Faster than JDB_NONE. No risk of db corruption, but could lose last transaction.
-#JDB_LMDB_PERFORMANCE_LEVEL2 - Sets MDB_NOMETASYNC | MDB_NOSYNC
-#	This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
-#	No risk of db corruption if filesystem preserves write order otherwise db corruption is possible.  Also could lose last transaction.
-#JDB_LMDB_PERFORMANCE_LEVEL3 - Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
-#	WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
-#	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
-#	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
-
-database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
 
 # The jal-local-store process, at startup, will check if it is
 # running under systemd along with a systemd socket unit file configuration.
