@@ -50,6 +50,7 @@ extern "C" {
 #include "jal_alloc.h"
 #include "jal_ts_utils.h"
 #include "jaldb_context.hpp"
+#include "jaldb_config.h"
 #include "jaldb_strings.h"
 #include "jaldb_segment.h"
 #include "jaldb_utils.h"
@@ -133,7 +134,7 @@ extern "C" void setup()
 	mkdir(OTHER_DB_ROOT, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	context = jaldb_context_create();
-	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, JDB_NONE));
+	assert_equals(JALDB_OK, jaldb_context_init(context, OTHER_DB_ROOT, JDB_NONE, 1));
 
 	records[0] = jaldb_create_record();
 	records[0]->version = EXPECTED_RECORD_VERSION;
@@ -253,7 +254,7 @@ extern "C" void test_mark_record_sent()
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 	rec = NULL;
 
@@ -261,14 +262,14 @@ extern "C" void test_mark_record_sent()
 	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
-	assert_equals(1, rec->synced);
+	assert_equals(JALDB_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	// Test clear flag
 	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 0));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	free(nonce);
@@ -280,15 +281,15 @@ extern "C" void test_mark_record_sent_and_synced()
 	char *nonce = NULL;
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce, -1));
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	rec = NULL;
 	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce, 1));
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
-	assert_equals(1, rec->synced);
+	assert_equals(JALDB_SENT, rec->synced);
 	rec = NULL;
 	assert_equals(JALDB_OK, jaldb_mark_synced(context, JALDB_RTYPE_LOG, nonce));
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce, &rec));
-	assert_equals(2, rec->synced);
+	assert_equals(JALDB_SYNCED, rec->synced);
 	jaldb_destroy_record(&rec);
 	free(nonce);
 }
@@ -338,6 +339,7 @@ extern "C" void test_marking_record_synced_doesnt_affect_sent_ordering()
 	char *nonce1 = NULL;
 	char *nonce2 = NULL;
 	char *nonce3 = NULL;
+
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[0], 1, &nonce1, -1));
 	assert_equals(JALDB_OK, jaldb_insert_record(context, records[1], 1, &nonce2, -1));
 	assert_equals(JALDB_OK, jaldb_mark_sent(context, JALDB_RTYPE_LOG, nonce1, 1));
@@ -351,8 +353,8 @@ extern "C" void test_marking_record_synced_doesnt_affect_sent_ordering()
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce1, &rec1));
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec2));
-	assert_equals(2, rec1->synced);
-	assert_equals(1, rec2->synced);
+	assert_equals(JALDB_SYNCED, rec1->synced);
+	assert_equals(JALDB_SENT, rec2->synced);
 	jaldb_destroy_record(&rec1);
 	jaldb_destroy_record(&rec2);
 	jaldb_destroy_record(&rec3);
@@ -387,25 +389,25 @@ extern "C" void test_next_mark_unsynced_records_unsent_works()
 	assert_equals(JALDB_OK, jaldb_mark_unsynced_records_unsent(context, JALDB_RTYPE_LOG));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce0, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce1, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce3, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;
@@ -425,25 +427,26 @@ extern "C" void test_next_mark_unsynced_records_unsent_works()
 	assert_equals(JALDB_OK, jaldb_mark_unsynced_records_unsent(context, JALDB_RTYPE_LOG));
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce0, &rec));
-	assert_equals(2, rec->synced);
+
+	assert_equals(JALDB_SYNCED, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce1, &rec));
-	assert_equals(2, rec->synced);
+	assert_equals(JALDB_SYNCED, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce2, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;
 
 	assert_equals(JALDB_OK, jaldb_get_record(context, JALDB_RTYPE_LOG, nonce3, &rec));
-	assert_equals(0, rec->synced);
+	assert_equals(JALDB_NOT_SENT, rec->synced);
 	jaldb_destroy_record(&rec);
 
 	rec = NULL;

@@ -67,7 +67,8 @@ enum jaldb_status jaldb_create_primary_dbs_with_indices(
 		std::shared_ptr<MDBEnv> &env,
 		const char *prefix,
 		const u_int32_t db_flags,
-		struct jaldb_record_dbs **pprdbs);
+		struct jaldb_record_dbs **pprdbs,
+		int map_size);
 
 #ifdef __cplusplus
 }

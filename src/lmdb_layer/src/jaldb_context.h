@@ -145,14 +145,15 @@ enum jaldb_status jaldb_get_db_flags(
  * @param[in] jdb_flags Bit-packed options to be passed to the db. Specify zero
  * or more options using a bitwise or "|" with the values specified in the
  * jaldb_flags enum.
- *
+ * @param[in] map_size The lmdb map size in gigabytes (GB)
  * @return JAL_OK if the function succeeds or a JAL error code if the function
  * fails.
  */
 enum jaldb_status jaldb_context_init(
 	jaldb_context *ctx,
 	const char *db_root,
-	enum jaldb_flags jdb_flags);
+	enum jaldb_flags jdb_flags,
+	int map_size);
 
 /**
  * Destroys a DB context.
@@ -178,7 +179,7 @@ void jaldb_context_destroy(jaldb_context **ctx);
 
 enum jaldb_status jaldb_get_record(jaldb_context *ctx,
 		enum jaldb_rec_type type,
-		char *nonce,
+		const char *nonce,
 		struct jaldb_record **rec);
 
 
@@ -264,22 +265,6 @@ enum jaldb_status jaldb_mark_unsynced_records_unsent(
 	enum jaldb_rec_type type);
 
 /**
- * Retrieves the next un-synced record from the database.
- *
- * @param[in] ctx The context.
- * @param[in] type The type of record to retrieve.
- * @param[out] nonce The nonce for the returned record.
- * @param[out] rec The record from the DB.
- *
- * @return JALDB_OK if the function succeeds or an error code.
- */
-enum jaldb_status jaldb_next_unsynced_record(
-	jaldb_context *ctx,
-	enum jaldb_rec_type type,
-	char **nonce,
-	struct jaldb_record **rec);
-
-/**
  * Retrieves the next chronological record from the database.
  *
  * @param[in] ctx The context.
@@ -299,6 +284,22 @@ enum jaldb_status jaldb_next_chronological_record(
 	char **nonce,
 	struct jaldb_record **rec,
 	char** timestamp);
+
+/**
+ * Retrieves the next un-synced record from the database.
+ *
+ * @param[in] ctx The context.
+ * @param[in] type The type of record to retrieve.
+ * @param[out] network_nonce The nonce for the returned record.
+ * @param[out] rec_out The record from the DB.
+ *
+ * @return JALDB_OK if the function succeeds or an error code.
+ */
+enum jaldb_status jaldb_next_unsynced_record(
+		jaldb_context *ctx,
+		enum jaldb_rec_type type,
+		char **network_nonce,
+		struct jaldb_record **rec_out);
 
 /**
  * Utility to insert any JALoP record

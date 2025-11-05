@@ -38,7 +38,6 @@
 enum LmdbDbIndex {
 	IDX_NETWORK_NONCE = 0,
 	IDX_NONCE_TIMESTAMP,
-	IDX_CONFIRMED,
 	IDX_SENT,
 	IDX_UUID,
 	IDX_TIMESTAMP
@@ -53,8 +52,7 @@ using LmdbDbType = TypedDBI<JaldbRecordTranslator,
 	index_on<JaldbRecordTranslator, std::string, &JaldbRecordTranslator::networkNonce>,
 	// nonce_timestamp - formerly nonce_timestamp_db
 	index_on<JaldbRecordTranslator, std::string, &JaldbRecordTranslator::nonceTimestamp>,
-	// confirmed - formely record_confirmed_db - UNUSED
-	index_on<JaldbRecordTranslator, bool, &JaldbRecordTranslator::confirmed>,
+
 	// sent - formerly record_sent_db
 	index_on<JaldbRecordTranslator, enum jaldb_sync_stat, &JaldbRecordTranslator::synced>,
 	// uuid - formerly record_id_idx_db
@@ -131,7 +129,7 @@ struct jaldb_context_t {
 	*/
 	std::string *db_root;
 	/**
-	* The number of records to purge per transaction;
+	* The number of records to purge per transaction.
 	*/
 	long batch_size;
 };
@@ -336,7 +334,6 @@ enum jaldb_status jaldb_get_all_records(
 		jaldb_context *ctx,
 		std::list<std::string> **nonce_list,
 		enum jaldb_rec_type type);
-
 
  /**
  * Retrieve a list of the records with the given type received

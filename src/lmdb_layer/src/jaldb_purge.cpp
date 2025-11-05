@@ -57,7 +57,7 @@ enum jaldb_status jaldb_purge_unconfirmed_records(
 		LmdbDbRWTransaction txn = rdbs->primary_db->getRWTransaction();
 
 		//Delete all unconfirmed records only
-		auto range = txn.equal_range<LmdbDbIndex::IDX_CONFIRMED>(false);
+		auto range = txn.equal_range<LmdbDbIndex::IDX_SENT>(JALDB_NOT_CONFIRMED);
 		for(auto iter = std::move(range.first); iter != range.second; ++iter) {
 			txn.del(iter.getID());
 		}

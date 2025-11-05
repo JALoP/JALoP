@@ -36,7 +36,6 @@ extern "C" {
 #define __STDC_FORMAT_MACROS
 #include <errno.h>
 #include <fcntl.h>
-#include <db.h>
 #include <dirent.h>
 #include <inttypes.h>
 #include <iostream>
@@ -50,6 +49,7 @@ extern "C" {
 #include "jaldb_utils.h"
 #include "jaldb_purge.hpp"
 #include "jaldb_segment.h"
+#include "jaldb_config.h"
 
 using namespace std;
 
@@ -146,7 +146,7 @@ extern "C" void setup()
 		(void)closedir(dir);
 	}
 	context = jaldb_context_create();
-	jaldb_context_init(context, OTHER_DB_ROOT, JDB_NONE);
+	jaldb_context_init(context, OTHER_DB_ROOT, JDB_NONE, 1);
 }
 
 extern "C" void teardown()

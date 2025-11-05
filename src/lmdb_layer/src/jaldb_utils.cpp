@@ -65,18 +65,6 @@ enum jaldb_status jaldb_create_file(
 		return JALDB_E_INVAL;
 	}
 
-	#define UUID_STRING_REP_LEN 37
-
-	// First two hexidecimal characters of UUID as directory + /
-	#define DIRPATH_LEN 3
-
-	//TYPE_LEN is long enough to hold "_journal_sys_meta", which is the longest type name
-	#define TYPE_LEN 17
-
-	#define FILENAME_LEN UUID_STRING_REP_LEN + TYPE_LEN + 1
-
-	#define REL_PATH_LEN DIRPATH_LEN + FILENAME_LEN
-
 	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
 	enum jal_status jal_ret = JAL_E_INVAL;
 
@@ -84,12 +72,12 @@ enum jaldb_status jaldb_create_file(
 	char *suffix = NULL;
 	int root_len = -1;
 	int lfd = -1;
-	char *uuid_string = (char*)jal_calloc(UUID_STRING_REP_LEN,sizeof(char));
+	char *uuid_string = (char*)jal_calloc(UUID_STRING_REP_LEN+1,sizeof(char)); //add 1 for NULL char
 	uuid_unparse(uuid,uuid_string);
 
 	root_len = strlen(db_root);
 
-	full_path = (char *) jal_calloc(root_len+REL_PATH_LEN,sizeof(char));
+	full_path = (char *) jal_calloc(root_len+REL_PATH_LEN+1,sizeof(char)); //add 1 for NULL char
 
 	strcpy(full_path,db_root);
 
@@ -100,7 +88,7 @@ enum jaldb_status jaldb_create_file(
 	full_path[path_pos++] = uuid_string[1];
 	full_path[path_pos++] = '/';
 
-	suffix = (char *)jal_calloc(FILENAME_LEN,sizeof(char));
+	suffix = (char *)jal_calloc(FILENAME_LEN+1,sizeof(char));
 
 
 	if (rtype == JALDB_RTYPE_JOURNAL)
@@ -148,13 +136,13 @@ enum jaldb_status jaldb_create_file(
 	strcat(full_path,suffix);
 
 	// Create the file as read/write with permission mode set to owner read/write
-	lfd = open(full_path, O_RDWR | O_CREAT, S_IRUSR|S_IWUSR);
+	lfd = open(full_path, O_RDWR | O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP);
 	if (lfd == -1) {
 		goto error_out;
 	}
 
 	ret = JALDB_OK;
-	*relative_path_out = (char *)jal_calloc(REL_PATH_LEN,sizeof(char));
+	*relative_path_out = (char *)jal_calloc(strlen(full_path) - root_len + 1,sizeof(char));
 	memcpy(*relative_path_out, full_path + root_len, REL_PATH_LEN);
 	goto out;
 
