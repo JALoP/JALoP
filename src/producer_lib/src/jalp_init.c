@@ -71,6 +71,10 @@ void jalp_shutdown()
 	xmlSecCryptoAppShutdown();
 	xmlSecShutdown();
 
+	#ifndef XMLSEC_NO_XSLT
+	xsltCleanupGlobals();
+	#endif
+
 	xmlCleanupParser();
 	xmlCleanupGlobals();
 }
