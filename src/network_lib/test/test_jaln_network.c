@@ -66,16 +66,16 @@ void test_jaln_disconnect_works()
 
 	sess2 = jaln_session_create();
 
-	assert_equals(axl_false, sess->closing);
-	assert_equals(axl_false, sess2->closing);
+	assert_equals(false, sess->closing);
+	assert_equals(false, sess2->closing);
 
 	sessions = jaln_session_list_create();
 	axl_hash_insert_full(jaln_ctx->sessions_by_conn, key, free, sessions, jaln_axl_list_destroy_wrapper);
 	axl_list_append(sessions, sess);
 	axl_list_append(sessions, sess2);
 	jaln_disconnect(conn);
-	assert_equals(axl_true, sess->closing);
-	assert_equals(axl_true, sess2->closing);
+	assert_equals(true, sess->closing);
+	assert_equals(true, sess2->closing);
 	jaln_session_destroy(&sess2);
 }
 

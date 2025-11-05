@@ -332,7 +332,7 @@ enum jal_status jaln_finish(jaln_session *sess)
 		return JAL_E_INVAL_PARAM;
 	}
 
-	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
+	bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(sess->rec_chan, sess->pub_data->msg_no);
 	if (!ans_rpy_sent) {
 		return JAL_E_COMM;
 	}

@@ -132,16 +132,16 @@ struct jaln_connection *jaln_subscribe(
 		vortex_mutex_unlock(&ctx->lock);
 		//TODO - find alternate fix for having to do below to make
 		//reconnected work.
-		ctx->is_connected = axl_false;
+		ctx->is_connected = false;
 		return NULL;
 	}
 
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	ctx->user_data = user_data;
 
 	if (ctx->private_key && ctx->public_cert && ctx->peer_certs) {
 		// Enable TLS for every connection and do not allow failures.
-		vortex_tls_set_auto_tls(ctx->vortex_ctx, axl_true, axl_false, NULL);
+		vortex_tls_set_auto_tls(ctx->vortex_ctx, true, false, NULL);
 	}
 
 	vortex_mutex_unlock(&ctx->lock);
@@ -152,7 +152,7 @@ struct jaln_connection *jaln_subscribe(
 	VortexConnection *v_conn = NULL;
 	VortexCtx *v_ctx = ctx->vortex_ctx;
 	v_conn = vortex_connection_new(v_ctx, host, port, NULL, NULL);
-	if (!vortex_connection_is_ok(v_conn, axl_true)) {
+	if (!vortex_connection_is_ok(v_conn, true)) {
 		return NULL;
 	}
 	struct jaln_connection *jconn = jaln_connection_create();
@@ -365,7 +365,7 @@ enum jal_status jaln_subscriber_send_subscribe_request(jaln_session *session)
 		BEEP_HEADERS_LOG(session->jaln_ctx->debug_flag, msg);
 	}
 	int msg_no;
-	vortex_channel_set_complete_flag(session->rec_chan, axl_false);
+	vortex_channel_set_complete_flag(session->rec_chan, false);
 
 	if (!(vortex_channel_send_msg(session->rec_chan, msg, strlen(msg), &msg_no))) {
 		ret = JAL_E_NOT_CONNECTED;
@@ -405,7 +405,7 @@ void jaln_subscriber_on_channel_create(int channel_num,
 	//The window_size parameter passed in from user is in kilobytes.
 	//We need to convert to bytes here for the vortex API.
 	vortex_channel_set_window_size(chan, 1024*sess->window_size);
-	vortex_channel_set_serialize(chan, axl_true);
+	vortex_channel_set_serialize(chan, true);
 
 	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, sess);
 	sess->ch_info->addr = strdup(vortex_connection_get_host(conn));

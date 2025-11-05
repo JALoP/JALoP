@@ -38,8 +38,8 @@
 #include "jaln_string_utils.h"
 #include "jaln_subscriber_state_machine.h"
 
-axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
-		__attribute__((unused)) uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
+		__attribute__((unused)) uint64_t frame_off, bool more)
 {
 	if (!session || !session->ch_info || !session->dgst || !session->sub_data->sm || !frame) {
 		goto err_out;
@@ -57,7 +57,7 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 			if (!copied  && !jaln_sub_state_append_frame(session, frame)) {
 				goto err_out;
 			}
-			return axl_true;
+			return true;
 		}
 		// no more data expected for this ANS, and couldn't process the
 		// MIME headers, consider it an error
@@ -132,16 +132,16 @@ axl_bool jaln_sub_wait_for_mime(jaln_session *session, VortexFrame *frame,
 	}
 
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_sys_meta);
-	axl_bool ret = session->sub_data->sm->curr_state->frame_handler(session, frame, 0, more);
+	bool ret = session->sub_data->sm->curr_state->frame_handler(session, frame, 0, more);
 	vortex_frame_unref(session->sub_data->sm->cached_frame);
 	session->sub_data->sm->cached_frame = NULL;
 	return ret;
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_sub_data_segment_common(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more,
+bool jaln_sub_data_segment_common(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more,
 		uint8_t* dst_buffer, uint64_t dst_size, uint64_t *dst_off, struct jaln_sub_state *next_state)
 {
 	if (!session || !session->sub_data->sm || !frame || !dst_buffer || !dst_off || !next_state) {
@@ -156,50 +156,50 @@ axl_bool jaln_sub_data_segment_common(jaln_session *session, VortexFrame *frame,
 			jaln_sub_state_transition(session->sub_data->sm, next_state);
 			return session->sub_data->sm->curr_state->frame_handler(session, frame, frame_off, more);
 		} else if (*dst_off < dst_size) {
-			return axl_true;
+			return true;
 		}
 		// if dst_off > dst_size something wrong, fall
 		// through to error handler
 	}
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_sub_wait_for_payload(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_payload(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->sub_data->sm) {
-		return axl_false;
+		return false;
 	}
 	return jaln_sub_data_segment_common(session, frame, frame_off, more,
 			session->sub_data->sm->payload_buf, session->sub_data->sm->payload_sz, &session->sub_data->sm->payload_off,
 			session->sub_data->sm->wait_for_payload_break);
 }
 
-axl_bool jaln_sub_wait_for_sys_meta(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_sys_meta(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->sub_data->sm) {
-		return axl_false;
+		return false;
 	}
 	return jaln_sub_data_segment_common(session, frame, frame_off, more,
 			session->sub_data->sm->sys_meta_buf, session->sub_data->sm->sys_meta_sz, &session->sub_data->sm->sys_meta_off,
 			session->sub_data->sm->wait_for_sys_meta_break);
 }
-axl_bool jaln_sub_wait_for_app_meta(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_app_meta(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->sub_data->sm) {
-		return axl_false;
+		return false;
 	}
 	return jaln_sub_data_segment_common(session, frame, frame_off, more,
 			session->sub_data->sm->app_meta_buf, session->sub_data->sm->app_meta_sz, &session->sub_data->sm->app_meta_off,
 			session->sub_data->sm->wait_for_app_meta_break);
 }
 
-axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_off,
-		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, axl_bool more)
+bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_off,
+		const uint8_t *src, const uint64_t src_sz, uint64_t *psrc_off, bool more)
 {
 	if (!dst || !pdst_off || !src || !psrc_off) {
-		return axl_false;
+		return false;
 	}
 	uint64_t dst_off = *pdst_off;
 	uint64_t src_off = *psrc_off;
@@ -208,7 +208,7 @@ axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_of
 
 	if ((dst_sz < dst_off) ||
 		(src_sz < src_off)) {
-		return axl_false;
+		return false;
 	}
 
 	uint64_t dst_bytes_left = dst_sz - dst_off;
@@ -217,17 +217,17 @@ axl_bool jaln_copy_buffer(uint8_t *dst, const uint64_t dst_sz, uint64_t *pdst_of
 	int need_more_frames = src_bytes_left < dst_bytes_left;
 
 	if (need_more_frames && !more) {
-		return axl_false;
+		return false;
 	}
 
 	uint64_t bytes_to_copy = need_more_frames ? src_bytes_left : dst_bytes_left;
 	memcpy(dst, src, bytes_to_copy);
 	*psrc_off = src_off + bytes_to_copy;
 	*pdst_off = dst_off + bytes_to_copy;
-	return axl_true;
+	return true;
 }
 
-axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->dgst || !session->sub_data->sm || !session->sub_data->sm->dgst_inst || !session->jaln_ctx ||
 			!session->jaln_ctx->sub_callbacks || !frame) {
@@ -268,72 +268,72 @@ axl_bool jaln_sub_wait_for_journal_payload(jaln_session *session, VortexFrame *f
 	if (session->sub_data->sm->payload_off == session->sub_data->sm->payload_sz) {
 		return session->sub_data->sm->wait_for_payload_break->frame_handler(session, frame, frame_off, more);
 	} else if (session->sub_data->sm->payload_off < session->sub_data->sm->payload_sz) {
-		return axl_true;
+		return true;
 	}
 	// otherwise it's an error and fall through
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_sub_wait_for_break_common(jaln_session *session, VortexFrame *frame,
-		uint64_t *frame_off, axl_bool more, axl_bool *break_valid)
+bool jaln_sub_wait_for_break_common(jaln_session *session, VortexFrame *frame,
+		uint64_t *frame_off, bool more, bool *break_valid)
 {
 	if (!session || !session->sub_data->sm || !frame || !frame_off || !break_valid) {
-		return axl_false;
+		return false;
 	}
-	*break_valid = axl_false;
+	*break_valid = false;
 	uint8_t *payload = (uint8_t*) vortex_frame_get_payload(frame);
 	int payload_sz = vortex_frame_get_payload_size(frame);
-	axl_bool ret = axl_false;
+	bool ret = false;
 
 	if (payload_sz < 0) {
-		return axl_false;
+		return false;
 	}
 
 	if (jaln_copy_buffer(session->sub_data->sm->break_buf, session->sub_data->sm->break_sz, &session->sub_data->sm->break_off,
 				payload, payload_sz, frame_off, more)) {
 		if (session->sub_data->sm->break_off == session->sub_data->sm->break_sz) {
 			if (0 ==  memcmp(session->sub_data->sm->break_buf, JALN_STR_BREAK, session->sub_data->sm->break_sz)) {
-				*break_valid = axl_true;
-				ret = axl_true;
+				*break_valid = true;
+				ret = true;
 			}
 			session->sub_data->sm->break_off = 0;
 			memset(session->sub_data->sm->break_buf, 0, session->sub_data->sm->break_sz);
 		} else if (session->sub_data->sm->break_off < session->sub_data->sm->break_sz) {
-			ret = axl_true;
+			ret = true;
 		}
 	}
 	return ret;
 }
 
-axl_bool jaln_sub_state_error_state(__attribute__((unused)) jaln_session *session,
+bool jaln_sub_state_error_state(__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) VortexFrame *frame,
 		__attribute__((unused)) uint64_t frame_off,
-		__attribute__((unused)) axl_bool more)
+		__attribute__((unused)) bool more)
 {
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_sub_state_append_frame(jaln_session *session, VortexFrame *frame)
+bool jaln_sub_state_append_frame(jaln_session *session, VortexFrame *frame)
 {
 	if (!session || !session->sub_data->sm || !frame) {
-		return axl_false;
+		return false;
 	}
 	if (!session->sub_data->sm->cached_frame) {
 		session->sub_data->sm->cached_frame = frame;
 		vortex_frame_ref(frame);
-		return axl_true;
+		return true;
 	}
 	VortexFrame *new_frame = vortex_frame_join(session->sub_data->sm->cached_frame, frame);
 	if (!new_frame) {
-		return axl_false;
+		return false;
 	}
 	vortex_frame_unref(session->sub_data->sm->cached_frame);
 	session->sub_data->sm->cached_frame = new_frame;
-	return axl_true;
+	return true;
 }
-axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->dgst || !session->jaln_ctx ||
 			!session->jaln_ctx->sub_callbacks || !frame) {
@@ -364,13 +364,13 @@ axl_bool jaln_sub_audit_record_complete(jaln_session *session, VortexFrame *fram
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
-	return axl_true;
+	return true;
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->dgst || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks || !session->sub_data->sm) {
 		goto err_out;
@@ -399,12 +399,12 @@ axl_bool jaln_sub_log_record_complete(jaln_session *session, VortexFrame *frame,
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
-	return axl_true;
+	return true;
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
-axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->dgst || !session->jaln_ctx || !session->jaln_ctx->sub_callbacks || !session->sub_data->sm) {
 		goto err_out;
@@ -434,53 +434,53 @@ axl_bool jaln_sub_journal_record_complete(jaln_session *session, VortexFrame *fr
 	session->jaln_ctx->sub_callbacks->message_complete(session, session->ch_info, session->ch_info->type, session->jaln_ctx->user_data);
 	jaln_sub_state_reset(session);
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_mime);
-	return axl_true;
+	return true;
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
-axl_bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_rec_complete_sanity_check(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->sub_data->sm || !frame) {
-		return axl_false;
+		return false;
 	}
 	if (more) {
-		return axl_false;
+		return false;
 	}
 	int payload_sz = vortex_frame_get_payload_size(frame);
 	if (payload_sz < 0) {
-		return axl_false;
+		return false;
 	}
 	if (frame_off != (uint64_t) payload_sz) {
 		// failed to consume the entire frame payload...
-		return axl_false;
+		return false;
 	}
 	if (session->sub_data->sm->payload_sz != session->sub_data->sm->payload_off) {
-		return axl_false;
+		return false;
 	}
-	return axl_true;
+	return true;
 }
-axl_bool jaln_sub_wait_for_payload_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_payload_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->sub_data->sm || !frame) {
 		goto err_out;
 	}
-	axl_bool break_valid = axl_false;
+	bool break_valid = false;
 	if (jaln_sub_wait_for_break_common(session, frame, &frame_off, more, &break_valid)) {
 		if (break_valid) {
 			jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->record_complete);
 			return session->sub_data->sm->curr_state->frame_handler(session, frame, frame_off, more);
 		}
-		return axl_true;
+		return true;
 	}
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_sub_process_journal_beginning(jaln_session *session)
+bool jaln_sub_process_journal_beginning(jaln_session *session)
 {
-	axl_bool ret = axl_false;
+	bool ret = false;
 	struct jaln_payload_feeder *feeder = jal_malloc(sizeof(struct jaln_payload_feeder));
 	if(JAL_OK != session->jaln_ctx->sub_callbacks->acquire_journal_feeder(session,
 								session->ch_info,
@@ -511,10 +511,10 @@ axl_bool jaln_sub_process_journal_beginning(jaln_session *session)
 		left_to_process -= tmp;
 		pos += tmp;
 	}
-	ret = axl_true;
+	ret = true;
 	goto out;
 err_out:
-	ret = axl_false;
+	ret = false;
 out:
 	session->jaln_ctx->sub_callbacks->release_journal_feeder(session,
 								session->ch_info,
@@ -524,12 +524,12 @@ out:
 	return ret;
 }
 
-axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->dgst || !session->ch_info || !session->sub_data->sm || !session->sub_data->sm->dgst_inst) {
 		goto err_out;
 	}
-	axl_bool break_valid = axl_false;
+	bool break_valid = false;
 	if (jaln_sub_wait_for_break_common(session, frame, &frame_off, more, &break_valid)) {
 		if (break_valid) {
 			struct jaln_record_info *info = jaln_record_info_create();
@@ -569,29 +569,29 @@ axl_bool jaln_sub_wait_for_app_meta_break(jaln_session *session, VortexFrame *fr
 			jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_payload);
 			return session->sub_data->sm->curr_state->frame_handler(session, frame, frame_off, more);
 		}
-		return axl_true;
+		return true;
 	}
 err_out:
 	jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->error_state);
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_sub_wait_for_sys_meta_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, axl_bool more)
+bool jaln_sub_wait_for_sys_meta_break(jaln_session *session, VortexFrame *frame, uint64_t frame_off, bool more)
 {
 	if (!session || !session->sub_data->sm || !frame) {
 		goto err_out;
 	}
 
-	axl_bool break_valid = axl_false;
+	bool break_valid = false;
 	if (jaln_sub_wait_for_break_common(session, frame, &frame_off, more, &break_valid)) {
 		if (break_valid) {
 			jaln_sub_state_transition(session->sub_data->sm, session->sub_data->sm->wait_for_app_meta);
 			return session->sub_data->sm->curr_state->frame_handler(session, frame, frame_off, more);
 		}
-		return axl_true;
+		return true;
 	}
 err_out:
-	return axl_false;
+	return false;
 }
 
 void jaln_sub_state_reset(jaln_session *session)

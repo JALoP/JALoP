@@ -56,7 +56,7 @@
 
 #define EXPECTED_MSG HEADERS SYS_META "BREAK" APP_META "BREAK" PAYLOAD "BREAK"
 
-static axl_bool finalized_called;
+static bool finalized_called;
 
 static VortexPayloadFeeder *fake_vortex_payload_feeder_new (
 		__attribute__((unused)) VortexPayloadFeederHandler handler,
@@ -83,19 +83,19 @@ enum jal_status fake_create_record_ans_rpy_headers(
 	return JAL_OK;
 }
 
-axl_bool fake_finalize_ans_rpy(
+bool fake_finalize_ans_rpy(
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) int msg_no)
 {
-	finalized_called = axl_true;
-	return axl_true;
+	finalized_called = true;
+	return true;
 }
-axl_bool fake_send_ans_rpy_from_feeder(
+bool fake_send_ans_rpy_from_feeder(
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) VortexPayloadFeeder *feeder,
 		__attribute__((unused)) int msg_no)
 {
-	return axl_true;
+	return true;
 }
 
 enum jal_status fake_add_to_dgst_list(
@@ -226,7 +226,7 @@ void setup()
 
 	sess->jaln_ctx->pub_callbacks = pub_cbs;
 
-	finalized_called = axl_false;
+	finalized_called = false;
 }
 
 void teardown()
@@ -237,7 +237,7 @@ void teardown()
 void test_pub_feeder_is_finished_returns_true_if_errored()
 {
 	int fin = 0;
-	sess->errored = axl_true;
+	sess->errored = true;
 	assert_true(jaln_pub_feeder_is_finished(sess, &fin));
 	assert_true(fin);
 }
@@ -245,7 +245,7 @@ void test_pub_feeder_is_finished_returns_true_if_errored()
 void test_pub_feeder_is_finished_returns_true_after_payload_break_is_written()
 {
 	int fin = 0;
-	sess->pub_data->finished_payload_break = axl_true;
+	sess->pub_data->finished_payload_break = true;
 	assert_true(jaln_pub_feeder_is_finished(sess, &fin));
 	assert_true(fin);
 }
@@ -253,7 +253,7 @@ void test_pub_feeder_is_finished_returns_true_after_payload_break_is_written()
 void test_pub_feeder_is_finished_returns_false_before_payload_break_is_written()
 {
 	int fin = 1;
-	sess->pub_data->finished_payload_break = axl_false;
+	sess->pub_data->finished_payload_break = false;
 	assert_false(jaln_pub_feeder_is_finished(sess, &fin));
 	assert_false(fin);
 }
@@ -262,7 +262,7 @@ void test_pub_feeder_get_size_returns_cached_size()
 {
 	int sz = 0;
 	sess->pub_data->vortex_feeder_sz = 24;
-	sess->pub_data->finished_payload_break = axl_false;
+	sess->pub_data->finished_payload_break = false;
 	assert_true(jaln_pub_feeder_get_size(sess, &sz));
 	assert_equals(24, sz);
 }

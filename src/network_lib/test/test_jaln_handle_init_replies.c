@@ -503,7 +503,7 @@ void test_jaln_handle_initialize_ack_succeeds()
 	replace_function(vortex_channel_get_connection,
 		vortex_channel_get_connection_returns_null);
 
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -515,20 +515,20 @@ void test_jaln_handle_initialize_ack_fails_bad_params()
 		vortex_channel_get_connection_returns_null);
 
 	// ERR1 - NULL jaln_session
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(NULL, role,
 				(VortexFrame*) 0xbadf00d));
 
 	sess->rec_chan = NULL; // Invalidate rec_chan
 
 	// ERR1 - NULL rec_chan
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 	sess->rec_chan = (VortexChannel*) 0xbadf00d; // Restore rec_chan
 
 	// ERR2 - NULL VortexFrame
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				NULL));
 
@@ -536,7 +536,7 @@ void test_jaln_handle_initialize_ack_fails_bad_params()
 		&(sess->jaln_ctx->conn_callbacks)); // Invalidate callbacks
 
 	// ERR2 - NULL callbacks
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 
@@ -549,7 +549,7 @@ void test_jaln_handle_initialize_ack_fails_bad_params()
 	sess->jaln_ctx = NULL;
 
 	// ERR2 - NULL jaln_ctx
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 
@@ -557,14 +557,14 @@ void test_jaln_handle_initialize_ack_fails_bad_params()
 	tmp = NULL;
 
 	// Verify complete restore worked
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 
 	jaln_channel_info_destroy(&sess->ch_info); // Invalidate ch_info
 
 	// ERR2 - NULL ch_info
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -578,7 +578,7 @@ void test_jaln_handle_initialize_ack_fails_null_digest_and_encoding()
 		fake_get_mime_header_returns_null_for_digest);
 
 	// ERR3 - NULL digest
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 
@@ -586,7 +586,7 @@ void test_jaln_handle_initialize_ack_fails_null_digest_and_encoding()
 		fake_get_mime_header_returns_null_for_encoding);
 
 	// ERR3 - NULL encoding
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -597,7 +597,7 @@ void test_jaln_handle_initialize_ack_succeeds_null_agent()
 		fake_get_mime_header_returns_null_for_agent);
 
 	// NO ERR
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -610,7 +610,7 @@ void test_jaln_handle_initialize_ack_fails_empty_axlLists_bad_encoding()
 		fake_get_mime_header_returns_dgst_for_encoding);
 
 	// ERR4 - Empty list + unrecognized encoding
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -623,7 +623,7 @@ void test_jaln_handle_initialize_ack_succeeds_empty_axlLists_good_encoding()
 		fake_get_mime_header);
 
 	// NO ERR - Empty list + recognized encoding
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -637,7 +637,7 @@ void test_jaln_handle_initialize_ack_fails_empty_axlLists_bad_digest()
 		fake_get_mime_header_returns_enc_for_digest);
 
 	// ERR6 - Empty list + unrecognized digest
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 	jal_digest_ctx_destroy(&digest);
@@ -652,7 +652,7 @@ void test_jaln_handle_initialize_ack_succeeds_empty_axlLists_good_digest()
 		fake_get_mime_header);
 
 	// NO ERR - Empty list + recognized digest
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 	jal_digest_ctx_destroy(&digest);
@@ -663,7 +663,7 @@ void test_jaln_handle_initialize_ack_fails_unrecognized_digest()
 	replace_function(vortex_frame_get_mime_header,
 		fake_get_mime_header_returns_enc_for_digest);
 
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -673,7 +673,7 @@ void test_jaln_handle_initialize_ack_fails_unrecognized_encoding()
 	replace_function(vortex_frame_get_mime_header,
 		fake_get_mime_header_returns_dgst_for_encoding);
 
-	assert_equals(axl_false,
+	assert_equals(false,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -686,7 +686,7 @@ void test_jaln_handle_initialize_ack_succeeds_null_userdata()
 	replace_function(vortex_channel_get_connection,
 		vortex_channel_get_connection_returns_null);
 
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -699,7 +699,7 @@ void test_jaln_handle_initialize_ack_succeeds_null_chinfo_addr()
 	replace_function(vortex_channel_get_connection,
 		vortex_channel_get_connection_returns_null);
 
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -713,7 +713,7 @@ void test_jaln_handle_initialize_ack_succeeds_null_chinfo_hostname()
 	replace_function(vortex_channel_get_connection,
 		vortex_channel_get_connection_returns_null);
 
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }
@@ -726,7 +726,7 @@ void test_jaln_handle_initialize_ack_succeeds_unset_role()
 	replace_function(vortex_channel_get_connection,
 		vortex_channel_get_connection_returns_null);
 
-	assert_equals(axl_true,
+	assert_equals(true,
 			jaln_handle_initialize_ack(sess, role,
 				(VortexFrame*) 0xbadf00d));
 }

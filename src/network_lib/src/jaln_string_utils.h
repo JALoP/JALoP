@@ -49,9 +49,9 @@ extern "C" {
  * @param[in] str The string to convert
  * @param[out] out The converted value
  *
- * @return axl_true on success, axl_false otherwise.
+ * @return true on success, false otherwise.
  */
-axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
+bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
 
 /**
  * Convert an ascii string to a uint64_t
@@ -60,9 +60,9 @@ axl_bool jaln_ascii_to_uint64(const char *str, uint64_t *out);
  *
  * @param[in] str The string to convert
  * @param[out] out The converted value
- * @return axl_true on success, axl_false otherwise
+ * @return true on success, false otherwise
  */
-axl_bool jaln_ascii_to_uint64_t(const char *str, uint64_t *out);
+bool jaln_ascii_to_uint64_t(const char *str, uint64_t *out);
 
 /**
  * Helper function to convert a hex character to a uint8_t value.

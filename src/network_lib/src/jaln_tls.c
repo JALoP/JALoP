@@ -40,7 +40,7 @@
 #include "jaln_tls.h"
 #include "jal_alloc.h"
 
-axl_bool jaln_profile_mask (VortexConnection *connection,
+bool jaln_profile_mask (VortexConnection *connection,
 				int channel_num,
 				const char *uri,
 				__attribute__((unused)) const char *profile_content,
@@ -51,19 +51,19 @@ axl_bool jaln_profile_mask (VortexConnection *connection,
 				__attribute__((unused)) axlPointer user_data)
 {
 	if (0 == strcmp(uri, VORTEX_TLS_PROFILE_URI)) {
-		return axl_false;
+		return false;
 	} else if (channel_num > 0 && !vortex_connection_is_tlsficated(connection)) {
 		*error_msg = axl_strdup("Profile not accepted due to an insecure connection");
-		return axl_true;
+		return true;
 	}
 
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_tls_on_connection_accepted(VortexConnection *connection, axlPointer user_data)
+bool jaln_tls_on_connection_accepted(VortexConnection *connection, axlPointer user_data)
 {
 	vortex_connection_set_profile_mask(connection, jaln_profile_mask, user_data);
-	return axl_true;
+	return true;
 }
 
 axlPointer jaln_ssl_ctx_creation(__attribute__((unused))VortexConnection *connection, axlPointer user_data)

@@ -41,14 +41,14 @@
 // to a different file.
 #include "jaln_subscriber_state_machine.h"
 
-axl_bool jaln_pub_feeder_get_size(jaln_session *sess, int *size)
+bool jaln_pub_feeder_get_size(jaln_session *sess, int *size)
 {
 	// expect that the pub_data is already filled out...
 	*size = sess->pub_data->vortex_feeder_sz;
-	return axl_true;
+	return true;
 }
 
-axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
+bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 {
 	uint64_t dst_sz = *size;
 	uint64_t dst_off = 0;
@@ -60,13 +60,13 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 	enum jal_status ret = JAL_OK;
 
 	if (sess->errored) {
-		return axl_false;
+		return false;
 	}
 
 	if (!pd->finished_headers && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*) pd->headers, pd->headers_sz, &pd->headers_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*) pd->headers, pd->headers_sz, &pd->headers_off, true);
 		if (pd->headers_off == pd->headers_sz) {
-			pd->finished_headers = axl_true;
+			pd->finished_headers = true;
 			free(pd->headers);
 			pd->headers = NULL;
 			pd->headers_sz = 0;
@@ -75,24 +75,24 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 	}
 
 	if (!pd->finished_sys_meta && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->sys_meta, pd->sys_meta_sz, &pd->sys_meta_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->sys_meta, pd->sys_meta_sz, &pd->sys_meta_off, true);
 		if (pd->sys_meta_sz == pd->sys_meta_off) {
-			pd->finished_sys_meta = axl_true;
+			pd->finished_sys_meta = true;
 		}
 	}
 
 	if (!pd->finished_sys_meta_break && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
-			pd->finished_sys_meta_break = axl_true;
+			pd->finished_sys_meta_break = true;
 			pd->break_off = 0;
 		}
 	}
 
 	if (!pd->finished_app_meta && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->app_meta, pd->app_meta_sz, &pd->app_meta_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->app_meta, pd->app_meta_sz, &pd->app_meta_off, true);
 		if (pd->app_meta_off == pd->app_meta_sz) {
-			pd->finished_app_meta = axl_true;
+			pd->finished_app_meta = true;
 			pd->sys_meta = NULL;
 			pd->sys_meta_off = 0;
 			pd->sys_meta_sz = 0;
@@ -103,9 +103,9 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 	}
 
 	if (!pd->finished_app_meta_break && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
-			pd->finished_app_meta_break = axl_true;
+			pd->finished_app_meta_break = true;
 			pd->break_off = 0;
 		}
 	}
@@ -115,7 +115,7 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 		case JALN_RTYPE_AUDIT:
 		case JALN_RTYPE_LOG: {
 			uint64_t tmp_offset = pd->payload_off;
-			jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->payload, pd->payload_sz, &tmp_offset, axl_true);
+			jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->payload, pd->payload_sz, &tmp_offset, true);
 			pd->payload_off = tmp_offset;
 			break;
 		}
@@ -128,12 +128,12 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 							&bytes_acquired,
 							pd->journal_feeder.feeder_data);
 			if (ret != JAL_OK || (bytes_acquired > left_in_buffer)) {
-				return axl_false;
+				return false;
 			}
 
 			ret = sess->dgst->update(pd->dgst_inst, buffer + dst_off, bytes_acquired);
 			if (JAL_OK != ret) {
-				return axl_false;
+				return false;
 			}
 
 			dst_off += bytes_acquired;
@@ -141,13 +141,13 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 			break;
 		}
 		default:
-			return axl_false;
+			return false;
 		}
 		if (pd->payload_sz == pd->payload_off) {
-			pd->finished_payload = axl_true;
+			pd->finished_payload = true;
 			unsigned int dgst_len = sess->dgst->len;
 			if (JAL_OK != sess->dgst->final(pd->dgst_inst, pd->dgst, &dgst_len)) {
-				return axl_false;
+				return false;
 			}
 
 			jaln_session_add_to_dgst_list(sess, pd->nonce, pd->dgst, dgst_len);
@@ -157,23 +157,23 @@ axl_bool jaln_pub_feeder_fill_buffer(jaln_session *sess, char *b, int *size)
 	}
 
 	if (!pd->finished_payload_break && (dst_sz > dst_off)) {
-		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, axl_true);
+		jaln_copy_buffer(buffer, dst_sz, &dst_off, (uint8_t*)JALN_STR_BREAK, strlen(JALN_STR_BREAK), &pd->break_off, true);
 		if (strlen(JALN_STR_BREAK) == pd->break_off) {
-			pd->finished_payload_break = axl_true;
+			pd->finished_payload_break = true;
 			pd->break_off = 0;
 		}
 	}
 	*size = dst_off;
-	return axl_true;
+	return true;
 }
 
-axl_bool jaln_pub_feeder_is_finished(jaln_session *sess, int *finished)
+bool jaln_pub_feeder_is_finished(jaln_session *sess, int *finished)
 {
 	*finished = sess->errored || sess->pub_data->finished_payload_break;
 	return *finished;
 }
 
-axl_bool jaln_pub_feeder_handler(
+bool jaln_pub_feeder_handler(
 		__attribute__((unused)) VortexCtx *ctx,
 		VortexPayloadFeederOp op_type,
 		__attribute__((unused)) VortexPayloadFeeder *feeder,
@@ -200,11 +200,11 @@ axl_bool jaln_pub_feeder_handler(
 		break;
 	case PAYLOAD_FEEDER_RELEASE:
 		// nothing really to do here.
-		return axl_true;
+		return true;
 		break;
 	}
 	// unknown OP, is it better to fail now? or just ignore?
-	return axl_false;
+	return false;
 }
 
 void jaln_pub_feeder_reset_state(jaln_session *sess)
@@ -228,13 +228,13 @@ void jaln_pub_feeder_reset_state(jaln_session *sess)
 	pd->payload_off = 0;
 	pd->break_off = 0;
 
-	pd->finished_headers = axl_false;
-	pd->finished_sys_meta = axl_false;
-	pd->finished_sys_meta_break = axl_false;
-	pd->finished_app_meta = axl_false;
-	pd->finished_app_meta_break = axl_false;
-	pd->finished_payload = axl_false;
-	pd->finished_payload_break = axl_false;
+	pd->finished_headers = false;
+	pd->finished_sys_meta = false;
+	pd->finished_sys_meta_break = false;
+	pd->finished_app_meta = false;
+	pd->finished_app_meta_break = false;
+	pd->finished_payload = false;
+	pd->finished_payload_break = false;
 
 	if (!pd->dgst_inst) {
 		pd->dgst_inst = sess->dgst->create();
@@ -280,18 +280,18 @@ void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess)
 	jaln_pub_feeder_safe_add_size(&pd->vortex_feeder_sz, 3 * strlen(JALN_STR_BREAK));
 }
 
-axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add)
+bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add)
 {
 	if (INT_MAX < to_add) {
 		*cnt = INT_MAX;
-		return axl_false;
+		return false;
 	}
 	if ((INT_MAX - to_add) < (uint64_t) *cnt) {
 		*cnt = INT_MAX;
-		return axl_false;
+		return false;
 	}
 	*cnt += to_add;
-	return axl_true;
+	return true;
 }
 
 enum jal_status jaln_pub_begin_next_record_ans(jaln_session *sess,

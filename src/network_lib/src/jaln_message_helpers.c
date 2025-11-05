@@ -147,27 +147,27 @@ out:
 	return ret;
 }
 
-axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
+bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame)
 {
 	if (!frame) {
-		return axl_false;
+		return false;
 	}
 	const char *ct = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_CONTENT_TYPE));
 	if (!ct) {
-		return axl_false;
+		return false;
 	}
 	if (0 != strcasecmp(ct, JALN_STR_CT_JALOP)) {
-		return axl_false;
+		return false;
 	}
 	// the assumption for beep is if there is no content transfer encoding,
 	// it is binary.
 	const char *te = VORTEX_FRAME_GET_MIME_HEADER(frame, (JALN_HDRS_CONTENT_TXFR_ENCODING));
 	if (te) {
 		if (0 != strcasecmp(te, JALN_STR_BINARY)) {
-			return axl_false;
+			return false;
 		}
 	}
-	return axl_true;
+	return true;
 }
 
 uint64_t jaln_digest_info_strlen(const struct jaln_digest_info *di)
@@ -290,13 +290,13 @@ out:
 
 }
 
-axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
+bool jaln_safe_add_size(uint64_t *base, uint64_t inc)
 {
 	if (!base || (*base > (SIZE_MAX - inc))) {
-		return axl_false;
+		return false;
 	}
 	*base += inc;
-	return axl_true;
+	return true;
 }
 
 enum jal_status jaln_create_init_msg(enum jaln_role role, enum jaln_publish_mode mode, enum jaln_record_type type,
@@ -662,33 +662,33 @@ enum jal_status jaln_create_init_nack_msg(enum jaln_connect_error err_codes, cha
 	const char *preamble = JALN_MIME_PREAMBLE JALN_MSG_INIT_NACK JALN_CRLF;
 	uint64_t msg_size = strlen(preamble) + 1;
 	char *msg = NULL;
-	axl_bool errors_listed = axl_false;
+	bool errors_listed = false;
 	if (err_codes & JALN_CE_UNSUPPORTED_VERSION) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_VERSION JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNSUPPORTED_ENCODING) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_ENCODING JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNSUPPORTED_DIGEST) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_DIGEST JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNSUPPORTED_MODE) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNSUPPORTED_MODE JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}
 	}
 	if (err_codes & JALN_CE_UNAUTHORIZED_MODE) {
-		errors_listed = axl_true;
+		errors_listed = true;
 		if (!jaln_safe_add_size(&msg_size, strlen(JALN_HDRS_UNAUTHORIZED_MODE JALN_COLON_SPACE JALN_CRLF))) {
 			goto err_out;
 		}

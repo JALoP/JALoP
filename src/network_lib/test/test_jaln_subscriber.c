@@ -98,48 +98,48 @@ VortexFrameType mock_vortex_frame_get_type_failure(__attribute__((unused)) Vorte
 	return VORTEX_FRAME_TYPE_ERR;
 }
 
-axl_bool mock_frame_handler_failure(__attribute__((unused)) jaln_session *sess,
+bool mock_frame_handler_failure(__attribute__((unused)) jaln_session *sess,
 				__attribute__((unused)) VortexFrame *curr_frame,
 				__attribute__((unused)) uint64_t payload_offset,
-				__attribute__((unused)) axl_bool flag_more)
+				__attribute__((unused)) bool flag_more)
 {
-	return axl_false;
+	return false;
 }
 
-axl_bool fake_vortex_channel_send_msg_success(
+bool fake_vortex_channel_send_msg_success(
 	__attribute__((unused)) VortexChannel *channel,
 	__attribute__((unused)) const void *msg,
 	__attribute__((unused)) size_t msg_size,
 	__attribute__((unused)) int* msg_no)
 {
 	isMsgSent = 1;
-	return axl_true;
+	return true;
 }
 
 
-axl_bool fake_vortex_channel_send_msg_fail(
+bool fake_vortex_channel_send_msg_fail(
 	__attribute__((unused)) VortexChannel *channel,
 	__attribute__((unused)) const void *msg,
 	__attribute__((unused)) size_t msg_size,
 	__attribute__((unused)) int* msg_no)
 {
 	isMsgSent = 0;
-	return axl_false;
+	return false;
 }
 
 void fake_vortex_channel_set_complete_flag(
 	__attribute__((unused)) VortexChannel *channel,
-	__attribute__((unused)) axl_bool value)
+	__attribute__((unused)) bool value)
 {
 	return;
 }
 
-axl_bool fake_vortex_channel_close_full(
+bool fake_vortex_channel_close_full(
 	__attribute__((unused)) VortexChannel *channel,
 	__attribute__((unused)) VortexOnClosedNotificationFull on_closed,
 	__attribute__((unused)) axlPointer user_data)
 {
-	return axl_true;
+	return true;
 }
 
 int fake_subscriber_callbacks_is_valid(struct jaln_subscriber_callbacks *subscriber_callbacks) {
@@ -160,21 +160,21 @@ VortexConnection  *fake_vortex_connection_new(
 	return (VortexConnection*) 0xbadf00d;
 }
 
-axl_bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *connection,
-		__attribute__((unused)) axl_bool free_on_fail)
+bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *connection,
+		__attribute__((unused)) bool free_on_fail)
 {
-	return axl_true;
+	return true;
 }
 
-axl_bool mock_frame_handler_success(__attribute__((unused)) jaln_session *sess,
+bool mock_frame_handler_success(__attribute__((unused)) jaln_session *sess,
 				__attribute__((unused)) VortexFrame *curr_frame,
 				__attribute__((unused)) uint64_t payload_offset,
-				__attribute__((unused)) axl_bool flag_more)
+				__attribute__((unused)) bool flag_more)
 {
-	return axl_true;
+	return true;
 }
 
-axl_bool mock_vortex_channel_close_full(__attribute__((unused)) VortexChannel *channel, __attribute__((unused)) VortexOnClosedNotificationFull on_closed, __attribute__((unused)) axlPointer user_data)
+bool mock_vortex_channel_close_full(__attribute__((unused)) VortexChannel *channel, __attribute__((unused)) VortexOnClosedNotificationFull on_closed, __attribute__((unused)) axlPointer user_data)
 {
 	fail = true;
 	return true;
@@ -507,7 +507,7 @@ void test_jaln_subscribe_fails_when_missing_sub_callbacks()
 
 void test_jaln_subscribe_fails_when_already_connected()
 {
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	assert_pointer_equals((void *) NULL, jaln_subscribe(ctx, FAKE_HOST, FAKE_PORT, JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL, 10, 1000, 4));
 }
 

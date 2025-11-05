@@ -42,7 +42,7 @@ int jaln_handle_initialize_nack(jaln_session *sess,
 	int err_cnt = 0;
 	if (sess == NULL || frame == NULL || !sess->jaln_ctx ||
 			!sess->jaln_ctx->conn_callbacks) {
-		return axl_false;
+		return false;
 	}
 	char *err_strs[4];
 	if (VORTEX_FRAME_GET_MIME_HEADER(frame, JALN_HDRS_UNAUTHORIZED_MODE)) {
@@ -63,20 +63,20 @@ int jaln_handle_initialize_nack(jaln_session *sess,
 	nack.error_list = err_strs;
 	nack.error_cnt = err_cnt;
 	sess->jaln_ctx->conn_callbacks->connect_nack(&nack, sess->jaln_ctx->user_data);
-	return axl_true;
+	return true;
 }
 
-axl_bool jaln_handle_initialize_ack(jaln_session *session,
+bool jaln_handle_initialize_ack(jaln_session *session,
 		enum jaln_role role,
 		VortexFrame *frame)
 {
-	int ret = axl_true;
+	int ret = true;
 	char *encoding = NULL;
 	char *digest = NULL;
 	char *agent = NULL;
 
 	if (!session || !session->rec_chan) {
-		return axl_false;
+		return false;
 	}
 	VortexConnection *v_conn = vortex_channel_get_connection(session->rec_chan);
 
@@ -152,7 +152,7 @@ axl_bool jaln_handle_initialize_ack(jaln_session *session,
 	goto out;
 
 err_out:
-	ret = axl_false;
+	ret = false;
 	vortex_connection_shutdown(v_conn);
 out:
 	free(agent);

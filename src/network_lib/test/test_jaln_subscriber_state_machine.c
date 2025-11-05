@@ -201,7 +201,7 @@ static char *sys_meta_sz_str = NULL;
 static char *payload_sz_str = NULL;
 static char *expected_type = NULL;
 static char *expected_payload_len_hdr = NULL;
-static axl_bool more = axl_false;
+static bool more = false;
 static VortexFrame* frame = NULL;
 static int should_have_cached_frame;
 static uint64_t frame_off;
@@ -228,10 +228,10 @@ struct jaln_sub_state fake_state;
 #define AUDIT_LEN_HDR "jal-audit-length"
 #define JOURNAL_LEN_HDR "jal-journal-length"
 
-axl_bool fake_handler(__attribute__((unused)) jaln_session *my_session,
+bool fake_handler(__attribute__((unused)) jaln_session *my_session,
 		__attribute__((unused)) VortexFrame *my_frame,
 		__attribute__((unused)) uint64_t my_frame_off,
-		__attribute__((unused)) axl_bool my_more)
+		__attribute__((unused)) bool my_more)
 {
 	if (should_have_cached_frame) {
 		assert(my_frame == my_session->sub_data->sm->cached_frame);
@@ -241,7 +241,7 @@ axl_bool fake_handler(__attribute__((unused)) jaln_session *my_session,
 	assert(my_session == session);
 	assert(my_frame_off == frame_off);
 	assert(my_more == more);
-	return axl_true;
+	return true;
 }
 
 struct jaln_sub_data sub_data;
@@ -375,14 +375,14 @@ static const void *app_meta_get_payload_full(__attribute__((unused)) VortexFrame
 }
 
 /*
-static axl_bool frame_mime_proccess_always_fails(__attribute__((unused)) VortexFrame *my_frame)
+static bool frame_mime_proccess_always_fails(__attribute__((unused)) VortexFrame *my_frame)
 {
-	return axl_false;
+	return false;
 }
 */
-static axl_bool frame_mime_proccess_always_success(__attribute__((unused)) VortexFrame *my_frame)
+static bool frame_mime_proccess_always_success(__attribute__((unused)) VortexFrame *my_frame)
 {
-	return axl_true;
+	return true;
 }
 
 static int content_type_and_txfr_encoding_always_true()
@@ -418,13 +418,13 @@ static const char *stubbed_frame_mime_header_content(VortexMimeHeader * header)
 }
 
 
-axl_bool fake_frame_handler_fails(
+bool fake_frame_handler_fails(
 		__attribute__((unused)) jaln_session *my_session,
 		__attribute__((unused)) VortexFrame *my_frame,
 		__attribute__((unused)) uint64_t my_frame_off,
-		__attribute__((unused)) axl_bool my_more)
+		__attribute__((unused)) bool my_more)
 {
-	return axl_false;
+	return false;
 }
 
 
@@ -444,7 +444,7 @@ void test_wait_for_mime_success_when_mime_data_spans_exactly_one_frame()
 	replace_function(vortex_frame_mime_header_content, stubbed_frame_mime_header_content);
 
 
-	assert_equals(axl_true, jaln_sub_wait_for_mime(session, frame, 0, more));
+	assert_equals(true, jaln_sub_wait_for_mime(session, frame, 0, more));
 	// should have filled in the meta data appropriately
 	struct jaln_sub_state_machine *sm = session->sub_data->sm;
 
@@ -481,15 +481,15 @@ void test_wait_for_mime_success_when_mime_data_spans_multiple_frames()
 
 	struct jaln_sub_state_machine *sm = session->sub_data->sm;
 
-	more = axl_true;
-	assert_equals(axl_true, jaln_sub_wait_for_mime(session, frame, 0, more));
+	more = true;
+	assert_equals(true, jaln_sub_wait_for_mime(session, frame, 0, more));
 	assert_not_equals((void*) NULL, session->sub_data->sm->cached_frame);
 
 	replace_function(vortex_frame_mime_process, frame_mime_proccess_always_success);
 
-	more = axl_false;
+	more = false;
 	should_have_cached_frame = 1;
-	assert_equals(axl_true, jaln_sub_wait_for_mime(session, frame, 0, more));
+	assert_equals(true, jaln_sub_wait_for_mime(session, frame, 0, more));
 
 	// should have filled in the meta data appropriately
 
@@ -524,7 +524,7 @@ void test_wait_for_mime_fails_when_next_state_fails()
 	replace_function(vortex_frame_get_mime_header, stubbed_frame_get_mime_header);
 	replace_function(vortex_frame_mime_header_content, stubbed_frame_mime_header_content);
 
-	assert_equals(axl_false, jaln_sub_wait_for_mime(session, frame, 0, more));
+	assert_equals(false, jaln_sub_wait_for_mime(session, frame, 0, more));
 
 }
 
@@ -542,7 +542,7 @@ void test_wait_for_sys_meta_success_when_sys_meta_spans_exactly_one_frame()
 	replace_function(vortex_frame_get_payload_size, sys_meta_get_payload_sz_full);
 
 	frame_off = EXPECTED_SYS_META_SZ;
-	assert_equals(axl_true, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
+	assert_equals(true, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
 	// metadata block should now be filled in...
 	assert_equals(0, memcmp(session->sub_data->sm->sys_meta_buf, EXPECTED_SYS_META, EXPECTED_SYS_META_SZ));
 }
@@ -560,15 +560,15 @@ void test_wait_for_sys_meta_success_when_sys_meta_data_spans_multiple_frames()
 	replace_function(vortex_frame_get_payload, sys_meta_get_payload_first_half);
 	replace_function(vortex_frame_get_payload_size, sys_meta_get_payload_sz_first_half);
 
-	more = axl_true;
-	assert_equals(axl_true, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
+	more = true;
+	assert_equals(true, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
 
 	frame_off = EXPECTED_SYS_META_SZ - (EXPECTED_SYS_META_SZ / 2);
 	replace_function(vortex_frame_get_payload, sys_meta_get_payload_second_half);
 	replace_function(vortex_frame_get_payload_size, sys_meta_get_payload_sz_second_half);
 
-	more = axl_false;
-	assert_equals(axl_true, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
+	more = false;
+	assert_equals(true, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
 
 	// metadata block should now be filled in...
 	assert_equals(0, memcmp(session->sub_data->sm->sys_meta_buf, EXPECTED_SYS_META, EXPECTED_SYS_META_SZ));
@@ -589,7 +589,7 @@ void test_wait_for_sys_meta_fails_when_next_state_fails()
 	replace_function(vortex_frame_get_payload, sys_meta_get_payload_full);
 	replace_function(vortex_frame_get_payload_size, sys_meta_get_payload_sz_full);
 
-	assert_equals(axl_false, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
+	assert_equals(false, jaln_sub_wait_for_sys_meta(session, frame, 0, more));
 
 }
 
@@ -607,7 +607,7 @@ void test_wait_for_app_meta_success()
 	replace_function(vortex_frame_get_payload_size, app_meta_get_payload_sz_full);
 
 	frame_off = EXPECTED_APP_META_SZ;
-	assert_equals(axl_true, jaln_sub_wait_for_app_meta(session, frame, 0, more));
+	assert_equals(true, jaln_sub_wait_for_app_meta(session, frame, 0, more));
 	// metadata block should now be filled in...
 	assert_equals(0, memcmp(session->sub_data->sm->app_meta_buf, EXPECTED_APP_META, EXPECTED_APP_META_SZ));
 }
@@ -626,7 +626,7 @@ void test_wait_for_app_meta_fails_when_next_state_fails()
 	replace_function(vortex_frame_get_payload, app_meta_get_payload_full);
 	replace_function(vortex_frame_get_payload_size, app_meta_get_payload_sz_full);
 
-	assert_equals(axl_false, jaln_sub_wait_for_app_meta(session, frame, 0, more));
+	assert_equals(false, jaln_sub_wait_for_app_meta(session, frame, 0, more));
 
 }
 
@@ -644,7 +644,7 @@ void test_wait_for_payload_success()
 	replace_function(vortex_frame_get_payload_size, payload_get_payload_sz_full);
 
 	frame_off = EXPECTED_PAYLOAD_SZ;
-	assert_equals(axl_true, jaln_sub_wait_for_payload(session, frame, 0, more));
+	assert_equals(true, jaln_sub_wait_for_payload(session, frame, 0, more));
 	// metadata block should now be filled in...
 	assert_equals(0, memcmp(session->sub_data->sm->payload_buf, EXPECTED_PAYLOAD, EXPECTED_PAYLOAD_SZ));
 }
@@ -663,7 +663,7 @@ void test_wait_for_payload_fails_when_next_state_fails()
 	replace_function(vortex_frame_get_payload, payload_get_payload_full);
 	replace_function(vortex_frame_get_payload_size, payload_get_payload_sz_full);
 
-	assert_equals(axl_false, jaln_sub_wait_for_payload(session, frame, 0, more));
+	assert_equals(false, jaln_sub_wait_for_payload(session, frame, 0, more));
 
 }
 
@@ -678,9 +678,9 @@ void test_wait_break_success_when_spans_single_frame()
 	replace_function(vortex_frame_get_payload_size, get_break_payload_sz);
 
 	frame_off = EXPECTED_BREAK_SZ;
-	axl_bool break_valid = axl_false;
+	bool break_valid = false;
 	uint64_t my_frame_off = 0;
-	assert_equals(axl_true, jaln_sub_wait_for_break_common(session, frame, &my_frame_off, more, &break_valid));
+	assert_equals(true, jaln_sub_wait_for_break_common(session, frame, &my_frame_off, more, &break_valid));
 	assert_equals(0, session->sub_data->sm->break_off);
 	assert_equals(EXPECTED_BREAK_SZ, my_frame_off);
 	assert_true(0 == memcmp(EMPTY_BREAK_BUF, session->sub_data->sm->break_buf, session->sub_data->sm->break_sz));
@@ -698,9 +698,9 @@ void test_wait_for_break_fails_with_bad_break_string()
 	replace_function(vortex_frame_get_payload_size, sys_meta_get_payload_sz_full);
 
 	frame_off = EXPECTED_BREAK_SZ;
-	axl_bool break_valid = axl_true;
+	bool break_valid = true;
 	uint64_t my_frame_off = 0;
-	assert_equals(axl_false, jaln_sub_wait_for_break_common(session, frame, &my_frame_off, more, &break_valid));
+	assert_equals(false, jaln_sub_wait_for_break_common(session, frame, &my_frame_off, more, &break_valid));
 	assert_equals(EXPECTED_BREAK_SZ, my_frame_off);
 	assert_equals(0, session->sub_data->sm->break_off);
 	assert_true(0 == memcmp(EMPTY_BREAK_BUF, session->sub_data->sm->break_buf, session->sub_data->sm->break_sz));
@@ -725,7 +725,7 @@ void test_wait_for_journal_success_when_journal_spans_exactly_one_frame()
 	journal_sz = EXPECTED_PAYLOAD_SZ;
 	journal_buf = jal_malloc(EXPECTED_PAYLOAD_SZ);
 
-	assert_equals(axl_true, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
+	assert_equals(true, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
 	// metadata block should now be filled in...
 	assert_equals(1, journal_cb_cnt);
 	assert_equals(0, memcmp(journal_buf, EXPECTED_PAYLOAD, EXPECTED_PAYLOAD_SZ));
@@ -750,15 +750,15 @@ void test_wait_for_journal_success_when_journal_data_spans_multiple_frames()
 	replace_function(vortex_frame_get_payload, sys_meta_get_payload_first_half);
 	replace_function(vortex_frame_get_payload_size, sys_meta_get_payload_sz_first_half);
 
-	more = axl_true;
-	assert_equals(axl_true, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
+	more = true;
+	assert_equals(true, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
 
 	frame_off = EXPECTED_SYS_META_SZ - (EXPECTED_SYS_META_SZ / 2);
 	replace_function(vortex_frame_get_payload, sys_meta_get_payload_second_half);
 	replace_function(vortex_frame_get_payload_size, sys_meta_get_payload_sz_second_half);
 
-	more = axl_false;
-	assert_equals(axl_true, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
+	more = false;
+	assert_equals(true, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
 
 	// metadata block should now be filled in...
 	assert_equals(2, journal_cb_cnt);
@@ -782,7 +782,7 @@ void test_wait_for_journal_payload_fails_when_next_state_fails()
 	replace_function(vortex_frame_get_payload, payload_get_payload_full);
 	replace_function(vortex_frame_get_payload_size, payload_get_payload_sz_full);
 
-	assert_equals(axl_false, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
+	assert_equals(false, jaln_sub_wait_for_journal_payload(session, frame, 0, more));
 
 }
 
@@ -795,7 +795,7 @@ void test_copy_buf_works_for_exact_copy()
 	uint8_t *src = jal_calloc(EXPECTED_PAYLOAD_SZ, sizeof(uint8_t));
 	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
 	uint64_t src_off = 0;
-	more = axl_true;
+	more = true;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
 		src, src_sz, &src_off, more));
@@ -815,7 +815,7 @@ void test_copy_buf_works_for_exact_copy_with_no_more_frames()
 
 	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
 	uint64_t src_off = 0;
-	more = axl_false;
+	more = false;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
 		(uint8_t*) EXPECTED_PAYLOAD, src_sz, &src_off, more));
@@ -835,7 +835,7 @@ void test_copy_buf_works_when_dst_smaller_than_src()
 
 	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
 	uint64_t src_off = 0;
-	more = axl_true;
+	more = true;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
 		(uint8_t*) EXPECTED_PAYLOAD, src_sz, &src_off, more));
@@ -855,7 +855,7 @@ void test_copy_buf_works_when_dst_smaller_than_src_with_no_more_expected_frames(
 
 	uint64_t src_sz = EXPECTED_PAYLOAD_SZ;
 	uint64_t src_off = 0;
-	more = axl_false;
+	more = false;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
 		(uint8_t*) EXPECTED_PAYLOAD, src_sz, &src_off, more));
@@ -875,7 +875,7 @@ void test_copy_buf_works_when_src_smaller_than_dst()
 
 	uint64_t src_sz = EXPECTED_PAYLOAD_SZ / 2;
 	uint64_t src_off = 0;
-	more = axl_true;
+	more = true;
 
 	assert_true(jaln_copy_buffer(dst, dst_sz, &dst_off,
 		(uint8_t*) EXPECTED_PAYLOAD, src_sz, &src_off, more));
@@ -895,7 +895,7 @@ void test_copy_buf_fails_when_src_smaller_than_dst_and_no_more_frames()
 
 	uint64_t src_sz = EXPECTED_PAYLOAD_SZ / 2;
 	uint64_t src_off = 0;
-	more = axl_false;
+	more = false;
 
 	assert_false(jaln_copy_buffer(dst, dst_sz, &dst_off,
 		(uint8_t*) EXPECTED_PAYLOAD, src_sz, &src_off, more));
@@ -916,7 +916,7 @@ void test_copy_buf_works_with_offsets()
 	// destination, so force them to be different with some pointer ugly.
 
 	src = src - src_off + dst_off;
-	more = axl_false;
+	more = false;
 
 	uint64_t should_copy = dst_sz - dst_off;
 	uint64_t expected_src_offset = src_off + should_copy;

@@ -95,14 +95,14 @@ DECL_MIME_HANDLER(fake_get_mime_header_audit, "jal-data-class", "audit");
 DECL_MIME_HANDLER(fake_get_mime_header_log, "jal-data-class", "log");
 DECL_MIME_HANDLER(fake_get_mime_header_publisher, "jal-mode", "publish-live");
 
-static axl_bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
+static bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
 {
-	return axl_true;
+	return true;
 }
 
-static axl_bool ct_and_enc_always_fail(__attribute__((unused)) VortexFrame *frame)
+static bool ct_and_enc_always_fail(__attribute__((unused)) VortexFrame *frame)
 {
-	return axl_false;
+	return false;
 }
 struct jaln_init_info *info;
 void setup()

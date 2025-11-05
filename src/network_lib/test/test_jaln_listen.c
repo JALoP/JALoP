@@ -53,10 +53,10 @@ static jaln_context *ctx;
 static jaln_session *sess;
 static const char *server_name = "some_server";
 static struct jaln_connection_callbacks *conn_cbs;
-static axl_bool init_ack_sent;
-static axl_bool init_nack_sent;
-static axl_bool subscribe_sent;
-static axl_bool channel_closed;
+static bool init_ack_sent;
+static bool init_nack_sent;
+static bool subscribe_sent;
+static bool channel_closed;
 
 static enum jaln_connect_error connect_request_handler_sha256(
 		__attribute__((unused)) const struct jaln_connect_request *req,
@@ -113,7 +113,7 @@ static enum jaln_connect_error my_connect_request_handler(
 
 static enum jal_status fake_subscriber_send_subscribe_request(__attribute__((unused)) jaln_session *session)
 {
-	subscribe_sent = axl_true;
+	subscribe_sent = true;
 	return JAL_OK;
 }
 
@@ -141,32 +141,32 @@ static VortexChannel *fake_connection_get_channel(__attribute__((unused)) Vortex
 	return (VortexChannel*) 0xaabbccdd;
 }
 
-static axl_bool fake_channel_send_err(
+static bool fake_channel_send_err(
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) const void *msg,
 		__attribute__((unused)) size_t msg_sz,
 		__attribute__((unused)) int msg_no_rpy)
 {
-	init_nack_sent = axl_true;
-	return axl_true;
+	init_nack_sent = true;
+	return true;
 }
 
-static axl_bool fake_channel_close(
+static bool fake_channel_close(
 		__attribute__((unused)) VortexChannel * channel,
 		__attribute__((unused)) VortexOnClosedNotification on_closed)
 {
-	channel_closed = axl_true;
-	return axl_true;
+	channel_closed = true;
+	return true;
 }
 
 
-static axl_bool fake_channel_send_rpy(__attribute__((unused)) VortexChannel *chan,
+static bool fake_channel_send_rpy(__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) const void *msg,
 		__attribute__((unused)) size_t msg_sz,
 		__attribute__((unused)) int msg_no_rpy)
 {
-	init_ack_sent = axl_true;
-	return axl_true;
+	init_ack_sent = true;
+	return true;
 }
 
 static void fake_channel_set_automatic_mime(__attribute__((unused)) VortexChannel *chan,
@@ -176,7 +176,7 @@ static void fake_channel_set_automatic_mime(__attribute__((unused)) VortexChanne
 }
 
 static void fake_channel_set_serialize(__attribute__((unused)) VortexChannel *chan,
-		__attribute__((unused)) axl_bool flag)
+		__attribute__((unused)) bool flag)
 {
 	return;
 }
@@ -228,20 +228,20 @@ static jaln_session * fake_find_session_by_rec_channel_no_lock(
 	return sess;
 }
 
-static axl_bool fake_associate_digest_channel_no_lock(
+static bool fake_associate_digest_channel_no_lock(
 		__attribute__((unused)) jaln_session* session,
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) int paired_chan_num)
 {
-	return axl_true;
+	return true;
 }
 
-static axl_bool fake_associate_digest_channel_fails(
+static bool fake_associate_digest_channel_fails(
 		__attribute__((unused)) jaln_session* session,
 		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) int paired_chan_num)
 {
-	return axl_false;
+	return false;
 }
 
 static enum jal_status fake_process_init_sub(__attribute__((unused)) VortexFrame *frame,
@@ -327,23 +327,23 @@ int mock_jaln_connection_callbacks_is_valid_succeeds(__attribute__((unused)) str
 	return 1;
 }
 
-axl_bool mock_vortex_profiles_register_extended_start_success(__attribute__((unused)) VortexCtx *curr_ctx,
+bool mock_vortex_profiles_register_extended_start_success(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *uri,
 		__attribute__((unused)) VortexOnStartChannelExtended extended_start,
 		__attribute__((unused)) axlPointer extended_start_user_data)
 {
-	return axl_true;
+	return true;
 }
 
-axl_bool mock_vortex_profiles_register_extended_start(__attribute__((unused)) VortexCtx *curr_ctx,
+bool mock_vortex_profiles_register_extended_start(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *uri,
 		__attribute__((unused)) VortexOnStartChannelExtended extended_start,
 		__attribute__((unused)) axlPointer extended_start_user_data)
 {
-	return axl_false;
+	return false;
 }
 
-axl_bool mock_vortex_profiles_register(__attribute__((unused)) VortexCtx *curr_ctx,
+bool mock_vortex_profiles_register(__attribute__((unused)) VortexCtx *curr_ctx,
 		__attribute__((unused)) const char *uri,
 		__attribute__((unused)) VortexOnStartChannel start,
 		__attribute__((unused)) axlPointer start_user_data,
@@ -352,7 +352,7 @@ axl_bool mock_vortex_profiles_register(__attribute__((unused)) VortexCtx *curr_c
 		__attribute__((unused)) VortexOnFrameReceived received,
 		__attribute__((unused)) axlPointer received_user_data)
 {
-	return axl_true;
+	return true;
 }
 
 VortexConnection * mock_vortex_listener_new_success(__attribute__((unused)) VortexCtx *curr_ctx,
@@ -379,7 +379,7 @@ void mock_vortex_listener_wait(__attribute__((unused)) VortexCtx *v_ctx)
 }
 
 void mock_vortex_listener_shutdown(__attribute__((unused)) VortexConnection * listener,
-                 __attribute__((unused)) axl_bool also_created_conns)
+                 __attribute__((unused)) bool also_created_conns)
 {
 	return;
 }
@@ -428,10 +428,10 @@ void setup()
 	jaln_register_digest_algorithm(ctx, dgst);
 	jaln_register_encoding(ctx, ENC_ONE);
 
-	init_ack_sent = axl_false;
-	init_nack_sent = axl_false;
-	subscribe_sent = axl_false;
-	channel_closed = axl_false;
+	init_ack_sent = false;
+	init_nack_sent = false;
+	subscribe_sent = false;
+	channel_closed = false;
 }
 
 void teardown()
@@ -486,21 +486,21 @@ void test_init_msg_handler_does_not_crash_with_bad_inputs()
 	jaln_listener_init_msg_handler(NULL, (VortexConnection *) 0xbadf00d, (VortexFrame *)0xbadf00d, sess);
 	assert_true(channel_closed);
 
-	channel_closed = axl_false;
+	channel_closed = false;
 	jaln_listener_init_msg_handler((VortexChannel *)0xbadf00d, NULL, (VortexFrame *)0xbadf00d, sess);
 	assert_true(channel_closed);
 
-	channel_closed = axl_false;
+	channel_closed = false;
 	jaln_listener_init_msg_handler((VortexChannel *)0xbadf00d, (VortexConnection *) 0xbadf00d, NULL, sess);
 	assert_true(channel_closed);
 
-	channel_closed = axl_false;
+	channel_closed = false;
 	sess->jaln_ctx = NULL;
 	jaln_listener_init_msg_handler((VortexChannel *) 0xbadf00d, (VortexConnection *) 0xbadf00d, (VortexFrame *) 0xbadf00d, sess);
 	sess->jaln_ctx = ctx;
 	assert_true(channel_closed);
 
-	channel_closed = axl_false;
+	channel_closed = false;
 	sess->jaln_ctx->conn_callbacks = NULL;
 	jaln_listener_init_msg_handler((VortexChannel *) 0xbadf00d, (VortexConnection *) 0xbadf00d, (VortexFrame *) 0xbadf00d, sess);
 	sess->jaln_ctx->conn_callbacks = conn_cbs;
@@ -571,16 +571,16 @@ void test_jaln_listen_fails_with_bad_input()
 
 void test_jaln_listen_fails_with_bad_context()
 {
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
 
-	ctx->is_connected = axl_false;
+	ctx->is_connected = false;
 	VortexCtx *temp = ctx->vortex_ctx;
 	ctx->vortex_ctx = NULL;
 	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
 
 	ctx->vortex_ctx = temp;
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	assert_equals(JAL_E_INVAL, jaln_listen(ctx, "host", "port", (void *)"user_data"));
 }
 
@@ -653,7 +653,7 @@ void test_jaln_listener_wait_success()
 {
 	replace_function(vortex_listener_wait, mock_vortex_listener_wait);
 
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	ctx->listener_conn = (VortexConnection *) "dummy";
 	assert_equals(JAL_OK, jaln_listener_wait(ctx));
 
@@ -669,11 +669,11 @@ void test_jaln_listener_wait_fails_bad_input()
 	assert_equals(JAL_E_INVAL, jaln_listener_wait(NULL));
 
 	//is_connected is false
-	ctx->is_connected = axl_false;
+	ctx->is_connected = false;
 	assert_equals(JAL_E_INVAL, jaln_listener_wait(ctx));
 
 	//listener_conn is NULL
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	ctx->listener_conn = NULL;
 	assert_equals(JAL_E_INVAL, jaln_listener_wait(ctx));
 
@@ -689,7 +689,7 @@ void test_jaln_listener_wait_fails_bad_input()
 
 void test_jaln_listener_shutdown_success()
 {
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
         ctx->listener_conn = (VortexConnection *) "dummy";
 	replace_function(vortex_listener_shutdown, mock_vortex_listener_shutdown);
 
@@ -707,11 +707,11 @@ void test_jaln_listener_shutdown_fails_with_bad_input()
 	assert_equals(JAL_E_INVAL, jaln_listener_shutdown(NULL));
 
 	//is_connected is false
-	ctx->is_connected = axl_false;
+	ctx->is_connected = false;
 	assert_equals(JAL_E_INVAL, jaln_listener_shutdown(ctx));
 
 	//listener_conn is NULL
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	ctx->listener_conn = NULL;
 	assert_equals(JAL_E_INVAL, jaln_listener_shutdown(ctx));
 

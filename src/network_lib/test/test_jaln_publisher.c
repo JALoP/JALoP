@@ -92,10 +92,10 @@ enum jal_status process_sync_success(__attribute__((unused)) VortexFrame *frame,
 	return JAL_OK;
 }
 
-axl_bool fake_finalize_ans_rpy(__attribute__((unused)) VortexChannel* chan, __attribute__((unused)) int msg_no_rpy)
+bool fake_finalize_ans_rpy(__attribute__((unused)) VortexChannel* chan, __attribute__((unused)) int msg_no_rpy)
 
 {
-	return axl_true;
+	return true;
 }
 
 int fake_vortex_channel_get_number(__attribute__((unused))VortexChannel * channel)
@@ -119,14 +119,14 @@ void fake_vortex_connection_set_on_close_full(__attribute__((unused)) VortexConn
 	return;
 }
 
-axl_bool mock_jaln_check_content_type_and_txfr_encoding_are_valid_failure(__attribute__((unused)) VortexFrame *frame)
+bool mock_jaln_check_content_type_and_txfr_encoding_are_valid_failure(__attribute__((unused)) VortexFrame *frame)
 {
-	return axl_false;
+	return false;
 }
 
-axl_bool mock_jaln_check_content_type_and_txfr_encoding_are_valid_success(__attribute__((unused)) VortexFrame *frame)
+bool mock_jaln_check_content_type_and_txfr_encoding_are_valid_success(__attribute__((unused)) VortexFrame *frame)
 {
-	return axl_true;
+	return true;
 }
 
 void mock_vortex_connection_shutdown(__attribute__((unused)) VortexConnection *connection)
@@ -232,10 +232,10 @@ VortexConnection  *fake_vortex_connection_new(
 	return (VortexConnection*) 0xbadf00d;
 }
 
-axl_bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *connection,
-		__attribute__((unused)) axl_bool free_on_fail)
+bool fake_vortex_connection_is_ok(__attribute__((unused)) VortexConnection *connection,
+		__attribute__((unused)) bool free_on_fail)
 {
-	return axl_true;
+	return true;
 }
 
 VortexChannel *fake_vortex_channel_new(
@@ -642,7 +642,7 @@ void test_publish_fails_when_missing_pub_callbacks()
 void test_publish_fails_when_already_connected()
 {
 	struct jaln_connection *conn = NULL;
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 
 	conn = jaln_publish(ctx, "some_host", "1234", JALN_RTYPE_JOURNAL, JALN_ARCHIVE_MODE, NULL);
 	assert_pointer_equals((void*) NULL, conn);

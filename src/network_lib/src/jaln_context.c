@@ -78,13 +78,13 @@ jaln_context *jaln_context_create(void)
 		jaln_context_destroy(&ctx);
 		jal_error_handler(JAL_E_UNINITIALIZED);
 	}
-
+	ctx->user_data = NULL;
 	// Configure the vortex thread pool
 	// Set the maximum possible number of threads to 50
 	// When an additional thread is needed, create 1 at a time
 	// Set the delay between creation of new threads to 0 (no delay)
 	// Do not prune threads after their tasks are complete
-	vortex_thread_pool_setup(ctx->vortex_ctx, 50, 1, 0, axl_false);
+	vortex_thread_pool_setup(ctx->vortex_ctx, 50, 1, 0, false);
 	return ctx;
 }
 
@@ -103,10 +103,7 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	if ((*jaln_ctx)->xml_encodings) {
 		axl_list_free((*jaln_ctx)->xml_encodings);
 	}
-	vortex_mutex_destroy(&(*jaln_ctx)->lock);
-	if ((*jaln_ctx)->vortex_ctx) {
-		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, axl_true);
-	}
+	
 	if ((*jaln_ctx)->sessions_by_conn) {
 		axl_hash_free((*jaln_ctx)->sessions_by_conn);
 	}
@@ -114,7 +111,15 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	free((*jaln_ctx)->peer_certs);
 	free((*jaln_ctx)->public_cert);
 	free((*jaln_ctx)->private_key);
+	//free((void *)(*jaln_ctx)->user_data); //this causes issues "bad pointer"
 
+	vortex_mutex_destroy(&(*jaln_ctx)->lock);
+	if ((*jaln_ctx)->vortex_ctx) {	
+		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, true); 
+		//using true will also do vortex_ctx_free() 
+		//vortex_ctx_free((*jaln_ctx)->vortex_ctx);
+	}
+	
 	free(*jaln_ctx);
 	*jaln_ctx = NULL;
 
@@ -166,14 +171,14 @@ enum jal_status jaln_ctx_add_session_no_lock(jaln_context *ctx, jaln_session *se
 	return JAL_OK;
 }
 
-axl_bool jaln_ctx_cmp_session_rec_channel_to_channel(axlPointer ptr, axlPointer data)
+bool jaln_ctx_cmp_session_rec_channel_to_channel(axlPointer ptr, axlPointer data)
 {
 	if (!ptr || !data) {
-		return axl_false;
+		return false;
 	}
 	int chan_num = *((int*) data);
 	if (0 >= chan_num) {
-		return axl_false;
+		return false;
 	}
 	jaln_session *sess = (jaln_session*) ptr;
 	return (sess->rec_chan_num == chan_num);

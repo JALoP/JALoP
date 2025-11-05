@@ -52,9 +52,9 @@ void jaln_record_info_destroy(struct jaln_record_info **rec_info);
  *
  * @param[in] info The jaln_record_info object to check.
  *
- * @return axl_true if the record is valid, axl_false otherwise.
+ * @return true if the record is valid, false otherwise.
  */
-axl_bool jaln_record_info_is_valid(struct jaln_record_info *info);
+bool jaln_record_info_is_valid(struct jaln_record_info *info);
 
 #endif // _JALN_RECORD_INFO_H_
 

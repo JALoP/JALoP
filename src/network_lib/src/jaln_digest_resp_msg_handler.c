@@ -84,7 +84,7 @@ enum jal_status jaln_process_digest_resp(VortexFrame *frame, axlList **dgst_resp
 	int last_tok_idx = 0;
 	int idx;
 	for (idx = 0; idx < payload_sz; idx++) {
-		axl_bool looking_for_nonce = axl_false;
+		bool looking_for_nonce = false;
 		enum jaln_digest_status status = JALN_DIGEST_STATUS_UNKNOWN;
 		if ('=' == payload[idx]) {
 			uint64_t len = idx - last_tok_idx + 1;
@@ -92,15 +92,15 @@ enum jal_status jaln_process_digest_resp(VortexFrame *frame, axlList **dgst_resp
 			memcpy(status_str, payload + last_tok_idx, len - 1);
 			status_str[len-1] = '\0';
 
-			axl_bool valid_status = axl_false;
+			bool valid_status = false;
 			if (0 == strcasecmp(status_str, JALN_STR_CONFIRMED)) {
-				valid_status = axl_true;
+				valid_status = true;
 				status =  JALN_DIGEST_STATUS_CONFIRMED;
 			} else if (0 == strcasecmp(status_str, JALN_STR_INVALID)) {
-				valid_status = axl_true;
+				valid_status = true;
 				status =  JALN_DIGEST_STATUS_INVALID;
 			} else if (0 == strcasecmp(status_str, JALN_STR_UNKNOWN)) {
-				valid_status = axl_true;
+				valid_status = true;
 				status =  JALN_DIGEST_STATUS_UNKNOWN;
 			}
 			free(status_str);
@@ -111,7 +111,7 @@ enum jal_status jaln_process_digest_resp(VortexFrame *frame, axlList **dgst_resp
 			}
 			idx++;
 			int nonce_start = idx;
-			looking_for_nonce = axl_true;
+			looking_for_nonce = true;
 			for (; (payload_sz - 1) >= idx; idx++) {
 				if ('\r' != payload[idx]) {
 					continue;
@@ -132,8 +132,8 @@ enum jal_status jaln_process_digest_resp(VortexFrame *frame, axlList **dgst_resp
 				free(nonce_str);
 				last_tok_idx = idx + 1;
 				// need to break out of the inner loop...
-				//bad_parse = axl_false;
-				looking_for_nonce = axl_false;
+				//bad_parse = false;
+				looking_for_nonce = false;
 				break;
 			}
 			if (looking_for_nonce) {

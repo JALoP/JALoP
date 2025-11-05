@@ -104,10 +104,10 @@ enum jal_status jaln_create_subscribe_msg(char **msg_out, uint64_t *msg_out_len)
  *
  * @param frame The vortex frame to inspect.
  *
- * @return axl_true if the content type and transfer encoding are valid,
- * axl_false otherwise.
+ * @return true if the content type and transfer encoding are valid,
+ * false otherwise.
  */
-axl_bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
+bool jaln_check_content_type_and_txfr_encoding_are_valid(VortexFrame *frame);
 
 /**
  * Helper function to calculate the number of bytes needed to to convert a
@@ -200,11 +200,11 @@ enum jal_status jaln_create_digest_response_msg(axlList *dgst_resp_list, int deb
  *
  * @param[in,out] base On success, base will be equal to (base + inc)
  * @param[in] inc The increment to add
- * @return axl_true if the addition was performed
- * axl_false if the addition was NOT performed. The only time the addition will
+ * @return true if the addition was performed
+ * false if the addition was NOT performed. The only time the addition will
  * not happen is when \p base is NULL, or *base + inc would overflow uint64_t.
  */
-axl_bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
+bool jaln_safe_add_size(uint64_t *base, uint64_t inc);
 
 /*
  * Helper function to create an 'initialize' message

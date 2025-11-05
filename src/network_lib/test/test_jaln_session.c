@@ -48,11 +48,11 @@ static struct jaln_payload_feeder zeroed_feeder;
 static char *nonce = NULL;
 static uint8_t *dgst_buf = NULL;
 static uint64_t dgst_len;
-static axl_bool cond_signal_called;
+static bool cond_signal_called;
 
 void fake_cond_signal(__attribute__((unused)) VortexCond *cond)
 {
-	cond_signal_called = axl_true;
+	cond_signal_called = true;
 }
 
 void fake_create_sub_digest_channel_thread_no_lock(__attribute__((unused)) jaln_session *session)
@@ -60,12 +60,12 @@ void fake_create_sub_digest_channel_thread_no_lock(__attribute__((unused)) jaln_
 	return;
 }
 
-axl_bool fake_vortex_thread_create(__attribute__((unused))  VortexThread *thread_def,
+bool fake_vortex_thread_create(__attribute__((unused))  VortexThread *thread_def,
 				__attribute__((unused)) VortexThreadFunc func,
 				__attribute__((unused)) axlPointer user_data,
 				...)
 {
-	return axl_true;
+	return true;
 }
 
 void fake_vortex_channel_set_automatic_mime(__attribute__((unused)) VortexChannel *channel,
@@ -75,7 +75,7 @@ void fake_vortex_channel_set_automatic_mime(__attribute__((unused)) VortexChanne
 }
 
 void fake_vortex_channel_set_serialize(__attribute__((unused)) VortexChannel *channel,
-					__attribute__((unused)) axl_bool serialize)
+					__attribute__((unused)) bool serialize)
 {
 	return;
 }
@@ -112,18 +112,18 @@ VortexConnection *fake_channel_get_connection(__attribute__((unused)) VortexChan
 	return (VortexConnection *)0xbadf00d;
 }
 
-axl_bool fake_connection_is_ok_fails(
+bool fake_connection_is_ok_fails(
 		__attribute__((unused)) VortexConnection *vcon,
-		__attribute__((unused)) axl_bool free_on_fail)
+		__attribute__((unused)) bool free_on_fail)
 {
-	return axl_false;
+	return false;
 }
 
-axl_bool fake_connection_is_ok_success(
+bool fake_connection_is_ok_success(
 		__attribute__((unused)) VortexConnection *vcon,
-		__attribute__((unused)) axl_bool free_on_fail)
+		__attribute__((unused)) bool free_on_fail)
 {
-	return axl_true;
+	return true;
 }
 
 void fake_vortex_cond_signal(
@@ -145,7 +145,7 @@ void setup()
 	dgst_buf[1] = 0x1;
 	dgst_buf[2] = 0xb;
 	dgst_buf[3] = 0x0;
-	cond_signal_called = axl_false;
+	cond_signal_called = false;
 
 	replace_function(vortex_thread_create, fake_vortex_thread_create);
 	replace_function(jaln_create_sub_digest_channel_thread_no_lock, fake_create_sub_digest_channel_thread_no_lock);
@@ -413,7 +413,7 @@ void test_notify_close_for_rec_channel_unrefs_session_and_clears_rec_info()
 	sess->dgst_chan_num = 5;
 
 	jaln_session_notify_close((VortexConnection*) 0xbadf00d,
-			sess->rec_chan_num, axl_true, NULL, NULL, sess);
+			sess->rec_chan_num, true, NULL, NULL, sess);
 	assert_equals((void*)NULL, sess->rec_chan);
 	assert_equals(-1, sess->rec_chan_num);
 
@@ -433,7 +433,7 @@ void test_notify_close_for_rec_channel_does_nothing_if_channel_was_not_closed()
 	sess->dgst_chan_num = 5;
 
 	jaln_session_notify_close((VortexConnection*) 0xbadf00d,
-			sess->rec_chan_num, axl_false, NULL, NULL, sess);
+			sess->rec_chan_num, false, NULL, NULL, sess);
 	assert_equals((void*)0xbadf00d, sess->rec_chan);
 	assert_equals(3, sess->rec_chan_num);
 
@@ -455,7 +455,7 @@ void test_notify_close_for_dgst_channel_unrefs_session_and_clears_rec_info()
 	sess->dgst_chan_num = 5;
 
 	jaln_session_notify_close((VortexConnection*) 0xbadf00d,
-			sess->dgst_chan_num, axl_true, NULL, NULL, sess);
+			sess->dgst_chan_num, true, NULL, NULL, sess);
 	assert_equals((void*)NULL, sess->dgst_chan);
 	assert_equals(-1, sess->dgst_chan_num);
 
@@ -473,7 +473,7 @@ void test_notify_close_does_nothing_with_bad_channel()
 	sess->dgst_chan_num = 5;
 
 	jaln_session_notify_close((VortexConnection*) 0xbadf00d, 12,
-			axl_true, NULL, NULL, sess);
+			true, NULL, NULL, sess);
 
 	assert_equals((void*) 0xbadf00d, sess->rec_chan);
 	assert_equals(3, sess->rec_chan_num);
@@ -603,9 +603,9 @@ void test_add_to_dgst_fails_with_bad_input()
 
 void test_jaln_session_associate_digest_channel_no_lock_does_not_crash_with_bad_input()
 {
-	assert_equals(axl_false, jaln_session_associate_digest_channel_no_lock(NULL,
+	assert_equals(false, jaln_session_associate_digest_channel_no_lock(NULL,
 									(VortexChannel *)0xbadf00d, 1));
-	assert_equals(axl_false, jaln_session_associate_digest_channel_no_lock(sess, NULL, 1));
+	assert_equals(false, jaln_session_associate_digest_channel_no_lock(sess, NULL, 1));
 
 }
 
@@ -622,7 +622,7 @@ void test_jaln_session_associate_digest_channel_no_lock_fails_when_role_unset()
 	sess->role = JALN_ROLE_UNSET;
 	sess->dgst_chan = NULL;
 	sess->dgst_chan_num = 0;
-	assert_equals(axl_false, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
+	assert_equals(false, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
 
 	restore_function(vortex_channel_set_automatic_mime);
 	restore_function(vortex_channel_set_serialize);
@@ -643,14 +643,14 @@ void test_jaln_session_associate_digest_channel_no_lock_succeeds()
 	sess->role = JALN_ROLE_SUBSCRIBER;
 	sess->dgst_chan = NULL;
 	sess->dgst_chan_num = 0;
-	assert_equals(axl_true, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
+	assert_equals(true, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
 
 	replace_function(vortex_channel_set_received_handler, fake_vortex_channel_set_received_handler);
 
 	sess->role = JALN_ROLE_PUBLISHER;
 	sess->dgst_chan = NULL;
 	sess->dgst_chan_num = 0;
-	assert_equals(axl_true, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
+	assert_equals(true, jaln_session_associate_digest_channel_no_lock(sess, chan, ch_num));
 
 	restore_function(vortex_channel_set_automatic_mime);
 	restore_function(vortex_channel_set_serialize);

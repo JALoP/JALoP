@@ -46,7 +46,7 @@ extern "C" {
 struct jaln_context_t {
 	VortexMutex lock;
 	int ref_cnt;
-	axl_bool is_connected;
+	bool is_connected;
 	struct jaln_publisher_callbacks *pub_callbacks;
 	struct jaln_subscriber_callbacks *sub_callbacks;
 	struct jaln_connection_callbacks *conn_callbacks;
@@ -134,10 +134,10 @@ jaln_session *jaln_ctx_find_session_by_rec_channel_no_lock(jaln_context *ctx, ch
  * @param[in] ptr A jaln_session pointer.
  * @param[in] data An int pointer.
  *
- * @return axl_true if the jaln_session pointed to by \p ptr has the \p
+ * @return true if the jaln_session pointed to by \p ptr has the \p
  * rec_chan_num equal to \p data, false otherwise.
  */
-axl_bool jaln_ctx_cmp_session_rec_channel_to_channel(axlPointer ptr, axlPointer data);
+bool jaln_ctx_cmp_session_rec_channel_to_channel(axlPointer ptr, axlPointer data);
 
 /**
  * Wrapper function to for use by the sessions_by_conn hash.

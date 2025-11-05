@@ -65,9 +65,9 @@ int jal_next_frame_size_handler(VortexChannel * chan, int next_seq_no,
  * @param[in] paired_chan_num The channel number (indicated by the peer) to
  * associate this new 'digest' channel with.
  *
- * @return axl_true on success, axl_false if there is an error.
+ * @return true on success, false if there is an error.
  */
-axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
+bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
 		const char *server_name,
 		int new_chan_num,
@@ -95,9 +95,9 @@ void jaln_listener_init_msg_handler(VortexChannel *chan,
  * @param[in] server_name The name/IP of the remote server
  * @param[in] chan_num The channel number assigned to the new channel.
  *
- * @return axl_true on success, axl_false if there is an error.
+ * @return true on success, false if there is an error.
  */
-axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
+bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
 		const char *server_name,
 		int chan_num);
@@ -115,10 +115,10 @@ axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
  * digest channel, this will indicate the existing record channel to associate
  * the new digest channel with.
  *
- * @return axl_true if everything appears in order, this indicates that channel
+ * @return true if everything appears in order, this indicates that channel
  * creation should be allowed.
  */
-axl_bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
+bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
 		int chan_num,
 		VortexConnection *conn,
 		const char *server_name,
@@ -141,9 +141,9 @@ axl_bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
  *
  * @see jaln_listener_start_channel_no_lock
  *
- * @return axl_true if the channel should be created, axl_false otherwise.
+ * @return true if the channel should be created, false otherwise.
  */
-axl_bool jaln_listener_start_channel_extended(
+bool jaln_listener_start_channel_extended(
 		const char *profile,
 		int chan_num,
 		VortexConnection *v_conn,

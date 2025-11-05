@@ -38,7 +38,7 @@
 #include "jaln_connection.h"
 #include "jaln_publisher.h"
 
-axl_bool jaln_disconnect_helper(__attribute__((unused)) axlPointer key,
+bool jaln_disconnect_helper(__attribute__((unused)) axlPointer key,
 				axlPointer data,
 				__attribute__((unused)) axlPointer user_data)
 {
@@ -50,11 +50,11 @@ axl_bool jaln_disconnect_helper(__attribute__((unused)) axlPointer key,
 		sess = (jaln_session *) axl_list_get_nth(sessions, i);
 
 		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
+		sess->closing = true;
 		vortex_mutex_unlock(&sess->lock);
 	}
 
-	return axl_false;
+	return false;
 }
 
 enum jal_status jaln_disconnect(struct jaln_connection *jal_conn)
@@ -78,18 +78,20 @@ enum jal_status jaln_shutdown(struct jaln_connection *jal_conn)
 		return JAL_E_INVAL;
 	}
 
-	axl_bool ret = axl_false;
+	bool ret = false;
 
 	vortex_connection_shutdown(jal_conn->v_conn);
 	ret = vortex_connection_close(jal_conn->v_conn);
-	if (axl_true != ret) {
+	if (true != ret) {
 		return JAL_E_INVAL;
 	}
 
 	// Vortex will handle notifying everything to shut down, but we can't return to the
 	// network store until that is complete.  The network store should have one reference
 	// to the context.
-	while (jal_conn->jaln_ctx->ref_cnt > 1) {
+	int count = 0;
+	while (jal_conn->jaln_ctx->ref_cnt > 1 && count<6) {
+		count++;
 		sleep(1);
 	}
 
@@ -119,5 +121,5 @@ long long jaln_session_get_resume_threshold(jaln_session* sess) {
 }
 
 int jaln_session_is_closing(jaln_session *sess) {
-	return (axl_true == sess->closing) ? 1 : 0;
+	return (true == sess->closing) ? 1 : 0;
 }

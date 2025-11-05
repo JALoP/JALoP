@@ -126,7 +126,7 @@ enum jal_status jaln_publisher_handle_sync(jaln_session *sess,
 		VortexFrame *frame,
 		int msg_no)
 {
-	axl_bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(chan, msg_no);
+	bool ans_rpy_sent = vortex_channel_finalize_ans_rpy(chan, msg_no);
 	char *nonce = NULL;
 	enum jal_status ret = JAL_E_INVAL;
 	if (!sess || !sess->jaln_ctx || !sess->jaln_ctx->pub_callbacks ||
@@ -427,7 +427,7 @@ void jaln_publisher_on_channel_create(int channel_num,
 		goto err_out;
 	}
 
-	vortex_channel_set_serialize(chan, axl_true);
+	vortex_channel_set_serialize(chan, true);
 	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, session);
 	vortex_channel_set_close_handler(chan, jaln_session_on_close_channel, session);
 	vortex_channel_set_automatic_mime(chan, 2);
@@ -477,12 +477,12 @@ struct jaln_connection *jaln_publish(
 		return NULL;
 	}
 
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 	ctx->user_data = user_data;
 
 	if (ctx->private_key && ctx->public_cert && ctx->peer_certs) {
 		// Enable TLS for every connection and do not allow failures.
-		vortex_tls_set_auto_tls(ctx->vortex_ctx, axl_true, axl_false, NULL);
+		vortex_tls_set_auto_tls(ctx->vortex_ctx, true, false, NULL);
 	}
 
 	vortex_mutex_unlock(&ctx->lock);
@@ -493,7 +493,7 @@ struct jaln_connection *jaln_publish(
 	VortexConnection *v_conn = NULL;
 	VortexCtx *v_ctx = ctx->vortex_ctx;
 	v_conn = vortex_connection_new(v_ctx, host, port, NULL, NULL);
-	if (!vortex_connection_is_ok(v_conn, axl_true)) {
+	if (!vortex_connection_is_ok(v_conn, true)) {
 		return NULL;
 	}
 	struct jaln_connection *jconn = jaln_connection_create();

@@ -43,9 +43,9 @@
  * but vortex only uses it as an estimate. Vortex will continue to try and send
  * data until 'jaln_pub_feeder_is_finished' returns true.
  *
- * @return axl_true on success, axl_false otherwise.
+ * @return true on success, false otherwise.
  */
-axl_bool jaln_pub_feeder_get_size(
+bool jaln_pub_feeder_get_size(
 		jaln_session *sess,
 		int *size);
 
@@ -57,9 +57,9 @@ axl_bool jaln_pub_feeder_get_size(
  * @param[in,out] size The size of the buffer. This will be set to the actual
  * number of bytes copied into the buffer.
  *
- * @return axl_true on success, axl_false otherwise.
+ * @return true on success, false otherwise.
  */
-axl_bool jaln_pub_feeder_fill_buffer(
+bool jaln_pub_feeder_fill_buffer(
 		jaln_session *sess,
 		char *buffer,
 		int *size);
@@ -69,13 +69,13 @@ axl_bool jaln_pub_feeder_fill_buffer(
  * are finished sending this record.
  *
  * @param[in] sess The session to operate on
- * @param[out] finished This will be set to axl_true if all bytes were sent or
+ * @param[out] finished This will be set to true if all bytes were sent or
  * there was an error,
- * axl_false otherwise.
+ * false otherwise.
  *
- * @return axl_true on success, or axl_false if there was an error.
+ * @return true on success, or false if there was an error.
  */
-axl_bool jaln_pub_feeder_is_finished(
+bool jaln_pub_feeder_is_finished(
 		jaln_session *sess,
 		int *finished);
 
@@ -93,9 +93,9 @@ axl_bool jaln_pub_feeder_is_finished(
  * @param[in] param2 The second parameter (the type depends on the op)
  * @param[in] user_data Expected to be the jaln_session
  *
- * @return axl_true on success, axl_false otherwise.
+ * @return true on success, false otherwise.
  */
-axl_bool jaln_pub_feeder_handler(VortexCtx *ctx,
+bool jaln_pub_feeder_handler(VortexCtx *ctx,
 		VortexPayloadFeederOp op_type,
 		VortexPayloadFeeder *feeder,
 		axlPointer param1,
@@ -127,16 +127,16 @@ void jaln_pub_feeder_calculate_size_for_vortex(jaln_session *sess);
  * Helper utility for calculating the 'size' for vortex.
  * This function adds \p to_add to \p cnt, while detecting integer overflow.
  * If the results of the addition would overflow an integer, then \p is set to
- * INT_MAX and axl_false is returned.
+ * INT_MAX and false is returned.
  *
  * @param[in,out] cnt The value to add to.
  * @param[in] to_add The value to add
  *
  * @return
- *   - axl_true if the addition was performed successfull
- *   - axl_false if the addtion would result in integer overflow.
+ *   - true if the addition was performed successfull
+ *   - false if the addtion would result in integer overflow.
  */
-axl_bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add);
+bool jaln_pub_feeder_safe_add_size(int *cnt, const uint64_t to_add);
 
 /**
  * Callback executed by vortex when the payload feeder is finished sending a

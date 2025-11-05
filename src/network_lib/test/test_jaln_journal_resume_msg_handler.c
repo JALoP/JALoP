@@ -82,14 +82,14 @@ DECL_MIME_HANDLER(fake_get_mime_header_missing_nonce, "jal-id", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_missing_offset, "jal-journal-offset", NULL);
 DECL_MIME_HANDLER(fake_get_mime_header_bad_offset, "jal-journal-offset", "123b123");
 
-static axl_bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
+static bool ct_and_enc_always_succeed(__attribute__((unused)) VortexFrame *frame)
 {
-	return axl_true;
+	return true;
 }
 
-static axl_bool ct_and_enc_always_fail(__attribute__((unused)) VortexFrame *frame)
+static bool ct_and_enc_always_fail(__attribute__((unused)) VortexFrame *frame)
 {
-	return axl_false;
+	return false;
 }
 
 static char *nonce;

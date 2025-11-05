@@ -53,18 +53,18 @@ int jaln_register_encoding(jaln_context *ctx,
 	return JAL_OK;
 }
 
-axl_bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointer data)
+bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointer data)
 {
 	if (ptr && data) {
 		return 0 == jaln_string_list_case_insensitive_func(ptr, data);
 	}
 	if (ptr) {
-		return axl_false;
+		return false;
 	}
 	if (data) {
-		return axl_false;
+		return false;
 	}
-	return axl_true;
+	return true;
 }
 
 enum jal_status jaln_axl_string_list_to_array(axlList *list,

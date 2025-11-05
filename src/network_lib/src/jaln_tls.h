@@ -55,10 +55,10 @@ extern "C" {
  * @param[in] user_data User defined data
  *
  * @return
- * 	- axl_true (filter profile)
- * 	- axl_false (do not filter profile)
+ * 	- true (filter profile)
+ * 	- false (do not filter profile)
  */
-axl_bool jaln_profile_mask (VortexConnection *connection,
+bool jaln_profile_mask (VortexConnection *connection,
 				int channel_num,
 				const char *uri,
 				const char *profile_content,
@@ -78,10 +78,10 @@ axl_bool jaln_profile_mask (VortexConnection *connection,
  * @param[in] user_data User defined data
  *
  * @return
- * 	- axl_true (connection approved)
- * 	- axl_false (connection rejected)
+ * 	- true (connection approved)
+ * 	- false (connection rejected)
  */
-axl_bool jaln_tls_on_connection_accepted(VortexConnection *connection,
+bool jaln_tls_on_connection_accepted(VortexConnection *connection,
 					axlPointer user_data);
 
 /**

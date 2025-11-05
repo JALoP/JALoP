@@ -169,8 +169,8 @@ out:
 
 void jaln_create_sub_digest_channel_thread_no_lock(jaln_session *sess)
 {
-	VortexThread thread;
-	if (!vortex_thread_create(&thread, jaln_sub_dgst_wait_thread, sess,
+	//VortexThread thread;
+	if (!vortex_thread_create(&sess->thread_id, jaln_sub_dgst_wait_thread, sess,
 				VORTEX_THREAD_CONF_END)) {
 		jaln_session_set_errored_no_lock(sess);
 	}

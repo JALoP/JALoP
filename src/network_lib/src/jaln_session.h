@@ -58,7 +58,8 @@ struct jaln_pub_data;
 struct jaln_session_t {
 	VortexMutex lock;                    //!< Mutex to lock the structure
 	VortexMutex wait_lock;               //!< Mutex to lock the structure on wait
-	VortexCond wait;                     //!< Condition variable to wait on
+	VortexCond wait;   					 //!< Condition variable to wait on
+	VortexThread thread_id;              //!< The jaln_sub_dgst_wait_thread in jaln_sub_dgst_channel
 	int ref_cnt;                         //!< Reference count
 	enum jaln_publish_mode mode;         //!< Whether to send messages as archive or live
 
@@ -70,8 +71,8 @@ struct jaln_session_t {
 	int dgst_chan_num;                   //!< The channel number for the \p dgst_chan
 	struct jaln_channel_info *ch_info;   //!< Additional information about the channel
 
-	axl_bool closing;                    //!< Flag that indicates this
-	axl_bool errored;                    //!< Flag that indicates an error occurred within the session
+	bool closing;                    //!< Flag that indicates this
+	bool errored;                    //!< Flag that indicates an error occurred within the session
 	axlList *dgst_list;                  //!< A list of jaln_digest_info structures that are calculated as data is sent/received
 	enum jaln_role role;                 //!< The role this context is performing (subscriber or publisher)
 	int dgst_list_max;                   //!< The maximum number of digest entries to keep as a subscriber
@@ -120,13 +121,13 @@ struct jaln_pub_data {
 	uint64_t payload_off;                       //!< The current offset into jaln_pub_data::payload, or the journal record.
 	uint64_t break_off;                           //!< The current offset used when writing the "BREAK" string between segments.
 
-	axl_bool finished_headers;                  //!< Indicates the headers have been sent.
-	axl_bool finished_sys_meta;                 //!< Indicates the system metadata has been sent.
-	axl_bool finished_sys_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
-	axl_bool finished_app_meta;                 //!< Indicates the application metadata has been sent.
-	axl_bool finished_app_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
-	axl_bool finished_payload;                  //!< Indicates the payload has been sent
-	axl_bool finished_payload_break;            //!< Indicates the "BREAK" following the payload has been sent.
+	bool finished_headers;                  //!< Indicates the headers have been sent.
+	bool finished_sys_meta;                 //!< Indicates the system metadata has been sent.
+	bool finished_sys_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
+	bool finished_app_meta;                 //!< Indicates the application metadata has been sent.
+	bool finished_app_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
+	bool finished_payload;                  //!< Indicates the payload has been sent
+	bool finished_payload_break;            //!< Indicates the "BREAK" following the payload has been sent.
 
 	void *dgst_inst;                            //!< An instance of a digest_ctx for a particular record.
 	uint8_t *dgst;                              //!< A buffer to hold the final contents of a digest
@@ -286,7 +287,7 @@ void jaln_session_on_dgst_channel_create(
 void jaln_session_notify_close(
 		VortexConnection *conn,
 		int channel_num,
-		axl_bool was_closed,
+		bool was_closed,
 		const char *code,
 		const char *msg,
 		axlPointer user_data);
@@ -298,7 +299,7 @@ void jaln_session_notify_close(
  *
  * @see VortexOnCloseChannel
  */
-axl_bool jaln_session_on_close_channel(int channel_num,
+bool jaln_session_on_close_channel(int channel_num,
 		VortexConnection *connection,
 		axlPointer user_data);
 
@@ -310,10 +311,10 @@ axl_bool jaln_session_on_close_channel(int channel_num,
  * @param[in] chan The vortex channel
  * @param[in] chan_num The channel number
  *
- * @return axl_true if \p chan was associated with \p session, axl_false
+ * @return true if \p chan was associated with \p session, false
  * otherwise.
  */
-axl_bool jaln_session_associate_digest_channel_no_lock(jaln_session *session,
+bool jaln_session_associate_digest_channel_no_lock(jaln_session *session,
 		VortexChannel *chan,
 		int chan_num);
 

@@ -67,7 +67,7 @@ jaln_session *jaln_session_create()
 	}
 	sess->dgst_list_max = JALN_SESSION_DEFAULT_DGST_LIST_MAX;
 	sess->dgst_timeout = JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS;
-	sess->errored = axl_false;
+	sess->errored = false;
 	return sess;
 }
 
@@ -111,7 +111,7 @@ void jaln_session_set_errored_no_lock(jaln_session *sess)
 	if (!sess) {
 		return;
 	}
-	sess->errored = axl_true;
+	sess->errored = true;
 }
 
 void jaln_session_set_errored(jaln_session *sess)
@@ -168,6 +168,9 @@ void jaln_session_destroy(jaln_session **psession) {
 	jaln_ctx_remove_session(sess->jaln_ctx, sess);
 	jaln_channel_info_destroy(&sess->ch_info);
 	jaln_ctx_unref(sess->jaln_ctx);
+	if(sess->thread_id){
+		vortex_thread_destroy(&sess->thread_id, false);
+	}
 	free(sess);
 	*psession = NULL;
 }
@@ -208,7 +211,7 @@ void jaln_pub_data_destroy(struct jaln_pub_data **ppub_data) {
 	*ppub_data = NULL;
 }
 
-axl_bool jaln_session_on_close_channel(int channel_num,
+bool jaln_session_on_close_channel(int channel_num,
 		__attribute__((unused)) VortexConnection *connection,
 		axlPointer user_data)
 {
@@ -216,23 +219,23 @@ axl_bool jaln_session_on_close_channel(int channel_num,
 	if (!sess) {
 		// shouldn't happen, but if it does, there is no session
 		// associated with the channel, so should be safe to close it.
-		return axl_true;
+		return true;
 	}
 	if (channel_num == sess->rec_chan_num) {
 		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
+		sess->closing = true;
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
 		vortex_cond_signal(&sess->wait);
 	} else if (channel_num == sess->dgst_chan_num) {
 		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
+		sess->closing = true;
 		sess->dgst_chan = NULL;
 		sess->dgst_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
 	} else {
-		return axl_true;
+		return true;
 	}
 	if (!sess->rec_chan && !sess->dgst_chan) {
 		jaln_context *ctx = sess->jaln_ctx;
@@ -243,13 +246,13 @@ axl_bool jaln_session_on_close_channel(int channel_num,
 		}
 	}
 	jaln_session_unref(sess);
-	return axl_true;
+	return true;
 }
 
 void jaln_session_notify_close(
 		__attribute__((unused)) VortexConnection *conn,
 		int channel_num,
-		axl_bool was_closed,
+		bool was_closed,
 		__attribute__((unused)) const char *code,
 		__attribute__((unused)) const char *msg,
 		void *user_data)
@@ -264,7 +267,7 @@ void jaln_session_notify_close(
 	}
 	if (channel_num == sess->rec_chan_num) {
 		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
+		sess->closing = true;
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
@@ -273,7 +276,7 @@ void jaln_session_notify_close(
 		// out any outstanding sync messages
 		vortex_cond_signal(&sess->sub_data->dgst_list_cond);
 		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
+		sess->closing = true;
 		sess->dgst_chan = NULL;
 		sess->dgst_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
@@ -301,17 +304,17 @@ void jaln_session_notify_unclean_channel_close(VortexChannel *channel,
 	}
 	if (channel == sess->rec_chan) {
 		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
+		sess->closing = true;
 		sess->rec_chan = NULL;
 		sess->rec_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
 		vortex_cond_signal(&sess->wait);
-	} else if (channel == sess->dgst_chan) {
+	} else if (sess->dgst_chan && channel == sess->dgst_chan) {
 		// Before closing the digest channel, let it try to run once to clean
 		// out any outstanding sync messages
 		vortex_cond_signal(&sess->sub_data->dgst_list_cond);
 		vortex_mutex_lock(&sess->lock);
-		sess->closing = axl_true;
+		sess->closing = true;
 		sess->dgst_chan = NULL;
 		sess->dgst_chan_num = -1;
 		vortex_mutex_unlock(&sess->lock);
@@ -340,9 +343,9 @@ enum jal_status jaln_session_add_to_dgst_list(jaln_session *sess, char *nonce, u
 	axl_list_append(sess->dgst_list, dgst_info);
 
 	if (JALN_ROLE_SUBSCRIBER == sess->role) {
-		axl_bool notify = axl_false;
+		bool notify = false;
 		if (axl_list_length(sess->dgst_list) >= sess->dgst_list_max) {
-			notify = axl_true;
+			notify = true;
 		}
 		if (notify) {
 			// wake up the thread that is supposed to be sending
@@ -366,26 +369,26 @@ axlList *jaln_session_list_create()
 	return axl_list_new(jaln_ptrs_equal, NULL);
 }
 
-axl_bool jaln_session_associate_digest_channel_no_lock(jaln_session *session, VortexChannel *chan, int chan_num)
+bool jaln_session_associate_digest_channel_no_lock(jaln_session *session, VortexChannel *chan, int chan_num)
 {
 	if (!session || session->dgst_chan != NULL || !chan) {
-		return axl_false;
+		return false;
 	}
 	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(chan, 2);
-	vortex_channel_set_serialize(chan, axl_true);
+	vortex_channel_set_serialize(chan, true);
 	session->dgst_chan = chan;
 	session->dgst_chan_num = chan_num;
 	vortex_channel_set_closed_handler(chan, jaln_session_notify_unclean_channel_close, session);
 	vortex_channel_set_close_handler(chan, jaln_session_on_close_channel, session);
 	if (JALN_ROLE_SUBSCRIBER == session->role) {
 		jaln_create_sub_digest_channel_thread_no_lock(session);
-		return axl_true;
+		return true;
 	} else if (JALN_ROLE_PUBLISHER == session->role) {
 		vortex_channel_set_received_handler(chan, jaln_publisher_digest_and_sync_frame_handler, session);
-		return axl_true;
+		return true;
 	}
-	return axl_false;
+	return false;
 }
 
 void jaln_session_on_dgst_channel_create(
@@ -414,7 +417,7 @@ enum jal_status jaln_session_is_ok(jaln_session *sess)
 		return JAL_E_NOT_CONNECTED;
 	}
 	VortexConnection *conn = vortex_channel_get_connection(sess->rec_chan);
-	if (!vortex_connection_is_ok(conn, axl_false)) {
+	if (!vortex_connection_is_ok(conn, false)) {
 		return JAL_E_NOT_CONNECTED;
 	}
 	return JAL_OK;

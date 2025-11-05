@@ -60,21 +60,21 @@ VortexFrame *vortex_channel_wait_reply_always_succeeds(__attribute__((unused)) V
 	return (VortexFrame *)0xdeadbeef;
 }
 
-axl_bool vortex_channel_send_msg_and_wait_always_succeeds(__attribute__((unused)) VortexChannel *channel,
+bool vortex_channel_send_msg_and_wait_always_succeeds(__attribute__((unused)) VortexChannel *channel,
 							__attribute__((unused)) const void *message,
 							__attribute__((unused)) size_t message_size,
 							__attribute__((unused)) int *msg_no,
 							__attribute__((unused)) WaitReplyData *wait_reply)
 {
-	return axl_true;
+	return true;
 }
 
-axl_bool vortex_channel_send_msg_always_succeeds(__attribute__((unused)) VortexChannel *channel,
+bool vortex_channel_send_msg_always_succeeds(__attribute__((unused)) VortexChannel *channel,
 						__attribute__((unused)) const void *message,
 						__attribute__((unused)) size_t message_size,
 						__attribute__((unused)) int *msg_no)
 {
-	return axl_true;
+	return true;
 }
 
 VortexMimeHeader *fake_vortex_frame_get_mime_header(VortexFrame *frame, const char *header_name)

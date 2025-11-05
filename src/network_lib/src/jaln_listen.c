@@ -48,28 +48,28 @@
 #include "jaln_subscriber_callbacks_internal.h"
 #include "jaln_tls.h"
 
-axl_bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
+bool jaln_listener_handle_new_digest_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
 		const char *server_name,
 		int new_chan_num,
 		int paired_chan_num)
 {
 	if (!ctx || !conn || !server_name || 0 >= new_chan_num || 0 >= paired_chan_num) {
-		return axl_false;
+		return false;
 	}
 	VortexChannel *chan = vortex_connection_get_channel(conn, new_chan_num);
 	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(chan, 2);
-	vortex_channel_set_serialize(chan, axl_true);
+	vortex_channel_set_serialize(chan, true);
 	char * server_name_cpy = jal_strdup(server_name);
 	jaln_session *sess = jaln_ctx_find_session_by_rec_channel_no_lock(ctx, server_name_cpy, paired_chan_num);
 	free(server_name_cpy);
 	if (!sess) {
-		return axl_false;
+		return false;
 	}
 	jaln_session_ref(sess);
 	vortex_mutex_lock(&sess->lock);
-	axl_bool ret = jaln_session_associate_digest_channel_no_lock(sess, chan, new_chan_num);
+	bool ret = jaln_session_associate_digest_channel_no_lock(sess, chan, new_chan_num);
 	vortex_mutex_unlock(&sess->lock);
 	return ret;
 }
@@ -86,14 +86,14 @@ int jal_next_frame_size_handler(VortexChannel * chan, int next_seq_no, int messa
 	return ret;
 }
 
-axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
+bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 		VortexConnection *conn,
 		const char *server_name,
 		int chan_num)
 {
 	// expect to have the ctx lock held
 	if (!ctx || !conn || !server_name || (0 > chan_num)) {
-		return axl_false;
+		return false;
 	}
 	jaln_session *session = jaln_session_create();
 	session->rec_chan_num = chan_num;
@@ -109,19 +109,19 @@ axl_bool jaln_listener_handle_new_record_channel_no_lock(jaln_context *ctx,
 
 		vortex_mutex_unlock(&ctx->lock);
 		jaln_session_unref(session);
-		return axl_false;
+		return false;
 	}
 	vortex_channel_set_next_frame_size_handler(session->rec_chan, jal_next_frame_size_handler, session);
 	// setting '2' disables MIME generation completely.
 	vortex_channel_set_automatic_mime(session->rec_chan, 2);
-	vortex_channel_set_serialize(session->rec_chan, axl_true);
+	vortex_channel_set_serialize(session->rec_chan, true);
 	vortex_channel_set_received_handler(session->rec_chan, jaln_listener_init_msg_handler, session);
 	vortex_channel_set_closed_handler(session->rec_chan, jaln_session_notify_unclean_channel_close, session);
 	vortex_channel_set_close_handler(session->rec_chan, jaln_session_on_close_channel, session);
-	return axl_true;
+	return true;
 }
 
-axl_bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
+bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
 		int chan_num,
 		VortexConnection *conn,
 		const char *server_name,
@@ -134,20 +134,20 @@ axl_bool jaln_listener_start_channel_no_lock(jaln_context *ctx,
 		// have profile content, so this must be a 'digest' channel
 		int matched = sscanf(profile_content, JALN_DGST_CHAN_FORMAT_STR, &paired_channel);
 		if (!matched) {
-			return axl_false;
+			return false;
 		} else {
-			axl_bool ret = jaln_listener_handle_new_digest_channel_no_lock(ctx, conn, server_name, chan_num, paired_channel);
+			bool ret = jaln_listener_handle_new_digest_channel_no_lock(ctx, conn, server_name, chan_num, paired_channel);
 			return ret;
 		}
 	} else {
 		// no profile content, must be a 'record' channel
-		axl_bool ret = jaln_listener_handle_new_record_channel_no_lock(ctx, conn, server_name, chan_num);
+		bool ret = jaln_listener_handle_new_record_channel_no_lock(ctx, conn, server_name, chan_num);
 		return ret;
 	}
-	return axl_false;
+	return false;
 }
 
-axl_bool jaln_listener_start_channel_extended(
+bool jaln_listener_start_channel_extended(
 		__attribute__((unused)) const char *profile,
 		int chan_num,
 		VortexConnection *conn,
@@ -159,11 +159,11 @@ axl_bool jaln_listener_start_channel_extended(
 {
 	jaln_context *ctx = (jaln_context *) user_data;
 	if (!ctx) {
-		return axl_false;
+		return false;
 	}
 	const char *remote_host = vortex_connection_get_host(conn);
 	vortex_mutex_lock(&ctx->lock);
-	axl_bool ret = jaln_listener_start_channel_no_lock(ctx, chan_num, conn, remote_host, profile_content);
+	bool ret = jaln_listener_start_channel_no_lock(ctx, chan_num, conn, remote_host, profile_content);
 	vortex_mutex_unlock(&ctx->lock);
 	return ret;
 }
@@ -326,7 +326,7 @@ enum jal_status jaln_listen(
 		ctx->is_connected) {
 		goto err_out;
 	}
-	ctx->is_connected = axl_true;
+	ctx->is_connected = true;
 
 	if (!jaln_subscriber_callbacks_is_valid(ctx->sub_callbacks) &&
 		!jaln_publisher_callbacks_is_valid(ctx->pub_callbacks)) {
@@ -417,8 +417,8 @@ enum jal_status jaln_listener_shutdown(jaln_context *ctx)
 	VortexConnection *v_conn = ctx->listener_conn;
 	vortex_mutex_unlock(&ctx->lock);
 
-	vortex_listener_shutdown(v_conn, axl_true);
-	vortex_exit_ctx(ctx->vortex_ctx, axl_false);
+	vortex_listener_shutdown(v_conn, true);
+	vortex_exit_ctx(ctx->vortex_ctx, false);
 	return JAL_OK;
 
 err_out:

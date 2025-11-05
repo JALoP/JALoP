@@ -48,9 +48,9 @@ extern "C" {
  *
  * @param[in] sess Then session to operate on.
  * @param[in] frame The frame that contains the 'initialze-nack' message.
- * @return axl_false if there were errors processing the message, axl_true otherwise.
+ * @return false if there were errors processing the message, true otherwise.
  */
-axl_bool jaln_handle_initialize_nack(jaln_session *sess,
+bool jaln_handle_initialize_nack(jaln_session *sess,
 		VortexFrame *frame);
 
 /**
@@ -64,7 +64,7 @@ axl_bool jaln_handle_initialize_nack(jaln_session *sess,
  * @param[in] frame The frame that contains the 'initialze-ack' message.
  * @return 0 if there were errors processing the message, 1 otherwise.
  */
-axl_bool jaln_handle_initialize_ack(jaln_session *session,
+bool jaln_handle_initialize_ack(jaln_session *session,
 		enum jaln_role role,
 		VortexFrame *frame);
 
