@@ -1,0 +1,23 @@
+#Valid settings for the database_option config setting are the following:
+#JDB_NONE - No LMDB db flags are set.
+#	This is the slowest, but most reliable setting to prevent data loss or db corruption
+#JDB_LMDB_PERFORMANCE_LEVEL1 - Sets MDB_NOMETASYNC
+#	Faster than JDB_NONE. No risk of db corruption, but could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL2 - Sets MDB_NOMETASYNC | MDB_NOSYNC
+#	This is the recommended setting and is much faster than JDB_LMDB_PERFORMANCE_LEVEL1.
+#	No risk of db corruption if filesystem preserves write order otherwise db corruption is possible.  Also could lose last transaction.
+#JDB_LMDB_PERFORMANCE_LEVEL3 - Sets MDB_NOMETASYNC | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC
+#	WARNING!!! This setting is faster than JDB_LMDB_PERFORMANCE_LEVEL2
+#	However there is a very high risk of db corruption and data loss in case of a crash or power outage.  Also if this setting is used, all other JAL processes
+#	must use this exact same setting.  Overall this setting is not recommended to be used if the risk of db corruption is not acceptable.
+
+#This is optional and will default to JDB_NONE if not present.
+database_option = "JDB_LMDB_PERFORMANCE_LEVEL2";
+
+#lmdb_map_size is in gigabytes (GB) and is the maximum database size allowed.
+#This value can be increased if lmdb map_full errors are occurring.
+#Valid valids are 1 (1GB) to 25000 (25 TB)
+#Use 1 when testing with valgrind
+lmdb_map_size = 1
+#Use 200 for default value
+#lmdb_map_size = 200

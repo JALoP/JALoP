@@ -7,7 +7,8 @@ After=jalls.socket
 Type=simple
 User=jalls
 Group=jalop
-ExecStart=/usr/bin/jal-local-store -c /etc/jalop/jalls_service.cfg
+UMask=007
+ExecStart=/usr/sbin/jal-local-store -c /etc/jalop/jalls_service.cfg
 
 [Install]
 WantedBy=multi-user.target
