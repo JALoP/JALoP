@@ -73,6 +73,7 @@
 #include "jal_seccomp_enforcer.h"
 #include "jalls_config.h"
 #include "jal_config.h"
+#include "jaldb_config.h"
 #include "jalu_daemonize.h"
 #include "jalls_handler.h"
 #include "jalls_msg.h"
@@ -229,6 +230,7 @@ int main(int argc, char **argv) {
 			goto err_out;
 		}
 		cert = PEM_read_X509(fp, NULL, NULL, NULL);
+		fclose(fp);
 		if (!cert) {
 			fprintf(stderr, "failed to read public cert\n");
 			goto err_out;
@@ -249,7 +251,39 @@ int main(int argc, char **argv) {
 
 	db_ctx = jaldb_context_create();
 
-	enum jaldb_status jaldb_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, jalls_ctx->jdb_flags);
+	//Attempts to load optional LMDB_CONFIG file in db_root
+	//If present, this will override the lmdb performance level
+	//and lmdb map size, otherwise default values will be used.
+	jaldb_config *jdb_config = NULL;
+	enum jaldb_config_status rc = get_jaldb_config(jalls_ctx->db_root, &jdb_config);
+	if (rc != JALDB_CONFIG_OK && rc != JALDB_CONFIG_E_NOTFOUND) {
+		old_socket_exist = 1; //Prevent trying to delete socket since it wasn't created yet.
+		goto err_out;
+	}
+
+	//Only override map size if present in config
+	enum jaldb_flags jdb_flags = JDB_LMDB_PERFORMANCE_LEVEL2;
+	jalls_ctx->map_size = DEFAULT_LMDB_MAP_SIZE;
+	jalls_ctx->database_option = jal_strdup(JDB_LMDB_PERFORMANCE_LEVEL2_STR);
+
+	if (rc != JALDB_CONFIG_E_NOTFOUND)
+	{
+		if (jdb_config->map_size != 0)
+		{
+			jalls_ctx->map_size = jdb_config->map_size;
+		}
+
+		//Only override database option if present in config
+		if (NULL != jdb_config->database_option)
+		{
+			jdb_flags = jdb_config->jdb_flags;
+			free(jalls_ctx->database_option);
+			jalls_ctx->database_option = jal_strdup(jdb_config->database_option);
+		}
+		free_jaldb_config(&jdb_config);
+	}
+
+	enum jaldb_status jaldb_err = jaldb_context_init(db_ctx, jalls_ctx->db_root, jdb_flags, jalls_ctx->map_size);
 
 	if (jaldb_err != JALDB_OK) {
 		fprintf(stderr, "failed to create the jaldb_context\n");
@@ -419,7 +453,9 @@ int main(int argc, char **argv) {
 		absolute_path = NULL;
 	}
 
-	dfprintf(stderr, "database_option:%s \n", jalls_ctx->database_option);
+	dfprintf(stderr, "database_option: %s\n", jalls_ctx->database_option);
+	free(jalls_ctx->database_option);
+	dfprintf(stderr, "lmdb_map_size (GB): %d\n", jalls_ctx->map_size);
 
 	if (jalls_ctx->daemon) {
 		dfprintf(stderr, "daemonizing...\n");
@@ -632,7 +668,14 @@ err_out:
 		}
 		free(thread_array);
 	}
-
+	free(jalls_ctx->db_root);
+	free(jalls_ctx->private_key_file);
+	free(jalls_ctx->public_cert_file);
+	free(jalls_ctx->socket);
+	free(jalls_ctx->log_dir);
+	free(jalls_ctx->pid_file);
+	free(jalls_ctx->hostname);
+	free(jalls_ctx);
 	EVP_PKEY_free(key);
 	X509_free(cert);
 	jalls_shutdown();

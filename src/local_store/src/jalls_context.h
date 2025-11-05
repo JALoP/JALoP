@@ -96,8 +96,8 @@ struct jalls_context {
 	long long audit_record_size_limit;
 	long long log_record_size_limit;
 
-	/**This setting is used by LMDB builds only and is the LMDB flags set by the database_option config setting*/
-	enum jaldb_flags jdb_flags;
+	/** The lmdb map size in gigabytes (GB)**/
+	int map_size;
 
 	/**Stores the string value for the database_option config setting**/
 	char *database_option;
