@@ -476,7 +476,6 @@ int main(int argc, char **argv) {
 	dfprintf(stderr, "audit_record_size_limit: %lld\n", jalls_ctx->audit_record_size_limit);
 	dfprintf(stderr, "log_record_size_limit: %lld\n", jalls_ctx->log_record_size_limit);
 	dfprintf(stderr, "database_option: %s\n", jalls_ctx->database_option);
-	free(jalls_ctx->database_option);
 	dfprintf(stderr, "lmdb_map_size (GB): %d\n", jalls_ctx->map_size);
 
 	struct sockaddr_un peer_addr;
@@ -690,6 +689,10 @@ err_out:
 	free(jalls_ctx->log_dir);
 	free(jalls_ctx->pid_file);
 	free(jalls_ctx->hostname);
+	free(jalls_ctx->socket_mode);
+	free(jalls_ctx->socket_owner);
+	free(jalls_ctx->socket_group);
+	free(jalls_ctx->database_option);
 	free(jalls_ctx);
 
 	EVP_PKEY_free(key);
