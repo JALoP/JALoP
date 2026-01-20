@@ -101,7 +101,7 @@ enum jal_status my_on_subscribe(
 	return JAL_OK;
 }
 
-enum jal_status journal_get_bytes(const uint64_t offset,
+enum jal_status get_bytes(const uint64_t offset,
 			uint8_t * const buffer,
 			uint64_t *size,
 			__attribute__((unused)) void *feeder_data)
@@ -227,10 +227,13 @@ void test_pub_feeder_fill_buffer()
 
 	struct jaln_readfunc_info info = { sess };
 
+	sess->pub_data->feeder.get_bytes = get_bytes;
+	sess->pub_data->feeder.feeder_data = NULL;
+
 	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, &info);
 
-	assert_string_equals(EXPECTED_MSG, buffer);
 	assert_equals(TOTAL_SZ, ret);
+	assert_string_equals(EXPECTED_MSG, buffer);
 }
 
 void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
@@ -239,14 +242,17 @@ void test_pub_feeder_fill_buffer_offset_at_end_of_payload()
 	void *buffer = jal_calloc(1, BUF_SIZE);
 
 	sess->pub_data->dgst = (uint8_t*) jal_calloc(1, sess->dgst->len);
-	sess->pub_data->payload_off = TOTAL_SZ - 5;
+	sess->pub_data->payload_off = strlen(PAYLOAD);
 
 	struct jaln_readfunc_info info = { sess };
 
+	sess->pub_data->feeder.get_bytes = get_bytes;
+	sess->pub_data->feeder.feeder_data = NULL;
+
 	size_t ret = jaln_pub_feeder_fill_buffer(buffer, BUF_SIZE, 1, &info);
 
-	assert_string_equals(EXPECTED_MSG_MAX_OFFSET, buffer);
 	assert_equals(strlen(EXPECTED_MSG_MAX_OFFSET), ret);
+	assert_string_equals(EXPECTED_MSG_MAX_OFFSET, buffer);
 }
 
 void test_pub_feeder_is_finished_returns_true_if_errored()

@@ -166,7 +166,7 @@ void test_jaln_ptrs_equals()
 void test_pub_data_create()
 {
 	assert_not_equals((void*) NULL, pub_data);
-	assert_equals(0, memcmp(&pub_data->journal_feeder, &zeroed_feeder, sizeof(zeroed_feeder)));
+	assert_equals(0, memcmp(&pub_data->feeder, &zeroed_feeder, sizeof(zeroed_feeder)));
 	assert_equals(0, pub_data->feeder_sz);
 	assert_equals(-1, pub_data->msg_no);
 	assert_equals((void*)NULL, pub_data->nonce);

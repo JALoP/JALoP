@@ -30,6 +30,9 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+#include <iostream>
+#include <sstream>
+
 // For the PRId64 type macro from printf
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -205,12 +208,38 @@ class FsDb : public JalSubDatabase
 			}
 		}
 	}
-
-	bool writeToDb(const std::string& basePath, uint64_t recordNum, const RecordInfo& recordInfo)
+	
+	std::string getDirectoryName(std::string nonce)
 	{
-		char recordNumBuf[11];
-		sprintf(recordNumBuf, "%010" PRId64, recordNum);
-		std::string newRecordDir = basePath + "/" + std::string(recordNumBuf);
+		std::vector<std::string> tokens;
+		std::stringstream ss(nonce);
+		std::string token;
+		while(std::getline(ss, token, '_'))
+		{
+			tokens.push_back(token);
+		}
+		if(tokens.size() != 4)
+		{
+			return "";
+		}
+		std::stringstream name("");
+		name << tokens[1] << "_";
+		name << tokens[2] << "_";
+		name << tokens[3] << "_";
+		name << tokens[0];
+		return name.str();
+	}
+
+	bool writeToDb(const std::string& basePath, const RecordInfo& recordInfo)
+	{
+		std::string directoryName = getDirectoryName(recordInfo.jalId);
+		if(directoryName.empty())
+		{
+			fprintf(stderr, "Error: Failed to create record directory name\n");
+			return false;
+		}
+		std::string newRecordDir = basePath + "/" + directoryName;
+
 		// This really shouldn't happen, abort write
 		if(dirExists(newRecordDir))
 		{
@@ -301,38 +330,17 @@ class FsDb : public JalSubDatabase
 
 	bool insertAuditImpl(const RecordInfo& recordInfo) override
 	{
-		// Note - if the user hasn't done something to clear old records when this rollover
-		// happens, further inserts will fail because the directories for the new inserts
-		// will already exist
-		if(auditCounter >= COUNTER_MAX)
-		{
-			auditCounter = 0;
-		}
-		return writeToDb(auditStoragePath, auditCounter++, recordInfo);
+		return writeToDb(auditStoragePath, recordInfo);
 	}
 
 	bool insertLogImpl(const RecordInfo& recordInfo) override
 	{
-		// Note - if the user hasn't done something to clear old records when this rollover
-		// happens, further inserts will fail because the directories for the new inserts
-		// will already exist
-		if(logCounter >= COUNTER_MAX)
-		{
-			logCounter = 0;
-		}
-		return writeToDb(logStoragePath, logCounter++, recordInfo);
+		return writeToDb(logStoragePath, recordInfo);
 	}
 
 	bool insertJournalImpl(const RecordInfo& recordInfo) override
 	{
-		// Note - if the user hasn't done something to clear old records when this rollover
-		// happens, further inserts will fail because the directories for the new inserts
-		// will already exist
-		if(journalCounter >= COUNTER_MAX)
-		{
-			journalCounter = 0;
-		}
-		return writeToDb(journalStoragePath, journalCounter++, recordInfo);
+		return writeToDb(journalStoragePath, recordInfo);
 	}
 };
 

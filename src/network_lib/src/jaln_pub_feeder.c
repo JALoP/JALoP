@@ -7,11 +7,7 @@
  *
  * ### LICENSE
  *
- * Source code in 3rd-party is licensed and owned by their respective
- * copyright holders.
- *
- * All other source code is copyright Tresys Technology and licensed as below.
- *
+ * Copyright (C) 2018-2025 Concurrent Technologies Corporation.
  * Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
@@ -111,20 +107,15 @@ size_t jaln_pub_feeder_fill_buffer(void *b, size_t size, size_t nmemb, void *use
 	if (!pd->finished_payload && (dst_sz > dst_off)) {
 		switch (ch_info->type) {
 		case JALN_RTYPE_AUDIT:
-		case JALN_RTYPE_LOG: {
-			uint64_t tmp_offset = pd->payload_off;
-			jaln_copy_buffer(buffer, dst_sz, &dst_off, pd->payload, pd->payload_sz, &tmp_offset, true);
-			pd->payload_off = tmp_offset;
-			break;
-		}
+		case JALN_RTYPE_LOG:
 		case JALN_RTYPE_JOURNAL: {
 			uint64_t left_in_buffer = dst_sz - dst_off;
 			uint64_t bytes_acquired = left_in_buffer;
 
-			ret = pd->journal_feeder.get_bytes(pd->payload_off,
+			ret = pd->feeder.get_bytes(pd->payload_off,
 							buffer + dst_off,
 							&bytes_acquired,
-							pd->journal_feeder.feeder_data);
+							pd->feeder.feeder_data);
 			if (ret != JAL_OK || (bytes_acquired > left_in_buffer)) {
 				curl_ret = CURL_READFUNC_ABORT;
 				goto out;

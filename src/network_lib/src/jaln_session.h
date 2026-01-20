@@ -7,11 +7,7 @@
  *
  * ### LICENSE
  *
- * Source code in 3rd-party is licensed and owned by their respective
- * copyright holders.
- *
- * All other source code is copyright Tresys Technology and licensed as below.
- *
+ * Copyright (C) 2018-2025 Concurrent Technologies Corporation.
  * Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
@@ -80,7 +76,7 @@ struct jaln_session_t {
  * Data related to a publisher session
  */
 struct jaln_pub_data {
-	struct jaln_payload_feeder journal_feeder;  //!< the jaln_payload_feeder for sending a journal record.
+	struct jaln_payload_feeder feeder;  //!< the jaln_payload_feeder for sending a record.
 	int64_t feeder_sz;                       //!< The size of this message.
 	int msg_no;                                 //!< The message number we are replying to
 
