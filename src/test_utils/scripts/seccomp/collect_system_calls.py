@@ -13,7 +13,7 @@
 #collect_system_calls will use this mark to determine where
 #a process transitions from setup stage to routine work stage.
 #   // int fd2;
-#	// fd2 = open("SECCOMP_PROCESS_IS_DONE_SETTING_UP", 0, 0600);
+#	// fd2 = open("Applying final ruleset DONE", 0, 0600);
 #	// if (fd2>0){
 #	// 	close(fd2);
 #	// }
@@ -47,7 +47,7 @@ init_syscalls = set()
 final_syscalls = set()
 break_point_found = 0
 for line in lines :
-    if line.find("SECCOMP_PROCESS_IS_DONE_SETTING_UP")>0:
+    if line.find("Applying final ruleset DONE")>0:
         break_point_found = 1
         continue
     space = line.find(" ") + 1

@@ -18,12 +18,12 @@
       - jaldb_inline_filter
       - jald
       - jalls
-  
+
   - name: clear database
     shell: |
       rm -fr /var/log/jalop/*
       rm -fr /var/log/jalop_sub/*
-  
+
   - name: start processes
     systemd_service:
       name: '{{ item }}'
@@ -62,7 +62,6 @@
     shell: |
       #sleep 7200
       PID=`/usr/sbin/pidof jald`
-      PID2=`/usr/sbin/pidof jald_marker`
       (( cpu="10" ))
       (( cpu2="10" ))
       (( retry_count=0 ))
@@ -70,7 +69,6 @@
       do
         sleep 1
         cpu=`top -b -n 1 -p $PID | grep -P -m 7 $PID | awk '{print $9}'`
-        cpu2=`top -b -n 1 -p $PID2 | grep -P -m 7 $PID2 | awk '{print $9}'`
       done
       exit 0
 
@@ -78,12 +76,12 @@
     command:
         cmd: jaldb_tool -h /var/log/jalop
     register: jaldb_tool_testdb_output
-    
+
   - name: jaldb_tool subdb
     command:
         cmd: jaldb_tool -h /var/log/jalop_sub
     register: jaldb_tool_subdb_output
-        
+
   - name: jaldb_tool output
     shell: |
       echo '{{ jaldb_tool_testdb_output.stdout }}' > jaldb_tool_output.txt
@@ -93,15 +91,15 @@
     shell: |
       jaldb_tail -h /var/log/jalop -t l|grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
     register: jaldb_tail_output
-    
+
   - name: jal_dump
     shell: |
       jal_dump -h /var/log/jalop -u '{{ jaldb_tail_output.stdout }}' -d m -t l
     register: jal_dump_output
-  
+
   - name: jal_dump output
     shell: |
       echo '{{ jal_dump_output.stdout }}' >> jaldb_tool_output.txt
- 
+
 #call with this command from jalop home
 ##ansible-playbook -i src/test_utils/scripts/ansible/ansible_inventory.ini src/test_utils/scripts/ansible/local-store-pub-sub-tests_debug.yml -e cwd=`pwd` -e mode=debug

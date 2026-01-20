@@ -48,7 +48,7 @@ final_syscalls = set()
 break_point_found = 0
 init_syscalls.add("seccomp")
 for line in lines :
-    if line.find("SECCOMP_PROCESS_IS_DONE_SETTING_UP")>0:
+    if line.find("Applying final ruleset DONE")>0:
         break_point_found = 1
         continue
     space = line.find(" ") + 1

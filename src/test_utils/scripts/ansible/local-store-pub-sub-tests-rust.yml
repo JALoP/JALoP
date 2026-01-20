@@ -12,6 +12,7 @@
     post_sleep: 0
     mode: "{{ lookup('env', 'marker') | default('debug', true) }}"
     marker_bin: "{{ lookup('env', 'marker_bin') | default('./' ~ mode ~ '/bin', true) }}"
+    rust_log: debug
 
   tasks:
   - name: stop processes
@@ -19,40 +20,39 @@
       killall -9 jal-local-store || true
       killall -9 jal_subscribe || true
       killall -9 jaldb_inline_filter || true
-      killall -9 jald_marker || true
       killall -9 jald || true
       #rm -f {{cwd}}/jald_record_socket
       rm -f {{cwd}}/jald_filter_socket*
       rm -f {{cwd}}/*.sock
-  
+
   - name: clear local store database
     file:
         path: '{{cwd}}/testdb'
         state: absent
-  
+
   - name: clear subscriber database
     file:
         path: '{{cwd}}/subdb'
         state: absent
-  
+
   - name: make local store database directory
     file:
         path: '{{cwd}}/testdb'
         state: directory
-  
+
   - name: make subscriber database directory
     file:
         path: '{{cwd}}/subdb'
         state: directory
-  
+
   - name: copy DB_CONFIG 1
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb'
-  
+
   - name: copy DB_CONFIG 2
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/testdb'
@@ -60,7 +60,7 @@
   - name: pre-sleep
     shell: |
       sleep {{ pre_sleep }}
-  
+
   - name: start local store
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -69,23 +69,12 @@
       umask 027
       ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>./ls.err 1>./ls.out &
 
-  - name: start CPP marker
-    environment:
-      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
-    shell: |
-      cd '{{cwd}}'
-      #valgrind --log-file=valgrind-out-filter.txt ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
-      #valgrind --leak-check=full --show-leak-kinds=all --verbose --fair-sched=yes --log-file=valgrind-out.txt ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
-      #gdb -batch -ex "run" -ex "bt" --args ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
-      ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
-    when: marker == 'cpp'
-
   - name: start Rust marker ({{marker_bin}}/jaldb_inline_filter)
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>./jald_filter.err 1>./jald_filter.out &
+      RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d {{cwd}}/testdb 2>./jald_filter.err 1>./jald_filter.out &
     when: marker == 'rust'
 
   - name: start subscriber
@@ -95,14 +84,14 @@
       cd '{{cwd}}'
       #valgrind --log-file=valgrind-out.txt ./{{mode}}/bin/jal_subscribe -c ./test-input/jal_subscribe.cfg -d 2>./subd.err 1>./subd.out &
       ./{{mode}}/bin/jal_subscribe -c ./test-input/jal_subscribe.cfg -d 2>./subd.err 1>./subd.out &
-    
+
 #  - name: check subscriber database directory exists
 #    stat:
 #        path: '{{cwd}}/subdb/lock.mdb'
 #    register: subscriber_stat
-#    
+#
 #  - name: Fail if file does not exists
-#    fail: 
+#    fail:
 #      msg: 'jal_subscriber did not start correctly'
 #    when: subscriber_stat.stat.exists == False
 
@@ -126,7 +115,7 @@
         chdir: '{{cwd}}'
         cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
     when: '"l" in types'
-  
+
   - name: send journals
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -189,7 +178,7 @@
         cmd: ./{{mode}}/bin/jaldb_tool -h testdb
     register: jaldb_tool_testdb_output
     when: tear_down | bool
-    
+
   - name: jaldb_tool subdb
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -198,7 +187,7 @@
         cmd: ./{{mode}}/bin/jaldb_tool -h subdb
     register: jaldb_tool_subdb_output
     when: tear_down | bool
-        
+
   - name: jaldb_tool output
     shell: |
       cd '{{cwd}}'
@@ -214,7 +203,7 @@
       ./{{mode}}/bin/jaldb_tail -h testdb/ -t j|grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
     register: jaldb_tail_output
     when: tear_down | bool
-    
+
   - name: jal_dump
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -224,27 +213,26 @@
       ./{{mode}}/bin/jal_dump -h testdb/ -u '{{ jaldb_tail_output.stdout }}' -d m -t j
     register: jal_dump_output
     when: tear_down | bool
-  
+
   - name: jal_dump output
     shell: |
       cd '{{cwd}}'
       echo '{{ jal_dump_output.stdout }}' >> jaldb_tool_output.txt
     when: tear_down | bool
-      
+
   - name: end processes
     shell: |
       killall jal-local-store || true
       killall jal_subscribe || true
       killall jaldb_inline_filter || true
-      killall jald_marker || true
       killall jald || true
       rm -f {{cwd}}/jald_record_socket_*
       rm -f {{cwd}}/jald_filter_socket
       rm -f {{cwd}}/*.sock
     when: tear_down | bool
-     
+
   - name: build cov report
-    shell: |      
+    shell: |
       cd '{{cwd}}'
       echo '{{cwd}}' >> jaldb_tool_output.txt
       mkdir cov_integration
