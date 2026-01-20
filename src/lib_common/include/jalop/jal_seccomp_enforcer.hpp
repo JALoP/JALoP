@@ -38,7 +38,6 @@
  */
 struct SeccompRule
 {
-
 	/**
 	 * Seccomp rule name
 	 */
@@ -49,7 +48,6 @@ struct SeccompRule
 	 */
 	int callNumber;
 };
-
 
 /**
  * LogLevel enum
@@ -79,12 +77,18 @@ class JalSeccompEnforcer
 	 * Seccomp enabled flag
 	 */
 	bool seccompEnabled = true;
-
+	/**
+	 * Seccomp debug flag
+	 */
+	bool seccompDebug = false;
+	/**
+	 * Seccomp version
+	 */
+	int seccompVersion = 0;
 	/**
 	 * Initial seccomp rules applied flag
 	 */
 	bool initialRulesApplied = false;
-
 	/**
 	 * final seccomp rules applied flag
 	 */
@@ -137,6 +141,22 @@ class JalSeccompEnforcer
 	*
 	*/
 	JalSeccompEnforcer(std::string configFile);
+
+	/**
+	* JalSeccompEnforcer constructor
+	*
+	* @param [in] initial_seccomp_rules Initial seccomp rules
+	* @param [in] final_seccomp_rules Final seccomp rules
+	* @param [in] both_seccomp_rules Both seccomp rules
+	* @param [in] enableSeccomp Determines if seccomp is enabled
+	* @param [in] debug Sets debug mode
+	*
+	*/
+	JalSeccompEnforcer(const std::vector<std::string> &initial_seccomp_rules,
+									   const std::vector<std::string> &final_seccomp_rules,
+									   const std::vector<std::string> &both_seccomp_rules,
+									   bool enableSeccomp,
+									   bool debug);
 
 	/**
 	* This function applies the initial seccomp rules

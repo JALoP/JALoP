@@ -29,7 +29,7 @@
 extern "C"
 {
 #endif
-
+#include <stdbool.h>
 /**
  * Opaque pointer representing the state required to load/manage seccomp policies
  */
@@ -58,6 +58,29 @@ struct jal_seccomp_enforcer_t;
  */
 struct jal_seccomp_enforcer_t* jal_seccomp_enforcer_create(
 	char* config_path);
+
+
+/**
+ * Create a jal_seccomp_enforcer_t given the seccomp rule list
+ * @param[in] initial_seccomp_rules - initial seccomp rule list
+ * @param[in] initial_seccomp_rules_len - length of initial seccomp rule list
+ * @param[in] final_seccomp_rules - final seccomp rule list
+ * @param[in] final_seccomp_rules_len - length of final seccomp rule list
+ * @param[in] both_seccomp_rules - both seccomp rule list
+ * @param[in] both_seccomp_rules_len - length of both seccomp rule list
+ * @param [in] enableSeccomp Determines if seccomp is enabled
+ * @param [in] debug Sets debug mode
+ *
+ *
+ * This function will print to stderr in the case of failures, and will additionally
+ * print diagnostic information to stderr if seccomp_debug is true
+ *
+ * @return NULL on error, else a valid jal_seccomp_enforcer_t*
+ */
+struct jal_seccomp_enforcer_t* jal_seccomp_enforcer_create_from_list(
+	char** initial_seccomp_rules, int initial_seccomp_rules_len, char** final_seccomp_rules,
+	int final_seccomp_rules_len, char** both_seccomp_rules, int both_seccomp_rules_len,
+	bool enableSeccomp, bool debug);
 
 /**
  * Destroy a jal_seccmop_enforcer_t, release the resources
