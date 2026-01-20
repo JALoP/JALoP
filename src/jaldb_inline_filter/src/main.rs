@@ -15,16 +15,19 @@
  * limitations under the License.
 */
 
+//! This module provides the main entrypoint to the inline filter.
+//! It sets up communication with jald, establishes connections to the database,
+//! and contains the main event loop that acts upon requests from jald.
 use anyhow::{bail, Context};
 use clap::Parser;
-use core::convert::From;
+use config::CliOpts;
 use core::time::Duration;
 use jalop::db::Pool;
 use jalop::receiver::{Message, MessageStream};
 use jalop::sender::{SenderActor, SenderMsg};
 use jalop::subscriber::{ArchiveSubscriber, LiveSubscriber, SubscriberMsg, Token};
 use jalop::writer::{Request, WriterActor};
-use jalop::{kill, receiver, time, writer};
+use jalop::{config, kill, receiver, seccomp, time, writer};
 use jalop_actors::actor::PoisonPill;
 use jalop_actors::path::ActorPath;
 use jalop_actors::system::ActorSystem;
@@ -32,82 +35,54 @@ use jalop_sys::{RecordType, MARK_REQUEST_SIZE};
 use log::{debug, info, trace, warn};
 use std::os::unix::net::UnixStream;
 use std::path::Path;
-use std::path::PathBuf;
 use tokio::io::duplex;
 use tokio::net::UnixListener;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 use tokio::time::interval;
 
-#[derive(Clone, Debug, Parser)]
-struct Opts {
-    /// database home directory
-    #[clap(short, long)]
-    db_home: PathBuf,
-    /// input socket path
-    #[clap(short, long, default_value = "jald_filter_socket")]
-    rx_socket_path: String,
-    /// output socket path template
-    #[clap(short, long, default_value = "jald_record_socket")]
-    tx_socket_path: String,
-    /// tx socket connection timeout (seconds)
-    #[clap(long, default_value = "30")]
-    tx_socket_timeout: u16,
-    /// force removal of socket if it exists
-    #[clap(long)]
-    force: bool,
-    /// cfg file, overridden by cli opts
-    #[clap(short, long)]
-    config_path: Option<PathBuf>,
-    /// number of messages to buffer
-    #[clap(long, default_value = "4096")]
-    message_buffer_size: usize,
-    /// max unsynced load on socket
-    #[clap(long, default_value = "256")]
-    socket_buffer_size: usize,
-    /// enable debug mode
-    #[clap(long)]
-    debug: bool,
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    let opts: Opts = Opts::parse();
-    debug!("global options: {opts:#?}");
+    let opts: CliOpts = CliOpts::parse();
+    let cfg = config::from_cli(&opts)?;
+    debug!("global options: {cfg:#?}");
 
-    // todo;; parse config file
+    // apply initial seccomp filter
+    seccomp::apply_initial(&cfg.seccomp)?;
 
-    if !opts.db_home.as_path().is_dir() {
+    if !cfg.db.path.is_dir() {
         bail!("db_home must be an existing directory")
     }
 
+    // rx - create one filter-owned socket to receive messages from jald
+    let socket_path = &cfg.control_socket.path;
+    info!("control-socket: binding to {}", socket_path.display());
+    let sock = UnixListener::bind(socket_path)?;
+    info!("control-socket: listening at {}", socket_path.display());
+
     let system = ActorSystem::default();
-    let (pool, writer) = Pool::new(&opts.db_home).expect("db init fail");
-    info!("Database connected {}", &opts.db_home.display());
+    let (pool, writer) = Pool::new(&cfg.db.path).expect("db init fail");
+    info!("Database connected {}", &cfg.db.path.display());
 
     // init the kill-signal broadcast channel
     let kill = kill::setup_signals()?;
 
-    // rx - create one filter-owned socket to receive messages from jald
-    let socket_path = &opts.rx_socket_path;
-    info!("socket-rx: binding to socket at {}", socket_path);
-    let sock = UnixListener::bind(socket_path)?;
-    info!("socket-rx: listening to socket at {}", socket_path);
-
     // rx - socket - parse messages from jald and push into msg channel
     // outer thread connects the socket
     // inner threads handle socket reading from socket and parsing messages
+    let (connected_tx, connected_rx) = tokio::sync::oneshot::channel();
     let (msg_tx, mut msg_rx) = mpsc::channel(1024);
     tokio::spawn({
         let kill = kill.clone();
         let mut kill_rx = kill.subscribe();
-        let message_buffer_size = MARK_REQUEST_SIZE * opts.message_buffer_size;
+        let message_buffer_size = MARK_REQUEST_SIZE * cfg.control_socket.buffer;
         async move {
             info!("socket-rx: thread started");
             tokio::select! {
                 Ok((input, _)) = sock.accept() => {
+                    let _ = connected_tx.send(());
                     // pump socket bytes into the duplex
                     info!("socket-rx: io buffer size: {message_buffer_size}");
                     let (buf_tx, buf_rx) = duplex(message_buffer_size);
@@ -135,10 +110,10 @@ async fn main() -> anyhow::Result<()> {
     // create a tx actor for each record type
     for rtype in RecordType::list() {
         // suffix the configured path for the mode
-        let socket_path = rtype.socket_path(&opts.tx_socket_path)?;
+        let socket_path = rtype.socket_path(&cfg.record_socket.path)?;
 
         // wait for the specified timeout and kill the filter if not connected
-        wait_for_socket(&socket_path, opts.tx_socket_timeout, kill.subscribe())
+        wait_for_socket(&socket_path, cfg.record_socket.timeout, kill.subscribe())
             .await
             .with_context(|| format!("{}", socket_path.display()))?;
 
@@ -148,9 +123,21 @@ async fn main() -> anyhow::Result<()> {
         info!("socket-tx: connected to {}", socket_path.display());
 
         // create the sender actor
-        let sender_actor = SenderActor::new(rtype, stream, opts.socket_buffer_size);
+        let sender_actor = SenderActor::new(rtype, stream, cfg.record_socket.buffer);
         system.create_actor_path(make_sender_path(rtype), sender_actor).await?;
     }
+
+    {
+        // ensure control socket has connected
+        let mut kill = kill.subscribe();
+        tokio::select! {
+            _ = connected_rx => {}
+            _ = kill.recv() => {}
+        }
+    };
+
+    // apply final seccomp filter
+    seccomp::apply_final(&cfg.seccomp)?;
 
     // handle incoming socket messages
     while let Some(incoming) = msg_rx.recv().await {

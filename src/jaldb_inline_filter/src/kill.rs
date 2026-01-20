@@ -15,6 +15,8 @@
  * limitations under the License.
 */
 
+//! This module provides asynchronous signal handling for the application by catching
+//! and distributing OS signals to any async task that has subscribed.
 use log::{info, warn};
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::broadcast;

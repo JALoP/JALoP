@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides a capacity limited asynchronous container that provides backpressure to producers.
 use core::clone::Clone;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -22,9 +23,8 @@ use tokio::sync::Mutex;
 use tokio::sync::Notify;
 use tokio::sync::Semaphore;
 
-/// a bounded back pressuring queue
-/// allows eviction
-/// fully async, block producers & consumers
+/// A capacity limited container for creating backpressure on producers and consumers.
+/// Fully asynchronous blocking of producers when at capacity and of consumers when empty.
 #[derive(Clone)]
 pub struct BackPressureQueue<V> {
     capacity: usize,
@@ -46,6 +46,7 @@ where
         }
     }
 
+    /// Insert a Key-Value pair, awaits if the queue is at capacity
     pub async fn insert<K: AsRef<str>>(&self, k: K, v: V) -> anyhow::Result<Option<()>> {
         // precheck for dupes, scoped to release the lock while waiting on
         // the semaphore to acquire. other threads need the lock to free capacity
@@ -76,7 +77,8 @@ where
         Ok(Some(()))
     }
 
-    /// remove an entry by its key, returning Some if evicted
+    /// Remove an entry by its key, optionally returning the evicted value if evicted
+    /// This does not await the key being present, it returns with None if the key does not exist
     pub async fn evict<K: AsRef<str>>(&self, k: K) -> Option<V> {
         let mut queue = self.queue.lock().await;
         let res = queue.remove(k.as_ref());
@@ -86,7 +88,8 @@ where
         res
     }
 
-    /// remove all entries with the specified value, returning count of evicted entries
+    /// Removes all keys that map to the specified value, returning count of evicted entries
+    /// This does not await a value being present, it returns with zero if the value does not exist
     pub async fn evict_values(&self, v: V) -> usize {
         let mut queue = self.queue.lock().await;
         let original = queue.len();
@@ -96,7 +99,7 @@ where
         evicted
     }
 
-    // take an item out of the bpq, waiting if empty
+    // for testing only;; take an item out of the bpq, waiting if empty
     #[cfg(test)]
     async fn take(&self) -> Option<(String, V)> {
         loop {
@@ -115,27 +118,32 @@ where
         }
     }
 
+    /// Does a key exist in the container
     pub async fn contains<K: AsRef<str>>(&self, k: K) -> bool {
         self.queue.lock().await.contains_key(k.as_ref())
     }
 
+    /// Get a vec of the keys in the container
     pub async fn keys(&self) -> Vec<String> {
         self.queue.lock().await.keys().cloned().collect()
     }
 
+    /// Get number of keys in the container
     pub async fn len(&self) -> usize {
         self.queue.lock().await.len()
     }
 
+    /// Is the container empty
     pub async fn is_empty(&self) -> bool {
         self.queue.lock().await.is_empty()
     }
 
+    /// Is the container full
     pub async fn is_full(&self) -> bool {
         self.available().await == 0
     }
 
-    /// remaining capacity
+    /// Get the remaining capacity of the container
     pub async fn available(&self) -> usize {
         self.capacity - self.len().await
     }
@@ -228,6 +236,7 @@ mod tests {
         assert_eq!(expected, actual.load(Ordering::Relaxed));
     }
 
+    // demonstrate evict all concurrently
     #[tokio::test]
     async fn test_concurrent_evict_all() {
         let q = BackPressureQueue::new(2);

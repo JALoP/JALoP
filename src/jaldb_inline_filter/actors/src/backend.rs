@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides the backend execution engine for [Actor]s and the [ActorSystem]
 use crate::actor::{Actor, ActorRef, Protocol, Receiver};
 use crate::path::ActorPath;
 use crate::system::{ActorContext, ActorSystem, SystemEvent};

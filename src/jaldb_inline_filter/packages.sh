@@ -28,6 +28,7 @@ rust-anstyle-query-devel
 rust-anyhow-devel
 rust-assert_matches-devel
 rust-async-trait-devel
+rust-toml-devel
 rust-bindgen0.69-devel
 rust-chrono-devel
 rust-env_logger-devel
@@ -38,6 +39,7 @@ rust-iana-time-zone-devel
 rust-jiff-devel
 rust-libc-devel
 rust-libloading-devel
+rust-libseccomp-devel
 rust-nix0.29-devel
 rust-log-devel
 rust-memoffset-devel
@@ -54,21 +56,22 @@ echo "installing dependencies for RHEL$RHEL_VERSION ..."
 
 if [[ "$RHEL_VERSION" == "9" ]]; then
 
-    dnf install -y $common_pkgs \
+    dnf install --nobest -y $common_pkgs \
                    rust-clap-devel rust-clap_derive-devel rust-clap_builder-devel rust-strsim-devel \
-                   rust-nom-devel
+                   rust-nom-devel rust-toml_parser-devel
 
 elif [[ "$RHEL_VERSION" == "8" ]]; then
 
-    dnf install -y $common_pkgs \
+    dnf install --nobest -y $common_pkgs \
                    rust-clap-devel rust-clap_derive-devel rust-clap_builder-devel rust-strsim-devel \
-                   rust-nom7-devel rust-regex-devel rust-aho-corasick-devel
+                   rust-nom7-devel rust-regex-devel rust-aho-corasick-devel rust-toml_parser-devel
 
 elif [[ "$RHEL_VERSION" == "7" ]]; then
-
-    yum install -y $common_pkgs \
+    yum remove -y rust-toml-devel rust-toml_parser-devel
+    yum install --nobest -y $common_pkgs \
                    rust-clap-devel-4.4.7 rust-clap_derive-devel-4.4.7 rust-clap_builder-devel-4.4.7 rust-strsim-devel-0.10.0 \
-                   rust-nom7-devel rust-regex-devel rust-aho-corasick-devel
+                   rust-nom7-devel rust-regex-devel rust-aho-corasick-devel rust-toml-devel-0.9.5 rust-toml_parser-devel-1.0.2 \
+                   rust-serde_spanned-devel-1.0.0 rust-toml_datetime-devel-0.7.0
 
 else
     echo "**Unsupported RHEL Version: $RHEL_VERSION"

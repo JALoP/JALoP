@@ -15,6 +15,8 @@
  * limitations under the License.
 */
 
+//! This module provides macros used to interact with [Actor]s and the [ActorSystem]
+
 /// Used by an [Actor] to tell a [Message] to itself
 #[macro_export]
 macro_rules! tell_self {

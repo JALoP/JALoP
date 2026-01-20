@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides asynchronous stream of decoded messages from a single input socket.
 use crate::subscriber::{Token, TokenId};
 use futures_util::StreamExt;
 use jalop_sys::RecordType;
@@ -41,7 +42,7 @@ pub struct MessageStream {
 impl MessageStream {
     /// Start a new [MessageStream] that parses from the [DuplexStream]
     /// Backpressure is applied to the parse by the capacity of the [Sender]
-    /// The backpressure propagates back to the source populating the duples
+    /// The backpressure propagates back to the source populating the duplex
     pub fn start(tx: Sender<Message>, rx: DuplexStream) -> Self {
         let (kill_tx, mut kill_rx) = oneshot::channel();
         let mut wire = Framed::new(rx, MessageCodec::default());
@@ -90,7 +91,7 @@ pub enum SubscriberModeError {
     InvalidFilterMode(u16),
 }
 
-/// Subscriber mode
+// JALoP Subscriber mode
 #[derive(Copy, Clone, Debug)]
 enum SubscriberMode {
     Archive,
@@ -109,7 +110,7 @@ impl TryFrom<u16> for SubscriberMode {
     }
 }
 
-/// Unique identifier of a subscription
+// Unique identifier of a subscription
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 enum SubKey {
     Journal(TokenId),
@@ -372,8 +373,6 @@ impl MessageCodec {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use crate::receiver::{Message, MessageCodec};
     use assert_matches::assert_matches;
     use futures_util::StreamExt;

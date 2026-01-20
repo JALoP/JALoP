@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provide an [Actor] and [Protocol] for writing to the JALoP database through a [Writer]
 use crate::db::Writer;
 use crate::writer::Request::{MarkSent, MarkSynced, MarkUnsent, MarkUnsyncedUnsent};
 use async_trait::async_trait;

@@ -511,3 +511,38 @@ extern "C" {
     #[doc = " Frees the jaldb_config pointer returned from the get_jaldb_config method.  This is needed\n for the rust inline filter to free this pointer.\n\n @param[in] jdb_config The jaldb_config pointer to free\n"]
     pub fn free_jaldb_config(jdb_config: *mut *mut jaldb_config);
 }
+#[doc = " Opaque pointer representing the state required to load/manage seccomp policies"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct jal_seccomp_enforcer_t {
+    _unused: [u8; 0],
+}
+extern "C" {
+    #[doc = " Create a jal_seccomp_enforcer_t given a path to a valid libconfig formatted\n configuration file\n @param[in] config_path The libconfig file containing the following configuration items\n - enable_seccomp [true|false]\n - seccomp_debug [true|false]\n - initial_seccomp_rules\n - both_seccomp_rules (optional)\n - final_seccomp_rules\n\n Each rules item should contain a list of the following form:\n *_rules = [\"item1\", \"item2\", ...];\n Where the items are an allowlist of permissable system calls. It is acceptable and\n expected to use the same jald.cfg, local_store.cfg, or jal_subscribe.cfg, but it is also\n valid to put the seccomp configuration items in their own separate config file.\n\n This function will print to stderr in the case of failures, and will additionally\n print diagnostic information to stderr if seccomp_debug is true\n\n @return NULL on error, else a valid jal_seccomp_enforcer_t*"]
+    pub fn jal_seccomp_enforcer_create(config_path: *mut ::std::os::raw::c_char) -> *mut jal_seccomp_enforcer_t;
+}
+extern "C" {
+    #[doc = " Create a jal_seccomp_enforcer_t given the seccomp rule list\n @param[in] initial_seccomp_rules - initial seccomp rule list\n @param[in] initial_seccomp_rules_len - length of initial seccomp rule list\n @param[in] final_seccomp_rules - final seccomp rule list\n @param[in] final_seccomp_rules_len - length of final seccomp rule list\n @param[in] both_seccomp_rules - both seccomp rule list\n @param[in] both_seccomp_rules_len - length of both seccomp rule list\n @param [in] enableSeccomp Determines if seccomp is enabled\n @param [in] debug Sets debug mode\n\n\n This function will print to stderr in the case of failures, and will additionally\n print diagnostic information to stderr if seccomp_debug is true\n\n @return NULL on error, else a valid jal_seccomp_enforcer_t*"]
+    pub fn jal_seccomp_enforcer_create_from_list(
+        initial_seccomp_rules: *mut *mut ::std::os::raw::c_char,
+        initial_seccomp_rules_len: ::std::os::raw::c_int,
+        final_seccomp_rules: *mut *mut ::std::os::raw::c_char,
+        final_seccomp_rules_len: ::std::os::raw::c_int,
+        both_seccomp_rules: *mut *mut ::std::os::raw::c_char,
+        both_seccomp_rules_len: ::std::os::raw::c_int,
+        enableSeccomp: bool,
+        debug: bool,
+    ) -> *mut jal_seccomp_enforcer_t;
+}
+extern "C" {
+    #[doc = " Destroy a jal_seccmop_enforcer_t, release the resources\n This does not apply any filters or cause any applied filters to be rescinded\n @param[in] enforcer The enforcer to be destroyed"]
+    pub fn jal_seccomp_enforcer_destroy(enforcer: *mut *mut jal_seccomp_enforcer_t);
+}
+extern "C" {
+    #[doc = " Apply the initial seccomp policy loaded by a jal_seccomp_enforcer_t\n @param[in] enforcer A validly created jal_seccomp_enforcer_t\n @return 0 on success, or -1 if the policy could not be applied\n - Will always return -1 if the initial or final policy has already been applied\n\n This function will print the reason for failure to stderr, and additional diagnostic\n information to stderr if the enforcer was created with seccomp_debug enabled"]
+    pub fn jal_seccomp_enforcer_apply_initial(enforcer: *mut jal_seccomp_enforcer_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " Apply the final seccomp policy loaded by a jal_seccomp_enforcer_t\n @param[in] enforcer A validly created jal_seccomp_enforcer_t\n @return 0 on success, or -1 if the policy could not be applied\n - Will always return -1 if the initial or final policy has already been applied\n\n This function will print the reason for failure to stderr, and additional diagnostic\n information to stderr if the enforcer was created with seccomp_debug enabled"]
+    pub fn jal_seccomp_enforcer_apply_final(enforcer: *mut jal_seccomp_enforcer_t) -> ::std::os::raw::c_int;
+}

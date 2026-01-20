@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides the mechanisms to uniquely address an actor instance within a system.
 use std::fmt::{Debug, Display, Formatter};
 
 /// A unique path to an [Actor] that locates it within the actor tree
