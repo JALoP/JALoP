@@ -1,6 +1,6 @@
 Name:      JALoP-rust-deps
 Version:   2.3.1.0
-Release:   1%{?dist}
+Release:   2%{?dist}
 Summary:   JALoP Rust Dependencies
 
 License:   Apache License, Version 2.0
@@ -29,6 +29,8 @@ cp -a * %{buildroot}/usr/share/cargo/registry/
 /usr/share/cargo/registry
 
 %changelog
+* Tue Dec 22 2025 Matt Cafasso <cafassom@ctc.com> - 2.3.1.0-2
+- Updated for 2.3.1.0-2 production release for inline filter
 * Tue Oct 21 2025 Matt Cafasso <cafassom@ctc.com> - 2.3.1.0
 - Updated for 2.3.1.0 beta release for inline filter
 * Tue Jul 22 2025 Jeremy Snyder <snyderj@ctc.com> - 0.0.1
