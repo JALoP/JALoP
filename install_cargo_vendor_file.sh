@@ -34,7 +34,6 @@ fi
 
 echo "Begin installing JALoP cargo vendor files for RHEL ${OS_VER}...."
 sudo yum install -y rust cargo || logError "Failed to install rust and cargo."
-source .gitlab/ci/utils.sh
 
 rm -rf /usr/share/cargo/registry
 mkdir -p /usr/share/cargo/registry || logError "Failed to create /usr/share/cargo/registry"
