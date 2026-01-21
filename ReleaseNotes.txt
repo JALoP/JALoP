@@ -1,3 +1,10 @@
+Summary of release 2.3.1.0 changes (Fri Jan 30 2026) -
+    - Implemented SECCOMP filters to restrict system calls invoked by the Rust Inline Filter.
+    - Grouped/Categorized SECCOMP configuration settings (syscall lists) for RHEL 7/8/9 OS platforms in each application's configuration file (e.g., jald.cfg, jal_subscribe.cfg, local-store.cfg, jaldb-filter.toml).
+    - Refactored 'jald' publisher module into multiple more manageable modules.
+    - In file-system (fs) database configuration, "jal_subscribe" and "jal_sub_cpp" subscribers store each received record in a subdirectory named after the UUID of the received record. This allows efficient tracking of a record on the publisher and subscriber sides using the UUID.
+    - Updated man pages.
+
 Summary of release 2.3.1.0-beta changes (Fri Oct 31 2025) -
     - Added the new "jaldb_inline_filter" component developed in the Rust programming language. This is an inline filter process that shall perform syntactic and symantic validation of each message from the 'JALD' publisher to the JALDB database. The goal is to protect the JALDB database from a potentially compromised 'JALD' publisher that interacts with external entities. With this new inline filter process in place, the 'JALD' publisher no longer has direct Read/Write access to the JALDB database. Pre-built RPMs with Rust dependencies (crates) for RHEL 7/8/9 are included in <JALoP>/3rd-Party/rust/ within the repository. Details can be found in the README and JALoP User Guide.
 
