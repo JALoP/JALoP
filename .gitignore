@@ -9,8 +9,15 @@ debug/
 /cov
 /cov_integration
 testdb
-subdb
+subdb*
+test_logs
 *.log
+*.err
 nbproject
 *.sock
 *.out
+vendor-cargo/
+vendor-cargo-*.tar.gz
+.tmp-rust-rpm/
+test_logs
+
