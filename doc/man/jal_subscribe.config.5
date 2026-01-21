@@ -95,6 +95,29 @@ gnutls_certificate_verify_peers3. The options are:
 .B http_server_thread_pool_size
 Specify the size of the thread pool used by the http server.
 May not be applicable to all server implementations
+.TP
+.B seccomp
+This config section contains the configuration settings for seccomp.
+.SH "SECCOMP CONFIGURATION"
+There are separate configuration settings for syscalls to allow on different OS versions.
+.TP
+.B enable
+seccomp will restrict the process to the defined system calls.
+.TP
+.B debug
+Enable debugging messages for seccomp
+.TP
+.B version
+This sets what config section corresponding to OS version that will be used for the seccomp syscall allow list.
+.TP
+.B initial
+System calls allowed in the setup phase only.
+.TP
+.B both
+System calls allowed in all phases.
+.TP
+.B final
+System calls allowed in the setup phase and while the process is running.
 .SH EXAMPLES
 .nf
 # If true, utilize tls encryption and authentication
@@ -161,6 +184,31 @@ client_certificate_validation = "always";
 # Set the size of the thread pool
 # 9 is sufficient for 3 fully connected publishers to be handled concurrently, and is a safe starting point
 http_server_thread_pool_size = 9;
+
+# seccomp will restrict the jal-subscribe process to the defined system calls.
+# When the process is in the setup phase, at startup, it will be restricted to the
+# initial_seccomp_rules, both_seccomp_rules and final_seccomp_rules system call sets.
+# After the setup phase and before the process is doing its routine work, it will be
+# further restricted to only the both_seccomp_rules and final_seccomp_rules system call sets.
+seccomp:
+{
+    enable = true;
+    debug = false;
+    version = "rhel_8_9";
+    rhel_8_9:
+    {
+        initial = ["arch_prctl","bind","brk","execve","flock","fstatfs","getdents","getdents64","getpid","getsockname","getsockopt","getrlimit","getrusage","ioctl","listen","newfstatat","prctl","rseq","seccomp","select","set_tid_address","socket","statfs","sysinfo"]
+        both = ["access","clone","clone3","close","fcntl","fdatasync","fstat","futex","lseek","mkdir","mmap","mprotect","munmap","open","openat","poll","pread64","pwrite64","read","rename","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","stat","write"]
+        final = ["accept4","clock_gettime","clock_nanosleep","connect","exit","exit_group","ftruncate","getrandom","getpid","madvise","nanosleep","recvfrom","rt_sigreturn","sched_getaffinity","sched_yield","sendto","sendmsg","shutdown","sysinfo","unlink","writev"]
+    };
+    rhel_7:
+    {
+        initial = ["arch_prctl","bind","brk","execve","flock","fstatfs","getdents","getdents64","getpid","getsockname","getsockopt","getrlimit","getrusage","ioctl","listen","mremap","prctl","seccomp","select","set_tid_address","socket","statfs"];
+        both = ["access","clone","close","fcntl","fdatasync","fstat","futex","lseek","mkdir","mmap","mprotect","munmap","open","openat","poll","pread64","pwrite64","read","rename","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","stat","write"];
+        final = ["accept4","clock_gettime","connect","exit","exit_group","ftruncate","getrandom","getpid","madvise","nanosleep","recvfrom","rt_sigreturn","sched_yield","sendto","sendmsg","shutdown","unlink","writev"];
+    };
+};
+
 .SH "SEE ALSO"
 .BR jal_subscribe (8),
 .BR openssl (1)

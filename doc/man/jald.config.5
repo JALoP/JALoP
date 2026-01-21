@@ -77,23 +77,11 @@ Log directory of jald when daemonized.
 A list of supported digest algorithms. These algorithms should be ordered by preference in a single double-quoted string with a space separating the algorithms.
 Valid values are "sha256", "sha384", and "sha512"
 .TP
-.B enable_seccomp
-seccomp will restrict the process to the defined system calls.
-.TP
-.B seccomp_debug
-Enable debugging messages for seccomp
-.TP
-.B initial_seccomp_rules
-System calls allowed in the setup phase only.
-.TP
-.B both_seccomp_rules
-System calls allowed in all phases.
-.TP
-.B final_seccomp_rules
-System calls allowed in the setup phase and while the process is running.
-.TP
 .B peers
 A list of peer configurations indicating which operations and JAL record types specific remotes are allowed to perform.
+.TP
+.B seccomp
+This config section contains the configuration settings for seccomp.
 .SH "PEER CONFIGURATIONS"
 Each peer configuration is used to identify the roles (publisher or subscriber) and JALoP data types that one or more remote peers are allowed to perform and exchange.
 Without any peer configurations,
@@ -128,6 +116,26 @@ Peer configurations are additive.
 That is to say,
 if there are more than one peer configurations that reference a particular host,
 the set of permissions is the union of all permissions granted by all configurations.
+.SH "SECCOMP CONFIGURATION"
+There are separate configuration settings for syscalls to allow on different OS versions.
+.TP
+.B enable
+seccomp will restrict the process to the defined system calls.
+.TP
+.B debug
+Enable debugging messages for seccomp
+.TP
+.B version
+This sets what config section corresponding to OS version that will be used for the seccomp syscall allow list.
+.TP
+.B initial
+System calls allowed in the setup phase only.
+.TP
+.B both
+System calls allowed in all phases.
+.TP
+.B final
+System calls allowed in the setup phase and while the process is running.
 .SH EXAMPLES
 .nf
 # the path to the PEM formatted private key, used for TLS negotiation
@@ -151,20 +159,41 @@ schemas_root = "/usr/share/jalop/schemas/";
 # Valid values are "sha256", "sha384", and "sha512"
 digest_algorithms = "sha256";
 
-# Enable application of seccomp rules
-enable_seccomp = false;
+# seccomp will restrict the process to the defined system calls.
+# When the process is in the setup phase, at startup, it will be restricted to the
+# initial_seccomp_rules, both_seccomp_rules and final_seccomp_rules system call sets. After the setup phase and before the process
+# is doing its routine work, it will be further restricted to only the both_seccomp_rules and final_seccomp_rules system call set.
 
-# Enable debugging messages for seccomp
-seccomp_debug = false;
-
-# Array of seccomp rules active during the setup phase of jald
-initial_seccomp_rules = ["prctl","access","arch_prctl","execve","getcwd","getrlimit","ioctl","lstat","set_tid_address","seccomp","statfs"]
-
-# Array of seccomp rules active after the setup phase but before the main loop of jald
-both_seccomp_rules = ["brk","close","fstat","lseek","mmap","mprotect","munmap","open","read","rt_sigaction","rt_sigprocmask","set_robust_list","stat","write"]
-
-# Array of seccomp rules active during the main loop of jald
-final_seccomp_rules = ["flock","setsockopt","getpid","clone","connect","exit","exit_group","fcntl","fdatasync","ftruncate","futex","getdents","getpeername","getsockname","getsockopt","gettid","madvise","nanosleep","openat","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_yield","sendto","socket"]
+seccomp:
+{
+    enable = true;
+    debug = false;
+    version = "rhel_8_9";
+    rhel_8_9:
+    {
+        initial = ["arch_prctl","bind","execve","faccessat2","fstatfs","getcwd","getpid","getrandom","ioctl","listen","lstat","prctl","pread64","prlimit64","readlink","seccomp","set_tid_address","statfs","unlink"]
+		both = ["access","brk","clock_nanosleep","clone","clone3","close","connect","fstat","futex","getpid","getrandom","lseek","mmap","mprotect","munmap","nanosleep","newfstatat","open","openat","poll","read","rseq","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"]
+		final = ["accept","exit", "exit_group","fcntl","getdents","getdents64","getpeername","getsockname","getsockopt","gettid","getuid","madvise","mkdir","recvfrom","recvmsg","rmdir","rt_sigreturn","sendmsg","sendto","socketpair","sysinfo","uname"]
+	};
+    rhel_7:
+    {
+       	initial = ["arch_prctl","bind","execve","fstatfs","getcwd","getpid","getrandom","ioctl","listen","lstat","prctl","pread64","prlimit64","readlink","seccomp","set_tid_address","statfs","unlink"]
+		both = ["access","brk","clock_nanosleep","clone","close","connect","fstat","futex","getpid","getrandom","lseek","mmap","mprotect","munmap","nanosleep","newfstatat","open","openat","poll","read","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"]
+		final = ["accept","exit", "exit_group","fcntl","getdents","getdents64","getpeername","getsockname","getsockopt","gettid","getuid","madvise","mkdir","recvfrom","recvmsg","rmdir","rt_sigreturn","sendmsg","sendto","socketpair","sysinfo","uname"]
+	};
+	rhel_8_9_no_filter:
+    {
+        initial = ["arch_prctl","execve","faccessat2","getcwd","getrlimit","ioctl","lstat","prctl","readlink","seccomp","set_tid_address","statfs"]
+		both = ["access","brk","close","fstat","fstatfs","getdents64","lseek","mmap","mprotect","munmap","newfstatat","open","read","rt_sigaction","rt_sigprocmask","set_robust_list","stat","write"]
+		final = ["clock_nanosleep","clone","clone3","connect","exit","exit_group","fcntl","fdatasync","flock","ftruncate","futex","getdents","getpeername","getpid","getrandom","getsockname","getsockopt","gettid","getuid","madvise","mkdir","nanosleep","openat","poll","pread64","pselect6","pwrite64","recvfrom","rename","rmdir","rseq","select","setsockopt","rt_sigreturn","pselect6","sched_yield","sendto","socket","socketpair","sysinfo","uname","writev"]
+	};
+	rhel_7_no_filter:
+    {
+        initial = ["arch_prctl","execve","getcwd","getrlimit","ioctl","lstat","prctl","set_tid_address","seccomp","statfs"]
+		both = ["access","brk","close","fstat","fstatfs","lseek","mmap","mprotect","munmap","open","read","rt_sigaction","rt_sigprocmask","set_robust_list","stat","write"]
+		final = ["clone","connect","exit","exit_group","fcntl","fdatasync","flock","ftruncate","futex","getpid","getrandom","getdents","getpeername","getsockname","getsockopt","gettid","getuid","madvise","mkdir","nanosleep","openat","poll","pread64","pwrite64","recvfrom","rename","rmdir","rt_sigreturn","sched_yield","select","sendto","setsockopt","socket","sysinfo","uname","writev"]
+	};
+};
 
 # List of peer configurations. This configuration indicates that the hosts with
 # the IP addresses 127.0.0.1 and 192.168.1.5 are allowed to subscribe to

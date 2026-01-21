@@ -112,20 +112,29 @@ File storing PID of jal-local-store when daemonized.
 .B log_dir
 Log directory of jal-local-store when daemonized.
 .TP
-.B enable_seccomp
+.B seccomp
+This config section contains the configuration settings for seccomp.
+.SH "SECCOMP CONFIGURATION"
+There are separate configuration settings for syscalls to allow on different OS versions.
+.TP
+.B enable
 seccomp will restrict the process to the defined system calls.
 .TP
-.B restrict_seccomp_F_SETFL
-This rule will restrict the process from setting flags on a file
+.B debug
+Enable debugging messages for seccomp
 .TP
-.B initial_seccomp_rules
+.B version
+This sets what config section corresponding to OS version that will be used for the seccomp syscall allow list.
+.TP
+.B initial
 System calls allowed in the setup phase only.
 .TP
-.B both_seccomp_rules
+.B both
 System calls allowed in all phases.
 .TP
-.B final_seccomp_rules
+.B final
 System calls allowed in the setup phase and while the process is running.
+
 .SH EXAMPLES
 .nf
 # Set the PEM key to the file at /etc/jalop/local_store/key.pem
@@ -158,3 +167,27 @@ socket = "/var/run/jalop/jalop.sock";
 journal_record_size_limit = -1L
 audit_record_size_limit = 200000000L
 log_record_size_limit = 200000000L
+
+# seccomp will restrict the jal-local-store process to the defined system calls.
+# When the process is in the setup phase, at startup, it will be restricted to the
+# initial_seccomp_rules and final_seccomp_rules system call sets. After the setup phase and before the process
+# is doing its routine work, it will be further restricted to only the final_seccomp_rules system call set.
+
+seccomp:
+{
+    enable = true;
+    debug = false;
+    version = "rhel_8_9";
+    rhel_8_9:
+    {
+        initial = ["arch_prctl","bind","capget","capset","chdir","chmod","chown","dup2","execve","flock","fstatfs","getcwd","getdents","getdents64","geteuid","getgid","getrlimit","ioctl","listen","lstat","prctl","prlimit64","readlink","rename","seccomp","select","set_tid_address","setsid","statfs","sysinfo"];
+        both = ["brk","ftruncate","newfstatat","poll","rt_sigaction","rt_sigprocmask"];
+        final = ["accept","access","clone3","clone","close","connect","exit","exit_group","faccessat2","fcntl","fdatasync","fstat","futex","getpid","getppid","getrandom","getsockopt","gettid","getuid","kill","lseek","madvise","mkdir","mmap","mprotect","munmap","open","openat","pread64","pwrite64","read","recvmsg","rseq","rt_sigreturn","sched_yield","sendto","set_robust_list","socket","stat","tgkill","unlink","write","writev"];
+    };
+    rhel_7:
+    {
+        initial = ["arch_prctl","bind","capget","capset","chdir","chmod","chown","dup2","execve","flock","fstatfs","getcwd","getdents","getdents64","geteuid","getgid","getrlimit","ioctl","listen","lstat","prctl","prlimit64","readlink","rename","seccomp","select","set_tid_address","setsid","statfs","sysinfo"]
+        both = ["brk","newfstatat","poll","rt_sigaction","rt_sigprocmask"]
+        final = ["accept","access","clone","close","connect","exit","exit_group","fcntl","fdatasync","ftruncate","fstat","futex","getpid","getppid","getrandom","getsockopt","gettid","getuid","kill","lseek","madvise","mkdir","mmap","mprotect","munmap","open","openat","pread64","pwrite64","read","recvmsg","rt_sigreturn","sched_yield","sendto","set_robust_list","socket","stat","tgkill","unlink","write","writev"]
+    };
+};
