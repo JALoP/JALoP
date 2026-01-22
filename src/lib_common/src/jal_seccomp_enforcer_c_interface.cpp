@@ -27,8 +27,8 @@
 #include <exception>
 #include <string>
 
-#include <jal_seccomp_enforcer.h>
-#include <jal_seccomp_enforcer.hpp>
+#include <jalop/jal_seccomp_enforcer.h>
+#include <jalop/jal_seccomp_enforcer.hpp>
 
 struct jal_seccomp_enforcer_t* jal_seccomp_enforcer_create(
 	char* configFile)
@@ -43,6 +43,49 @@ struct jal_seccomp_enforcer_t* jal_seccomp_enforcer_create(
 	try
 	{
 		enforcer = new JalSeccompEnforcer(std::string(configFile));
+	}
+	catch(std::exception& e)
+	{
+		fprintf(stderr,
+			"Error: Failed to create jal_seccomp_enforcer with reason: %s\n",
+			e.what());
+		return NULL;
+	}
+	return reinterpret_cast<struct jal_seccomp_enforcer_t*>(enforcer);
+}
+
+struct jal_seccomp_enforcer_t* jal_seccomp_enforcer_create_from_list(
+	char** initial_seccomp_rules, int initial_seccomp_rules_len, char** final_seccomp_rules,
+	int final_seccomp_rules_len, char** both_seccomp_rules, int both_seccomp_rules_len,
+	bool enableSeccomp, bool debug)
+{
+
+	JalSeccompEnforcer* enforcer;
+	std::vector<std::string> initial_rules;
+	std::vector<std::string> final_rules;
+	std::vector<std::string> both_rules;
+
+	//convert to vector
+	for (int i = 0; i < initial_seccomp_rules_len; i++)
+	{
+		initial_rules.push_back(initial_seccomp_rules[i]);
+	}
+
+	//convert to vector
+	for (int i = 0; i < final_seccomp_rules_len; i++)
+	{
+		final_rules.push_back(final_seccomp_rules[i]);
+	}
+
+	//convert to vector
+	for (int i = 0; i < both_seccomp_rules_len; i++)
+	{
+		both_rules.push_back(both_seccomp_rules[i]);
+	}
+
+	try
+	{
+		enforcer = new JalSeccompEnforcer(initial_rules, final_rules, both_rules, enableSeccomp, debug);
 	}
 	catch(std::exception& e)
 	{
@@ -120,7 +163,7 @@ int jal_seccomp_enforcer_apply_final(
 	catch(std::exception &e)
 	{
 		fprintf(stderr,
-			"Error: Unable to apply initial seccomp rules with reason: %s\n",
+			"Error: Unable to apply final seccomp rules with reason: %s\n",
 			e.what());
 		return -1;
 	}

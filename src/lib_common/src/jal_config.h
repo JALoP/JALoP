@@ -2,7 +2,7 @@
  * @file
  *
  * @brief This file contains utility functions for reading config
- * files.
+ * files with a C compliant interface.
  *
  * ### LICENSE
  *
