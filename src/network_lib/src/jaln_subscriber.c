@@ -101,6 +101,8 @@ void jaln_subscriber_on_connection_close(__attribute__((unused)) VortexConnectio
 
 	jaln_context *ctx = jal_conn->jaln_ctx;
 
+	jaln_disconnect(jal_conn);
+
 	vortex_mutex_lock(&ctx->lock);
 	if (jaln_connection_callbacks_is_valid(ctx->conn_callbacks)) {
 		ctx->conn_callbacks->on_connection_close(jal_conn, ctx->user_data);
@@ -264,30 +266,28 @@ void jaln_subscriber_unexpected_frame_handler(
 }
 
 void jaln_subscriber_record_frame_handler(jaln_session *session,
-		VortexChannel *chan,
+		__attribute__((unused)) VortexChannel *chan,
 		__attribute__((unused)) VortexConnection *conn,
 		VortexFrame *frame)
 {
 	if (!session || !session->sub_data || !session->sub_data->sm ||
 			!session->sub_data->sm->curr_state ||
 			!session->sub_data->sm->curr_state->frame_handler) {
-		goto err_out;
+		return;
+	}
+
+	//If session is bad or closing, stop any record processing
+	if (jaln_session_is_ok(session) != JAL_OK || jaln_session_is_closing(session))
+	{
+		return;
 	}
 
 	VortexFrameType frame_type = vortex_frame_get_type(frame);
 	if (frame_type != VORTEX_FRAME_TYPE_ANS) {
-		goto err_out;
+		return;
 	}
 	int flag_more = vortex_frame_get_more_flag(frame);
-	int ret = session->sub_data->sm->curr_state->frame_handler(session, frame, 0, flag_more);
-	if (!ret) {
-		goto err_out;
-	}
-	return;
-
-err_out:
-	vortex_channel_close_full(chan, jaln_session_notify_close, session);
-	return;
+	session->sub_data->sm->curr_state->frame_handler(session, frame, 0, flag_more);
 }
 
 enum jal_status jaln_configure_sub_session(VortexChannel *chan, jaln_session *session)
@@ -303,6 +303,7 @@ enum jal_status jaln_configure_sub_session_no_lock(VortexChannel *chan, jaln_ses
 	if (!chan || !session) {
 		return JAL_E_INVAL;
 	}
+
 	session->rec_chan = chan;
 	session->rec_chan_num = vortex_channel_get_number(chan);
 	session->role = JALN_ROLE_SUBSCRIBER;

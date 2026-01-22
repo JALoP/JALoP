@@ -131,7 +131,7 @@ enum jal_status my_on_subscribe(
 	return JAL_OK;
 }
 
-enum jal_status journal_get_bytes(const uint64_t offset,
+enum jal_status get_bytes(const uint64_t offset,
 			uint8_t * const buffer,
 			uint64_t *size,
 			__attribute__((unused)) void *feeder_data)

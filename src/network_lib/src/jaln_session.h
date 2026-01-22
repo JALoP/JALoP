@@ -99,7 +99,7 @@ struct jaln_sub_data {
  * Data related to a publisher session
  */
 struct jaln_pub_data {
-	struct jaln_payload_feeder journal_feeder;  //!< the jaln_payload_feeder for sending a journal record.
+	struct jaln_payload_feeder feeder;  //!< the jaln_payload_feeder for sending a journal record.
 	int vortex_feeder_sz;                       //!< The size (as reported to the Vortex engine) of this message.
 	int msg_no;                                 //!< The message number we are replying to
 

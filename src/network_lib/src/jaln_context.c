@@ -114,10 +114,13 @@ enum jal_status jaln_context_destroy(jaln_context **jaln_ctx)
 	//free((void *)(*jaln_ctx)->user_data); //this causes issues "bad pointer"
 
 	vortex_mutex_destroy(&(*jaln_ctx)->lock);
+	
 	if ((*jaln_ctx)->vortex_ctx) {	
-		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, true); 
-		//using true will also do vortex_ctx_free() 
-		//vortex_ctx_free((*jaln_ctx)->vortex_ctx);
+		fprintf(stderr, "EXITING.. \n");
+		vortex_exit_ctx((*jaln_ctx)->vortex_ctx, false); 
+		//using true will also do 
+		vortex_ctx_free((*jaln_ctx)->vortex_ctx);
+		fprintf(stderr, "EXITING DONE\n");
 	}
 	
 	free(*jaln_ctx);
