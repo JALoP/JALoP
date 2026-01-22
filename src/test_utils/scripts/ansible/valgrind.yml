@@ -24,7 +24,6 @@
       killall -9 jal-local-store || true
       killall -9 jal_subscribe || true
       killall -9 jaldb_inline_filter || true
-      killall -9 jald_marker || true
       killall -9 jald || true
       killall -9 memcheck-amd64- || true
       #rm -f {{cwd}}/jald_record_socket
@@ -32,35 +31,35 @@
       rm -f {{cwd}}/*.sock
       rm -fr {{log_dir}}
       mkdir -p {{valgrind_out_dir}}/tool_output
-  
+
   - name: clear local store database
     file:
         path: '{{cwd}}/testdb'
         state: absent
-  
+
   - name: clear subscriber database
     file:
         path: '{{cwd}}/subdb'
         state: absent
-  
+
   - name: make local store database directory
     file:
         path: '{{cwd}}/testdb'
         state: directory
-  
+
   - name: make subscriber database directory
     file:
         path: '{{cwd}}/subdb'
         state: directory
-  
+
   - name: copy DB_CONFIG 1
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb'
-  
+
   - name: copy DB_CONFIG 2
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/testdb'
@@ -68,7 +67,7 @@
   - name: pre-sleep
     shell: |
       sleep {{ pre_sleep }}
-  
+
   - name: start local store
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -77,16 +76,6 @@
       umask 027
       valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-localstore.xml ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
       #./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
-
-  - name: start CPP marker
-    environment:
-      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
-    shell: |
-      cd '{{cwd}}'
-      valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-cpp-filter.xml ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
-      #gdb -batch -ex "run" -ex "bt" --args ./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>./jald_marker.err 1>./jald_marker.out &
-      #./{{mode}}/bin/jald_marker -c ./test-input/jald_marker.cfg 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
-    when: marker == 'cpp'
 
   - name: start Rust marker ({{marker_bin}}/jaldb_inline_filter)
     environment:
@@ -127,7 +116,7 @@
         cmd: 'valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-producer-log.xml ./{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
         #cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
     when: '"l" in types'
-  
+
   - name: send journals
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -193,7 +182,7 @@
         cmd: valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-jaldb_tool.xml ./{{mode}}/bin/jaldb_tool -h testdb
     register: jaldb_tool_testdb_output
     when: tear_down | bool
-    
+
   - name: jaldb_tool subdb
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -202,7 +191,7 @@
         cmd: ./{{mode}}/bin/jaldb_tool -h subdb
     register: jaldb_tool_subdb_output
     when: tear_down | bool
-        
+
   - name: jaldb_tool output
     shell: |
       cd '{{cwd}}'
@@ -217,7 +206,7 @@
       cat out_tail | grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
     register: jaldb_tail_output
     when: tear_down | bool
-    
+
   - name: jal_dump
     shell: |
       cd '{{cwd}}'
@@ -225,7 +214,7 @@
       valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-jal_dump.xml ./{{mode}}/bin/jal_dump -h testdb/ -u '{{ jaldb_tail_output.stdout }}' -d m -t j
     register: jal_dump_output
     when: tear_down | bool
-  
+
   - name: jal_dump output
     shell: |
       cd '{{cwd}}'
@@ -245,13 +234,12 @@
       killall jal-local-store || true
       killall jal_subscribe || true
       killall jaldb_inline_filter || true
-      killall jald_marker || true
       killall jald || true
       sleep 20
       killall memcheck-amd64- || true
       sleep 20
       rm -f {{cwd}}/jald_record_socket_*
-      rm -f {{cwd}}/jald_filter_socket
+      rm -f {{cwd}}/jald_filter_socket*
       rm -f {{cwd}}/*.sock
     when: tear_down | bool
 
@@ -272,9 +260,9 @@
     shell: |
       cd '{{cwd}}'
       xsltproc '{{cwd}}/src/test_utils/scripts/valgrind/all-valgrind-xml-html.xslt' '{{valgrind_out_dir}}/tool_output/valgrind_errors_v1.xml' 1> '{{valgrind_out_dir}}/tool_output/valgrind_errors_v1.html'
-     
+
   - name: build cov report
-    shell: |      
+    shell: |
       cd '{{cwd}}'
       mkdir cov_integration
       rm -fr cov_integration/*
