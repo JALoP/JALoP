@@ -213,6 +213,11 @@ out:
 	return ret;
 }
 
+std::string getUidFromNonce(std::string nonce){
+	// NONCE 515e1854-705f-4b67-af48-0aa5fca438e1_2025-11-21T15:37:48.934622_865230_3896505920
+	// UUID  515e1854-705f-4b67-af48-0aa5fca438e1 (36 characters)
+	return nonce.substr(0,36);
+}
 int jsub_write_journal(
 		jaldb_context *db_ctx,
 		char **db_payload_path,
@@ -236,12 +241,15 @@ int jsub_write_journal(
 	if (!*db_payload_path && (-1 == *db_payload_fd)) {
 		// Path is NULL and FileDescriptor is invalid,
 		//	get a file from the db layer to write the
-		//	journal data to.
+		//	journal data to.	
+		
+		std::string suuid = getUidFromNonce(nonce).c_str();
 		uuid_t uuid;
-		uuid_generate(uuid);
-		//TODO: This needs to be updated to parse the uuid from the sys metadata
+		uuid_parse(suuid.c_str(), uuid);
+		
 		ret = jaldb_create_file(db_ctx->journal_root, db_payload_path, db_payload_fd,
 				uuid, JALDB_RTYPE_JOURNAL, JALDB_DTYPE_PAYLOAD);
+		
 		if (ret != JALDB_OK) {
 			if (debug) {
 				DEBUG_LOG("Could not create a file to store journal data\n");

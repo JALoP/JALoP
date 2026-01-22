@@ -45,7 +45,7 @@
 #include "jsub_db_layer.hpp"
 #include "jsub_callbacks.hpp"
 
-#include "jal_seccomp_enforcer.h"
+#include <jalop/jal_seccomp_enforcer.h>
 #include "jal_subscribe_config_context.h"
 
 #define DEBUG_MODE_ON 1
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 	pthread_t thread_timer, thread_subscriber;
 	int rc_timer, rc_subscriber;
 	config_t config;
-	jsub_is_conn_closed = false; // Externed in jsub_callbacks
+	jsub_is_conn_closed = true; // Externed in jsub_callbacks
 	struct jal_seccomp_enforcer_t* seccomp_enforcer = NULL;
 
 	rc = setup_signals();
@@ -879,9 +879,11 @@ void *subscriber_do_work(void *ptr)
 		if(global_quit==true){
 			timer_keep_going = false;
 			sleep(2);
-			err = jaln_shutdown(conn);
-			if(JAL_OK != err){
-				DEBUG_LOG("Subscriber failed to shutdown network connection!");
+			if(conn!=NULL){
+				err = jaln_shutdown(conn);
+				if(JAL_OK != err){
+					DEBUG_LOG("Subscriber failed to shutdown network connection!");
+				}
 			}
 		}
 		free(digest_list);
