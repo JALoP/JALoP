@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides the definition of an [Actor] and messaging [Protocol].
 use crate::backend::{MailboxTx, MessageEnvelope};
 use crate::path::ActorPath;
 use crate::system::ActorContext;

@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides a safe interface to the underlying JALoP database context.
 use crate as ffi;
 use crate::error::Error;
 use crate::error::Error::*;
@@ -63,24 +64,22 @@ impl Context {
         let mut db_flags = DbFlags::Perf2;
         let mut jdb_config_ptr: *mut ffi::jaldb_config = std::ptr::null_mut();
 
-        let result = unsafe { ffi::get_jaldb_config(db_home.as_ptr(), &mut jdb_config_ptr)};
-        if result != ffi::jaldb_config_status_JALDB_CONFIG_OK && result != ffi::jaldb_config_status_JALDB_CONFIG_E_NOTFOUND {
+        let result = unsafe { ffi::get_jaldb_config(db_home.as_ptr(), &mut jdb_config_ptr) };
+        if result != ffi::jaldb_config_status_JALDB_CONFIG_OK
+            && result != ffi::jaldb_config_status_JALDB_CONFIG_E_NOTFOUND
+        {
             return Err(ConfigLoadFailed);
         }
 
-        if result == ffi::jaldb_config_status_JALDB_CONFIG_OK
-        {
-            unsafe
-            {
+        if result == ffi::jaldb_config_status_JALDB_CONFIG_OK {
+            unsafe {
                 //Only override map size if present in config
-                if (*jdb_config_ptr).map_size != 0
-                {
+                if (*jdb_config_ptr).map_size != 0 {
                     map_size = (*jdb_config_ptr).map_size;
                 }
 
                 //Only override database option if present in config
-                if !(*jdb_config_ptr).database_option.is_null()
-                {
+                if !(*jdb_config_ptr).database_option.is_null() {
                     db_flags = DbFlags::from((*jdb_config_ptr).jdb_flags);
                 }
 
@@ -94,7 +93,14 @@ impl Context {
         log::info!("Performance Level: {:?}", db_flags);
         log::info!("Map Size: {}", map_size);
 
-        let ec = unsafe { ffi::jaldb_context_init(self.ctx.as_ptr(), db_home.as_ptr(), db_flags.into(), map_size as std::os::raw::c_int) };
+        let ec = unsafe {
+            ffi::jaldb_context_init(
+                self.ctx.as_ptr(),
+                db_home.as_ptr(),
+                db_flags.into(),
+                map_size as std::os::raw::c_int,
+            )
+        };
         match ec {
             ffi::jaldb_status_JALDB_OK => Ok(self),
             ec => Err(InitContextFailed(ec)),

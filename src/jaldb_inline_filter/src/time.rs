@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides a safe timestamp interface to the underlying JALoP timestamp
 use crate::Error;
 use anyhow::bail;
 use std::fmt::{Display, Formatter};

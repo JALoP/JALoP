@@ -15,8 +15,10 @@
  * limitations under the License.
 */
 
+//! This module defines errors that can occur when interacting with the JALoP native interface.
 use thiserror::Error;
 
+/// An error that can occur when interacting with the JALoP native interface.
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
     // db context related

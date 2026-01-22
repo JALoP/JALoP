@@ -20,3 +20,4 @@
 #include "jaldb_segment.h"
 #include "jal_ts_utils.h"
 #include "jaldb_config.h"
+#include "jal_seccomp_enforcer.h"

@@ -18,7 +18,7 @@
 use core::time::Duration;
 
 use jalop::db::Pool;
-use jalop_sys::{flags::DbFlags, RecordType};
+use jalop_sys::RecordType;
 use tokio::{
     test,
     time::{interval, sleep},

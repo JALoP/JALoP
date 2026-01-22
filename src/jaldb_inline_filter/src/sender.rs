@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provide actors that receive [RecordData] and publish to a single output [UnixStream].
 use crate::queue::BackPressureQueue;
 use crate::subscriber::TokenId;
 use async_trait::async_trait;
@@ -30,7 +31,7 @@ use std::os::unix::net::UnixStream;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 
-/// An [Actor] that owns a [UnixStream] that sends records to JALoP.
+/// An [Actor] that supervises the sending of [RecordData] across a single [UnixStream].
 pub struct SenderActor {
     rt: RecordType,
     bpq: Arc<BackPressureQueue<TokenId>>,
@@ -38,7 +39,7 @@ pub struct SenderActor {
 }
 
 impl SenderActor {
-    /// Create a new sender for the [RecordType] using the [UnixStream].
+    /// Create a new sender supervisor for the [RecordType] using the [UnixStream].
     /// The sender will backpressure when the specified capacity is met on the socket.
     /// Capacity is measured in number of records on the socket, not in total bytes.
     pub fn new(rt: RecordType, stream: UnixStream, capacity: usize) -> Self {
@@ -50,6 +51,7 @@ impl SenderActor {
     }
 }
 
+/// Behavior that maps the transition of the supervisor starting to being ready.
 #[derive(Default)]
 pub enum SenderBehavior {
     #[default]
@@ -57,6 +59,7 @@ pub enum SenderBehavior {
     Initialized(ActorRef<SendWorker>),
 }
 
+/// Implement [Actor] for the [SenderActor]
 #[async_trait]
 impl Actor for SenderActor {
     type Behavior = SenderBehavior;
@@ -77,6 +80,7 @@ impl Actor for SenderActor {
     }
 }
 
+/// A [Protocol] for messaging the [Sender] actor.
 #[derive(Clone)]
 pub enum SenderMsg {
     Send(TokenId, RecordData),
@@ -85,22 +89,32 @@ pub enum SenderMsg {
     EvictAll(TokenId),
 }
 
+/// Tx notification that a message was sent to the socket
 pub type SendNotify = mpsc::Sender<SendResp>;
+
+/// Rx notification that a message was sent to the socket
 pub type SendReceipt = mpsc::Receiver<SendResp>;
+
+/// Tx notification that a message was accepted by the sender, but not yet sent to the socket
 pub type AcceptedNotify = mpsc::Sender<()>;
+
+/// Rx notification that a message was accepted by the sender, but not yet sent to the socket
 pub type AcceptedReceipt = mpsc::Receiver<()>;
 
+/// Responses possible from the [SenderMsg] [Protocol]
 pub enum SendResp {
     Pending(AcceptedReceipt, SendReceipt),
     Success,
     Failure(String),
 }
 
+/// Implement [SenderMsg] as an actor messaging [Protocol]
 #[async_trait]
 impl Protocol for SenderMsg {
     type Response = Result<SendResp, ActorError>;
 }
 
+/// Implement [Receiver] of the [SenderMsg] [Protocol] for the [SenderActor] actor
 #[async_trait]
 impl Receiver<SenderMsg> for SenderActor {
     async fn receive(
@@ -141,6 +155,7 @@ impl Receiver<SenderMsg> for SenderActor {
     }
 }
 
+/// A [Protocol] for messaging the [SendWorker] actor.
 #[derive(Clone)]
 struct WorkerMsg {
     id: TokenId,
@@ -160,21 +175,25 @@ impl WorkerMsg {
     }
 }
 
+/// Implement [Worker] as an actor messaging [Protocol]
 impl Protocol for WorkerMsg {
     type Response = Result<(), ActorError>;
 }
 
+/// A child of the [SenderActor], responsible for putting bytes into the [UnixStream]
 pub struct SendWorker {
     rt: RecordType,
     bpq: Arc<BackPressureQueue<TokenId>>,
     stream: Arc<UnixStream>,
 }
 
+/// Implement [Actor] for the [SendWorker]
 #[async_trait]
 impl Actor for SendWorker {
     type Behavior = ();
 }
 
+/// Implement [Receiver] of the [WorkerMsg] [Protocol] for the [SendWorker] actor
 #[async_trait]
 impl Receiver<WorkerMsg> for SendWorker {
     async fn receive(&mut self, msg: WorkerMsg, _ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {

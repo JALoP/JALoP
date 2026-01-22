@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides the [ActorSystem] and related [ActorContext] functionality.
 use crate::actor::{Actor, ActorRef};
 use crate::backend::ActorExecutor;
 use crate::path::ActorPath;

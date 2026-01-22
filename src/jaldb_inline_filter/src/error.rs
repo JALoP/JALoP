@@ -15,9 +15,11 @@
  * limitations under the License.
 */
 
+//! This module defines errors that can occur in inline filter application.
 use jalop_actors::ActorError;
 use thiserror::Error;
 
+/// An error that can occur in the JALoP Inline Filter
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
     // db context related

@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides database configuration flags for the underlying JALoP database.
 use crate as jalop_sys;
 use std::str::FromStr;
 
@@ -49,7 +50,7 @@ impl From<jalop_sys::jaldb_flags> for DbFlags {
             jalop_sys::jaldb_flags_JDB_LMDB_PERFORMANCE_LEVEL1 => Perf1,
             jalop_sys::jaldb_flags_JDB_LMDB_PERFORMANCE_LEVEL2 => Perf2,
             jalop_sys::jaldb_flags_JDB_LMDB_PERFORMANCE_LEVEL3 => Perf3,
-            _=> Perf2,
+            _ => Perf2,
         }
     }
 }
