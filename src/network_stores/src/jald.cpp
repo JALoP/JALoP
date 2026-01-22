@@ -562,6 +562,11 @@ enum jal_status pub_send_records_feeder(
 			goto out;
 		}
 
+		// Inside the jaln_send call, the record will be cleaned up regardless of the
+		// success/failure status.
+		// For the filter case, we need to report the network nonce in the RecordResponse
+		// Make a copy of the network nonce while it is available
+		std::string nonce_copy = std::string(ctxPtr->rec->network_nonce);
 		ret = jaln_send(sess, ctxPtr->rec);
 
 		// If we're using the filter, we need to send recordError if the send
@@ -572,7 +577,7 @@ enum jal_status pub_send_records_feeder(
 			args.mType = FilterMessageType::RecordError;
 			args.subscriberToken = subscriber_token;
 			args.type = db_type;
-			args.recordNonce = ctxPtr->rec->network_nonce;
+			args.recordNonce = nonce_copy.c_str();
 
 			// Create and send the message
 			pthread_mutex_lock(&request_socket_lock);
