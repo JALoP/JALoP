@@ -70,7 +70,7 @@
 
 #include "jal_fs_utils.h"
 #include "jal_linux_cap.h"
-#include "jal_seccomp_enforcer.h"
+#include <jalop/jal_seccomp_enforcer.h>
 #include "jalls_config.h"
 #include "jal_config.h"
 #include "jaldb_config.h"
