@@ -86,19 +86,27 @@ Specify the minimum size payload for which a journal resume will be attempted
 0 means always attempt a resume (default)
 > 0 means attempt a resume if the size of already received data is greater than this value
 .TP
-.B enable_seccomp
-If true seccomp will restrict the process to the defined system calls.
+.B seccomp
+This config section contains the configuration settings for seccomp.
+.SH "SECCOMP CONFIGURATION"
+There are separate configuration settings for syscalls to allow on different OS versions.
 .TP
-.B seccomp_debug
-If true diagnostic information about seccomp policies will be printed to the console as they are interpreted and applied.
+.B enable
+seccomp will restrict the process to the defined system calls.
 .TP
-.B initial_seccomp_rules
+.B debug
+Enable debugging messages for seccomp
+.TP
+.B version
+This sets what config section corresponding to OS version that will be used for the seccomp syscall allow list.
+.TP
+.B initial
 System calls allowed in the setup phase only.
 .TP
-.B both_seccomp_rules
+.B both
 System calls allowed in all phases.
 .TP
-.B final_seccomp_rules
+.B final
 System calls allowed in the setup phase and while the process is running.
 .SH EXAMPLES
 .nf
@@ -160,17 +168,24 @@ journal_resume_threshold_size = 1048576L; #1024*1024 = 1MB (1,048,576 bytes)
 # initial_seccomp_rules, both_seccomp_rules and final_seccomp_rules system call sets. After the setup phase and before the process
 # is doing its routine work, it will be further restricted to only the both_seccomp_rules and final_seccomp_rules system call set.
 #
-enable_seccomp = true;
-seccomp_debug = false;
-# Use these rules for RHEL8/9
-initial_seccomp_rules = ["access","arch_prctl","bind","brk","execve","faccessat2","flock","fstat","fstatfs","getcwd","lstat","prctl","recvmsg","readlink","rt_sigprocmask","seccomp","set_tid_address"]
-both_seccomp_rules = ["clone","clone3","close","fcntl","getpid","ioctl","lseek","mmap","mprotect","munmap","newfstatat","open","openat","prlimit64","read","rseq","rt_sigaction","set_robust_list","stat","write"]
-final_seccomp_rules = ["clock_nanosleep","connect","epoll_create","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","fsync","ftruncate","futex","getdents","getdents64","getpeername","getppid","getrandom","getrlimit","gettid","getuid","getsockname","madvise","mkdir","nanosleep","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","setsockopt","shutdown","socket","sysinfo"]
-# RHEL7 doesn't recognize some of the syscalls that are invoked on RHEL9 so it is
-# necessary to use a variant set of syscalls
-#initial_seccomp_rules = ["access","arch_prctl","bind","brk","execve","flock","fstatfs","getcwd","lstat","prctl","recvmsg","readlink","rt_sigprocmask","seccomp","set_tid_address"]
-#both_seccomp_rules = ["clone","close","fcntl","fstat","getpid","ioctl","lseek","mmap","mprotect","munmap","newfstatat","open","openat","prlimit64","read","rt_sigaction","set_robust_list","stat","write"]
-#final_seccomp_rules = ["clock_nanosleep","connect","epoll_create","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","fsync","ftruncate","futex","getdents","getdents64","getpeername","getppid","getrandom","getrlimit","gettid","getuid","getsockname","madvise","mkdir","nanosleep","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","setsockopt","shutdown","socket","sysinfo"]
+seccomp:
+{
+    enable = false;
+    debug = false;
+    version = "rhel_8_9";
+    rhel_8_9:
+    {
+        initial = ["access","arch_prctl","bind","brk","execve","faccessat2","flock","fstat","fstatfs","getcwd","lstat","prctl","recvmsg","readlink","rt_sigprocmask","seccomp","set_tid_address","writev"]
+        both = ["clone","clone3","close","fcntl","getpid","ioctl","lseek","mmap","mprotect","munmap","newfstatat","open","openat","prlimit64","read","rseq","rt_sigaction","set_robust_list","stat","write"]
+        final = ["clock_nanosleep","connect","epoll_create","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","fsync","ftruncate","futex","getdents","getdents64","getpeername","getppid","getrandom","getrlimit","gettid","getuid","getsockname","madvise","mkdir","nanosleep","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","setsockopt","shutdown","socket","sysinfo"]
+    };
+    rhel_7:
+    {
+        initial = ["access","arch_prctl","bind","brk","execve","flock","fstatfs","getcwd","lstat","prctl","recvmsg","readlink","rt_sigprocmask","seccomp","set_tid_address"]
+        both = ["clone","close","fcntl","fstat","getpid","ioctl","lseek","mmap","mprotect","munmap","newfstatat","open","openat","prlimit64","read","rt_sigaction","set_robust_list","stat","write"]
+        final = ["clock_nanosleep","connect","epoll_create","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","fsync","ftruncate","futex","getdents","getdents64","getpeername","getppid","getrandom","getrlimit","gettid","getuid","getsockname","madvise","mkdir","nanosleep","poll","pread64","pwrite64","recvfrom","rename","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","setsockopt","shutdown","socket","sysinfo"]
+    };
+};
 
 .SH "SEE ALSO"
 .BR jal_subscribe (8),
