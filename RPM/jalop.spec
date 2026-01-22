@@ -1,6 +1,6 @@
 Name:JALoP
 Version:1.3.1.0
-Release:1%{?dist}
+Release:2%{?dist}
 ExclusiveArch:x86_64
 Summary:JALoP binary installation
 License:Apache License, Version 2.0
