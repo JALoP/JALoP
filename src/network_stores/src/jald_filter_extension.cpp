@@ -63,6 +63,14 @@ RecvRecordMessage::RecvRecordMessage() {
 	break5Id = addField(sizeof("BREAK")-1);
 }
 
+RecvRecordMessage::~RecvRecordMessage() {
+	// If, at the time of destruction, the data owned by raw pointers has not been
+	// stolen, free it
+	free(payloadData);
+	free(appMeta);
+	free(sysMeta);
+}
+
 int RecvRecordMessage::process() {
 	try {
 		// Sanity check on the break fields first to help guard against data alignment errors

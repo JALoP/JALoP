@@ -110,6 +110,7 @@ struct RecvRecordMessage : public UDSRecvMessage {
 	int break5Id;
 
 	RecvRecordMessage();
+	~RecvRecordMessage();
 
 	int process();
 };
