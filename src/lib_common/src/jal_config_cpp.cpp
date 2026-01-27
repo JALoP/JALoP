@@ -74,13 +74,13 @@ std::string jal_config_lookup_cpp_string(
 	}
 }
 
-std::string jal_config_lookup_cpp_file(
+std::string jal_config_lookup_cpp_file_path(
 	const config_setting_t* setting,
 	const std::string name,
 	const int required,
 	const std::string default_value,
 	const bool must_exist) {
-	return jal_config_lookup_cpp_file(setting, name.c_str(), required, default_value, must_exist);
+	return jal_config_lookup_cpp_file_path(setting, name.c_str(), required, default_value, must_exist);
 }
 
 std::string jal_config_lookup_cpp_file_path(
@@ -227,7 +227,7 @@ int jal_config_lookup_cpp_int(
 	const config_setting_t* setting,
 	const std::string name,
 	const int required,
-	const int default_value) 
+	const int default_value)
 {
 	return jal_config_lookup_cpp_int(setting, name.c_str(), required, default_value);
 }
@@ -236,7 +236,7 @@ int jal_config_lookup_cpp_int(
 	const config_setting_t* setting,
 	const char* name,
 	const int required,
-	const int default_value) 
+	const int default_value)
 {
 	if(NULL == setting) {
 		std::string msg = std::string("NULL setting passed to jal_config_lookup_cppint");
@@ -264,7 +264,7 @@ long long int jal_config_lookup_cpp_int64(
 	const config_setting_t* setting,
 	const std::string name,
 	const int required,
-	const long long default_value) 
+	const long long default_value)
 {
 	return jal_config_lookup_cpp_int64(setting, name.c_str(), required, default_value);
 }
@@ -273,7 +273,7 @@ long long int jal_config_lookup_cpp_int64(
 	const config_setting_t* setting,
 	const char* name,
 	const int required,
-	const long long int default_value) 
+	const long long int default_value)
 {
 	if(NULL == setting) {
 		std::string msg = std::string("NULL setting passed to jal_config_lookup_cpp_int64");
@@ -301,7 +301,7 @@ bool jal_config_lookup_cpp_bool(
 	const config_setting_t* setting,
 	const std::string name,
 	const int required,
-	const bool default_value) 
+	const bool default_value)
 {
 	return jal_config_lookup_cpp_bool(setting, name.c_str(), required, default_value);
 }
@@ -310,7 +310,7 @@ bool jal_config_lookup_cpp_bool(
 	const config_setting_t* setting,
 	const char* name,
 	const int required,
-	const bool default_value) 
+	const bool default_value)
 {
 	if(NULL == setting) {
 		std::string msg = std::string("NULL setting passed to jal_config_lookup_cpp_bool");
