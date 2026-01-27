@@ -18,3 +18,4 @@ nbproject
 vendor-cargo/
 vendor-cargo-*.tar.gz
 .tmp-rust-rpm/
+*.jar
