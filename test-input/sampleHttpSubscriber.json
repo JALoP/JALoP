@@ -1,0 +1,23 @@
+{
+  "address": "127.0.0.1",
+  "port": 8444,
+  "subscriber": {
+    "maxSessionLimit": 100,
+    "recordType": [ "audit", "journal", "log" ],
+    "configureDigest": [ "on"],
+    "digestAlgorithms": [ "SHA256" ],
+    "configureTls": "on",
+    "output": "./subdb",
+    "mode": "archive",
+    "createConfirmedFile" : "off",
+    "bufferSize": 4096,
+    "journalResumeThresholdSize": 0,
+  },
+  "ssl": {
+    "Key Store Passphrase": "changeit",
+    "Key Store": "./test-input/TLS_CA_Signed/server/jal_subscriber_v2_server.jks",
+
+    "Trust Store Passphrase": "changeit",
+    "Trust Store": "./test-input/TLS_CA_Signed/server/jal_subscriber_v2_server-remotes.jks"
+  }
+}

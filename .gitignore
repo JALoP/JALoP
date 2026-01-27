@@ -20,4 +20,4 @@ vendor-cargo/
 vendor-cargo-*.tar.gz
 .tmp-rust-rpm/
 test_logs
-
+*.jar

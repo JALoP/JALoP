@@ -11,7 +11,7 @@ timeout = 30
 buffer = 256
 
 [seccomp]
-enabled = true
+enabled = false
 debug = false
 
 initial = ["access", "arch_prctl", "bind", "epoll_create1", "eventfd2", "execve", "getrandom", "ioctl", "listen", "poll", "prlimit64", "seccomp", "set_tid_address", "socketpair"]
