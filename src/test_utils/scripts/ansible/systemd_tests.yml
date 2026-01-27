@@ -1,5 +1,5 @@
 ---
-
+# under construction
 - hosts: localhost
   connection: local
   gather_facts: no
@@ -100,6 +100,3 @@
   - name: jal_dump output
     shell: |
       echo '{{ jal_dump_output.stdout }}' >> jaldb_tool_output.txt
-
-#call with this command from jalop home
-##ansible-playbook -i src/test_utils/scripts/ansible/ansible_inventory.ini src/test_utils/scripts/ansible/local-store-pub-sub-tests_debug.yml -e cwd=`pwd` -e mode=debug

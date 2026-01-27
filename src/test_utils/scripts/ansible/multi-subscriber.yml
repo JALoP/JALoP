@@ -1,11 +1,11 @@
 ---
-
+# ansible-playbook  src/test_utils/scripts/ansible/multi-subscriber.yml  -e cwd=`pwd` -e rcnt=3 -e mode=release
 - hosts: localhost
   gather_facts: no
 
   vars:
     marker: "{{ lookup('env', 'marker') | default('none', true) | lower | trim }}"
-    types: alj
+    types: aljf
     tear_down: true
     max_send_time: 360000
     pre_sleep: 0
@@ -107,14 +107,13 @@
     shell: |
       cd '{{cwd}}'
       RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb -c ./test-input/jaldb-filter.toml 2>./jald_filter.err 1>./jald_filter.out &
-    when: marker == 'rust'
 
   - name: start jald
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      ./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -s -d -f  2>./jald.err 1>./jald.out &
+      ./{{mode}}/bin/jald -c ./test-input/jald_multi_subs.cfg --no-daemon -s -d -f  2>./jald.err 1>./jald.out &
 
   - name: start subscriber
     environment:
