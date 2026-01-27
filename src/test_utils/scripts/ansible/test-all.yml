@@ -17,9 +17,9 @@
     shell: |
       cd {{cwd}}
       if [[ {{use_filter}}  == 'no' ]]; then
-        sed -i 's/version.*$/version = "rhel_8_9_no_filter";/g' test-input/jald2.cfg
+        sed -i 's/version.*$/version = "rhel_8_9_no_filter";/g' test-input/jald_multi_subs.cfg
       else
-        sed -i 's/version.*$/version = "rhel_8_9";/g' test-input/jald2.cfg
+        sed -i 's/version.*$/version = "rhel_8_9";/g' test-input/jald_multi_subs.cfg
       fi
       sed -i 's/database_type.*$/database_type = "{{subdb}}";/g' test-input/jal_subscribe.cfg   
       ansible-playbook  src/test_utils/scripts/ansible/process-test.yml -e cwd=`pwd` -e rcnt={{rcnt}} -e filter={{use_filter}} -e types={{types}} -e subd={{subd}}
