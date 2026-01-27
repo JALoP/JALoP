@@ -1,16 +1,14 @@
 ---
-
+# ansible-playbook  src/test_utils/scripts/ansible/valgrind.yml  -e cwd=`pwd` -e rcnt=10 -e rust_log=debug -e mode=debug
 - hosts: localhost
   gather_facts: no
 
   vars:
     log_dir: '{{cwd}}/test_logs'
     valgrind_out_dir: '{{log_dir}}/valgrind'
-    #valgrind_options: "--leak-check=full --show-leak-kinds=all --verbose --fair-sched=yes"
     valgrind_options: "--leak-check=full --show-leak-kinds=all --fair-sched=yes --xml=yes --track-origins=yes"
-    #valgrind_options: "--show-leak-kinds=all --fair-sched=yes"
     marker: "{{ lookup('env', 'marker') | default('none', true) | lower | trim }}"
-    types: alj
+    types: aljf
     tear_down: true
     max_send_time: 3600
     pre_sleep: 0
@@ -82,9 +80,8 @@
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      RUST_LOG={{rust_log}} valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-rust-filter.xml {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
-      #RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb -f {{perf}} --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
-    when: marker == 'rust'
+      RUST_LOG=debug valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-rust-filter.xml {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d ./testdb  2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
+      #RUST_LOG=debug {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d ./testdb 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
 
   - name: start subscriber
     environment:
@@ -193,6 +190,8 @@
     when: tear_down | bool
 
   - name: jaldb_tool output
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
       echo '{{ jaldb_tool_testdb_output.stdout }}' > {{log_dir}}/jaldb_tool_output.json
@@ -200,6 +199,8 @@
     when: tear_down | bool
 
   - name: jaldb_tail
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
       valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-jaldb_tail.xml ./{{mode}}/bin/jaldb_tail -h testdb/ -t j > out_tail
@@ -208,6 +209,8 @@
     when: tear_down | bool
 
   - name: jal_dump
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
       rm -f out_tail
@@ -216,6 +219,8 @@
     when: tear_down | bool
 
   - name: jal_dump output
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
       echo '{{ jal_dump_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
@@ -244,6 +249,8 @@
     when: tear_down | bool
 
   - name: jal_purge
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
       rm -f out_tail

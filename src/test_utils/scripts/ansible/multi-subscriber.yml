@@ -1,5 +1,5 @@
 ---
-
+# ansible-playbook  src/test_utils/scripts/ansible/multi-subscriber.yml  -e cwd=`pwd` -e perf=p2 -e marker=rust -e rcnt=3 -e types=jalf -e rust_log=debug -e mode=release
 - hosts: localhost
   gather_facts: no
 
@@ -112,7 +112,7 @@
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      ./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -s -d 2>./jald.err 1>./jald.out &
+      ./{{mode}}/bin/jald -c ./test-input/jald_multi_subs.cfg --no-daemon -s -d 2>./jald.err 1>./jald.out &
 
   - name: start subscriber
     environment:
