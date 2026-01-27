@@ -458,7 +458,6 @@ enum jal_status pub_send_records_feeder(
 
 	// In the case of a journal resume, the session will already exist
 	if (0 == sessionHostMap.count(std::string(ch_info->hostname))) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Inserting new session");
 
 		// The session does not alreaady exist. Create it
 		// This is a shared pointer to allow both maps to point at the same context safely and ensures
@@ -477,6 +476,9 @@ enum jal_status pub_send_records_feeder(
 		}
 
 		// Insert this session by hostname and token to our maps
+		std::string type_str = stringify_type(ch_info->type);
+		DEBUG_LOG_SUB_SESSION(ch_info, "Inserting session with hostname: %s, token: %d, type: %s\n",
+			ch_info->hostname, subscriber_token, type_str.c_str());
 		sessionHostMap.insert({std::string(ch_info->hostname), ctxPtr});
 		sessionTokenMap.insert({subscriber_token, ctxPtr});
 	} else {

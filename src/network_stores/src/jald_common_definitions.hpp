@@ -142,3 +142,5 @@ jaldb_context_t* setup_db_layer(void);
 
 __attribute__((noreturn))
 void *pub_send(__attribute__((unused)) void *args);
+
+std::string stringify_type(enum jaln_record_type type);

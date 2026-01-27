@@ -102,3 +102,15 @@ jaldb_context_t* setup_db_layer(void)
 
 	return db_ctx;
 }
+
+std::string stringify_type(enum jaln_record_type type) {
+	switch(type) {
+		case JALN_RTYPE_JOURNAL:
+			return std::string("journal");
+		case JALN_RTYPE_AUDIT:
+			return std::string("audit");
+		case JALN_RTYPE_LOG:
+			return std::string("log");
+	}
+	return std::string("unknown type");
+}
