@@ -353,7 +353,7 @@ int main(int argc, char **argv) {
 			return -1;
 		}
 		if(!jalls_ctx->socket_mode){
-			jalls_ctx->socket_mode = "0666";
+			jalls_ctx->socket_mode = strdup("0666");
 		}
 		if (check_mode(jalls_ctx->socket_mode)!=0){
 			fprintf(stderr, "%s", mode_error);
