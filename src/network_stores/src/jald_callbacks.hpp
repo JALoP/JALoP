@@ -6,7 +6,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  * Copyright (c) 2012-2013 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -162,8 +162,6 @@ enum jal_status pub_on_record_complete(
  * @param[in] headers Unused
  * @param[in] user_data Unused
  *
- * @return JAL_OK if the notification was succesfully handled. Otherwise a jal_status
- * error code.
  */
 void pub_sync(
 		jaln_session *sess,
