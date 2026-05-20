@@ -6,7 +6,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@
 
 #include "xml_test_utils2.h"
 
-struct jaldb_record rec;
+struct jaldb_record record;
 struct jaldb_segment app_meta;
 struct jaldb_segment payload;
 EVP_PKEY *key;
@@ -67,21 +67,21 @@ EVP_PKEY *key;
 
 void setup()
 {
-	memset(&rec, 0, sizeof(rec));
+	memset(&record, 0, sizeof(record));
 	memset(&app_meta, 0, sizeof(app_meta));
 	memset(&payload, 0, sizeof(payload));
-	rec.pid = 1234;
-	rec.uid = 5678;
-	rec.source = (char*)SOURCE;
-	rec.hostname = (char*)HOSTNAME;
-	rec.timestamp = (char*)TIMESTAMP;
-	rec.username = (char*)USERNAME;
-	rec.sec_lbl = (char*)SEC_LABEL;
-	rec.have_uid = 1;
-	rec.version = 1;
-	rec.payload = jaldb_create_segment();
-	assert_equals(0, uuid_parse(REC_UUID, rec.uuid));
-	assert_equals(0, uuid_parse(HOST_UUID, rec.host_uuid));
+	record.pid = 1234;
+	record.uid = 5678;
+	record.source = (char*)SOURCE;
+	record.hostname = (char*)HOSTNAME;
+	record.timestamp = (char*)TIMESTAMP;
+	record.username = (char*)USERNAME;
+	record.sec_lbl = (char*)SEC_LABEL;
+	record.have_uid = 1;
+	record.version = 1;
+	record.payload = jaldb_create_segment();
+	assert_equals(0, uuid_parse(REC_UUID, record.uuid));
+	assert_equals(0, uuid_parse(HOST_UUID, record.host_uuid));
 
 	//JAL-897 - OPENSSL_init_ssl() replaces SSL_library_init() in openssl v1.1 and higher
 	#if OPENSSL_VERSION_NUMBER < OPENSSL_V11_VER
@@ -102,7 +102,7 @@ void setup()
 
 void teardown()
 {
-	jaldb_destroy_segment(&rec.payload);
+	jaldb_destroy_segment(&record.payload);
 	xmlCleanupParser();
 }
 
@@ -112,7 +112,7 @@ do { \
 	char* dbuf = NULL; \
 	size_t dbufsz = 0; \
 	xmlDocPtr doc; \
-	ret = jaldb_record_to_system_metadata_doc(&rec, key, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz); \
+	ret = jaldb_record_to_system_metadata_doc(&record, key, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz); \
 	assert_equals(JALDB_OK, ret); \
 	assert_not_equals((void*) NULL, dbuf); \
 	assert_not_equals(0, dbufsz); \
@@ -199,7 +199,7 @@ do { \
 void test_to_system_works_for_journal()
 {
 
-	rec.type = JALDB_RTYPE_JOURNAL;
+	record.type = JALDB_RTYPE_JOURNAL;
 
 	VERIFY_DOC(journal, 1, 1, 0);
 }
@@ -207,7 +207,7 @@ void test_to_system_works_for_journal()
 void test_to_system_works_for_audit()
 {
 
-	rec.type = JALDB_RTYPE_AUDIT;
+	record.type = JALDB_RTYPE_AUDIT;
 
 	VERIFY_DOC(audit, 1, 1, 0);
 }
@@ -215,15 +215,15 @@ void test_to_system_works_for_audit()
 void test_to_system_works_for_log()
 {
 
-	rec.type = JALDB_RTYPE_LOG;
+	record.type = JALDB_RTYPE_LOG;
 
 	VERIFY_DOC(log, 1, 1, 0);
 }
 
 void test_to_system_works_without_sec_label()
 {
-	rec.type = JALDB_RTYPE_LOG;
-	rec.sec_lbl = NULL;
+	record.type = JALDB_RTYPE_LOG;
+	record.sec_lbl = NULL;
 
 	VERIFY_DOC(log, 0, 1, 0);
 }
@@ -231,15 +231,15 @@ void test_to_system_works_without_sec_label()
 void test_to_system_works_without_uid()
 {
 
-	rec.type = JALDB_RTYPE_LOG;
-	rec.have_uid = 0;
+	record.type = JALDB_RTYPE_LOG;
+	record.have_uid = 0;
 
 	VERIFY_DOC(log, 1, 0, 0);
 }
 
 void test_to_system_works_with_signing_key()
 {
-	rec.type = JALDB_RTYPE_LOG;
+	record.type = JALDB_RTYPE_LOG;
 
 	FILE *fp = fopen(TEST_RSA_KEY, "r");
 	assert_not_equals(NULL, fp);
@@ -258,24 +258,25 @@ void test_to_system_fails_with_bad_input()
 
 	ret = jaldb_record_to_system_metadata_doc(NULL, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&record, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, NULL);
+	ret = jaldb_record_to_system_metadata_doc(&record, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, NULL);
 	assert_not_equals(JALDB_OK, ret);
 
 	dbuf = (char*) 0xdeadbeef;
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
+	ret = jaldb_record_to_system_metadata_doc(&record, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
 	dbuf = NULL;
 	assert_not_equals(JALDB_OK, ret);
 
-	rec.type = JALDB_RTYPE_UNKNOWN;
-	ret = jaldb_record_to_system_metadata_doc(&rec, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
+	record.type = JALDB_RTYPE_UNKNOWN;
+	ret = jaldb_record_to_system_metadata_doc(&record, NULL, NULL, 0, NULL, NULL, 0, NULL, &dbuf, &dbufsz);
 	assert_not_equals(JALDB_OK, ret);
 }
 
-void test_jaldb_xml_to_sys_metadata_works()
+void test_jaldb_system_metadata_xml_to_record_metadata_works()
 {
-	struct jaldb_record *sys_meta;
+	struct jaldb_record *rec = jaldb_create_record();
+	assert_not_equals(rec,NULL);
 	FILE *fd = fopen(GOOD_SYS_META,"r");
 	assert_not_equals(fd,NULL);
 	assert_equals(fseek(fd, 0L, SEEK_END),0);
@@ -287,23 +288,24 @@ void test_jaldb_xml_to_sys_metadata_works()
 	assert_equals(fseek(fd,0L,SEEK_SET),0);
 	assert_not_equals(fread(buf,sizeof(char),bufsize,fd),0);
 
-	assert_equals(JAL_OK,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
-	assert_not_equals(sys_meta,NULL);
-	assert_equals(sys_meta->pid,0);
-	assert_equals(sys_meta->uid,0);
-	assert_string_equals(sys_meta->hostname,"test.jalop.com");
-	assert_string_equals(sys_meta->timestamp,"2011-11-10T04:09:55-05:00");
-	assert_string_equals(sys_meta->username,"root");
-	assert_string_equals(sys_meta->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
-	assert_equals(sys_meta->type,JALDB_RTYPE_JOURNAL);
+	assert_equals(JAL_OK,jaldb_system_metadata_xml_to_record_metadata((uint8_t *)buf,(size_t)bufsize,rec));
+	assert_not_equals(rec,NULL);
+	assert_equals(rec->pid,0);
+	assert_equals(rec->uid,0);
+	assert_string_equals(rec->hostname,"test.jalop.com");
+	assert_string_equals(rec->timestamp,"2011-11-10T04:09:55-05:00");
+	assert_string_equals(rec->username,"root");
+	assert_string_equals(rec->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
+	assert_equals(rec->type,JALDB_RTYPE_JOURNAL);
 
 	fclose(fd);
 	free(buf);
 }
 
-void test_jaldb_xml_to_sys_metadata_works_with_cdata()
+void test_jaldb_system_metadata_xml_to_record_metadata_works_with_cdata()
 {
-	struct jaldb_record *sys_meta;
+	struct jaldb_record * rec = jaldb_create_record();
+	assert_not_equals(rec, NULL); 
 	FILE *fd = fopen(GOOD_SYS_META_CDATA,"r");
 	assert_not_equals(fd,NULL);
 	assert_equals(fseek(fd, 0L, SEEK_END),0);
@@ -315,23 +317,24 @@ void test_jaldb_xml_to_sys_metadata_works_with_cdata()
 	assert_equals(fseek(fd,0L,SEEK_SET),0);
 	assert_not_equals(fread(buf,sizeof(char),bufsize,fd),0);
 
-	assert_equals(JAL_OK,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
-	assert_not_equals(sys_meta,NULL);
-	assert_equals(sys_meta->pid,0);
-	assert_equals(sys_meta->uid,0);
-	assert_string_equals(sys_meta->hostname,"test.jalop.com");
-	assert_string_equals(sys_meta->timestamp,"2011-11-10T04:09:55-05:00");
-	assert_string_equals(sys_meta->username,"root");
-	assert_string_equals(sys_meta->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
-	assert_equals(sys_meta->type,JALDB_RTYPE_JOURNAL);
+	assert_equals(JAL_OK,jaldb_system_metadata_xml_to_record_metadata((uint8_t *)buf,(size_t)bufsize,rec));
+	assert_not_equals(rec,NULL);
+	assert_equals(rec->pid,0);
+	assert_equals(rec->uid,0);
+	assert_string_equals(rec->hostname,"test.jalop.com");
+	assert_string_equals(rec->timestamp,"2011-11-10T04:09:55-05:00");
+	assert_string_equals(rec->username,"root");
+	assert_string_equals(rec->sec_lbl,"unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023");
+	assert_equals(rec->type,JALDB_RTYPE_JOURNAL);
 
 	fclose(fd);
 	free(buf);
 }
 
-void test_jaldb_xml_to_sys_metadata_returns_error_on_malformed_data()
+void test_jaldb_system_metadata_xml_to_record_metadata_returns_error_on_malformed_data()
 {
-	struct jaldb_record *sys_meta;
+	struct jaldb_record *rec = jaldb_create_record();
+	assert_not_equals(rec,NULL);
 	FILE *fd = fopen(MALFORMED_SYS_META,"r");
 	assert_not_equals(fd,NULL);
 	assert_equals(fseek(fd, 0L, SEEK_END),0);
@@ -343,7 +346,7 @@ void test_jaldb_xml_to_sys_metadata_returns_error_on_malformed_data()
 	assert_equals(fseek(fd,0L,SEEK_SET),0);
 	assert_not_equals(fread(buf,sizeof(char),bufsize,fd),0);
 
-	assert_equals(JAL_E_INVAL,jaldb_xml_to_sys_metadata((uint8_t *)buf,(size_t)bufsize,&sys_meta));
+	assert_equals(JAL_E_XML_PARSE,jaldb_system_metadata_xml_to_record_metadata((uint8_t *)buf,(size_t)bufsize,rec));
 
 	fclose(fd);
 	free(buf);

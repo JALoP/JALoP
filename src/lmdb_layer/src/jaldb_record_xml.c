@@ -6,7 +6,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include <uuid/uuid.h>
 #include <inttypes.h>
 #include <libxml/parser.h>
+#include <libxml/parserInternals.h>
 #include <libxml/tree.h>
 #include <string.h>
 #include <errno.h>
@@ -204,7 +205,7 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 enum parse_state { START,IN_JAL_RECORD,END,UNKNOWN };
 
 struct sax_parse_user_data {
-	struct jaldb_record* sys_meta;
+	struct jaldb_record* rec;
 	enum jal_status ret;
 	xmlChar *tag_name;
 	enum parse_state state;
@@ -224,17 +225,16 @@ void jaldb_end_document(void *user_data)
 	struct sax_parse_user_data *sp_user_data = (struct sax_parse_user_data *)user_data;
 	free(sp_user_data->tag_name);
 	if(sp_user_data->state != END		||
-	   !sp_user_data->sys_meta		||
-	   !sp_user_data->sys_meta->hostname	||
-	   !sp_user_data->sys_meta->timestamp	||
-	   !sp_user_data->sys_meta->username	||
-	   !sp_user_data->sys_meta->type	||
-	   !sp_user_data->sys_meta->host_uuid	||
-	   !sp_user_data->sys_meta->uuid) {
+	   !sp_user_data->rec		||
+	   !sp_user_data->rec->hostname	||
+	   !sp_user_data->rec->timestamp	||
+	   !sp_user_data->rec->username	||
+	   !sp_user_data->rec->type)
+	{
 		sp_user_data->ret = JAL_E_INVAL;
 	}
 	if (sp_user_data->ret != 0) {
-		jaldb_destroy_record(&(sp_user_data->sys_meta));
+		jaldb_destroy_record(&(sp_user_data->rec));
 	}
 }
 
@@ -261,7 +261,7 @@ void jaldb_start_element(void *user_data,
 			int i=0;
 			while (attrs[i]) {
 				if (0 == strcmp((char *)attrs[i], JALDB_USERNAME_PROP)) {
-					sp_user_data->sys_meta->username = jal_strdup((const char *)attrs[i+1]);
+					sp_user_data->rec->username = jal_strdup((const char *)attrs[i+1]);
 					break;
 				}
 				i+=2;
@@ -279,13 +279,13 @@ static void handle_type(struct sax_parse_user_data *sp_user_data,
 		int len)
 {
 	if (0 == strncmp(name, JALDB_JOURNAL, len)) {
-		sp_user_data->sys_meta->type = JALDB_RTYPE_JOURNAL;
+		sp_user_data->rec->type = JALDB_RTYPE_JOURNAL;
 	} else if (0 == strncmp(name, JALDB_AUDIT, len)) {
-		sp_user_data->sys_meta->type = JALDB_RTYPE_AUDIT;
+		sp_user_data->rec->type = JALDB_RTYPE_AUDIT;
 	} else if (0 == strncmp(name, JALDB_LOG, len)) {
-		sp_user_data->sys_meta->type = JALDB_RTYPE_LOG;
+		sp_user_data->rec->type = JALDB_RTYPE_LOG;
 	} else {
-		sp_user_data->sys_meta->type = JALDB_RTYPE_UNKNOWN;
+		sp_user_data->rec->type = JALDB_RTYPE_UNKNOWN;
 		sp_user_data->ret = JAL_E_INVAL;
 	}
 }
@@ -315,18 +315,18 @@ void jaldb_end_element(void *user_data,
 	} else if (0 == strcmp((char *)name, JALDB_DATA_TYPE_TAG)) {
 		handle_type(sp_user_data,sp_user_data->chars,sp_user_data->chars_len);
 	} else if (0 == strcmp((char *)name, JALDB_RECORD_ID_TAG)) {
-		if (-1 == uuid_parse(sp_user_data->chars,sp_user_data->sys_meta->uuid)) {
+		if (-1 == uuid_parse(sp_user_data->chars,sp_user_data->rec->uuid)) {
 			sp_user_data->ret = JAL_E_INVAL;
 		}
 	} else if (0 == strcmp((char *)name, JALDB_HOSTNAME_TAG)) {
-		sp_user_data->sys_meta->hostname = sp_user_data->chars;
+		sp_user_data->rec->hostname = sp_user_data->chars;
 		sp_user_data->chars = NULL;
 	} else if (0 == strcmp((char *)name, JALDB_HOST_UUID_TAG)) {
-		if (-1 == uuid_parse(sp_user_data->chars,sp_user_data->sys_meta->host_uuid)) {
+		if (-1 == uuid_parse(sp_user_data->chars,sp_user_data->rec->host_uuid)) {
 			sp_user_data->ret = JAL_E_INVAL;
 		}
 	} else if (0 == strcmp((char *)name, JALDB_TIMESTAMP_TAG)) {
-		sp_user_data->sys_meta->timestamp = sp_user_data->chars;
+		sp_user_data->rec->timestamp = sp_user_data->chars;
 		sp_user_data->chars = NULL;
 	} else if (0 == strcmp((char *)name, JALDB_PROCESS_ID_TAG)) {
 		errno=0;
@@ -334,7 +334,7 @@ void jaldb_end_element(void *user_data,
 		if (errno != 0) {
 			sp_user_data->ret = JAL_E_INVAL;
 		}
-		sp_user_data->sys_meta->pid = pid;
+		sp_user_data->rec->pid = pid;
 	} else if (0 == strcmp((char *)sp_user_data->tag_name, JALDB_USER_TAG)) {
 		errno=0;
 		if (sp_user_data->chars != NULL) {
@@ -342,10 +342,10 @@ void jaldb_end_element(void *user_data,
 			if (errno != 0) {
 				sp_user_data->ret = JAL_E_INVAL;
 			}
-			sp_user_data->sys_meta->uid = uid;
+			sp_user_data->rec->uid = uid;
 		}
 	} else if (0 == strcmp((char *)sp_user_data->tag_name, JALDB_SEC_LABEL_TAG)) {
-		sp_user_data->sys_meta->sec_lbl = sp_user_data->chars;
+		sp_user_data->rec->sec_lbl = sp_user_data->chars;
 		sp_user_data->chars = NULL;
 	}
 	free(sp_user_data->chars);
@@ -365,28 +365,47 @@ void jaldb_xml_error(void *user_data, __attribute__((unused)) const char * msg, 
 	sp_user_data->ret = JAL_E_INVAL;
 }
 
-enum jal_status jaldb_xml_to_sys_metadata(uint8_t *xml, size_t xml_len, struct jaldb_record **sys_meta)
+enum jal_status jaldb_system_metadata_xml_to_record_metadata(uint8_t *system_metadata_xml, size_t xml_len, struct jaldb_record *rec)
 {
 	struct sax_parse_user_data *sp_user_data = (struct sax_parse_user_data *)jal_calloc(1,sizeof(struct sax_parse_user_data));
-	*sys_meta = jaldb_create_record();
-	sp_user_data->sys_meta = *sys_meta;
+	sp_user_data->rec = rec;
 
-	static xmlSAXHandler sys_meta_handler;
+	xmlParserCtxtPtr ctxt = NULL;
+	ctxt = xmlCreateMemoryParserCtxt((char*)system_metadata_xml, (int)xml_len);
 
-	sys_meta_handler.startDocument = &jaldb_start_document;
-	sys_meta_handler.endDocument = &jaldb_end_document;
-	sys_meta_handler.startElement = &jaldb_start_element;
-	sys_meta_handler.characters = &jaldb_characters;
-	sys_meta_handler.endElement = &jaldb_end_element;
-	sys_meta_handler.warning = &jaldb_xml_error;
-	sys_meta_handler.error = &jaldb_xml_error;
-	sys_meta_handler.fatalError = &jaldb_xml_error;
-	sys_meta_handler.cdataBlock = &jaldb_cdata_handler;
+	if(ctxt == NULL)
+	{
+		return JAL_E_XML_PARSE;
+	}
 
-	xmlSAXUserParseMemory(&sys_meta_handler,sp_user_data,(char*)xml,(int)xml_len);
+	xmlSAXHandler *sys_meta_handler = (xmlSAXHandler *)jal_calloc(1,sizeof(xmlSAXHandler));
+	sys_meta_handler->startDocument = jaldb_start_document;
+	sys_meta_handler->endDocument = jaldb_end_document;
+	sys_meta_handler->startElement = jaldb_start_element;
+	sys_meta_handler->characters = jaldb_characters;
+	sys_meta_handler->endElement = jaldb_end_element;
+	sys_meta_handler->warning = jaldb_xml_error;
+	sys_meta_handler->error = jaldb_xml_error;
+	sys_meta_handler->fatalError = jaldb_xml_error;
+	sys_meta_handler->cdataBlock = jaldb_cdata_handler;
 
-	enum jal_status ret;
-	ret = sp_user_data->ret;
+	ctxt->userData = sp_user_data;
+	free(ctxt->sax);
+	ctxt->sax = NULL;
+	ctxt->sax = sys_meta_handler;
+
+	if(xmlParseDocument(ctxt) < 0)
+	{
+		return JAL_E_XML_PARSE;
+	}
+
+	ctxt->sax = NULL;
+	free(sys_meta_handler);
+
+	ctxt->userData = NULL;
 	free(sp_user_data);
-	return ret;
+
+	xmlFreeParserCtxt(ctxt);
+	
+	return JAL_OK;
 }
