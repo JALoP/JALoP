@@ -228,7 +228,7 @@ int main(void)
  * function for the application to use. It may be anything at
  * all, or NULL.
  *
- * \subsubsection d_step7a Step 7a: Using a #jaln_context to initiate a
+ * \subsubsection d_step7a Step 7a: Using a \#jaln_context to initiate a
  * connection a subscribe to a remote peer. If the #jaln_context is going to be
  * used to initiate a connection to a remote and subscribe to JALoP data, you
  * must use the jaln_subscribe() function. Once jaln_subscribe() is called, the
@@ -268,7 +268,7 @@ int main(void)
  * disconnect from the remote peer.  If an orderly disconnect is taking too long,
  * the application may execute jaln_shutdown() which will sever the connection.
  *
- * \subsubsection d_step7b Step 7b: Using a #jaln_context to initiate a
+ * \subsubsection d_step7b Step 7b: Using a \#jaln_context to initiate a
  * connection to a remote and act as a publisher. The initial setup for a
  * publisher is similar to that of a subscriber except that rather than
  * registering a #jaln_subscriber_callbacks object, you must register a
@@ -327,7 +327,7 @@ int main(void)
  * disconnect from the remote peer.  If an orderly disconnect is taking too long,
  * the application may execute jaln_shutdown() which will sever the connection.
  *
- * \subsubsection d_step7c Step 7c: Using a #jaln_context to listen for
+ * \subsubsection d_step7c Step 7c: Using a \#jaln_context to listen for
  * connections. If the #jaln_context is going to be used for listening to
  * incoming connections, you must first register any additional digest
  * algorithms or XML encodings. You must also register your

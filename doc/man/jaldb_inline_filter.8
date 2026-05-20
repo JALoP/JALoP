@@ -1,0 +1,44 @@
+.TH JALDB_INLINE_FILTER 8
+.SH NAME
+.B jaldb_inline_filter
+\-
+.SM JALoP
+Inline Filter that marks records sent/synced and retrieves new records to send to jald.
+.SH SYNOPSIS
+.B jaldb_inline_filter
+[\fIOPTION\fR...]
+.B \-\-config
+.I config_file
+.SH "DESCRIPTION"
+The
+.B jaldb_inline_filter
+is a Rust implementation of an inline filter that isolates the
+.B jald
+process from the JAL database.  The inline filter sends records to
+.B jald
+over a unidirectional Unix Domain Socket (UDS).
+.B Jald
+sends sent/sync messages to the inline filter over a separate unidirectional Unix Domain Socket (UDS), and the inline filter marks those records as sent/sync.  When in use, the inline filter allows
+.B jald
+to operate with no direct access to the filesystem where the JAL database is located.
+.SH OPTIONS
+.TP
+\fB\-c\fR, \fB\-\-config-path=C\fR
+Instruct
+.B jaldb_inline_filter
+to get its configuration from the file
+.BR C .
+.TP
+.B \-\-debug\fR
+Output debugging information.
+.TP
+\fB\-d\fR, \fB\-\-db-home
+Path to the JALoP database.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help.
+.SH "SEE ALSO"
+.BR jaldb_inline_filter.config (5),
+.BR jald (8),
+.BR jal-local-store (8),
+.BR jal_subscribe (8)

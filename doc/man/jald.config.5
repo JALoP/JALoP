@@ -74,17 +74,8 @@ Log directory of jald when daemonized.
 A list of supported digest algorithms. These algorithms should be ordered by preference in a single double-quoted string with a space separating the algorithms.
 Valid values are "sha256", "sha384", and "sha512"
 .TP
-.B enable_seccomp
-seccomp will restrict the process to the defined system calls.
-.TP
-.B initial_seccomp_rules
-System calls allowed in the setup phase only.
-.TP
-.B both_seccomp_rules
-System calls allowed in all phases.
-.TP
-.B final_seccomp_rules
-System calls allowed in the setup phase and while the process is running.
+.B seccomp
+This config section contains the configuration settings for seccomp.
 .TP
 .B peers
 A list of peer configurations indicating which operations and JAL record types specific remotes are allowed to perform.
@@ -119,6 +110,26 @@ Peer configurations are additive.
 That is to say,
 if there are more than one peer configurations that reference a particular host,
 the set of permissions is the union of all permissions granted by all configurations.
+.SH "SECCOMP CONFIGURATION"
+There are separate configuration settings for syscalls to allow on different OS versions.
+.TP
+.B enable
+seccomp will restrict the process to the defined system calls.
+.TP
+.B debug
+Enable debugging messages for seccomp
+.TP
+.B version
+This sets what config section corresponding to OS version that will be used for the seccomp syscall allow list.
+.TP
+.B initial
+System calls allowed in the setup phase only.
+.TP
+.B both
+System calls allowed in all phases.
+.TP
+.B final
+System calls allowed in the setup phase and while the process is running.
 .SH EXAMPLES
 .nf
 # the path to the private key, used for TLS negotiation
@@ -173,18 +184,36 @@ peers = ( {
 # When the process is in the setup phase, at startup, it will be restricted to the
 # initial_seccomp_rules, both_seccomp_rules and final_seccomp_rules system call sets. After the setup phase and before the process
 # is doing its routine work, it will be further restricted to only the both_seccomp_rules and final_seccomp_rules system call set.
-#
-enable_seccomp = true;
-seccomp_debug = false;
-# Use these rules for RHEL8/9
-initial_seccomp_rules = ["arch_prctl","bind","brk","execve","getcwd","getrlimit","ioctl","listen","lstat","newfstatat","prctl","readlink","sysinfo","seccomp","set_tid_address","statfs","writev"];
-both_seccomp_rules = ["access","clone","clone3","close","epoll_create","fcntl","fstat","futex","getsockname","lseek","mmap","mprotect","munmap","open","read","rseq","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"];
-final_seccomp_rules = ["accept","clock_nanosleep","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","flock","ftruncate","getpeername","getpid","getrandom","getuid","madvise","nanosleep","openat","poll","pread64","prlimit64","pwrite64","recvfrom","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","shutdown"];
-# RHEL7 doesn't recognize some of the syscalls that are invoked on RHEL9 so it is
-# necessary to use a variant set of syscalls
-#initial_seccomp_rules = ["arch_prctl","bind","brk","execve","getcwd","getrlimit","ioctl","listen","lstat","newfstatat","prctl","readlink","sysinfo","seccomp","set_tid_address","statfs","writev"];
-#both_seccomp_rules = ["access","clone","close","epoll_create","fcntl","fstat","futex","getsockname","lseek","mmap","mprotect","munmap","open","read","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"];
-#final_seccomp_rules = ["accept","clock_nanosleep","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","flock","ftruncate","getpeername","getpid","getrandom","getuid","madvise","nanosleep","openat","poll","pread64","prlimit64","pwrite64","recvfrom","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","shutdown"];
+seccomp:
+{
+    enable = false;
+    debug = false;
+    version = "rhel_8_9";
+    rhel_8_9:
+    {
+		initial = ["access","arch_prctl","bind","clone","connect","execve","fstatfs","getcwd","getrandom","getrlimit","getuid","ioctl","listen","lstat","open","prctl","pread64","prlimit64","readlink","seccomp","set_tid_address","stat","sysinfo","unlink"]
+		both = ["accept","brk","clock_nanosleep","clone3","close","epoll_create","fcntl","fstat","futex","getpid","getsockname","getsockopt","lseek","mmap","mprotect","munmap","newfstatat","openat","poll","read","recvmsg","rseq","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","write"]
+		final = ["epoll_ctl","epoll_wait","exit","exit_group","getdents64","getpeername","madvise","nanosleep","pwrite64","recvfrom","rt_sigreturn","sendmsg","sendto","shutdown","writev"]
+	};
+    rhel_7:
+    {
+		initial = ["access","arch_prctl","bind","clone","connect","execve","fstatfs","getcwd","getrandom","getrlimit","getuid","ioctl","listen","lstat","open","prctl","pread64","prlimit64","readlink","seccomp","set_tid_address","stat","sysinfo","unlink"]
+		both = ["accept","brk","clock_nanosleep","close","epoll_create","fcntl","fstat","futex","getpid","getsockname","getsockopt","lseek","mmap","mprotect","munmap","newfstatat","openat","poll","read","recvmsg","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","write"]
+		final = ["epoll_ctl","epoll_wait","exit","exit_group","getdents64","getpeername","madvise","nanosleep","pwrite64","recvfrom","rt_sigreturn","sendmsg","sendto","shutdown","writev"]
+	};
+	rhel_8_9_no_filter:
+    {
+		initial = ["arch_prctl","bind","brk","execve","getcwd","getdents64","getrlimit","ioctl","listen","lstat","newfstatat","prctl","readlink","sysinfo","seccomp","set_tid_address","statfs","writev"];
+		both = ["access","clone","clone3","close","epoll_create","fcntl","fstat","futex","getsockname","lseek","mmap","mprotect","munmap","open","read","rseq","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"];
+		final = ["accept","clock_nanosleep","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","flock","ftruncate","getpeername","getpid","getrandom","getuid","madvise","nanosleep","openat","poll","pread64","prlimit64","pwrite64","recvfrom","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","shutdown"];
+	};
+	rhel_7_no_filter:
+    {
+		initial = ["arch_prctl","bind","brk","execve","getcwd","getrlimit","ioctl","listen","lstat","newfstatat","prctl","readlink","sysinfo","seccomp","set_tid_address","statfs","writev"];
+		both = ["access","clone","close","epoll_create","fcntl","fstat","futex","getsockname","lseek","mmap","mprotect","munmap","open","read","rt_sigaction","rt_sigprocmask","set_robust_list","setsockopt","socket","stat","write"];
+		final = ["accept","clock_nanosleep","epoll_ctl","epoll_wait","exit","exit_group","fdatasync","flock","ftruncate","getpeername","getpid","getrandom","getuid","madvise","nanosleep","openat","poll","pread64","prlimit64","pwrite64","recvfrom","rt_sigreturn","sched_getaffinity","sched_yield","select","sendto","shutdown"];
+	};
+};
 
 .SH "SEE ALSO"
 .BR jald (8),
