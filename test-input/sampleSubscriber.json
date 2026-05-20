@@ -1,0 +1,27 @@
+{
+  "address": "127.0.0.1",
+  "port": 1234,
+  "configureTLS": "on",
+  "subscriber": {
+  	"sessionTimeout": "00:00:00",
+  	"dataClass": [ "log", "audit", "journal" ],
+  	"pendingDigestMax": 10,
+        "digestAlgorithms": [ "sha256" ],
+  	"pendingDigestTimeout": 1,
+  	"output": "./subdb",
+  	"mode": "archive",
+  	"bufferSize": 4096,
+  	"journalResumeThresholdSize": 0,
+  },
+  "ssl": {
+    "Key Algorithm": "SunX509",
+    "Key Store Passphrase": "changeit",
+    "Key Store Data Type": "file",
+    "Key Store": "./test-input/TLS_CA_Signed/client/jal_subscriber_v1_client.jks",
+
+    "Trust Algorithm": "SunX509",
+    "Trust Store Passphrase": "changeit",
+    "Trust Store Data Type": "file",
+    "Trust Store": "./test-input/TLS_CA_Signed/client/jal_subscriber_v1_client-remotes.jks",
+  }
+}
