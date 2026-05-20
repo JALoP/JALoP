@@ -70,7 +70,7 @@
 
 #include "jal_fs_utils.h"
 #include "jal_linux_cap.h"
-#include "jal_seccomp_enforcer.h"
+#include <jalop/jal_seccomp_enforcer.h>
 #include "jalls_config.h"
 #include "jal_config.h"
 #include "jaldb_config.h"
@@ -361,7 +361,7 @@ int main(int argc, char **argv) {
 			return -1;
 		}
 		if(!jalls_ctx->socket_mode){
-			jalls_ctx->socket_mode = "0666";
+			jalls_ctx->socket_mode = strdup("0666");
 		}
 		if (check_mode(jalls_ctx->socket_mode)!=0){
 			fprintf(stderr, "%s", mode_error);
@@ -675,6 +675,9 @@ err_out:
 	free(jalls_ctx->log_dir);
 	free(jalls_ctx->pid_file);
 	free(jalls_ctx->hostname);
+	free(jalls_ctx->socket_mode);
+	free(jalls_ctx->socket_group);
+	free(jalls_ctx->socket_owner);
 	free(jalls_ctx);
 	EVP_PKEY_free(key);
 	X509_free(cert);

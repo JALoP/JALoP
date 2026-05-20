@@ -111,11 +111,17 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 		signing_key = thread_ctx->signing_key;
 	}
 
+	err = jalls_create_record(JALDB_RTYPE_JOURNAL, thread_ctx, &rec);
+	if (err < 0) {
+		if (debug) {
+			fprintf(stderr, "failed to create record struct\n");
+		}
+		goto err_out;
+	}
+
 	//get a file from the db layer to write the journal data to.
-	uuid_t uuid;
-	uuid_generate(uuid);
 	jal_err = (enum jal_status)jaldb_create_file(thread_ctx->db_ctx->journal_root,
-			&db_payload_path, &db_payload_fd, uuid, JALDB_RTYPE_JOURNAL, JALDB_DTYPE_PAYLOAD);
+			&db_payload_path, &db_payload_fd, rec->uuid, JALDB_RTYPE_JOURNAL, JALDB_DTYPE_PAYLOAD);
 	if (jal_err != JAL_OK) {
 		if (debug) {
 			fprintf(stderr, "could not create a file to store journal data\n");
@@ -192,15 +198,6 @@ extern "C" int jalls_handle_journal_fd(struct jalls_thread_context *thread_ctx, 
 	if (err < 0) {
 		if (debug) {
 			fprintf(stderr, "could not receive BREAK\n");
-		}
-		goto err_out;
-	}
-
-
-	err = jalls_create_record(JALDB_RTYPE_JOURNAL, thread_ctx, &rec);
-	if (err < 0) {
-		if (debug) {
-			fprintf(stderr, "failed to create record struct\n");
 		}
 		goto err_out;
 	}
