@@ -1,5 +1,5 @@
 Name:JALoP-devel
-Version:1.3.1.0
+Version:1.4.0.0
 Release:1%{?dist}
 ExclusiveArch:x86_64
 Summary:JALoP binary installation

@@ -1,5 +1,5 @@
 Name:JALoP
-Version:1.3.1.0
+Version:1.4.0.0
 Release:1%{?dist}
 ExclusiveArch:x86_64
 Summary:JALoP binary installation
@@ -11,9 +11,6 @@ Requires: axl
 Requires: vortex
 Requires: openssl
 Requires: xmlsec1-openssl
-Requires: xmlsec1-gcrypt
-Requires: xmlsec1-gnutls
-Requires: xmlsec1-nss
 Requires: libuuid
 Requires: libxml2
 Requires: libconfig
