@@ -30,7 +30,7 @@
  */
 
 #include <inttypes.h>
-
+#include <stdlib.h>
 #include <jalop/jal_namespaces.h>
 #include <jalop/jalp_journal_metadata.h>
 #include <jalop/jal_status.h>

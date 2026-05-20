@@ -29,7 +29,7 @@
  * limitations under the License.
  */
 
-
+#include <stdlib.h>
 #include <jalop/jalp_journal_metadata.h>
 #include "jal_alloc.h"
 

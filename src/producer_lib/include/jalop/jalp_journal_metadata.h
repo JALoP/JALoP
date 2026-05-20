@@ -400,7 +400,7 @@ struct jalp_journal_metadata {
  */
 struct jalp_journal_metadata *jalp_journal_metadata_create(void);
 /**
- * @ingroup jalp_journal_metadata
+ * @ingroup JournalMetadata
  * Release all memory associated with a jalp_journal_metadata object. This
  * calls the appropriate "*_destroy()" functions and "free()" on all members.
  * @param[in,out] journal_meta the object to destroy, this will be set to NULL.
