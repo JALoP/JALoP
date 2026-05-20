@@ -38,6 +38,7 @@ Below are the platform-specific versions of python and scons that were used to t
   RHEL 7.x: python3.6 (python 3.6.8), scons-3.6
   RHEL 8.x: python3.6 (python 3.6.8), scons-3.6
   RHEL 9.x: python3.9 (python 3.9.21), scons-4.5
+  RHEL 10.x: python3.12 (python 3.12.21), scons-4.8.1
 
 Later versions of Python and scons should work as well, but were not tested.
 
@@ -75,7 +76,7 @@ yum install <JALoP git root>/3rd-party/rust/RHEL<rhel version>/*.x86_64.rpm
 NOTE: The following 3 steps below can be skipped if the JALoP rust dependency rpm was successfully installed
 in the step above.
 
-1. On a RHEL 9 machine/vm, run the following script to package all of the dependencies needed on RHEL 7/8/9.
+1. On a RHEL 9 or 10 machine/vm, run the following script to package all of the dependencies needed on RHEL 7/8/9/10.
 
 sudo sh create_cargo_vendor_files.sh
 
