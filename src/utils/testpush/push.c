@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <jaldb_segment.h>
 
 #include "jal_base64_internal.h"
 
@@ -100,10 +101,22 @@ enum jal_status on_journal_resume(
 	DEBUG_LOG("headers: %p", headers);
 	return JAL_E_INVAL;
 }
+
+static enum jal_status feeder_func(
+		__attribute__((unused)) const uint64_t offset,
+		uint8_t * const buffer,
+		uint64_t *size,
+		__attribute__((unused)) void *feeder_data)
+{
+	static const char payload[] = "payload_buffer";
+	memcpy(buffer, (uint8_t*)payload, strlen(payload));
+	*size = sizeof(payload);
+	return JAL_OK;
+}
+
 enum jal_status __send_record(jaln_session *sess, char *nonce,
-			enum jal_status (*send)(jaln_session *, char *, uint8_t *,
-						uint64_t, uint8_t *,uint64_t,
-						uint8_t *, uint64_t))
+						enum jal_status (*send)(jaln_session *, struct jaldb_record* rec,
+						struct jaln_payload_feeder *feeder))
 {
 	uint8_t *sys_meta_buf = NULL;
 	uint64_t sys_meta_len = 0;
@@ -119,8 +132,60 @@ enum jal_status __send_record(jaln_session *sess, char *nonce,
 	payload_buf = (uint8_t*) strdup("payload_buffer");
 	payload_len = strlen("payload_buffer");
 
-	enum jal_status ret = send(sess, nonce, sys_meta_buf, sys_meta_len,
-				app_meta_buf, app_meta_len, payload_buf, payload_len);
+	struct jaldb_record* rec = jaldb_create_record();
+
+	rec->network_nonce = nonce;
+	nonce = NULL;
+
+	// pid, uid - unknown at this time, will be populated by the subscriber using
+	// the system metadata. We can ignore it
+	//
+	// sys_meta
+	{
+		struct jaldb_segment * sys_meta_seg = jaldb_create_segment();
+
+		sys_meta_seg->length = sys_meta_len;
+		sys_meta_len = 0;
+		sys_meta_seg->payload = sys_meta_buf;
+		sys_meta_buf = NULL;
+		sys_meta_seg->on_disk = 0;
+		sys_meta_seg->fd = -1;
+
+		rec->sys_meta = sys_meta_seg;
+	}
+
+	// app_meta
+	{
+		struct jaldb_segment * app_meta_seg = jaldb_create_segment();
+
+		app_meta_seg->length = app_meta_len;
+		app_meta_len = 0;
+		app_meta_seg->payload = app_meta_buf;
+		app_meta_buf = NULL;
+		app_meta_seg->on_disk = 0;
+		app_meta_seg->fd = -1;
+
+		rec->app_meta = app_meta_seg;
+	}
+
+	{
+		struct jaldb_segment * payload_seg = jaldb_create_segment();
+
+		payload_seg->length = payload_len;
+		payload_len = 0;
+		payload_seg->payload = payload_buf;
+		payload_buf = NULL;
+		payload_seg->on_disk = 0;
+		payload_seg->fd = -1;
+
+		rec->payload = payload_seg;
+	}
+
+	struct jaln_payload_feeder feeder;
+	// mock feeder function doesn't use user data or respect the size input
+	feeder.feeder_data = NULL;
+	feeder.get_bytes = feeder_func;
+	enum jal_status ret = send(sess, rec, &feeder);
 
 	free(sys_meta_buf);
 	free(app_meta_buf);
@@ -132,6 +197,7 @@ __attribute__((noreturn))
 void *send_journal(__attribute__((unused)) void *args) {
 	pthread_exit(NULL);
 }
+
 __attribute__((noreturn))
 void *send_record(void *args) {
 	struct thread_data *data = (struct thread_data *) args;
@@ -140,7 +206,7 @@ void *send_record(void *args) {
 	enum jal_status ret = JAL_E_INVAL;
 
 	while (1) {
-		ret = __send_record(sess, nonce, &jaln_send_audit);\
+		ret = __send_record(sess, nonce, &jaln_send_feeder);
 		if (JAL_OK != ret) {
 			DEBUG_LOG("Failed to send audit record");
 			goto out;
