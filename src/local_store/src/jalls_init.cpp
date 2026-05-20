@@ -38,6 +38,7 @@
 #include <xmlsec/crypto.h>
 #define OPENSSL_V30_VER 0x3000000fL
 #define OPENSSL_V11_VER 0x1010000fL
+#define LIBXML2_V212_VER 21200
 
 int jalls_init()
 {
@@ -49,11 +50,9 @@ int jalls_init()
 	#endif
 	xmlSecInit();
 	xmlSecCryptoDLLoadLibrary((xmlChar*) "openssl");
-	(void)xmlIsMainThread();
 
 	xmlSecCryptoAppInit(NULL);
 	xmlSecCryptoInit();
-
 
 	return 0;
 }
@@ -76,7 +75,10 @@ void jalls_shutdown()
 	#endif
 
 	xmlCleanupParser();
-	xmlCleanupGlobals();
+
+	#if LIBXML_VERSION < LIBXML2_V212_VER
+		xmlCleanupGlobals();
+	#endif
 }
 
 
