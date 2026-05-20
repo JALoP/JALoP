@@ -1,5 +1,5 @@
 ---
-
+# ansible-playbook  src/test_utils/scripts/ansible/multi-subscriber.yml  -e cwd=`pwd` -e perf=p2 -e marker=rust -e rcnt=3 -e types=jalf -e rust_log=debug -e mode=release
 - hosts: localhost
   gather_facts: no
 
@@ -12,6 +12,7 @@
     post_sleep: 0
     mode: "{{ lookup('env', 'marker') | default('debug', true) }}"
     marker_bin: "{{ lookup('env', 'marker_bin') | default('./' ~ mode ~ '/bin', true) }}"
+    rust_log: debug
 
   tasks:
   - name: stop processes
@@ -19,17 +20,16 @@
       killall -9 jal-local-store || true
       killall -9 jal_subscribe || true
       killall -9 jaldb_inline_filter || true
-      killall -9 jald_marker || true
       killall -9 jald || true
       #rm -f {{cwd}}/jald_record_socket
       rm -f {{cwd}}/jald_filter_socket*
       rm -f {{cwd}}/*.sock
-  
+
   - name: clear local store database
     file:
         path: '{{cwd}}/testdb'
         state: absent
-  
+
   - name: clear subscriber database
     file:
         path: '{{cwd}}/subdb'
@@ -44,12 +44,12 @@
     file:
         path: '{{cwd}}/subdb3'
         state: absent
-  
+
   - name: make local store database directory
     file:
         path: '{{cwd}}/testdb'
         state: directory
-  
+
   - name: make subscriber database directory
     file:
         path: '{{cwd}}/subdb'
@@ -59,30 +59,30 @@
     file:
         path: '{{cwd}}/subdb2'
         state: directory
-  
+
   - name: make subscriber3 database directory
     file:
         path: '{{cwd}}/subdb3'
         state: directory
-  
+
   - name: copy DB_CONFIG 1
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/testdb'
-  
+
   - name: copy DB_CONFIG 2
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb'
   - name: copy DB_CONFIG 3
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb2'
   - name: copy DB_CONFIG 4
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb3'
@@ -90,7 +90,7 @@
   - name: pre-sleep
     shell: |
       sleep {{ pre_sleep }}
-  
+
   - name: start local store
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -99,12 +99,12 @@
       umask 027
       ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>./ls.err 1>./ls.out &
 
-  - name: start Rust marker ({{marker_bin}}/jald_marker_rs) 
+  - name: start Rust marker ({{marker_bin}}/jald_marker_rs)
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>./jaldb_inline_filter.err 1>./jaldb_inline_filter.out &
+      RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb -c ./test-input/jaldb-filter.toml 2>./jald_filter.err 1>./jald_filter.out &
     when: marker == 'rust'
 
   - name: start jald
@@ -112,7 +112,7 @@
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      ./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -s -d 2>./jald.err 1>./jald.out &
+      ./{{mode}}/bin/jald -c ./test-input/jald_multi_subs.cfg --no-daemon -s -d 2>./jald.err 1>./jald.out &
 
   - name: start subscriber
     environment:
@@ -148,7 +148,7 @@
         chdir: '{{cwd}}'
         cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
     when: '"l" in types'
- 
+
   - name: send journals
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -211,7 +211,7 @@
         cmd: ./{{mode}}/bin/jaldb_tool -h testdb
     register: jaldb_tool_testdb_output
     when: tear_down | bool
-    
+
   - name: jaldb_tool subdb
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -238,7 +238,7 @@
         cmd: ./{{mode}}/bin/jaldb_tool -h subdb3
     register: jaldb_tool_subdb3_output
     when: tear_down | bool
-        
+
   - name: jaldb_tool output
     shell: |
       cd '{{cwd}}'
@@ -247,16 +247,14 @@
       echo '{{ jaldb_tool_subdb2_output.stdout }}' >> jaldb_tool_output.txt
       echo '{{ jaldb_tool_subdb3_output.stdout }}' >> jaldb_tool_output.txt
     when: tear_down | bool
-      
+
   - name: end processes
     shell: |
       killall jal-local-store || true
       killall jal_subscribe || true
       killall jaldb_inline_filter || true
-      killall jald_marker || true
       killall jald || true
       rm -f {{cwd}}/jald_record_socket_*
       rm -f {{cwd}}/jald_filter_socket
       rm -f {{cwd}}/*.sock
     when: tear_down | bool
-  

@@ -13,7 +13,7 @@
 #collect_system_calls will use this mark to determine where
 #a process transitions from setup stage to routine work stage.
 #   // int fd2;
-#	// fd2 = open("SECCOMP_PROCESS_IS_DONE_SETTING_UP", 0, 0600);
+#	// fd2 = open("Applying final ruleset DONE", 0, 0600);
 #	// if (fd2>0){
 #	// 	close(fd2);
 #	// }
@@ -47,12 +47,12 @@ init_syscalls = set()
 final_syscalls = set()
 break_point_found = 0
 for line in lines :
-    if line.find("SECCOMP_PROCESS_IS_DONE_SETTING_UP")>0:
+    if line.find("Applying final ruleset DONE")>0:
         break_point_found = 1
         continue
     space = line.find(" ") + 1
     leftp = line.find("(")
-    if leftp>0 :        
+    if leftp>0 :
         call = line[space : leftp]
         if call[0] >= 'a' and call[0] <= 'z':
             if break_point_found==0:
@@ -77,9 +77,9 @@ init_syscalls.difference_update(both_syscalls)
 final_syscalls.difference_update(both_syscalls)
 
 print("---------------------------")
-print("INIT ONLY " + str(len(init_syscalls))) 
-print("BOTH " + str(len(both_syscalls))) 
-print("FINAL ONLY " + str(len(final_syscalls))) 
+print("INIT ONLY " + str(len(init_syscalls)))
+print("BOTH " + str(len(both_syscalls)))
+print("FINAL ONLY " + str(len(final_syscalls)))
 print("---------------------------")
 
 #print out init_syscalls in an array
@@ -89,7 +89,7 @@ count = 0;
 for call in init:
     if count>0:
         init_cfg = init_cfg + ",\"" + call + "\""
-    else: 
+    else:
         init_cfg = init_cfg + "\"" + call + "\""
     count = count + 1
 init_cfg = init_cfg + "]"
@@ -101,9 +101,9 @@ both_cfg = "both_seccomp_rules = ["
 count = 0
 for call in both:
     if count>0:
-        both_cfg = both_cfg + ",\"" + call + "\"" 
+        both_cfg = both_cfg + ",\"" + call + "\""
     else:
-        both_cfg = both_cfg + "\"" + call + "\"" 
+        both_cfg = both_cfg + "\"" + call + "\""
     count = count + 1
 both_cfg = both_cfg + "]"
 print (both_cfg)
@@ -114,9 +114,9 @@ final_cfg = "final_seccomp_rules = ["
 count = 0
 for call in final:
     if count>0:
-        final_cfg = final_cfg + ",\"" + call + "\"" 
+        final_cfg = final_cfg + ",\"" + call + "\""
     else:
-        final_cfg = final_cfg + "\"" + call + "\"" 
+        final_cfg = final_cfg + "\"" + call + "\""
     count = count + 1
 final_cfg = final_cfg + "]"
 print (final_cfg)

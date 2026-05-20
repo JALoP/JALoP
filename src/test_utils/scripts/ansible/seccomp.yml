@@ -1,5 +1,5 @@
 ---
-
+# ansible-playbook  src/test_utils/scripts/ansible/local-store-pub-sub-tests-rust.yml  -e cwd=`pwd` -e rcnt=10 -e rust_log=debug -e mode=debug
 - hosts: localhost
   gather_facts: no
 
@@ -8,13 +8,14 @@
     seccomp_out_dir: '{{log_dir}}/seccomp'
     seccomp_options: "strace -f -o "
     marker: "{{ lookup('env', 'marker') | default('none', true) | lower | trim }}"
-    types: alj
+    types: aljf
     tear_down: true
     max_send_time: 3600
     pre_sleep: 0
     post_sleep: 0
     mode: "{{ lookup('env', 'marker') | default('debug', true) }}"
     marker_bin: "{{ lookup('env', 'marker_bin') | default('./' ~ mode ~ '/bin', true) }}"
+    rust_log: debug
 
   tasks:
   - name: stop processes
@@ -22,14 +23,13 @@
       killall -9 jal-local-store || true
       killall -9 jal_subscribe || true
       killall -9 jaldb_inline_filter || true
-      killall -9 jald_marker || true
       killall -9 jald || true
       #rm -f {{cwd}}/jald_record_socket
       rm -f {{cwd}}/jald_filter_socket*
       rm -f {{cwd}}/*.sock
       rm -fr {{log_dir}}
       mkdir -p {{seccomp_out_dir}}/tool_output
-  
+
   - name: clear local store database
     file:
         path: '{{cwd}}/testdb'
@@ -45,12 +45,12 @@
   - name: clear subscriber3 database
     file:
         path: '{{cwd}}/subdb3'
-        state: absent 
-  
+        state: absent
+
   - name: make local store database directory
     file:
         path: '{{cwd}}/testdb'
-        state: directory 
+        state: directory
   - name: make subscriber database directory
     file:
         path: '{{cwd}}/subdb'
@@ -62,57 +62,57 @@
   - name: make subscriber3 database directory
     file:
         path: '{{cwd}}/subdb3'
-        state: directory 
+        state: directory
 
   - name: copy DB_CONFIG 1
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb'
-  
+
   - name: copy DB_CONFIG 2
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/testdb'
   - name: copy DB_CONFIG 3
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb2'
   - name: copy DB_CONFIG 4
-    copy: 
+    copy:
         mode: 0640
         src:  '{{cwd}}/test-input/LMDB_CONFIG'
         dest: '{{cwd}}/subdb3'
   - name: pre-sleep
     shell: |
       sleep {{ pre_sleep }}
-  
+
   - name: start local store
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
       umask 027
-      #{{seccomp_options}} {{seccomp_out_dir}}/seccomp-localstore.out ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
-      ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
+      {{seccomp_options}} {{seccomp_out_dir}}/seccomp-localstore.out ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
+      #./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon 2>{{log_dir}}/local_store.err 1>{{log_dir}}/local_store.out &
 
   - name: start Rust marker ({{marker_bin}}/jaldb_inline_filter)
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      #RUST_LOG={{rust_log}} {{seccomp_options}} {{seccomp_out_dir}}/seccomp-rust-filter.out {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
-      RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb --force --rx-socket-path "./jald_filter_socket_request" --tx-socket-path "./jald_filter_socket" 2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
+      RUST_LOG={{rust_log}} {{seccomp_options}} {{seccomp_out_dir}}/seccomp-rust-filter.out {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d {{cwd}}/testdb 2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
+      #RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -d {{cwd}}/testdb 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
 
   - name: start jald
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      #{{seccomp_options}} {{seccomp_out_dir}}/seccomp-publisher.out ./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -d -f -s 2>{{log_dir}}/jald.err 1>{{log_dir}}/jald.out &
-      ./{{mode}}/bin/jald -c ./test-input/jald2.cfg --no-daemon -d -f -s 2>{{log_dir}}/jald.err 1>{{log_dir}}/jald.out &
+      {{seccomp_options}} {{seccomp_out_dir}}/seccomp-publisher.out ./{{mode}}/bin/jald -c ./test-input/jald_multi_subs.cfg --no-daemon -d -f -s 2>{{log_dir}}/jald.err 1>{{log_dir}}/jald.out &
+      #./{{mode}}/bin/jald -c ./test-input/jald_multi_subs.cfg --no-daemon -d -f -s 2>{{log_dir}}/jald.err 1>{{log_dir}}/jald.out &
 
   - name: start subscriber
     environment:
@@ -147,7 +147,7 @@
         chdir: '{{cwd}}'
         cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
     when: '"l" in types'
-  
+
   - name: send journals
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -207,7 +207,7 @@
     command:
         chdir: '{{cwd}}'
         cmd: ./{{mode}}/bin/jaldb_tool -h testdb
-    register: jaldb_tool_testdb_output   
+    register: jaldb_tool_testdb_output
   - name: jaldb_tool subdb
     environment:
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
@@ -237,13 +237,12 @@
       echo '{{ jaldb_tool_subdb_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
       echo '{{ jaldb_tool_subdb2_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
       echo '{{ jaldb_tool_subdb3_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
-  
+
   - name: end processes
     shell: |
       killall jal-local-store || true
       killall jal_subscribe || true
       killall jaldb_inline_filter || true
-      killall jald_marker || true
       killall jald || true
       rm -f {{cwd}}/jald_record_socket_*
       rm -f {{cwd}}/jald_filter_socket
@@ -252,6 +251,6 @@
   - name: build seccomp html
     shell: |
       cd '{{cwd}}'
-      '{{cwd}}/src/test_utils/scripts/seccomp/create_seccomp_allowed_calls.py' '{{seccomp_out_dir}}' 
+      '{{cwd}}/src/test_utils/scripts/seccomp/create_seccomp_allowed_calls.py' '{{seccomp_out_dir}}'
 
 # sed -i 's/enable_tls.*$/enable_tls = false/g' test-input/jal_subscribe?.cfg

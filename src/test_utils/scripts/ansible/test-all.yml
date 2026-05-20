@@ -1,0 +1,80 @@
+---
+# ansible-playbook -i src/test_utils/scripts/ansible/ansible_inventory.ini src/test_utils/scripts/ansible/test-all.yml -e branch=JAL-1166-V1-Delivery-Testing -e cwd=`pwd` -e rcnt=6 -e jalop_home='~/jalop_home/jalop'
+- hosts: localhost
+  gather_facts: no
+  vars:
+    jalop_home: ~/jalop_home/jalop
+    branch: 1.x.x.x 
+    rcnt: 10
+    use_filter: "yes"
+    subdb: "db"
+    subd: "c"
+    types: "alj"
+  tasks:
+  - name: Test {{branch}}
+    async: 3600
+    poll: 0
+    shell: |
+      cd {{cwd}}
+      if [[ {{use_filter}}  == 'no' ]]; then
+        sed -i 's/version.*$/version = "rhel_8_9_no_filter";/g' test-input/jald_multi_subs.cfg
+      else
+        sed -i 's/version.*$/version = "rhel_8_9";/g' test-input/jald_multi_subs.cfg
+      fi
+      sed -i 's/database_type.*$/database_type = "{{subdb}}";/g' test-input/jal_subscribe.cfg   
+      ansible-playbook  src/test_utils/scripts/ansible/process-test.yml -e cwd=`pwd` -e rcnt={{rcnt}} -e filter={{use_filter}} -e types={{types}} -e subd={{subd}}
+
+- hosts: all
+  user: dlinsalata
+  gather_facts: no
+  vars:
+    jalop_home: ~/jalop_home/jalop
+    branch: 1.x.x.x 
+    rcnt: 10
+    use_filter: "yes"
+    subdb: "db"
+    subd: "c"
+    build: "yes"
+  tasks:      
+  - name: Build {{branch}}
+    shell: |
+      cd {{jalop_home}}
+      git checkout .
+      git pull
+      git checkout {{branch}}
+      git pull
+      . /etc/os-release
+      if [[ $VERSION_ID == 7 ]]; then
+        export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig/
+        scl enable devtoolset-7 "scons-3.6" 
+        
+      else
+        scons
+      fi
+    when: build == "yes"
+  - name: Test {{branch}}
+    shell: |
+      cd {{jalop_home}}
+      . /etc/os-release
+      if [[ $VERSION_ID == 7 ]]; then
+        sed -i 's/version.*$/version = "rhel_7";/g' test-input/local_store.cfg
+        sed -i 's/version.*$/version = "rhel_7";/g' test-input/jal_subscribe.cfg
+        sed -i 's/version.*$/version = "rhel_7";/g' test-input/jald.cfg
+        sed -i 's/version.*$/version = "rhel_7";/g' test-input/jald2.cfg
+        if [[ {{use_filter}}  == 'no' ]]; then
+          sed -i 's/version.*$/version = "rhel_7_no_filter";/g' test-input/jald.cfg
+          sed -i 's/version.*$/version = "rhel_7_no_filter";/g' test-input/jald2.cfg
+        fi
+      else
+        sed -i 's/version.*$/version = "rhel_8_9";/g' test-input/jald2.cfg
+        if [[ {{use_filter}}  == 'no' ]]; then
+          sed -i 's/version.*$/version = "rhel_8_9_no_filter";/g' test-input/jald2.cfg
+        fi
+      fi
+      sed -i 's/database_type.*$/database_type = "{{subdb}}";/g' test-input/jal_subscribe.cfg 
+      ansible-playbook  src/test_utils/scripts/ansible/process-test.yml -e cwd=`pwd` -e rcnt={{rcnt}} -e filter={{use_filter}} -e types={{types}} -e subd={{subd}}
+  - name: Fetch Logs {{branch}}
+    fetch:
+      src: '{{jalop_home}}/test_logs/jaldb_tool_output.txt'
+      dest: '{{cwd}}/test_logs/{{inventory_hostname}}-jaldb_tool_output.txt'
+      flat: yes
