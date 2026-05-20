@@ -6,7 +6,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2018-2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2018-2026 Concurrent Technologies Corporation.
  * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
@@ -35,7 +35,7 @@ int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b)
 	return strcasecmp(str_a, str_b);
 }
 
-int jaln_register_compression(jaln_context *ctx,
+enum jal_status jaln_register_compression(jaln_context *ctx,
 				const char *compression)
 {
 	if (!ctx || !ctx->xml_compressions || !compression) {

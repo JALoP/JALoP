@@ -35,7 +35,7 @@
 // See https://stackoverflow.com/a/217605 for rtrim and alternate implementations
 static void ltrim(std::string& str)
 {
-	str.erase(str.begin(), std::find_if(str.begin(), str.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+	str.erase(str.begin(), std::find_if(str.begin(), str.end(), [](int c) {return !std::isspace(c);}));
 }
 
 // Helper function to extract comma separated values from headers

@@ -80,8 +80,13 @@ int jsub_insert_audit(
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	struct jaldb_record *rec;
+	struct jaldb_record *rec = jaldb_create_record();
 	char* local_nonce = NULL;
+
+	if(!rec){
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
 
 	// Must have sys_meta and audit_doc
 	if (!sys_meta || !audit || !nonce_in || !db_ctx) {
@@ -92,7 +97,7 @@ int jsub_insert_audit(
 		goto out;
 	}
 
-	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+	ret = jaldb_system_metadata_xml_to_record_metadata((uint8_t *)sys_meta, (size_t)sys_len, rec);
 
 	if (ret < 0) {
 		if (debug) {
@@ -148,8 +153,13 @@ int jsub_insert_log(
 		int debug)
 {
 	int ret = JALDB_E_UNKNOWN;
-	struct jaldb_record *rec;
+	struct jaldb_record *rec = jaldb_create_record();
 	char* local_nonce = NULL;
+
+	if(!rec){
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
 
 	// Only requires sys_meta
 	if (!sys_meta || !db_ctx){
@@ -160,7 +170,7 @@ int jsub_insert_log(
 		goto out;
 	}
 
-	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+	ret = jaldb_system_metadata_xml_to_record_metadata((uint8_t *)sys_meta, (size_t)sys_len, rec);
 
 	if (ret < 0) {
 		if (debug) {
@@ -273,8 +283,13 @@ int jsub_insert_journal_metadata(
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	struct jaldb_record *rec;
+	struct jaldb_record *rec = jaldb_create_record();
 	char* local_nonce = NULL;
+
+	if(!rec){
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
 
 	if (!sys_meta || !db_ctx){
 		if (debug) {
@@ -284,7 +299,7 @@ int jsub_insert_journal_metadata(
 		goto out;
 	}
 
-	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+	ret = jaldb_system_metadata_xml_to_record_metadata((uint8_t *)sys_meta, (size_t)sys_len, rec);
 
 	if (ret < 0) {
 		if (debug) {
