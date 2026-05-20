@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/jalop-actors",
+    "crates/jalop-filter",
+    "crates/jalop-sys",
+]
