@@ -355,9 +355,6 @@ const char* jsub_db_status_to_string(jaldb_status db_status);
 * @param[in] db_status The status of the database after an operation.
 * @param[in] err_msg The message to be written.
 *
-* @return
-*  - JALDB_OK if the function succeeds or a JAL error code if the function
-* fails.
 */
 void jsub_write_to_stderr_db_status(jaldb_status db_status, char *err_msg);
 

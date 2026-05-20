@@ -21,7 +21,7 @@ env.MergeFlags(env['libuuid_ldflags'])
 env.MergeFlags(env['lmdb_cflags'])
 env.MergeFlags(env['lmdb_ldflags'])
 
-jsub, jald, jald_marker, net_stores_env = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer network_lib')
+jsub, jald, net_stores_env = env.SConscript('src/SConscript', exports='env jal_utils lib_common db_layer network_lib')
 SConscript('test/SConscript', exports='env net_stores_env all_tests lib_common db_layer jal_utils network_lib test_utils')
 
 Return("jsub jald")

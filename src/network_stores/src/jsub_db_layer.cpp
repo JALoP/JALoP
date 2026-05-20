@@ -90,8 +90,13 @@ int jsub_insert_audit(
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	struct jaldb_record *rec;
+	struct jaldb_record *rec = jaldb_create_record();
 	char* local_nonce = NULL;
+
+	if(!rec){
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
 
 	// Must have sys_meta and audit_doc
 	if (!sys_meta || !audit || !nonce_in || !db_ctx) {
@@ -102,7 +107,7 @@ int jsub_insert_audit(
 		goto out;
 	}
 
-	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+	ret = jaldb_system_metadata_xml_to_record_metadata((uint8_t *)sys_meta, (size_t)sys_len, rec);
 
 	if (ret < 0) {
 		if (debug) {
@@ -158,8 +163,13 @@ int jsub_insert_log(
 		int debug)
 {
 	int ret = JALDB_E_UNKNOWN;
-	struct jaldb_record *rec;
+	struct jaldb_record *rec = jaldb_create_record();
 	char* local_nonce = NULL;
+
+	if(!rec){
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
 
 	// Only requires sys_meta
 	if (!sys_meta || !db_ctx){
@@ -170,7 +180,7 @@ int jsub_insert_log(
 		goto out;
 	}
 
-	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+	ret = jaldb_system_metadata_xml_to_record_metadata((uint8_t *)sys_meta, (size_t)sys_len, rec);
 
 	if (ret < 0) {
 		if (debug) {
@@ -213,6 +223,11 @@ out:
 	return ret;
 }
 
+std::string getUidFromNonce(std::string nonce){
+	// NONCE 515e1854-705f-4b67-af48-0aa5fca438e1_2025-11-21T15:37:48.934622_865230_3896505920
+	// UUID  515e1854-705f-4b67-af48-0aa5fca438e1 (36 characters)
+	return nonce.substr(0,36);
+}
 int jsub_write_journal(
 		jaldb_context *db_ctx,
 		char **db_payload_path,
@@ -236,12 +251,15 @@ int jsub_write_journal(
 	if (!*db_payload_path && (-1 == *db_payload_fd)) {
 		// Path is NULL and FileDescriptor is invalid,
 		//	get a file from the db layer to write the
-		//	journal data to.
+		//	journal data to.	
+		
+		std::string suuid = getUidFromNonce(nonce).c_str();
 		uuid_t uuid;
-		uuid_generate(uuid);
-		//TODO: This needs to be updated to parse the uuid from the sys metadata
+		uuid_parse(suuid.c_str(), uuid);
+		
 		ret = jaldb_create_file(db_ctx->journal_root, db_payload_path, db_payload_fd,
 				uuid, JALDB_RTYPE_JOURNAL, JALDB_DTYPE_PAYLOAD);
+		
 		if (ret != JALDB_OK) {
 			if (debug) {
 				DEBUG_LOG("Could not create a file to store journal data\n");
@@ -283,8 +301,13 @@ int jsub_insert_journal_metadata(
 		int debug)
 {
 	int ret = JAL_E_INVAL;
-	struct jaldb_record *rec;
+	struct jaldb_record *rec = jaldb_create_record();
 	char* local_nonce = NULL;
+
+	if(!rec){
+		ret = JAL_E_NO_MEM;
+		goto out;
+	}
 
 	if (!sys_meta || !db_ctx){
 		if (debug) {
@@ -294,7 +317,7 @@ int jsub_insert_journal_metadata(
 		goto out;
 	}
 
-	ret = jaldb_xml_to_sys_metadata((uint8_t *)sys_meta, (size_t)sys_len, &rec);
+	ret = jaldb_system_metadata_xml_to_record_metadata((uint8_t *)sys_meta, (size_t)sys_len, rec);
 
 	if (ret < 0) {
 		if (debug) {
