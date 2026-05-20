@@ -39,6 +39,7 @@
 #include <jalop/jalp_context.h>
 #define OPENSSL_V30_VER 0x3000000fL
 #define OPENSSL_V11_VER 0x1010000fL
+#define LIBXML2_V212_VER 21200
 
 enum jal_status jalp_init()
 {
@@ -53,7 +54,6 @@ enum jal_status jalp_init()
 	xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl");
 	xmlSecCryptoAppInit(NULL);
 	xmlSecCryptoInit();
-	(void)xmlIsMainThread();
 
 	return JAL_OK;
 }
@@ -76,5 +76,8 @@ void jalp_shutdown()
 	#endif
 
 	xmlCleanupParser();
-	xmlCleanupGlobals();
+
+	#if LIBXML_VERSION < LIBXML2_V212_VER
+		xmlCleanupGlobals();
+	#endif
 }

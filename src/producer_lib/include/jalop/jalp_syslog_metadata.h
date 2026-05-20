@@ -102,7 +102,6 @@ struct jalp_syslog_metadata *jalp_syslog_metadata_create(void);
  * Destroy a #jalp_syslog_metadata structure and all it's members.
  * @param[in,out] syslog_meta A #jalp_syslog_metadata object to destroy. This will
  * be set to NULL.
- * @return JAL_OK, or JAL_BAD_POINTER
  */
 void jalp_syslog_metadata_destroy(struct jalp_syslog_metadata **syslog_meta);
 /** @} */
