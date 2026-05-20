@@ -38,7 +38,7 @@
 #include "jaln_digest_resp_info.h"
 #include "jaln_digest_resp_msg_handler.h"
 
-#define JALN_DIGEST_RESPONSE_TIMEOUT_USECS 30*1000000
+#define JALN_DIGEST_RESPONSE_TIMEOUT_USECS 10*1000000
 
 axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 	jaln_session *sess = (jaln_session*) user_data;
@@ -49,7 +49,6 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 			// wait failed? now what... I guess try again?
 			continue;
 		}
-
 		// no point sending empty digest/sync messages
 		if (!sess->errored && axl_list_length(sess->dgst_list) > 0) {
 			axlList *dgst_list = sess->dgst_list;
@@ -60,17 +59,11 @@ axlPointer jaln_sub_dgst_wait_thread(axlPointer user_data) {
 		}
 
 		if (sess->errored || sess->closing) {
-			// try to close the channel;
-			if (sess->dgst_chan) {
-				vortex_channel_close_full(sess->dgst_chan, jaln_session_notify_close, sess);
-				vortex_mutex_unlock(&sess->lock);
-				break;
-			} else {
-				vortex_mutex_unlock(&sess->lock);
-				break;
-			}
+			vortex_mutex_unlock(&sess->lock);
+			break;
 		}
 	}
+	fprintf(stderr, "jaln_sub_dgst_wait_thread DONE \n");
 	return NULL;
 }
 

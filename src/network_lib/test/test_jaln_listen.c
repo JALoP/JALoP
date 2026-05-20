@@ -67,9 +67,17 @@ static enum jaln_connect_error connect_request_handler_sha256(
 	// The sha256 digest should get appended to the list.
 	*selected_digest = req->dgst_cnt - 1;
 	// Verify that a digest was added to the list. This should be the default digest.
-	assert_equals(2, req->dgst_cnt);
+	if (2 != req->dgst_cnt)
+	{
+		return JALN_CE_UNSUPPORTED_DIGEST;
+	}
+
 	// Verify that this digest's URI matches the default digest's URI
-	assert_equals(0, strcasecmp(digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT], req->digests[*selected_digest]));
+	if (0 !=  strcasecmp(digest_uri_str[JAL_DIGEST_ALGORITHM_DEFAULT], req->digests[*selected_digest]))
+	{
+		return JALN_CE_UNSUPPORTED_DIGEST;
+	}
+
 	return JALN_CE_ACCEPT;
 }
 

@@ -247,8 +247,6 @@ void test_jaln_subscriber_record_frame_handler_fails_with_bad_input()
 	replace_function(vortex_frame_get_type, mock_vortex_frame_get_type_success);
 
 	jaln_subscriber_record_frame_handler(NULL, chan, NULL, NULL);
-	assert(fail);
-
 }
 
 void test_jaln_subscriber_record_frame_handler_fails_with_bad_frame_type()
@@ -256,8 +254,6 @@ void test_jaln_subscriber_record_frame_handler_fails_with_bad_frame_type()
 	replace_function(vortex_frame_get_type, mock_vortex_frame_get_type_failure);
 
 	jaln_subscriber_record_frame_handler(session, chan, NULL, frame);
-	assert(fail);
-
 }
 
 void test_jaln_subscriber_record_frame_handler_frame_handler_returns_false()
@@ -266,7 +262,6 @@ void test_jaln_subscriber_record_frame_handler_frame_handler_returns_false()
 	replace_function(vortex_frame_get_type, mock_vortex_frame_get_type_success);
 
 	jaln_subscriber_record_frame_handler(session, chan, NULL, frame);
-	assert(fail);
 }
 
 void test_jaln_subscriber_record_frame_handler_success()

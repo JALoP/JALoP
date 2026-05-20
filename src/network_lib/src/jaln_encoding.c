@@ -39,7 +39,7 @@ int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b)
 	return strcasecmp(str_a, str_b);
 }
 
-int jaln_register_encoding(jaln_context *ctx,
+enum jal_status jaln_register_encoding(jaln_context *ctx,
 				const char *encoding)
 {
 	if (!ctx || !ctx->xml_encodings || !encoding) {

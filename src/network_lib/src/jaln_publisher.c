@@ -297,6 +297,7 @@ enum jal_status jaln_pub_handle_journal_resume(jaln_session *sess, VortexChannel
 	rec_info.nonce = jal_strdup(nonce);
 
 	ret = cbs->on_journal_resume(sess, ch_info, &rec_info, offset, &pd->sys_meta, &pd->app_meta, NULL, ud);
+	free(rec_info.nonce);
 	if (JAL_OK != ret) {
 		goto err_out;
 	}

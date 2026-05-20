@@ -10,6 +10,8 @@ env = env.Clone()
 # -fcommon needed to restore original gcc behavior in rhel9 to prevent multiple definition linker errors
 ccflags = ' -fcommon -Wno-format-nonliteral '
 
+env.MergeFlags({'CPPPATH': ('#src/lmdb_layer/src:').split(':')})
+
 env.Append(CCFLAGS=ccflags.split())
 env.Append(RPATH=os.path.dirname(str(lib_common[0])))
 
