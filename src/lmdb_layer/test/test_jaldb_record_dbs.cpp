@@ -6,7 +6,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,7 +221,7 @@ void teardown()
 {
 	jaldb_destroy_record_dbs(&rdbs);
 	restore_function(db_create);
-	xmlSchemaCleanupTypes();
+	xmlCleanupParser();
 }
 
 void test_create_initializes_to_null()

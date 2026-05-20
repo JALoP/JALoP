@@ -6,7 +6,7 @@
  *
  * ### LICENSE
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,11 +69,11 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 
 /*
  * Function to parse sys metadata xml into a jaldb_record structure
- * @param xml [in] buffer containing the xml to parse
+ * @param system_metadata_xml [in] buffer containing the xml to parse
  * @param xml_len [in] Length of buffer
- * @param sys_meta [out] The populated structure
+ * @param rec [in] The record to populate
  */
-enum jal_status jaldb_xml_to_sys_metadata(uint8_t *xml, size_t xml_len, struct jaldb_record **sys_meta);
+enum jal_status jaldb_system_metadata_xml_to_record_metadata(uint8_t *system_metadata_xml, size_t xml_len, struct jaldb_record *rec);
 
 
 
