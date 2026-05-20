@@ -1,7 +1,7 @@
 /**
  * @file jal_ts_utils.h This file defines general timestamp utility functions.
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

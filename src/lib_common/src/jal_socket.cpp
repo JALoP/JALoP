@@ -8,7 +8,7 @@
  * Source code in 3rd-party is licensed and owned by their respective
  * copyright holders.
  *
- * Copyright (C) 2025 The National Security Agency (NSA)
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
