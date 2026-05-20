@@ -135,19 +135,14 @@ def display_file(file):
         process_el.set("InvalidWrite", str(InvalidWrite))
         process_el.set("InvalidRead", str(InvalidRead))
 
-xslt_path = sys.argv[1]
-xml_dir = sys.argv[2]
-#sys.exit("goodbye")
+xml_dir = sys.argv[1]
+
 xml_files = [f for f in os.listdir(xml_dir) if os.path.isfile(xml_dir + os.sep + f)]
 for filename in xml_files:
     xml_path = os.path.join(xml_dir, filename)
     name, extension = os.path.splitext(filename)
     if (extension == ".xml"):
-        #print(xml_path)
         display_file(xml_path)
-        #print("file: " + xml_path)
-        # command = "xsltproc " + xslt_path + " " + xml_path + " > " + xml_dir + "/" + name + ".html"
-        # os.system(command)
 
 summary_el.set("TotalErrors", str(sumTotalErrors))   
 summary_el.set("SyscallParam", str(sumSyscallParam))

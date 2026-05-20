@@ -80,8 +80,8 @@
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      RUST_LOG={{rust_log}} valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-rust-filter.xml {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d ./testdb  2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
-      #RUST_LOG={{rust_log}} {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d ./testdb 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
+      RUST_LOG=debug valgrind {{valgrind_options}} --xml-file={{valgrind_out_dir}}/valgrind-rust-filter.xml {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d ./testdb  2>{{log_dir}}/jaldb_inline_filter.err 1>{{log_dir}}/jaldb_inline_filter.out &
+      #RUST_LOG=debug {{marker_bin}}/jaldb_inline_filter -c ./test-input/jaldb-filter.toml -d ./testdb 2>{{log_dir}}/jald_marker.err 1>{{log_dir}}/jald_marker.out &
 
   - name: start subscriber
     environment:
@@ -192,8 +192,8 @@
   - name: jaldb_tool output
     shell: |
       cd '{{cwd}}'
-      echo '{{ jaldb_tool_testdb_output.stdout }}' > {{log_dir}}/jaldb_tool_output.json
-      echo '{{ jaldb_tool_subdb_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
+      echo '{{ jaldb_tool_testdb_output.stdout }}' > {{log_dir}}/jaldb_tool_output.txt
+      echo '{{ jaldb_tool_subdb_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.txt
     when: tear_down | bool
 
   - name: jaldb_tail
@@ -221,7 +221,7 @@
       LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
     shell: |
       cd '{{cwd}}'
-      echo '{{ jal_dump_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.json
+      echo '{{ jal_dump_output.stdout }}' >> {{log_dir}}/jaldb_tool_output.txt
     when: tear_down | bool
 
   - name: end process
@@ -258,7 +258,7 @@
     shell: |
       cd '{{cwd}}'
       sleep 5
-      '{{cwd}}/src/test_utils/scripts/valgrind/create_html.py' '{{cwd}}/src/test_utils/scripts/valgrind/valgrind-xml-html.xslt' '{{cwd}}/test_logs/valgrind' 1> '{{valgrind_out_dir}}/tool_output/valgrind_errors_v2.xml'
+      '{{cwd}}/src/test_utils/scripts/valgrind/create_html.py' '{{cwd}}/test_logs/valgrind' 1> '{{valgrind_out_dir}}/tool_output/valgrind_errors_v2.xml'
 
   - name: build valgrind html
     shell: |

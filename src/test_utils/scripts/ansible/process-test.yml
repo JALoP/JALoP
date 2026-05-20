@@ -1,6 +1,6 @@
 ---
 # when testing with java subscriber, copy the correct java jar version to the jalop root and rename jnl_test-v2.jar
-# ansible-playbook  src/test_utils/scripts/ansible/process-test.yml -e cwd=`pwd` -e rcnt=3000 -e filter=yes -e subd=java
+# ansible-playbook  src/test_utils/scripts/ansible/process-test.yml -e cwd=`pwd` -e rcnt=6000 -e filter=yes -e subd=java
 - hosts: localhost
   gather_facts: no
 
@@ -83,7 +83,7 @@
 
   - name: sleep
     shell: |
-      sleep 5
+      sleep 2
 
   - name: send logs
     environment:
@@ -94,6 +94,15 @@
         chdir: '{{cwd}}'
         cmd: './{{mode}}/bin/jalp_test -j ./jal.sock -a ./test-input/sample2.cfg -p ./test-input/good_audit_input.xml -n {{rcnt}} -t l'
     when: '"l" in types'
+  
+  - name: send jaf audits
+    async: 3600
+    poll: 0
+    shell: |
+        cd '{{cwd}}'
+        # valgrind --leak-check=full --show-leak-kinds=all --fair-sched=yes --xml=yes --track-origins=yes --xml-file={{log_dir}}/valgrind-jafgen.xml 
+        jafgen -c ./test-input/jaf/jaf.cfg -p ./test-input/jaf/manyEvents.xml -i ./test-input/jaf/manyEvents.dat -e -j -s ./jal.sock -x ./test-input/schemas 2>{{log_dir}}/jafgen.err 1>{{log_dir}}/jafgen.out &
+    when: '"g" in types'
 
   - name: send journals
     environment:
@@ -127,7 +136,7 @@
 
   - name: sleep
     shell: |
-      sleep 20
+      sleep 2
       PID=`/usr/sbin/pidof ./{{mode}}/bin/jald`
       (( cpu="10" ))
       (( retry_count=0 ))

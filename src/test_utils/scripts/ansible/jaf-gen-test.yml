@@ -1,0 +1,83 @@
+---
+# ansible-playbook  src/test_utils/scripts/ansible/jaf-gen-test.yml -e cwd=`pwd`
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    log_dir: '{{cwd}}/test_logs'
+    valgrind_cmd: 'valgrind --leak-check=full --show-leak-kinds=all --fair-sched=yes --xml=yes --track-origins=yes --xml-file={{log_dir}}/valgrind-jafgen.xml'
+    mode: release
+  tasks:
+  - name: stop processes
+    shell: |
+      killall -9 jal-local-store || true
+      rm -f {{cwd}}/*.sock
+  - name: clear database
+    shell: |
+      cd '{{cwd}}'
+      rm -fr testdb/*
+      cp test-input/LMDB_CONFIG testdb
+      rm -fr '{{log_dir}}'
+      mkdir '{{log_dir}}'
+  - name: start local store
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      umask 027
+      ./{{mode}}/bin/jal-local-store -c ./test-input/local_store.cfg --no-daemon -d 2>{{log_dir}}/ls.err 1>{{log_dir}}/ls.out &
+  - name: send audits
+    shell: |
+        sleep 2
+        cd '{{cwd}}'
+        # --gen-suppressions=all
+        # --suppressions='{{cwd}}/src/test_utils/scripts/valgrind/jaf_gen.supp'
+        {{valgrind_cmd}} --suppressions='{{cwd}}/src/test_utils/scripts/valgrind/jaf_gen.supp' jafgen -c ./test-input/jaf/jaf.cfg -p ./test-input/jaf/manyEvents.xml -p ./test-input/jaf/manyEvents2.xml -i ./test-input/jaf/manyEvents.dat -e -j -s ./jal.sock -x ./test-input/schemas 2>{{log_dir}}/jafgen.err 1>{{log_dir}}/jafgen.out &
+        # {{valgrind_cmd}} 
+        sleep 20
+  
+  - name: jaldb_tool testdb
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    command:
+        chdir: '{{cwd}}'
+        cmd: ./{{mode}}/bin/jaldb_tool -h testdb -t a
+    register: jaldb_tool_testdb_output
+  
+  - name: jaldb_tail
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./{{mode}}/bin/jaldb_tail -h testdb/ -t a|grep -P -m 1 '\dT\d'|sed 's/_.*//'|sed 's/\s//'
+    register: jaldb_tail_output
+  
+  - name: jal_dump
+    environment:
+      LD_LIBRARY_PATH: '{{cwd}}/{{mode}}/lib'
+    shell: |
+      cd '{{cwd}}'
+      ./{{mode}}/bin/jal_dump -h testdb/ -u '{{ jaldb_tail_output.stdout }}' -d z -t a
+    register: jal_dump_output
+
+  - name: jal_collect_output
+    shell: |
+      cd '{{cwd}}'
+      echo '{{ jaldb_tool_testdb_output.stdout }}' > {{log_dir}}/test_results.txt
+      echo '{{ jal_dump_output.stdout }}' >> {{log_dir}}/test_results.txt
+  
+  - name: end processes
+    shell: |
+      killall jal-local-store || true
+      rm -f {{cwd}}/*.sock
+
+  - name: combine valgrind xml
+    shell: |
+      cd '{{cwd}}'
+      sleep 5
+      '{{cwd}}/src/test_utils/scripts/valgrind/create_html.py' '{{cwd}}/test_logs' 1> '{{log_dir}}/valgrind_errors_jafgen.xml'
+
+  - name: build valgrind html
+    shell: |
+      cd '{{cwd}}'
+      xsltproc '{{cwd}}/src/test_utils/scripts/valgrind/all-valgrind-xml-html.xslt' '{{log_dir}}/valgrind_errors_jafgen.xml' 1> '{{log_dir}}/valgrind_errors_jafgen.html'

@@ -10,15 +10,16 @@
 				#summary_table td:nth-child(1):hover {background-color: #4169e1 !important}
 				.summary_button:hover {background-color: #4169e1 !important; color: white}
 
+				.help_table{border: 1px; width: 100%; cellspacing:0; border-spacing:0; border-collapse:collapse; display: block}
+				.help_table th{color: black; text-decoration: none;border: solid 1px; padding:5px; margin:0}
+				.help_table td {border: solid 1px; padding: 5px; margin:0}
+				.help_caption {border:0px solid black; font-weight: bold; font-size: 1.5em; padding-left: 5px; padding-right: 5px ; color:brown }
+				.caption {border:1px solid black; font-weight: bold; font-size: 1.5em; padding-left: 5px; padding-right: 5px  }
+
 				#frame_table{border: 1px; width: 100%; cellspacing:0; border-spacing:0; border-collapse:collapse; display: block}
 				#frame_table th{color: black; text-decoration: none;border: solid 1px; padding:5px; margin:0}
 				#frame_table td {border: solid 1px; padding: 5px; margin:0}
-				#frame_table_caption {border:1px solid black; font-weight: bold; margin-left: 20px }
-				
-				#main_div {position: absolute; left:0%; top:0%; width:100%; height:100%; display: block}
-				#top_div  {position: absolute; left:1%; top:1%; width:98%; height:5%; display: block; border: 1px solid black; background: white;}
-				#summary_div{position: absolute; left:1%; top:6%; width:98%; height: 93%; border:1px solid #4169e1; display: block; overflow:auto}
-				#frame_div{position: absolute; left:1%; top:6%; width:98%; height: 93%; border:1px solid #4169e1; display: none; overflow:auto}
+				#frame_table_caption {border:1px solid black; font-weight: bold; font-size: 1.5em; padding-left: 5px; padding-right: 5px  }
 				
 				.frame_row {display:none}
 				#frame_table th:hover {background-color: #4169e1 !important}
@@ -27,16 +28,36 @@
 				#frame_table td:nth-child(4):hover {background-color: #4169e1 !important}
 				#frame_table tr:hover {cursor: pointer;}
 				caption{font-size: 1em; margin: 10px; font-weight: bold; color:#4169e1}
-				.top_table{margin-left:20px;border: 1px; width: 100%; display: block; text-align:center; border-collapse:collapse;}
+				.top_table{margin-left:0px;border: 1px; width: 100%; display: block; text-align:center; border-collapse:collapse;}
 				.top_table th{color: black; text-decoration: none;border: solid 1px; padding:5px; margin:0}
 				.top_table td {border: solid 1px; padding: 5px; margin:0; background:white; color: #4169e1}
 				.top_table tr {width: 100%}
 				.top_table th:hover {background-color: #4169e1 !important; color:white !important}
 				h4 {margin-left: 20px; padding: 5px; margin: 5px; color: #4169e1}
+								
+				#help_div{position: absolute; left:0%; top:0%; width:33%; height: 100%; border:1px solid #4169e1; display: none; overflow:auto}
+				#main_div {position: absolute; left:0%; top:0%; width:100%; height:100%; display: block}
+				#top_div  {position: absolute; left:1%; top:1%; width:98%; height:5%; display: block; border: 1px solid black; background: white;}
+				#summary_div{position: absolute; left:1%; top:6%; width:98%; height: 93%; border:1px solid #4169e1; display: block; overflow:auto}
+				#frame_div{position: absolute; left:1%; top:6%; width:98%; height: 93%; border:1px solid #4169e1; display: none; overflow:auto}
             </style>
             <script type="text/javascript">
 				<xsl:text disable-output-escaping="yes">
 					<![CDATA[
+						function show_help(){
+							help_div = document.getElementById("help_div");
+							main_div = document.getElementById("main_div");
+							if(help_div.style.display==='block'){
+								help_div.style.display = 'none';
+								main_div.style.left = "0%";
+								main_div.style.width = "100%";
+							}
+							else{
+								help_div.style.display = 'block';
+								main_div.style.left = "34%";
+								main_div.style.width = "65%";
+							}
+						}
 						function highlight_summary_buttons(button){
 							els = document.getElementsByClassName("summary_button");
 							for(let x=0; x<els.length; x++){
@@ -94,7 +115,7 @@
                                 }
                                 caption = document.getElementById("frame_table_caption");
                             }
-                            caption.innerHTML = "Stack Frame Table - " + process;
+                            caption.innerHTML = "Frame Table - " + process;
                             //highlight_summary_buttons("");
 							frame_div.style.display = 'block';
 							summary_div.style.display = 'none';
@@ -119,7 +140,7 @@
                                 }
                                 caption = document.getElementById("frame_table_caption");
                             }
-                            caption.innerHTML = "Stack Frame Table - " + kind;
+                            caption.innerHTML = "Frame Table - " + kind;
                             frame_div.style.display = 'block';
 							summary_div.style.display = 'none';
 							//highlight_summary_buttons(kind);
@@ -219,17 +240,64 @@
 				</xsl:text>
 			</script>
 			<body onload="">
-            
+            <div id="help_div">
+				<table style="width:100%">
+					<tr>
+						<td class="help_caption">Valgrind Report Help</td>
+						<td><input type="button" value="Close Help" onclick="show_help()" /></td>
+					</tr>
+				</table>
+				<h4 class="help_caption">Summary Table</h4>
+				<table class="help_table">
+					<tr>
+						<th>Show Frames</th>
+						<td>Will show frames from all processes in this report.</td>
+					</tr>
+					<tr>
+						<th></th>
+						<td>If "show only last frame per error" is selected, it will do just that.</td>
+					</tr>
+					<tr>
+						<th>Column Headers</th>
+						<td>Clicking on any column header, will show frames for that particular error type for all processes.</td>
+					</tr>
+					<tr>
+						<th>Process Column Cell</th>
+						<td>Clicking on the process name, will show all frames for that particular process.</td>
+					</tr>
+				</table>
+				<h4 class="help_caption">Frame Table</h4>
+				<table class="help_table">
+					<tr>
+						<th>Column Headers</th>
+						<td>Clicking on any column header, will sort the table by that column.</td>
+					</tr>
+					<tr>
+						<th>Process Column Cell</th>
+						<td>Clicking on the process name, will show all frames for that particular process.</td>
+					</tr>
+					<tr>
+						<th>Error Column Cell</th>
+						<td>Clicking on the error number, will show all frames for that particular error.</td>
+					</tr>
+					<tr>
+						<th>Kind Column Cell</th>
+						<td>Clicking on the error kind, will show all frames for that particular error kind.</td>
+					</tr>
+				</table>
+			</div>
 			<div id="main_div">
 			<div id="top_div">
 				<h4>Valgrind <xsl:value-of select="valgrind_trace/summary/@Date"/></h4>
-			</div>
+			</div>		
 			<div id="summary_div">
 				<table class="top_table">
 					<tr>
+						<td class="caption">Summary Table</td>
 						<td><input type="button" value="Show Frames" onclick="toggle_divs()" /></td>
 						<td>show only last frame per error</td>
 						<td><input type="checkbox" name="one_frame" id="one_frame" checked="false"/></td>
+						<td><input type="button" value="Show Help" onclick="show_help()" /></td>
 					</tr>
 				</table>
 				<table id="summary_table">
@@ -276,8 +344,9 @@
 			<div id="frame_div">
 			<table class="top_table">
 				<tr>
-					<td><input type="button" value="Show Summary" onclick="toggle_divs()" /></td>
-					<td id="frame_table_caption">Stack Frame Table</td>
+					<td id="frame_table_caption">Frame Table - All</td>
+					<td><input type="button" value="Back to Summary" onclick="toggle_divs()" /></td>
+					<td><input type="button" value="Show Help" onclick="show_help()" /></td>
 				</tr>
 			</table>
 			<table id="frame_table">
