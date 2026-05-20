@@ -16,6 +16,7 @@ libc = "0.2"
 
 [features]
 default = []
+rhel10 = ["bindgen"]
 rhel9 = ["bindgen"]
 rhel8 = []
 rhel7 = []

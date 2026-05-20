@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides an [Actor] implementation that maps to a JALoP subscriber [RecordType] channel.
 use crate::db::Reader;
 use crate::sender::{SendResp, SenderActor, SenderMsg};
 use crate::time::Timestamp;
@@ -28,15 +29,16 @@ use jalop_sys::RecordType;
 use log::{error, info, warn};
 use std::time::Duration;
 
+/// A subscriber of a [RecordType] in archive mode
 pub struct ArchiveSubscriber {
     id: TokenId,
     rt: RecordType,
     tx: ActorRef<SenderActor>,
     db: Reader,
     writer: ActorRef<WriterActor>,
-    cnt: usize,
 }
 
+/// A subscriber of a [RecordType] in live mode
 pub struct LiveSubscriber {
     id: TokenId,
     ts: Timestamp,
@@ -53,14 +55,7 @@ impl ArchiveSubscriber {
         db: Reader,
         writer: ActorRef<WriterActor>,
     ) -> Self {
-        Self {
-            id,
-            rt,
-            tx,
-            db,
-            writer,
-            cnt: 0,
-        }
+        Self { id, rt, tx, db, writer }
     }
 }
 
@@ -73,13 +68,6 @@ impl LiveSubscriber {
 #[async_trait]
 impl Actor for ArchiveSubscriber {
     type Behavior = ();
-
-    async fn post_stop(&mut self, _ctx: &mut ActorContext<Self::Behavior>) {
-        info!(
-            "{} subscriber {} stopping after processing {} records",
-            self.rt, self.id, self.cnt
-        );
-    }
 }
 
 impl Actor for LiveSubscriber {
@@ -139,16 +127,13 @@ impl Receiver<SubscriberMsg> for ArchiveSubscriber {
                         let send_res = self.tx.ask(SenderMsg::Send(self.id, record)).await??;
                         match send_res {
                             SendResp::Pending(mut accepted, _sent) => {
-                                self.cnt += 1;
                                 let _ = accepted.recv().await;
                             }
                             SendResp::Failure(nonce) => {
                                 warn!("send of {nonce} failed, marking unsent");
                                 let _ = self.writer.tell(self.make_unsent_msg(&nonce)).await;
                             }
-                            SendResp::Success => {
-                                self.cnt += 1;
-                            }
+                            SendResp::Success => {}
                         }
                         tell_self!(ctx, SubscriberMsg::ReadNext);
                     }

@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides a safe timestamp interface to the underlying JALoP timestamp
 use crate::Error;
 use anyhow::bail;
 use std::fmt::{Display, Formatter};

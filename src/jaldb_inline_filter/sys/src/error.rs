@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  * limitations under the License.
 */
 
+//! This module defines errors that can occur when interacting with the JALoP native interface.
 use thiserror::Error;
 
+/// An error that can occur when interacting with the JALoP native interface.
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
     // db context related

@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  * limitations under the License.
 */
 
+//! This module provides asynchronous signal handling for the application by catching
+//! and distributing OS signals to any async task that has subscribed.
 use log::{info, warn};
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::broadcast;

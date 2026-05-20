@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@ pub mod flags;
 pub mod record_data;
 mod record_type;
 pub use record_type::*;
+
+// provide ffi bindings to jal seccomp on el7
+// libseccomp is too old on el7 to be supported by libseccomp-rs
+#[cfg(feature = "rhel7")]
+pub mod jal_seccomp;
 
 use crate::error::Error;
 use crate::error::Error::UnexpectedFfiError;

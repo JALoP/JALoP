@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@ mod error;
 
 pub use crate::error::Error;
 
+pub mod config;
 pub mod db;
 pub mod kill;
 pub mod queue;
 pub mod receiver;
+pub mod seccomp;
 pub mod sender;
 pub mod subscriber;
 pub mod time;

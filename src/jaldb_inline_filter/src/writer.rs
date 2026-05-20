@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provide an [Actor] and [Protocol] for writing to the JALoP database through a [Writer]
 use crate::db::Writer;
 use crate::writer::Request::{MarkSent, MarkSynced, MarkUnsent, MarkUnsyncedUnsent};
 use async_trait::async_trait;

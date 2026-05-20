@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  * limitations under the License.
 */
 
+//! This module provides an interface to produce accessors of the JALoP database.
+//! The [Pool] acts as a producer of [Reader] and [Writer] DB accessors, and following
+//! the Single writer Multiple Reader (SWMR) pattern it limits production to a single [Writer] while
+//! allowing multiple [Reader] instances. There should be one [Pool] created per underlying database.
 use crate::error::Error;
 use crate::error::Error::*;
 use crate::time::Timestamp;
@@ -36,7 +40,7 @@ use tokio::time::sleep;
 type NotifyRx = watch::Receiver<bool>;
 type NotifyTx = watch::Sender<bool>;
 
-/// Context writer
+/// Database writer
 /// Single instance per [Pool]
 pub struct Writer {
     ctx: Context,
@@ -44,6 +48,7 @@ pub struct Writer {
 }
 
 impl Writer {
+    /// Mark all unsynced records for the [RecordType] unsent
     pub fn mark_unsynced_records_unsent(&mut self, rec_type: RecordType) -> Result<(), Error> {
         if *self.notify.borrow() {
             return Err(ConnectionClosed);
@@ -51,6 +56,7 @@ impl Writer {
         Ok(self.ctx.mark_unsynced_records_unsent(rec_type)?)
     }
 
+    /// Mark a single record of the given [RecordType] and identified by the nonce
     pub fn mark_sent(&mut self, rec_type: RecordType, nonce: &str) -> Result<(), Error> {
         if *self.notify.borrow() {
             return Err(ConnectionClosed);
@@ -58,6 +64,7 @@ impl Writer {
         Ok(self.ctx.mark_sent(rec_type, nonce)?)
     }
 
+    /// Mark a single record of the given [RecordType] and identified by the nonce
     pub fn mark_unsent(&mut self, rec_type: RecordType, nonce: &str) -> Result<(), Error> {
         if *self.notify.borrow() {
             return Err(ConnectionClosed);
@@ -65,6 +72,7 @@ impl Writer {
         Ok(self.ctx.mark_unsent(rec_type, nonce)?)
     }
 
+    /// Mark a single record of the given [RecordType] and identified by the nonce
     pub fn mark_synced(&mut self, rec_type: RecordType, nonce: &str) -> Result<(), Error> {
         if *self.notify.borrow() {
             return Err(ConnectionClosed);
@@ -73,7 +81,7 @@ impl Writer {
     }
 }
 
-/// Context Reader
+/// Database Reader
 /// Multiple instances per [Pool]
 pub struct Reader {
     ctx: Context,
@@ -81,12 +89,15 @@ pub struct Reader {
 }
 
 impl Reader {
+    /// Get the [RecordData] for the record of the given [RecordType] identified by the specified nonce
     pub fn get_record(&self, rec_type: RecordType, nonce: &str) -> Result<RecordData, Error> {
         if *self.notify.borrow() {
             return Err(ConnectionClosed);
         }
         Ok(self.ctx.get_record(rec_type, nonce, &self.ctx.path())?)
     }
+
+    /// Get the [RecordData] for the next unsynced record of the given [RecordType]
     pub fn get_next_unsynced_record(&self, rec_type: RecordType) -> Result<Option<RecordData>, Error> {
         if *self.notify.borrow() {
             return Err(ConnectionClosed);
@@ -94,8 +105,8 @@ impl Reader {
         Ok(self.ctx.get_next_unsynced_record(rec_type, &self.ctx.path())?)
     }
 
-    /// retrieve the next record in chronological order from the specified offset
-    /// returns the offset of the fetched record to use in the next chronological fetch
+    /// Get the [RecordData] for the next record of the given [RecordType] starting from the specified [Timestamp] offset
+    /// returns the [Timestamp] offset of the fetched record
     pub fn get_next_chronological(
         &self,
         rec_type: RecordType,
@@ -117,9 +128,8 @@ impl Drop for Reader {
     }
 }
 
-/// A multi-reader, single-writer [Context] manager
-/// Owns the context and distributes readers and a writer
-/// Destroys the context when dropped or shut down
+/// A Single Writer Multiple Reader interface to the JALoP database
+/// Produces [Readers] and a [Writer] that share the same configuration to the underlying database.
 pub struct Pool {
     path: PathBuf,
     notify_tx: NotifyTx,
@@ -128,8 +138,8 @@ pub struct Pool {
 }
 
 impl Pool {
-    /// create the pool and the writer
-    /// creating the writer now avoids maintaing state of whether it exists or not later
+    /// create the [Pool] and the single [Writer] available from this pool.
+    // creating the writer now avoids maintaining state to track whether a reader exists or not
     pub fn new<P: AsRef<Path>>(path: P) -> Result<(Self, Writer), Error> {
         let (tx, rx) = watch::channel(false);
         Ok((
@@ -146,7 +156,7 @@ impl Pool {
         ))
     }
 
-    /// create a reader
+    /// Create a [Reader] of the database
     pub async fn reader(&self) -> Result<Reader, Error> {
         let notify_rx = self.notify_rx.lock().await;
         let notify_rx = notify_rx.as_ref().ok_or(ConnectionClosed)?;
@@ -161,7 +171,7 @@ impl Pool {
         })
     }
 
-    /// shutdown - await closing of all clients
+    /// Shutdown the [Pool] and await the closing of all [Reader] and [Writer] instances.
     pub async fn shutdown(self, timeout: Duration) -> anyhow::Result<()> {
         self.notify_tx.send(true).with_context(|| "failed to send shutdown signal")?;
 
@@ -180,22 +190,5 @@ impl Pool {
 impl Drop for Pool {
     fn drop(&mut self) {
         let _ = self.notify_tx.send(true);
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct Stats {
-    pub unsync_unsent: usize,
-    pub synced: usize,
-    pub sent: usize,
-    pub unsent: usize,
-}
-
-impl std::fmt::Display for Stats {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "unsync: {}, sync: {}, sent: {}, unsent: {}",
-            self.unsync_unsent, self.synced, self.sent, self.unsent
-        ))
     }
 }

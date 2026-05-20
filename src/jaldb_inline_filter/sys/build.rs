@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,16 +42,19 @@ fn main() -> anyhow::Result<()> {
     println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rerun-if-changed=build.rs");
 
-    // binding generation is only supported on rhel 9
-    #[cfg(feature = "rhel9")]
+    // binding generation is only supported on rhel 9 and 10
+    #[cfg(any(feature = "rhel9", feature = "rhel10"))]
     {
         use anyhow::Context;
         use bindgen;
+        let lib_common_include = format!("-I{jalop_root}/src/lib_common/include/jalop");
 
-        let includes: Vec<_> = ["lmdb_layer", "network_stores", "lib_common"]
+        let mut includes: Vec<_> = ["lmdb_layer", "network_stores", "lib_common"]
             .iter()
             .map(|s| format!("-I{jalop_root}/src/{s}/src"))
             .collect();
+
+        includes.push(lib_common_include);
 
         let bindings = bindgen::Builder::default()
             .header("wrapper.h")
@@ -68,14 +71,23 @@ fn main() -> anyhow::Result<()> {
             .allowlist_function("get_jaldb_config")
             .allowlist_function("free_jaldb_config")
             .allowlist_function("jal_gen_timestamp_usec")
+            // the seccomp enforcer is only used on el7 but has to be generated from el9 -- so no feature flag here
+            .allowlist_function("jal_seccomp_enforcer_apply_initial")
+            .allowlist_function("jal_seccomp_enforcer_apply_final")
+            .allowlist_function("jal_seccomp_enforcer_create_from_list")
+            .allowlist_function("jal_seccomp_enforcer_create")
+            .allowlist_function("jal_seccomp_enforcer_destroy")
             .allowlist_type("mark_request")
             .allowlist_type("jaldb_segment")
             .clang_args(includes)
             .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+            .formatter(bindgen::Formatter::Rustfmt)
+            .with_rustfmt("/usr/bin/rustfmt")
             .generate()
             .context("failed to gen bindings")?;
 
         bindings.write_to_file("src/bindings.rs").context("failed to write bindings")?;
     }
+
     Ok(())
 }

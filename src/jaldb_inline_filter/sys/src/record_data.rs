@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  * limitations under the License.
 */
 
+//! This module provides functionality to access and serialize JALoP database records.
 use crate::error::Error;
 use crate::error::Error::GetRecordError;
 use crate::RecordType;
@@ -28,6 +29,7 @@ use std::os::fd::OwnedFd;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+/// Represent a record read from the database
 #[derive(Debug, Clone)]
 pub struct RecordData {
     pub rec_type: RecordType,
@@ -41,6 +43,9 @@ pub struct RecordData {
     on_disk: bool,
 }
 
+// A structure that assists in serializing [RecordData] to an IO vector for
+// sending across a Unix Domain Socket. The mechanics of sending impose ownership
+// constraints, this struct serves as an owner of the serialized data while sending.
 #[derive(Default)]
 struct Inner {
     rec_type: Vec<u8>,
@@ -59,9 +64,9 @@ struct Inner {
     timestamp: Vec<u8>,
 }
 
+/// A serialized [RecordData] that is ready to be sent across a UDS
 #[derive(Debug)]
 pub struct IoData {
-    // iovecs borrow from inner
     inner: Inner,
     on_disk: bool,
     pub fd: Option<Arc<OwnedFd>>,
@@ -322,9 +327,9 @@ impl Debug for Inner {
             self.app_meta.len(),
             self.sys_meta.len(),
             self.timestamp.len(),
-            "todo",
+            "???",
             self.payload_on_disk,
-            "todo",
+            "???",
         ))
     }
 }

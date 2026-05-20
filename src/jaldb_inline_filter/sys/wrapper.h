@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,3 +20,4 @@
 #include "jaldb_segment.h"
 #include "jal_ts_utils.h"
 #include "jaldb_config.h"
+#include "jal_seccomp_enforcer.h"

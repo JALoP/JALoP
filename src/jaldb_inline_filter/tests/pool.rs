@@ -1,6 +1,6 @@
 /***
  *
- * Copyright (C) 2025 Concurrent Technologies Corporation.
+ * Copyright (C) 2026 Concurrent Technologies Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 use core::time::Duration;
 
 use jalop::db::Pool;
-use jalop_sys::{flags::DbFlags, RecordType};
+use jalop_sys::RecordType;
 use tokio::{
     test,
     time::{interval, sleep},
