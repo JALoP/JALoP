@@ -31,16 +31,21 @@
 #include "jal_config.h"
 #include <stdexcept>
 #include <stdarg.h>
-#include <jal_seccomp_enforcer.hpp>
+#include <jalop/jal_seccomp_enforcer.hpp>
 #include <fcntl.h> // Sepcifically for F_SETFL and O_NONBLOCK constants
 #include <sys/ioctl.h> // Sepcifically for FIONREAD constant
+#include <sys/utsname.h>
+
+#ifndef SCMP_ACT_LOG
+	#define SCMP_ACT_LOG SCMP_ACT_TRAP
+#endif
 
 // File-local string constants
-static const char SC_CFG_DEBUG[] = "seccomp_debug";
-static const char SC_CFG_ENABLE[] =  "enable_seccomp";
-static const char SC_CFG_INITIAL_SYSCALLS[] = "initial_seccomp_rules";
-static const char SC_CFG_BOTH_SYSCALLS[] = "both_seccomp_rules";
-static const char SC_CFG_FINAL_SYSCALLS[] = "final_seccomp_rules";
+static const char SC_CFG_DEBUG[] = "debug";
+static const char SC_CFG_ENABLE[] =  "enable";
+static const char SC_CFG_INITIAL_SYSCALLS[] = "initial";
+static const char SC_CFG_BOTH_SYSCALLS[] = "both";
+static const char SC_CFG_FINAL_SYSCALLS[] = "final";
 
 static void catchSeccompViolation(int sig, siginfo_t * si, void * void_context)
 {
@@ -70,14 +75,44 @@ static int initCatchSeccompViolation()
 // and converting the contents into SeccompRule items
 // Throws a runtime_error if any error occurs
 static void addRules(
-	config_setting_t* configRoot,
+	const std::vector<std::string>& ruleNames,
+	std::vector<SeccompRule>& rules,
+	bool debug)
+{
+	for(auto it = ruleNames.cbegin(); it != ruleNames.cend(); ++it)
+	{
+		std::string syscallName = *it;
+		int callNumber = seccomp_syscall_resolve_name(syscallName.c_str());
+		if(__NR_SCMP_ERROR == callNumber)
+		{
+			if(!debug){
+				std::string errMsg = "Error: Unable to resolve syscall name: " +
+					syscallName + ".";
+				throw std::runtime_error(errMsg);
+			}
+			else{
+				fprintf(stderr,"Debug: Unable to resolve syscall name: %s \n", syscallName.c_str());
+			}
+		}
+		else{
+			rules.push_back({syscallName, callNumber});
+		}
+	}
+}
+
+// Helper function to avoid repeating logic for extracting a libconfig list of strings
+// and converting the contents into SeccompRule items
+// Throws a runtime_error if any error occurs
+static void addRules(
+	config_setting_t* configSeccomp,
 	const char* settingName,
 	std::vector<SeccompRule>& rules,
-	bool rulesetOptional)
+	bool rulesetOptional,
+	bool debug)
 {
 	config_setting_t* setting = NULL;
 	int numEntries = 0;
-	if(JAL_CFG_SUCCESS != jal_config_lookup_list(configRoot,
+	if(JAL_CFG_SUCCESS != jal_config_lookup_list(configSeccomp,
 		settingName,
 		&setting,
 		&numEntries,
@@ -104,11 +139,18 @@ static void addRules(
 			int callNumber = seccomp_syscall_resolve_name(syscallName);
 			if(__NR_SCMP_ERROR == callNumber)
 			{
-				std::string errMsg = "Error: Unable to resolve syscall name: " +
-					std::string(syscallName) + ".";
-				throw std::runtime_error(errMsg);
+				if(!debug){
+					std::string errMsg = "Error: Unable to resolve syscall name: " +
+						std::string(syscallName) + ".";
+					throw std::runtime_error(errMsg);
+				}
+				else{
+					fprintf(stderr,"Debug: Unable to resolve syscall name: %s \n", syscallName);
+				}
 			}
-			rules.push_back({std::string(syscallName), callNumber});
+			else{
+				rules.push_back({std::string(syscallName), callNumber});
+			}
 		}
 	}
 }
@@ -138,12 +180,16 @@ JalSeccompEnforcer::JalSeccompEnforcer(std::string configFile)
 	}
 
 	// Extract root configuration setting
-	config_setting_t *configRoot = config_root_setting(&config);
+	config_setting_t *configSeccomp = config_lookup(&config, "seccomp");
+	if (configSeccomp==NULL){
+		std::string errMsg = "Error: Unable to process: seccomp settings";
+		throw std::runtime_error(errMsg);
+	}
 
 	// Extract enable_seccomp setting
 	int enableSeccomp = 0;
 	if(JAL_CFG_SUCCESS != jal_config_lookup_bool(
-			configRoot,
+			configSeccomp,
 			SC_CFG_ENABLE,
 			&enableSeccomp,
 			JAL_CFG_REQUIRED)
@@ -165,7 +211,7 @@ JalSeccompEnforcer::JalSeccompEnforcer(std::string configFile)
 	// if seccomp_debug is present and true
 	int printDebug = 0;
 	if(JAL_CFG_SUCCESS != jal_config_lookup_bool(
-			configRoot,
+			configSeccomp,
 			SC_CFG_DEBUG,
 			&printDebug,
 			JAL_CFG_OPTIONAL)
@@ -178,6 +224,7 @@ JalSeccompEnforcer::JalSeccompEnforcer(std::string configFile)
 	if(1 == printDebug)
 	{
 		this->logLevel = LogLevel::Debug;
+		this->seccompDebug = true;
 	}
 
 	// If debugging has been requested, print the enable/disable state
@@ -188,10 +235,113 @@ JalSeccompEnforcer::JalSeccompEnforcer(std::string configFile)
 		SC_CFG_ENABLE,
 		printDebug);
 
+	struct utsname sys_info;
+	if(uname(&sys_info) == 0){
+		// Release example: 5.14.0-570.21.1.el9_6.x86_64
+		std::string release = std::string(sys_info.release);
+		if (release.find("el10")!=std::string::npos){
+			this->seccompVersion = 10;
+		}
+		else if (release.find("el9")!=std::string::npos){
+			this->seccompVersion = 9;
+		}
+		else if (release.find("el8")!=std::string::npos){
+			this->seccompVersion = 8;
+		}
+		else if (release.find("el7")!=std::string::npos){
+			this->seccompVersion = 7;
+		}
+		else{
+			this->seccompVersion = 0;
+		}
+		output(LogLevel::Debug, stderr, "OS Version: %i \n", this->seccompVersion);
+	}
+
 	// Extract each list of rules and resolve to syscall ids
-	addRules(configRoot, SC_CFG_INITIAL_SYSCALLS, this->initialRules, false);
-	addRules(configRoot, SC_CFG_BOTH_SYSCALLS, this->bothRules, true);
-	addRules(configRoot, SC_CFG_FINAL_SYSCALLS, this->finalRules, false);
+	// Setting all rule sets to be optional.
+	// This will be needed when initialing sets and also when a particular set is actually empty.
+	const char * version;
+	int ret = config_setting_lookup_string(configSeccomp, "version", &version);
+	if(ret==CONFIG_FALSE){
+		std::string errMsg = "Error: Unable to process: 'version' configuration parameter";
+		throw std::runtime_error(errMsg);
+	}
+	config_setting_t *configRules = config_setting_get_member(configSeccomp, version);
+	if(configRules==NULL){
+		std::string errMsg = "Error: Unable to load rules for version " + std::string(version);
+		throw std::runtime_error(errMsg);
+	}
+	addRules(configRules, SC_CFG_INITIAL_SYSCALLS, this->initialRules, true, this->seccompDebug);
+	addRules(configRules, SC_CFG_BOTH_SYSCALLS, this->bothRules, true, this->seccompDebug);
+	addRules(configRules, SC_CFG_FINAL_SYSCALLS, this->finalRules, true, this->seccompDebug);
+}
+
+
+JalSeccompEnforcer::JalSeccompEnforcer(const std::vector<std::string> &initial_seccomp_rules,
+									   const std::vector<std::string> &final_seccomp_rules,
+									   const std::vector<std::string> &both_seccomp_rules,
+									   bool enableSeccomp,
+									   bool debug)
+{
+	// If seccomp isn't enabled, we're done, bail out and ignore the rest of the settings
+	if(!enableSeccomp)
+	{
+		this->seccompEnabled = false;
+		return;
+	}
+
+	// Extract (optional) seccomp_debug setting and increase the logging level to DEBUG
+	// if seccomp_debug is present and true
+	if(debug)
+	{
+		this->logLevel = LogLevel::Debug;
+		this->seccompDebug = true;
+	}
+
+	// If debugging has been requested, print the enable/disable state
+	output(
+		LogLevel::Debug,
+		stderr,
+		"%s: %i\n",
+		SC_CFG_ENABLE,
+		debug);
+
+	struct utsname sys_info;
+	if(uname(&sys_info) == 0){
+		// Release example: 5.14.0-570.21.1.el9_6.x86_64
+		std::string release = std::string(sys_info.release);
+		if (release.find("el10")!=std::string::npos){
+			this->seccompVersion = 10;
+		}
+		else if (release.find("el9")!=std::string::npos){
+			this->seccompVersion = 9;
+		}
+		else if (release.find("el8")!=std::string::npos){
+			this->seccompVersion = 8;
+		}
+		else if (release.find("el7")!=std::string::npos){
+			this->seccompVersion = 7;
+		}
+		else{
+			this->seccompVersion = 0;
+		}
+		output(LogLevel::Debug, stderr, "seccompVersion: %i \n", this->seccompVersion);
+	}
+
+	//special case for rust filter, where multiple instances of JalSeccompEnforcer is being created
+	//for initial and final rules.   The this->initialRulesApplied flag needs set if final rules
+	//are provided but initial rules are not provided indicating that initial rules were already applied
+	if (initial_seccomp_rules.size() == 0 && final_seccomp_rules.size() != 0)
+	{
+		this->initialRulesApplied = true;
+	}
+
+	// Extract each list of rules and resolve to syscall ids
+	// Setting all rule sets to be optional.
+	// This will be needed when initialing sets and also when a particular set is actually empty.
+	addRules(initial_seccomp_rules, this->initialRules, this->seccompDebug);
+	addRules(both_seccomp_rules, this->bothRules, this->seccompDebug);
+	addRules(final_seccomp_rules, this->finalRules, this->seccompDebug);
 }
 
 // Helpler to consolidate logic for adding a set of SeccompRules to a given scmp_filter_ctx
@@ -209,8 +359,21 @@ void JalSeccompEnforcer::applyRules(
 		if(0 != seccomp_rule_add(filter_ctx, SCMP_ACT_ALLOW, rule.callNumber, 0))
 		{
 			std::string errMsg = "Error: seccomp_rule_add FAILED for " + rule.name
-				+ "(" + std::to_string(rule.callNumber) + ")";
-			throw std::runtime_error(errMsg);
+					+ "(" + std::to_string(rule.callNumber) + ")";
+			if(!seccompDebug)
+			{
+				throw std::runtime_error(errMsg);
+			}
+			else
+			{
+				//RHEL 7 in debug it always fails because SCMP_ACT_ALLOW probably matches the default
+				//filter_ctx intialization of SCMP_ACT_ALLOW. EACCES(rule matches default action)
+				//I cannot determine the actual failure type, the errno=2 and perror says "no directory or file found"
+				if(seccompVersion>7)
+				{
+					output(LogLevel::Debug, stderr, "%s", errMsg.c_str());
+				}
+			}
 		}
 		output(LogLevel::Debug, stderr, "%s(%d) ", rule.name.c_str(), rule.callNumber);
 	}
@@ -231,7 +394,29 @@ void JalSeccompEnforcer::applyInitial()
 
 	output(LogLevel::Debug, stderr, "configureInitialSeccomp \n");
 
-	scmp_filter_ctx filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+	scmp_filter_ctx filter_ctx = NULL;
+	if (this->seccompVersion<8)
+	{
+		if(this->seccompDebug)
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_ALLOW);
+		}
+		else
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+		}
+	}
+	else
+	{
+		if(this->seccompDebug)
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_LOG);
+		}
+		else
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+		}
+	}
 	if(NULL == filter_ctx)
 	{
 		std::string errMsg = "Error: Failed to create scmp_filter_ctx";
@@ -281,6 +466,25 @@ void JalSeccompEnforcer::applyInitial()
 	this->initialRulesApplied = true;
 }
 
+static int configureDisallowSeccomp()
+{
+	scmp_filter_ctx filter_ctx;
+	filter_ctx = seccomp_init(SCMP_ACT_ALLOW);
+
+	if (seccomp_rule_add(filter_ctx, SCMP_ACT_TRAP, SCMP_SYS(fcntl), 1, SCMP_A1(SCMP_CMP_EQ, F_SETFL)) != 0)
+	{
+		fprintf(stderr, "configureDisallowSeccomp seccomp_rule_add FAILED\n");
+		return -1;
+	}
+
+	if (seccomp_load(filter_ctx) != 0)
+	{
+		fprintf(stderr, "configureDisallowSeccomp seccomp_load FAILED\n");
+		return -1;
+	}
+	return 0;
+}
+
 void JalSeccompEnforcer::applyFinal()
 {
 	// Do nothing if seccomp isn't enabled by the config
@@ -303,7 +507,38 @@ void JalSeccompEnforcer::applyFinal()
 
 	output(LogLevel::Debug, stderr, "configureFinalSeccomp \n");
 
-	scmp_filter_ctx filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+	if(0) //TO_DO disable for now since curl uses F_SETFL
+	{
+		if(configureDisallowSeccomp()!=0)
+		{
+			std::string errMsg = "Error: Could not apply disallow rules.";
+			throw std::runtime_error(errMsg);
+		}
+	}
+
+	scmp_filter_ctx filter_ctx = NULL;
+	if (this->seccompVersion<8)
+	{
+		if(this->seccompDebug)
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_ALLOW);
+		}
+		else
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+		}
+	}
+	else
+	{
+		if(this->seccompDebug)
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_LOG);
+		}
+		else
+		{
+			filter_ctx = seccomp_init(SCMP_ACT_TRAP);
+		}
+	}
 	if(NULL == filter_ctx)
 	{
 		std::string errMsg = "Error: Failed to create scmp_filter_ctx";
@@ -334,6 +569,9 @@ void JalSeccompEnforcer::applyFinal()
 		std::string errMsg = "Failed to apply filter with seccomp_load\n";
 		throw std::runtime_error(errMsg);
 	}
+	//Changing this log message will affect how the tool collect_system_calls.py
+	//script will determine its phase of operation.(setup or routine work)
+	//You will need to edit collect_system_calls.py to use this value.
 	output(LogLevel::Debug, stderr, "Applying final ruleset DONE\n");
 
 	// Finally, mark that final rules have been applied so we don't do it again

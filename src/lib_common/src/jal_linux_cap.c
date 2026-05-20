@@ -80,7 +80,14 @@ int set_ambient_cap(int cap)
 {
     int rc = -1;
 
-    capng_get_caps_process();
+    rc = capng_get_caps_process();
+
+    if (rc != 0)
+    {
+        printf("Cannot get cap process\n");
+        return -1;
+    }
+
     rc = capng_update(CAPNG_ADD, CAPNG_INHERITABLE, cap);
     if (rc != 0) {
         printf("Cannot add inheritable cap\n");
