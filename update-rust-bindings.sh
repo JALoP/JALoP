@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -f src/jaldb_inline_filter/sys/src/bindings.rs
-sudo bash src/jaldb_inline_filter/packages.sh
+rm -f src/jalop-rust/crates/jalop-sys/src/bindings.rs
+sudo bash src/jalop-rust/packages.sh
 scons
-cp release/src/jaldb_inline_filter/sys/src/bindings.rs src/jaldb_inline_filter/sys/src/bindings.rs
+cp release/src/jalop-rust/crates/jalop-sys/src/bindings.rs src/jalop-rust/crates/jalop-sys/src/bindings.rs

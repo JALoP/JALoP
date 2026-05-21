@@ -22,6 +22,9 @@ then
 elif grep -q -i "release 9" /etc/redhat-release
 then
    OS_VER="9"
+elif grep -q -i "release 10" /etc/redhat-release
+then
+   OS_VER="10"
 else
    logError "Unsupported OS version detected."
 fi

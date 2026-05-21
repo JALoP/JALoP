@@ -1,8 +1,13 @@
 #!/bin/bash
-#Determine the installed operating system version, this script only supports RHEL9
-if ! grep -q -i "release 9" /etc/redhat-release
+#Determine the installed operating system version, this script only supports RHEL9 or RHEL10
+if grep -q -i "release 10" /etc/redhat-release
 then
-    echo "This script is only supported on RHEL 9."
+    OS_VER=10;
+elif grep -q -i "release 9" /etc/redhat-release
+then
+    OS_VER=9;
+else
+    echo "This script is only supported on RHEL 9 or 10."
     exit 1
 fi
 
@@ -16,7 +21,8 @@ function package_cargo_vendor_files() {
     vendor_tar=vendor-cargo-$target_rhel_version.tar.gz
     dnf remove -y rust-*-devel
     rm -rf /usr/share/cargo/registry/
-    sh src/jaldb_inline_filter/packages.sh $target_rhel_version
+    mkdir -p /usr/share/cargo/registry
+    sh src/jalop-rust/packages.sh $target_rhel_version
     vendor_dest=vendor-cargo/vendor
     rm -rf ${vendor_dest}
     mkdir -p ${vendor_dest}
@@ -31,8 +37,9 @@ echo "Begin generating JALoP cargo vendor files...."
 package_cargo_vendor_files 7
 package_cargo_vendor_files 8
 package_cargo_vendor_files 9
+package_cargo_vendor_files 10
 
 #clears out vendor-cargo dir
 rm -rf ./vendor-cargo
 
-echo "Finished generating RHEL 7/8/9 JALoP cargo vendor files."
+echo "Finished generating RHEL 7/8/9/10 JALoP cargo vendor files."

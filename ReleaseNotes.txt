@@ -1,3 +1,7 @@
+Summary of release 2.4.0.0 changes (Wed May 20 2026) -
+    - Added RHEL 10 support. This release has been tested on RHEL 7/8/9/10 OS platforms.
+    - Bug fixes and improvements.
+
 Summary of release 2.3.1.0 changes (Fri Jan 30 2026) -
     - Implemented SECCOMP filters to restrict system calls invoked by the Rust Inline Filter.
     - Grouped/Categorized SECCOMP configuration settings (syscall lists) for RHEL 7/8/9 OS platforms in each application's configuration file (e.g., jald.cfg, jal_subscribe.cfg, local-store.cfg, jaldb-filter.toml).

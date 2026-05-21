@@ -256,12 +256,12 @@ cwd = os.getcwd()
 coverage = debug_env.Alias(target=lcov_output_dir, source=None,
 		action=["mkdir -p ${TARGET}",
 			"lcov -q --directory ${TARGET}/.. -b ${TARGET}/.. --capture --output-file %s" % lcov_output_path,
-			"lcov -q --remove %s /usr/\* --output-file %s" % (lcov_output_path, lcov_output_path),
-			"lcov -q --remove %s %s/3rd-party/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
-			"lcov -q --remove %s %s/src/\*/test/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
-			"lcov -q --remove %s %s/src/test_utils/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
-			"lcov -q --remove %s %s/debug/\*/test/\* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
-			"cd ${TARGET} && genhtml --show-details -k %s" % (lcov_output_file),
+			"lcov --config-file jalop.lcovrc -q --remove %s /usr/* --output-file %s" % (lcov_output_path, lcov_output_path),
+			"lcov --config-file jalop.lcovrc -q --remove %s %s/3rd-party/* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
+			"lcov --config-file jalop.lcovrc -q --remove %s %s/src/*/test/* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
+			"lcov --config-file jalop.lcovrc -q --remove %s %s/src/test_utils/* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
+			"lcov --config-file jalop.lcovrc -q --remove %s %s/debug/*/test/* --output-file %s" % (lcov_output_path, cwd, lcov_output_path),
+			"cd ${TARGET} && genhtml --show-details -k %s -o %s" % (lcov_output_file, lcov_output_path),
 			])
 
 debug_env.AlwaysBuild(coverage)
