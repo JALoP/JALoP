@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Profile
+  JAFSchemaVersion="1.0.5"
+  releaseDate="2001-01-01"
+  uuid="00000000-1234-5678-9abc-000000000000"
+  version="4"
+  title="profile example"
+  xml:lang="en-US"
+  xmlns="urn:x-cds-tech:logging:jaf:profile:1.0#">
+  <Metadata>
+    <Description>
+      This is a sample profile that provides EventClasses for generic logon/logoff events.
+    </Description>
+    <Vendor>POSIX Community</Vendor>
+    <ContactInfo name="John Smith">
+      <Email>jsmith@somedomain.org</Email>
+      <Phone>555-555-5555</Phone>
+    </ContactInfo>
+  </Metadata>
+  <EventClasses>
+    <EventClass id="1" name="LogonEvent" version="2">
+      <Description>Logon Event</Description>
+      <Fields>
+        <Field name="username" optional="false" rendered="true" type="jaf:i18nString">
+          <Description>The username of the user who logged in.</Description>
+        </Field>
+        <Field name="hostname">
+          <Description>The hostname of the machine the user logged off
+            of.</Description>
+        </Field>
+      </Fields>
+    </EventClass>
+    <EventClass id="2" name="FailedLogon" version="1">
+      <Description>Failed Logon Attempt</Description>
+      <Fields>
+        <Field name="username">
+          <Description>The username used in the failed logon attempt.</Description>
+        </Field>
+        <Field name="hostname">
+          <Description>The hostname of the machine the user logged off
+            of.</Description>
+        </Field>
+      </Fields>
+    </EventClass>
+    <EventClass id="3" name="LogOff" version="1">
+      <Description>Logoff Event</Description>
+      <Fields>
+        <Field name="username">
+          <Description>The username of the user who logged off.</Description>
+        </Field>
+        <Field name="hostname">
+          <Description>The hostname of the machine the user logged off
+            of.</Description>
+        </Field>
+      </Fields>
+    </EventClass>
+  </EventClasses>
+</Profile>
