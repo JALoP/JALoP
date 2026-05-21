@@ -1,6 +1,6 @@
 Name:    JALoP
-Version: 2.3.1.0
-Release: 2%{?dist}
+Version: 2.4.0.0
+Release: 1%{?dist}
 ExclusiveArch: x86_64
 Summary: JALoP binary installation
 License: Apache License, Version 2.0
@@ -10,9 +10,6 @@ Requires: boost-system
 Requires: axl
 Requires: openssl
 Requires: xmlsec1-openssl
-Requires: xmlsec1-gcrypt
-Requires: xmlsec1-gnutls
-Requires: xmlsec1-nss
 Requires: libcurl
 Requires: libuuid
 Requires: libxml2

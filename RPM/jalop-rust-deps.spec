@@ -1,13 +1,13 @@
 Name:      JALoP-rust-deps
-Version:   2.3.1.0
-Release:   2%{?dist}
+Version:   2.4.0.0
+Release:   1%{?dist}
 Summary:   JALoP Rust Dependencies
 
 License:   Apache License, Version 2.0
 BuildArch: x86_64
 Source0:   vendor-cargo.tar.gz
 
-Requires:  rust, cargo
+Requires:  rust, cargo, clang-devel
 
 %description
 This RPM installs all of the Rust crates under /usr/share/cargo/registry
@@ -29,7 +29,11 @@ cp -a * %{buildroot}/usr/share/cargo/registry/
 /usr/share/cargo/registry
 
 %changelog
-* Tue Dec 22 2025 Matt Cafasso <cafassom@ctc.com> - 2.3.1.0-2
+* Wed Apr 22 2026 Matt Cafasso <cafassom@ctc.com> - 2.4.0.0-1
+- Updated for 2.4.0.0-1 for RHEL 10 support
+* Wed Mar 18 2026 Matt Cafasso <cafassom@ctc.com> - 2.3.1.0-3
+- Updated for 2.3.1.0-3 for RHEL 10 support
+* Mon Dec 22 2025 Matt Cafasso <cafassom@ctc.com> - 2.3.1.0-2
 - Updated for 2.3.1.0-2 production release for inline filter
 * Tue Oct 21 2025 Matt Cafasso <cafassom@ctc.com> - 2.3.1.0
 - Updated for 2.3.1.0 beta release for inline filter
