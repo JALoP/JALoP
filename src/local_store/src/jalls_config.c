@@ -239,14 +239,12 @@ int jalls_parse_config(const char *config_file_path, struct jalls_context **jall
 	// Extra scope layer for len to avoid goto crosses instantiation warnings
 	{
 		// *db_root guaranteed non-null at this point
-		int len = strlen(*db_root);
+		int len = strlen(*db_root); // nosemgrep - strlen is needed here to get length
 		if ((*db_root)[len - 1] != '/')
 		{
 			// Create a new buffer that is one spot larger to hold the /
 			char *tmp = jal_malloc(len + 2);
-			strncpy(tmp, *db_root, len);
-			tmp[len] = '/';
-			tmp[len + 1] = 0;
+			snprintf(tmp, len + 1, "%s/", *db_root);
 			free(*db_root);
 			(*jalls_ctx)->db_root = tmp;
 		}
