@@ -1,5 +1,5 @@
 Name:    JALoP
-Version: 2.4.0.0
+Version: 2.4.1.0
 Release: 1%{?dist}
 ExclusiveArch: x86_64
 Summary: JALoP binary installation
@@ -35,6 +35,7 @@ mkdir -p %{buildroot}/usr/sbin
 cp ./release/bin/jal-local-store	%{buildroot}/usr/sbin
 cp ./release/bin/jald			%{buildroot}/usr/sbin
 cp ./release/bin/jaldb_inline_filter			%{buildroot}/usr/sbin
+cp ./release/bin/jald_rs			%{buildroot}/usr/sbin
 cp ./release/bin/jal_subscribe		%{buildroot}/usr/sbin
 cp ./release/bin/jaldb_tail		%{buildroot}/usr/sbin
 cp ./release/bin/jaldb_tool		%{buildroot}/usr/sbin
@@ -53,6 +54,7 @@ mkdir -p %{buildroot}/etc/systemd/system
 cp ./test-input/SYSTEMD/jalls.service		%{buildroot}/etc/systemd/system
 cp ./test-input/SYSTEMD/jalls.socket		%{buildroot}/etc/systemd/system
 cp ./test-input/SYSTEMD/jald.service		%{buildroot}/etc/systemd/system
+cp ./test-input/SYSTEMD/jald_rs.service		%{buildroot}/etc/systemd/system
 cp ./test-input/SYSTEMD/jaldb_inline_filter.service		%{buildroot}/etc/systemd/system
 cp ./test-input/SYSTEMD/jal_subscribe.service	%{buildroot}/etc/systemd/system
 
@@ -61,8 +63,10 @@ cp ./test-input/TLS_Unit_Test_Files/cert		%{buildroot}/etc/jalop
 cp ./test-input/TLS_Unit_Test_Files/cert_and_key	%{buildroot}/etc/jalop
 cp ./test-input/TLS_Unit_Test_Files/rsa_key		%{buildroot}/etc/jalop
 cp ./test-input/jald.cfg				%{buildroot}/etc/jalop
+cp ./test-input/jald.toml				%{buildroot}/etc/jalop
 cp ./test-input/SYSTEMD/jalls_service.cfg		%{buildroot}/etc/jalop
 cp ./test-input/SYSTEMD/jald_service.cfg		%{buildroot}/etc/jalop
+cp ./test-input/SYSTEMD/jald_rs_service.cfg		%{buildroot}/etc/jalop
 cp ./test-input/SYSTEMD/jaldb_inline_filter_service.cfg		%{buildroot}/etc/jalop
 cp ./test-input/SYSTEMD/jal_subscribe_service.cfg	%{buildroot}/etc/jalop
 cp ./test-input/sample2.cfg %{buildroot}/etc/jalop/test-input
@@ -99,6 +103,7 @@ mkdir -p %{buildroot}/var/log/jalop_sub/db-logs
 %files
 /usr/sbin/jal-local-store
 /usr/sbin/jald
+/usr/sbin/jald_rs
 /usr/sbin/jaldb_inline_filter
 /usr/sbin/jal_subscribe
 /usr/sbin/jaldb_tail
@@ -116,6 +121,7 @@ mkdir -p %{buildroot}/var/log/jalop_sub/db-logs
 /etc/systemd/system/jalls.service
 /etc/systemd/system/jalls.socket
 /etc/systemd/system/jald.service
+/etc/systemd/system/jald_rs.service
 /etc/systemd/system/jaldb_inline_filter.service
 /etc/systemd/system/jal_subscribe.service
 
@@ -127,8 +133,10 @@ mkdir -p %{buildroot}/var/log/jalop_sub/db-logs
 /etc/jalop/cert_and_key
 /etc/jalop/rsa_key
 /etc/jalop/jald.cfg
+/etc/jalop/jald.toml
 /etc/jalop/jalls_service.cfg
 /etc/jalop/jald_service.cfg
+/etc/jalop/jald_rs_service.cfg
 /etc/jalop/jaldb_inline_filter_service.cfg
 /etc/jalop/jal_subscribe_service.cfg
 /etc/jalop/schemas/*

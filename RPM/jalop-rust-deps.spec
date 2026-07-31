@@ -1,5 +1,5 @@
 Name:      JALoP-rust-deps
-Version:   2.4.0.0
+Version:   2.4.1.0
 Release:   1%{?dist}
 Summary:   JALoP Rust Dependencies
 
@@ -29,6 +29,8 @@ cp -a * %{buildroot}/usr/share/cargo/registry/
 /usr/share/cargo/registry
 
 %changelog
+* Tue Jul 21 2026 Matt Cafasso <cafassom@ctc.com> - 2.4.1.0-1
+- Added the Rust Publisher
 * Wed Apr 22 2026 Matt Cafasso <cafassom@ctc.com> - 2.4.0.0-1
 - Updated for 2.4.0.0-1 for RHEL 10 support
 * Wed Mar 18 2026 Matt Cafasso <cafassom@ctc.com> - 2.3.1.0-3

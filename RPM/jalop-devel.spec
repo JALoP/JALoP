@@ -1,5 +1,5 @@
 Name:    JALoP-devel
-Version: 2.4.0.0
+Version: 2.4.1.0
 Release: 1%{?dist}
 ExclusiveArch: x86_64
 Summary: JALoP binary installation
