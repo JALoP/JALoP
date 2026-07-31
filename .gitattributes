@@ -1,0 +1,2 @@
+doc/JALoP_v2x_User_Guide.docx filter=lfs diff=lfs merge=lfs -text
+doc/JALoP_v2x_User_Guide.pdf filter=lfs diff=lfs merge=lfs -text
