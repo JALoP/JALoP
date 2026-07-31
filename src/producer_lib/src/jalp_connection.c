@@ -98,7 +98,7 @@ enum jal_status jalp_connection_fill_out_msghdr(struct iovec *iov,
 
 		// BREAK
 		iov[i].iov_base = JALP_BREAK_STR;
-		iov[i].iov_len = strlen(JALP_BREAK_STR);
+		iov[i].iov_len = sizeof(JALP_BREAK_STR) -1;
 		i++;
 	}
 
@@ -109,7 +109,7 @@ enum jal_status jalp_connection_fill_out_msghdr(struct iovec *iov,
 
 	// BREAK
 	iov[i].iov_base = JALP_BREAK_STR;
-	iov[i].iov_len = strlen(JALP_BREAK_STR);
+	iov[i].iov_len = sizeof(JALP_BREAK_STR) - 1;
 
 	return JAL_OK;
 }
@@ -259,7 +259,7 @@ enum jal_status jalp_send_buffer(jalp_context *ctx, uint16_t message_type,
 		cmsg->cmsg_type = SCM_RIGHTS;
 		cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
 		fdptr = (int *) CMSG_DATA(cmsg);
-		memcpy(fdptr, &fd, sizeof(fd));
+		memcpy(fdptr, &fd, sizeof(fd)); // nosemgrep - the copy length is less than or equal to the destination buffer size
 		msgh.msg_controllen = cmsg->cmsg_len;
 	}
 

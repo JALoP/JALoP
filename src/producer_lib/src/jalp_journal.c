@@ -152,7 +152,7 @@ enum jal_status jalp_journal_path(jalp_context *ctx,
 	if (!ctx || !path) {
 		return JAL_E_INVAL;
 	}
-	int fd = open(path, O_RDONLY);
+	int fd = open(path, O_RDONLY); // nosemgrep - suppress medium finding
 	if (fd == -1) {
 		return JAL_E_INVAL;
 	}

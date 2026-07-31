@@ -57,7 +57,7 @@ extern "C" {
 
 
 /**
- * mask to indicate that audit xml payload is to be varified against a schema
+ * mask to indicate that audit xml payload is to be verified against a schema
  */
 #define JAF_VALIDATE_XML 0x00000001
 

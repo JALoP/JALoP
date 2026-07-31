@@ -70,7 +70,7 @@ ssize_t fake_sendmsg(__attribute__((unused)) int sockfd, const struct msghdr *ms
 	uint8_t *buffer = (uint8_t*) malloc(sz);
 	int cnt = 0;
 	for (i=0; i < iov_len; i++) {
-		memcpy(buffer + cnt, msg->msg_iov[i].iov_base, msg->msg_iov[i].iov_len);
+		memcpy(buffer + cnt, msg->msg_iov[i].iov_base, msg->msg_iov[i].iov_len); // nosemgrep - the copy length is less than or equal to the destination buffer size
 		cnt += msg->msg_iov[i].iov_len;
 	}
 

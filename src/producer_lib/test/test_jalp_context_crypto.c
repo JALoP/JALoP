@@ -84,7 +84,7 @@ int pass_cb_correct_key(char *buf, int size,
 		len = size;
 	}
 
-	memcpy(buf, TEST_KEY_PASSWORD, len);
+	memcpy(buf, TEST_KEY_PASSWORD, len); // nosemgrep - unit test usage
 	return len;
 }
 

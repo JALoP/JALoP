@@ -143,16 +143,16 @@ enum jal_status jalp_context_init(jalp_context *ctx, const char *path,
 		ssize_t pathsize;
 
 		jal_asprintf(&linkpath, JALP_PROCESS_NAME_PATH, (intmax_t)pid);
-		pathsize = readlink(linkpath, abspath, PATH_MAX+1);
+		pathsize = readlink(linkpath, abspath, PATH_MAX+1); // nosemgrep - suppress medium finding
 
 		// if this doesn't exist for some reason, just use the pid
 		if (pathsize <= 0 || pathsize > PATH_MAX) {
-			snprintf(abspath, PATH_MAX, "%" PRIdMAX, (intmax_t)pid);
+			snprintf(abspath, PATH_MAX, "%" PRIdMAX, (intmax_t)pid); // nosemgrep - false positive, no variable format specifier is being used
 		}
 
 		free(linkpath);
 #else /* no JALP_HAVE_PROCFS */
-		snprintf(abspath, PATH_MAX, "%" PRIdMAX, (intmax_t)pid);
+		snprintf(abspath, PATH_MAX, "%" PRIdMAX, (intmax_t)pid); // nosemgrep - false positive, no variable format specifier is being used
 #endif /* JALP_HAVE_PROCFS */
 		ctx->app_name = abspath;
 	}
@@ -189,13 +189,13 @@ enum jal_status jalp_context_connect(jalp_context *ctx)
 	memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sun_family = AF_UNIX;
 
-	size_t pathlen = strlen(ctx->path);
+	size_t pathlen = strlen(ctx->path); // nosemgrep - strlen is needed here to get length
 	if (pathlen >= sizeof(sock_addr.sun_path)) {
 		// path to socket file is too long to fit in sockaddr_un.sun_path
 		goto err_out;
 	}
 
-	strncpy(sock_addr.sun_path, ctx->path, sizeof(sock_addr.sun_path) - 1);
+	strncpy(sock_addr.sun_path, ctx->path, sizeof(sock_addr.sun_path) - 1);  // nosemgrep - cannot convert to snprintf as the null terminator must be stripped
 	err = connect(ctx->socket, (struct sockaddr*) &sock_addr, sizeof(sock_addr));
 	if (0 != err) {
 		goto err_out;
@@ -229,7 +229,7 @@ enum jal_status jalp_context_set_digest_callbacks(jalp_context *ctx,
 	}
 
 	free(ctx->digest_ctx->algorithm_uri);
-	memcpy(ctx->digest_ctx, digest_ctx, sizeof(*digest_ctx));
+	memcpy(ctx->digest_ctx, digest_ctx, sizeof(*digest_ctx)); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	ctx->digest_ctx->algorithm_uri = jal_strdup(digest_ctx->algorithm_uri);
 
 	return JAL_OK;

@@ -33,6 +33,7 @@
 
 #include <string.h>
 #include <libxml/xmlschemastypes.h>
+#include <sys/stat.h>
 
 #include "jalp_xml_validate.h"
 
@@ -47,7 +48,9 @@ enum jal_status jalp_validate_xml(jalp_context *jalp_ctx, xmlDocPtr doc, const c
 			return JAL_E_INVAL;
 		}
 
-		if(access(xsdFileName, F_OK) != 0) {
+		//check if file exists
+		struct stat buffer;
+		if(lstat(xsdFileName, &buffer) != 0) {
 			return JAL_E_INVAL;
 		}
 

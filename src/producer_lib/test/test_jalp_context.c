@@ -140,7 +140,7 @@ int mocked_close(int fd)
 }
 int mocked_gethostname(char *name, size_t len)
 {
-	strncpy(name, MOCKED_HOSTNAME, len);
+	snprintf(name, len, "%s", MOCKED_HOSTNAME);
 	return 0;
 }
 int gethostname_always_fails(__attribute__((unused)) char *name,
@@ -162,7 +162,7 @@ ssize_t mocked_readlink(__attribute__((unused)) const char *path,
 		__attribute__((unused)) char *buf,
 		__attribute__((unused)) size_t bufsiz)
 {
-	strncpy(buf, MOCKED_APP_NAME, bufsiz);
+	snprintf(buf, bufsiz, "%s", MOCKED_APP_NAME);
 	return bufsiz < strlen(MOCKED_APP_NAME) ? bufsiz : strlen(MOCKED_APP_NAME);
 }
 

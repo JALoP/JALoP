@@ -98,11 +98,11 @@ struct jalp_transform_encryption_info *jalp_transform_encryption_info_create(con
 		(struct jalp_transform_encryption_info *) jal_calloc(1, sizeof(*info));
 	if (have_key) {
 		info->key = (uint8_t*) jal_malloc(key_len);
-		memcpy(info->key, key, key_len);
+		memcpy(info->key, key, key_len); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	}
 	if (have_iv) {
 		info->iv = (uint8_t*) jal_malloc(iv_len);
-		memcpy(info->iv, iv, iv_len);
+		memcpy(info->iv, iv, iv_len); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	}
 	return info;
 }
