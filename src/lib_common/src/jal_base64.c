@@ -76,7 +76,7 @@ char *jal_base64_enc(const unsigned char *input, int length)
 
 	size_t malloc_amount = bptr->length;
 	buff = jal_malloc(malloc_amount + 1);
-	memcpy(buff, bptr->data, bptr->length);
+	memcpy(buff, bptr->data, bptr->length);  // nosemgrep - the copy length is less than or equal to the destination buffer size
 	buff[bptr->length] = 0;
 
 b64_out:

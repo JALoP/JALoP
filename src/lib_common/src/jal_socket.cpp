@@ -145,7 +145,7 @@ int UDSSendMessage::addFieldByCopy(const void* const data, const size_t length) 
 	Field f;
 	f.owned_data = (void*)malloc(length);
 	f.length = length;
-	memcpy(f.owned_data, data, length);
+	memcpy(f.owned_data, data, length);  // nosemgrep - the copy length is less than or equal to the destination buffer size
 	fields.emplace_back(std::move(f));
 	return 0;
 }
@@ -295,7 +295,7 @@ int UDSSendSocket::connectSocket(std::string path) {
 	struct sockaddr_un sock_addr;
 	memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sun_family = AF_UNIX;
-	strncpy(sock_addr.sun_path, path.c_str(), sizeof(sock_addr.sun_path) - 1);
+	strncpy(sock_addr.sun_path, path.c_str(), sizeof(sock_addr.sun_path) - 1);  // nosemgrep - cannot convert to snprintf as the null terminator must be stripped
 
 	if(0 != connect(sock, (struct sockaddr*) &sock_addr, sizeof(sock_addr))) {
 		return -1;
@@ -342,7 +342,7 @@ int UDSSendSocket::sendMsg(UDSSendMessage message) {
 		cmsg->cmsg_type = SCM_RIGHTS;
 		cmsg->cmsg_len = CMSG_LEN(sizeof(message.fd));
 		fdptr = (int *) CMSG_DATA(cmsg);
-		memcpy(fdptr, &(message.fd), sizeof(message.fd));
+		memcpy(fdptr, &(message.fd), sizeof(message.fd)); // nosemgrep - the copy length is less than or equal to the destination buffer size
 		msgh.msg_controllen = cmsg->cmsg_len;
 	}
 
@@ -433,7 +433,7 @@ UDSRecvSocket::UDSRecvSocket(std::string path) {
 	struct sockaddr_un sock_addr;
 	memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sun_family = AF_UNIX;
-	strncpy(sock_addr.sun_path, path.c_str(), sizeof(sock_addr.sun_path) - 1);
+	strncpy(sock_addr.sun_path, path.c_str(), sizeof(sock_addr.sun_path) - 1);  // nosemgrep - strncpy must be used here to function properly.
 	sock_addr.sun_path[sizeof(sock_addr.sun_path) - 1] = '\0';
 
 	unlink(path.c_str());

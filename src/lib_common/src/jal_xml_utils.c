@@ -87,7 +87,7 @@ enum jal_status jal_parse_xml_snippet(
 		return JAL_E_INVAL;
 	}
 
-	xmlDocPtr doc = xmlParseMemory(snippet, strlen(snippet));
+	xmlDocPtr doc = xmlParseMemory(snippet, strlen(snippet));  // nosemgrep - strlen is needed here
 	if (!doc) {
 		return JAL_E_XML_PARSE;
 	}
@@ -304,7 +304,7 @@ enum jal_status jal_digest_xml_data(
 		goto error_out;
 	}
 
-	ret = (enum jal_status) dgst_ctx->update(instance, (unsigned char *) doc_txt, strlen((char *) doc_txt));
+	ret = (enum jal_status) dgst_ctx->update(instance, (unsigned char *) doc_txt, strlen((char *) doc_txt)); // nosemgrep - strlen is needed here to get length
 
 	ret = (enum jal_status) dgst_ctx->final(instance, dval, &dlen);
 	if (ret != JAL_OK) {
@@ -413,7 +413,7 @@ enum jal_status jal_add_signature_block(
 	xmlSecDSigCtxPtr dsigCtx = NULL;
 
 
-	//On rhel 7 and rhel8, RSA structure needs to be used to prevent
+	//On rhel8, RSA structure needs to be used to prevent
 	//assert failure in xmlSecOpenSSLKeyDataRsaAdoptRsa
 	//Key duplication is needed to prevent this assert failure and EVP_PKEY_dup
 	//is only available in openssl 3.0 or higher
@@ -459,9 +459,9 @@ enum jal_status jal_add_signature_block(
 	int ref_len = beg_len + id_len + end_len + 1;
 
 	char *reference_uri = jal_calloc(ref_len, sizeof(xmlChar));
-	strncat(reference_uri, JAL_XML_XPOINTER_ID_BEG, beg_len);
-	strncat(reference_uri, id, id_len);
-	strncat(reference_uri, JAL_XML_XPOINTER_ID_END, end_len);
+	strncat(reference_uri, JAL_XML_XPOINTER_ID_BEG, beg_len);  // nosemgrep - nonissue as correct space is allocated above
+	strncat(reference_uri, id, id_len); // nosemgrep - nonissue as correct space is allocated above
+	strncat(reference_uri, JAL_XML_XPOINTER_ID_END, end_len); // nosemgrep - nonissue as correct space is allocated above
 
 	refNode = xmlSecTmplSignatureAddReference(signNode,
 						xmlSecOpenSSLTransformSha256Id,
@@ -490,7 +490,7 @@ enum jal_status jal_add_signature_block(
 	xmlSecKeyDataPtr pKeyData = NULL;
 	pKeyData = xmlSecKeyDataCreate(xmlSecKeyDataRsaId);
 
-	//On rhel 7/rhel8, xmlSecOpenSSLKeyDataRsaAdoptRsa needs to be used to prevent
+	//On rhel8, xmlSecOpenSSLKeyDataRsaAdoptRsa needs to be used to prevent
 	//assert failure in xmlSecOpenSSLKeyDataRsaAdoptEvp
 #if OPENSSL_VERSION_NUMBER < OPENSSL_V30_VER
 	if (0 != xmlSecOpenSSLKeyDataRsaAdoptRsa(pKeyData, new_rsa)) {

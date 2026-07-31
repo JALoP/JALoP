@@ -357,9 +357,9 @@ char* jal_expand_home_dir(const char *raw_path, const char *key_name)
 	char *return_path = NULL;
 
 	//Replaces paths that start with '~' with user home directory
-	if (strlen(curr_path) >= 2 && curr_path[0] == '~' && curr_path[1] == '/')
+	if (strlen(curr_path) >= 2 && curr_path[0] == '~' && curr_path[1] == '/') // nosemgrep - strlen is needed here for this check
 	{
-		const char *home_dir = getenv("HOME");
+		const char *home_dir = getenv("HOME");  // nosemgrep - home_dir is getting validated to ensure not null
 		if (home_dir == NULL)
 		{
 			struct passwd *curr_pwd_uid = getpwuid(getuid());
@@ -385,14 +385,14 @@ char* jal_expand_home_dir(const char *raw_path, const char *key_name)
 		curr_path++;
 
 		//Combines home dir path with config path
-		return_path = (char*)calloc(strlen(home_dir) + strlen(curr_path) + 1, sizeof(char));
+		return_path = (char*)calloc(strlen(home_dir) + strlen(curr_path) + 1, sizeof(char)); // nosemgrep - strlen is needed here
 		if (return_path == NULL)
 		{
 			fprintf(stderr, "Failed to allocate space to expand file path.\n");
 			return NULL;
 		}
 
-		sprintf(return_path, "%s%s", home_dir, curr_path);
+		snprintf(return_path, strlen(home_dir) + strlen(curr_path) + 1, "%s%s", home_dir, curr_path); // nosemgrep - strlen is needed here
 	}
 	else
 	{
@@ -423,7 +423,7 @@ char* jal_expand_path(const char *raw_path, const char *key_name)
 	}
 
 	//Fixes relative paths
-	absolute_path = realpath(curr_path, NULL);
+	absolute_path = realpath(curr_path, NULL);  // nosemgrep - false positive as this is correctly being called with NULL as second param to allocate correct space.
 	free(curr_path);
 	if (absolute_path == NULL)
 	{

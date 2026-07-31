@@ -456,10 +456,10 @@ enum jal_status jal_parse_digest_algorithm_str(const char *str, enum jal_digest_
 }
 
 enum jal_status jal_get_digest_algorithm_list(const char *config, const char *cli, enum jal_digest_algorithm **digest_list, size_t *num_digests) {
-	if (cli && 0 != strlen(cli)) {
+	if (cli && 0 != strlen(cli)) { // nosemgrep - strlen is needed here for this check
 		return jal_parse_digest_algorithm_str(cli, digest_list, num_digests);
 	}
-	else if (config && 0 != strlen(config)) {
+	else if (config && 0 != strlen(config)) { // nosemgrep - strlen is needed here for this check
 		return jal_parse_digest_algorithm_str(config, digest_list, num_digests);
 	}
 	else {

@@ -192,11 +192,11 @@ void test_jal_create_base64_element_returns_null_with_null_inputs()
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jal_create_base64_element(NULL, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(NULL, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem); // nosemgrep - strlen is needed here
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(doc, NULL, strlen(base64_input_str), namespace_uri, tag, &new_elem); // nosemgrep - strlen is needed here
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
@@ -204,15 +204,15 @@ void test_jal_create_base64_element_returns_null_with_null_inputs()
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem);
+	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), NULL, tag, &new_elem); // nosemgrep - strlen is needed here
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem);
+	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, NULL, &new_elem); // nosemgrep - strlen is needed here
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL);
+	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, NULL); // nosemgrep - strlen is needed here
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals((void*)NULL, new_elem);
 }
@@ -222,12 +222,12 @@ void test_jal_create_base64_element_fails_does_not_overwrite_existing_elm_pointe
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem); // nosemgrep - strlen is needed here
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 
 	xmlNodePtr orig = new_elem;
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem); // nosemgrep - strlen is needed here
 	assert_equals(JAL_E_INVAL, ret);
 	assert_equals(orig, new_elem);
 	xmlFreeNodeList(new_elem);
@@ -239,7 +239,7 @@ void test_jal_create_base64_element_works_with_normal_value()
 	xmlNodePtr new_elem = NULL;
 	enum jal_status ret;
 
-	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem);
+	ret = jal_create_base64_element(doc, (uint8_t *) base64_input_str, strlen(base64_input_str), namespace_uri, tag, &new_elem); // nosemgrep - strlen is needed here
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, new_elem);
 	assert_tag_equals(TAG, new_elem);
@@ -258,7 +258,7 @@ void test_jal_create_reference_elem_returns_null_with_null_inputs()
 	enum jal_status ret = jal_create_reference_elem(EXAMPLE_URI,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) null_input_string,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				doc, &elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, elem);
@@ -267,7 +267,7 @@ void test_jal_create_reference_elem_returns_null_with_null_inputs()
 	ret = jal_create_reference_elem(EXAMPLE_URI,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) base64_input_str,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				NULL, &elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, elem);
@@ -277,7 +277,7 @@ void test_jal_create_reference_elem_returns_null_with_null_inputs()
 	ret = jal_create_reference_elem(EXAMPLE_URI,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) base64_input_str,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				bad_doc, &elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals((void*)NULL, elem);
@@ -295,7 +295,7 @@ void test_jal_create_reference_elem_returns_null_with_null_inputs()
 	ret = jal_create_reference_elem(EXAMPLE_URI,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) base64_input_str,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				doc, NULL);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 }
@@ -306,7 +306,7 @@ void test_jal_create_reference_elem_succeeds_with_good_input()
 	enum jal_status ret = jal_create_reference_elem(EXAMPLE_URI,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) base64_input_str,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				doc, &elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, elem);
@@ -338,7 +338,7 @@ void test_jal_create_reference_elem_succeeds_with_no_uri()
 	enum jal_status ret = jal_create_reference_elem(NULL,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) base64_input_str,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				doc, &elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, elem);
@@ -368,7 +368,7 @@ void test_jal_create_reference_elem_fails_does_not_overwrite_existing_pointer()
 	enum jal_status ret = jal_create_reference_elem(EXAMPLE_URI,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) base64_input_str,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				doc, &elem);
 	assert_equals(JAL_OK, ret);
 	assert_not_equals(NULL, elem);
@@ -378,7 +378,7 @@ void test_jal_create_reference_elem_fails_does_not_overwrite_existing_pointer()
 	ret = jal_create_reference_elem(EXAMPLE_URI,
                                 EXAMPLE_DIGEST_METHOD,
                                 (uint8_t *) base64_input_str,
-                                strlen(base64_input_str),
+                                strlen(base64_input_str), // nosemgrep - strlen is needed here
                                 doc, &elem);
 	assert_equals(JAL_E_XML_CONVERSION, ret);
 	assert_equals(1, old_elem == elem);
@@ -392,7 +392,7 @@ void test_jal_create_reference_elem_fails_bad_url()
 	enum jal_status ret = jal_create_reference_elem(EXAMPLE_BAD_URI,
 				EXAMPLE_DIGEST_METHOD,
 				(uint8_t *) base64_input_str,
-				strlen(base64_input_str),
+				strlen(base64_input_str), // nosemgrep - strlen is needed here
 				doc, &elem);
 	assert_equals(JAL_E_INVAL_URI, ret);
 	assert_equals((void*)NULL, elem);

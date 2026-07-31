@@ -170,7 +170,7 @@ static enum jal_status fake_final(void *ctx, uint8_t *digest_out, unsigned int *
 		// callback, so just abort.
 		abort();
 	}
-	memcpy(digest_out, gs_digest_value, *len);
+	memcpy(digest_out, gs_digest_value, *len); // nosemgrep - the use of memcpy here is fine for unit tests
 	return JAL_OK;
 }
 
@@ -186,7 +186,7 @@ static enum jal_status fake_final_for_fd(void *ctx, uint8_t *digest_out, unsigne
 		// didn't digest the full contents of the file?
 		abort();
 	}
-	memcpy(digest_out, gs_digest_value, *len);
+	memcpy(digest_out, gs_digest_value, *len); // nosemgrep - the use of memcpy here is fine for unit tests
 	return JAL_OK;
 }
 
@@ -244,7 +244,7 @@ static ssize_t fake_read(int fd, void *buf, size_t count)
 	}
 	size_t bytes_left = gs_fake_file_size - gs_fake_file_offset;
 	size_t to_copy = count < bytes_left ? count : bytes_left;
-	memcpy(buf, gs_fake_file_buffer + gs_fake_file_offset, to_copy);
+	memcpy(buf, gs_fake_file_buffer + gs_fake_file_offset, to_copy); // nosemgrep - the use of memcpy here is fine for unit tests
 	gs_fake_file_offset += to_copy;
 	return to_copy;
 }
@@ -507,7 +507,7 @@ void test_jal_digest_init_and_update_returns_ok()
 
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
-		size_t len = strlen(HELLO_WORLD);
+		size_t len = strlen(HELLO_WORLD); // nosemgrep - strlen is needed here
 		enum jal_status ret = digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)HELLO_WORLD, len);
 		assert_equals(JAL_OK, ret);
 	}
@@ -527,7 +527,7 @@ void test_jal_digest_update_handles_error()
 {
 	for (int i = 0; i < JAL_DIGEST_ALGORITHM_COUNT; i ++)
 	{
-		size_t len = strlen(HELLO_WORLD);
+		size_t len = strlen(HELLO_WORLD); // nosemgrep - strlen is needed here
 		replace_update_function(i);
 		enum jal_status ret = digest_ctx_list[i]->update(digest_inst_list[i], (uint8_t *)HELLO_WORLD, len);
 		assert_equals(JAL_E_INVAL, ret);
@@ -568,7 +568,7 @@ void test_jal_digest_full()
 		uint8_t *data = jal_calloc(len, sizeof(*data));
 		char *buf = jal_calloc((len * 2) + 1, sizeof(*buf));
 		digest_ctx_list[i]->init(ctx_inst);
-		digest_ctx_list[i]->update(ctx_inst, (uint8_t *)HELLO_WORLD, strlen(HELLO_WORLD));
+		digest_ctx_list[i]->update(ctx_inst, (uint8_t *)HELLO_WORLD, strlen(HELLO_WORLD)); // nosemgrep - strlen is needed here
 		digest_ctx_list[i]->final(ctx_inst, data, &len);
 
 		for (int j = 0; j < (int) len; j++) {

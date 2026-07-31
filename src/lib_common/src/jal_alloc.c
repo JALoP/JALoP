@@ -83,31 +83,6 @@ char *jal_strdup(const char *str)
 	return tmp;
 }
 
-char *jal_strndup(const char *str, size_t size)
-{
-	/* Return immediately if there is nothing to copy */
-	if (0 == size || !str) {
-		return NULL;
-	}
-	/* Solaris does not have a strndup function, so we have to implement it */
-
-	/* Search the memory block for a null termination, and set size or max */
-	const char *end = memchr (str, '\0', size);
-	size_t len = end ? (size_t)(end - str) : size;
-
-	/* Allocate memory for the string + the null termination */
-	char *tmp = malloc(len+1);
-	if (!tmp) {
-		jal_error_handler(JAL_E_NO_MEM);
-	}
-
-	/* binary copy of requested size */
-	memcpy(tmp, str, len);
-	tmp[len] = '\0';
-
-	return(tmp);
-}
-
 char *jal_memdup(const char *buf, size_t size)
 {
 	/* Return immediately if there is nothing to copy */
@@ -121,7 +96,7 @@ char *jal_memdup(const char *buf, size_t size)
 	}
 
 	/* binary copy of requested size */
-	memcpy(tmp, buf, size);
+	memcpy(tmp, buf, size); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	return(tmp);
 }
 

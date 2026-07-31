@@ -111,7 +111,7 @@ int performChown(char* path, uid_t uid, gid_t group)
 {
     enable_capability_chown();
     enable_capability_dac_override();
-    int chownResult = chown(path, uid, group);
+    int chownResult = chown(path, uid, group); // nosemgrep - chown is needed here
     disable_capability_dac_override();
     disable_capability_chown();
 
@@ -126,7 +126,7 @@ int performChown(char* path, uid_t uid, gid_t group)
 }
 int performChmod(char* path, mode_t mode)
 {
-    int chmodResult = chmod((char*)path, mode);
+    int chmodResult = chmod((char*)path, mode);  // nosemgrep - chmod is needed here
 
     if (chmodResult != 0)
     {

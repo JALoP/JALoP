@@ -45,6 +45,6 @@ void test_jal_gen_timestamp_usec_works()
 
 	assert_not_equals(NULL,end_timestamp);
 
-	assert_equals(1,sscanf(end_timestamp,".%d-%*d:%*d",&ms));
+	assert_equals(1,sscanf(end_timestamp,".%d-%*d:%*d",&ms)); // nosemgrep - sscanf is needed here and a dynamic buffer is being used, so can't specify fixed width
 }
 

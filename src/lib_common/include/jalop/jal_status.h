@@ -67,6 +67,8 @@ enum jal_status {
 	JAL_E_PARSE,
 	JAL_E_COMM,
 	JAL_E_JOURNAL_MISSING,          //!< A record requested by journal-resume does not exist in the network store
+	JAL_E_RECORD_FAILURE,           //!< The Subscriber rejected a JAL record or failed to store it
+	JAL_E_SESSION_FAILURE,           //!< The Subscriber does not recognize the provided session id
 	JAL_OK = 0,
 };
 

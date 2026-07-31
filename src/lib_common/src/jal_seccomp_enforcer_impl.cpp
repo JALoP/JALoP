@@ -247,9 +247,6 @@ JalSeccompEnforcer::JalSeccompEnforcer(std::string configFile)
 		else if (release.find("el8")!=std::string::npos){
 			this->seccompVersion = 8;
 		}
-		else if (release.find("el7")!=std::string::npos){
-			this->seccompVersion = 7;
-		}
 		else{
 			this->seccompVersion = 0;
 		}
@@ -318,9 +315,6 @@ JalSeccompEnforcer::JalSeccompEnforcer(const std::vector<std::string> &initial_s
 		else if (release.find("el8")!=std::string::npos){
 			this->seccompVersion = 8;
 		}
-		else if (release.find("el7")!=std::string::npos){
-			this->seccompVersion = 7;
-		}
 		else{
 			this->seccompVersion = 0;
 		}
@@ -365,13 +359,7 @@ void JalSeccompEnforcer::applyRules(
 			}
 			else
 			{
-				//RHEL 7 in debug it always fails because SCMP_ACT_ALLOW probably matches the default
-				//filter_ctx intialization of SCMP_ACT_ALLOW. EACCES(rule matches default action)
-				//I cannot determine the actual failure type, the errno=2 and perror says "no directory or file found"
-				if(seccompVersion>7)
-				{
-					output(LogLevel::Debug, stderr, "%s", errMsg.c_str());
-				}
+				output(LogLevel::Debug, stderr, "%s", errMsg.c_str());
 			}
 		}
 		output(LogLevel::Debug, stderr, "%s(%d) ", rule.name.c_str(), rule.callNumber);
@@ -586,7 +574,7 @@ void JalSeccompEnforcer::output(LogLevel messageLevel, FILE* fd, const char* fmt
 	{
 		va_list args;
 		va_start(args, fmt);
-		vfprintf(fd, fmt, args);
+		vfprintf(fd, fmt, args);  // nosemgrep - false positive, no format specifier is getting passed here, just the actual string
 		va_end(args);
 	}
 }
