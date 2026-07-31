@@ -184,10 +184,4 @@ seccomp:
         both = ["brk","ftruncate","newfstatat","poll","rt_sigaction","rt_sigprocmask"];
         final = ["accept","access","clone3","clone","close","connect","exit","exit_group","faccessat2","fcntl","fdatasync","fstat","futex","getpid","getppid","getrandom","getsockopt","gettid","getuid","kill","lseek","madvise","mkdir","mmap","mprotect","munmap","open","openat","pread64","pwrite64","read","recvmsg","rseq","rt_sigreturn","sched_yield","sendto","set_robust_list","socket","stat","tgkill","unlink","write","writev"];
     };
-    rhel_7:
-    {
-        initial = ["arch_prctl","bind","capget","capset","chdir","chmod","chown","dup2","execve","flock","fstatfs","getcwd","getdents","getdents64","geteuid","getgid","getrlimit","ioctl","listen","lstat","prctl","prlimit64","readlink","rename","seccomp","select","set_tid_address","setsid","statfs","sysinfo"]
-        both = ["brk","newfstatat","poll","rt_sigaction","rt_sigprocmask"]
-        final = ["accept","access","clone","close","connect","exit","exit_group","fcntl","fdatasync","ftruncate","fstat","futex","getpid","getppid","getrandom","getsockopt","gettid","getuid","kill","lseek","madvise","mkdir","mmap","mprotect","munmap","open","openat","pread64","pwrite64","read","recvmsg","rt_sigreturn","sched_yield","sendto","set_robust_list","socket","stat","tgkill","unlink","write","writev"]
-    };
 };

@@ -227,9 +227,8 @@ void send_log()
 	if (app_meta == NULL)
 		return -1;
 
-	uint8_t[128] payload = "This is the payload, it is a string here but it can be binary\n";
-	// strlen works here because it is a string but do not use it if there may be binary data
-	size_t payload_size = strlen(payload);
+	const uint8_t payload[] = "This is the payload, it is a string here but it can be binary\n";
+	size_t payload_size = sizeof(payload);
 
 	ret = jalp_log(context, app_meta, payload, payload_size);
 	if (ret != JAL_OK) {
