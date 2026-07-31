@@ -21,7 +21,6 @@
 //! allowing multiple [Reader] instances. There should be one [Pool] created per underlying database.
 use crate::error::Error;
 use crate::error::Error::*;
-use crate::time::Timestamp;
 use anyhow::{anyhow, Context as _};
 use core::marker::PhantomData;
 use core::ops::Drop;
@@ -30,6 +29,7 @@ use core::time::Duration;
 use jalop_sys;
 use jalop_sys::context::Context;
 use jalop_sys::record_data::RecordData;
+use jalop_sys::time::Timestamp;
 use jalop_sys::RecordType;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -129,7 +129,7 @@ impl Drop for Reader {
 }
 
 /// A Single Writer Multiple Reader interface to the JALoP database
-/// Produces [Readers] and a [Writer] that share the same configuration to the underlying database.
+/// Produces multiple [Reader]s and a single [Writer] that share the same configuration to the underlying database.
 pub struct Pool {
     path: PathBuf,
     notify_tx: NotifyTx,

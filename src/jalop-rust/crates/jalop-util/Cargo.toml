@@ -1,0 +1,13 @@
+[package]
+name = "jalop-util"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+libc = "0.2"
+log = "0.4"
+
+[dev-dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["std"] }

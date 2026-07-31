@@ -71,12 +71,6 @@ fn main() -> anyhow::Result<()> {
             .allowlist_function("get_jaldb_config")
             .allowlist_function("free_jaldb_config")
             .allowlist_function("jal_gen_timestamp_usec")
-            // the seccomp enforcer is only used on el7 but has to be generated from el9 -- so no feature flag here
-            .allowlist_function("jal_seccomp_enforcer_apply_initial")
-            .allowlist_function("jal_seccomp_enforcer_apply_final")
-            .allowlist_function("jal_seccomp_enforcer_create_from_list")
-            .allowlist_function("jal_seccomp_enforcer_create")
-            .allowlist_function("jal_seccomp_enforcer_destroy")
             .allowlist_type("mark_request")
             .allowlist_type("jaldb_segment")
             .clang_args(includes)

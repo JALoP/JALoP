@@ -3,5 +3,9 @@ resolver = "2"
 members = [
     "crates/jalop-actors",
     "crates/jalop-filter",
+    "crates/jalop-jald",
+    "crates/jalop-protocol",
+    "crates/jalop-sec",
     "crates/jalop-sys",
+    "crates/jalop-util",
 ]

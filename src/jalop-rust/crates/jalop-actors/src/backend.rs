@@ -30,6 +30,7 @@ use tokio::sync::{broadcast, mpsc};
 pub(crate) struct ActorExecutor<A: Actor> {
     path: ActorPath,
     actor: A,
+    aref: ActorRef<A>,
     rx: MailboxRx<A>,
     parent_kill: KillRx,
 }
@@ -41,6 +42,7 @@ impl<A: Actor> ActorExecutor<A> {
         let executor = ActorExecutor {
             path,
             actor,
+            aref: actor_ref.clone(),
             rx,
             parent_kill,
         };
@@ -51,6 +53,7 @@ impl<A: Actor> ActorExecutor<A> {
     pub async fn start(mut self, system: ActorSystem) {
         let (self_kill, _) = broadcast::channel(1);
         let mut ctx = ActorContext {
+            aref: self.aref.clone(),
             path: self.path.clone(),
             system: system.clone(),
             behavior: Default::default(),
@@ -58,42 +61,37 @@ impl<A: Actor> ActorExecutor<A> {
             kill: self_kill.clone(),
         };
 
-        let start_res = self.actor.pre_start(&mut ctx).await;
-
-        if start_res.is_err() {
-            println!(
-                "actor {} failed to start: {:?}",
-                self.path,
-                start_res.as_ref().unwrap_err()
-            );
-        } else {
-            // update behavior if it was changed and pre-start did not error
-            if let Some(b) = ctx.becomes.take() {
-                ctx.behavior = b;
-            }
-        }
-
-        if start_res.is_ok() {
-            let mut self_kill_rx = self_kill.subscribe();
-            loop {
-                tokio::select! {
-                    Some(mut msg) = self.rx.recv() => {
-                        msg.handle(&mut self.actor, &mut ctx).await;
-                        // update behavior if it was changed
-                        if let Some(b) = ctx.becomes.take() {
-                            ctx.behavior = b;
-                        }
-                    }
-                    Ok(_) = self_kill_rx.recv() => break,
-                    Ok(_) = self.parent_kill.recv() => {
-                        let _ = self_kill.send(());
-                        break
-                    }
-                    else => break
+        match self.actor.pre_start(&mut ctx).await {
+            Ok(()) => {
+                // update behavior if it was changed and pre-start did not error
+                if let Some(b) = ctx.becomes.take() {
+                    ctx.behavior = b;
                 }
+
+                let mut self_kill_rx = self_kill.subscribe();
+                loop {
+                    tokio::select! {
+                        Some(mut msg) = self.rx.recv() => {
+                            msg.handle(&mut self.actor, &mut ctx).await;
+                            // update behavior if it was changed
+                            if let Some(b) = ctx.becomes.take() {
+                                ctx.behavior = b;
+                            }
+                        }
+                        Ok(_) = self_kill_rx.recv() => break,
+                        Ok(_) = self.parent_kill.recv() => {
+                            let _ = self_kill.send(());
+                            break
+                        }
+                        else => break
+                    }
+                }
+                trace!("actor {} stopping", self.path);
+                self.actor.post_stop(&mut ctx).await;
             }
-            trace!("actor {} stopping", self.path);
-            self.actor.post_stop(&mut ctx).await;
+            Err(e) => {
+                println!("actor {} failed to start: {:?}", self.path, e);
+            }
         }
 
         if let Err(e) = system.publish(SystemEvent::ActorStopped(self.path.clone())) {
@@ -112,7 +110,7 @@ pub(crate) type MailboxTx<A> = mpsc::UnboundedSender<BoxedEnvelopeHandler<A>>;
 // internal trait that specifies handling of [Envelop]
 #[async_trait]
 pub(crate) trait EnvelopeHandler<A: Actor>: Send + Sync {
-    async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<A::Behavior>);
+    async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<A>);
 }
 
 // internal wrapper that provides the communication interface between the public api and the executor
@@ -121,7 +119,7 @@ where
     P: Protocol,
     A: Receiver<P>,
 {
-    message: P,
+    message: Option<P>,
     reply_to: Option<oneshot::Sender<P::Response>>,
     _marker: PhantomData<A>,
 }
@@ -132,8 +130,8 @@ where
     A: Receiver<P>,
 {
     pub fn new(msg: P, reply_to: Option<oneshot::Sender<P::Response>>) -> Self {
-        MessageEnvelope {
-            message: msg,
+        Self {
+            message: Some(msg),
             reply_to,
             _marker: PhantomData,
         }
@@ -149,10 +147,15 @@ where
     P: Protocol,
     A: Receiver<P>,
 {
-    async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<A::Behavior>) {
-        let r = actor.receive(self.message.clone(), ctx).await;
-        if let Some(reply_to) = self.reply_to.take() {
-            let _ = reply_to.send(r);
+    async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<A>) {
+        match self.message.take() {
+            Some(message) => {
+                let r = actor.receive(message, ctx).await;
+                if let Some(reply_to) = self.reply_to.take() {
+                    let _ = reply_to.send(r);
+                }
+            }
+            None => warn!("Message Unsent: envelope payload is empty "),
         }
     }
 }

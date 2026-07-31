@@ -22,12 +22,8 @@ pub mod error;
 pub mod flags;
 pub mod record_data;
 mod record_type;
+pub mod time;
 pub use record_type::*;
-
-// provide ffi bindings to jal seccomp on el7
-// libseccomp is too old on el7 to be supported by libseccomp-rs
-#[cfg(feature = "rhel7")]
-pub mod jal_seccomp;
 
 use crate::error::Error;
 use crate::error::Error::UnexpectedFfiError;

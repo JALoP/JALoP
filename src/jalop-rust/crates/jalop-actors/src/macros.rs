@@ -15,9 +15,9 @@
  * limitations under the License.
 */
 
-//! This module provides macros used to interact with [Actor]s and the [ActorSystem]
+//! This module provides macros used to interact with [crate::actor::Actor]s and the [crate::system::ActorSystem]
 
-/// Used by an [Actor] to tell a [Message] to itself
+/// Used by an [crate::actor::Actor] to tell a [crate::actor::Protocol] message to itself
 #[macro_export]
 macro_rules! tell_self {
     ($ctx:expr, $msg:expr) => {

@@ -16,14 +16,14 @@
 */
 
 //! This module provide actors that receive [RecordData] and publish to a single output [UnixStream].
-use crate::queue::BackPressureQueue;
-use crate::subscriber::TokenId;
 use async_trait::async_trait;
 use jalop_actors::actor::{Actor, ActorRef, Protocol, Receiver};
 use jalop_actors::system::ActorContext;
 use jalop_actors::ActorError;
+use jalop_protocol::TokenId;
 use jalop_sys::record_data::{IoData, RecordData};
 use jalop_sys::RecordType;
+use jalop_util::queue::BackPressureQueue;
 use log::{error, trace, warn};
 use nix::sys::socket::{sendmsg, ControlMessage, MsgFlags, UnixAddr};
 use std::os::fd::AsRawFd;
@@ -64,7 +64,7 @@ pub enum SenderBehavior {
 impl Actor for SenderActor {
     type Behavior = SenderBehavior;
 
-    async fn pre_start(&mut self, ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+    async fn pre_start(&mut self, ctx: &mut ActorContext<Self>) -> Result<(), ActorError> {
         let worker = ctx
             .spawn(
                 "worker",
@@ -80,8 +80,7 @@ impl Actor for SenderActor {
     }
 }
 
-/// A [Protocol] for messaging the [Sender] actor.
-#[derive(Clone)]
+/// A [Protocol] for messaging the [SenderActor] actor.
 pub enum SenderMsg {
     Send(TokenId, RecordData),
     Sent(TokenId, String),
@@ -117,11 +116,7 @@ impl Protocol for SenderMsg {
 /// Implement [Receiver] of the [SenderMsg] [Protocol] for the [SenderActor] actor
 #[async_trait]
 impl Receiver<SenderMsg> for SenderActor {
-    async fn receive(
-        &mut self,
-        msg: SenderMsg,
-        ctx: &mut ActorContext<Self::Behavior>,
-    ) -> Result<SendResp, ActorError> {
+    async fn receive(&mut self, msg: SenderMsg, ctx: &mut ActorContext<Self>) -> Result<SendResp, ActorError> {
         match ctx.behavior() {
             SenderBehavior::Initialized(worker) => match msg {
                 SenderMsg::Sent(token, nonce) => {
@@ -156,7 +151,6 @@ impl Receiver<SenderMsg> for SenderActor {
 }
 
 /// A [Protocol] for messaging the [SendWorker] actor.
-#[derive(Clone)]
 struct WorkerMsg {
     id: TokenId,
     record: RecordData,
@@ -196,7 +190,7 @@ impl Actor for SendWorker {
 /// Implement [Receiver] of the [WorkerMsg] [Protocol] for the [SendWorker] actor
 #[async_trait]
 impl Receiver<WorkerMsg> for SendWorker {
-    async fn receive(&mut self, msg: WorkerMsg, _ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+    async fn receive(&mut self, msg: WorkerMsg, _ctx: &mut ActorContext<Self>) -> Result<(), ActorError> {
         let fd = self.stream.as_raw_fd();
         let nonce = msg.record.nonce.clone();
         self.bpq.insert(&nonce, msg.id).await.map_err(|_| ActorError::ActorStopped)?;
@@ -209,7 +203,7 @@ impl Receiver<WorkerMsg> for SendWorker {
 
             // this construct transfers ownership of the fd reference to the outer context
             let fd_array;
-            if let Some(fd) = io_data.fd.clone() {
+            if let Some(fd) = io_data.fd.as_ref() {
                 fd_array = [fd.as_raw_fd()];
                 cmsgs.push(ControlMessage::ScmRights(&fd_array))
             }

@@ -18,7 +18,7 @@
 //! This module provides the mechanisms to uniquely address an actor instance within a system.
 use std::fmt::{Debug, Display, Formatter};
 
-/// A unique path to an [Actor] that locates it within the actor tree
+/// A unique path to an [crate::actor::Actor] that locates it within the actor tree
 #[derive(Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct ActorPath(pub(crate) Vec<String>);
 impl ActorPath {

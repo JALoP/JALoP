@@ -58,7 +58,7 @@ impl Actor for WriterActor {
 
 #[async_trait]
 impl Receiver<Request> for WriterActor {
-    async fn receive(&mut self, msg: Request, _ctx: &mut ActorContext<Self::Behavior>) {
+    async fn receive(&mut self, msg: Request, _ctx: &mut ActorContext<Self>) {
         if let Err(e) = match msg {
             MarkUnsyncedUnsent { rec_type } => self.db.mark_unsynced_records_unsent(rec_type),
             MarkSent { rec_type, nonce } => self.db.mark_sent(rec_type, &nonce),

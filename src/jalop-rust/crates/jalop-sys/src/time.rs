@@ -16,7 +16,7 @@
 */
 
 //! This module provides a safe timestamp interface to the underlying JALoP timestamp
-use crate::Error;
+use crate::{jald_timestamp, Error};
 use anyhow::bail;
 use std::fmt::{Display, Formatter};
 use std::ops::Sub;
@@ -27,7 +27,7 @@ pub struct Timestamp(String);
 
 /// Create a [Timestamp] for the current time
 pub fn now() -> Result<Timestamp, Error> {
-    Ok(jalop_sys::jald_timestamp().map(Timestamp)?)
+    jald_timestamp().map(Timestamp)
 }
 
 impl Sub<std::time::Duration> for Timestamp {

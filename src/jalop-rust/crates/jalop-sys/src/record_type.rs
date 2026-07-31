@@ -19,12 +19,14 @@
 use crate::bindings as ffi;
 use crate::error::Error;
 use crate::jaldb_rec_type;
+use serde::Deserialize;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 /// A JALoP record type
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum RecordType {
     Journal,
     Audit,

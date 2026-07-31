@@ -17,12 +17,12 @@
 
 //! This module provides loading and deserialization of the filter TOML config file and CLI options.
 use clap::Parser;
+use jalop_sec::seccomp;
 use log::debug;
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use libseccomp::ScmpAction;
 #[derive(Clone, Debug, Parser)]
 pub struct CliOpts {
     /// filter config file location
@@ -41,7 +41,7 @@ pub struct CliOpts {
 pub struct FilterCfg {
     pub db: DbConfig,
     #[serde(default)]
-    pub seccomp: FilterSeccomp,
+    pub seccomp: seccomp::Config,
     #[serde(rename = "control-socket")]
     pub control_socket: ControlSocketCfg,
     #[serde(rename = "record-socket")]
@@ -69,6 +69,8 @@ pub fn from_file<P: AsRef<Path>>(config_file: P) -> anyhow::Result<FilterCfg> {
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct DbConfig {
     pub path: PathBuf,
+    #[serde(default = "default_poll_time_seconds")]
+    pub poll_time: u64,
 }
 
 /// Control Socket (rx) Configuration
@@ -91,57 +93,6 @@ pub struct RecordSocketCfg {
     pub buffer: usize,
 }
 
-/// Inline filter seccomp configuration
-/// system calls are specified as `name: phase`
-#[derive(Clone, Debug, Default, Deserialize)]
-pub struct FilterSeccomp {
-    #[allow(unused)]
-    enabled: bool,
-    debug: bool,
-    #[cfg_attr(feature = "rhel7", serde(rename = "rhel7_initial"))]
-    initial: Vec<String>,
-    #[cfg_attr(feature = "rhel7", serde(rename = "rhel7_final"))]
-    r#final: Vec<String>,
-    #[cfg_attr(feature = "rhel7", serde(rename = "rhel7_both"))]
-    both: Vec<String>,
-}
-
-impl FilterSeccomp {
-    /// Is seccomp enabled
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn get_seccomp_action(&self) -> libseccomp::ScmpAction {
-        if self.debug {
-            log::warn!("Seccomp debugging is enabled.");
-            ScmpAction::Log
-        } else {
-            ScmpAction::KillProcess
-        }
-    }
-
-    /// Is seccomp debug enabled (prints a message at transition point for sorting system calls)
-    pub fn is_debug_enabled(&self) -> bool {
-        self.debug
-    }
-
-    /// The full set of system calls the application requires, used for init stage
-    pub fn all(&self) -> Vec<String> {
-        [self.initial.clone(), self.r#final.clone(), self.both.clone()].concat()
-    }
-
-    /// The initial set of system calls + common system calls, as specified in the configuration.
-    pub fn initials(&self) -> Vec<String> {
-        [self.initial.clone(), self.both.clone()].concat()
-    }
-
-    /// The final set of system calls + common system calls, as specified in the configuration.
-    pub fn finals(&self) -> Vec<String> {
-        [self.r#final.clone(), self.both.clone()].concat()
-    }
-}
-
 fn default_socket_timeout() -> u16 {
     30
 }
@@ -152,4 +103,8 @@ fn default_control_message_buffer() -> usize {
 
 fn default_record_socket_buffer() -> usize {
     256
+}
+
+fn default_poll_time_seconds() -> u64 {
+    1
 }

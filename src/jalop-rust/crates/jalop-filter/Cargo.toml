@@ -12,28 +12,24 @@ thiserror = "2"
 clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
-nom = "7"
 log = "0.4"
 env_logger = "0.11"
-libc = "0.2"
 nix = { version = "0.29", features = ["uio", "socket"] }
-tokio-util = { version = "0.7", features = ["codec"] }
-futures-util = { version = "0.3", default-features = false, features = ["std", "sink"] }
 async-trait = "0.1"
-chrono = "0.4"
 serde = { version = "1", features = ["derive"] }
-libseccomp = "0.4"
-toml = { version = "0.9", default-features = false, features = ["serde", "parse"] }
+toml = { version = "1.0", default-features = false, features = ["serde", "parse"] }
 
 jalop-sys = { path = "../jalop-sys" }
+jalop-sec = { path = "../jalop-sec" }
 jalop-actors = { path = "../jalop-actors" }
+jalop-util = { path = "../jalop-util" }
+jalop-protocol = { path = "../jalop-protocol" }
 
 [dev-dependencies]
 assert_matches = "1.5"
 
 [features]
 default = []
-rhel10 = ["jalop-sys/rhel10"]
-rhel9 = ["jalop-sys/rhel9"]
-rhel8 = ["jalop-sys/rhel8"]
-rhel7 = ["jalop-sys/rhel7"]
+rhel10 = ["jalop-sys/rhel10", "jalop-sec/rhel10"]
+rhel9 = ["jalop-sys/rhel9", "jalop-sec/rhel9"]
+rhel8 = ["jalop-sys/rhel8", "jalop-sec/rhel8"]

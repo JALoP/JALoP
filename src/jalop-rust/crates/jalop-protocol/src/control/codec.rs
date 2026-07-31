@@ -16,193 +16,111 @@
 */
 
 //! This module provides asynchronous stream of decoded messages from a single input socket.
-use crate::subscriber::{Token, TokenId};
-use futures_util::StreamExt;
-use jalop_sys::RecordType;
-use log::{error, info, trace, warn};
+use crate::control::error::MessageDecodeError;
+use crate::control::message::Message;
+use crate::control::subscriptions::{SubKey, SubscriberMode};
+use crate::Token;
+use anyhow::bail;
+use log::trace;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use thiserror::Error;
-use tokio::sync::mpsc::Sender;
-use tokio::sync::oneshot;
-use tokio::{
-    io,
-    io::{AsyncWriteExt, DuplexStream},
-    net::UnixStream,
-};
-use tokio_util::bytes::{Buf, BytesMut};
-use tokio_util::codec::{Decoder, Framed};
-// socket receiving and parsing
-
-/// Stream of [Message] parsed out of a [DuplexStream]
-pub struct MessageStream {
-    kill: oneshot::Sender<()>,
-}
-
-impl MessageStream {
-    /// Start a new [MessageStream] that parses from the [DuplexStream]
-    /// Backpressure is applied to the parse by the capacity of the [Sender]
-    /// The backpressure propagates back to the source populating the duplex
-    pub fn start(tx: Sender<Message>, rx: DuplexStream) -> Self {
-        let (kill_tx, mut kill_rx) = oneshot::channel();
-        let mut wire = Framed::new(rx, MessageCodec::default());
-        tokio::spawn(async move {
-            info!("socket-rx: message stream started");
-            loop {
-                tokio::select! {
-                    msg = wire.next() => match msg {
-                        Some(Ok(m)) => {
-                            let _ = tx.send(m).await;
-                        }
-                        Some(Err(e)) => {
-                            warn!("socket-rx: message stream error {e:?}");
-                        }
-                        None => {
-                            info!("socket-rx: message stream stopped, wire closed");
-                            break
-                        },
-                    },
-                    _ = &mut kill_rx => {
-                        info!("socket-rx: message stream stopped, killed");
-                        break
-                    },
-                }
-            }
-        });
-        Self { kill: kill_tx }
-    }
-
-    /// Interrupt the stream, stopping the parser
-    pub fn stop(self) -> anyhow::Result<()> {
-        Ok(self.kill.send(()).map_err(|_| crate::Error::StreamError("failed to send kill signal"))?)
-    }
-}
-
-/// Create an IO Pump that transfers bytes from the [UnixStream] to the [DuplexStream]
-pub async fn pump(mut tx: DuplexStream, mut stream: UnixStream) -> anyhow::Result<u64> {
-    let res = io::copy(&mut stream, &mut tx).await;
-    let _ = tx.shutdown().await;
-    Ok(res?)
-}
-
-#[derive(Debug, Error)]
-pub enum SubscriberModeError {
-    #[error("invalid filter mode: {0}")]
-    InvalidFilterMode(u16),
-}
-
-// JALoP Subscriber mode
-#[derive(Copy, Clone, Debug)]
-enum SubscriberMode {
-    Archive,
-    Live,
-}
-
-impl TryFrom<u16> for SubscriberMode {
-    type Error = SubscriberModeError;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(SubscriberMode::Archive),
-            1 => Ok(SubscriberMode::Live),
-            x => Err(SubscriberModeError::InvalidFilterMode(x)),
-        }
-    }
-}
-
-// Unique identifier of a subscription
-#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-enum SubKey {
-    Journal(TokenId),
-    Audit(TokenId),
-    Log(TokenId),
-}
-
-impl SubKey {
-    fn from(token: TokenId, rt: RecordType) -> Self {
-        match rt {
-            RecordType::Journal => SubKey::Journal(token),
-            RecordType::Audit => SubKey::Audit(token),
-            RecordType::Log => SubKey::Log(token),
-        }
-    }
-}
+use tokio_util::bytes::{Buf, BufMut, BytesMut};
+use tokio_util::codec::{Decoder, Encoder};
 
 const MESSAGE_TYPE_TAG_SZ: usize = 2;
 const MIN_START_SZ: usize = 8;
 const MIN_STOP_SZ: usize = 4;
 const MIN_REC_RES_SZ: usize = 6;
 
-/// A message sent from JALoP to the filter
-#[derive(Clone, Debug)]
-pub enum Message {
-    /// Start a new subscriber stream
-    StartStream { token: Token, rtype: RecordType },
-    /// Start a new subscriber stream at the resume point
-    ResumeStream {
-        token: Token,
-        rtype: RecordType,
-        nonce: String,
-    },
-    /// Stop an active stream
-    StopStream { token: Token, rtype: RecordType },
-    /// Indicates that a record completed
-    RecordSuccess {
-        token: Token,
-        rtype: RecordType,
-        nonce: String,
-    },
-    /// Indicates that a record failed
-    RecordError {
-        token: Token,
-        rtype: RecordType,
-        nonce: String,
-    },
-    /// Indicates a record failure for disconnected subscriber
-    UnsubscribedRecordError {
-        id: TokenId,
-        rtype: RecordType,
-        nonce: String,
-    },
-}
-
-impl Message {
-    pub fn rtype(&self) -> RecordType {
-        match *self {
-            Message::StartStream { rtype, .. } => rtype,
-            Message::ResumeStream { rtype, .. } => rtype,
-            Message::StopStream { rtype, .. } => rtype,
-            Message::RecordSuccess { rtype, .. } => rtype,
-            Message::RecordError { rtype, .. } => rtype,
-            Message::UnsubscribedRecordError { rtype, .. } => rtype,
-        }
-    }
-}
-
-/// An error that can occur in the [Message] decoder
-#[derive(Debug, Error)]
-pub enum MessageDecodeError {
-    #[error("unsupported type tag: {0}")]
-    InvalidTypeTag(u16),
-    #[error("io error: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error(transparent)]
-    BadFilterMode(#[from] SubscriberModeError),
-    #[error(transparent)]
-    FfiError(#[from] jalop_sys::error::Error),
-    #[error("nonce was not found")]
-    MissingNonce,
-    #[error("sub already subscribed for {0} {1}")]
-    AlreadySubscribed(u16, RecordType),
-    #[error("no subscription exists for {0}")]
-    NotSubscribed(u16),
-}
+const TAG_MSG_START: u16 = 1;
+const TAG_MSG_STOP: u16 = 2;
+const TAG_MSG_SUCCESS: u16 = 4;
+const TAG_MSG_FAILURE_RETRY: u16 = 8;
+const TAG_MSG_FAILURE_NO_RETRY: u16 = 16;
 
 // Decode a [Message] from bytes
 // Maintains state of active subscribers
 #[derive(Default)]
-struct MessageCodec {
+pub struct MessageCodec {
     subs: HashMap<SubKey, SubscriberMode>,
+}
+
+impl Encoder<Message> for MessageCodec {
+    type Error = anyhow::Error;
+
+    fn encode(&mut self, item: Message, dst: &mut BytesMut) -> Result<(), Self::Error> {
+        let token_id = item.token_id();
+        let rtype: u16 = item.rtype().into();
+
+        match item {
+            Message::StartStream { token, .. } => {
+                dst.put_u16_ne(TAG_MSG_START);
+                dst.put_u16_ne(token_id);
+                dst.put_u16_ne(rtype);
+
+                let mode: u16 = match token {
+                    Token::Live(_) => SubscriberMode::Live.into(),
+                    Token::Archive(_) => SubscriberMode::Archive.into(),
+                };
+                dst.put_u16_ne(mode);
+
+                // StartStream has no nonce; len 0
+                dst.put_u16_ne(0);
+            }
+            Message::ResumeStream { token, nonce, .. } => {
+                dst.put_u16_ne(TAG_MSG_START);
+                dst.put_u16_ne(token_id);
+                dst.put_u16_ne(rtype);
+
+                let mode: u16 = match token {
+                    Token::Live(_) => SubscriberMode::Live.into(),
+                    Token::Archive(_) => SubscriberMode::Archive.into(),
+                };
+                dst.put_u16_ne(mode);
+
+                let nonce_bytes = nonce.as_bytes();
+                dst.put_u16_ne(nonce_bytes.len() as u16);
+                dst.put_slice(nonce_bytes);
+            }
+            Message::StopStream { .. } => {
+                dst.put_u16_ne(TAG_MSG_STOP);
+                dst.put_u16_ne(token_id);
+                dst.put_u16_ne(rtype);
+            }
+            Message::RecordSuccess { nonce, .. } => {
+                dst.put_u16_ne(TAG_MSG_SUCCESS);
+                dst.put_u16_ne(token_id);
+                dst.put_u16_ne(rtype);
+
+                let nonce_bytes = nonce.as_bytes();
+                dst.put_u16_ne(nonce_bytes.len() as u16);
+                dst.put_slice(nonce_bytes);
+            }
+            Message::RecordErrorNoRetry { nonce, .. } => {
+                dst.put_u16_ne(TAG_MSG_FAILURE_NO_RETRY);
+                dst.put_u16_ne(token_id);
+                dst.put_u16_ne(rtype);
+
+                let nonce_bytes = nonce.as_bytes();
+                dst.put_u16_ne(nonce_bytes.len() as u16);
+                dst.put_slice(nonce_bytes);
+            }
+            Message::RecordErrorRetry { nonce, .. } => {
+                dst.put_u16_ne(TAG_MSG_FAILURE_RETRY);
+                dst.put_u16_ne(token_id);
+                dst.put_u16_ne(rtype);
+
+                let nonce_bytes = nonce.as_bytes();
+                dst.put_u16_ne(nonce_bytes.len() as u16);
+                dst.put_slice(nonce_bytes);
+            }
+            Message::UnsubscribedRecordError { .. } => {
+                bail!("UnsubscribedRecordError is not sendable, use RecordError instead")
+            }
+        };
+
+        Ok(())
+    }
 }
 
 impl Decoder for MessageCodec {
@@ -217,10 +135,11 @@ impl Decoder for MessageCodec {
         let mut cursor = src.as_ref();
         let tag = cursor.get_u16_ne();
         let res = match tag {
-            1 => Self::decode_start_stream_msg(self, cursor),
-            2 => Self::decode_stop_stream_msg(self, cursor),
-            4 => Self::decode_rec_success_msg(self, cursor),
-            8 => Self::decode_rec_error_msg(self, cursor),
+            TAG_MSG_START => Self::decode_start_stream_msg(self, cursor),
+            TAG_MSG_STOP => Self::decode_stop_stream_msg(self, cursor),
+            TAG_MSG_SUCCESS => Self::decode_rec_success_msg(self, cursor),
+            TAG_MSG_FAILURE_NO_RETRY => Self::decode_rec_error_no_retry_msg(self, cursor),
+            TAG_MSG_FAILURE_RETRY => Self::decode_rec_error_retry_msg(self, cursor),
             x => {
                 src.advance(MESSAGE_TYPE_TAG_SZ); // consume the tag if it was invalid
                 Err(MessageDecodeError::InvalidTypeTag(x))
@@ -258,7 +177,7 @@ impl MessageCodec {
         let nonce_len = cursor.get_u16_ne();
 
         let rtype = rtype.try_into()?;
-        let token = match self.subs.entry(SubKey::from(token, rtype)) {
+        let token = match self.subs.entry(SubKey::new(token, rtype)) {
             Entry::Occupied(_) => return Err(MessageDecodeError::AlreadySubscribed(token, rtype)),
             Entry::Vacant(e) => {
                 let mode: SubscriberMode = mode.try_into()?;
@@ -292,7 +211,7 @@ impl MessageCodec {
         let rtype = cursor.get_u16_ne();
 
         let rtype = rtype.try_into()?;
-        let subkey = SubKey::from(token, rtype);
+        let subkey = SubKey::new(token, rtype);
         let mode = self.subs.remove(&subkey).ok_or(MessageDecodeError::NotSubscribed(token))?;
         let token = match mode {
             SubscriberMode::Archive => Token::Archive(token),
@@ -313,7 +232,7 @@ impl MessageCodec {
         let nonce_len = cursor.get_u16_ne();
 
         let rtype = rtype.try_into()?;
-        let subkey = SubKey::from(token, rtype);
+        let subkey = SubKey::new(token, rtype);
         let mode = self.subs.get(&subkey).ok_or(MessageDecodeError::NotSubscribed(token))?;
         let token = match mode {
             SubscriberMode::Archive => Token::Archive(token),
@@ -333,7 +252,7 @@ impl MessageCodec {
         }
     }
 
-    fn decode_rec_error_msg(&self, src: &[u8]) -> DecodeResult {
+    fn decode_rec_error_retry_msg(&self, src: &[u8]) -> DecodeResult {
         if src.len() < MIN_REC_RES_SZ {
             return Ok(None);
         }
@@ -344,14 +263,51 @@ impl MessageCodec {
         let nonce_len = cursor.get_u16_ne();
 
         let rtype = rtype.try_into()?;
-        let subkey = SubKey::from(token, rtype);
+        let subkey = SubKey::new(token, rtype);
         let err_type: Box<dyn FnOnce(String) -> Message> = match self.subs.get(&subkey) {
             Some(mode) => {
                 let token = match mode {
                     SubscriberMode::Archive => Token::Archive(token),
                     SubscriberMode::Live => Token::Live(token),
                 };
-                Box::new(|nonce| Message::RecordError { token, rtype, nonce })
+                Box::new(move |nonce| Message::RecordErrorRetry { token, rtype, nonce })
+            }
+            None => Box::new(|nonce| Message::UnsubscribedRecordError {
+                id: token,
+                rtype,
+                nonce,
+            }),
+        };
+
+        match nonce_len {
+            0 => Err(MessageDecodeError::MissingNonce),
+            sz if src.len() < MIN_REC_RES_SZ + sz as usize => Ok(None),
+            sz => {
+                let nonce = String::from_utf8_lossy(&cursor[..sz as usize]).to_string();
+                Ok(Some((MIN_REC_RES_SZ + sz as usize, err_type(nonce))))
+            }
+        }
+    }
+
+    fn decode_rec_error_no_retry_msg(&self, src: &[u8]) -> DecodeResult {
+        if src.len() < MIN_REC_RES_SZ {
+            return Ok(None);
+        }
+
+        let mut cursor = src;
+        let token = cursor.get_u16_ne();
+        let rtype = cursor.get_u16_ne();
+        let nonce_len = cursor.get_u16_ne();
+
+        let rtype = rtype.try_into()?;
+        let subkey = SubKey::new(token, rtype);
+        let err_type: Box<dyn FnOnce(String) -> Message> = match self.subs.get(&subkey) {
+            Some(mode) => {
+                let token = match mode {
+                    SubscriberMode::Archive => Token::Archive(token),
+                    SubscriberMode::Live => Token::Live(token),
+                };
+                Box::new(move |nonce| Message::RecordErrorNoRetry { token, rtype, nonce })
             }
             None => Box::new(|nonce| Message::UnsubscribedRecordError {
                 id: token,
@@ -373,9 +329,12 @@ impl MessageCodec {
 
 #[cfg(test)]
 mod tests {
-    use crate::receiver::{Message, MessageCodec};
+    use crate::control::codec::MessageCodec;
+    use crate::control::message::Message;
+    use crate::Token;
     use assert_matches::assert_matches;
-    use futures_util::StreamExt;
+    use futures_util::{SinkExt, StreamExt};
+    use jalop_sys::RecordType;
     use tokio::io::{duplex, AsyncWriteExt, DuplexStream};
     use tokio_util::bytes::BufMut;
     use tokio_util::codec::Framed;
@@ -386,8 +345,7 @@ mod tests {
 
     async fn make_wire(bytes: &[u8]) -> Framed<DuplexStream, MessageCodec> {
         let (mut a, b) = duplex(1024);
-        //Ignore bytes_written currently
-        let _bytes_written = a.write(bytes).await.unwrap();
+        let _ = a.write(bytes).await.unwrap();
         Framed::new(b, MessageCodec::default())
     }
 
@@ -502,7 +460,7 @@ mod tests {
     async fn parse_error() {
         let mut wire = concat_wire(&[&start_bytes(), &error_bytes()]).await;
         assert_matches!(wire.next().await.unwrap(), Ok(Message::StartStream { .. }));
-        assert_matches!(wire.next().await.unwrap(), Ok(Message::RecordError { .. }));
+        assert_matches!(wire.next().await.unwrap(), Ok(Message::RecordErrorRetry { .. }));
     }
 
     #[tokio::test]
@@ -534,7 +492,7 @@ mod tests {
         let start = wire.next().await.unwrap();
         assert_matches!(start, Ok(Message::StartStream { .. }));
         let err = wire.next().await.unwrap();
-        assert_matches!(err, Ok(Message::RecordError { .. }));
+        assert_matches!(err, Ok(Message::RecordErrorRetry { .. }));
         let stop = wire.next().await.unwrap();
         assert_matches!(stop, Ok(Message::StopStream { .. }));
     }
@@ -567,5 +525,79 @@ mod tests {
 
         let stop = wire.next().await.unwrap();
         assert_matches!(stop, Ok(Message::UnsubscribedRecordError { id: 1, .. }));
+    }
+
+    type FramedStream = Framed<DuplexStream, MessageCodec>;
+
+    fn make_dewire() -> (FramedStream, FramedStream) {
+        let (a, b) = duplex(1024);
+        let i = Framed::new(a, MessageCodec::default());
+        let o = Framed::new(b, MessageCodec::default());
+        (i, o)
+    }
+
+    #[tokio::test]
+    async fn round_trip_token_type_check() {
+        let (mut i, mut o) = make_dewire();
+        let start1 = Message::start(Token::Live(1), RecordType::Journal);
+        let start2 = Message::start(Token::Archive(1), RecordType::Journal);
+
+        i.send(start1.clone()).await.unwrap();
+        let m = o.next().await.unwrap().unwrap();
+        assert_eq!(m, start1);
+        assert_ne!(m, start2);
+    }
+    #[tokio::test]
+    async fn round_trip_token_id_check() {
+        let (mut i, mut o) = make_dewire();
+        let start1 = Message::start(Token::Live(1), RecordType::Journal);
+        let start2 = Message::start(Token::Live(2), RecordType::Journal);
+
+        i.send(start1.clone()).await.unwrap();
+        let m = o.next().await.unwrap().unwrap();
+        assert_eq!(m, start1);
+        assert_ne!(m, start2);
+    }
+
+    #[tokio::test]
+    async fn round_trip_rec_check() {
+        let (mut i, mut o) = make_dewire();
+        let start1 = Message::start(Token::Live(1), RecordType::Journal);
+        let start2 = Message::start(Token::Live(1), RecordType::Audit);
+
+        i.send(start1.clone()).await.unwrap();
+        let m = o.next().await.unwrap().unwrap();
+        assert_eq!(m, start1);
+        assert_ne!(m, start2);
+
+        let (mut i, mut o) = make_dewire();
+        let start1 = Message::start(Token::Live(1), RecordType::Journal);
+        let start2 = Message::start(Token::Live(1), RecordType::Log);
+
+        i.send(start1.clone()).await.unwrap();
+        let m = o.next().await.unwrap().unwrap();
+        assert_eq!(m, start1);
+        assert_ne!(m, start2);
+    }
+
+    #[tokio::test]
+    async fn round_trip_handle_unsubscribed() {
+        let (mut c, mut s) = make_dewire();
+        let sub = Message::start(Token::Live(1), RecordType::Journal);
+        let unsub = Message::stop(Token::Live(1), RecordType::Journal);
+        let suc = Message::success(Token::Live(1), RecordType::Journal, "_nonce_");
+        let err = Message::error_retry(Token::Live(1), RecordType::Journal, "_nonce_");
+
+        c.send(sub).await.unwrap();
+        s.next().await.unwrap().unwrap();
+
+        c.send(unsub).await.unwrap();
+        s.next().await.unwrap().unwrap();
+
+        c.send(err).await.unwrap();
+        s.next().await.unwrap().unwrap();
+
+        c.send(suc).await.unwrap();
+        assert!(s.next().await.unwrap().is_err());
     }
 }

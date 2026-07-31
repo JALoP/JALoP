@@ -26,20 +26,23 @@ use jalop_actors::path::ActorPath;
 use jalop_actors::system::ActorSystem;
 use jalop_filter::config::CliOpts;
 use jalop_filter::db::Pool;
-use jalop_filter::receiver::{Message, MessageStream};
 use jalop_filter::sender::{SenderActor, SenderMsg};
-use jalop_filter::subscriber::{ArchiveSubscriber, LiveSubscriber, SubscriberMsg, Token};
+use jalop_filter::subscriber::{ArchiveSubscriber, LiveSubscriber, SubscriberMsg};
 use jalop_filter::writer::{Request, WriterActor};
-use jalop_filter::{config, kill, receiver, seccomp, time, writer};
+use jalop_filter::{config, writer};
+use jalop_protocol::control::message::Message;
+use jalop_protocol::control::stream::MessageStream;
+use jalop_protocol::Token;
+use jalop_sec::seccomp;
+use jalop_sys::time;
 use jalop_sys::{RecordType, MARK_REQUEST_SIZE};
+use jalop_util::kill;
+use jalop_util::wait::wait_for_socket;
 use log::{debug, info, trace, warn};
 use std::os::unix::net::UnixStream;
-use std::path::Path;
 use tokio::io::duplex;
 use tokio::net::UnixListener;
-use tokio::sync::broadcast;
 use tokio::sync::mpsc;
-use tokio::time::interval;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -47,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
 
     let opts: CliOpts = CliOpts::parse();
     let cfg = config::from_cli(&opts)?;
-    debug!("global options: {cfg:#?}");
+    //debug!("global options: {cfg:#?}");
 
     // apply initial seccomp filter
     seccomp::apply_initial(&cfg.seccomp)?;
@@ -86,7 +89,7 @@ async fn main() -> anyhow::Result<()> {
                     // pump socket bytes into the duplex
                     info!("socket-rx: io buffer size: {message_buffer_size}");
                     let (buf_tx, buf_rx) = duplex(message_buffer_size);
-                    tokio::spawn(receiver::pump(buf_tx, input));
+                    tokio::spawn(jalop_util::io::pump(buf_tx, input));
 
                     // decode the duplex into messages
                     let msg_stream = MessageStream::start(msg_tx, buf_rx);
@@ -148,7 +151,14 @@ async fn main() -> anyhow::Result<()> {
                 rtype,
             } => {
                 let _ = writer.ask(Request::MarkUnsyncedUnsent { rec_type: rtype }).await;
-                let reader = ArchiveSubscriber::new(id, rtype, sender, pool.reader().await?, writer.clone());
+                let reader = ArchiveSubscriber::new(
+                    id,
+                    rtype,
+                    sender,
+                    pool.reader().await?,
+                    writer.clone(),
+                    cfg.db.poll_time,
+                );
                 let reader = system.create_actor_path(make_reader_path(id, rtype), reader).await?;
                 let _ = reader.tell(SubscriberMsg::ReadNext).await;
                 trace!("processed start stream for {rtype:?} archive subscriber id {id}");
@@ -157,7 +167,8 @@ async fn main() -> anyhow::Result<()> {
                 token: Token::Live(id),
                 rtype,
             } => {
-                let reader = LiveSubscriber::new(id, time::now()?, rtype, sender, pool.reader().await?);
+                let reader =
+                    LiveSubscriber::new(id, time::now()?, rtype, sender, pool.reader().await?, cfg.db.poll_time);
                 let reader = system.create_actor_path(make_reader_path(id, rtype), reader).await?;
                 let _ = reader.tell(SubscriberMsg::ReadNext).await;
                 trace!("processed start stream for {rtype} live subscriber id {id}");
@@ -168,7 +179,14 @@ async fn main() -> anyhow::Result<()> {
                 nonce,
             } => {
                 let _ = writer.ask(Request::MarkUnsyncedUnsent { rec_type: rtype }).await;
-                let reader = ArchiveSubscriber::new(id, rtype, sender, pool.reader().await?, writer.clone());
+                let reader = ArchiveSubscriber::new(
+                    id,
+                    rtype,
+                    sender,
+                    pool.reader().await?,
+                    writer.clone(),
+                    cfg.db.poll_time,
+                );
                 let reader = system.create_actor_path(make_reader_path(id, rtype), reader).await?;
                 let _ = reader.tell(SubscriberMsg::ResumeFrom(nonce)).await;
                 trace!("processed resume stream for {rtype} archive subscriber id {id}");
@@ -187,6 +205,22 @@ async fn main() -> anyhow::Result<()> {
                 let reader = system.get_actor::<ArchiveSubscriber>(&make_reader_path(id, rtype)).await.unwrap();
                 let _ = reader.tell(PoisonPill).await;
                 let _ = sender.tell(SenderMsg::EvictAll(id)).await;
+                // todo; Per the comment on 1230 MR
+                // Create a router above the subscribers to manage sequencing of
+                // destruticon/creation of subscribers when reusing the same token id
+                // Stopgap measure, wait until the actor specified by this token/rtype is gone
+                // before proceeding
+                let mut wait_count: u64 = 0;
+                loop {
+                    let dead_reader = system.get_actor::<ArchiveSubscriber>(&make_reader_path(id, rtype)).await;
+                    // Break out of this loop once the reader by this path no longer exists, or
+                    // after 5 seconds, whichever comes first
+                    if dead_reader.is_none() || wait_count > 50 {
+                        break;
+                    }
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    wait_count += 1;
+                }
                 trace!("processed stop stream for {rtype} archive subscriber id {id}");
             }
             Message::StopStream {
@@ -215,7 +249,7 @@ async fn main() -> anyhow::Result<()> {
                 let _ = sender.tell(SenderMsg::Sent(id, nonce)).await;
                 trace!("processed record success for {rtype} live subscriber id {id}");
             }
-            Message::RecordError {
+            Message::RecordErrorRetry {
                 token: Token::Archive(id),
                 rtype,
                 nonce,
@@ -224,7 +258,20 @@ async fn main() -> anyhow::Result<()> {
                 let _ = writer.ask(make_unsent_msg(rtype, nonce.clone())).await;
                 let _ = sender.tell(SenderMsg::Evict(nonce)).await;
             }
-            Message::RecordError {
+            Message::RecordErrorNoRetry {
+                token: Token::Archive(id),
+                rtype,
+                nonce,
+            } => {
+                warn!("error reported by jald archive subscriber {id} for {rtype} {nonce}");
+                let _ = sender.tell(SenderMsg::Evict(nonce)).await;
+            }
+            Message::RecordErrorRetry {
+                token: Token::Live(id),
+                rtype,
+                nonce,
+            }
+            | Message::RecordErrorNoRetry {
                 token: Token::Live(id),
                 rtype,
                 nonce,
@@ -241,38 +288,13 @@ async fn main() -> anyhow::Result<()> {
 
     // gracefully shut down actors and db
     debug!("shutting down");
-    system.shutdown().await;
+    system.terminate().await;
     if let Err(e) = pool.shutdown(Duration::from_secs(3)).await {
         warn!("{e}");
     }
 
     info!("Done");
     Ok(())
-}
-
-// wait for the socket file to appear on disk, waiting up to the specified timeout
-async fn wait_for_socket<P: AsRef<Path>>(
-    path: P,
-    timeout: u16,
-    mut kill: broadcast::Receiver<()>,
-) -> anyhow::Result<()> {
-    let mut attempts = 0;
-    let mut check_interval = interval(Duration::from_secs(1));
-    loop {
-        tokio::select! {
-            _ = kill.recv() => bail!("wait for socket interrupted by kill signal"),
-            _ = check_interval.tick() => {
-                if path.as_ref().try_exists()? {
-                    break Ok(())
-                } else if attempts < timeout {
-                    debug!("waiting on socket");
-                    attempts += 1;
-                } else {
-                    bail!("socket timeout expired")
-                }
-            }
-        }
-    }
 }
 
 fn make_sender_path(rec_type: RecordType) -> ActorPath {

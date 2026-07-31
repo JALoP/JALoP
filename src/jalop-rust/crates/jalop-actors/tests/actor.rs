@@ -31,7 +31,7 @@ struct TestActor;
 impl Actor for TestActor {
     type Behavior = ();
 
-    async fn post_stop(&mut self, _ctx: &mut ActorContext<Self::Behavior>) {
+    async fn post_stop(&mut self, _ctx: &mut ActorContext<Self>) {
         println!("stopping test actor")
     }
 }
@@ -48,7 +48,7 @@ impl Protocol for TestMsg {
 
 #[async_trait]
 impl Receiver<TestMsg> for TestActor {
-    async fn receive(&mut self, msg: TestMsg, ctx: &mut ActorContext<Self::Behavior>) {
+    async fn receive(&mut self, msg: TestMsg, ctx: &mut ActorContext<Self>) {
         match msg {
             TestMsg::Foo => {
                 println!("received foo");
@@ -82,7 +82,7 @@ struct SpawningActor(usize, Arc<Mutex<Vec<usize>>>);
 impl Actor for SpawningActor {
     type Behavior = ();
 
-    async fn pre_start(&mut self, ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+    async fn pre_start(&mut self, ctx: &mut ActorContext<Self>) -> Result<(), ActorError> {
         if self.0 > 0 {
             let next = self.0 - 1;
             println!("{} spawning actor {}", ctx.path, next);
@@ -91,7 +91,7 @@ impl Actor for SpawningActor {
         Ok(())
     }
 
-    async fn post_stop(&mut self, _ctx: &mut ActorContext<Self::Behavior>) {
+    async fn post_stop(&mut self, _ctx: &mut ActorContext<Self>) {
         let mut log = self.1.lock().await;
         log.push(self.0);
         println!("stopping spawing actor {}", self.0);
@@ -127,7 +127,7 @@ async fn system_shutdown() {
     let log: Arc<Mutex<Vec<usize>>> = Default::default();
     let _top = sys.create_actor("5", SpawningActor(5, log.clone())).await.unwrap();
     sleep(Duration::from_secs(1)).await;
-    sys.shutdown().await;
+    sys.terminate().await;
     sleep(Duration::from_secs(1)).await;
     let log = log.lock().await.to_vec();
     assert_eq!(log, vec![5, 4, 3, 2, 1, 0]);

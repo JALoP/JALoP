@@ -15,14 +15,17 @@
  * limitations under the License.
 */
 
-//! This module provides the definition of an [Actor] and messaging [Protocol].
+//! This module provides the definition of an Actor and the messaging Protocol trait.
+
 use crate::backend::{MailboxTx, MessageEnvelope};
 use crate::path::ActorPath;
 use crate::system::ActorContext;
 use crate::ActorError;
 use async_trait::async_trait;
-use log::trace;
-use tokio::sync::oneshot;
+use log::{trace, warn};
+use std::fmt::{Debug, Formatter};
+use tokio::sync::mpsc::{Sender, UnboundedSender};
+use tokio::sync::{mpsc, oneshot};
 
 /// The Actor trait identifies that a type should be treated as an actor.
 /// Provides optional hooks for tasks that should be run at changes to the actor lifecycle.
@@ -34,18 +37,18 @@ pub trait Actor: Send + Sync + 'static {
     type Behavior: Default + Send + Sync + 'static;
 
     /// Override this function to provide a custom task that executes once prior to message handling
-    async fn pre_start(&mut self, _ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+    async fn pre_start(&mut self, _ctx: &mut ActorContext<Self>) -> Result<(), ActorError> {
         Ok(())
     }
 
     /// Override this function to provide a custom task that executes once after the actor has stopped
-    async fn post_stop(&mut self, _ctx: &mut ActorContext<Self::Behavior>) {}
+    async fn post_stop(&mut self, _ctx: &mut ActorContext<Self>) {}
 }
 
 /// This trait defines the protocol used to communicate with an [Actor].
 /// The [Protocol] implementor is the input type, and the response type is the output.
 /// The response can be a Unit which declares that there is not a response expected.
-pub trait Protocol: Clone + Send + Sync + 'static {
+pub trait Protocol: Send + Sync + 'static {
     /// Define the response type to the message
     /// Specify unit to declare there is no response expected
     /// The ask functionality on an actor is available regardless of this type
@@ -53,21 +56,30 @@ pub trait Protocol: Clone + Send + Sync + 'static {
 }
 
 /// This trait defines handling of a [Protocol] type, allowing the message to be received by an [Actor].
-/// The [ActorContext] maintains the state of the actor instance within the [ActorSystem] and
+/// The [ActorContext] maintains the state of the actor instance within the [crate::system::ActorSystem] and
 /// maintains the current behavior of the actor.
 #[async_trait]
-pub trait Receiver<M: Protocol>: Actor {
+pub trait Receiver<M: Protocol, A: Actor = Self>: Actor {
     /// Receive the next message from the actor mailbox along with the current context of the actor
     /// This function will return the response type declared in the message that was received
-    async fn receive(&mut self, msg: M, ctx: &mut ActorContext<Self::Behavior>) -> M::Response;
+    async fn receive(&mut self, msg: M, ctx: &mut ActorContext<A>) -> M::Response;
 }
 
 /// The interface to a running actor that allows message based communication with the actor.
 /// This type is cloneable and lightweight, intended to be shared anywhere communication with
 /// the underlying [Actor] is expected.
-pub struct ActorRef<A: Actor> {
+pub struct ActorRef<A: Actor + ?Sized> {
     path: ActorPath,
     tx: MailboxTx<A>,
+}
+
+impl<A> Debug for ActorRef<A>
+where
+    A: Actor + ?Sized,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ActorRef: {:?}", self.path)
+    }
 }
 
 impl<A: Actor> ActorRef<A> {
@@ -119,6 +131,51 @@ impl<A: Actor> ActorRef<A> {
     }
 }
 
+/// Convert an [ActorRef] into a Tokio [Sender] for API compatibility
+/// The bounded channel is set to capacity of 1 to allow the actor backpressure to propagate
+impl<A, M> From<ActorRef<A>> for Sender<M>
+where
+    M: Protocol,
+    A: Receiver<M>,
+{
+    fn from(value: ActorRef<A>) -> Self {
+        let (tx, mut rx) = mpsc::channel(1);
+        let actor_ref = value.clone();
+        let actor_path = value.path.clone();
+        tokio::spawn(async move {
+            while let Some(msg) = rx.recv().await {
+                if actor_ref.tell(msg).await.is_err() {
+                    warn!("{actor_path} is dead, bounded channel closed");
+                    break;
+                }
+            }
+        });
+        tx
+    }
+}
+
+/// Convert an [ActorRef] into a Tokio [UnboundedSender] for API compatibility
+impl<A, M> From<ActorRef<A>> for UnboundedSender<M>
+where
+    M: Protocol,
+    A: Receiver<M>,
+{
+    fn from(value: ActorRef<A>) -> Self {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let actor_ref = value.clone();
+        let actor_path = value.path.clone();
+        tokio::spawn(async move {
+            while let Some(msg) = rx.recv().await {
+                if actor_ref.tell(msg).await.is_err() {
+                    warn!("{actor_path} is dead, unbounded channel closed");
+                    break;
+                }
+            }
+        });
+        tx
+    }
+}
+
 impl<A: Actor> Clone for ActorRef<A> {
     fn clone(&self) -> Self {
         Self {
@@ -142,7 +199,7 @@ impl Protocol for PoisonPill {
 // blanket impl so that all actors handle this message by stopping the actor
 #[async_trait]
 impl<T: Actor> Receiver<PoisonPill> for T {
-    async fn receive(&mut self, _: PoisonPill, ctx: &mut ActorContext<Self::Behavior>) {
+    async fn receive(&mut self, _: PoisonPill, ctx: &mut ActorContext<Self>) {
         trace!("actor {} poisoned", ctx.path);
         ctx.stop();
     }

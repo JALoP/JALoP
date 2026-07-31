@@ -18,13 +18,14 @@
 //! This module provides an [Actor] implementation that maps to a JALoP subscriber [RecordType] channel.
 use crate::db::Reader;
 use crate::sender::{SendResp, SenderActor, SenderMsg};
-use crate::time::Timestamp;
 use crate::writer;
 use crate::writer::WriterActor;
 use async_trait::async_trait;
 use jalop_actors::actor::{Actor, ActorRef, Protocol, Receiver};
 use jalop_actors::system::ActorContext;
 use jalop_actors::{tell_self, ActorError};
+use jalop_protocol::TokenId;
+use jalop_sys::time::Timestamp;
 use jalop_sys::RecordType;
 use log::{error, info, warn};
 use std::time::Duration;
@@ -36,6 +37,7 @@ pub struct ArchiveSubscriber {
     tx: ActorRef<SenderActor>,
     db: Reader,
     writer: ActorRef<WriterActor>,
+    poll_time: u64,
 }
 
 /// A subscriber of a [RecordType] in live mode
@@ -45,6 +47,7 @@ pub struct LiveSubscriber {
     rt: RecordType,
     tx: ActorRef<SenderActor>,
     db: Reader,
+    poll_time: u64,
 }
 
 impl ArchiveSubscriber {
@@ -54,14 +57,36 @@ impl ArchiveSubscriber {
         tx: ActorRef<SenderActor>,
         db: Reader,
         writer: ActorRef<WriterActor>,
+        poll_time: u64,
     ) -> Self {
-        Self { id, rt, tx, db, writer }
+        Self {
+            id,
+            rt,
+            tx,
+            db,
+            writer,
+            poll_time,
+        }
     }
 }
 
 impl LiveSubscriber {
-    pub fn new(id: TokenId, ts: Timestamp, rt: RecordType, tx: ActorRef<SenderActor>, db: Reader) -> Self {
-        Self { id, ts, rt, tx, db }
+    pub fn new(
+        id: TokenId,
+        ts: Timestamp,
+        rt: RecordType,
+        tx: ActorRef<SenderActor>,
+        db: Reader,
+        poll_time: u64,
+    ) -> Self {
+        Self {
+            id,
+            ts,
+            rt,
+            tx,
+            db,
+            poll_time,
+        }
     }
 }
 
@@ -86,11 +111,11 @@ impl Protocol for SubscriberMsg {
 
 #[async_trait]
 impl Receiver<SubscriberMsg> for LiveSubscriber {
-    async fn receive(&mut self, msg: SubscriberMsg, ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+    async fn receive(&mut self, msg: SubscriberMsg, ctx: &mut ActorContext<Self>) -> Result<(), ActorError> {
         match msg {
             SubscriberMsg::ReadNext => {
                 match self.db.get_next_chronological(self.rt, self.ts.clone()) {
-                    Ok(None) => tokio::time::sleep(Duration::from_secs(1)).await,
+                    Ok(None) => tokio::time::sleep(Duration::from_secs(self.poll_time)).await,
                     Ok(Some((record, ts))) => match self.tx.ask(SenderMsg::Send(self.id, record)).await?? {
                         SendResp::Pending(mut accepted, _sent) => {
                             let _ = accepted.recv().await;
@@ -114,13 +139,12 @@ impl Receiver<SubscriberMsg> for LiveSubscriber {
 
 #[async_trait]
 impl Receiver<SubscriberMsg> for ArchiveSubscriber {
-    async fn receive(&mut self, msg: SubscriberMsg, ctx: &mut ActorContext<Self::Behavior>) -> Result<(), ActorError> {
+    async fn receive(&mut self, msg: SubscriberMsg, ctx: &mut ActorContext<Self>) -> Result<(), ActorError> {
         match msg {
             SubscriberMsg::ReadNext => {
                 match self.db.get_next_unsynced_record(self.rt) {
                     Ok(None) => {
-                        tokio::time::sleep(Duration::from_secs(1)).await;
-                        tell_self!(ctx, SubscriberMsg::ReadNext);
+                        tokio::time::sleep(Duration::from_secs(self.poll_time)).await;
                     }
                     Ok(Some(record)) => {
                         let _ = self.writer.ask(self.make_sent_msg(&record.nonce)).await;
@@ -135,13 +159,12 @@ impl Receiver<SubscriberMsg> for ArchiveSubscriber {
                             }
                             SendResp::Success => {}
                         }
-                        tell_self!(ctx, SubscriberMsg::ReadNext);
                     }
                     Err(e) => {
                         error!("archive-subscriber: {} failed to read next: {}", self.rt, e);
-                        tell_self!(ctx, SubscriberMsg::ReadNext);
                     }
                 }
+                tell_self!(ctx, SubscriberMsg::ReadNext);
                 Ok(())
             }
             SubscriberMsg::ResumeFrom(nonce) => match self.db.get_record(self.rt, &nonce) {
@@ -159,6 +182,7 @@ impl Receiver<SubscriberMsg> for ArchiveSubscriber {
                         }
                         SendResp::Success => {}
                     }
+                    tell_self!(ctx, SubscriberMsg::ReadNext);
                     Ok(())
                 }
                 Err(e) => {
@@ -183,27 +207,6 @@ impl ArchiveSubscriber {
         writer::Request::MarkUnsent {
             rec_type: self.rt,
             nonce: nonce.to_string(),
-        }
-    }
-}
-
-/// Token
-pub type TokenId = u16;
-
-/// Unique identifier of a subscriber
-/// Provides token number and indicates the filter mode
-#[derive(Clone, Debug)]
-pub enum Token {
-    Live(TokenId),
-    Archive(TokenId),
-}
-
-impl Token {
-    /// Get the identifier of this token
-    pub fn id(&self) -> TokenId {
-        match self {
-            Token::Live(id) => *id,
-            Token::Archive(id) => *id,
         }
     }
 }

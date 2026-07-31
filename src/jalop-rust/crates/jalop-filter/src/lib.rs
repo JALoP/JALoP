@@ -21,11 +21,6 @@ pub use crate::error::Error;
 
 pub mod config;
 pub mod db;
-pub mod kill;
-pub mod queue;
-pub mod receiver;
-pub mod seccomp;
 pub mod sender;
 pub mod subscriber;
-pub mod time;
 pub mod writer;

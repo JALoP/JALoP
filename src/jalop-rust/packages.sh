@@ -23,16 +23,23 @@ cargo
 clippy
 rustfmt
 clang
-rust-anstream0.6-devel
+rust-anstream-devel
 rust-anstyle-query-devel
-rust-anyhow-devel-1.0.102
+rust-anyhow-devel
 rust-assert_matches-devel
 rust-async-trait-devel
+rust-bindgen0.69-devel
 rust-chrono-devel
-rust-env_logger-devel-0.11.9
+rust-clap_builder-devel
+rust-clap-devel
+rust-clap_derive-devel
+rust-digest0.10-devel
+rust-env_logger-devel
 rust-futures-devel
 rust-futures-util-devel
+rust-getrandom-devel
 rust-humantime-devel
+rust-hyper-tls-devel
 rust-iana-time-zone-devel
 rust-jiff-devel
 rust-libc-devel
@@ -40,42 +47,41 @@ rust-libloading-devel
 rust-libseccomp-devel
 rust-log-devel
 rust-memoffset-devel
+rust-mime_guess-devel
+rust-nix0.29-devel
+rust-nom-devel
+rust-rustls-pki-types-devel
 rust-prettyplease-devel
+rust-reqwest-devel
 rust-serde-devel
+rust-serde_bytes-devel
+rust-sha2_0.10-devel
+rust-sha2-devel
 rust-slab-devel
 rust-signal-hook-devel
+rust-strsim-devel
 rust-thiserror-devel
 rust-tokio+full-devel
 rust-tokio-util-devel
-rust-toml-devel-0.9.5
+rust-toml-devel
+rust-toml_parser-devel
 rust-which4-devel
-rust-winnow-devel-0.7.15
+rust-winnow-devel
+rust-uuid-devel
+rust-zeroize-devel
 "
 echo "installing dependencies for RHEL$RHEL_VERSION ..."
 
 if [[ "$RHEL_VERSION" == "10" ]]; then
-    dnf install -y $common_pkgs \
-                   rust-clap-devel-4.5.60 rust-clap_derive-devel-4.5.55 rust-clap_builder-devel-4.5.60 rust-strsim-devel \
-                   rust-nom-devel rust-bindgen0.69-devel rust-nix0.29-devel rust-toml_parser-devel-1.0.9
+
+    dnf install -y $common_pkgs
 
 elif [[ "$RHEL_VERSION" == "9" ]]; then
 
-    dnf install -y $common_pkgs \
-                   rust-clap-devel-4.5.60 rust-clap_derive-devel-4.5.55 rust-clap_builder-devel-4.5.60 rust-strsim-devel \
-                   rust-nom-devel rust-toml_parser-devel-1.0.9 rust-bindgen0.69-devel rust-nix0.29-devel
+    dnf install -y $common_pkgs
 elif [[ "$RHEL_VERSION" == "8" ]]; then
 
-    dnf install -y $common_pkgs \
-                   rust-clap_lex-devel-1.0.0 rust-clap-devel-4.5.60 rust-clap_derive-devel-4.5.55 rust-clap_builder-devel-4.5.60 rust-strsim-devel \
-                   rust-nom7-devel rust-regex-devel rust-aho-corasick-devel rust-toml_parser-devel-1.0.9 rust-bindgen0.69-devel rust-nix0.29-devel \
-                   rust-serde_spanned-devel-1.0.4
-
-elif [[ "$RHEL_VERSION" == "7" ]]; then
-    yum install --exclude rust-toml_datetime0.7-devel -y $common_pkgs \
-                   rust-clap-devel-4.4.7 rust-clap_derive-devel-4.4.7 rust-clap_builder-devel-4.4.7 rust-strsim-devel-0.10.0 \
-                   rust-nom7-devel rust-regex-devel rust-aho-corasick-devel rust-toml_parser-devel-1.0.2 \
-                   rust-serde_spanned-devel-1.0.0 rust-toml_datetime-devel-0.7.0 rust-bindgen0.69-devel rust-nix0.29-devel
-
+    dnf install -y $common_pkgs
 else
     echo "**Unsupported RHEL Version: $RHEL_VERSION"
     exit 1

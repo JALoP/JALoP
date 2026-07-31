@@ -1,38 +1,53 @@
 Import('*')
-from Utils import add_project_lib
-from Utils import install_for_build
-from Utils import rhel_version
 import os
 import shutil
+import subprocess
+from Utils import rhel_version
+from Utils import install_for_build
+
 env = env.Clone()
-
+os.system("pwd")
 rhel_ver = rhel_version()
-cargo_flags = f"--features rhel{rhel_ver}"
+variant = env['variant']
+cargo_flags = f"rhel{rhel_ver}"
 
-env['ENV']['JALOP_ROOT'] = Dir('#').abspath
+try:
+	if not 'install' in BUILD_TARGETS and not 'doc' in BUILD_TARGETS and not 'cov' in BUILD_TARGETS:
+		if env.GetOption('clean'):
+			print("CARGO Cleaning")
+			subprocess.run(["cargo", "clean"], check=True, shell=False)
+			Return("")
+		if (env['variant'] == 'release'):
 
-#Copies latest source
-if not env.GetOption('clean'):
-	destPath =  Dir('.').abspath + "/"
-	os.system("cp -rTf " + Dir('.').srcnode().abspath + "/ " + destPath + "/")
-	#Removes bindings.rs to ensure regeneration during build
-	os.system("sh " + Dir('.').srcnode().abspath + "/remove_bindings.sh " +  destPath)
+			#Checks if scons test
+			if 'tests' in BUILD_TARGETS:
+				print("CARGO Test Release")
+				subprocess.run(["cargo", "test", "--release", "--features", cargo_flags], check=True, shell=False)
+			else:
+				print("CARGO Build Release")
+				subprocess.run(["cargo", "build", "--release", "--features", cargo_flags], check=True, shell=False)
+				print("CARGO Installing Release")
+				subprocess.run(["mkdir", "-p", "../../release/bin"], check=True, shell=False)
+				subprocess.run(["cp", "-f", "./target/release/jaldb_inline_filter", "../../release/bin"], check=True, shell=False)
+				subprocess.run(["cp", "-f", "./target/release/jald_rs", "../../release/bin"], check=True, shell=False)
+			Return("")
+		if (env['variant'] == 'debug'):
+			#Checks if scons test
+			if 'tests' in BUILD_TARGETS:
+				print("CARGO Test Debug")
+				subprocess.run(["cargo", "test", "--features", cargo_flags], check=True, shell=False)
+			else:
+				print("CARGO Build Debug")
+				subprocess.run(["cargo", "build", "--features", cargo_flags], check=True, shell=False)
+				print("CARGO Installing Debug")
+				subprocess.run(["mkdir", "-p", "../../debug/bin"], check=True, shell=False)
+				subprocess.run(["cp", "-f", "./target/debug/jaldb_inline_filter", "../../debug/bin"], check=True, shell=False)
+				subprocess.run(["cp", "-f", "./target/debug/jald_rs", "../../debug/bin"], check=True, shell=False)
+			Return("")
+except subprocess.CalledProcessError as e:
+	print(e)
+	print("ERROR: JALoP Rust build failed.")
+	os._exit(2)
 
-if (env['variant'] == 'release'):
-	cargo = Builder(action=f"cargo clean && cargo build --release {cargo_flags}", chdir=1)
-else:
-	cargo = Builder(action=f"cargo clean && cargo build {cargo_flags}", chdir=1)
-
-env.Append(BUILDERS = {'Cargo' : cargo})
-jalop_rust = env.Cargo("Cargo.toml")
-env.AlwaysBuild(jalop_rust)
-
-if (env['variant'] == 'release'):
-	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
-	env.Alias('install', env.Install(sbindir, "target/release/jaldb_inline_filter"))
-
-rust_tests = env.Alias(target="tests", source=None,
-		action=[f"export RUSTFLAGS='-L ../../lib'; cd debug/src/jalop-rust; cargo test {cargo_flags}"])
-env.AlwaysBuild(rust_tests)
-
-Return("jalop_rust")
+print("CARGO Doing Nothing")
+Return("")

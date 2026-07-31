@@ -23,7 +23,6 @@ use tokio::sync::broadcast;
 /// This implementation standardizes communication mechanisms while remaining flexible in protocol definition.
 /// For general Actor Model background see many existing implementations such as Scala's Akka, Erlang, and several
 /// in Rust such as the robust Actix and Kameo libraries, and smaller implementations such as ractor and tiny tokio.
-///
 pub mod actor;
 mod backend;
 pub mod macros;
@@ -33,9 +32,11 @@ pub mod system;
 pub(crate) type KillTx = broadcast::Sender<()>;
 pub(crate) type KillRx = broadcast::Receiver<()>;
 
-/// [Actor] and [ActorSystem] related errors
+/// [actor::Actor] and [system::ActorSystem] related errors
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum ActorError {
+    #[error("actor prestart init failed")]
+    PreStartFailed(String),
     /// A stopped actor was accessed
     #[error("actor is not running")]
     ActorStopped,
@@ -48,10 +49,21 @@ pub enum ActorError {
     /// Actor does not exist at the specified path
     #[error("actor was not found at path {0}")]
     ActorNotFound(ActorPath),
-    /// An attempt to create an [Actor] at an occupied [ActorPath]
+    /// An attempt to create an [actor::Actor] at an occupied [ActorPath]
     #[error("actor at path already exists: {0}")]
     ActorExists(ActorPath),
     /// An error occurred during the post-stop lifecycle hook
     #[error("failure in post-stop of actor")]
     PostStopError(ActorPath),
+}
+
+#[derive(Error, Debug, Clone, PartialEq)]
+pub enum ActorSystemError {
+    /// [system::ActorSystem] shutdown request timed out
+    #[error("system shutdown timed out")]
+    ShutdownTimeout,
+
+    /// System event failed to publish
+    #[error("system event publish failure")]
+    SystemEventPublish,
 }

@@ -16,25 +16,26 @@
 */
 
 //! This module provides the [ActorSystem] and related [ActorContext] functionality.
-use crate::actor::{Actor, ActorRef};
+use crate::actor::{Actor, ActorRef, Protocol, Receiver};
 use crate::backend::ActorExecutor;
 use crate::path::ActorPath;
-use crate::ActorError;
 use crate::KillRx;
 use crate::KillTx;
+use crate::{ActorError, ActorSystemError};
 use log::trace;
 use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use tokio::sync::{broadcast, mpsc, RwLock};
+use std::time::Duration;
+use tokio::sync::{broadcast, mpsc, watch, RwLock};
 
 #[derive(Clone)]
 pub(crate) enum SystemEvent {
     ActorStopped(ActorPath),
 }
 
-/// A system is a hierarchical group of [Actors]
+/// A system is a hierarchical group of [Actor]s
 /// The implementation of this type provides methods to create and access running actors
 #[derive(Clone)]
 pub struct ActorSystem {
@@ -42,16 +43,20 @@ pub struct ActorSystem {
     actors: Arc<RwLock<ActorRefMap>>,
     bus: mpsc::UnboundedSender<SystemEvent>,
     kill: KillTx,
+    killed: watch::Receiver<bool>,
 }
 
 /// A view of the [Actor] instance within the system that provides contextual information about the running actor.
-#[derive(Debug)]
-pub struct ActorContext<S> {
+pub struct ActorContext<A>
+where
+    A: Actor + ?Sized,
+{
     pub path: ActorPath,
     pub system: ActorSystem,
-    pub(crate) behavior: S,
-    pub(crate) becomes: Option<S>,
+    pub(crate) behavior: A::Behavior,
+    pub(crate) becomes: Option<A::Behavior>,
     pub(crate) kill: KillTx,
+    pub(crate) aref: ActorRef<A>,
 }
 
 impl ActorSystem {
@@ -60,19 +65,30 @@ impl ActorSystem {
         let (tx, mut rx) = mpsc::unbounded_channel();
         let actors = Arc::new(RwLock::new(ActorRefMap::default()));
         let (kill_tx, _) = broadcast::channel(1);
+        let (killed_tx, killed_rx) = watch::channel(false);
         tokio::spawn({
             let system_name = name.to_owned();
             let actors = actors.clone();
+            let mut kill_rx = kill_tx.subscribe();
             async move {
-                while let Some(e) = rx.recv().await {
-                    match e {
-                        SystemEvent::ActorStopped(path) => {
-                            let mut db = actors.write().await;
-                            trace!("{system_name}-actor-system: removing actor @ {path}");
-                            db.remove(&path);
+                loop {
+                    tokio::select! {
+                        Some(e) = rx.recv() => {
+                            match e {
+                                SystemEvent::ActorStopped(path) => {
+                                    let mut db = actors.write().await;
+                                    trace!("{system_name}-actor-system: removing actor @ {path}");
+                                    db.remove(&path);
+                                }
+                            }
+                        }
+                        _ = kill_rx.recv() => {
+                            trace!("{system_name}-actor-system: killed");
+                            break
                         }
                     }
                 }
+                let _ = killed_tx.send(true);
             }
         });
 
@@ -81,6 +97,7 @@ impl ActorSystem {
             actors,
             bus: tx,
             kill: kill_tx,
+            killed: killed_rx,
         }
     }
 
@@ -154,23 +171,40 @@ impl ActorSystem {
         Ok(actor_ref)
     }
 
-    pub(crate) fn publish(&self, e: SystemEvent) -> Result<(), mpsc::error::SendError<SystemEvent>> {
-        self.bus.send(e)
+    pub(crate) fn publish(&self, e: SystemEvent) -> Result<(), ActorSystemError> {
+        self.bus.send(e).map_err(|_| ActorSystemError::SystemEventPublish)
     }
 
-    pub async fn shutdown(&self) {
+    pub async fn terminate(&self) {
         let _ = self.kill.send(());
+    }
+
+    pub async fn await_shutdown(&self) {
+        let interval = Duration::from_millis(100);
+        while !*self.killed.borrow() {
+            tokio::time::sleep(interval).await;
+        }
+    }
+
+    pub async fn await_shutdown_with_timeout(&self, timeout: Duration) -> Result<(), ActorSystemError> {
+        tokio::select! {
+            _ = self.await_shutdown() => Ok(()),
+            _ = tokio::time::sleep(timeout) => Err(ActorSystemError::ShutdownTimeout),
+        }
     }
 }
 
-impl<S> ActorContext<S> {
+impl<A> ActorContext<A>
+where
+    A: Actor,
+{
     /// access the current behavior of the [Actor] instance
-    pub fn behavior(&self) -> &S {
+    pub fn behavior(&self) -> &A::Behavior {
         &self.behavior
     }
 
     /// change the behavior of the [Actor] instance starting on the next message
-    pub fn becomes(&mut self, new_behavior: S) {
+    pub fn becomes(&mut self, new_behavior: A::Behavior) {
         self.becomes = Some(new_behavior);
     }
 
@@ -204,6 +238,19 @@ impl<S> ActorContext<S> {
     /// Signal the [Actor] to stop after processing the current message
     pub fn stop(&mut self) {
         let _ = self.kill.send(());
+    }
+
+    pub fn aref(&self) -> ActorRef<A> {
+        self.aref.clone()
+    }
+}
+
+impl<A: Actor> ActorContext<A> {
+    pub async fn tell<M: Protocol>(&self, msg: M) -> Result<(), ActorError>
+    where
+        A: Receiver<M>,
+    {
+        self.aref.tell(msg).await
     }
 }
 
@@ -260,7 +307,7 @@ mod tests {
     impl Actor for DestroyCountingActor {
         type Behavior = ();
 
-        async fn post_stop(&mut self, _ctx: &mut ActorContext<Self::Behavior>) {
+        async fn post_stop(&mut self, _ctx: &mut ActorContext<Self>) {
             self.destroyed.fetch_add(1, Ordering::Relaxed);
         }
     }

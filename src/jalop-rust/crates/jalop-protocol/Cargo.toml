@@ -1,0 +1,22 @@
+[package]
+name = "jalop-protocol"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+thiserror = "2"
+log = "0.4"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+futures-util = { version = "0.3", default-features = false, features = ["std", "sink"] }
+reqwest = { version = "0.13", default-features = false, features = ["native-tls", "stream"] }
+digest = { version = "0.10.7", features = ["alloc"] }
+sha2 = { version = "0.10.9" }
+uuid = { version = "1.19", features = ["v4", "serde"] }
+
+jalop-sys = { path = "../jalop-sys" }
+serde = { version = "1.0.228", features = ["derive"] }
+
+[dev-dependencies]
+assert_matches = "1.5"
