@@ -34,7 +34,6 @@ function package_cargo_vendor_files() {
 
 echo "Begin generating JALoP cargo vendor files...."
 
-package_cargo_vendor_files 7
 package_cargo_vendor_files 8
 package_cargo_vendor_files 9
 package_cargo_vendor_files 10
@@ -42,4 +41,4 @@ package_cargo_vendor_files 10
 #clears out vendor-cargo dir
 rm -rf ./vendor-cargo
 
-echo "Finished generating RHEL 7/8/9/10 JALoP cargo vendor files."
+echo "Finished generating RHEL 8/9/10 JALoP cargo vendor files."

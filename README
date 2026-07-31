@@ -33,7 +33,6 @@ Building and Installing
 This project uses the scons (www.scons.org) build tool.
 Below are the platform-specific versions of python and scons that were used to test JALoP v2.x.
 
-  RHEL 7.x: python3.6 (python 3.6.8), scons-3.6
   RHEL 8.x: python3.6 (python 3.6.8), scons-3.6
   RHEL 9.x: python3.9 (python 3.9.21), scons-4.5
   RHEL 10.x: python3.12 (python 3.12.21), scons-4.8.1
@@ -41,51 +40,8 @@ Below are the platform-specific versions of python and scons that were used to t
 Later versions of Python and scons should work as well, but were not tested.
 
 Note: The following commands assume your system directs "scons" to scons version 3.6.
-On RHEL7, it may be necessary to invoke "scons-3.6", if multiple versions exist.
 
 Building requires a C++ compiler with full C++17 capabilities.
-For CentOS7/RHEL7, use of a devtoolset can provide a capable compiler:
- - Add the repository
-  - For CentOS 7:
-    - # yum install centos-release-scl
-  - For RHEL 7:
-    - # subscription-manager repos --enable rhel-7-server-devtools-rpms
- - Install GCC 7 toolset
-  - # yum install devtoolset-7
- - Launch a new shell using Devtoolset 7
-  - scl enable devtoolset-7 $SHELL
-
-The version of libmicrohttpd available in the CentOS7/RHEL7 packages is not sufficient for this project
-It is necessary to acquire v0.9.59 (or newer) from http://www.gnu.org/software/libmicrohttpd/
-or one of the mirrors - or clone the repo from: https://git.gnunet.org/libmicrohttpd.git
-v0.9.59 is recommended because it is the version available in the CentOS/RHEL8 packages and has
-been the most thoroughly tested
-
-Once the source has been acquired, cd to that directory
-There are a few additional dependencies to build libmicrohttpd "makeinfo", but these dependencies
-are already available in the rhel/centos packages
-$ sudo yum install texinfo gnutls gnutls-devel
-
-At this point, you're ready to build the expected version of libmicrohttpd
-$ git checkout v0.9.59
-$ ./boostrap
-$ ./configure --enable-https --with-gnutls
-$ make
-$ make install (This will likely require sudo, depending on the prefix given to ./configure)
-
-By default, make install places the installed library in /usr/local/lib and the header in
-/usr/local/include, which SCons will not understand to look for by default.
-The JALoP SConstruct uses pkg-config to find dependencies. Additional
-locations can be added to pkg-config's search path. Use the command:
-
-$ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig/
-
-to inform pkg-config of this additional search location. This command will only affect
-the current shell and must be re-run if a new shell is used for building. If a different
---prefix=PREFIX option is passed to the ./configure for libmicrohttpd, the path given to
-PKG_CONFIG_PATH must be modified accordingly. If necessary, the installation locations
-can be configured even more precisely. Use ./configure --help to see the available options.
-e.g. --libdir, --includedir
 
 At run-time, it's necessary to link against this newly built .so with the jal_sub_cpp and jal_subscribe
 CLIs - or any program that creates a JalSubscriber object. There are a few ways to do this.
@@ -95,7 +51,7 @@ then run sudo ldconfig to update the cache
 where jal_sub_cpp, jal_subscribe, or other v2 subscriber will be run
 3. Modify the call to ./configure to use a --prefix=PREFIX that will place the library somewhere
 it will be found by the usual means.
-e.g. ./configure --prefix=/usr/ (Note that on CentOS7 /lib is linked to /usr/lib)
+e.g. ./configure --prefix=/usr/
 
 Initialize Git Large File storage (LFS) for the JALoP git repo.
 
@@ -116,7 +72,7 @@ yum install <JALoP git root>/3rd-party/rust/RHEL<rhel version>/*.x86_64.rpm
 NOTE: The following 3 steps below can be skipped if the JALoP rust dependency rpm was successfully installed
 in the step above.
 
-1. On a RHEL 9 or 10 machine/vm, run the following script to package all of the dependencies needed on RHEL 7/8/9/10.
+1. On a RHEL 9 or 10 machine/vm, run the following script to package all of the dependencies needed on RHEL 8/9/10.
 
 sudo sh create_cargo_vendor_files.sh
 

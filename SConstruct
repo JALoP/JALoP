@@ -2,6 +2,10 @@ import sys
 import os
 import platform
 import SCons.Util
+
+import atexit
+from SCons.Script import GetBuildFailures
+
 sys.path.append(os.getcwd() + '/3rd-party/build')
 sys.path.append(os.getcwd() + '/build-scripts')
 
@@ -275,11 +279,20 @@ if GetOption("clean"):
 else:
 	debug_env.Depends(target=coverage, dependency=all_tests)
 
+# build rust last
+def final_hook():
+	failures = GetBuildFailures()
+	if not failures:
+		SConscript('src/jalop-rust/SConscript', exports={'env':debug_env})
+		if not GetOption("DISABLE_RELEASE"):
+			SConscript('src/jalop-rust/SConscript', exports={'env':release_env})
+atexit.register(final_hook)
 
 # build release and debug versions in seperate directories
 debug_env['variant'] = 'debug';
 release_env['variant'] = 'release';
 SConscript('SConscript', variant_dir='debug', duplicate=0, exports={'env':debug_env, 'all_tests':all_tests})
+
 if not GetOption("DISABLE_RELEASE"):
 	SConscript('SConscript', variant_dir='release', duplicate=0, exports={'env':release_env, 'all_tests':all_tests})
 
@@ -291,6 +304,5 @@ if GetOption("clean"):
 
 # docs only need to get built once, and it shouldn't matter if the debug or
 # release flags are used.
-
 SConscript('doc/SConscript', duplicate=0, exports={'env':debug_env})
 

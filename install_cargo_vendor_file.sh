@@ -11,12 +11,9 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 #Installs the JALoP vendor cargo tar file for the current OS
-#The file vendor-cargo-<rhel version>.tar.gz (ex: vendor-cargo-7.tar.gz) must exist in the same
+#The file vendor-cargo-<rhel version>.tar.gz (ex: vendor-cargo-9.tar.gz) must exist in the same
 #directory as this script.
-if grep -q -i "release 7" /etc/redhat-release
-then
-   OS_VER="7"
-elif grep -q -i "release 8" /etc/redhat-release
+if grep -q -i "release 8" /etc/redhat-release
 then
    OS_VER="8"
 elif grep -q -i "release 9" /etc/redhat-release

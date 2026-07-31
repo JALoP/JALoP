@@ -10,11 +10,8 @@ then
 elif grep -q -i "release 8" /etc/redhat-release
 then
     OS_VER=8;
-elif grep -q -i "release 7" /etc/redhat-release
-then
-    OS_VER=7;
 else
-    echo "This script is only supported on RHEL 7, 8, 9 or 10."
+    echo "This script is only supported on RHEL 8, 9 or 10."
     exit 1
 fi
 
