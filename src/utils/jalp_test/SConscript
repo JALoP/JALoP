@@ -24,5 +24,9 @@ jalp_test = env.Program(target='jalp_test', source=sources)
 env.Depends(jalp_test, [lib_common, producer_lib])
 env.Default(jalp_test)
 
+if env['variant'] == 'release':
+	sbindir = env['DESTDIR'] + env.subst(env['SBINDIR'])
+	env.Alias('install', env.Install(sbindir, jalp_test))
+
 install_for_build(env, 'bin', jalp_test)
 Return("jalp_test")

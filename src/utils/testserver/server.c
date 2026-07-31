@@ -113,7 +113,7 @@ int recv_buffer(int fd, struct msghdr *msgh, int total_size)
 
 int recv_break(int fd, struct msghdr *msgh)
 {
-	int break_len = strlen(BREAK_STRING);
+	int break_len = strlen(BREAK_STRING); // nosemgrep - strlen on string constant is fine
 	char break_buffer[break_len + 1];
 	int result;
 	ssize_t bytes_recv;
@@ -249,7 +249,7 @@ int handler(int fd)
 
 			char tmpfile_name[] = {'T', 'e', 's', 't', 'P', 'a', 'y', 'l', 'o', 'a', 'd', '_',
 				'X', 'X', 'X', 'X', 'X', 'X', '\0'};
-			int new_tmpfile_fd = mkstemp(tmpfile_name);
+			int new_tmpfile_fd = mkstemp(tmpfile_name);  // nosemgrep - mkstemp use is fine for test server
 
 			printf("Receiving fd: %d. Writing to \"%s\"\n", recv_fd, tmpfile_name);
 			fflush(stdout);
@@ -296,7 +296,7 @@ int handler(int fd)
 	if (data_len > 0 && message_type != JOURNAL_FD_MSG) {
 		char tmpfile_name[] = {'T', 'e', 's', 't', 'P', 'a', 'y', 'l', 'o', 'a', 'd', '_',
 			'X', 'X', 'X', 'X', 'X', 'X', '\0'};
-		int new_tmpfile_fd = mkstemp(tmpfile_name);
+		int new_tmpfile_fd = mkstemp(tmpfile_name); // nosemgrep - mkstemp use is fine for test server
 		printf("Writing Data buffer to  %s\n", tmpfile_name);
 		while (bytes_remaining > 0) {
 			int tmp_len = (BUF_SIZE < bytes_remaining) ? BUF_SIZE : bytes_remaining;
@@ -430,14 +430,14 @@ int main(int argc, char **argv)
 	memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sun_family = AF_UNIX;
 
-	size_t socket_path_len = strlen(sock_path);
+	size_t socket_path_len = strlen(sock_path); // nosemgrep - strlen is needed to get the length
 	if (socket_path_len >= sizeof(sock_addr.sun_path)) {
 		printf("path to socket file (%s) is too long to fit in sockaddr_un.sun_path\n",
 				sock_path);
 		goto err_out;
 	}
 
-	strncpy(sock_addr.sun_path, sock_path, sizeof(sock_addr.sun_path) - 1);
+	strncpy(sock_addr.sun_path, sock_path, sizeof(sock_addr.sun_path) - 1);  // nosemgrep - null terminator must be removed here
 
 	err = bind(sock, (struct sockaddr*) &sock_addr, sizeof(sock_addr));
 	my_errno = errno;

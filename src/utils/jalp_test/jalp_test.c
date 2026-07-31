@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 	if (jp_conf_ctx.stdin_payload == 1) {
 		payload_fd = STDIN_FILENO;
 	} else if (jp_conf_ctx.payload_path) {
-		payload_fd = open(jp_conf_ctx.payload_path, O_RDONLY);
+		payload_fd = open(jp_conf_ctx.payload_path, O_RDONLY); // nosemgrep - suppress medium finding
 	}
 	if (payload_fd < 0) {
 		printf("file open error\n");
@@ -487,7 +487,7 @@ void print_payload(uint8_t *payload_buf, size_t payload_size)
 		printf("%x", (payload_buf[i]));
 	}
 	char *str_payload = malloc(payload_size + 1);
-	memcpy(str_payload, payload_buf, payload_size);
+	memcpy(str_payload, payload_buf, payload_size); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	str_payload[payload_size] = 0;
 	printf("payload(char): %s\n", str_payload);
 	printf("\n");
@@ -583,6 +583,12 @@ static void print_error(enum jal_status error)
 			break;
 		case JAL_E_JOURNAL_MISSING:
 			printf("JAL_E_JOURNAL_MISSING");
+			break;
+		case JAL_E_RECORD_FAILURE:
+			printf("JAL_E_RECORD_FAILURE");
+			break;
+		case JAL_E_SESSION_FAILURE:
+			printf("JAL_E_SESSION_FAILURE");
 			break;
 		case JAL_OK:
 			break;

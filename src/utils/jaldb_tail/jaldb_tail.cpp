@@ -509,7 +509,7 @@ static int jal_dump_write(jaldb_context *ctx, int fd, struct jaldb_segment *s)
 			} else {
 				snprintf(msg, sizeof(msg), "##relative file path: %s", (char *) s->payload);
 			}
-			ret = write(fd, msg, strlen(msg));
+			ret = write(fd, msg, strlen(msg));  // nosemgrep - strlen is needed here to get length
 			if (-1 == ret) {
 				return -1;
 			}

@@ -904,7 +904,7 @@ static int generate_transforms(config_setting_t *journal, struct jalp_transform 
 						goto err_transform;
 				}
 				uint32_t tmp_iv_be = htonl((uint32_t)tmp_iv_data);
-				memcpy(iv_buf + 4 * j, &tmp_iv_be, 4);
+				memcpy(iv_buf + 4 * j, &tmp_iv_be, 4); // nosemgrep - the copy length is less than or equal to the destination buffer size
 			}
 		}
 
@@ -933,7 +933,7 @@ static int generate_transforms(config_setting_t *journal, struct jalp_transform 
 						goto err_transform;
 				}
 				uint32_t tmp_key_be = htonl((uint32_t)tmp_key_data);
-				memcpy(key_buf + 4 * j, &tmp_key_be, 4);
+				memcpy(key_buf + 4 * j, &tmp_key_be, 4); // nosemgrep - the copy length is less than or equal to the destination buffer size
 			}
 		}
 		if(enum_transform_type != JALP_TRANSFORM_OTHER && (uri)) {

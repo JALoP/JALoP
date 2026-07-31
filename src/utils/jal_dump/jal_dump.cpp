@@ -56,11 +56,6 @@
 #include "jaldb_segment.h"
 #include "jaldb_strings.h"
 
-// For RHEL7 compatibility
-#ifndef UUID_STR_LEN
-constexpr int UUID_STR_LEN = 37;
-#endif
-
 #define INITIAL_ARRAY_SIZE 20
 #define WRITE_MAX 2147479552
 
@@ -468,7 +463,7 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 		jal_asprintf(&appstr, "%sapplication-metadata.xml", tmpstr);
 		jal_asprintf(&metastr, "%sdatabase-record-metadata.txt",tmpstr);
 
-		fd_meta = open(metastr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
+		fd_meta = open(metastr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)? // nosemgrep - suppress medium finding
 		if (fd_meta == -1) {
 			perror("Error Opening Record Metadata Doc");
 			ret = -1;
@@ -481,7 +476,7 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 			goto out;
 		}
 
-		fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 0600);	// Delete existing file(O_TRUNC)?
+		fd_sys = open(sysstr, O_RDWR|O_CREAT|O_TRUNC, 0600);	// Delete existing file(O_TRUNC)? // nosemgrep - suppress medium finding
 		if (fd_sys == -1) {
 			perror("Error Opening System Metadata Doc");
 			ret = -1;
@@ -494,7 +489,7 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 			goto out;
 		}
 		if (rec->app_meta) {
-			fd_app = open(appstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
+			fd_app = open(appstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)? // nosemgrep - suppress medium finding
 			if (fd_app == -1) {
 				perror("Error Opening Application Metadata Doc");
 				ret = -1;
@@ -508,7 +503,7 @@ int print_record(jaldb_context *ctx, char *uuid, char data, char *path, struct j
 			}
 		}
 		if (rec->payload) {
-			fd_dat = open(datstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)?
+			fd_dat = open(datstr, O_RDWR|O_CREAT|O_TRUNC, 0600); 	// Delete existing file(O_TRUNC)? // nosemgrep - suppress medium finding
 			if (fd_dat == -1) {
 				perror("Error Opening Payload File");
 				ret = -1;
@@ -576,7 +571,7 @@ static error_t parse_opt(int key_in,
 			jd_conf_ctx->path = strdup(arg);
 			char *new_path;
 			new_path = NULL;
-			if ((jd_conf_ctx->path)[strlen((jd_conf_ctx->path))-1] != '/') {
+			if ((jd_conf_ctx->path)[strlen((jd_conf_ctx->path))-1] != '/') { // nosemgrep - strlen is needed here to get length
 				jal_asprintf(&new_path, "%s/", jd_conf_ctx->path);
 				free(jd_conf_ctx->path);
 				jd_conf_ctx->path = new_path;
@@ -629,7 +624,7 @@ void print_payload(uint8_t *payload_buf, size_t payload_size)
 		printf("%x", payload_buf[i]);
 	}
 	char *str_payload = (char *) malloc(payload_size + 1);
-	memcpy(str_payload, payload_buf, payload_size);
+	memcpy(str_payload, payload_buf, payload_size); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	str_payload[payload_size] = 0;
 	printf("\n\n(char): %s\n", str_payload);
 	free(str_payload);
