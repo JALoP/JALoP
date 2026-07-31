@@ -79,26 +79,27 @@ int RecvRecordMessage::process() {
 		// out early
 		uint16_t onDisk = getField<uint16_t>(payloadOnDiskId);
 		payloadOnDisk = (0 != onDisk ? true : false);
+		std::string break_string("BREAK");
 
 		if(!payloadOnDisk) {
-			if(std::string("BREAK") != getString(break1Id, strlen("BREAK"))) {
+			if(break_string != getString(break1Id, break_string.length())) {
 				fprintf(stderr, "First BREAK segment does not contain BREAK\n");
 				return -1;
 			}
 		}
-		if(std::string("BREAK") != getString(break2Id, strlen("BREAK"))) {
+		if(break_string != getString(break2Id, break_string.length())) {
 			fprintf(stderr, "Second BREAK segment does not contain BREAK\n");
 			return -1;
 		}
-		if(std::string("BREAK") != getString(break3Id, strlen("BREAK"))) {
+		if(break_string != getString(break3Id, break_string.length())) {
 			fprintf(stderr, "Third BREAK segment does not contain BREAK\n");
 			return -1;
 		}
-		if(std::string("BREAK") != getString(break4Id, strlen("BREAK"))) {
+		if(break_string != getString(break4Id, break_string.length())) {
 			fprintf(stderr, "Fourth BREAK segment does not contain BREAK\n");
 			return -1;
 		}
-		if(std::string("BREAK") != getString(break5Id, strlen("BREAK"))) {
+		if(break_string != getString(break5Id, break_string.length())) {
 			fprintf(stderr, "First BREAK segment does not contain BREAK\n");
 			return -1;
 		}
@@ -146,7 +147,7 @@ JalFilterStartStream::JalFilterStartStream(const StartStreamArgs& args) {
 	addFieldByCopy(&args.mode, sizeof(uint16_t));
 	// journal resume request nonce
 	if(args.resumeNonce) {
-		uint16_t nonceLen = strlen(args.resumeNonce);
+		uint16_t nonceLen = strlen(args.resumeNonce);  // nosemgrep - strlen is needed here for retrieving nonce length
 		addFieldByCopy(&nonceLen, sizeof(uint16_t));
 		addFieldByNonOwningPointer(args.resumeNonce, nonceLen);
 	} else {
@@ -174,8 +175,8 @@ JalFilterRecordResponse::JalFilterRecordResponse(const RecordResponseArgs& args)
 	// Record Type
 	addFieldByCopy(&args.type, sizeof(uint16_t));
 	// record Nonce
-	if(args.recordNonce && (strlen(args.recordNonce) > 0)) {
-		uint16_t nonceLen = strlen(args.recordNonce);
+	if(args.recordNonce && (strlen(args.recordNonce) > 0)) { // nosemgrep - strlen is needed here for this check
+		uint16_t nonceLen = strlen(args.recordNonce); // nosemgrep - strlen is needed here
 		addFieldByCopy(&nonceLen, sizeof(uint16_t));
 		addFieldByNonOwningPointer(args.recordNonce, nonceLen);
 	} else {
@@ -277,12 +278,12 @@ void *record_receive_thread(void *paramArgs) {
 			pthread_mutex_unlock(mapLock.get());
 			// This subscriber token corresponds to a hostname for which we have no active session
 			// Warn, but continue
-			fprintf(stderr, "WARNING: Received a record for unregistered subscriber token: %d\n.",
+			fprintf(stderr, "WARNING: Received a record for unregistered subscriber token: %d.\n",
 				recordMessage.subscriberToken);
 			// Generate a record failure for the nonce so the filter doesn't wait for a response for
 			// that record
 			RecordResponseArgs responseArgs;
-			responseArgs.mType = FilterMessageType::RecordError;
+			responseArgs.mType = FilterMessageType::RecordErrorRetry;
 			responseArgs.subscriberToken = recordMessage.subscriberToken;
 			responseArgs.type = (enum jaldb_rec_type)recordMessage.recordType;
 			responseArgs.recordNonce = recordMessage.nonce.data();

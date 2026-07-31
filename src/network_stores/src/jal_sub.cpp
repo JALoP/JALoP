@@ -183,9 +183,9 @@ static SubscriberConfig process_options(
 	if(js_conf_ctx.port != NULL)
 	{
 		int portno;
-		int portlen = strlen(js_conf_ctx.port);
+		int portlen = strlen(js_conf_ctx.port); // nosemgrep - strlen is needed to get string length here
 		int scanLen;
-		int ret = sscanf(js_conf_ctx.port, "%d%n", &portno, &scanLen);
+		int ret = sscanf(js_conf_ctx.port, "%d%n", &portno, &scanLen); // nosemgrep - sscanf is needed here and a dynamic length is being used, so can't specify fixed width
 
 		if(ret == 1 && portlen == scanLen) // no error
 		{

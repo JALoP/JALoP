@@ -42,8 +42,12 @@ enum class FilterMessageType: uint16_t {
 	/** Indicates that a record was succesfully transferred to the
 	 * subscriber and acknowledged **/
 	RecordSuccess = 0x04,
-	/** Indicates that a record was not succesfully transferred to the **/
-	RecordError = 0x08,
+	/** Indicates that a record failed to transfer succesfully to the
+	 * subscriber and should be retried **/
+	RecordErrorRetry = 0x08,
+	/** Indicates that a record failed to transfer succesfully to the
+	 * subscriber and should not be retried **/
+	RecordErrorNoRetry = 0x10,
 };
 
 /** A helper to bundle the arguments passed to the Socket Receive Thread

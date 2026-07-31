@@ -158,14 +158,19 @@ void on_connect_nack(
 // pub_on_subscribe. In this case, pub_on_journal_resume creates the session context and inserts
 // it to the hash map. pub_on_subscribe detects this by finding ctx != NULL
 // "offset" is unused here because it is set in session->pub_data->payload_off
-// by the jaln_nextwork layer, and that value is used internally by jaln_send_payload_feeder anyway
+// by the jaln_nextwork layer, and that value is used internally by jaln_send anyway
+//
+// With the change to using the filter, we can no longer assume that the record itself
+// is available at this point. Populate the record if we retrieve it, or just capture the nonce
+// for later retrieval.
+// The system_metadata_buffer and application_metadata_buffer are no longer used by the library and will always be NULL.
 enum jal_status pub_on_journal_resume(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
 		struct jaln_record_info *record_info,
 		__attribute__((unused)) uint64_t offset,
-		uint8_t **system_metadata_buffer,
-		uint8_t **application_metadata_buffer,
+		__attribute__((unused)) uint8_t **system_metadata_buffer,
+		__attribute__((unused)) uint8_t **application_metadata_buffer,
 		__attribute__((unused)) struct jaln_mime_header *headers,
 		__attribute__((unused)) void *user_data)
 {
@@ -206,21 +211,14 @@ enum jal_status pub_on_journal_resume(
 
 		enum jaldb_status db_ret = JALDB_E_INVAL;
 
+		ctxPtr->resume_nonce = strdup(record_info->nonce);
 		db_ret = jaldb_get_record(ctxPtr->db_ctx, JALDB_RTYPE_JOURNAL, record_info->nonce, &(ctxPtr->rec));
 		if (JALDB_OK != db_ret) {
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to retrieve journal from db");
 			return JALDB_E_NOT_FOUND == db_ret? JAL_E_JOURNAL_MISSING : JAL_E_INVAL;
 		}
-
-		*system_metadata_buffer = ctxPtr->rec->sys_meta->payload;
-		if (ctxPtr->rec->app_meta) {
-			*application_metadata_buffer = ctxPtr->rec->app_meta->payload;
-		} else {
-			*application_metadata_buffer = NULL;
-		}
 	}
 	// When using the filter, store the nonce for later retrieval
-	// sess->pub_data->payload_off is already set for later use
 	else {
 		ctxPtr->resume_nonce = strdup(record_info->nonce);
 	}
@@ -260,7 +258,7 @@ enum jal_status pub_on_subscribe(
 	data->sess = sess;
 	data->ch_info = ch_info;
 	data->timestamp = NULL;
-	// pub_on_subscriber is called directly on the main thread via jaln_publish
+	// pub_on_subscribe is called directly on the main thread via jaln_publish
 	// we can trust that the global value next_subscriber_token will not be concurrently accessed.
 	// This is incremented in the main loop, after all corresponding threads have been started
 	// Unused when not using the filter
@@ -326,6 +324,8 @@ err_out:
 	return ret;
 }
 
+// Invoked by the network_lib when a record is sent to the subscriber succesfully
+// but before considerations like the digest challenge
 enum jal_status pub_on_record_complete(
 		jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
@@ -380,7 +380,6 @@ enum jal_status pub_on_record_complete(
 			DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as sent %i", nonce, db_type);
 		}
 	}
-	jaldb_destroy_record(&ctxPtr->rec);
 	return JAL_OK;
 }
 
@@ -444,8 +443,8 @@ void pub_sync(
 		pthread_mutex_unlock(&request_socket_lock);
 	} 
 	else {
-		// Only sync the record in the DB in archive mode with digest challenges
-		if (mode == JALN_ARCHIVE_MODE && ch_info->digest_method) {
+		// Only sync the record in the DB in archive mode
+		if (mode == JALN_ARCHIVE_MODE) {
 			pthread_mutex_lock(mapLock.get());
 			jaldb_ret = jaldb_mark_synced(ctxPtr->db_ctx, db_type, nonce);
 			pthread_mutex_unlock(mapLock.get());
@@ -473,6 +472,9 @@ void pub_notify_digest(
 	free(b64);
 }
 
+// This callback is currently used for diagnostic information only
+// The handling of a successful or unsuccessful challenge is handled
+// by the protocol
 void pub_peer_digest(
 		__attribute__((unused)) jaln_session *sess,
 		const struct jaln_channel_info *ch_info,
@@ -484,24 +486,6 @@ void pub_peer_digest(
 		const uint32_t peer_size,
 		__attribute__((unused)) void *user_data)
 {
-	enum jaldb_rec_type db_type = JALDB_RTYPE_UNKNOWN;
-	enum jaldb_status db_ret = JALDB_E_INVAL;
-	switch (type) {
-	case JALN_RTYPE_JOURNAL:
-		db_type = JALDB_RTYPE_JOURNAL;
-		break;
-	case JALN_RTYPE_AUDIT:
-		db_type = JALDB_RTYPE_AUDIT;
-		break;
-	case JALN_RTYPE_LOG:
-		db_type = JALDB_RTYPE_LOG;
-		break;
-	default:
-		// shouldn't happen.
-		db_type = JALDB_RTYPE_UNKNOWN;
-		return;
-	}
-
 	auto [sessionHostMap, sessionTokenMap, mapLock] = select_channel(type);
 	//sessionTokenMap is not used
 	(void)	sessionTokenMap;
@@ -520,11 +504,11 @@ void pub_peer_digest(
 	// Check for error conditions
 	if (!local_digest || !peer_digest) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Missing peer or local digest.");
-		goto error;
+		return;
 	}
 	if ((0 == local_size) || (0 == peer_size) || (local_size != peer_size)) {
 		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Digests have different lengths for %s. Local[%u] Peer[%u]", nonce, local_size, peer_size);
-		goto error;
+		return;
 	}
 	if (0 != memcmp(local_digest, peer_digest, local_size)) {
 		char *local_b64 = jal_base64_enc(local_digest, local_size);
@@ -532,45 +516,9 @@ void pub_peer_digest(
 		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Digests do not match for %s. Local[%s] Peer[%s]",nonce, local_b64, peer_b64);
 		free(local_b64);
 		free(peer_b64);
-		goto error;
+		return;
 	}
-	// Digest match
 	DEBUG_LOG_SUB_SESSION(ch_info, "Digest match for %s", nonce);
-	goto out;
 
-error:
-	// The digests do not match. We need to mark the record as unsent so it can be sent again by the publisher.
-
-
-	if(ctxPtr)
-	{
-		if (global_args.use_filter){
-			RecordResponseArgs args;
-			args.mType = FilterMessageType::RecordError;
-			args.subscriberToken = ctxPtr->subscriber_token;
-			args.type = db_type;
-			args.recordNonce = nonce;
-
-			// Create and send the message
-			pthread_mutex_lock(&request_socket_lock);
-			requestSocket.sendMsg(JalFilterRecordResponse(args));
-			pthread_mutex_unlock(&request_socket_lock);
-			db_ret = JALDB_OK;
-		}
-		else
-		{
-			db_ret = jaldb_mark_sent(ctxPtr->db_ctx, db_type, nonce, 0);
-		}
-	}
-
-	if (JALDB_OK != db_ret) {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Error: Failed to update record as unsent %s. Return code: %d", nonce, db_ret);
-		goto out;
-	} else {
-		DEBUG_LOG_SUB_SESSION(ch_info, "Marked %s as unsent", nonce);
-	}
-
-out:
-	// No status returned by callback function
 	return;
 }

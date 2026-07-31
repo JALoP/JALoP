@@ -153,7 +153,7 @@ JaldConfig::JaldConfig(const char* config_path) {
 	jaldb_config *jdb_config = NULL;
 	enum jaldb_config_status jcs = get_jaldb_config(db_root.c_str(), &jdb_config);
 	if (jcs != JALDB_CONFIG_OK && jcs != JALDB_CONFIG_E_NOTFOUND) {
-		std::string msg = std::string("Failued to load db config file from directory: ") + db_root;
+		std::string msg = std::string("Failure to load db config file from directory: ") + db_root;
 		throw std::runtime_error(msg);
 	}
 
@@ -175,6 +175,21 @@ JaldConfig::JaldConfig(const char* config_path) {
 	}
 
 	peers = std::move(parse_peer_configs(root));
+
+	//Ensures only one archive peer is present
+	int archiveCount = 0;
+	for (PeerConfig& peer : peers) {
+		if (peer.mode == JALN_ARCHIVE_MODE)
+		{
+			archiveCount++;
+
+			if (archiveCount > 1)
+			{
+				std::string msg = std::string("Peer list in configuration file has more than one archival subscribers. At most one archival subscriber is supported.");
+				throw std::runtime_error(msg);
+			}
+		}
+	}
 }
 
 void JaldConfig::print_config() {
@@ -233,33 +248,18 @@ void JaldConfig::print_config() {
 
 void print_record_types(enum jaln_record_type rtype)
 {
-	const size_t j_len = strlen(JALNS_JOURNAL);
-	const size_t a_len = strlen(JALNS_AUDIT);
-	const size_t l_len = strlen(JALNS_LOG);
-	// max size: length of all strings plus 3 spaces and a NUL
-	char buffer[sizeof(JALNS_JOURNAL) + sizeof(JALNS_AUDIT) + sizeof(JALNS_LOG) + 1];
-	// Fill buffer with space characters
-	memset(buffer, ' ', sizeof(buffer));
+	std::string buffer;
 
-	char *head = buffer;
 	if (rtype & JALN_RTYPE_JOURNAL) {
-		memcpy(head, JALNS_JOURNAL, j_len);
-		// skip one past the end of this string to leave a space
-		head += j_len + 1;
+		buffer += std::string(JALNS_JOURNAL) + " ";
 	}
 	if (rtype & JALN_RTYPE_AUDIT) {
-		memcpy(head, JALNS_AUDIT, a_len);
-		// skip one past the end of this string to leave a space
-		head += a_len + 1;
+		buffer += std::string(JALNS_AUDIT) + " ";
 	}
 	if (rtype & JALN_RTYPE_LOG) {
-		memcpy(head, JALNS_LOG, l_len);
-		// skip one past the end of this string to leave a space
-		head += l_len + 1;
+		buffer += std::string(JALNS_LOG) + " ";
 	}
-	// terminate with a NULL, potentially but not necessarily in the last byte of the array
-	*head = '\0';
-	printf("%s", buffer);
+	printf("%s", buffer.c_str());
 }
 
 

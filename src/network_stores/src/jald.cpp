@@ -435,7 +435,7 @@ out:
 	return ret;
 }
 
-enum jal_status pub_send_records_feeder(
+void pub_send_records_feeder(
 			jaln_session *sess,
 			const struct jaln_channel_info *ch_info,
 			char **timestamp,
@@ -447,9 +447,14 @@ enum jal_status pub_send_records_feeder(
 
 	std::shared_ptr<struct session_ctx_t> ctxPtr;
 	enum jaldb_rec_type db_type = db_type_from_rec_type(type);
-	if(JALDB_RTYPE_UNKNOWN == db_type)
-	{
-			return jaln_finish(sess);
+	if(JALDB_RTYPE_UNKNOWN == db_type) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Unknown Record Type.\n");
+		return;
+	}
+	enum jaln_publish_mode mode = jaln_session_get_publish_mode(sess);
+	if(JALN_UNKNOWN_MODE == mode) {
+		DEBUG_LOG_SUB_SESSION(ch_info, "Unknown Mode.\n");
+		return;
 	}
 
 	auto [sessionHostMap, sessionTokenMap, mapLock] = select_channel(type);
@@ -471,7 +476,8 @@ enum jal_status pub_send_records_feeder(
 			if(NULL == ctxPtr->db_ctx) {
 				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to setup db");
 				pthread_mutex_unlock(mapLock.get());
-				return JAL_E_INVAL;
+				ret = JAL_E_INVAL;
+				goto out;
 			}
 		}
 
@@ -488,9 +494,9 @@ enum jal_status pub_send_records_feeder(
 	pthread_mutex_unlock(mapLock.get());
 
 	DEBUG_LOG_SUB_SESSION(ch_info, "Verifying previously sent records.");
+
 	// Only need to clear sent flags for archive mode connection
-	// Have to use timestamp since sess->mode is internal to the network library
-	if (!*timestamp) {
+	if(JALN_ARCHIVE_MODE == mode) {
 		if (global_args.use_filter){
 			DEBUG_LOG_SUB_SESSION(ch_info, "Using filter.");
 		}
@@ -511,11 +517,7 @@ enum jal_status pub_send_records_feeder(
 		StartStreamArgs args;
 		args.subscriberToken = subscriber_token;
 		args.type = db_type;
-		if(*timestamp) {
-			args.mode = JALN_LIVE_MODE;
-		} else {
-			args.mode = JALN_ARCHIVE_MODE;
-		}
+		args.mode = mode;
 		if(ctxPtr->resume_nonce) {
 			// Give a non-owning pointer to the JalFilterStartStream message
 			// We know the ctxPtr->resume_nonce will outlive the message, so this is safe
@@ -528,9 +530,8 @@ enum jal_status pub_send_records_feeder(
 		pthread_mutex_unlock(&request_socket_lock);
 	}
 
-	do {
+	while(true) {
 		// The records will be placed in ctxPtr->rec
-		// The record is cleaned up by pub_on_record_complete
 		if (global_args.use_filter){
 			db_ret = pub_get_next_record_on_socket(
 						sess,
@@ -545,55 +546,73 @@ enum jal_status pub_send_records_feeder(
 		}
 
 		if (JALDB_OK != db_ret) {
-			if (JALDB_E_NOT_FOUND == db_ret) {
-				ret = JAL_OK;
-				goto out;
-			}
-			if (JALDB_E_NETWORK_DISCONNECTED == db_ret) {
-				// Check if jaln_session is fine.
-				if (JAL_OK != jaln_session_is_ok(sess)) {
-					DEBUG_LOG_SUB_SESSION(ch_info, "Session issues detected 2");
-					DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 2");
-					goto out;
-				}
-				ret = JAL_E_NOT_CONNECTED;
-				goto out;
-			}
 			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to get next record (%d)", db_ret);
 			ret = JAL_E_INVAL;
 			goto out;
 		}
 
-		// Inside the jaln_send call, the record will be cleaned up regardless of the
-		// success/failure status.
-		// For the filter case, we need to report the network nonce in the RecordResponse
-		// Make a copy of the network nonce while it is available
-		std::string nonce_copy = std::string(ctxPtr->rec->network_nonce);
 		ret = jaln_send(sess, ctxPtr->rec);
+		// Success or fail, we're done with this record now
+		// Make a copy of the network nonce before we destroy the record
+		std::string nonce_copy = std::string(ctxPtr->rec->network_nonce);
+		jaldb_destroy_record(&ctxPtr->rec);
 
-		// If we're using the filter, we need to send recordError if the send
-		// failed for any reason
-		if (global_args.use_filter && JAL_OK != ret){
-			// Form up the message data
-			RecordResponseArgs args;
-			args.mType = FilterMessageType::RecordError;
-			args.subscriberToken = subscriber_token;
-			args.type = db_type;
-			args.recordNonce = nonce_copy.c_str();
+		// Valid return values from jaln_send are:
+		// JAL_OK - The record was sent successfully, the digest challenge (if configured) was
+		// successful, and the record has been marked sent/sync in callbacks.
+		// RECORD_FAILURE - A non-session related failure. Something is wrong with this record itself. Leave
+		// it marked as sent so we don't keep retrying it in a loop.
+		// SESSION_FAILURE - The session is suspect, bail out of the loop so we shut it down and 
+		// try reconnecting. The record will be marked unsent when we re-enter this function
+		// JAL_E_INVAL_PARAM - Something jald provided to jaln_send was invalid, kill the session
+		switch(ret) {
+			case JAL_OK:
+				// The record has been fully handled and was successful
+				// Nothing to do here
+				break;
+			case JAL_E_RECORD_FAILURE:
+				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record with status: (%d). ", ret);
+			// The current record is suspect. We don't want to get trapped in a loop sending the same record
+			// over and over again. Leave it marked sent and move on to the next record. This record will
+			// be tried again (archive only) next time a session of this type is created
+				if (global_args.use_filter){
+					// Inform the filter that the record failed and must not be sent again during this session
+					DEBUG_LOG_SUB_SESSION(ch_info, "Sending RecordErrorNoRetry to filter.\n");
+					// Form up the message data
+					RecordResponseArgs args;
+					args.mType = FilterMessageType::RecordErrorNoRetry;
+					args.subscriberToken = subscriber_token;
+					args.type = db_type;
+					args.recordNonce = nonce_copy.c_str();
 
-			// Create and send the message
-			pthread_mutex_lock(&request_socket_lock);
-			requestSocket.sendMsg(JalFilterRecordResponse(args));
-			pthread_mutex_unlock(&request_socket_lock);
+					// Create and send the message
+					pthread_mutex_lock(&request_socket_lock);
+					requestSocket.sendMsg(JalFilterRecordResponse(args));
+					pthread_mutex_unlock(&request_socket_lock);
+				}
+				// If not using the filter, we don't want to mark this record as unsent so we don't try
+				// to send it again
+				break;
+			default:
+				DEBUG_LOG_SUB_SESSION(ch_info, "Unexpected status from jaln_send: (%d). Treating as Session Failure.", ret);
+				[[fallthrough]];
+			case JAL_E_SESSION_FAILURE:
+				DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record with status: (%d). ", ret);
+				// The record failed to transfer, but for some reason not related to the record itself
+				// The session will be terminated and the record may be retried
+				//
+				// If using the filter, when the session is terminated the filter will drop any in-progress
+				// records from its tracking list. Sending RecordError is not necessary
+				//
+				// If not using the filter, the record will be marked as unsent when the session
+				// is recreated anyway, so we don't need to mark it here
+
+				// Break the loop, which will bring down the session and allow for a reconnect attempt
+				goto out;
+				break;
 		}
+	}
 
-		if (JAL_OK != ret) {
-			DEBUG_LOG_SUB_SESSION(ch_info, "Failed to send record (%d)", ret);
-			goto out;
-		}
-	} while (JALDB_OK == db_ret);
-
-	DEBUG_LOG_SUB_SESSION(ch_info, "Calling jaln_finish() 3");
 out:
 	// If we are using the filter, we need to stimulate the filter to stop
 	// sending us records for this session
@@ -609,8 +628,7 @@ out:
 		// resume processing so it exits quickly
 		pthread_cond_signal(&(ctxPtr->socket_thread_signal));
 	}
-	ret = jaln_finish(sess);
-	return ret;
+	jaln_finish(sess);
 }
 
 /*
@@ -718,8 +736,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error initializing session locks");
 		return -1;
 	}
-
-
 		
 	jaln_context *jctx = NULL;
 	enum jal_status jaln_ret;
