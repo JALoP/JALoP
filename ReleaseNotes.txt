@@ -1,3 +1,8 @@
+Summary of release 2.4.1.0-beta changes (Tue Jul 28 2026) -
+    - Added the BETA version of Rust Publisher ('jald_rs').
+    - Dropped RHEL 7 support; RHEL 8/9/10 are supported.
+    - Bug fixes and improvements.
+
 Summary of release 2.4.0.0 changes (Wed May 20 2026) -
     - Added RHEL 10 support. This release has been tested on RHEL 7/8/9/10 OS platforms.
     - Bug fixes and improvements.
