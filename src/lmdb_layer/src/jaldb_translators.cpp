@@ -33,7 +33,7 @@ jaldb_segment* JaldbSegmentTranslator::generateCStruct() const {
 	ret->fd = -1;
 	ret->on_disk = onDisk ? 1 : 0;
 	ret->payload = (uint8_t*)jal_calloc(payload.size(), sizeof(uint8_t));
-	memcpy(ret->payload, payload.data(), payload.size());
+	memcpy(ret->payload, payload.data(), payload.size()); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	return ret;
 }
 
@@ -48,7 +48,7 @@ JaldbSegmentTranslator JaldbSegmentTranslator::fromCStruct(const jaldb_segment& 
 	// its on disk or in the payload field
 	size_t payloadLen;
 	if(1 == s.on_disk) {
-		payloadLen = strlen((char*)s.payload)+1; //add one for NULL character
+		payloadLen = strlen((char*)s.payload)+1; //add one for NULL character  // nosemgrep - strlen needed to get length
 	} else {
 		payloadLen = s.length;
 	}
@@ -62,10 +62,6 @@ void JaldbRecordTranslator::regenNetworkNonce() {
 	// jaldb_utils, but we need the timestamp twice, so we're breaking it out ourselves
 	// to avoid re-parsing the nonce after we've made it
 
-	// For RHEL7 compatibility
-	#ifndef UUID_STR_LEN
-	constexpr int  UUID_STR_LEN = 37;
-	#endif
 	char uuidCStr[UUID_STR_LEN] = {0};
 	uuid_unparse(uuid, uuidCStr);
 

@@ -94,7 +94,7 @@ extern "C" void test_jaldb_create_file_returns_cleanly_when_open_fails()
 	int dir_path_len = strlen("/tmp/XX/") + 1;
 	dir_path = (char*)jal_calloc(dir_path_len, sizeof(char));
 	strcpy(dir_path, "/tmp/");
-	strncat(dir_path, uuid_string, 2);
+	strncat(dir_path, uuid_string, 2);  // nosemgrep - non issue for unit test use
 	dir_path[dir_path_len-1] = '/';
 
 	// Remove this directory
@@ -150,7 +150,8 @@ extern "C" void test_jaldb_create_file_works()
 	snprintf(full_path,strlen(path)+6,"/tmp/%s",path);
 
 	// Ensure the file was created
-	assert_equals(access(full_path,F_OK),0);
+	struct stat buffer;
+	assert_equals(lstat(full_path, &buffer),0);
 	// Remove the file
 	remove(full_path);
 

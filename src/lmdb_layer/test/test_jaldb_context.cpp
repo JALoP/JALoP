@@ -1382,7 +1382,7 @@ extern "C" void test_jaldb_next_log_record_fails_on_invalid_input()
 {
 	const char *log_buffer_x = LOG_DATA_X;
 	uint8_t *logbuf = (uint8_t *)log_buffer_x;
-	size_t loglen = strlen(log_buffer_x);
+	size_t loglen = strlen(log_buffer_x); // nosemgrep - strlen is needed here to get length
 	int db_err = 0;
 	char *next_nonce;
 	std::string src = "";
@@ -1470,7 +1470,7 @@ extern "C" void test_jaldb_next_log_record_succeeds()
 	std::string nonce;
 	const char *log_buffer_x = LOG_DATA_X;
 	uint8_t *logbuf = (uint8_t *)log_buffer_x;
-	size_t loglen = strlen(log_buffer_x);
+	size_t loglen = strlen(log_buffer_x); // nosemgrep - strlen is needed here to get length
 	int db_err = 0;
 	enum jaldb_status ret;
 
@@ -1521,7 +1521,7 @@ extern "C" void test_jaldb_next_log_record_succeeds_with_no_app_meta()
 	char *next_nonce = NULL;
 	const char *log_buffer_x = LOG_DATA_X;
 	uint8_t *logbuf = (uint8_t *)log_buffer_x;
-	size_t loglen = strlen(log_buffer_x);
+	size_t loglen = strlen(log_buffer_x); // nosemgrep - strlen is needed here to get length
 	int db_err = 0;
 	enum jaldb_status ret;
 
@@ -1568,7 +1568,7 @@ extern "C" void test_jaldb_next_log_record_returns_not_found()
 	std::string nonce = "1";
 	const char *log_buffer_x = LOG_DATA_X;
 	uint8_t *logbuf = (uint8_t *)log_buffer_x;
-	size_t loglen = strlen(log_buffer_x);
+	size_t loglen = strlen(log_buffer_x); // nosemgrep - strlen is needed here to get length
 	char *next_nonce = NULL;
 	enum jaldb_status ret;
 	uint8_t *sys_buf = NULL;
@@ -1783,7 +1783,7 @@ extern "C" void test_jaldb_next_journal_record_succeeds()
 	assert_not_equals(NULL, path);
 	assert_not_equals(-1, fd);
 
-	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1); // nosemgrep - strlen is needed here to get length
 	assert_not_equals(-1, rc);
 	close(fd);
 
@@ -1804,7 +1804,7 @@ extern "C" void test_jaldb_next_journal_record_succeeds()
 	assert_not_equals(NULL, path);
 	assert_not_equals(-1, fd);
 
-	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1); // nosemgrep - strlen is needed here to get length
 	assert_not_equals(-1, rc);
 	close(fd);
 
@@ -1875,7 +1875,7 @@ extern "C" void test_jaldb_next_journal_record_succeeds_with_no_app_meta()
 	assert_not_equals(NULL, path);
 	assert_not_equals(-1, fd);
 
-	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1); // nosemgrep - strlen is needed here to get length
 	assert_not_equals(-1, rc);
 	close(fd);
 
@@ -1896,7 +1896,7 @@ extern "C" void test_jaldb_next_journal_record_succeeds_with_no_app_meta()
 	assert_not_equals(NULL, path);
 	assert_not_equals(-1, fd);
 
-	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1); // nosemgrep - strlen is needed here to get length
 	assert_not_equals(-1, rc);
 	close(fd);
 
@@ -1990,7 +1990,7 @@ extern "C" void test_jaldb_next_journal_record_returns_not_found()
 	assert_not_equals(NULL, path);
 	assert_not_equals(-1, fd);
 
-	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1);
+	rc = write(fd, msg.c_str(), strlen(msg.c_str()) + 1); // nosemgrep - strlen is needed here to get length
 	assert_not_equals(-1, rc);
 	close(fd);
 

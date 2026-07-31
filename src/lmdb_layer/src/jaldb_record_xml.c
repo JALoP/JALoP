@@ -103,12 +103,12 @@ enum jaldb_status jaldb_record_to_system_metadata_doc(struct jaldb_record *rec,
 	snprintf(uuid_str_with_prefix, UUID_STR_LEN + 5, "UUID-%s", uuid_str);
 	uuid_unparse(rec->host_uuid, host_uuid_str);
 
-	if (PID_STR_MAX_LEN <= snprintf(pid_str, PID_STR_MAX_LEN, "%" PRId64, rec->pid)) {
+	if (PID_STR_MAX_LEN <= snprintf(pid_str, PID_STR_MAX_LEN, "%" PRId64, rec->pid)) {  // nosemgrep - false positive, no variable format specifier is being used
 		return JALDB_E_INVAL;
 	}
 
 	if (rec->have_uid) {
-		if (UID_STR_MAX_LEN <= snprintf(uid_str, UID_STR_MAX_LEN, "%" PRId64, rec->uid)) {
+		if (UID_STR_MAX_LEN <= snprintf(uid_str, UID_STR_MAX_LEN, "%" PRId64, rec->uid)) { // nosemgrep - false positive, no variable format specifier is being used
 			return JALDB_E_INVAL;
 		}
 	}
@@ -297,11 +297,11 @@ void jaldb_characters(void *user_data,
 	struct sax_parse_user_data *sp_user_data = (struct sax_parse_user_data *)user_data;
 	if (sp_user_data->chars == NULL) {
 		sp_user_data->chars = (char*)jal_calloc(len+1,sizeof(char));
-		strncpy(sp_user_data->chars,(char *)name,len);
+		strncpy(sp_user_data->chars,(char *)name,len); // nosemgrep - nonissue as correct space is allocated above.
 		sp_user_data->chars_len = len;
 	} else {
-		sp_user_data->chars = (char*)jal_realloc(sp_user_data->chars,strlen(sp_user_data->chars)+len+1);
-		strncat(sp_user_data->chars,(char *)name,len);
+		sp_user_data->chars = (char*)jal_realloc(sp_user_data->chars,strlen(sp_user_data->chars)+len+1); // nosemgrep - strlen is needed here to get length
+		strncat(sp_user_data->chars,(char *)name,len);  // nosemgrep - nonissue as correct space is allocated above.
 		sp_user_data->chars_len += len;
 	}
 }

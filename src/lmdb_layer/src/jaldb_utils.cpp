@@ -68,40 +68,32 @@ enum jaldb_status jaldb_create_file(
 	enum jaldb_status ret = JALDB_E_INTERNAL_ERROR;
 	enum jal_status jal_ret = JAL_E_INVAL;
 
-	char *full_path = NULL;
-	char *suffix = NULL;
+	std::string full_path;
+	std::string suffix;
 	int root_len = -1;
 	int lfd = -1;
 	char *uuid_string = (char*)jal_calloc(UUID_STRING_REP_LEN+1,sizeof(char)); //add 1 for NULL char
 	uuid_unparse(uuid,uuid_string);
 
-	root_len = strlen(db_root);
-
-	full_path = (char *) jal_calloc(root_len+REL_PATH_LEN+1,sizeof(char)); //add 1 for NULL char
-
-	strcpy(full_path,db_root);
-
-	int path_pos = root_len;
+	full_path = std::string(db_root);
+	root_len = full_path.length();
 
 	// Grab the first two digits of the uuid for the directory to create
-	full_path[path_pos++] = uuid_string[0];
-	full_path[path_pos++] = uuid_string[1];
-	full_path[path_pos++] = '/';
-
-	suffix = (char *)jal_calloc(FILENAME_LEN+1,sizeof(char));
-
+	full_path += uuid_string[0];
+	full_path += uuid_string[1];
+	full_path += '/';
 
 	if (rtype == JALDB_RTYPE_JOURNAL)
 	{
-		strcpy(suffix,"journal");
+		suffix = "journal";
 	}
 	else if (rtype == JALDB_RTYPE_AUDIT)
 	{
-		strcpy(suffix,"audit");
+		suffix = "audit";
 	}
 	else if (rtype == JALDB_RTYPE_LOG)
 	{
-		strcpy(suffix,"log");
+		suffix ="log";
 	}
 	else
 	{
@@ -111,39 +103,39 @@ enum jaldb_status jaldb_create_file(
 
 	if (dtype == JALDB_DTYPE_SYS_META)
 	{
-		strcat(suffix,"_sys_meta_");
+		suffix += "_sys_meta_";
 	}
 	else if (dtype == JALDB_DTYPE_APP_META)
 	{
-		strcat(suffix,"_app_meta_");
+		suffix += "_app_meta_";
 	}
 	else if (dtype == JALDB_DTYPE_PAYLOAD)
 	{
-		strcat(suffix,"_payload_");
+		suffix += "_payload_";
 	}
 	else
 	{
 		ret = JALDB_E_INVAL;
 		goto error_out;
 	}
-	strcat(suffix,uuid_string);
+	suffix += std::string(uuid_string);
 
-	jal_ret = jal_create_dirs(full_path);
+	jal_ret = jal_create_dirs(full_path.c_str());
 	if (JAL_OK != jal_ret) {
 		goto error_out;
 	}
 
-	strcat(full_path,suffix);
+	full_path += suffix;
 
 	// Create the file as read/write with permission mode set to owner read/write
-	lfd = open(full_path, O_RDWR | O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP);
+	lfd = open(full_path.c_str(), O_RDWR | O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP); // nosemgrep - suppress medium finding
 	if (lfd == -1) {
 		goto error_out;
 	}
 
 	ret = JALDB_OK;
-	*relative_path_out = (char *)jal_calloc(strlen(full_path) - root_len + 1,sizeof(char));
-	memcpy(*relative_path_out, full_path + root_len, REL_PATH_LEN);
+	*relative_path_out = (char *)jal_calloc(full_path.length() - root_len + 1,sizeof(char));
+	memcpy(*relative_path_out, full_path.c_str() + root_len, REL_PATH_LEN); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	goto out;
 
 error_out:
@@ -152,10 +144,8 @@ error_out:
 		lfd = -1;
 	}
 out:
-	free(full_path);
-	free(uuid_string);
-	free(suffix);
 	*fd = lfd;
+	free(uuid_string);
 	return ret;
 }
 
@@ -165,10 +155,6 @@ char *jaldb_gen_primary_key(uuid_t uuid)
 		return NULL;
 	}
 
-	// For RHEL7 compatibility
-	#ifndef UUID_STR_LEN
-	constexpr int  UUID_STR_LEN = 37;
-	#endif
 	char uuid_str[UUID_STR_LEN];
 	uuid_unparse(uuid,uuid_str);
 

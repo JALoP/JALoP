@@ -104,7 +104,7 @@ enum jaldb_status jaldb_iterate_by_timestamp_purge(
 		return ret;
 	}
 
-	if (!sscanf(tmp_time,".%d-%*d:%*d", &target_ms)) {
+	if (!sscanf(tmp_time,".%d-%*d:%*d", &target_ms)) { // nosemgrep - sscanf is needed here and a dynamic buffer is being used, so can't specify fixed width
 		fprintf(stderr, "ERROR: Invalid time format specified.\n");
 		ret = JALDB_E_INVAL_TIMESTAMP;
 		return ret;
@@ -143,7 +143,7 @@ enum jaldb_status jaldb_iterate_by_timestamp_purge(
 				break;
 			}
 
-			if (!sscanf(tmp_time,".%d-%*d:%*d", &record_ms)) {
+			if (!sscanf(tmp_time,".%d-%*d:%*d", &record_ms)) { // nosemgrep - sscanf is needed here and a dynamic buffer is being used, so can't specify fixed width
 				ret = JALDB_E_INVAL_TIMESTAMP;
 				break;
 			}

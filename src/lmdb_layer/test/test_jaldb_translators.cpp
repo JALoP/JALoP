@@ -135,21 +135,21 @@ static void create_records(struct jaldb_record** recs)
 	recs[0]->sys_meta = jaldb_create_segment();
 	recs[0]->sys_meta->length = 5;
 	recs[0]->sys_meta->payload = (uint8_t*)jal_calloc(recs[0]->sys_meta->length,sizeof(uint8_t));
-	memcpy(recs[0]->sys_meta->payload, segment_data, recs[0]->sys_meta->length);
+	memcpy(recs[0]->sys_meta->payload, segment_data, recs[0]->sys_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[0]->sys_meta->fd = -1;
 	recs[0]->sys_meta->on_disk = 0;
 
 	recs[0]->app_meta = jaldb_create_segment();
 	recs[0]->app_meta->length = 4;
 	recs[0]->app_meta->payload = (uint8_t*)jal_calloc(recs[0]->app_meta->length,sizeof(uint8_t));
-	memcpy(recs[0]->app_meta->payload, segment_data, recs[0]->app_meta->length);
+	memcpy(recs[0]->app_meta->payload, segment_data, recs[0]->app_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[0]->app_meta->fd = -1;
 	recs[0]->app_meta->on_disk = 0;
 
 	recs[0]->payload = jaldb_create_segment();
 	recs[0]->payload->length = 3;
 	recs[0]->payload->payload = (uint8_t*)jal_calloc(recs[0]->payload->length,sizeof(uint8_t));
-	memcpy(recs[0]->payload->payload, segment_data, recs[0]->payload->length);
+	memcpy(recs[0]->payload->payload, segment_data, recs[0]->payload->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[0]->payload->fd = -1;
 	recs[0]->payload->on_disk = 0;
 
@@ -178,21 +178,21 @@ static void create_records(struct jaldb_record** recs)
 	recs[1]->sys_meta = jaldb_create_segment();
 	recs[1]->sys_meta->length = 5;
 	recs[1]->sys_meta->payload = (uint8_t*)jal_calloc(recs[1]->sys_meta->length,sizeof(uint8_t));
-	memcpy(recs[1]->sys_meta->payload, segment_data, recs[1]->sys_meta->length);
+	memcpy(recs[1]->sys_meta->payload, segment_data, recs[1]->sys_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[1]->sys_meta->fd = -1;
 	recs[1]->sys_meta->on_disk = 0;
 
 	recs[1]->app_meta = jaldb_create_segment();
 	recs[1]->app_meta->length = 4;
 	recs[1]->app_meta->payload = (uint8_t*)jal_calloc(recs[1]->app_meta->length,sizeof(uint8_t));
-	memcpy(recs[1]->app_meta->payload, segment_data, recs[1]->app_meta->length);
+	memcpy(recs[1]->app_meta->payload, segment_data, recs[1]->app_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[1]->app_meta->fd = -1;
 	recs[1]->app_meta->on_disk = 0;
 
 	recs[1]->payload = jaldb_create_segment();
 	recs[1]->payload->length = 3;
 	recs[1]->payload->payload = (uint8_t*)jal_calloc(recs[1]->payload->length,sizeof(uint8_t));
-	memcpy(recs[1]->payload->payload, segment_data, recs[1]->payload->length);
+	memcpy(recs[1]->payload->payload, segment_data, recs[1]->payload->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[1]->payload->fd = -1;
 	recs[1]->payload->on_disk = 0;
 
@@ -221,21 +221,21 @@ static void create_records(struct jaldb_record** recs)
 	recs[2]->sys_meta = jaldb_create_segment();
 	recs[2]->sys_meta->length = 5;
 	recs[2]->sys_meta->payload = (uint8_t*)jal_calloc(recs[2]->sys_meta->length,sizeof(uint8_t));
-	memcpy(recs[2]->sys_meta->payload, segment_data, recs[2]->sys_meta->length);
+	memcpy(recs[2]->sys_meta->payload, segment_data, recs[2]->sys_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[2]->sys_meta->fd = -1;
 	recs[2]->sys_meta->on_disk = 0;
 
 	recs[2]->app_meta = jaldb_create_segment();
 	recs[2]->app_meta->length = 4;
 	recs[2]->app_meta->payload = (uint8_t*)jal_calloc(recs[2]->app_meta->length,sizeof(uint8_t));
-	memcpy(recs[2]->app_meta->payload, segment_data, recs[2]->app_meta->length);
+	memcpy(recs[2]->app_meta->payload, segment_data, recs[2]->app_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[2]->app_meta->fd = -1;
 	recs[2]->app_meta->on_disk = 0;
 
 	recs[2]->payload = jaldb_create_segment();
 	recs[2]->payload->length = 3;
 	recs[2]->payload->payload = (uint8_t*)jal_calloc(recs[2]->payload->length,sizeof(uint8_t));
-	memcpy(recs[2]->payload->payload, segment_data, recs[2]->payload->length);
+	memcpy(recs[2]->payload->payload, segment_data, recs[2]->payload->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[2]->payload->fd = -1;
 	recs[2]->payload->on_disk = 0;
 
@@ -264,21 +264,21 @@ static void create_records(struct jaldb_record** recs)
 	recs[3]->sys_meta = jaldb_create_segment();
 	recs[3]->sys_meta->length = 5;
 	recs[3]->sys_meta->payload = (uint8_t*)jal_calloc(recs[3]->sys_meta->length,sizeof(uint8_t));
-	memcpy(recs[3]->sys_meta->payload, segment_data, recs[3]->sys_meta->length);
+	memcpy(recs[3]->sys_meta->payload, segment_data, recs[3]->sys_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[3]->sys_meta->fd = -1;
 	recs[3]->sys_meta->on_disk = 0;
 
 	recs[3]->app_meta = jaldb_create_segment();
 	recs[3]->app_meta->length = 4;
 	recs[3]->app_meta->payload = (uint8_t*)jal_calloc(recs[3]->app_meta->length,sizeof(uint8_t));
-	memcpy(recs[3]->app_meta->payload, segment_data, recs[3]->app_meta->length);
+	memcpy(recs[3]->app_meta->payload, segment_data, recs[3]->app_meta->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[3]->app_meta->fd = -1;
 	recs[3]->app_meta->on_disk = 0;
 
 	recs[3]->payload = jaldb_create_segment();
 	recs[3]->payload->length = 3;
 	recs[3]->payload->payload = (uint8_t*)jal_calloc(recs[3]->payload->length,sizeof(uint8_t));
-	memcpy(recs[3]->payload->payload, segment_data, recs[3]->payload->length);
+	memcpy(recs[3]->payload->payload, segment_data, recs[3]->payload->length); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	recs[3]->payload->fd = -1;
 	recs[3]->payload->on_disk = 0;
 
@@ -548,10 +548,6 @@ extern "C" void  test_insert_and_get_by_uuid()
 	// TODO: lmdb-typed is a little dumb with non-string non-numeric types
 	// We have to convert the key into a string for lmdb to make use of it
 
-	// For RHEL7 compatibility
-	#ifndef UUID_STR_LEN
-	constexpr int UUID_STR_LEN = 37;
-	#endif
 	char uuidCStr[UUID_STR_LEN] = {0};
 	uuid_unparse_lower(records[2]->uuid, uuidCStr);
 	auto range = rotxn.equal_range<LmdbDbIndex::IDX_UUID>(std::string(uuidCStr));

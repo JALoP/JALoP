@@ -100,10 +100,6 @@ struct JaldbRecordTranslator {
 
 struct UuidExtract {
 	std::string operator()(const JaldbRecordTranslator& t) {
-		// For RHEL7 compatibility
-		#ifndef UUID_STR_LEN
-		constexpr int  UUID_STR_LEN = 37;
-		#endif
 		char uuidCStr[UUID_STR_LEN] = {0};
 		uuid_unparse_lower(t.uuid, uuidCStr);
 		return std::string(uuidCStr);

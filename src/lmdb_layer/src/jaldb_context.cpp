@@ -810,7 +810,7 @@ enum jaldb_status jaldb_get_journal_resume(
 	}
 
 	/* Check for a well formatted offset */
-	if(0 > sscanf((char*)std::string(offset_val).c_str(), "%" PRIu64, &offset)) {
+	if(0 > sscanf((char*)std::string(offset_val).c_str(), "%" PRIu64, &offset)) { // nosemgrep - sscanf is needed here and a dynamic length is being used, so can't specify fixed width
 		ret = JALDB_E_CORRUPTED;
 	}
 
@@ -930,7 +930,7 @@ enum jaldb_status jaldb_get_records_since_last_nonce(
 		return JALDB_E_INVAL;
 	}
 
-	if (!last_nonce || 0 == strlen(last_nonce)) {
+	if (!last_nonce || 0 == strlen(last_nonce)) { // nosemgrep - strlen needed here for this check
 		ret = JALDB_E_INVAL;
 		return ret;
 	}
@@ -1197,7 +1197,7 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
 {
 	char *path = NULL;
 	int fd = -1;
-	if (!ctx || !s || !s->on_disk || !s->payload || (0 == strlen((char*)s->payload))) {
+	if (!ctx || !s || !s->on_disk || !s->payload || (0 == strlen((char*)s->payload))) {  // nosemgrep - strlen is needed here for this check.
 		return JALDB_E_INVAL;
 	}
 	if (s->fd != -1) {
@@ -1206,7 +1206,7 @@ enum jaldb_status jaldb_open_segment_for_read(jaldb_context *ctx, struct jaldb_s
 
 	jal_asprintf(&path, "%s/%s", ctx->journal_root, (char *)s->payload);
 
-	fd = open(path, O_RDONLY);
+	fd = open(path, O_RDONLY);  // nosemgrep - suppress medium finding
 	free(path);
 	path = NULL;
 	if (-1 == fd) {

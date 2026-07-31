@@ -149,7 +149,7 @@ struct MDBOutVal
     if(d_mdbval.mv_size != sizeof(T))
       throw std::runtime_error("MDB data has wrong length for type");
 
-    memcpy(&ret, d_mdbval.mv_data, sizeof(T));
+    memcpy(&ret, d_mdbval.mv_data, sizeof(T)); // nosemgrep - the copy length is less than or equal to the destination buffer size
     return ret;
   }
 
@@ -164,7 +164,7 @@ struct MDBOutVal
     if(d_mdbval.mv_size != sizeof(T))
       throw std::runtime_error("MDB data has wrong length for type");
 
-    memcpy(&ret, d_mdbval.mv_data, sizeof(T));
+    memcpy(&ret, d_mdbval.mv_data, sizeof(T)); // nosemgrep - the copy length is less than or equal to the destination buffer size
     return ret;
   }
 
@@ -204,14 +204,14 @@ public:
                                     T>::type* = nullptr>
   MDBInVal(T i)
   {
-    memcpy(&d_memory[0], &i, sizeof(i));
+    memcpy(&d_memory[0], &i, sizeof(i)); // nosemgrep - the copy length is less than or equal to the destination buffer size
     d_mdbval.mv_size = sizeof(T);
     d_mdbval.mv_data = d_memory;;
   }
 
   MDBInVal(const char* s)
   {
-    d_mdbval.mv_size = strlen(s);
+    d_mdbval.mv_size = strlen(s); // nosemgrep - strlen is needed here to get length
     d_mdbval.mv_data = (void*)s;
   }
 
