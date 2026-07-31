@@ -334,7 +334,7 @@ enum jal_status jal_subscriber_config_set_server_ip(
 		return JAL_E_INVAL;
 	}
 
-	if(0 == strlen(addr))
+	if(0 == strlen(addr)) // nosemgrep - strlen is needed here to get length
 	{
 		return JAL_E_INVAL;
 	}

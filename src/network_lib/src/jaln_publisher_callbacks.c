@@ -77,7 +77,7 @@ enum jal_status jaln_register_publisher_callbacks(jaln_context *jaln_ctx,
 	}
 
 	new_callbacks = jaln_publisher_callbacks_create();
-	memcpy(new_callbacks, publisher_callbacks, sizeof(*new_callbacks));
+	memcpy(new_callbacks, publisher_callbacks, sizeof(*new_callbacks)); // nosemgrep - the copy length is less than or equal to the destination buffer size
 
 	jaln_ctx->pub_callbacks = new_callbacks;
 

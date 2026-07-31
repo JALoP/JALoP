@@ -29,10 +29,11 @@
  */
 
 #include <test-dept.h>
+
+
+extern "C" {
 #include <jalop/jaln_network_types.h>
-
 #include "jal_alloc.h"
-
 #include "jaln_connection.h"
 #include "jaln_connection_callbacks_internal.h"
 #include "jaln_publisher.h"
@@ -42,6 +43,7 @@
 #include "jaln_digest_info.h"
 #include "jaln_digest_resp_info.h"
 #include "jaln_message_helpers.h"
+}
 
 #define FAKE_CHAN_NUM 5
 #define SAMPLE_UUID "e25253a3-4986-40b8-8511-56f416cda9b6"
@@ -121,12 +123,6 @@ enum jal_status fake_jaln_create_init_msg(
 	return JAL_OK;
 }
 
-enum jal_status fake_jaln_verify_init_ack_headers(
-		__attribute__((unused)) struct jaln_response_header_info *info)
-{
-	return JAL_OK;
-}
-
 void on_connect_ack(
 		__attribute__((unused)) const struct jaln_connect_ack *ack,
 		__attribute__((unused)) void *user_data)
@@ -134,7 +130,7 @@ void on_connect_ack(
 	ack_cb = true;
 }
 
-int on_subscribe(
+enum jal_status on_subscribe(
 		__attribute__((unused)) jaln_session *session,
 		__attribute__((unused)) const struct jaln_channel_info *ch_info,
 		__attribute__((unused)) enum jaln_record_type type,
@@ -143,7 +139,7 @@ int on_subscribe(
 		__attribute__((unused)) void *user_data)
 {
 	subscribe_cb = true;
-	return 0;
+	return JAL_OK;
 }
 
 
@@ -151,7 +147,6 @@ void setup()
 {
 	replace_function(jaln_publisher_callbacks_is_valid, fake_publisher_callbacks_is_valid);
 	replace_function(jaln_connection_callbacks_is_valid, fake_connection_callbacks_is_valid);
-	replace_function(jaln_verify_init_ack_headers, fake_jaln_verify_init_ack_headers)
 	replace_function(curl_easy_perform, fake_curl_easy_perform);
 	replace_function(curl_easy_setopt, fake_curl_easy_setopt);
 	replace_function(curl_easy_cleanup, fake_curl_easy_cleanup);
@@ -262,7 +257,6 @@ void test_pub_create_session_works()
 	jaln_session *my_sess = jaln_publisher_create_session(ctx, "some_host", JALN_RTYPE_JOURNAL);
 	assert_not_equals((void*) NULL, my_sess);
 	assert_equals(2, ctx->ref_cnt);
-	assert_equals(JALN_ROLE_PUBLISHER, my_sess->role);
 	assert_equals(JALN_RTYPE_JOURNAL, my_sess->ch_info->type);
 	assert_not_equals(host, my_sess->ch_info->hostname);
 	assert_not_equals((void*) NULL, my_sess->ch_info->hostname);

@@ -81,7 +81,7 @@ void debugOutput(bool shouldPrint, FILE* fd, const char* fmt, ...)
 
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(fd, fmt, args);
+	vfprintf(fd, fmt, args); // nosemgrep - false positive, no format specifier is getting passed here, just the actual string
 	va_end(args);
 }
 

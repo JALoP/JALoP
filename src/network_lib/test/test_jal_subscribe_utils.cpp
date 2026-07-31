@@ -213,6 +213,21 @@ bool populateDigestResponse(
 	return true;
 }
 
+void populateJournalMissing(
+	Message& message,
+	std::string jalId,
+	std::string sessionId)
+{
+	message.addHeader(HEADER_MESSAGE_TYPE, MSG_JOURNAL_MISSING_STR);
+	message.addHeader(HEADER_CONTENT_LENGTH, "0");
+	message.addHeader(HEADER_JAL_SESSION_ID_TYPE, sessionId);
+	message.addHeader(HEADER_JAL_ID_TYPE, jalId);
+
+	// Let the message process these headers as if they were just received and
+	// set its internal state
+	message.processHeaders();
+}
+
 bool compareHeader(
 	const Response& response,
 	const char* filename,
@@ -337,6 +352,54 @@ bool checkSync(
 		}
 		nextHeader = HEADER_JAL_ID_TYPE;
 		if(!compareHeader(response, __FILE__, __LINE__, nextHeader, jalId))
+		{
+			return false;
+		}
+	}
+	catch(std::runtime_error &e)
+	{
+		fprintf(stderr, "Context: %s:%d. Expected header: %s not found.\n",
+			__FILE__, __LINE__, nextHeader.c_str());
+		return false;
+	}
+	return true;
+}
+
+bool checkSessionFailure(
+	const Response& response,
+	const std::string& sessionId,
+	const std::string& jalId,
+	const std::string& errorMessage)
+{
+	std::string nextHeader = HEADER_CONTENT_TYPE;
+	try
+	{
+		if(!compareHeader(response, __FILE__, __LINE__, nextHeader, HEADER_CONTENT_TYPE_DEFAULT))
+		{
+			return false;
+		}
+		nextHeader = HEADER_MESSAGE_TYPE;
+		if(!compareHeader(response, __FILE__, __LINE__, nextHeader, MSG_SESSION_FAILURE_STR))
+		{
+			return false;
+		}
+		nextHeader = HEADER_CONTENT_LENGTH;
+		if(!compareHeader(response, __FILE__, __LINE__, nextHeader, ""))
+		{
+			return false;
+		}
+		nextHeader = HEADER_JAL_SESSION_ID_TYPE;
+		if(!compareHeader(response, __FILE__, __LINE__, nextHeader, sessionId))
+		{
+			return false;
+		}
+		nextHeader = HEADER_JAL_ID_TYPE;
+		if(!compareHeader(response, __FILE__, __LINE__, nextHeader, jalId))
+		{
+			return false;
+		}
+		nextHeader = HEADER_JAL_ERROR_MESSAGE_TYPE;
+		if(!compareHeader(response, __FILE__, __LINE__, nextHeader, errorMessage))
 		{
 			return false;
 		}

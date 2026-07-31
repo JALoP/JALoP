@@ -42,7 +42,6 @@
 
 static jaln_session *sess = NULL;
 static struct jaln_pub_data *pub_data = NULL;
-static struct jaln_payload_feeder zeroed_feeder;
 static char *nonce = NULL;
 static uint8_t *dgst_buf = NULL;
 static uint64_t dgst_len;
@@ -58,7 +57,6 @@ void setup()
 {
 	sess = jaln_session_create();
 	pub_data = jaln_pub_data_create();
-	memset(&zeroed_feeder, 0, sizeof(zeroed_feeder));
 	nonce = jal_strdup(NONCE);
 	dgst_len = 4;
 	dgst_buf = (uint8_t*) jal_malloc(dgst_len);
@@ -99,7 +97,6 @@ void test_session_create()
 	assert_false(sess->closing);
 	assert_false(sess->errored);
 	assert_not_equals((void*) NULL, sess->dgst_list);
-	assert_equals(JALN_ROLE_UNSET, sess->role);
 	assert_equals(JALN_SESSION_DEFAULT_DGST_LIST_MAX, sess->dgst_list_max);
 	assert_equals(JALN_SESSION_DEFAULT_DGST_TIMEOUT_MICROS, sess->dgst_timeout);
 	assert_equals((void*) NULL, sess->pub_data);
@@ -120,7 +117,6 @@ void test_session_destroy_sets_pointer_to_null()
 
 void test_session_destroy_cleans_up_pub_data()
 {
-	sess->role = JALN_ROLE_PUBLISHER;
 	sess->pub_data = pub_data;
 	pub_data = NULL;
 }
@@ -166,35 +162,8 @@ void test_jaln_ptrs_equals()
 void test_pub_data_create()
 {
 	assert_not_equals((void*) NULL, pub_data);
-	assert_equals(0, memcmp(&pub_data->feeder, &zeroed_feeder, sizeof(zeroed_feeder)));
-	assert_equals(0, pub_data->feeder_sz);
-	assert_equals(-1, pub_data->msg_no);
-	assert_equals((void*)NULL, pub_data->nonce);
-	assert_equals((void*)NULL, pub_data->headers);
-	assert_equals((void*)NULL, pub_data->sys_meta);
-	assert_equals((void*)NULL, pub_data->app_meta);
-	assert_equals((void*)NULL, pub_data->payload);
-	assert_equals(0, pub_data->headers_sz);
-	assert_equals(0, pub_data->sys_meta_sz);
-	assert_equals(0, pub_data->app_meta_sz);
-	assert_equals(0, pub_data->payload_sz);
-
-	assert_equals(0, pub_data->headers_off);
-	assert_equals(0, pub_data->sys_meta_off);
-	assert_equals(0, pub_data->app_meta_off);
-	assert_equals(0, pub_data->payload_off);
-	assert_equals(0, pub_data->break_off);
-
-	assert_false(pub_data->finished_headers);
-	assert_false(pub_data->finished_sys_meta);
-	assert_false(pub_data->finished_sys_meta_break);
-	assert_false(pub_data->finished_app_meta);
-	assert_false(pub_data->finished_app_meta_break);
-	assert_false(pub_data->finished_payload);
-	assert_false(pub_data->finished_payload_break);
-
-	assert_equals((void*)NULL, pub_data->dgst_inst);
-	assert_equals((void*)NULL, pub_data->dgst);
+	assert_equals((void*)NULL, pub_data->resume_nonce);
+	assert_equals(0, pub_data->resume_off);
 }
 
 void test_pub_data_destroy_does_not_crash()
@@ -234,7 +203,6 @@ void test_add_to_dgst_list_does_not_signal_for_publisher()
 	replace_function(pthread_cond_signal, fake_cond_signal);
 	assert_equals(0, axl_list_length(sess->dgst_list));
 	sess->dgst_list_max = 1;
-	sess->role = JALN_ROLE_PUBLISHER;
 	assert_equals(JAL_OK, jaln_session_add_to_dgst_list(sess, nonce, dgst_buf, dgst_len));
 	assert_false(cond_signal_called);
 }

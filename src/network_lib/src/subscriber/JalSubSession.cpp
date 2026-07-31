@@ -88,9 +88,19 @@ enum jal_digest_algorithm Session::getDigestAlgorithm()
 	return digestAlgorithm;
 }
 
-std::string Session::getPublisherId()
+RecordType Session::getRecordType() const 
+{
+	return recordType;
+}
+
+std::string Session::getPublisherId() const
 {
 	return publisherId;
+}
+
+bool Session::getResumeAllowed() const
+{
+	return resumeAllowed;
 }
 
 ModeType Session::getReceiveMode()
@@ -142,7 +152,7 @@ Response Session::generateSyncFailure()
 
 Response Session::generateSync()
 {
-	debugOutput(config.debug, stderr, "generating sync\n");
+	debugOutput(config.debug, stdout, "generating sync\n");
 	Response response;
 	response.addHeader(HEADER_JAL_ID_TYPE, currentRecordInfo.jalId);
 	response.addHeader(HEADER_MESSAGE_TYPE, MSG_SYNC_STR);
@@ -159,6 +169,17 @@ bool Session::shouldResume()
 		ModeType::ARCHIVE != config.mode )
 	{
 		debugOutput(config.debug, stdout, "should not resume, type or mode\n");
+		return false;
+	}
+
+	// With the new rust jald process being able to support multiple
+	// sessions per record type on the same publisher, to keep the old behavior
+	// (until we decide we want to support multiple resumes) we're going to
+	// only allow the first journal session for a given publisher to do a resume.
+	// This prevents concurrent access to the file-system from attempting to do
+	// multiple resumes on the same in-progress record file.
+	if(!resumeAllowed) {
+		debugOutput(config.debug, stdout, "should not resume, not the first journal session for this publisherId\n");
 		return false;
 	}
 
@@ -524,12 +545,12 @@ Response Session::handleJournalMissing(const Message& message)
 {
 	// Extract headers
 	std::string jalId = message.getHeader(HEADER_JAL_ID_TYPE);
-	// The spec doesn't specify what to do if the jalId is missing for this message
-	// The publisher respects an empty response, and no errors are defined for this transaction
-	// so there's really nothing to do here.
-	//
-	// If we DO have a jalID, go attempt to clean up the payload corresponding to that ID
-	if(!jalId.empty())
+
+	if(jalId.empty())
+	{
+		return generateRecordFailure(JAL_INVALID_JAL_ID, "");
+	}
+	else
 	{
 		std::string tempFilePath = config.databasePath + "/staging";
 		std::string payloadFileName = getPayloadFileName(
@@ -538,11 +559,25 @@ Response Session::handleJournalMissing(const Message& message)
 			ReceiveMessageType::MSG_JOURNAL,
 			jalId);
 
+		if(0 != access(payloadFileName.c_str(), W_OK)) {  // nosemgrep - need to check for write perms
+			// The file does not exist or cannot be opened for write (which means
+			// it also can't be deleted)
+			debugOutput(config.debug, stdout,
+				"handleJournalMissing: Could not access file: %s\n", payloadFileName.c_str());
+			return generateRecordFailure(JAL_JOURNAL_MISSING_FAILURE, jalId);
+		}
+		// Remove the File
 		remove(payloadFileName.c_str());
+		struct stat buffer;
+		if(0 == lstat(payloadFileName.c_str(), &buffer)) {
+			// The file stil exists after our attempt to remove it
+			debugOutput(config.debug, stdout,
+				"handleJournalMissing: Could not remove file: %s\n", payloadFileName.c_str());
+			return generateRecordFailure(JAL_JOURNAL_MISSING_FAILURE, jalId);
+		}
 		debugOutput(config.debug, stdout,
-			"handleJournalMissing Removing file: %s\n", payloadFileName.c_str());
+			"handleJournalMissing: Removed file: %s\n", payloadFileName.c_str());
 	}
-	// In either case, send an empty journal-missing-response message
 	Response response;
 	response.addHeader(HEADER_MESSAGE_TYPE, MSG_JOURNAL_MISSING_RESP_STR);
 	return response;
@@ -624,12 +659,11 @@ Response Session::handleDigestChallengeResponse(const Message& message)
 	if(!insertRecord())
 	{
 		// Always print
-		fprintf(stdout, "Sending SYNC failure for jalId: %s\n", currentRecordInfo.jalId.c_str());
+		fprintf(stderr, "Sending SYNC failure for jalId: %s\n", currentRecordInfo.jalId.c_str());
 		return generateSyncFailure();
 	}
 
-	// Always print
-	fprintf(stdout, "Sending SYNC for jalId: %s\n", currentRecordInfo.jalId.c_str());
+	debugOutput(config.debug, stdout, "Sending SYNC for jalId: %s\n", currentRecordInfo.jalId.c_str());
 	return generateSync();
 }
 
@@ -670,8 +704,7 @@ Response Session::handleRecord(const Message& message, RecordType messageRecordT
 	// If digest challenge is enabled, send a digest challenge
 	if(shouldChallengeDigest)
 	{
-		//Always print
-		fprintf(stdout, "Sending digest challenge for type: %s sessionId: %s\n",
+		debugOutput(config.debug, stdout, "Sending digest challenge for type: %s sessionId: %s\n",
 			recordTypeToString(recordType).c_str(),
 			uuid.c_str());
 		return generateDigestChallenge();
@@ -681,14 +714,13 @@ Response Session::handleRecord(const Message& message, RecordType messageRecordT
 	{
 		if(insertRecord())
 		{
-			// Always print
-			fprintf(stdout, "Sending SYNC for jalId: %s\n", currentRecordInfo.jalId.c_str());
+			debugOutput(config.debug, stdout, "Sending SYNC for jalId: %s\n", currentRecordInfo.jalId.c_str());
 			return generateSync();
 		}
 		else
 		{
 			// Always print
-			fprintf(stdout, "Sending SYNC failure for jalId: %s\n", currentRecordInfo.jalId.c_str());
+			fprintf(stderr, "Sending SYNC failure for jalId: %s\n", currentRecordInfo.jalId.c_str());
 			return generateSyncFailure();
 		}
 	}
@@ -754,7 +786,7 @@ Response Session::handleInitMessage(const Message& message)
 	response.addHeader(HEADER_JAL_SESSION_ID_TYPE, uuid);
 
 	// TODO - override default Xml compression
-	response.addHeader("JAL-XML-Compression", "None");
+	response.addHeader("jal-xml-compression", "none");
 	response.addHeader(HEADER_JAL_DIGEST, digest_uri_str[digestAlgorithm]);
 
 	if(shouldChallengeDigest)
@@ -833,7 +865,8 @@ Response Session::handleMessage(ReceiveMessageType type, const Message& message)
 Session::Session(
 	std::string paramUuid,
 	std::weak_ptr<JalSubDatabase> paramJdb,
-	SubscriberConfig paramConfig) : uuid(paramUuid), jdb(paramJdb), config(paramConfig)
+	SubscriberConfig paramConfig,
+	bool paramResumeAllowed) : uuid(paramUuid), jdb(paramJdb), config(paramConfig), resumeAllowed(paramResumeAllowed)
 {
 }
 

@@ -1,14 +1,13 @@
 /**
  * @file
  *
- * @brief This file contains function
- * declarations for internal library functions related to creating JALoP
- * messages
+ * @brief This file contains function declarations for code related
+ * to sending JAL records to the Subscriber.
  *
  * ### LICENSE
  *
  * Copyright (C) 2018-2026 Concurrent Technologies Corporation.
- * Copyright (c) 2012 Tresys Technology LLC, Columbia, Maryland, USA
+ * Copyright (c) 2011 Tresys Technology LLC, Columbia, Maryland, USA
  *
  * This software was developed by Tresys Technology LLC
  * with U.S. Government sponsorship.
@@ -26,26 +25,29 @@
  * limitations under the License.
  */
 #pragma once
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <jalop/jal_status.h>
+#include "jaln_session.h"
+#include "jaldb_record.h"
 
-#include <inttypes.h>
-#include <jalop/jaln_network_types.h>
-#include <stddef.h>
-#include <curl/curl.h>
+enum jal_status jaln_send_record_impl(
+	jaln_session* sess,
+	struct jaldb_record* rec,
+	uint8_t** digestOut,
+	uint32_t* digestLenOut,
+	uint8_t** peerDigestOut,
+	uint32_t* peerDigestLenOut);
 
-#include "jaln_digest_info.h"
-#include "jaln_digest_resp_info.h"
+enum jal_status jaln_send_digest_response_impl(
+	jaln_session* sess,
+	const char* paramNonce,
+	const uint8_t* localDigest,
+	const uint32_t localLen,
+	const uint8_t* peerDigest,
+	const int32_t peerLen);
 
-/**
- * Send a close-session message to end the current session.
- *
- * @param[in] sess The current session.
- */
-void jaln_send_close_session(jaln_session *sess);
 #ifdef __cplusplus
 }
 #endif
-

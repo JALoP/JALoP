@@ -147,7 +147,6 @@ void jaln_session_destroy(jaln_session **psession) {
 struct jaln_pub_data *jaln_pub_data_create()
 {
 	struct jaln_pub_data *pub_data = jal_calloc(1, sizeof(*pub_data));
-	pub_data->msg_no = -1;
 	return pub_data;
 }
 
@@ -156,13 +155,7 @@ void jaln_pub_data_destroy(struct jaln_pub_data **ppub_data) {
 		return;
 	}
 	struct jaln_pub_data *pub_data = *ppub_data;
-	if(pub_data->headers) {
-		curl_slist_free_all(pub_data->headers);
-		pub_data->headers = NULL;
-	}
-	free(pub_data->nonce);
-	free(pub_data->dgst);
-	free(pub_data->dgst_inst);
+	free(pub_data->resume_nonce);
 	free(pub_data);
 	*ppub_data = NULL;
 }

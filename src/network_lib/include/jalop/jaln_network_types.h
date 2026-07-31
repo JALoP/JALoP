@@ -217,39 +217,6 @@ struct jaln_connect_nack {
 };
 
 /**
- * @struct jaln_payload_feeder
- * The jaln_payload_feeder is used to send bytes of the payload (journal,
- * audit, or log data) to the remote peer.
- */
-struct jaln_payload_feeder {
-	/**
-	 * An application may set this to anything they like. It will be passed
-	 * as the \p feeder_data parameter of #get_bytes.
-	 *
-	 * the JNL will call release_payload_feeder when it is done with a
-	 * particular instance to give the application a chance to release any
-	 * data associated with the feeder.
-	 */
-	void *feeder_data;
-	/**
-	 * The JNL calls this when it needs to read more bytes of the payload
-	 * (raw journal, audit, or log data).
-	 *
-	 * @param[in] offset The offset, in bytes, to start reading from.
-	 * @param[in] buffer The buffer to fill with data.
-	 * @param[in,out] size The number of bytes available in the buffer.
-	 * Applications must set this to the actual number of bytes read.
-	 * @param[in] feeder_data the application defined feeder_data pointer of this struct.
-	 *
-	 * @return JAL_OK to continue, some other value to stop sending data.
-	 */
-	enum jal_status (*get_bytes)(const uint64_t offset,
-			   uint8_t * const buffer,
-			   uint64_t *size,
-			   void *feeder_data);
-};
-
-/**
  * Used to indicate whether a connection should be accepted or rejected
  */
 enum jaln_connect_error {

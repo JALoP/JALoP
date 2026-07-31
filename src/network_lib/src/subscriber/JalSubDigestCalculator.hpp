@@ -107,7 +107,7 @@ class DigestCalculator
 		}
 	}
 
-	std::string finalizeDigest()
+	std::string finalizeDigest(bool debug)
 	{
 		unsigned int digestLen = digestContext->len;
 		uint8_t* digest = (uint8_t*)malloc(digestLen);
@@ -122,14 +122,16 @@ class DigestCalculator
 
 		for(size_t i = 0; i < digestLen; i++)
 		{
-			sprintf(hexArray + 2*i, "%02x", digest[i]);
+			snprintf(hexArray + 2*i, 3, "%02x", digest[i]);
 		}
 		std::string hexStr(hexArray);
 		free(hexArray);
 
-		// TODO: Only calculate for DEBUG
 		char* b64 = jal_base64_enc(digest, digestLen);
-		printf("computed digest(b64): %s\n", b64);
+		if(debug)
+		{
+			printf("computed digest(b64): %s\n", b64);
+		}
 		free(b64);
 		free(digest);
 		return hexStr;

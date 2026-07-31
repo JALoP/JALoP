@@ -217,6 +217,18 @@ void Message::processHeaders()
 		case ReceiveMessageType::MSG_AUDIT:
 			payloadLenHeader = HEADER_JAL_AUDIT_LENGTH;
 			payloadLenErrorValue = JAL_INVALID_AUDIT_LENGTH;
+			{
+				// Audit records have an additional header: JAL-Audit-Format
+				std::string auditFormat = getHeader(HEADER_JAL_AUDIT_FORMAT);
+				if(JAL_AUDIT_FORMAT_XML == auditFormat) {
+					this->info.auditFormat = AuditFormat::XML;
+				} else if(JAL_AUDIT_FORMAT_JSON == auditFormat) {
+					this->info.auditFormat = AuditFormat::JSON;
+				} else {
+					setError(MSG_RECORD_FAILURE_STR, JAL_UNSUPPORTED_AUDIT_FORMAT);
+					return;
+				}
+			}
 			break;
 		case ReceiveMessageType::MSG_JOURNAL:
 			payloadLenHeader = HEADER_JAL_JOURNAL_LENGTH;
@@ -252,9 +264,30 @@ Response Message::generateError()
 	Response response;
 	response.addHeader(HEADER_MESSAGE_TYPE, this->parsingState.errorKind);
 	response.addHeader(HEADER_JAL_ERROR_MESSAGE_TYPE, this->parsingState.errorMessage);
+
+	// If there is a JalId associated with the message being processed
+	// (i.e., journal/audit/log record, journal missing, digest challenge, or sync)
+	// included it in the outgoing error headers
 	if(!this->info.jalId.empty())
 	{
 		response.addHeader(HEADER_JAL_ID_TYPE, this->info.jalId);
+	}
+
+	// The Session Failure message additionally provides the
+	// Session Id in the response headers. Note that all session-failure messages
+	// are in response to messages which are required to include a session-id, so we
+	// should use the id from the message in the response.
+	if(MSG_SESSION_FAILURE_STR == this->parsingState.errorKind) {
+		// If we didn't receive a session id header for some reason, we can't give one back.
+		// This probably means either the subscriber or publisher is in a bad state and
+		// is constructing or receving malformed messages.
+		// We can't include what we don't have, so better to omit a required header
+		// than illegally leave it empty. The publisher should notice the absence of
+		// the required header and throw a session error.
+		std::string uuid = this->getHeader(HEADER_JAL_SESSION_ID_TYPE);
+		if(!uuid.empty()) {
+			response.addHeader(HEADER_JAL_SESSION_ID_TYPE, uuid);
+		}
 	}
 	return response;
 }
@@ -535,7 +568,9 @@ bool Message::processPayload(
 	// payload file and perform a resume if needed
 	if(0 == parsingState.segmentOffset)
 	{
-		prepareForPayload();
+		if(!prepareForPayload()) {
+			return false;
+		}
 	}
 
 	// If the size of the payload exceeds the bufferSize, we'll offload it to a file
@@ -586,12 +621,18 @@ void Message::addData(const uint8_t* messageData, size_t* size)
 					info.sysMetadata,
 					info.sysMetadataLen,
 					ParsingState::RecordSegment::BREAK1);
+				if(!parseOk) {
+					fprintf(stderr, "Error encountered parsing system metadata\n");
+				}
 				break;
 			case ParsingState::RecordSegment::BREAK1:
 				parseOk = processBreak(
 					remainingData,
 					remainingLen,
 					ParsingState::RecordSegment::APP_METADATA);
+				if(!parseOk) {
+					fprintf(stderr, "Error encountered parsing first BREAK marker\n");
+				}
 				break;
 			case ParsingState::RecordSegment::APP_METADATA:
 				parseOk = processMetadata(
@@ -600,28 +641,41 @@ void Message::addData(const uint8_t* messageData, size_t* size)
 					info.appMetadata,
 					info.appMetadataLen,
 					ParsingState::RecordSegment::BREAK2);
+				if(!parseOk) {
+					fprintf(stderr, "Error encountered parsing applicatoin metadata\n");
+				}
 				break;
 			case ParsingState::RecordSegment::BREAK2:
 				parseOk = processBreak(
 					remainingData,
 					remainingLen,
 					ParsingState::RecordSegment::PAYLOAD);
+				if(!parseOk) {
+					fprintf(stderr, "Error encountered parsing second BREAK marker\n");
+				}
 				break;
 			case ParsingState::RecordSegment::PAYLOAD:
 				parseOk = processPayload(
 					remainingData,
 					remainingLen);
+				if(!parseOk) {
+					fprintf(stderr, "Error encountered parsing payload\n");
+				}
 				break;
 			case ParsingState::RecordSegment::BREAK3:
 				parseOk = processBreak(
 					remainingData,
 					remainingLen,
 					ParsingState::RecordSegment::DONE);
+				if(!parseOk) {
+					fprintf(stderr, "Error encountered parsing third BREAK marker\n");
+				}
 				break;
 			case ParsingState::RecordSegment::DONE:
 				// If we actually land here, we have more data than we expected
 				// This is an error
 				parseOk = false;
+				fprintf(stderr, "Error: Extraneous data beyond end of message.\n");
 				setError(MSG_RECORD_FAILURE_STR, JAL_RECORD_FAILURE);
 				break;
 		}
@@ -634,6 +688,39 @@ void Message::addData(const uint8_t* messageData, size_t* size)
 	if(ParsingState::RecordSegment::DONE != parsingState.currentSegment
 		&& parsingState.bytesProcessed >= contentLength)
 	{
+		fprintf(stderr, "Error: Incomplete Message.\n  \
+			Bytes Processed: %zu, Expected: %zu\n",
+			parsingState.bytesProcessed, contentLength);
+		fprintf(stderr, "Error encountered while parsing state was: ");
+		switch(parsingState.currentSegment) {
+			case ParsingState::RecordSegment::NEW_RECORD:
+				fprintf(stderr, "New Record\n");
+				break;
+			case ParsingState::RecordSegment::SYS_METADATA:
+				fprintf(stderr, "System Metadata\n");
+				break;
+			case ParsingState::RecordSegment::BREAK1:
+				fprintf(stderr, "Break 1\n");
+				break;
+			case ParsingState::RecordSegment::APP_METADATA:
+				fprintf(stderr, "Application Metadata\n");
+				break;
+			case ParsingState::RecordSegment::BREAK2:
+				fprintf(stderr, "Break 2\n");
+				break;
+			case ParsingState::RecordSegment::PAYLOAD:
+				fprintf(stderr, "Payload\n");
+				break;
+			case ParsingState::RecordSegment::BREAK3:
+				fprintf(stderr, "Break 3\n");
+				break;
+			case ParsingState::RecordSegment::DONE:
+				fprintf(stderr, "Done\n");
+				break;
+			default:
+				fprintf(stderr, "Invalid Parsing State\n");
+				break;
+		}
 		setError(MSG_RECORD_FAILURE_STR, JAL_RECORD_FAILURE);
 	}
 
@@ -644,7 +731,7 @@ void Message::addData(const uint8_t* messageData, size_t* size)
 	{
 		if(parsingState.shouldChallenge)
 		{
-			this->info.digest = parsingState.digestCalculator.finalizeDigest();
+			this->info.digest = parsingState.digestCalculator.finalizeDigest(Message::debug);
 		}
 		parsingState.messageComplete = true;
 	}

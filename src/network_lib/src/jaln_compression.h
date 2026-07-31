@@ -50,7 +50,7 @@ int jaln_string_list_case_insensitive_func(axlPointer a, axlPointer b);
  * @param[in] ptr The object in the list
  * @param[in] data The string to look for
  */
-bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointer data);
+axl_bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointer data);
 
 /**
  * Function to convert an axlList of strings (char*) to an array of strings.

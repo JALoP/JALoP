@@ -35,6 +35,8 @@
 // For sleeping
 #include <chrono>
 #include <thread>
+#include <algorithm>
+#include <cctype>
 
 #include "JalSubMessaging.hpp"
 #include "JalSubNetworkLayer.hpp"
@@ -332,8 +334,10 @@ static MHD_Return_Type header_func(
 	(void)kind;
 
 	Message* messagePtr = (Message*)cls;
-	// If we have a problem with one of the headers, skip the rest
-	messagePtr->addHeader(key, value);
+	std::string lowercaseKey = key;
+	std::transform(lowercaseKey.begin(), lowercaseKey.end(), lowercaseKey.begin(),
+		[](unsigned char c) { return std::tolower(c);});
+	messagePtr->addHeader(lowercaseKey, value);
 	return MHD_YES;
 }
 

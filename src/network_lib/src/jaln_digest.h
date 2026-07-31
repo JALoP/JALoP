@@ -62,6 +62,6 @@ int jaln_digest_list_equal_func(axlPointer a, axlPointer b);
  * @param[in] ptr The object in the list
  * @param[in] data A string that is the digest algorithm to look for
  */
-bool jaln_digest_lookup_func(axlPointer ptr, axlPointer data);
+axl_bool jaln_digest_lookup_func(axlPointer ptr, axlPointer data);
 
 #endif // _JALN_DIGEST_INTERNAL_H_

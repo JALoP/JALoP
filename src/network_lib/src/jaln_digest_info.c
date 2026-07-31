@@ -44,7 +44,7 @@ struct jaln_digest_info *jaln_digest_info_create(const char *nonce,
 	struct jaln_digest_info *dgst_info = jal_malloc(sizeof(*dgst_info));
 	dgst_info->nonce = jal_strdup(nonce);
 	dgst_info->digest = jal_malloc(dgst_len);
-	memcpy(dgst_info->digest, dgst_buf, dgst_len);
+	memcpy(dgst_info->digest, dgst_buf, dgst_len); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	dgst_info->digest_len = dgst_len;
 	return dgst_info;
 }

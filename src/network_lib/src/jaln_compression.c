@@ -24,6 +24,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <axl.h>
 #include "jal_alloc.h"
 #include "jaln_compression.h"
 #include "jaln_context.h"
@@ -49,18 +50,22 @@ enum jal_status jaln_register_compression(jaln_context *ctx,
 	return JAL_OK;
 }
 
-bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointer data)
+axl_bool jaln_string_list_case_insensitive_lookup_func(axlPointer ptr, axlPointer data)
 {
 	if (ptr && data) {
-		return 0 == jaln_string_list_case_insensitive_func(ptr, data);
+		if(0 == jaln_string_list_case_insensitive_func(ptr, data)) {
+			return axl_true;
+		} else {
+			return axl_false;
+		}
 	}
 	if (ptr) {
-		return false;
+		return axl_false;
 	}
 	if (data) {
-		return false;
+		return axl_false;
 	}
-	return true;
+	return axl_true;
 }
 
 enum jal_status jaln_axl_string_list_to_array(axlList *list,

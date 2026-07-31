@@ -111,6 +111,7 @@ Response generateSessFailure(
 	std::string errorMessage)
 {
 	Response response;
+	response.addHeader(HEADER_MESSAGE_TYPE, MSG_SESSION_FAILURE_STR);
 	response.addHeader(HEADER_JAL_SESSION_ID_TYPE, uuid);
 	response.addHeader(HEADER_JAL_ERROR_MESSAGE_TYPE, errorMessage);
 
@@ -230,10 +231,37 @@ Response JalSubscriber::messageHandler(const Message& message)
 			// locks the sessionList internally
 			pruneOldestSession();
 		}
-		// Obtain an exclusive-lock on the session list.
+
+		// Obtain a full lock on the session list to prevent another thread from also thinking
+		// it's the first while we're scanning the session list and adding our new session
 		std::unique_lock lock(sessionsMutex);
+
+		// For now, multiple resume is not allowed. Check if there are any other sessions
+		// with record type journal for this publisher. Disable journal resume if any
+		// are found
+		bool resumeAllowed = true;
+		try {
+			std::string publisherId = message.getHeader(HEADER_JAL_PUBLISHER_ID_TYPE);
+
+			// Loop through all active sessions, searching for this publisherId and the journal
+			// record type
+			for(const auto& [key, session] : activeSessions) {
+				if( publisherId == session.getPublisherId() &&
+						RecordType::JAL_JOURNAL == session.getRecordType()) {
+					resumeAllowed = false;
+					break;
+				}
+			}
+		} catch(...) {
+			// If something goes wrong fetching the publisher Id for this check, just fail out
+			// of the resume
+			debugOutput(config.debug, stderr,
+				"Failed to obtain publisherId when checking for journal resume\n");
+			resumeAllowed = false;
+		}
+
 		activeSessions.emplace(
-			std::make_pair(uuid, Session(uuid, jdb, config)));
+			std::make_pair(uuid, Session(uuid, jdb, config, resumeAllowed)));
 	}
 	// Else, hand off the message to an existing session
 	else

@@ -292,8 +292,7 @@ enum jaln_publish_mode jaln_session_get_publish_mode(jaln_session* sess);
  *
  * This method should be called to send a record to the awaiting
  * subscriber. The method expects the calling implementation to obtain
- * and provide the record and uses a default payload feeder
- * to read the payload data. This function does not free the record.
+ * and provide the record. This function does not free the record.
  *
  * @param[in] sess The session containg the connection and subscriber information
  * @param[in] rec The record to be sent
@@ -303,26 +302,6 @@ enum jaln_publish_mode jaln_session_get_publish_mode(jaln_session* sess);
 enum jal_status jaln_send(
 			jaln_session *sess,
 			struct jaldb_record* rec);
-
-/**
- * Send the record to the awaiting subscriber with a customer payload feeder.
- *
- * This method should be called to send a record to the awaiting
- * subscriber. The method expects the calling implementation to obtain
- * and provide the record and a payload feeder used
- * to read the payload data. This function does not free the record, feeder
- * or feeder data.
- *
- * @param[in] sess The session containg the connection and subscriber information
- * @param[in] rec The record to be sent
- * @param[in] feeder The payload feeder that will be used to read the data
- *
- * @return JAL_OK on successfully sending the record or an error otherwise
- */
-enum jal_status jaln_send_feeder(
-			jaln_session *sess,
-			struct jaldb_record* rec,
-			struct jaln_payload_feeder *feeder);
 
 /**
  * Notify the library that the publisher is finished sending records.

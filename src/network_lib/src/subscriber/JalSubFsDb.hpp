@@ -68,7 +68,7 @@ class FsDb : public JalSubDatabase
 		// Valid directory names have a length of 10
 		const int expectedDirNameLen = 10;
 		int charsRead = 0;
-		int matchedItems = sscanf(dp->d_name, "%*d%n", &charsRead);
+		int matchedItems = sscanf(dp->d_name, "%*d%n", &charsRead); // nosemgrep - sscanf is needed here and a dynamic length is being used, so can't specify fixed width
 		if(1 != matchedItems || expectedDirNameLen != charsRead)
 		{
 			return -1;

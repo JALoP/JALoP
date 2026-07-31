@@ -60,6 +60,11 @@ bool populateDigestResponse(
 	const std::string& sessionId,
 	const DigestStatus& status);
 
+void populateJournalMissing(
+	Message& message,
+	std::string jalId,
+	std::string sessionId);
+
 bool checkInit(
 	const Response& response,
 	const std::string& digest,
@@ -73,6 +78,12 @@ bool checkDigestChallenge(
 bool checkSync(
 	const Response& response,
 	const std::string& jalId);
+
+bool checkSessionFailure(
+	const Response& response,
+	const std::string& sessionId,
+	const std::string& jalId,
+	const std::string& errorMessage);
 
 bool compareHeader(
 	const Response& response,

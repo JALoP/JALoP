@@ -73,7 +73,7 @@ class Session final
 	std::string publisherId;
 
 	// TODO: Unused
-	std::string xmlCompression = "None";
+	std::string xmlCompression = "none";
 
 	// Each session has a single RecordType it is associated with, requested
 	// by the publisher
@@ -93,6 +93,7 @@ class Session final
 		= std::chrono::steady_clock::now();
 
 	// Information about whether or not this session should request a journal resume
+	bool resumeAllowed = false;
 	std::string resumeId;
 	size_t resumeOffset = 0;
 
@@ -136,7 +137,11 @@ class Session final
 
 	enum jal_digest_algorithm getDigestAlgorithm();
 
-	std::string getPublisherId();
+	RecordType getRecordType() const;
+
+	std::string getPublisherId() const;
+
+	bool getResumeAllowed() const;
 
 	ModeType getReceiveMode();
 
@@ -158,7 +163,8 @@ class Session final
 	Session(
 		std::string uuid,
 		std::weak_ptr<JalSubDatabase> jdb,
-		SubscriberConfig config);
+		SubscriberConfig config,
+		bool resumeAllowed);
 
 	~Session();
 };

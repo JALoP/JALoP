@@ -176,3 +176,80 @@ extern "C" void test_init()
 	// Check for existence of record with jalId in test db
 	assert(db->checkForRecord(logRecordJalId));
 }
+
+extern "C" void test_session_failure_returns_session_id()
+{
+	TestSubscriberConfig config(TMP_DIR);
+
+	JalSubscriber subscriber(config.getSubscriberConfig(),
+		MockDb::MockDbFactory,
+		MockHttpServer::MockHttpServerFactory);
+
+	// Get a handle to the singleton mock server
+	std::shared_ptr<MockHttpServer> server = MockHttpServer::getServerHandle();
+	assert_not_equals(nullptr, server);
+
+	// Get a handle to the singleton mock db
+	std::shared_ptr<MockDb> db = MockDb::getDbHandle();
+	assert_not_equals(nullptr, db);
+
+	// Due to an issue with the way Messages are handled, a new message object must be
+	// created for each transaction and an existing message cannot be reassigned with =
+	// Skip init - we want to use a session id that doesn't exist
+	std::string invalidSessionId = "BADBAD00-0000-0000-0000-000000000000";
+
+	// Create a log record message
+	Message logRecord;
+	std::string logRecordJalId = "00000000-0000-0000-0000-000000000001";
+	std::string computedDigest;
+	std::vector<uint8_t> sysMetadata;
+	std::vector<uint8_t> appMetadata;
+	std::vector<uint8_t> payload;
+	assert_true(populateRecordValid(
+		logRecord,
+		computedDigest,
+		invalidSessionId,
+		logRecordJalId,
+		sysMetadata,
+		appMetadata,
+		payload,
+		RecordType::JAL_LOG));
+
+	// Stimulate subscriber with log record, capture session failure
+	Response sessionFailureResponse = server->sendMessage(logRecord);
+	for(const auto& [name, val] : sessionFailureResponse.getHeaders()) {
+		fprintf(stderr, "header: [%s] - [%s]\n", name.c_str(), val.c_str());
+	}
+	assert_true(checkSessionFailure(sessionFailureResponse, invalidSessionId, logRecordJalId, JAL_UNSUPPORTED_SESSION_ID));
+}
+
+extern "C" void test_journal_missing_session_failure_returns_session_id()
+{
+	TestSubscriberConfig config(TMP_DIR);
+
+	JalSubscriber subscriber(config.getSubscriberConfig(),
+		MockDb::MockDbFactory,
+		MockHttpServer::MockHttpServerFactory);
+
+	// Get a handle to the singleton mock server
+	std::shared_ptr<MockHttpServer> server = MockHttpServer::getServerHandle();
+	assert_not_equals(nullptr, server);
+
+	// Skip init - we want to use a session id that doesn't exist
+	std::string invalidSessionId = "BADBAD00-0000-0000-0000-000000000000";
+
+	// Create a journal missing message
+	Message journalMissing;
+	std::string jalId = "00000000-0000-0000-0000-000000000001";
+	populateJournalMissing(
+		journalMissing,
+		jalId,
+		invalidSessionId);
+
+	// Stimulate subscriber with journal-missing, capture session failure
+	Response sessionFailureResponse = server->sendMessage(journalMissing);
+	for(const auto& [name, val] : sessionFailureResponse.getHeaders()) {
+		fprintf(stderr, "header: [%s] - [%s]\n", name.c_str(), val.c_str());
+	}
+	assert_true(checkSessionFailure(sessionFailureResponse, invalidSessionId, jalId, JAL_UNSUPPORTED_SESSION_ID));
+}

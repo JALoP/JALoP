@@ -178,7 +178,7 @@ enum jal_status jaln_register_publisher_id(jaln_context *ctx, const char *pub_id
 	if (!ctx || !pub_id || *ctx->pub_id || !validate_uuid(pub_id)) {
 		return JAL_E_INVAL;
 	}
-	memcpy(ctx->pub_id, pub_id, sizeof(ctx->pub_id));
+	memcpy(ctx->pub_id, pub_id, sizeof(ctx->pub_id)); // nosemgrep - the copy length is less than or equal to the destination buffer size
 	return JAL_OK;
 }
 

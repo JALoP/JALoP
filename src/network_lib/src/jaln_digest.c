@@ -24,6 +24,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <axl.h>
 #include "jaln_compression.h"
 #include "jaln_digest.h"
 
@@ -40,11 +41,15 @@ int jaln_digest_list_equal_func(axlPointer a, axlPointer b)
 	return strcasecmp(dgst_a->algorithm_uri, dgst_b->algorithm_uri);
 }
 
-bool jaln_digest_lookup_func(axlPointer ptr, axlPointer data)
+axl_bool jaln_digest_lookup_func(axlPointer ptr, axlPointer data)
 {
 	struct jal_digest_ctx *dgst = (struct jal_digest_ctx*)ptr;
 	if (dgst == NULL) {
-		return false;
+		return axl_false;
 	}
-	return 0 == jaln_string_list_case_insensitive_func(dgst->algorithm_uri, data);
+	if(0 == jaln_string_list_case_insensitive_func(dgst->algorithm_uri, data)) {
+		return axl_true;
+	} else {
+		return axl_false;
+	}
 }

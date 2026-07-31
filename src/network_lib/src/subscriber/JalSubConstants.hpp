@@ -53,33 +53,34 @@ const std::string JAL_INVALID_RECORD_STR = "INVALID_TYPE";
 // Digest status values
 const std::string DIGEST_STATUS_INVALID_STR = "invalid";
 const std::string DIGEST_STATUS_CONFIRMED_STR = "confirmed";
-// Header Type Strings
-const std::string HEADER_MESSAGE_TYPE = "JAL-Message";
-const std::string HEADER_JAL_SESSION_ID_TYPE = "JAL-Session-Id";
-const std::string HEADER_CONTENT_TYPE = "Content-Type";
-const std::string HEADER_JAL_PUBLISHER_ID_TYPE = "JAL-Publisher-Id";
-const std::string HEADER_JAL_VERSION_TYPE = "JAL-Version";
-const std::string HEADER_JAL_RECORD_TYPE = "JAL-Record-Type";
-const std::string HEADER_JAL_ERROR_MESSAGE_TYPE = "JAL-Error-Message";
-const std::string HEADER_JAL_MODE_TYPE = "JAL-Mode";
-const std::string HEADER_JAL_ID_TYPE = "JAL-Id";
-const std::string HEADER_JAL_ACCEPT_DIGEST = "JAL-Accept-Digest";
-const std::string HEADER_JAL_ACCEPT_CONFIGURE_DIGEST_CHALLENGE = "JAL-Accept-Configure-Digest-Challenge";
-const std::string HEADER_JAL_CONFIGURE_DIGEST_CHALLENGE = "JAL-Configure-Digest-Challenge";
-const std::string HEADER_JAL_SYSTEM_METADATA_LENGTH = "JAL-System-Metadata-Length";
-const std::string HEADER_JAL_APPLICATION_METADATA_LENGTH = "JAL-Application-Metadata-Length";
-const std::string HEADER_JAL_AUDIT_LENGTH = "JAL-Audit-Length";
-const std::string HEADER_JAL_LOG_LENGTH = "JAL-Log-Length";
-const std::string HEADER_JAL_JOURNAL_LENGTH = "JAL-Journal-Length";
-const std::string HEADER_JAL_PRIORITY = "JAL-Priority";
-const std::string HEADER_JAL_DIGEST = "JAL-Digest";
-const std::string HEADER_JAL_DIGEST_VALUE = "JAL-Digest-Value";
-const std::string HEADER_JAL_DIGEST_STATUS = "JAL-Digest-Status";
-const std::string HEADER_JAL_JOURNAL_OFFSET = "JAL-Journal-Offset";
+// Header Type Strings - normalized to lowercase
+const std::string HEADER_MESSAGE_TYPE = "jal-message";
+const std::string HEADER_JAL_SESSION_ID_TYPE = "jal-session-id";
+const std::string HEADER_CONTENT_TYPE = "content-type";
+const std::string HEADER_JAL_PUBLISHER_ID_TYPE = "jal-publisher-id";
+const std::string HEADER_JAL_VERSION_TYPE = "jal-version";
+const std::string HEADER_JAL_RECORD_TYPE = "jal-record-type";
+const std::string HEADER_JAL_ERROR_MESSAGE_TYPE = "jal-error-message";
+const std::string HEADER_JAL_MODE_TYPE = "jal-mode";
+const std::string HEADER_JAL_ID_TYPE = "jal-id";
+const std::string HEADER_JAL_ACCEPT_DIGEST = "jal-accept-digest";
+const std::string HEADER_JAL_ACCEPT_CONFIGURE_DIGEST_CHALLENGE = "jal-accept-configure-digest-challenge";
+const std::string HEADER_JAL_CONFIGURE_DIGEST_CHALLENGE = "jal-configure-digest-challenge";
+const std::string HEADER_JAL_SYSTEM_METADATA_LENGTH = "jal-system-metadata-length";
+const std::string HEADER_JAL_APPLICATION_METADATA_LENGTH = "jal-application-metadata-length";
+const std::string HEADER_JAL_AUDIT_LENGTH = "jal-audit-length";
+const std::string HEADER_JAL_AUDIT_FORMAT = "jal-audit-format";
+const std::string HEADER_JAL_LOG_LENGTH = "jal-log-length";
+const std::string HEADER_JAL_JOURNAL_LENGTH = "jal-journal-length";
+const std::string HEADER_JAL_PRIORITY = "jal-priority";
+const std::string HEADER_JAL_DIGEST = "jal-digest";
+const std::string HEADER_JAL_DIGEST_VALUE = "jal-digest-value";
+const std::string HEADER_JAL_DIGEST_STATUS = "jal-digest-status";
+const std::string HEADER_JAL_JOURNAL_OFFSET = "jal-journal-offset";
 
 // Header Const Values
 const std::string HEADER_CONTENT_TYPE_DEFAULT = "application/http+jalop";
-const std::string HEADER_CONTENT_LENGTH = "Content-Length";
+const std::string HEADER_CONTENT_LENGTH = "content-length";
 
 // INIT message Values
 const std::vector<std::string> SUPPORTED_XML_COMPRESSIONS = {"none", "exi-1.0", "deflate"};
@@ -109,17 +110,23 @@ const std::string JAL_UNSUPPORTED_SESSION_ID = "JAL-Unsupported-Session-Id";
 const std::string JAL_UNSUPPORTED_DIGEST = "JAL-Unsupported-Digest";
 const std::string JAL_UNSUPPORTED_CONFIGURE_DIGEST_CHALLENGE = "JAL-Unsupported-Configure-Digest-Challenge";
 
+// Record message value
+const std::string JAL_AUDIT_FORMAT_XML = "xml";
+const std::string JAL_AUDIT_FORMAT_JSON = "json";
+
 // Record Failure message values
 const std::string JAL_INVALID_JAL_ID = "JAL-Invalid-JAL-Id";
 const std::string JAL_INVALID_SYSTEM_METADATA_LENGTH = "JAL-Invalid-System-Metadata-Length";
 const std::string JAL_INVALID_APPLICATION_METADATA_LENGTH = "JAL-Invalid-Application-Metadata-Length";
 const std::string JAL_INVALID_LOG_LENGTH = "JAL-Invalid-Log-Length";
 const std::string JAL_INVALID_AUDIT_LENGTH = "JAL-Invalid-Audit-Length";
+const std::string JAL_UNSUPPORTED_AUDIT_FORMAT = "JAL-Unsupported-Audit-Format";
 const std::string JAL_INVALID_JOURNAL_LENGTH = "JAL-Invalid-Joural-Length";
 const std::string JAL_RECORD_FAILURE = "JAL-Record-Failure";
 const std::string JAL_INVALID_DIGEST_STATUS = "JAL-Invalid-Digest-Status";
 const std::string JAL_INVALID_DIGEST = "JAL-Invalid-Digest";
 const std::string JAL_SYNC_FAILURE = "JAL-Sync-Failure";
+const std::string JAL_JOURNAL_MISSING_FAILURE = "JAL-Journal-Missing-Failure";
 
 // Translation of microhttpd constants
 const int JAL_STATUS_OK = MHD_HTTP_OK;

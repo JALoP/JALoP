@@ -9,7 +9,7 @@ env.Append(LIBS = ['microhttpd', 'config', 'gnutls'])
 env.Append(CXXFLAGS = '-std=c++17')
 
 sources = []
-sources = env.Glob("*.c") + env.Glob("subscriber/*.cpp")
+sources = env.Glob("*.c") + env.Glob("*.cpp") + env.Glob("subscriber/*.cpp")
 
 env.MergeFlags({'CPPPATH':['#src/lmdb_layer/src']})
 add_project_lib(env, 'lmdb_layer', 'jal-db')

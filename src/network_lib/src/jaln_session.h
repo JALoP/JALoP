@@ -65,7 +65,6 @@ struct jaln_session_t {
 	bool closing;                    //!< Flag that indicates this
 	bool errored;                    //!< Flag that indicates an error occurred within the session
 	axlList *dgst_list;                  //!< A list of jaln_digest_info structures that are calculated as data is sent/received
-	enum jaln_role role;                 //!< The role this context is performing (subscriber or publisher)
 	int dgst_list_max;                   //!< The maximum number of digest entries to keep as a subscriber
 	long dgst_timeout;                   //!< The maximum amount of time to wait before sending a 'digest' message
 	struct jaln_pub_data* pub_data;      //!< Data specific to a publisher
@@ -76,38 +75,8 @@ struct jaln_session_t {
  * Data related to a publisher session
  */
 struct jaln_pub_data {
-	struct jaln_payload_feeder feeder;  //!< the jaln_payload_feeder for sending a record.
-	int64_t feeder_sz;                       //!< The size of this message.
-	int msg_no;                                 //!< The message number we are replying to
-
-	char *nonce;                            //!< The nonce of the last record sent.
-
-	struct curl_slist *headers;                              //!< A buffer to hold the MIME headers for the current record.
-	uint8_t *sys_meta;                          //!< A buffer to hold the system metadata for the current record.
-	uint8_t *app_meta;                          //!< A buffer to hold the application metadata for the current record.
-	uint8_t *payload;                           //!< A buffer to hold the data for the payload (if this is an audit or log record
-
-	uint64_t headers_sz;                          //!< The size of jaln_pub_data::headers
-	uint64_t sys_meta_sz;                         //!< The size of jaln_pub_data::sys_meta
-	uint64_t app_meta_sz;                         //!< The size of jaln_pub_data::app_meta
-	uint64_t payload_sz;                        //!< The size of jaln_pub_data::payload, or the size of the journal record.
-
-	uint64_t headers_off;                         //!< The current offset into jaln_pub_data::headers
-	uint64_t sys_meta_off;                        //!< The current offset into jaln_pub_data::sys_meta
-	uint64_t app_meta_off;                        //!< The current offset into jaln_pub_data::app_meta
-	uint64_t payload_off;                       //!< The current offset into jaln_pub_data::payload, or the journal record.
-	uint64_t break_off;                           //!< The current offset used when writing the "BREAK" string between segments.
-
-	bool finished_headers;                  //!< Indicates the headers have been sent.
-	bool finished_sys_meta;                 //!< Indicates the system metadata has been sent.
-	bool finished_sys_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
-	bool finished_app_meta;                 //!< Indicates the application metadata has been sent.
-	bool finished_app_meta_break;           //!< Indicates the "BREAK" following the system metadata has been sent.
-	bool finished_payload;                  //!< Indicates the payload has been sent
-	bool finished_payload_break;            //!< Indicates the "BREAK" following the payload has been sent.
-
-	void *dgst_inst;                            //!< An instance of a digest_ctx for a particular record.
-	uint8_t *dgst;                              //!< A buffer to hold the final contents of a digest
+	char *resume_nonce;                         //!< If not NULL - the nonce of the record to be resumed
+	uint64_t resume_off;                        //!< The starting offset of the record to be resumed
 };
 
 /**

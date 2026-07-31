@@ -94,14 +94,3 @@ void test_jaln_send_record_fails_on_too_large_nonce()
 
 	assert_equals(ret, JAL_E_INVAL_NONCE);
 }
-
-void test_jaln_send_record_feeder_fails_on_too_large_nonce()
-{
-	char *nonce = BIG_N;
-	enum jal_status ret;
-
-	ret = jaln_send_record_feeder(sess, nonce, sys_meta_buf, sys_meta_len, app_meta_buf,
-				app_meta_len, payload_len, (uint64_t) 0, &empty_feeder);
-
-	assert_equals(ret, JAL_E_INVAL_NONCE);
-}
