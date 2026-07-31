@@ -49,7 +49,7 @@ int dir_cleanup(const char *path)
 	struct dirent *ent = NULL;
 	char *ent_path = NULL;
 
-	path_len = strlen(path);
+	path_len = strlen(path);  // nosemgrep - strlen is needed here to get length
 
 	dir = opendir(path);
 	if (!dir) {
@@ -57,14 +57,12 @@ int dir_cleanup(const char *path)
 	}
 
 	while ((ent = readdir(dir))) {
-		int ent_len = strlen(ent->d_name);
+		int ent_len = strlen(ent->d_name); // nosemgrep - strlen is needed here to get length
 		struct stat st;
 
 		ent_path = malloc(path_len + ent_len + 2);
 
-		strcpy(ent_path, path);
-		strcat(ent_path, "/");
-		strcat(ent_path, ent->d_name);
+		snprintf(ent_path, path_len + ent_len + 2, "%s/%s", path, ent->d_name);
 
 		lstat(ent_path, &st);
 

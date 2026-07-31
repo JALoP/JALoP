@@ -1,0 +1,107 @@
+{
+    openssl_leaks
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    obj:*/libcrypto.so.3*
+}
+{
+    openssl_leaks_rhel_8
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    obj:*/libcrypto.so.1.1*
+}
+{
+    libboost_leaks
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    obj:*/libboost_serialization.so.1*
+}
+{
+    ld_leaks
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    obj:*/ld-2.28.so
+}
+{
+    libxml_leaks
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    obj:*/libxml2.so.2.9*
+}
+{
+   Rust_Leaks1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:_ZN*tokio*
+}
+{
+   Rust_Leaks2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:realloc
+   ...
+   fun:_ZN*tokio*
+}
+{
+   Rust_Leaks3
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:*parking_lot_core*
+}
+{
+   Rust_Leaks4
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:*parse_filters*
+}
+{
+   Rust_Leaks5
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:posix_memalign
+   ...
+   fun:*parking_lot_core*
+}
+{
+   Rust_Leaks6
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:*core::marker::*
+}
+{
+   Rust_Leaks7
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:*set_current_info*
+}
+{
+   Rust_Leaks8_JALD_RS
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:*core..convert..From*
+}
+{
+   Rust_Leaks9_JALD_RS
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:*openssl_probe*
+}

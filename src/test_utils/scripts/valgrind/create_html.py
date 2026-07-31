@@ -1,7 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import os
 import sys
-from pathlib import Path
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
@@ -152,9 +151,8 @@ summary_el.set("Leak_IndirectlyLost", str(sumLeak_IndirectlyLost))
 summary_el.set("Leak_DefinitelyLost", str(sumLeak_DefinitelyLost))
 summary_el.set("InvalidWrite", str(sumInvalidWrite))
 summary_el.set("InvalidRead", str(sumInvalidRead))
-now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 summary_el.set("Date", now)
-ET.indent(out_doc, space='  ', level=0)
 ET.dump(out_doc)
 
 # process_name
