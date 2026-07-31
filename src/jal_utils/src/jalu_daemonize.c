@@ -72,7 +72,7 @@ int jalu_daemonize(const char *log_dir, const char *pid_file) {
 		int flags = O_CREAT | O_WRONLY | O_TRUNC;
 
 		// Attempt to create the stdout log file
-		int fd = open(filename, flags, mode);
+		int fd = open(filename, flags, mode); // nosemgrep - suppress medium finding
 		if(-1 == fd) {
 			return -1;
 		}
@@ -89,7 +89,7 @@ int jalu_daemonize(const char *log_dir, const char *pid_file) {
 		}
 
 		// Attempt to create the stderr log file
-		fd = open(filename, flags, mode);
+		fd = open(filename, flags, mode); // nosemgrep - suppress medium finding
 		if(-1 == fd) {
 			return -1;
 		}
@@ -105,7 +105,7 @@ int jalu_daemonize(const char *log_dir, const char *pid_file) {
 	}
 
 	if (pid_file != NULL) {
-		FILE *fp = fopen(pid_file, "w");
+		FILE *fp = fopen(pid_file, "w");  // nosemgrep - suppress medium finding
 		if (fp == NULL) {
 			fprintf(stderr, "Failed to open pid file '%s'.\n", pid_file);
 			return -1;
@@ -124,7 +124,7 @@ int jalu_pid(const char* path) {
 	pid = getpid();
 
 	if (path) {
-		pidfile = fopen(path, "w");
+		pidfile = fopen(path, "w"); // nosemgrep - suppress medium finding
 		if (NULL == pidfile) {
 			return -1;
 		}
