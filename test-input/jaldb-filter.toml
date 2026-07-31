@@ -1,5 +1,6 @@
 [db]
 path = "testdb"
+poll_time = 1
 
 [control-socket]
 path = "jald_filter_socket_request"
@@ -17,8 +18,3 @@ debug = false
 initial = ["access", "arch_prctl", "bind", "epoll_create1", "eventfd2", "execve", "getrandom", "ioctl", "listen", "poll", "prlimit64", "seccomp", "set_tid_address", "socketpair"]
 final = ["accept4", "connect", "exit", "getpid", "madvise", "pwrite64", "recvfrom", "rt_sigreturn", "sendmsg", "writev"]
 both = ["brk", "clone3", "close", "epoll_ctl", "epoll_wait", "exit_group", "fcntl", "fstat", "fstatfs", "futex", "lseek", "mmap", "mprotect", "munmap", "newfstatat", "openat", "prctl", "pread64", "read", "rseq", "rt_sigaction", "rt_sigprocmask", "sched_getaffinity", "sched_yield", "set_robust_list", "sigaltstack", "socket", "statx", "stat", "write"]
-
-# el7 requires an alternative set of syscalls
-rhel7_initial = ["access", "arch_prctl", "bind", "epoll_create1", "eventfd2", "execve", "getrandom", "listen", "poll", "prlimit64", "seccomp", "set_tid_address", "socketpair"]
-rhel7_final = ["accept4", "exit", "getpid", "madvise", "pwrite64", "recvfrom", "rt_sigreturn", "sendmsg", "writev"]
-rhel7_both = ["brk", "clone", "close", "connect", "epoll_ctl", "epoll_wait", "exit_group", "fcntl", "fstat", "fstatfs", "futex", "ioctl", "lseek", "mmap", "mprotect", "munmap", "newfstatat", "open", "openat", "prctl", "pread64", "read", "rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "sched_getaffinity", "sched_yield", "set_robust_list", "sigaltstack", "socket", "statx", "stat", "uname", "write"]

@@ -1,0 +1,76 @@
+[general]
+# UUID used to identify this publisher
+publisher_id = "cc0191c2-97e8-4cbf-af13-920d268d68ec"
+
+# A list of supported digest algorithms. These algorithms should be ordered by preference.
+# Valid values are "sha256", "sha384", and "sha512"
+digest_algorithms = ["sha256"]
+
+# path to a directory containing the JALoP schemas (optional)
+schemas_root = "./schemas/"
+
+[tls]
+# the path to the private key, used for TLS negotiation
+private_key = "./test-input/TLS_CA_Signed/client/jal_publisher_v2_client.key.pem"
+#private_key = "./test-input/TLS_Self_Signed/pub-certs/publisher.key"
+
+# the path to the public cert, used for TLS negotiation
+public_cert = "./test-input/TLS_CA_Signed/client/jal_publisher_v2_client.cert.pem"
+#public_cert = "./test-input/TLS_Self_Signed/pub-certs/publisher.crt"
+trust_store = "./test-input/TLS_CA_Signed/server/trust_store_dir"
+
+#Set this config setting to true to enable the use of self signed certs for TLS.
+#WARNING!!! this will disable cert validity checks within libcurl and this should only
+#be used for testing and not on a live production system.
+#TODO might not be needed for rust jald
+allow_self_signed_certs = false
+
+[tuning]
+# time in seconds between checks for new records when none are available
+poll_time = 1
+
+# time in seconds between attempts to reconnect to peers where the connection has closed
+# the special value of -1 can be used to indicated that jald should not attempt reconnects
+retry_interval = 5
+
+# Network timeout for each session, in minutes. Upon failure to send or receive
+# data in this time, a network outage is assumed and the session closes.
+# The special value of 0 implies not network timeout is enforced.
+network_timeout = 60
+
+# List of subscriber configurations.
+[[peer]]
+# the hostname or IP address of the subscriber
+host = "127.0.0.1"
+# the port to connect to
+port = 8444
+# the mode of JALoP operation
+# To run JALoP in Archive mode, use "archive" or "archival"
+# To run JALoP in Live mode, use "live"
+mode = "archive"
+# array of digest challenge configuration settings ordered by descending priority
+# Valid values are "on" and "off"
+digest_challenge = ["on"]
+# array of record types to be sent to the subscriber
+# Valid values are "audit", "log", and "journal"
+record_types = ["audit", "log", "journal"]
+# directory containing the CA certificate(s) to use for TLS negotiation
+cert_dir = "./test-input/TLS_CA_Signed/client/trust_store_dir"
+#cert_dir = "./test-input/TLS_Self_Signed/pub-certs/trust_store_dir"
+
+[control-socket]
+path = "jald_filter_socket_request"
+buffer = 4096
+
+[record-socket]
+path = "jald_filter_socket"
+timeout = 30
+buffer = 256
+
+[seccomp]
+enabled = false
+debug = false
+
+initial = ["access", "arch_prctl", "bind", "epoll_create1", "eventfd2", "execve", "getrandom", "ioctl", "listen", "poll", "prlimit64", "seccomp", "set_tid_address", "socketpair"]
+final = ["accept4", "connect", "exit", "getpid", "madvise", "pwrite64", "recvfrom", "rt_sigreturn", "sendmsg", "writev"]
+both = ["brk", "clone3", "close", "epoll_ctl", "epoll_wait", "exit_group", "fcntl", "fstat", "fstatfs", "futex", "lseek", "mmap", "mprotect", "munmap", "newfstatat", "openat", "prctl", "pread64", "read", "rseq", "rt_sigaction", "rt_sigprocmask", "sched_getaffinity", "sched_yield", "set_robust_list", "sigaltstack", "socket", "statx", "stat", "write"]

@@ -1,0 +1,11 @@
+[Unit]
+Description=JALoP Rust Publisher Service
+
+[Service]
+Type=simple
+User=jald
+Group=jalop
+ExecStart=/usr/sbin/jald_rs -c /etc/jalop/jald_rs_service.cfg
+
+[Install]
+WantedBy=multi-user.target
